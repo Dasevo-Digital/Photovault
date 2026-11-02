@@ -23,7 +23,7 @@ typedef FamilientagMitFotos = ({
 
 /// Die nächsten Geburts-, Todes- und Hochzeitstage aus dem Stammbaum,
 /// jeder mit Fotos der Beteiligten – bei einem Paar zuerst die, auf denen
-/// beide sind.
+/// beide sind, bei einem Geburtstag die von früheren Geburtstagen (#272).
 Future<List<FamilientagMitFotos>> familientageMitFotos(
   AppDatabase db, {
   required DateTime heute,
@@ -64,13 +64,55 @@ Future<List<FamilientagMitFotos>> familientageMitFotos(
   for (final tag in tage) {
     final ids = tag.personen.where(nachId.containsKey).toList();
     if (ids.isEmpty) continue;
+    final geburtstag = tag.art == Familientagart.geburtstag && ids.length == 1
+        ? nachId[ids.single]!.geburtsdatum
+        : null;
     ergebnis.add((
       tag: tag,
       namen: [for (final id in ids) nachId[id]!.name],
-      fotos: await _fotosVon(db, ids, hoechstensFotos),
+      fotos: geburtstag == null
+          ? await _fotosVon(db, ids, hoechstensFotos)
+          : await _vonGeburtstagen(db, ids.single, geburtstag, hoechstensFotos),
     ));
   }
   return ergebnis;
+}
+
+/// Die Fotos von [personId], die an einem ihrer Geburtstage entstanden
+/// sind – wie Immichs Geburtstags-Erinnerungen (#272). Bisher zeigte der
+/// Familientag einfach die neuesten Fotos der Person, auch die vom
+/// letzten Dienstag.
+///
+/// Höchstens drei je Jahr, das jüngste Jahr zuerst: Ein Fest mit vierzig
+/// Bildern soll die anderen Jahre nicht verdrängen. Wer am 29. Februar
+/// geboren ist, feiert in den übrigen Jahren am 28. Gibt es keine solchen
+/// Fotos, bleibt es bei den neuesten.
+Future<List<AssetData>> _vonGeburtstagen(
+  AppDatabase db,
+  String personId,
+  DateTime geburtsdatum,
+  int hoechstens,
+) async {
+  final alle = await db.assetsFuerPersonen([personId]);
+  bool amGeburtstag(DateTime d) {
+    if (d.month != geburtsdatum.month) return false;
+    if (d.day == geburtsdatum.day) return true;
+    final schaltjahr = DateTime(d.year, 2, 29).month == 2;
+    return geburtsdatum.month == 2 &&
+        geburtsdatum.day == 29 &&
+        d.day == 28 &&
+        !schaltjahr;
+  }
+
+  final jeJahr = <int, List<AssetData>>{};
+  for (final a in alle) {
+    if (!amGeburtstag(a.fileCreatedAt)) continue;
+    final liste = jeJahr.putIfAbsent(a.fileCreatedAt.year, () => []);
+    if (liste.length < 3) liste.add(a);
+  }
+  if (jeJahr.isEmpty) return alle.take(hoechstens).toList();
+  final jahre = jeJahr.keys.toList()..sort((a, b) => b.compareTo(a));
+  return [for (final j in jahre) ...jeJahr[j]!].take(hoechstens).toList();
 }
 
 Future<List<AssetData>> _fotosVon(
