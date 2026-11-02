@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.50.1" date="2026-11-02">
+      <description>
+        <p>Developing a photo again on the computer now reaches connected devices. Until now the computer always saved a development under the same name, and phones and other computers kept showing the version they had fetched first.</p>
+        <p>The browser shows the new image after an edit. Until now it could keep the old one for up to a day, even right after saving in the browser.</p>
+        <p>The server is built with Dart 3.13.7, which fixes a BoringSSL issue with compromised intermediate certificates.</p>
+      </description>
+    </release>
     <release version="3.50.0" date="2026-11-02">
       <description>
         <p>The browser and the mobile app now show photos in full resolution. Until now they showed only the 2048-pixel preview of HEIC, DNG and RAW photos. The server converts such photos once and keeps the result in a cache limited to 2 GiB.</p>
