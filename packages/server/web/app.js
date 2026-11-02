@@ -3718,9 +3718,15 @@ function holeVoll(a) {
     if (lauf !== vollLauf) return;
     const lang = Math.max(a.breite || 0, a.hoehe || 0);
     if (Math.max(bild.naturalWidth, bild.naturalHeight) >= lang) return;
-    const voll = new Image();
-    voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
-    voll.src = bildUrl(a.id, 'voll', a.stand);
+    // Erst nach kurzem Verweilen, wie in der Handy-App (#266): Wer mit den
+    // Pfeiltasten durch HEIC oder RAW blättert, stiess sonst für jedes Foto
+    // eine Wandlung am Server an.
+    setTimeout(() => {
+      if (lauf !== vollLauf) return;
+      const voll = new Image();
+      voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
+      voll.src = bildUrl(a.id, 'voll', a.stand);
+    }, 400);
   }, { once: true });
 }
 
