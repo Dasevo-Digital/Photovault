@@ -42,7 +42,9 @@ const String rasterSpalten =
     'thumbnail_relative_path, file_created_at, duration_seconds, '
     'is_favorite, is_stack_cover, stack_id, stack_size, linked_asset_id, '
     'rating, color_label, width_px, height_px, latitude, longitude, '
-    'camera_make, is_locked, dateiformat';
+    'camera_make, is_locked, dateiformat, '
+    'coalesce(restored_relative_path, developed_relative_path, '
+    'trimmed_relative_path, preview_relative_path) AS fassung';
 
 /// Wer im Raster eigenständig sichtbar ist – als SQL-Bedingung.
 ///
@@ -84,6 +86,7 @@ class Rasterzeile {
     required this.cameraMake,
     required this.isLocked,
     this.dateiformat,
+    this.fassung,
   });
 
   final String id;
@@ -111,6 +114,12 @@ class Rasterzeile {
   /// Format des Inhalts (siehe [formatKuerzel]).
   final String? dateiformat;
 
+  /// Der Pfad der Fassung, die statt des Originals zu sehen ist –
+  /// Restaurierung, Entwicklung, Schnitt oder Vorschau, in dieser Folge.
+  /// Nur dafür, dass eine Adresse merkt, wenn das Bild wechselt (#259):
+  /// Der Browser hält Bilder unter ihrer Adresse vor.
+  final String? fassung;
+
   /// Aus einer vollen Zeile – für die Bildschirme, die ohnehin schon
   /// `AssetData` in der Hand halten (Alben, Suche, Personen und die
   /// anderen). Sie gewinnen nichts, verlieren aber auch nichts: Die
@@ -137,6 +146,11 @@ class Rasterzeile {
     cameraMake: a.cameraMake,
     isLocked: a.isLocked,
     dateiformat: a.dateiformat,
+    fassung:
+        a.restoredRelativePath ??
+        a.developedRelativePath ??
+        a.trimmedRelativePath ??
+        a.previewRelativePath,
   );
 
   /// Aus einer rohen Abfragezeile – der Weg, um dessentwillen es diese
@@ -170,6 +184,7 @@ class Rasterzeile {
     cameraMake: r.readNullable<String>('camera_make'),
     isLocked: r.read<int>('is_locked') != 0,
     dateiformat: r.readNullable<String>('dateiformat'),
+    fassung: r.readNullable<String>('fassung'),
   );
 
   /// Das Format-Kürzel für die Kachel – dieselbe Rechnung wie für eine

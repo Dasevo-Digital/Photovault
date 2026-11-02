@@ -26,7 +26,7 @@ function rbStreifen(aufnahmen, titel) {
     const img = el('img');
     img.loading = 'lazy';
     img.alt = '';
-    img.src = miniaturUrl(a.id);
+    img.src = miniaturUrl(a.id, a.stand);
     b.append(img);
     b.addEventListener('click', () => {
       zeigeBereich(['raster']);
@@ -192,7 +192,7 @@ async function zeigeJahresrueckblick(jahrText) {
       const img = el('img');
       img.loading = 'lazy';
       img.alt = '';
-      img.src = miniaturUrl(a.id);
+      img.src = miniaturUrl(a.id, a.stand);
       b.append(img);
       b.addEventListener('click', () => { zeigeBereich(['raster']); zeigeListe({ aufnahmen: d.auswahl }, t('Dein Jahr {jahr}', { jahr })); oeffne(i); });
       raster.append(b);

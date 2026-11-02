@@ -506,6 +506,10 @@ async function entwSpeichern() {
       },
     });
     entw.geaendert = false;
+    // Zurück im Betrachter die neue Fassung unter neuer Adresse (#259) –
+    // auch bevor die Liste neu geladen ist.
+    const gezeigt = liste && liste.aufnahmen.find((x) => x.id === entw.id);
+    if (gezeigt) gezeigt.stand = pfad;
     meldung.textContent = t('Gespeichert.');
     history.back();
   } catch (x) {

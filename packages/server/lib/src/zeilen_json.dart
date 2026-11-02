@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:kern/db/database.dart' show FaceData;
 import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -39,7 +42,23 @@ Map<String, Object?> zeileAlsJson(Rasterzeile r) => {
   // Das Kürzel oben rechts auf der Kachel, wie am Rechner.
   if (r.kuerzel.isNotEmpty) 'format': r.kuerzel,
   'miniatur': r.thumbnailRelativePath != null,
+  'stand': bildstand(r),
 };
+
+/// Ein kurzes Merkmal dafür, welche Dateien Miniatur, Ansicht und volle
+/// Auflösung gerade sind (#259). Der Browser hängt es an die Adresse:
+/// Er hält Bilder unter ihrer Adresse vor, und ohne das Merkmal zeigte er
+/// nach einer Bearbeitung bis zu einen Tag lang das alte Bild – auch
+/// gleich nach dem Speichern im Browser selbst. Jede neue Fassung kommt
+/// unter einem neuen Pfad (#258), also genügen die Pfade.
+String bildstand(Rasterzeile r) => sha1
+    .convert(
+      utf8.encode(
+        '${r.relativePath}|${r.fassung ?? ''}|${r.thumbnailRelativePath ?? ''}',
+      ),
+    )
+    .toString()
+    .substring(0, 10);
 
 /// Wo ein Gesicht im Foto sitzt: links, oben, Breite, Höhe – als Anteile
 /// des Bildes (0..1), wie in der Datenbank. Gilt für Vorschau und Original

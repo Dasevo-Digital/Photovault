@@ -947,7 +947,7 @@ function zeigeStand(z, stand, abschnitt) {
   if (foto) {
     if (z.flugbildImg.dataset.id !== foto.id) {
       z.flugbildImg.dataset.id = foto.id;
-      z.flugbildImg.src = miniaturUrl(foto.id);
+      z.flugbildImg.src = miniaturUrl(foto.id, foto.stand);
       z.flugbildText.textContent = foto.unterschrift;
     }
     const weg = Math.max(40, z.flug.laenge * 0.01);
@@ -1071,7 +1071,7 @@ function setzeFotomarken(z) {
     const img = el('img');
     img.alt = '';
     img.loading = 'lazy';
-    img.src = miniaturUrl(f.id);
+    img.src = miniaturUrl(f.id, f.stand);
     e.append(img);
     e.addEventListener('click', () => {
       const n = liste?.aufnahmen?.findIndex((x) => x.id === f.id) ?? -1;
@@ -1357,7 +1357,7 @@ async function videoAusgeben(z) {
     if (z.linien && z.wahl.hoehenlinien) karte.getSource('hoehenlinien').setData(z.linien);
     const schilder = z.schilder.map((m) => ({ ort: m.getLngLat(), text: m.getElement().textContent }));
     const fotos = new Map();
-    for (const f of z.fotos) fotos.set(f.id, await ladeBild(miniaturUrl(f.id)));
+    for (const f of z.fotos) fotos.set(f.id, await ladeBild(miniaturUrl(f.id, f.stand)));
 
     const ziel = new ArrayBufferTarget();
     const muxer = new Muxer({ target: ziel, video: { codec: 'avc', width: wahl.breite, height: wahl.hoehe }, fastStart: 'in-memory' });

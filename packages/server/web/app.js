@@ -36,7 +36,11 @@ const el = (tag, klasse, text) => {
 };
 // „1 Aufnahme“, „3 Aufnahmen“ – wie auf dem Telefon.
 const anzahlText = (n) => (n === 1 ? t('1 Aufnahme') : t('{n} Aufnahmen', { n }));
-const miniaturUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/miniatur`;
+// Bilder hält der Browser unter ihrer Adresse vor. `stand` aus der Liste
+// (#259) ändert sich mit jeder neuen Fassung – ohne es zeigte er nach
+// einer Bearbeitung bis zu einen Tag lang das alte Bild.
+const bildUrl = (id, art, stand) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/${art}${stand ? `?v=${encodeURIComponent(stand)}` : ''}`;
+const miniaturUrl = (id, stand) => bildUrl(id, 'miniatur', stand);
 const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
 const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
 const monatJahr = new Intl.DateTimeFormat(GEBIET, { month: 'long', year: 'numeric' });
@@ -434,7 +438,7 @@ function kachel(a, index) {
   img.decoding = 'async';
   img.alt = '';
   img.draggable = false;
-  img.src = miniaturUrl(a.id);
+  img.src = miniaturUrl(a.id, a.stand);
   k.append(img);
   if (liste && liste.alsListe) {
     // In der Liste trägt die Zeile die Angaben statt der Marken – Auswahl,
@@ -1695,7 +1699,7 @@ function duplikatgruppe(g) {
     const img = el('img');
     img.loading = 'lazy';
     img.alt = '';
-    img.src = miniaturUrl(a.id);
+    img.src = miniaturUrl(a.id, a.stand);
     img.addEventListener('click', () => { liste = { aufnahmen: g.aufnahmen, nachTagen: false, mehr: null }; oeffne(i); });
     const knopf = el('button', null, t('Behalten'));
     knopf.type = 'button';
@@ -1791,7 +1795,7 @@ function datumszeile(v, i) {
   const img = el('img');
   img.loading = 'lazy';
   img.alt = '';
-  img.src = miniaturUrl(a.id);
+  img.src = miniaturUrl(a.id, a.stand);
   img.addEventListener('click', (e) => {
     e.preventDefault(); // nicht zugleich das Häkchen umschalten
     liste = { aufnahmen: datumsvorschlaege.map((x) => x.aufnahme), nachTagen: false, mehr: null };
@@ -3486,7 +3490,7 @@ function oeffneVergleich(paar) {
   vergleich.gekoppelt = true;
   paar.forEach((a, i) => {
     const f = vergleichFelder[i];
-    f.querySelector('img').src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
+    f.querySelector('img').src = bildUrl(a.id, 'ansicht', a.stand);
     f.querySelector('figcaption').textContent = a.name || '';
   });
   vergleichZurueck();
@@ -3716,7 +3720,7 @@ function holeVoll(a) {
     if (Math.max(bild.naturalWidth, bild.naturalHeight) >= lang) return;
     const voll = new Image();
     voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
-    voll.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/voll`;
+    voll.src = bildUrl(a.id, 'voll', a.stand);
   }, { once: true });
 }
 
@@ -3744,7 +3748,7 @@ function oeffne(i) {
     video.hidden = true;
     bild.hidden = false;
     holeVoll(a);
-    bild.src = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`;
+    bild.src = bildUrl(a.id, 'ansicht', a.stand);
   }
   $('bearbeiten').hidden = a.art === 'video';
   $('gesichter-knopf').hidden = a.art === 'video';
@@ -4410,7 +4414,7 @@ function starteDiashow(aufnahmen, ab = 0) {
   zeigeDia(dia.i);
 }
 
-function diaUrl(a) { return `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/ansicht`; }
+function diaUrl(a) { return bildUrl(a.id, 'ansicht', a.stand); }
 
 // Geladen und möglichst dekodiert. decode() hängt in manchen Lagen (etwa
 // wenn die Seite im Hintergrund nicht zeichnet) – deshalb mit Frist.
