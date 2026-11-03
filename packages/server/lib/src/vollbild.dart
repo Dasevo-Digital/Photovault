@@ -23,9 +23,20 @@ import 'package:path/path.dart' as p;
 /// **Ohne Angaben.** Der Wandler streift EXIF ab, also auch den Ort: Die
 /// Fassung ist nur zum Ansehen.
 class Vollbilder {
-  Vollbilder({this.grenze = 2 * 1024 * 1024 * 1024});
+  Vollbilder({
+    this.grenze = 2 * 1024 * 1024 * 1024,
+    this.frist = const Duration(minutes: 5),
+  });
 
   final int grenze;
+
+  /// Wie lange eine Wandlung die Reihe aufhalten darf (#263). Hing ein
+  /// Werkzeug an einer kaputten Datei, wartete jede weitere Vollansicht
+  /// dahinter, bis der Server neu startete. Die Werkzeuge haben eine eigene
+  /// Grenze (DesktopImageTools.wandlungsgrenze); diese hier fängt auch, was
+  /// davor oder danach hängt. Danach gilt das Foto als gescheitert wie
+  /// jedes andere, bis sich die Quelle ändert.
+  final Duration frist;
 
   final _laufend = <String, Future<File?>>{};
   Future<void> _reihe = Future.value();
@@ -87,7 +98,11 @@ class Vollbilder {
     final stand = await quelle.lastModified();
     Uint8List? bytes;
     try {
-      bytes = await wandle();
+      // In einem eigenen Future: Der von [wandle] kann zur Laufzeit ein
+      // Future<Uint8List> sein, und dessen timeout nähme kein null an.
+      bytes = await Future<Uint8List?>(
+        wandle,
+      ).timeout(frist, onTimeout: () => null);
     } finally {
       if (bytes == null) _gescheitert[datei.path] = stand;
     }

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../../berechne.dart';
+import '../../protokoll.dart';
 import 'package:meta/meta.dart' show visibleForTesting;
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
@@ -102,6 +103,42 @@ class DesktopImageTools {
   /// Die Abtastrate, mit der die Spracherkennung rechnet.
   static const whisperTonrate = 16000;
 
+  /// Wie lange eine einzelne Bildwandlung höchstens laufen darf (#263).
+  ///
+  /// Am Server wandelt [Vollbilder] immer nur ein Foto auf einmal; hing
+  /// dcraw_emu oder heif-dec an einer kaputten Datei, wartete jede weitere
+  /// Vollansicht dahinter – für immer. Zwei Minuten reichen für ein RAW mit
+  /// 100 Megapixeln auf einer langsamen CPU mit Abstand.
+  static Duration wandlungsgrenze = const Duration(minutes: 2);
+
+  /// [Process.run] mit [wandlungsgrenze]: Läuft das Werkzeug länger, wird
+  /// es beendet, und es kommt `null` zurück wie bei jedem anderen
+  /// Fehlschlag. Nur für Bildwerkzeuge – ihre Ausgabe ist Text, das Bild
+  /// geht in eine Datei.
+  static Future<ProcessResult?> _laufe(
+    String werkzeug,
+    List<String> argumente,
+  ) async {
+    final prozess = await Process.start(werkzeug, argumente);
+    final aus = prozess.stdout.transform(systemEncoding.decoder).join();
+    final fehler = prozess.stderr.transform(systemEncoding.decoder).join();
+    final int code;
+    try {
+      code = await prozess.exitCode.timeout(wandlungsgrenze);
+    } on TimeoutException {
+      prozess.kill(ProcessSignal.sigkill);
+      protokoll(
+        '${p.basename(werkzeug)} nach ${wandlungsgrenze.inSeconds} s '
+        'abgebrochen: ${argumente.isEmpty ? '' : argumente.first}',
+      );
+      // Die Ströme enden mit dem Prozess; nicht auf sie warten.
+      unawaited(aus.then((_) {}, onError: (_) {}));
+      unawaited(fehler.then((_) {}, onError: (_) {}));
+      return null;
+    }
+    return ProcessResult(prozess.pid, code, await aus, await fehler);
+  }
+
   /// Was Dart selbst dekodiert und deshalb kein Werkzeug braucht.
   static const dartEndungen = {
     '.jpg',
@@ -131,8 +168,8 @@ class DesktopImageTools {
     final pfad = await aufruf('raw-identify');
     if (pfad == null) return Aufnahmedaten.leer;
     try {
-      final ergebnis = await Process.run(pfad, ['-v', datei.path]);
-      if (ergebnis.exitCode != 0) return Aufnahmedaten.leer;
+      final ergebnis = await _laufe(pfad, ['-v', datei.path]);
+      if (ergebnis == null || ergebnis.exitCode != 0) return Aufnahmedaten.leer;
       return parseRawIdentify(ergebnis.stdout as String);
     } on ProcessException {
       return Aufnahmedaten.leer;
@@ -453,8 +490,8 @@ class DesktopImageTools {
       if (libheifEndungen.contains(endung)) {
         final werkzeug = await aufruf('heif-dec');
         if (werkzeug == null) return null;
-        final r = await Process.run(werkzeug, [datei.path, ziel]);
-        if (r.exitCode != 0) return null;
+        final r = await _laufe(werkzeug, [datei.path, ziel]);
+        if (r == null || r.exitCode != 0) return null;
         // Enthält die Datei mehrere Bilder (Serienaufnahmen, Live Photos),
         // schreibt heif-dec nicht "out.jpg", sondern "out-1.jpg" usw.
         // Dann das erste davon nehmen, statt an der fehlenden out.jpg zu
@@ -484,13 +521,13 @@ class DesktopImageTools {
         final verstaerkung = be == null || be.abs() < 0.05
             ? null
             : math.pow(2, be).clamp(0.25, 8.0).toStringAsFixed(3);
-        final r = await Process.run(werkzeug, [
+        final r = await _laufe(werkzeug, [
           '-w',
           if (verstaerkung != null) ...['-aexpo', verstaerkung, '0'],
           '-T',
           kopie,
         ]);
-        if (r.exitCode != 0) return null;
+        if (r == null || r.exitCode != 0) return null;
         final tiff = '$kopie.tiff';
         if (!await File(tiff).exists()) return null;
         await File(tiff).rename(ziel);
@@ -553,8 +590,10 @@ class DesktopImageTools {
     try {
       temp = await Directory.systemTemp.createTemp('pv_jxl_');
       final png = p.join(temp.path, 'out.png');
-      final r = await Process.run(werkzeug, [datei.path, png]);
-      if (r.exitCode != 0 || !await File(png).exists()) return null;
+      final r = await _laufe(werkzeug, [datei.path, png]);
+      if (r == null || r.exitCode != 0 || !await File(png).exists()) {
+        return null;
+      }
       final ueberVips = await _mitVips(
         png,
         maxDimension,
@@ -614,7 +653,7 @@ class DesktopImageTools {
       temp = await Directory.systemTemp.createTemp('pv_vips_');
       final ziel = p.join(temp.path, 'aus.jpg');
       final kante = math.min(maxDimension, _vipsOhneGrenze);
-      final r = await Process.run(werkzeug, [
+      final r = await _laufe(werkzeug, [
         quelle,
         '--size',
         '${kante}x$kante>',
@@ -624,7 +663,7 @@ class DesktopImageTools {
         '-o',
         '$ziel[Q=$quality,keep=icc]',
       ]);
-      if (r.exitCode != 0) return null;
+      if (r == null || r.exitCode != 0) return null;
       final aus = File(ziel);
       if (!await aus.exists()) return null;
       final bytes = await aus.readAsBytes();
@@ -665,12 +704,12 @@ class DesktopImageTools {
     try {
       temp = await Directory.systemTemp.createTemp('pv_depth_');
       final hauptbild = p.join(temp.path, 'primary.png');
-      final result = await Process.run(werkzeug, [
+      final result = await _laufe(werkzeug, [
         '--with-aux',
         datei.path,
         hauptbild,
       ]);
-      if (result.exitCode != 0) return null;
+      if (result == null || result.exitCode != 0) return null;
       final kandidaten =
           temp
               .listSync()

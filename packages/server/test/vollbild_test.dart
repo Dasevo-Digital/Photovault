@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -197,6 +198,33 @@ void main() {
     wandler.kaputt.clear();
     expect((await voll('k')).statusCode, 200);
     expect(wandler.versuche, 2);
+  });
+
+  test('eine hängende Wandlung hält die nächsten nicht auf (#263)', () async {
+    final speicher = Directory('${ordner.path}/speicher');
+    final vollbilder = Vollbilder(frist: const Duration(milliseconds: 200));
+    final haengt = File('${ordner.path}/haengt.heic')..writeAsBytesSync([1]);
+    final gut = File('${ordner.path}/gut.heic')..writeAsBytesSync([1]);
+    final nie = Completer<Uint8List?>();
+    final erstes = vollbilder.bereit(speicher, 'h', haengt, () => nie.future);
+    final zweites = vollbilder.bereit(
+      speicher,
+      'g',
+      gut,
+      () async => Uint8List(10),
+    );
+    expect(await zweites.timeout(const Duration(seconds: 5)), isNotNull);
+    expect(await erstes, isNull);
+    // Und es wird nicht bei jedem Aufruf wieder fünf Minuten gewartet.
+    var gefragt = false;
+    expect(
+      await vollbilder.bereit(speicher, 'h', haengt, () async {
+        gefragt = true;
+        return Uint8List(10);
+      }),
+      isNull,
+    );
+    expect(gefragt, isFalse);
   });
 
   test('der Zwischenspeicher bleibt unter seiner Grenze', () async {
