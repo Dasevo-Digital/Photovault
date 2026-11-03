@@ -60,8 +60,12 @@ class DesktopImageTools {
   /// einem Foto mit 24 MP: die volle Auflösung in 0,12 s und 62 MB statt
   /// Sekunden und bis zu 1,4 GB über Dart. Fehlt es, rechnet Dart wie
   /// bisher.
+  ///
+  /// `djxl` (libjxl, #276): JPEG XL, wo libvips fehlt oder ohne libjxl
+  /// gebaut ist. Ohne beides bleiben nur JPEG-XL-Fotos ohne Vorschau.
   static const freiwilligeWerkzeuge = <String, String>{
     'vipsthumbnail': 'Schnelles Verkleinern (Linux: Paket libvips-tools)',
+    'djxl': 'JPEG-XL-Fotos ohne libvips (Linux: Paket libjxl-tools)',
   };
 
   /// Unter welchen Namen ein Werkzeug auftreten kann, in Suchreihenfolge.
@@ -376,6 +380,7 @@ class DesktopImageTools {
     // Original, der Datenschutzexport brach bei jedem gewöhnlichen Foto
     // ab. Steckt hinter der Endung etwas anderes, versuchen es danach die
     // Werkzeuge.
+    if (endung == '.jxl') return _jxl(datei, maxDimension, quality);
     if (vipsEndungen.contains(endung)) {
       final schnell = await _mitVips(
         datei.path,
@@ -519,6 +524,51 @@ class DesktopImageTools {
       return null;
     } finally {
       // Zwischendateien immer aufräumen, auch bei Fehlern.
+      try {
+        await temp?.delete(recursive: true);
+      } catch (_) {}
+    }
+  }
+
+  /// JPEG XL (#276): libvips liest es selbst, wenn es mit libjxl gebaut
+  /// ist – am Server ja, und es kennt die Lage aus dem Datenstrom. Sonst
+  /// packt `djxl` es in ein PNG aus, schon gedreht: Der Dekoder von libjxl
+  /// wendet die Lage an, solange man ihn nicht ausdrücklich bittet, sie
+  /// stehen zu lassen.
+  static Future<Uint8List?> _jxl(
+    File datei,
+    int maxDimension,
+    int quality,
+  ) async {
+    final schnell = await _mitVips(
+      datei.path,
+      maxDimension,
+      quality,
+      drehen: true,
+    );
+    if (schnell != null) return schnell;
+    final werkzeug = await aufruf('djxl');
+    if (werkzeug == null) return null;
+    Directory? temp;
+    try {
+      temp = await Directory.systemTemp.createTemp('pv_jxl_');
+      final png = p.join(temp.path, 'out.png');
+      final r = await Process.run(werkzeug, [datei.path, png]);
+      if (r.exitCode != 0 || !await File(png).exists()) return null;
+      final ueberVips = await _mitVips(
+        png,
+        maxDimension,
+        quality,
+        drehen: false,
+      );
+      if (ueberVips != null) return ueberVips;
+      return await berechne(
+        _skaliereUndKodiere,
+        _SkalierAuftrag(await File(png).readAsBytes(), maxDimension, quality),
+      );
+    } catch (_) {
+      return null;
+    } finally {
       try {
         await temp?.delete(recursive: true);
       } catch (_) {}

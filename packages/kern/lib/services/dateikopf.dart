@@ -24,6 +24,8 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'dateikennung.dart';
+
 /// Ein JPEG innerhalb einer Rohdatei.
 class EingebettetesJpeg {
   const EingebettetesJpeg({
@@ -128,6 +130,7 @@ Rohkopf? leseRohkopf(File datei) {
       final marke = String.fromCharCodes(anfang.sublist(8, 12));
       return marke == 'crx ' ? _Cr3Leser(q).masse() : _HeifLeser(q).masse();
     }
+    if (kennungAus(anfang) == '.jxl') return _JxlLeser(q).masse();
     return null;
   } catch (_) {
     return null;
@@ -674,6 +677,106 @@ class _Cr3Leser {
         final v = u16(e + 8);
         return v >= 1 && v <= 8 ? v : null;
       }
+    }
+    return null;
+  }
+}
+
+// --- JPEG XL (#276) ---------------------------------------------------------
+
+/// Die EXIF-Daten einer JPEG-XL-Datei als TIFF-Block, so wie
+/// `package:exif` ihn liest – oder `null`.
+///
+/// `package:exif` kennt JPEG XL nicht. Im Kastenformat liegen die Angaben
+/// in einem eigenen Kasten `Exif`: vier Bytes Abstand bis zum TIFF-Kopf,
+/// dann der Block. Ein mit Brotli gepackter Kasten (`brob`) bleibt aussen
+/// vor; libjxl packt EXIF nur auf ausdrücklichen Wunsch. Ein nackter
+/// Datenstrom hat gar keine.
+Uint8List? leseJxlExif(File datei) {
+  RandomAccessFile? f;
+  try {
+    f = datei.openSync();
+    final q = _Quelle(f);
+    if (kennungAus(q.bytes(0, 12)) != '.jxl') return null;
+    for (final k in _kisten(q, 0, q.laenge)) {
+      if (k.typ != 'Exif') continue;
+      final b = q.bytes(k.inhalt, k.ende - k.inhalt);
+      if (b.length < 12) return null;
+      final ab = 4 + _be32(b, 0);
+      if (ab + 8 > b.length) return null;
+      final tiff = Uint8List.sublistView(b, ab);
+      return _istTiff(tiff) ? Uint8List.fromList(tiff) : null;
+    }
+    return null;
+  } catch (_) {
+    return null;
+  } finally {
+    f?.closeSync();
+  }
+}
+
+/// Grösse und Lage aus dem Kopf des JPEG-XL-Datenstroms.
+///
+/// Der Kopf ist ein Bitstrom, das niederwertigste Bit zuerst: Signatur
+/// FF 0A, dann `SizeHeader` (kleine Bilder in Achterschritten, sonst bis
+/// 30 Bit, die Breite wahlweise als festes Seitenverhältnis) und gleich
+/// danach in `ImageMetadata` die Lage – wie bei EXIF 1 bis 8. Ab 5 sind
+/// Breite und Höhe für die Anzeige vertauscht.
+class _JxlLeser {
+  _JxlLeser(this.q);
+
+  final _Quelle q;
+
+  /// Breite zu Höhe der sieben festen Seitenverhältnisse.
+  static const _verhaeltnisse = [
+    (1, 1), (12, 10), (4, 3), (3, 2), (16, 9), (5, 4), (2, 1), //
+  ];
+
+  ({int breite, int hoehe})? masse() {
+    final strom = _datenstrom();
+    if (strom == null || strom.length < 4) return null;
+    if (strom[0] != 0xFF || strom[1] != 0x0A) return null;
+    var bit = 16;
+    int lies(int n) {
+      var v = 0;
+      for (var i = 0; i < n; i++, bit++) {
+        if (bit >> 3 >= strom.length) throw const FormatException('kurz');
+        v |= ((strom[bit >> 3] >> (bit & 7)) & 1) << i;
+      }
+      return v;
+    }
+
+    int gross() => lies(const [9, 13, 18, 30][lies(2)]) + 1;
+
+    final klein = lies(1) == 1;
+    final hoehe = klein ? (lies(5) + 1) * 8 : gross();
+    final verhaeltnis = lies(3);
+    final int breite;
+    if (verhaeltnis == 0) {
+      breite = klein ? (lies(5) + 1) * 8 : gross();
+    } else {
+      final (z, n) = _verhaeltnisse[verhaeltnis - 1];
+      breite = hoehe * z ~/ n;
+    }
+    var lage = 1;
+    if (lies(1) == 0 && lies(1) == 1) lage = lies(3) + 1;
+    if (breite <= 0 || hoehe <= 0) return null;
+    return lage >= 5
+        ? (breite: hoehe, hoehe: breite)
+        : (breite: breite, hoehe: hoehe);
+  }
+
+  /// Der Anfang des Datenstroms: die Datei selbst, oder im Kastenformat der
+  /// Inhalt von `jxlc` bzw. des ersten `jxlp` (der vier Bytes Zählung
+  /// vorwegnimmt).
+  Uint8List? _datenstrom() {
+    final anfang = q.bytes(0, 64);
+    if (anfang.length >= 2 && anfang[0] == 0xFF && anfang[1] == 0x0A) {
+      return anfang;
+    }
+    for (final k in _kisten(q, 0, q.laenge)) {
+      if (k.typ == 'jxlc') return q.bytes(k.inhalt, 64);
+      if (k.typ == 'jxlp') return q.bytes(k.inhalt + 4, 64);
     }
     return null;
   }

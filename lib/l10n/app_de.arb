@@ -6133,7 +6133,7 @@
   "serverFehler": "Hat nicht geklappt",
   "stufeVideobilder": "Videobilder",
   "werkzAutoVorschlaege": "Sichere Vorschläge automatisch übernehmen",
-  "werkzAutoVorschlaegeText": "Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet; unsichere bleiben Vorschläge.",
+  "werkzAutoVorschlaegeText": "Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.",
   "werkzAutoVorschlaegeAb": "ab {wert}",
   "@werkzAutoVorschlaegeAb": {
     "placeholders": {

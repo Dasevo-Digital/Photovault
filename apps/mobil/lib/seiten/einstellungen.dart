@@ -26,7 +26,7 @@ class _EinstellungenState extends State<Einstellungen> {
   final _tage = TextEditingController();
   var _leeren = false;
   var _vorschlaegeAn = false;
-  var _vorschlaegeAb = 0.9;
+  var _vorschlaegeAb = 0.7;
   var _schwelle = 0.5;
 
   AppDatabase get _db => widget.sitzung.db;
@@ -51,7 +51,7 @@ class _EinstellungenState extends State<Einstellungen> {
       _leeren = e.papierkorbLeeren;
       _tage.text = '${e.papierkorbTage}';
       _vorschlaegeAn = e.vorschlaegeAb != null;
-      _vorschlaegeAb = e.vorschlaegeAb ?? 0.9;
+      _vorschlaegeAb = e.vorschlaegeAb ?? 0.7;
       _schwelle = e.gesichtsschwelle;
     });
   }
@@ -170,11 +170,12 @@ class _EinstellungenState extends State<Einstellungen> {
             setState(() => _vorschlaegeAn = an);
             _sende(VorschlaegeAutomatischSetzen(an ? _vorschlaegeAb : null));
           },
+          // Dieselbe Skala wie am Rechner und im Browser, siehe app.js.
           zusatz: _Regler(
             wert: _vorschlaegeAb,
-            min: 0.8,
-            max: 0.99,
-            schritte: 19,
+            min: 0.6,
+            max: 0.9,
+            schritte: 6,
             anzeige: (v) => t.einstAb(_prozent(v)),
             beiAenderung: (v) => setState(() => _vorschlaegeAb = v),
             fertig: (v) {

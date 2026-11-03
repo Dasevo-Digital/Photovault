@@ -43,7 +43,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:kern/services/clip_service.dart';
-import 'package:photo_vault/services/datierung.dart';
+import 'package:kern/services/datierung.dart';
 import 'package:photo_vault/services/diashow.dart';
 import 'package:photo_vault/services/dokumenterkennung.dart';
 import 'package:photo_vault/services/flugvideo.dart';

@@ -72,6 +72,17 @@ String? kennungAus(List<int> kopf) {
   // Marke dahinter entscheidet, ob es ein Bild ist und welches.
   if (_text(kopf, 4, 'ftyp')) return _bmff(_marke(kopf));
 
+  // JPEG XL (#276), in zwei Formen: im Kastenformat mit dem festen
+  // Signaturkasten `JXL ` – zwölf Bytes, die nichts anderes haben – oder
+  // als nackter Datenstrom, der mit FF 0A beginnt. Zwei Bytes sind wenig,
+  // aber FF 0A ist weder ein JPEG (FF D8) noch sonst ein Format hier.
+  if (_gleich(kopf, 0, const [0, 0, 0, 0x0C]) &&
+      _text(kopf, 4, 'JXL ') &&
+      _gleich(kopf, 8, const [0x0D, 0x0A, 0x87, 0x0A])) {
+    return '.jxl';
+  }
+  if (kopf[0] == 0xFF && kopf[1] == 0x0A) return '.jxl';
+
   return null;
 }
 

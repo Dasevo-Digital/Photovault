@@ -1080,7 +1080,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get einstVorschlaegeText =>
-      'Detected faces that are very similar to a person are assigned without asking.';
+      'Recognised faces at or above this confidence are assigned without asking and marked as such, as are whole groups in which every face points to the same person; uncertain ones remain suggestions.';
 
   @override
   String get einstAuswerten => 'Run AI analysis automatically after import';
@@ -1560,6 +1560,39 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get diashowBeenden => 'End slideshow';
+
+  @override
+  String get diashowAlsVideo => 'Save as video';
+
+  @override
+  String get diashowVideoTitel => 'Save slideshow as video';
+
+  @override
+  String diashowVideoUmfang(int n, int s) {
+    return '$n photos, about $s seconds.';
+  }
+
+  @override
+  String diashowVideoErste(int n, int m, int s) {
+    return 'The first $n of $m photos, about $s seconds.';
+  }
+
+  @override
+  String get diashowVideoTitelfeld => 'Title';
+
+  @override
+  String get diashowVideoUntertitel => 'Subtitle';
+
+  @override
+  String get diashowVideoErstellen => 'Create';
+
+  @override
+  String get diashowVideoWirdErstellt => 'Creating video …';
+
+  @override
+  String diashowVideoFehler(String grund) {
+    return 'The video could not be written. $grund';
+  }
 
   @override
   String get betrachterMehr => 'More';
@@ -2359,6 +2392,53 @@ class AppTexteEn extends AppTexte {
   @override
   String get datenOhneServer =>
       'The check runs on the server and needs a connection.';
+
+  @override
+  String get datierungTitel => 'Date old photos';
+
+  @override
+  String get datierungEinleitung =>
+      'These photos have no real capture date – guessed on import or set by a scanner – and look old. Image search estimates the decade from them. If the range is too wide, the model doesn\'t know, and there is nothing to apply. The middle of the year is applied; the date stays marked as estimated.';
+
+  @override
+  String get datierungOhneModell =>
+      'The estimate needs the image search model (CLIP) on the server.';
+
+  @override
+  String get datierungKeine =>
+      'None of the photos without a real capture date looks old.';
+
+  @override
+  String datierungUm(String jahr) {
+    return 'around $jahr';
+  }
+
+  @override
+  String datierungSpanne(String von, String bis) {
+    return '$von to $bis';
+  }
+
+  @override
+  String datierungUnsicher(String von, String bis) {
+    return 'too uncertain ($von to $bis)';
+  }
+
+  @override
+  String get datierungUebernehmen => 'Apply';
+
+  @override
+  String get datierungIstUebernommen => 'Applied';
+
+  @override
+  String datierungAlle(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Apply $anzahl estimates',
+      one: 'Apply 1 estimate',
+    );
+    return '$_temp0';
+  }
 
   @override
   String angabenNameNennt(String d) {

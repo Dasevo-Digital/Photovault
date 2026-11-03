@@ -26,6 +26,7 @@ const heicAndRawExtensions = {
   '.heif',
   '.avif',
   '.avifs',
+  '.jxl',
   ...rawImageExtensions,
 };
 

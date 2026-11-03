@@ -9644,7 +9644,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get werkzAutoVorschlaegeText =>
-      'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet; unsichere bleiben Vorschläge.';
+      'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.';
 
   @override
   String werkzAutoVorschlaegeAb(String wert) {

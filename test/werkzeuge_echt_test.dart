@@ -422,4 +422,37 @@ void main() {
       },
     );
   });
+
+  group('JPEG XL (#276)', () {
+    final probe = File('test/fixtures/jxl/gross_1001x777.jxl');
+
+    Future<void> pruefe() async {
+      final r = await DesktopImageTools.convertToJpeg(probe, maxDimension: 500);
+      final aus = img.decodeJpg(r!)!;
+      expect(aus.width, 500);
+      expect(aus.height, inInclusiveRange(387, 389));
+      // Der Verlauf läuft links dunkel, rechts rot.
+      expect(aus.getPixel(490, 10).r, greaterThan(200));
+      expect(aus.getPixel(5, 10).r, lessThan(40));
+    }
+
+    test('über djxl', () async {
+      final djxl = await hole('djxl');
+      if (djxl == null) return;
+      DesktopImageTools.stelleWerkzeuge({'djxl': djxl});
+      await pruefe();
+    });
+
+    test('über libvips, wenn es mit libjxl gebaut ist', () async {
+      final vips = await hole('vipsthumbnail');
+      if (vips == null) return;
+      final lader = await Process.run('vips', ['-l', 'foreign']);
+      if (!'${lader.stdout}'.contains('jxlload')) {
+        markTestSkipped('libvips ohne libjxl');
+        return;
+      }
+      DesktopImageTools.stelleWerkzeuge({'vipsthumbnail': vips});
+      await pruefe();
+    });
+  });
 }

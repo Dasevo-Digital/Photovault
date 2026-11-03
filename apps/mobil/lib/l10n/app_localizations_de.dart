@@ -1082,7 +1082,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get einstVorschlaegeText =>
-      'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.';
+      'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.';
 
   @override
   String get einstAuswerten =>
@@ -1565,6 +1565,39 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get diashowBeenden => 'Diashow beenden';
+
+  @override
+  String get diashowAlsVideo => 'Als Video speichern';
+
+  @override
+  String get diashowVideoTitel => 'Diashow als Video speichern';
+
+  @override
+  String diashowVideoUmfang(int n, int s) {
+    return '$n Fotos, gut $s Sekunden.';
+  }
+
+  @override
+  String diashowVideoErste(int n, int m, int s) {
+    return 'Die ersten $n von $m Fotos, gut $s Sekunden.';
+  }
+
+  @override
+  String get diashowVideoTitelfeld => 'Titel';
+
+  @override
+  String get diashowVideoUntertitel => 'Untertitel';
+
+  @override
+  String get diashowVideoErstellen => 'Erstellen';
+
+  @override
+  String get diashowVideoWirdErstellt => 'Video wird erstellt …';
+
+  @override
+  String diashowVideoFehler(String grund) {
+    return 'Das Video ließ sich nicht schreiben. $grund';
+  }
 
   @override
   String get betrachterMehr => 'Mehr';
@@ -2369,6 +2402,53 @@ class AppTexteDe extends AppTexte {
   @override
   String get datenOhneServer =>
       'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.';
+
+  @override
+  String get datierungTitel => 'Alte Fotos zeitlich einordnen';
+
+  @override
+  String get datierungEinleitung =>
+      'Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Ist die Spanne zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres; das Datum bleibt als geschätzt markiert.';
+
+  @override
+  String get datierungOhneModell =>
+      'Für die Schätzung braucht der Server das Modell der Bildsuche (CLIP).';
+
+  @override
+  String get datierungKeine =>
+      'Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.';
+
+  @override
+  String datierungUm(String jahr) {
+    return 'um $jahr';
+  }
+
+  @override
+  String datierungSpanne(String von, String bis) {
+    return '$von bis $bis';
+  }
+
+  @override
+  String datierungUnsicher(String von, String bis) {
+    return 'zu unsicher ($von bis $bis)';
+  }
+
+  @override
+  String get datierungUebernehmen => 'Übernehmen';
+
+  @override
+  String get datierungIstUebernommen => 'Übernommen';
+
+  @override
+  String datierungAlle(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Schätzungen übernehmen',
+      one: '1 Schätzung übernehmen',
+    );
+    return '$_temp0';
+  }
 
   @override
   String angabenNameNennt(String d) {

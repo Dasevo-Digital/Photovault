@@ -4764,7 +4764,7 @@
   "serverFehler": "That did not work",
   "stufeVideobilder": "Video stills",
   "werkzAutoVorschlaege": "Accept confident suggestions automatically",
-  "werkzAutoVorschlaegeText": "Recognised faces at or above this confidence are assigned without asking and marked as such; uncertain ones remain suggestions.",
+  "werkzAutoVorschlaegeText": "Recognised faces at or above this confidence are assigned without asking and marked as such, as are whole groups in which every face points to the same person; uncertain ones remain suggestions.",
   "werkzAutoVorschlaegeAb": "from {wert}",
   "@werkzAutoVorschlaegeAb": {
     "placeholders": {

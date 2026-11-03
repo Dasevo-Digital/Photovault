@@ -484,9 +484,14 @@ extension PersonenAbfragen on AppDatabase {
   /// zehntausende Zeilen. Die Marke [Faces.vorschlagGeprueftAm] wird auch
   /// dort gesetzt, wo nichts gefunden wurde – sonst begaenne der naechste
   /// Lauf wieder von vorn.
+  ///
+  /// [uebernehmen] `false` überlässt das Übernehmen dem Aufrufer – der Lauf
+  /// der Wiedererkennung benennt erst ganze Gruppen (siehe
+  /// [uebernimmEinigeGruppen]) und dann die sicheren einzelnen.
   Future<void> merkeVorschlaege(
     List<({String faceId, String? personId, double? wert})> ergebnisse, {
     DateTime? jetzt,
+    bool uebernehmen = true,
   }) async {
     if (ergebnisse.isEmpty) return;
     final zeitpunkt = jetzt ?? DateTime.now();
@@ -503,6 +508,7 @@ extension PersonenAbfragen on AppDatabase {
         );
       }
     });
+    if (!uebernehmen) return;
     await uebernimmSichereVorschlaege([
       for (final e in ergebnisse)
         if (e.personId != null) e.faceId,
@@ -540,6 +546,73 @@ extension PersonenAbfragen on AppDatabase {
       );
     }
     return sicher.length;
+  }
+
+  /// Die offenen Gesichter mit Vorschlag samt Einbettung – der Stoff für
+  /// [uebernimmEinigeGruppen].
+  Future<List<FaceData>> offeneVorschlaegeMitEinbettung() async {
+    final zeilen =
+        await (select(faces).join([
+              innerJoin(assets, assets.id.equalsExp(faces.assetId)),
+            ])..where(
+              faces.personId.isNull() &
+                  faces.isIgnored.equals(false) &
+                  faces.embedding.isNotNull() &
+                  faces.vorschlagPersonId.isNotNull() &
+                  assets.isTrashed.equals(false) &
+                  assets.isLocked.equals(false),
+            ))
+            .get();
+    return [for (final z in zeilen) z.readTable(faces)];
+  }
+
+  /// Benennt ganze Gruppen auf einmal, in denen alle Treffer
+  /// übereinstimmen (#282, wie PhotoPrism im Oktober 2026).
+  ///
+  /// [gruppen] sind Gruppen einander ähnlicher, noch offener Gesichter
+  /// (aus `clusterFaces`). Eine Gruppe wird zugeordnet, wenn **jedes**
+  /// ihrer Gesichter für sich dieselbe Person vorgeschlagen bekam und
+  /// mindestens eines davon die Schwelle `vorschlaegeAutomatischAb`
+  /// erreicht. Einzeln läge der Rest darunter; dass alle unabhängig
+  /// voneinander auf dieselbe Person zeigen und einander zugleich
+  /// ähnlich sind, ist die Sicherheit, die ihnen fehlt. Schlägt auch nur
+  /// ein Gesicht jemand anderen oder niemanden vor, bleibt die ganze
+  /// Gruppe Vorschlag – eine Kette aus zwei Leuten soll nicht unter einem
+  /// Namen landen.
+  ///
+  /// Gekennzeichnet wie [uebernimmSichereVorschlaege]; ohne Schwelle
+  /// geschieht nichts. Gibt zurück, wie viele Gesichter es waren.
+  Future<int> uebernimmEinigeGruppen(List<List<String>> gruppen) async {
+    final ab = await vorschlaegeAutomatischAbWert();
+    if (ab == null) return 0;
+    var anzahl = 0;
+    for (final g in gruppen) {
+      if (g.length < 2) continue;
+      final offen =
+          await (select(faces)..where(
+                (t) =>
+                    t.id.isIn(g) &
+                    t.personId.isNull() &
+                    t.isIgnored.equals(false),
+              ))
+              .get();
+      if (offen.length != g.length) continue;
+      final personen = {for (final f in offen) f.vorschlagPersonId};
+      if (personen.length != 1) continue;
+      final person = personen.single;
+      if (person == null) continue;
+      final bester = offen
+          .map((f) => f.vorschlagWert ?? 0)
+          .fold(0.0, (a, b) => a > b ? a : b);
+      if (bester < ab) continue;
+      final ids = [for (final f in offen) f.id];
+      await assignFacesToPerson(ids, person);
+      await (update(faces)..where((t) => t.id.isIn(ids))).write(
+        const FacesCompanion(automatischZugeordnet: Value(true)),
+      );
+      anzahl += ids.length;
+    }
+    return anzahl;
   }
 
   /// Die wartenden Vorschlaege, nach Person gebuendelt und nach Menge

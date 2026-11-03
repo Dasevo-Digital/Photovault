@@ -188,6 +188,44 @@ modules:
         url: https://www.libraw.org/data/LibRaw-0.22.2.tar.gz
         sha256: de86b035655accff8d4010f1a221fdf50d353cb7b1422ba26f14a0db92612cfa
 
+  # --- JPEG XL -----------------------------------------------------------
+  # Die Laufzeit 49 hat libjxl, aber kein Programm, das es aufruft (#276).
+  # djxl wird mit fest eingebundenem libjxl gebaut, highway, brotli und
+  # lcms2 kommen aus der Laufzeit – ohne die Untermodule der Quelle.
+  # Dieselben Schalter wie in tool/windows_jxl.sh.
+  - name: libjxl
+    buildsystem: cmake-ninja
+    config-opts:
+      - -DCMAKE_BUILD_TYPE=Release
+      - -DBUILD_SHARED_LIBS=OFF
+      - -DBUILD_TESTING=OFF
+      - -DJPEGXL_ENABLE_TOOLS=ON
+      - -DJPEGXL_ENABLE_BENCHMARK=OFF
+      - -DJPEGXL_ENABLE_EXAMPLES=OFF
+      - -DJPEGXL_ENABLE_MANPAGES=OFF
+      - -DJPEGXL_ENABLE_DOXYGEN=OFF
+      - -DJPEGXL_ENABLE_JNI=OFF
+      - -DJPEGXL_ENABLE_PLUGINS=OFF
+      - -DJPEGXL_ENABLE_VIEWERS=OFF
+      - -DJPEGXL_ENABLE_OPENEXR=OFF
+      - -DJPEGXL_ENABLE_SJPEG=OFF
+      - -DJPEGXL_ENABLE_JPEGLI=OFF
+      - -DJPEGXL_ENABLE_SKCMS=OFF
+      - -DJPEGXL_FORCE_SYSTEM_BROTLI=ON
+      - -DJPEGXL_FORCE_SYSTEM_HWY=ON
+      - -DJPEGXL_FORCE_SYSTEM_LCMS2=ON
+    # Gebraucht wird nur djxl; libjxl selbst steckt fest darin.
+    cleanup:
+      - /bin/cjxl
+      - /bin/jxlinfo
+      - /share
+    sources:
+      - type: git
+        url: https://github.com/libjxl/libjxl.git
+        tag: v0.11.2
+        commit: 332feb17d17311c748445f7ee75c4fb55cc38530
+        disable-submodules: true
+
   # --- Video -------------------------------------------------------------
   # Kein eigener ffmpeg-Bau: Die GNOME-Laufzeit 49 liefert ffmpeg und
   # ffprobe samt HEVC- und H.264-Dekoder mit. Nachgemessen im Sandkasten,

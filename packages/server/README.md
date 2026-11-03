@@ -571,7 +571,7 @@ Auf dem Server (Debian 12 und neuer, Ubuntu 22.04 und neuer):
 
 ```sh
 sudo apt install ffmpeg libheif-examples libheif-plugin-libde265 libraw-bin \
-  libvips-tools bubblewrap procps
+  libvips-tools libjxl-tools bubblewrap procps
 sudo tar -xzf photo-vault-server-linux-amd64.tar.gz -C /opt
 sudo useradd --system --user-group --home-dir /var/lib/photo-vault-server \
   --shell /usr/sbin/nologin photovault

@@ -1708,7 +1708,7 @@ abstract class AppTexte {
   /// No description provided for @einstVorschlaegeText.
   ///
   /// In de, this message translates to:
-  /// **'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.'**
+  /// **'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.'**
   String get einstVorschlaegeText;
 
   /// No description provided for @einstAuswerten.
@@ -2514,6 +2514,60 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Diashow beenden'**
   String get diashowBeenden;
+
+  /// No description provided for @diashowAlsVideo.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Video speichern'**
+  String get diashowAlsVideo;
+
+  /// No description provided for @diashowVideoTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Diashow als Video speichern'**
+  String get diashowVideoTitel;
+
+  /// No description provided for @diashowVideoUmfang.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Fotos, gut {s} Sekunden.'**
+  String diashowVideoUmfang(int n, int s);
+
+  /// No description provided for @diashowVideoErste.
+  ///
+  /// In de, this message translates to:
+  /// **'Die ersten {n} von {m} Fotos, gut {s} Sekunden.'**
+  String diashowVideoErste(int n, int m, int s);
+
+  /// No description provided for @diashowVideoTitelfeld.
+  ///
+  /// In de, this message translates to:
+  /// **'Titel'**
+  String get diashowVideoTitelfeld;
+
+  /// No description provided for @diashowVideoUntertitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Untertitel'**
+  String get diashowVideoUntertitel;
+
+  /// No description provided for @diashowVideoErstellen.
+  ///
+  /// In de, this message translates to:
+  /// **'Erstellen'**
+  String get diashowVideoErstellen;
+
+  /// No description provided for @diashowVideoWirdErstellt.
+  ///
+  /// In de, this message translates to:
+  /// **'Video wird erstellt …'**
+  String get diashowVideoWirdErstellt;
+
+  /// No description provided for @diashowVideoFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Video ließ sich nicht schreiben. {grund}'**
+  String diashowVideoFehler(String grund);
 
   /// No description provided for @betrachterMehr.
   ///
@@ -3702,6 +3756,66 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.'**
   String get datenOhneServer;
+
+  /// No description provided for @datierungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Alte Fotos zeitlich einordnen'**
+  String get datierungTitel;
+
+  /// No description provided for @datierungEinleitung.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Ist die Spanne zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres; das Datum bleibt als geschätzt markiert.'**
+  String get datierungEinleitung;
+
+  /// No description provided for @datierungOhneModell.
+  ///
+  /// In de, this message translates to:
+  /// **'Für die Schätzung braucht der Server das Modell der Bildsuche (CLIP).'**
+  String get datierungOhneModell;
+
+  /// No description provided for @datierungKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.'**
+  String get datierungKeine;
+
+  /// No description provided for @datierungUm.
+  ///
+  /// In de, this message translates to:
+  /// **'um {jahr}'**
+  String datierungUm(String jahr);
+
+  /// No description provided for @datierungSpanne.
+  ///
+  /// In de, this message translates to:
+  /// **'{von} bis {bis}'**
+  String datierungSpanne(String von, String bis);
+
+  /// No description provided for @datierungUnsicher.
+  ///
+  /// In de, this message translates to:
+  /// **'zu unsicher ({von} bis {bis})'**
+  String datierungUnsicher(String von, String bis);
+
+  /// No description provided for @datierungUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernehmen'**
+  String get datierungUebernehmen;
+
+  /// No description provided for @datierungIstUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernommen'**
+  String get datierungIstUebernommen;
+
+  /// No description provided for @datierungAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Schätzung übernehmen} other{{anzahl} Schätzungen übernehmen}}'**
+  String datierungAlle(int anzahl);
 
   /// No description provided for @angabenNameNennt.
   ///

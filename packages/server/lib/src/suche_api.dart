@@ -3,12 +3,14 @@ import 'dart:typed_data';
 
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/datierung.dart';
 import 'package:kern/services/intelligente_alben.dart';
 import 'package:kern/services/laendernamen.dart';
 import 'package:kern/services/suchlauf.dart';
 import 'package:shelf/shelf.dart';
 
 import 'anmeldung_api.dart';
+import 'bibliothek.dart';
 import 'bibliotheken.dart';
 import 'zeilen_json.dart';
 
@@ -46,6 +48,52 @@ class Suchapi {
     final englisch = await b.auswertungen.insEnglische(text);
     final vektor = await halter.mit((clip) => clip.embedText(englisch));
     return _json({'vektor': vektor, 'text': englisch});
+  }
+
+  /// Die Satzvektoren je Jahrzehnt, einmal je Bibliothek gerechnet: 60
+  /// Sätze durch den Textkodierer kosten rund eine Sekunde, und sie hängen
+  /// an nichts als dem Modell.
+  final _datierungssaetze = Expando<Map<int, Float32List>>();
+
+  Future<Map<int, Float32List>?> _saetze(Bibliothek b) async {
+    final schon = _datierungssaetze[b];
+    if (schon != null) return schon;
+    final halter = b.modelle.clipTextHalter;
+    if (!halter.installiert) return null;
+    final saetze = await halter.mit(
+      (clip) => datierungssaetzeMit(clip.embedText),
+    );
+    if (saetze != null) _datierungssaetze[b] = saetze;
+    return saetze;
+  }
+
+  /// `{funde: [{aufnahme, jahr, von, bis, belastbar, uebernommen}]}` – die
+  /// alten Fotos ohne echtes Datum samt Schätzung, für den Browser (#279);
+  /// dieselbe Liste wie am Rechner ([datierungsfunde]). Übernommen wird
+  /// über den Befehl `jahrSchaetzen`. 404 ohne Textmodell.
+  ///
+  /// Auch das Telefon fragt hier, obwohl es die Bildvektoren selbst hat:
+  /// Die Seite „Aufnahmedaten“ prüft dort ohnehin auf dem Server, und so
+  /// braucht es die Satzvektoren nicht.
+  Future<Response> datierung(Request anfrage) async {
+    final b = (await bibliotheken.fuer(kontoVon(anfrage).id)).bibliothek;
+    final saetze = await _saetze(b);
+    if (saetze == null) {
+      return _json({'fehler': 'kein Modell für die Bildsuche'}, status: 404);
+    }
+    return _json({
+      'funde': [
+        for (final f in await datierungsfunde(b.db, saetze))
+          {
+            'aufnahme': zeileAlsJson(Rasterzeile.aus(f.asset)),
+            'jahr': f.datierung.jahr,
+            'von': f.datierung.von,
+            'bis': f.datierung.bis,
+            'belastbar': f.datierung.belastbar,
+            'uebernommen': f.uebernommen,
+          },
+      ],
+    });
   }
 
   /// `?text=…&art=inhalt|text` und die Filter aus [Suchfilter]

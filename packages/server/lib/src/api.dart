@@ -239,6 +239,7 @@ Handler baueApi({
     ..delete('/api/v1/geraete/<id>', anmeldung.geraetAbmelden)
     ..get('/api/v1/bibliothek', api.bibliothek)
     ..get('/api/v1/aufnahmen', api.aufnahmen)
+    ..get('/api/v1/zeitleiste/monate', api.zeitleistenmonate)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/angaben', api.angaben)
     ..post('/api/v1/aufnahmen/<id>/gesichter', api.gesichtAnlegen)
@@ -257,6 +258,7 @@ Handler baueApi({
     )
     ..post('/api/v1/suche/text', suche.text)
     ..get('/api/v1/suche', suche.suche)
+    ..get('/api/v1/datierung', suche.datierung)
     ..get('/api/v1/suche/auswahl', suche.auswahl)
     ..get('/api/v1/intelligente-alben', suche.intelligenteAlben)
     ..post('/api/v1/intelligente-alben', suche.albumMerken)
@@ -670,6 +672,28 @@ class _Api {
       'weiter': liste.length < anzahl
           ? null
           : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    });
+  }
+
+  /// Wie viele Aufnahmen die Zeitleiste je Monat zeigt, neueste zuerst –
+  /// für den Ziehregler im Browser (#278). Er kennt so die ganze Zeitleiste,
+  /// auch was noch nicht geladen ist. Die Monate in der Ortszeit des
+  /// Servers, wie `aufgenommen` in jeder Zeile (siehe zeilen_json.dart).
+  Future<Response> zeitleistenmonate(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final zeilen = await db
+        .customSelect(
+          "SELECT strftime('%Y-%m', file_created_at, 'unixepoch', 'localtime') "
+          'AS m, COUNT(*) AS n FROM assets WHERE $rasterSichtbar '
+          'GROUP BY m ORDER BY m DESC',
+          readsFrom: {db.assets},
+        )
+        .get();
+    return _json({
+      'monate': [
+        for (final z in zeilen)
+          {'monat': z.read<String>('m'), 'anzahl': z.read<int>('n')},
+      ],
     });
   }
 

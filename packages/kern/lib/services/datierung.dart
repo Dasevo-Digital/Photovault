@@ -19,6 +19,8 @@ library;
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import '../db/database.dart';
+
 /// Die Jahrzehnte, zwischen denen gewählt wird. Vor 1880 gibt es kaum
 /// Abzüge in Familienalben, und was es gibt, sieht für CLIP gleich aus.
 const datierungJahrzehnte = [
@@ -170,4 +172,49 @@ double _skalar(Float32List a, Float32List b) {
     s += a[i] * b[i];
   }
   return s;
+}
+
+/// Die gemittelten Satzvektoren je Jahrzehnt für [schaetzeDatierung],
+/// gerechnet mit [einbetten] – dem Textteil von CLIP, wo er gerade liegt:
+/// in der App oder auf dem Server (#279).
+Future<Map<int, Float32List>> datierungssaetzeMit(
+  Future<Float32List> Function(String satz) einbetten,
+) async => {
+  for (final j in datierungJahrzehnte)
+    j: mittlererVektor([
+      for (final satz in datierungsSaetze(j)) await einbetten(satz),
+    ]),
+};
+
+/// Ein altes Foto mit seiner Schätzung; [uebernommen], wenn sein Datum
+/// schon dort steht, wohin [AppDatabase.setzeGeschaetztesJahr] es legt.
+typedef Datierungsfund = ({
+  AssetData asset,
+  Datierung datierung,
+  bool uebernommen,
+});
+
+/// Die Fotos ohne echtes Aufnahmedatum, die alt aussehen, samt Schätzung –
+/// älteste zuerst. Dieselbe Liste am Rechner, im Browser (über den Server)
+/// und auf dem Telefon.
+///
+/// Nur, was alt aussieht: Ein Bildschirmfoto mit geratenem Datum ist auch
+/// ohne Schätzung von gestern, und es aufzulisten verdeckte die Fotos, um
+/// die es geht.
+Future<List<Datierungsfund>> datierungsfunde(
+  AppDatabase db,
+  Map<int, Float32List> saetze,
+) async {
+  final liste = <Datierungsfund>[];
+  for (final k in await db.datierungskandidaten()) {
+    final d = schaetzeDatierung(k.vektor, saetze);
+    if (!d.siehtAltAus) continue;
+    liste.add((
+      asset: k.asset,
+      datierung: d,
+      uebernommen: k.asset.fileCreatedAt == DateTime(d.jahr, 7, 1, 12),
+    ));
+  }
+  liste.sort((a, b) => a.datierung.jahr.compareTo(b.datierung.jahr));
+  return liste;
 }

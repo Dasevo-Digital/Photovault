@@ -3,20 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
-import '../services/datierung.dart';
+import 'package:kern/services/datierung.dart';
 import '../services/meldungsdienst.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import 'asset_viewer_screen.dart';
 
-typedef _Schaetzung = ({AssetData asset, Datierung datierung});
+typedef _Schaetzung = Datierungsfund;
 
-/// **Alte Fotos zeitlich einordnen** – siehe `services/datierung.dart`.
-///
-/// Gezeigt werden nur Fotos, die alt aussehen: Ein Bildschirmfoto mit
-/// geratenem Datum ist auch ohne Schätzung von gestern, und es hier
-/// aufzulisten, verdeckte die Fotos, um die es geht.
+/// **Alte Fotos zeitlich einordnen** – siehe `datierung.dart` im Kern.
+/// Dieselbe Liste wie im Browser und auf dem Telefon ([datierungsfunde]).
 class DatierungScreen extends StatefulWidget {
   const DatierungScreen({super.key, required this.library});
 
@@ -35,19 +32,11 @@ class _DatierungScreenState extends State<DatierungScreen> {
   Future<List<_Schaetzung>?> _laden() async {
     final saetze = await widget.library.datierungssaetze();
     if (saetze == null) return null;
-    final kandidaten = await widget.library.db.datierungskandidaten();
-    final liste = <_Schaetzung>[
-      for (final k in kandidaten)
-        (asset: k.asset, datierung: schaetzeDatierung(k.vektor, saetze)),
-    ]..removeWhere((s) => !s.datierung.siehtAltAus);
-    liste.sort((a, b) => a.datierung.jahr.compareTo(b.datierung.jahr));
-    // Schon übernommen, wenn das Datum genau dort steht, wohin
-    // [AppDatabase.setzeGeschaetztesJahr] es legt.
-    for (final s in liste) {
-      if (s.asset.fileCreatedAt == DateTime(s.datierung.jahr, 7, 1, 12)) {
-        _uebernommen.add(s.asset.id);
-      }
-    }
+    final liste = await datierungsfunde(widget.library.db, saetze);
+    _uebernommen.addAll([
+      for (final s in liste)
+        if (s.uebernommen) s.asset.id,
+    ]);
     return liste;
   }
 

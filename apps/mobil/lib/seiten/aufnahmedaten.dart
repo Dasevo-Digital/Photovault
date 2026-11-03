@@ -34,12 +34,27 @@ typedef Aufnahmedatenvorschlag = ({
 String vorschlagsdatum(String sprache, DateTime neu, bool geschaetzt) =>
     (geschaetzt ? datumMittel(sprache) : datumZeitMittel(sprache)).format(neu);
 
+/// Eine Schätzung für ein altes Foto, wie sie der Server schickt
+/// (`GET /api/v1/datierung`, #279).
+typedef Datierungsvorschlag = ({
+  AssetData aufnahme,
+  int jahr,
+  int von,
+  int bis,
+  bool belastbar,
+});
+
 /// Aufnahmedaten wie im Browser (web/app.js, zeigeAufnahmedaten, #203): wo
 /// der Dateiname ein anderes Datum nennt als die Bibliothek, und was gelten
 /// sollte. **Geprüft wird auf dem Server**, nicht auf der Kopie: Bei einem
 /// Teil der Aufnahmen muss dafür die Originaldatei gelesen werden, und die
 /// liegt auf dem Telefon meist nicht. Übernommen wird über denselben Befehl
 /// wie am Rechner und im Browser.
+///
+/// Darunter die Datierung alter Fotos (#279): Fotos ohne echtes Datum, die
+/// alt aussehen, mit dem Jahrzehnt, das die Bildsuche schätzt – dieselbe
+/// Liste wie am Rechner (Werkzeuge) und im Browser. Auch sie rechnet der
+/// Server, der das Textmodell hat.
 class Aufnahmedaten extends StatefulWidget {
   const Aufnahmedaten({super.key, required this.sitzung, this.verbindung});
 
@@ -57,6 +72,10 @@ class _AufnahmedatenState extends State<Aufnahmedaten> {
   final _gewaehlt = <String>{};
   var _prueft = false;
   String? _fehler;
+
+  List<Datierungsvorschlag>? _funde;
+  final _uebernommen = <String>{};
+  String? _datierungHinweis;
 
   AppDatabase get _db => widget.sitzung.db;
 
@@ -101,6 +120,7 @@ class _AufnahmedatenState extends State<Aufnahmedaten> {
           ..clear()
           ..addAll([for (final v in liste) v.aufnahme.id]);
       });
+      await _datiere(verbindung);
     } on KeineVerbindung {
       if (mounted) {
         setState(() => _fehler = AppTexte.of(context).datenOhneServer);
@@ -109,6 +129,56 @@ class _AufnahmedatenState extends State<Aufnahmedaten> {
       if (mounted) setState(() => _fehler = '$x');
     } finally {
       if (mounted) setState(() => _prueft = false);
+    }
+  }
+
+  Future<void> _datiere(Serververbindung verbindung) async {
+    final t = AppTexte.of(context);
+    try {
+      final d = await verbindung.hole(
+        'api/v1/datierung',
+        zeitlimit: const Duration(minutes: 2),
+      );
+      final funde = <Datierungsvorschlag>[];
+      final schon = <String>{};
+      for (final f in (d['funde']! as List).cast<Map>()) {
+        final a = await _db.assetById((f['aufnahme']! as Map)['id']! as String);
+        if (a == null) continue;
+        funde.add((
+          aufnahme: a,
+          jahr: f['jahr']! as int,
+          von: f['von']! as int,
+          bis: f['bis']! as int,
+          belastbar: f['belastbar'] as bool? ?? false,
+        ));
+        if (f['uebernommen'] == true) schon.add(a.id);
+      }
+      if (!mounted) return;
+      setState(() {
+        _funde = funde;
+        _uebernommen
+          ..clear()
+          ..addAll(schon);
+        _datierungHinweis = funde.isEmpty ? t.datierungKeine : null;
+      });
+    } on Serverfehler catch (x) {
+      if (x.abgemeldet) rethrow;
+      if (!mounted) return;
+      setState(() {
+        _funde = null;
+        _datierungHinweis = x.status == 404 ? t.datierungOhneModell : '$x';
+      });
+    }
+  }
+
+  Future<void> _schaetzungUebernehmen(List<Datierungsvorschlag> welche) async {
+    for (final f in welche) {
+      await _db.fuehreAus(JahrSchaetzen(f.aufnahme.id, f.jahr));
+    }
+    if (mounted) {
+      setState(
+        () => _uebernommen.addAll([for (final f in welche) f.aufnahme.id]),
+      );
     }
   }
 
@@ -255,7 +325,77 @@ class _AufnahmedatenState extends State<Aufnahmedaten> {
                 ].join('\n'),
               ),
             ),
+        if (!_prueft) ..._datierung(context, t),
       ],
     );
+  }
+
+  List<Widget> _datierung(BuildContext context, AppTexte t) {
+    final funde = _funde;
+    final hinweis = _datierungHinweis;
+    if (funde == null && hinweis == null) return const [];
+    final farben = Theme.of(context).colorScheme;
+    final klein = TextStyle(color: farben.onSurfaceVariant);
+    final offen = [
+      for (final f in funde ?? const <Datierungsvorschlag>[])
+        if (f.belastbar && !_uebernommen.contains(f.aufnahme.id)) f,
+    ];
+    final zeilen = [
+      for (final f in funde ?? const <Datierungsvorschlag>[])
+        Rasterzeile.aus(f.aufnahme),
+    ];
+    return [
+      const Divider(height: 32),
+      Text(t.datierungTitel, style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: 4),
+      Text(hinweis ?? t.datierungEinleitung, style: klein),
+      if (offen.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FilledButton(
+              onPressed: () => _schaetzungUebernehmen(offen),
+              child: Text(t.datierungAlle(offen.length)),
+            ),
+          ),
+        ),
+      for (final (i, f) in (funde ?? const <Datierungsvorschlag>[]).indexed)
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: GestureDetector(
+            onTap: () => Navigator.of(context).push(
+              betrachterWeg(
+                Betrachter(sitzung: widget.sitzung, zeilen: zeilen, start: i),
+              ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                width: 56,
+                height: 56,
+                child: Miniatur(
+                  paths: widget.sitzung.paths,
+                  relativ: f.aufnahme.thumbnailRelativePath,
+                ),
+              ),
+            ),
+          ),
+          title: Text(t.datierungUm('${f.jahr}')),
+          subtitle: Text(
+            f.belastbar
+                ? t.datierungSpanne('${f.von}', '${f.bis}')
+                : t.datierungUnsicher('${f.von}', '${f.bis}'),
+          ),
+          trailing: _uebernommen.contains(f.aufnahme.id)
+              ? Text(t.datierungIstUebernommen, style: klein)
+              : f.belastbar
+              ? TextButton(
+                  onPressed: () => _schaetzungUebernehmen([f]),
+                  child: Text(t.datierungUebernehmen),
+                )
+              : null,
+        ),
+    ];
   }
 }

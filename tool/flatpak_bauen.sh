@@ -158,9 +158,19 @@ gut "nur noch \$ORIGIN-relative Suchpfade"
 titel "Flatpak bauen"
 # --force-clean, weil ein halber Bauort aus einem abgebrochenen Lauf sonst
 # stillschweigend weiterverwendet wird.
-flatpak-builder --force-clean --user --repo="$LAGER" \
-  --install-deps-from=flathub \
-  "$BAUORT" "$BAUPLAN" || exit 1
+# Ein zweiter Versuch ohne Aktualisieren der Quellen: Beim Bau von 3.51.0
+# war code.videolan.org (libplacebo) dreimal hintereinander nicht zu
+# erreichen. Alle Quellen sind auf einen Commit oder eine Prüfsumme
+# festgelegt; was schon im Zwischenspeicher liegt, muss nicht neu geholt
+# werden, und was fehlt, lädt flatpak-builder auch so.
+if ! flatpak-builder --force-clean --user --repo="$LAGER" \
+    --install-deps-from=flathub \
+    "$BAUORT" "$BAUPLAN"; then
+  hinweis "Bau gescheitert – zweiter Versuch mit den Quellen aus dem Zwischenspeicher"
+  flatpak-builder --force-clean --user --repo="$LAGER" --disable-updates \
+    --install-deps-from=flathub \
+    "$BAUORT" "$BAUPLAN" || exit 1
+fi
 gut "Paket gebaut"
 
 if [ "$buendel" -eq 1 ]; then
@@ -235,6 +245,8 @@ if [ "$pruefen" -eq 1 ]; then
   laeuft raw-identify raw-identify
   laeuft ffmpeg ffmpeg -hide_banner -version
   laeuft ffprobe ffprobe -hide_banner -version
+  # JPEG XL (#276): Die Laufzeit hat libjxl, aber kein djxl.
+  laeuft djxl djxl --version
 
   # Das eigentliche Versprechen dieses Pakets: Vorhandensein genügt nicht,
   # libheif muss den Bildinhalt auch auspacken können. Genau daran ist der

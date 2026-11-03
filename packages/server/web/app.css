@@ -340,6 +340,12 @@ body.mit-leiste #ende { padding-bottom: 280px; }
 #bildlauf-griff { position: absolute; right: 0; top: 0; width: 40px; height: 44px; border-radius: 22px 0 0 22px; background: var(--karte); border: 1px solid var(--rand); border-right: 0; box-shadow: 0 1px 6px rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; color: var(--leise); cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
 #bildlauf.zieht #bildlauf-griff { cursor: grabbing; }
 #bildlauf-monat { position: absolute; right: 52px; top: 6px; white-space: nowrap; background: var(--akzent); color: #fff; font-weight: 600; padding: 6px 12px; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.3); }
+#bildlauf-monat.laedt { opacity: .7; }
+/* Die Jahre beim Ziehen (#278), nah am Griff keins – dort steht der Monat. */
+#bildlauf-jahre { position: absolute; right: 46px; top: 0; bottom: 0; width: 64px; pointer-events: none; opacity: 0; transition: opacity .15s; }
+#bildlauf.zieht #bildlauf-jahre { opacity: 1; }
+#bildlauf-jahre span { position: absolute; right: 0; transform: translateY(-50%); font-size: 12px; font-weight: 600; padding: 1px 6px; border-radius: 8px; background: color-mix(in srgb, var(--karte) 92%, transparent); color: var(--leise); box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: opacity .1s; }
+#bildlauf-jahre span.nah { opacity: 0; }
 
 /* Kurze Meldungen und das Hochladen. */
 #meldung { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 20; background: var(--text); color: var(--grund); padding: 10px 16px; border-radius: 10px; box-shadow: 0 2px 12px rgba(0,0,0,.3); max-width: calc(100vw - 32px); }
@@ -439,6 +445,9 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .datumszeile .inhalt { min-width: 0; }
 .datumszeile .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .datumszeile .neben { color: var(--leise); font-size: 0.85em; }
+#datierung { margin-top: 24px; }
+#datierung .datumszeile { cursor: default; }
+.datierung-ende { margin-left: auto; flex: none; }
 .datumsvorschlag { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; color: var(--leise); font-size: 0.9em; }
 .datumsvorschlag button { padding: 3px 10px; border: 1px solid var(--akzent); border-radius: 8px; background: none; color: var(--akzent); }
 .gruppe { background: var(--karte); border: 1px solid var(--rand); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
@@ -747,6 +756,9 @@ body.teilen { min-height: 100vh; }
 #diashow.mit-leiste { cursor: default; }
 #diashow .dia { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; transition: opacity .8s ease-in-out; will-change: opacity, transform; }
 #diashow .dia.sichtbar { opacity: 1; }
+/* Diashow als Video (#281): die laufende Aufnahme im Kleinen. */
+#diavideo-bild { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; margin: 8px 0; border-radius: 8px; background: #000; }
+#diavideo-bild[hidden] { display: none; }
 #diashow .dia.sichtbar.links { animation: dia-zoom-links 5s ease-out forwards; }
 #diashow .dia.sichtbar.rechts { animation: dia-zoom-rechts 5s ease-out forwards; }
 @keyframes dia-zoom-links { from { transform: scale(1); } to { transform: scale(1.06) translate(-1%, -1%); } }

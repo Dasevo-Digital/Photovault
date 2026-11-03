@@ -70,7 +70,7 @@
   <h1 id="kopf-titel"></h1>
   <button id="hochladen" type="button" class="primaer" title="Fotos und Videos hochladen"><svg class="symbol"><use href="#i-hochladen"/></svg><span class="lang">Hochladen</span></button>
   <input id="hochladen-datei" type="file" multiple hidden
-    accept="image/*,video/*,.heic,.heif,.avif,.psd,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw,.x3f,.3fr,.iiq,.erf,.mef,.mos,.kdc,.dcr,.raw,.mkv,.avi,.m4v,.mts,.m2ts,.mpg,.mpeg,.mod,.tod,.3gp,.3g2,.wmv,.asf,.webm,.flv">
+    accept="image/*,video/*,.heic,.heif,.avif,.jxl,.psd,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.srf,.sr2,.raf,.orf,.rw2,.pef,.srw,.x3f,.3fr,.iiq,.erf,.mef,.mos,.kdc,.dcr,.raw,.mkv,.avi,.m4v,.mts,.m2ts,.mpg,.mpeg,.mod,.tod,.3gp,.3g2,.wmv,.asf,.webm,.flv">
   <button id="auswaehlen" type="button" title="Mehrere auswählen"><svg class="symbol"><use href="#i-auswaehlen"/></svg><span class="lang">Auswählen</span></button>
   <a id="konto-knopf" href="#/konto" data-bereich="konto" title="Konto" aria-label="Konto"></a>
 </header>
@@ -174,6 +174,14 @@
     </div>
     <p id="daten-hinweis" class="leise"></p>
     <div id="daten-liste"></div>
+    <div id="datierung" hidden>
+      <div class="zeile">
+        <h2>Alte Fotos zeitlich einordnen</h2>
+        <button id="datierung-alle" type="button" hidden></button>
+      </div>
+      <p id="datierung-hinweis" class="leise"></p>
+      <div id="datierung-liste"></div>
+    </div>
   </section>
   <section id="bereich-stammbaum" hidden>
     <div class="zeile">
@@ -394,6 +402,7 @@
 </div>
 
 <div id="bildlauf" aria-hidden="true">
+  <div id="bildlauf-jahre"></div>
   <span id="bildlauf-monat" hidden></span>
   <div id="bildlauf-griff">⇕</div>
 </div>
@@ -473,6 +482,24 @@
       <button type="button" id="gesicht-loeschen" hidden>Rahmen löschen</button>
       <button type="button" id="gesicht-abbrechen">Abbrechen</button>
       <button type="submit">Benennen</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- Die Diashow als Video (#281), wie am Rechner. -->
+<dialog id="diavideo-dialog">
+  <form method="dialog" id="form-diavideo">
+    <h3>Diashow als Video speichern</h3>
+    <p class="leise klein" id="diavideo-umfang"></p>
+    <label>Titel <input name="titel" autocomplete="off" maxlength="120"></label>
+    <label>Untertitel <input name="untertitel" autocomplete="off" maxlength="160"></label>
+    <label>Musik (wahlweise) <input name="musik" type="file" accept="audio/*"></label>
+    <p class="leise klein">Das Video entsteht in Echtzeit in diesem Fenster – lassen Sie es dafür im Vordergrund.</p>
+    <canvas id="diavideo-bild" width="480" height="270" hidden></canvas>
+    <p id="diavideo-meldung" class="leise"></p>
+    <menu>
+      <button type="button" id="diavideo-abbrechen">Abbrechen</button>
+      <button type="submit" id="diavideo-los">Erstellen</button>
     </menu>
   </form>
 </dialog>
@@ -610,6 +637,7 @@
     <button id="dia-pause" type="button" aria-label="Anhalten">❚❚</button>
     <button id="dia-vor" type="button" aria-label="Nächste">›</button>
     <span id="dia-stand"></span>
+    <button id="dia-video" type="button" aria-label="Als Video speichern" title="Als Video speichern">⤓&#xFE0E;</button>
     <button id="dia-zu" type="button" aria-label="Diashow beenden">×</button>
   </div>
 </div>

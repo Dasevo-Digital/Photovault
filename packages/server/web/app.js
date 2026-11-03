@@ -721,7 +721,9 @@ function haengeAn(aufnahmen) {
       if (monat !== letzterMonat) {
         letzterMonat = monat;
         letzterTag = null;
-        kopfDazu(el('h2', 'monat', monatJahr.format(d)));
+        const kopf = el('h2', 'monat', monatJahr.format(d));
+        kopf.dataset.monat = monatsschluessel(d);
+        kopfDazu(kopf);
       }
       if (mitTagen && tag !== letzterTag) {
         letzterTag = tag;
@@ -835,9 +837,11 @@ function seitenverhaeltnis(a) {
 const zeitleiste = {
   weiter: undefined,
   geladen: [],
-  leeren() { this.weiter = undefined; this.geladen = []; },
+  // Grössere Seiten, solange die Leiste zu einem fernen Monat springt.
+  seite: 200,
+  leeren() { this.weiter = undefined; this.geladen = []; zeitleistenmonate.liste = null; },
   async mehr() {
-    const q = new URLSearchParams({ anzahl: '200' });
+    const q = new URLSearchParams({ anzahl: String(this.seite) });
     if (this.weiter) q.set('nach', this.weiter);
     if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
     if (ansicht.liste) q.set('voll', '1');
@@ -870,6 +874,7 @@ async function zeigeFotos() {
   }
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
+  holeZeitleistenmonate().catch(() => {});
 }
 
 // Die Favoriten wie in der Bibliothek des Telefons: nach Tagen gegliedert,
@@ -1747,7 +1752,96 @@ async function zeigeAufnahmedaten() {
   markiereNav('aufnahmedaten');
   zeigeBereich(['aufnahmedaten']);
   if (datumsvorschlaege) zeichneAufnahmedaten(); else await pruefeAufnahmedaten();
+  if (datierungsfunde) zeichneDatierung(); else await holeDatierung();
 }
+
+// --- Alte Fotos zeitlich einordnen (#279) -----------------------------------
+//
+// Dieselbe Liste wie am Rechner (Werkzeuge) und auf dem Telefon: Fotos ohne
+// echtes Datum, die alt aussehen, mit dem Jahrzehnt, das die Bildsuche
+// schätzt. Gerechnet auf dem Server, der das Textmodell hat; übernommen
+// wird die Jahresmitte über denselben Befehl wie am Rechner.
+
+let datierungsfunde = null;
+const datierungUebernommen = new Set();
+
+async function holeDatierung() {
+  $('datierung').hidden = false;
+  $('datierung-hinweis').textContent = t('Prüfe …');
+  $('datierung-liste').replaceChildren();
+  $('datierung-alle').hidden = true;
+  try {
+    const d = await api('/api/v1/datierung');
+    datierungsfunde = d.funde;
+  } catch (x) {
+    $('datierung-hinweis').textContent = x.status === 404
+      ? t('Für die Schätzung braucht der Server das Modell der Bildsuche (CLIP).')
+      : x.message;
+    return;
+  }
+  datierungUebernommen.clear();
+  for (const f of datierungsfunde) if (f.uebernommen) datierungUebernommen.add(f.aufnahme.id);
+  zeichneDatierung();
+}
+
+const offeneSchaetzungen = () => datierungsfunde.filter((f) => f.belastbar && !datierungUebernommen.has(f.aufnahme.id));
+
+function zeichneDatierung() {
+  $('datierung').hidden = false;
+  $('datierung-hinweis').textContent = datierungsfunde.length === 0
+    ? t('Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.')
+    : t('Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Ist die Spanne zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres; das Datum bleibt als geschätzt markiert.');
+  const offen = offeneSchaetzungen();
+  const alle = $('datierung-alle');
+  alle.hidden = offen.length === 0;
+  alle.textContent = offen.length === 1 ? t('1 Schätzung übernehmen') : t('{n} Schätzungen übernehmen', { n: offen.length });
+  $('datierung-liste').replaceChildren(...datierungsfunde.map((f, i) => datierungszeile(f, i)));
+}
+
+function datierungszeile(f, i) {
+  const a = f.aufnahme;
+  const zeile = el('div', 'datumszeile');
+  const img = el('img');
+  img.loading = 'lazy';
+  img.alt = '';
+  img.src = miniaturUrl(a.id, a.stand);
+  img.addEventListener('click', () => {
+    liste = { aufnahmen: datierungsfunde.map((x) => x.aufnahme), nachTagen: false, mehr: null };
+    oeffne(i);
+  });
+  const inhalt = el('div', 'inhalt');
+  inhalt.append(
+    el('div', 'name', t('um {jahr}', { jahr: f.jahr })),
+    el('div', 'neben', f.belastbar
+      ? t('{von} bis {bis}', { von: f.von, bis: f.bis })
+      : t('zu unsicher ({von} bis {bis})', { von: f.von, bis: f.bis })),
+  );
+  zeile.append(img, inhalt);
+  if (datierungUebernommen.has(a.id)) {
+    zeile.append(el('span', 'leise datierung-ende', t('Übernommen')));
+  } else if (f.belastbar) {
+    const knopf = el('button', 'datierung-ende', t('Übernehmen'));
+    knopf.type = 'button';
+    knopf.addEventListener('click', () => uebernimmSchaetzungen([f]).catch((x) => { knopf.textContent = x.message; }));
+    zeile.append(knopf);
+  }
+  return zeile;
+}
+
+async function uebernimmSchaetzungen(welche) {
+  for (const f of welche) {
+    await befehl('jahrSchaetzen', { id: f.aufnahme.id, jahr: f.jahr });
+    datierungUebernommen.add(f.aufnahme.id);
+  }
+  zeitleiste.leeren(); // die Fotos stehen jetzt an anderer Stelle
+  zeichneDatierung();
+}
+
+$('datierung-alle').addEventListener('click', () => {
+  const offen = offeneSchaetzungen();
+  if (!offen.length) return;
+  uebernimmSchaetzungen(offen).catch((x) => { $('datierung-hinweis').textContent = x.message; });
+});
 
 async function pruefeAufnahmedaten() {
   $('daten-hinweis').textContent = t('Prüfe …');
@@ -1952,12 +2046,16 @@ async function zeigeEinstellungen() {
   tageBox.append(el('span', null, t('nach')), tage, el('span', null, t('Tagen')));
   let leeren = e.papierkorbLeeren;
   tage.addEventListener('change', () => sende('papierkorbFristSetzen', { an: leeren, tage: Number(tage.value) }));
-  let vorschlaegeAb = e.vorschlaegeAb ?? 0.9;
-  const vorschlagRegler = regler(0.8, 0.99, 0.01, vorschlaegeAb, (v) => t('ab {p}', { p: `${Math.round(v * 100)} %` }), (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
+  // Dieselbe Skala wie am Rechner (Werkzeuge → Gesichtserkennung): Die
+  // Ähnlichkeit von SFace liegt für dieselbe Person meist zwischen 0,5 und
+  // 0,8. Bis 3.51 stand hier 0,8 bis 0,99 mit 0,9 als Vorgabe – damit
+  // wurde fast nie etwas übernommen.
+  let vorschlaegeAb = e.vorschlaegeAb ?? 0.7;
+  const vorschlagRegler = regler(0.6, 0.9, 0.05, vorschlaegeAb, (v) => t('ab {p}', { p: `${Math.round(v * 100)} %` }), (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
   let vorschlaegeAn = e.vorschlaegeAb != null;
   ziel.replaceChildren(
     zeile('Papierkorb automatisch leeren', 'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.', leeren, (an) => { leeren = an; sende('papierkorbFristSetzen', { an, tage: Number(tage.value) }); }, tageBox),
-    zeile('Sichere Vorschläge automatisch übernehmen', 'Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.', vorschlaegeAn, (an) => { vorschlaegeAn = an; sende('vorschlaegeAutomatischSetzen', { ab: an ? vorschlaegeAb : null }); }, vorschlagRegler),
+    zeile('Sichere Vorschläge automatisch übernehmen', 'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.', vorschlaegeAn, (an) => { vorschlaegeAn = an; sende('vorschlaegeAutomatischSetzen', { ab: an ? vorschlaegeAb : null }); }, vorschlagRegler),
     zeile('KI-Auswertung nach dem Import automatisch nachholen', 'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.', e.auswertenNachImport, (an) => sende('auswertenNachImportSetzen', { an })),
     zeile('Suche und Schlagwörter übersetzen', 'Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.', e.sucheUebersetzen, (an) => sende('sucheUebersetzenSetzen', { an })),
     zeile('Private Metadaten schützen', 'Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.', e.angabenSchuetzen, (an) => sende('angabenSchuetzenSetzen', { an })),
@@ -3265,7 +3363,8 @@ function bildlaufHoehe() { return document.documentElement.scrollHeight - innerH
 
 function zeigeBildlauf() {
   const b = $('bildlauf');
-  const lang = !$('bereich-raster').hidden && $('betrachter').hidden && liste && liste.aufnahmen.length > 0 && bildlaufHoehe() > innerHeight * 2;
+  const lang = !$('bereich-raster').hidden && $('betrachter').hidden && liste && liste.aufnahmen.length > 0 &&
+    (bildlaufHoehe() > innerHeight * 2 || (monatsleiste() && !!liste.mehr));
   if (!lang) { b.classList.remove('sichtbar'); return; }
   // Erst lesen, dann nur schreiben, was sich geändert hat: Jedes Setzen
   // verwarf das Layout, und das Lesen gleich danach rechnete es neu – bei
@@ -3280,13 +3379,138 @@ function zeigeBildlauf() {
   if (!bildlauf.zieht) bildlauf.aus = setTimeout(() => { if (!bildlauf.zieht) b.classList.remove('sichtbar'); }, 1500);
 }
 
-function setzeGriff() {
+function setzeGriff(anteil) {
   const b = $('bildlauf'), g = $('bildlauf-griff');
   const raum = b.clientHeight - g.offsetHeight;
-  const max = bildlaufHoehe();
-  const anteil = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+  if (anteil === undefined) {
+    const m = monatsleiste() ? monatsschluesselOben() : null;
+    if (m && zeitleistenmonate.ab.has(m)) {
+      anteil = zeitleistenmonate.ab.get(m);
+    } else {
+      const max = bildlaufHoehe();
+      anteil = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+    }
+  }
   g.style.transform = `translateY(${anteil * raum}px)`;
   $('bildlauf-monat').style.transform = `translateY(${anteil * raum}px)`;
+  if (bildlauf.zieht) blendeJahreNahe(anteil * raum + g.offsetHeight / 2);
+}
+
+// --- Die ganze Zeitleiste an der Leiste (#278) ----------------------------
+//
+// Geladen ist die Zeitleiste seitenweise; die Leiste reichte deshalb nur
+// bis zum Ende dessen, was schon da war. In der Zeitleiste nach
+// Aufnahmedatum kennt sie jetzt alle Monate samt Anzahl vom Server: Ihre
+// Länge ist die ganze Bibliothek, beim Ziehen stehen die Jahre an ihrer
+// Stelle, und ein Monat, der noch nicht geladen ist, wird beim Loslassen
+// nachgeladen – wie in der Handy-App und am Rechner.
+
+const zeitleistenmonate = { liste: null, ab: new Map(), fuer: null };
+
+function monatsschluessel(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function holeZeitleistenmonate() {
+  const d = await api('/api/v1/zeitleiste/monate');
+  const monate = ansicht.sortierung === 'aufnahmeAlt' ? [...d.monate].reverse() : d.monate;
+  const gesamt = monate.reduce((n, m) => n + m.anzahl, 0);
+  let vorher = 0;
+  zeitleistenmonate.ab = new Map();
+  for (const m of monate) {
+    zeitleistenmonate.ab.set(m.monat, gesamt ? vorher / gesamt : 0);
+    vorher += m.anzahl;
+  }
+  zeitleistenmonate.liste = monate;
+  zeitleistenmonate.fuer = ansicht.sortierung;
+}
+
+// Nur, wo die Reihenfolge der Monate die des Servers ist.
+function monatsleiste() {
+  return !!(liste && liste.zeitleiste && liste.nachTagen && !liste.alsListe &&
+    zeitleistenmonate.liste && zeitleistenmonate.liste.length > 1 &&
+    zeitleistenmonate.fuer === ansicht.sortierung &&
+    (ansicht.sortierung === 'aufnahmeNeu' || ansicht.sortierung === 'aufnahmeAlt'));
+}
+
+// Der Monat der obersten sichtbaren Kachel als Schlüssel.
+function monatsschluesselOben() {
+  const oben = $('kopf').getBoundingClientRect().bottom;
+  const x = $('raster').getBoundingClientRect().left + 24;
+  for (let y = oben + 8; y < oben + 260; y += 24) {
+    const ziel = document.elementFromPoint(x, y);
+    const k = ziel && ziel.closest ? ziel.closest('#raster .kachel') : null;
+    const a = k && liste.aufnahmen[Number(k.dataset.index)];
+    if (a) return monatsschluessel(new Date(a.aufgenommen));
+  }
+  return null;
+}
+
+// Der Monat an der Stelle [anteil] der Leiste.
+function monatBei(anteil) {
+  let treffer = zeitleistenmonate.liste[0].monat;
+  for (const m of zeitleistenmonate.liste) {
+    if (zeitleistenmonate.ab.get(m.monat) <= anteil + 1e-9) treffer = m.monat;
+    else break;
+  }
+  return treffer;
+}
+
+function monatAusSchluessel(schluessel) {
+  const [j, m] = schluessel.split('-').map(Number);
+  return monatJahr.format(new Date(j, m - 1, 1));
+}
+
+function monatskopf(schluessel) {
+  return $('raster').querySelector(`h2.monat[data-monat="${schluessel}"]`);
+}
+
+function fahreZuKopf(k) {
+  window.scrollTo(0, k.getBoundingClientRect().top + scrollY - $('kopf').getBoundingClientRect().bottom - 4);
+}
+
+// Die Jahreszahlen an ihrer Stelle; dicht beieinander nur die erste.
+function legeJahre() {
+  const b = $('bildlauf'), g = $('bildlauf-griff'), j = $('bildlauf-jahre');
+  const raum = b.clientHeight - g.offsetHeight;
+  const spans = [];
+  let jahr = null, zuletzt = -Infinity;
+  for (const m of zeitleistenmonate.liste) {
+    const dieses = m.monat.slice(0, 4);
+    if (dieses === jahr) continue;
+    jahr = dieses;
+    const y = zeitleistenmonate.ab.get(m.monat) * raum + g.offsetHeight / 2;
+    if (y - zuletzt < 18) continue;
+    zuletzt = y;
+    const s = el('span', '', dieses);
+    s.style.top = `${y}px`;
+    spans.push(s);
+  }
+  j.replaceChildren(...spans);
+}
+
+function blendeJahreNahe(mitte) {
+  for (const s of $('bildlauf-jahre').children) {
+    s.classList.toggle('nah', Math.abs(parseFloat(s.style.top) - mitte) < 26);
+  }
+}
+
+async function springeZuMonat(schluessel) {
+  const m = $('bildlauf-monat');
+  m.classList.add('laedt');
+  zeitleiste.seite = 1000;
+  try {
+    for (let i = 0; i < 400 && !monatskopf(schluessel) && liste && liste.mehr; i++) {
+      if (liste.laedt) { await new Promise((fertig) => setTimeout(fertig, 60)); continue; }
+      await ladeMehr();
+    }
+  } finally {
+    zeitleiste.seite = 200;
+    m.classList.remove('laedt');
+    m.hidden = true;
+  }
+  const k = monatskopf(schluessel);
+  if (k) fahreZuKopf(k);
 }
 
 // Der Monat der obersten sichtbaren Kachel.
@@ -3305,6 +3529,18 @@ function monatOben() {
 function zieheBildlauf(y) {
   const b = $('bildlauf').getBoundingClientRect(), g = $('bildlauf-griff').offsetHeight;
   const anteil = Math.min(1, Math.max(0, (y - b.top - g / 2) / (b.height - g)));
+  if (monatsleiste()) {
+    // Der Griff folgt dem Finger; geladene Monate kommen sofort, die
+    // übrigen beim Loslassen.
+    const ziel = monatBei(anteil);
+    bildlauf.ziel = ziel;
+    const k = monatskopf(ziel);
+    if (k) fahreZuKopf(k);
+    $('bildlauf-monat').textContent = monatAusSchluessel(ziel);
+    $('bildlauf-monat').hidden = false;
+    setzeGriff(anteil);
+    return;
+  }
   window.scrollTo(0, anteil * bildlaufHoehe());
   const m = monatOben();
   if (m) { $('bildlauf-monat').textContent = m; $('bildlauf-monat').hidden = false; }
@@ -3321,8 +3557,11 @@ $('bildlauf-griff').addEventListener('pointerdown', (e) => {
   e.preventDefault();
   try { $('bildlauf-griff').setPointerCapture(e.pointerId); } catch (_) { /* ohne geht es auch */ }
   bildlauf.zieht = true;
+  bildlauf.ziel = null;
   clearTimeout(bildlauf.aus);
   $('bildlauf').classList.add('zieht');
+  if (monatsleiste()) legeJahre();
+  else $('bildlauf-jahre').replaceChildren();
   zieheBildlauf(e.clientY);
 });
 $('bildlauf-griff').addEventListener('pointermove', (e) => { if (bildlauf.zieht) zieheBildlauf(e.clientY); });
@@ -3331,6 +3570,12 @@ for (const ev of ['pointerup', 'pointercancel']) {
     if (!bildlauf.zieht) return;
     bildlauf.zieht = false;
     $('bildlauf').classList.remove('zieht');
+    const ziel = bildlauf.ziel;
+    bildlauf.ziel = null;
+    if (ziel && monatsleiste() && !monatskopf(ziel)) {
+      springeZuMonat(ziel).catch(() => { $('bildlauf-monat').hidden = true; }).finally(zeigeBildlauf);
+      return;
+    }
     $('bildlauf-monat').hidden = true;
     zeigeBildlauf();
   });
@@ -4505,6 +4750,246 @@ function beendeDiashow() {
     if (j >= 0) oeffne(j);
   }
 }
+
+// --- Diashow als Video (#281) -------------------------------------------------
+//
+// Wie am Rechner (lib/services/diashow.dart): eine Titelkarte, dann jedes
+// Foto 3,5 Sekunden mit langsamem Zoom und Schwenk, dazwischen 0,8 Sekunden
+// Überblendung, höchstens 40 Fotos, Full HD. Die Zeitrechnung und das
+// Malen sind dieselben Formeln. Aufgenommen wird, was ein Canvas in
+// Echtzeit zeigt (MediaRecorder): MP4, wo der Browser es schreibt
+// (Safari, neuere Chrome), sonst WebM. Musik von der Platte läuft
+// wiederholt darunter und wird am Ende ausgeblendet – wie dort.
+
+// nachlauf: So lange steht das letzte Bild noch, ehe die Aufnahme endet.
+// MediaRecorder verwirft beim Anhalten, was er noch nicht kodiert hat –
+// gemessen fehlten vom letzten Foto sonst 1,8 Sekunden.
+const DIAVIDEO = { breite: 1920, hoehe: 1080, jeBild: 3500, ueberblendung: 800, titel: 2500, hoechstens: 40, bilderJeSekunde: 30, nachlauf: 2000 };
+
+function diavideoTakt(ms, anzahl) {
+  const { jeBild, ueberblendung, titel } = DIAVIDEO;
+  if (ms < titel || anzahl === 0) {
+    const rest = titel - ms;
+    const ein = anzahl === 0 || rest > ueberblendung ? 0 : 1 - rest / ueberblendung;
+    return { titel: true, index: 0, naechster: ein > 0 ? 0 : null, ueberblendung: ein, fortschritt: 0 };
+  }
+  const imFoto = ms - titel;
+  const index = Math.min(Math.floor(imFoto / jeBild), anzahl - 1);
+  const inDiesem = imFoto - jeBild * index;
+  const fortschritt = Math.min(1, Math.max(0, inDiesem / jeBild));
+  const bisEnde = jeBild - inDiesem;
+  if (index !== anzahl - 1 && bisEnde < ueberblendung) {
+    return { titel: false, index, naechster: index + 1, ueberblendung: 1 - bisEnde / ueberblendung, fortschritt };
+  }
+  return { titel: false, index, naechster: null, ueberblendung: 0, fortschritt };
+}
+
+// Bildfüllend, gerade und ungerade Fotos in entgegengesetzter Richtung.
+function maleDiavideoFoto(c, bild, index, fortschritt, deckkraft = 1) {
+  const W = c.canvas.width, H = c.canvas.height;
+  const b = bild.width, h = bild.height;
+  const deckend = Math.max(W / b, H / h);
+  const zoom = 1 + 0.08 * (index % 2 === 0 ? fortschritt : 1 - fortschritt);
+  const massstab = deckend * zoom;
+  const aw = W / massstab, ah = H / massstab;
+  const richtung = index % 2 === 0 ? fortschritt : 1 - fortschritt;
+  c.globalAlpha = deckkraft;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(bild, (b - aw) * (0.3 + 0.4 * richtung), (h - ah) * 0.5, aw, ah, 0, 0, W, H);
+  c.globalAlpha = 1;
+}
+
+function maleDiavideoTitel(c, titel, untertitel) {
+  const W = c.canvas.width, H = c.canvas.height;
+  c.fillStyle = '#141414';
+  c.fillRect(0, 0, W, H);
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillStyle = '#f5f0e6';
+  c.font = `${Math.round(H * 0.075)}px Zierschrift, Georgia, serif`;
+  const mitte = untertitel ? H / 2 - H * 0.03 : H / 2;
+  c.fillText(titel, W / 2, mitte, W * 0.8);
+  if (untertitel) {
+    c.fillStyle = 'rgba(245, 240, 230, 0.7)';
+    c.font = `${Math.round(H * 0.035)}px Zierschrift, Georgia, serif`;
+    c.fillText(untertitel, W / 2, mitte + H * 0.075, W * 0.8);
+  }
+}
+
+// So gross, dass es das Video füllt – nicht grösser, wie am Rechner.
+async function ladeDiavideoBild(a) {
+  try {
+    const blob = await (await fetch(bildUrl(a.id, 'ansicht', a.stand), { credentials: 'same-origin' })).blob();
+    const roh = await createImageBitmap(blob);
+    const m = Math.max(DIAVIDEO.breite / roh.width, DIAVIDEO.hoehe / roh.height) * 1.1;
+    if (m >= 1) return roh;
+    const klein = await createImageBitmap(roh, { resizeWidth: Math.round(roh.width * m), resizeHeight: Math.round(roh.height * m), resizeQuality: 'high' });
+    roh.close();
+    return klein;
+  } catch (_) {
+    return null; // steht als schwarzes Bild da und nimmt das Video nicht mit
+  }
+}
+
+const DIAVIDEO_FORMATE = ['video/mp4;codecs=avc1.640028,mp4a.40.2', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'];
+
+const diavideo = { abbruch: false, laeuft: false };
+
+async function schreibeDiavideo({ fotos, titel, untertitel, musik, fortschritt }) {
+  const format = DIAVIDEO_FORMATE.find((f) => window.MediaRecorder && MediaRecorder.isTypeSupported(f));
+  if (!format) throw new Error(t('Dieser Browser kann kein Video aufnehmen.'));
+  await document.fonts?.load(`20px Zierschrift`).catch(() => {});
+  const leinwand = document.createElement('canvas');
+  leinwand.width = DIAVIDEO.breite;
+  leinwand.height = DIAVIDEO.hoehe;
+  const c = leinwand.getContext('2d');
+  const strom = leinwand.captureStream(DIAVIDEO.bilderJeSekunde);
+  const dauer = DIAVIDEO.titel + DIAVIDEO.jeBild * fotos.length;
+  let ton = null;
+  if (musik) {
+    const ac = new AudioContext();
+    const puffer = await ac.decodeAudioData(await musik.arrayBuffer());
+    const quelle = ac.createBufferSource();
+    quelle.buffer = puffer;
+    quelle.loop = true;
+    const lautstaerke = ac.createGain();
+    const ziel = ac.createMediaStreamDestination();
+    quelle.connect(lautstaerke).connect(ziel);
+    for (const spur of ziel.stream.getAudioTracks()) strom.addTrack(spur);
+    ton = { ac, quelle, lautstaerke };
+  }
+  const geladen = new Map();
+  const lade = (i) => {
+    if (i < fotos.length && !geladen.has(i)) geladen.set(i, ladeDiavideoBild(fotos[i]).then((b) => { geladen.set(i, b); return b; }));
+  };
+  lade(0); lade(1);
+  await Promise.all([geladen.get(0), geladen.get(1)]);
+  const aufnahme = new MediaRecorder(strom, { mimeType: format, videoBitsPerSecond: 12000000 });
+  const stuecke = [];
+  aufnahme.ondataavailable = (e) => { if (e.data && e.data.size) stuecke.push(e.data); };
+  const fertig = new Promise((ok) => { aufnahme.onstop = ok; });
+  aufnahme.start(1000);
+  if (ton) {
+    const jetzt = ton.ac.currentTime;
+    ton.quelle.start();
+    ton.lautstaerke.gain.setValueAtTime(1, jetzt + Math.max(0, dauer / 1000 - 2));
+    ton.lautstaerke.gain.linearRampToValueAtTime(0, jetzt + dauer / 1000);
+  }
+  // Ist die Seite verborgen, zeichnet der Browser nichts – die Aufnahme
+  // liefe mit einem stehenden Bild weiter. Dann halten Aufnahme, Uhr und
+  // Musik an und gehen danach dort weiter, wo sie waren.
+  let anfang = performance.now();
+  let verborgenSeit = null;
+  const sichtbarkeit = () => {
+    if (document.hidden && verborgenSeit === null) {
+      verborgenSeit = performance.now();
+      if (aufnahme.state === 'recording') aufnahme.pause();
+      ton?.ac.suspend();
+    } else if (!document.hidden && verborgenSeit !== null) {
+      anfang += performance.now() - verborgenSeit;
+      verborgenSeit = null;
+      if (aufnahme.state === 'paused') aufnahme.resume();
+      ton?.ac.resume();
+    }
+  };
+  document.addEventListener('visibilitychange', sichtbarkeit);
+  await new Promise((ende) => {
+    const bild = () => {
+      if (verborgenSeit !== null) { requestAnimationFrame(bild); return; }
+      const jetzt = performance.now() - anfang;
+      if (diavideo.abbruch || jetzt >= dauer + DIAVIDEO.nachlauf) { ende(); return; }
+      const ms = Math.min(jetzt, dauer - 1);
+      const takt = diavideoTakt(ms, fotos.length);
+      // Vorausladen, was gleich kommt, und freigeben, was vorbei ist.
+      lade(takt.index + 1); lade(takt.index + 2);
+      for (const [i, b] of geladen) {
+        if (i < takt.index - 1 && b && !(b instanceof Promise)) { b.close(); geladen.delete(i); }
+      }
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, leinwand.width, leinwand.height);
+      const zeige = (i, f, d) => { const b = geladen.get(i); if (b && !(b instanceof Promise)) maleDiavideoFoto(c, b, i, f, d); };
+      if (takt.titel) maleDiavideoTitel(c, titel, untertitel);
+      else zeige(takt.index, takt.fortschritt, 1);
+      if (takt.naechster !== null) zeige(takt.naechster, 0, takt.ueberblendung);
+      fortschritt(jetzt / (dauer + DIAVIDEO.nachlauf), leinwand);
+      requestAnimationFrame(bild);
+    };
+    requestAnimationFrame(bild);
+  });
+  document.removeEventListener('visibilitychange', sichtbarkeit);
+  aufnahme.stop();
+  await fertig;
+  ton?.quelle.stop();
+  ton?.ac.close();
+  for (const b of geladen.values()) if (b && !(b instanceof Promise)) b.close();
+  if (diavideo.abbruch) return null;
+  return { blob: new Blob(stuecke, { type: format.split(';')[0] }), endung: format.startsWith('video/mp4') ? 'mp4' : 'webm' };
+}
+
+function oeffneDiavideo() {
+  const fotos = dia.fotos.slice(0, DIAVIDEO.hoechstens);
+  if (!fotos.length) return;
+  diaPause(false);
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  const f = $('form-diavideo');
+  f.titel.value = ($('raster-titel').hidden ? '' : $('raster-titel').textContent) || t('Diashow');
+  f.untertitel.value = '';
+  f.musik.value = '';
+  $('diavideo-umfang').textContent = dia.fotos.length > DIAVIDEO.hoechstens
+    ? t('Die ersten {n} von {m} Fotos, gut {s} Sekunden.', { n: fotos.length, m: dia.fotos.length, s: Math.round((DIAVIDEO.titel + DIAVIDEO.jeBild * fotos.length) / 1000) })
+    : t('{n} Fotos, gut {s} Sekunden.', { n: fotos.length, s: Math.round((DIAVIDEO.titel + DIAVIDEO.jeBild * fotos.length) / 1000) });
+  $('diavideo-meldung').textContent = '';
+  $('diavideo-bild').hidden = true;
+  $('diavideo-los').disabled = false;
+  $('diavideo-dialog').showModal();
+}
+
+$('dia-video').addEventListener('click', oeffneDiavideo);
+$('diavideo-abbrechen').addEventListener('click', () => {
+  if (diavideo.laeuft) diavideo.abbruch = true;
+  else $('diavideo-dialog').close();
+});
+$('form-diavideo').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (diavideo.laeuft) return;
+  const f = e.target;
+  const vorschau = $('diavideo-bild');
+  const vc = vorschau.getContext('2d');
+  diavideo.laeuft = true;
+  diavideo.abbruch = false;
+  $('diavideo-los').disabled = true;
+  vorschau.hidden = false;
+  try {
+    const ergebnis = await schreibeDiavideo({
+      fotos: dia.fotos.slice(0, DIAVIDEO.hoechstens),
+      titel: f.titel.value.trim() || t('Diashow'),
+      untertitel: f.untertitel.value.trim() || null,
+      musik: f.musik.files[0] || null,
+      fortschritt: (anteil, leinwand) => {
+        $('diavideo-meldung').textContent = t('Video wird erstellt … {p} %', { p: Math.floor(anteil * 100) });
+        vc.drawImage(leinwand, 0, 0, vorschau.width, vorschau.height);
+      },
+    });
+    if (ergebnis) {
+      const a = el('a');
+      a.href = URL.createObjectURL(ergebnis.blob);
+      a.download = `${(f.titel.value.trim() || t('Diashow')).replace(/[\\/:*?"<>|]+/g, '-')}.${ergebnis.endung}`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+      $('diavideo-dialog').close();
+      meldung(t('Video gespeichert.'));
+    } else {
+      $('diavideo-meldung').textContent = t('Abgebrochen.');
+    }
+  } catch (x) {
+    $('diavideo-meldung').textContent = x.message;
+  } finally {
+    diavideo.laeuft = false;
+    $('diavideo-los').disabled = false;
+  }
+});
 
 $('dia-zu').addEventListener('click', beendeDiashow);
 $('dia-pause').addEventListener('click', () => diaPause());

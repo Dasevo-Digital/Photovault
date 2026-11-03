@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -188,6 +189,63 @@ void main() {
     },
   );
 
+  test('Monate der Zeitleiste für den Ziehregler (#278)', () async {
+    var farbe = 10;
+    for (final d in [
+      DateTime(2024, 7, 3, 12),
+      DateTime(2024, 7, 20, 12),
+      DateTime(2023, 1, 9, 12),
+    ]) {
+      final r = await hochladen(jpeg(farbe += 40), 'f$farbe.jpg', geaendert: d);
+      expect(r.headers['pv-ausgang'], 'imported');
+    }
+    final d = await jsonAus(await frag('GET', '/api/v1/zeitleiste/monate'));
+    expect(d['monate'], [
+      {'monat': '2024-07', 'anzahl': 2},
+      {'monat': '2023-01', 'anzahl': 1},
+    ]);
+    final ohne = await frag(
+      'GET',
+      '/api/v1/zeitleiste/monate',
+      schluessel: false,
+    );
+    expect(ohne.statusCode, 401);
+  });
+
+  test('JPEG XL: aufgenommen, Vorschau als JPEG (#276)', () async {
+    // Gewandelt wird über libvips oder djxl; ohne beides gibt es keine
+    // Vorschau, und das prüft dann jpeg_xl_test.dart im Wurzelordner.
+    final werkzeug =
+        await DesktopImageTools.aufruf('djxl') ??
+        await DesktopImageTools.aufruf('vipsthumbnail');
+    if (werkzeug == null) {
+      markTestSkipped('weder djxl noch libvips auf dieser Maschine');
+      return;
+    }
+    final jxl = File(
+      '../../test/fixtures/jxl/kasten_exif_64x48.jxl',
+    ).readAsBytesSync();
+    final r = await hochladen(jxl, 'foto.jxl');
+    expect(r.headers['pv-ausgang'], 'imported');
+    final id = r.headers['pv-aufnahme']!;
+    final zeile =
+        ((await jsonAus(await frag('GET', '/api/v1/aufnahmen')))['aufnahmen']!
+                as List)
+            .cast<Map>()
+            .single;
+    expect(zeile['format'], 'JXL');
+    expect(
+      DateTime.parse(zeile['aufgenommen']! as String),
+      DateTime(2019, 7, 14, 16, 20, 5),
+      reason: 'aus dem EXIF-Kasten',
+    );
+    final v = await frag('GET', '/api/v1/aufnahmen/$id/vorschau');
+    expect(v.statusCode, 200);
+    final bytes = await v.read().expand((b) => b).toList();
+    final bild = img.decodeJpg(Uint8List.fromList(bytes))!;
+    expect((bild.width, bild.height), (64, 48));
+  });
+
   test('PSD aus der Kamerarolle: aufgenommen, Vorschau als JPEG', () async {
     final psd = File('../../test/fixtures/psd/probe.psd').readAsBytesSync();
     final r = await hochladen(psd, 'IMG_2258.psd');
@@ -368,6 +426,12 @@ void main() {
     expect(r.statusCode, 404);
     final leer = await frag('POST', '/api/v1/suche/text', inhalt: '{}');
     expect(leer.statusCode, 400);
+  });
+
+  test('Datierung alter Fotos: ohne Modell eine klare Absage (#279)', () async {
+    expect((await frag('GET', '/api/v1/datierung')).statusCode, 404);
+    final ohne = await frag('GET', '/api/v1/datierung', schluessel: false);
+    expect(ohne.statusCode, 401);
   });
 
   test('Prüfsummen: was schon da ist, auch im Papierkorb', () async {

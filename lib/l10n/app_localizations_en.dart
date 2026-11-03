@@ -9591,7 +9591,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get werkzAutoVorschlaegeText =>
-      'Recognised faces at or above this confidence are assigned without asking and marked as such; uncertain ones remain suggestions.';
+      'Recognised faces at or above this confidence are assigned without asking and marked as such, as are whole groups in which every face points to the same person; uncertain ones remain suggestions.';
 
   @override
   String werkzAutoVorschlaegeAb(String wert) {

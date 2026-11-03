@@ -12,9 +12,9 @@
 # Pruefsummen. Ein Werkzeug ohne Pruefsumme im Installationspaket waere
 # ein Einfallstor.
 #
-# libheif und ffmpeg kommen nicht als Download, sondern werden gebaut -
-# siehe tool\windows_libheif.sh und tool\windows_ffmpeg.sh und die
-# Begruendungen dort. Beim ffmpeg sind es 16 statt 124 MB (Issue #3).
+# libheif, ffmpeg und djxl kommen nicht als Download, sondern werden
+# gebaut - siehe tool\windows_libheif.sh, tool\windows_ffmpeg.sh,
+# tool\windows_jxl.sh und die Begruendungen dort. Beim ffmpeg sind es 16 statt 124 MB (Issue #3).
 [CmdletBinding()]
 param([string]$Ziel)
 
@@ -152,6 +152,13 @@ $rc = Fremd $bash @('-lc', "bash '$sh' '$zielUnix'")
 if ($rc -ne 0) { Schlecht "ffmpeg-Bau fehlgeschlagen (Rueckgabewert $rc)"; exit 1 }
 foreach ($n in 'ffmpeg.exe', 'ffprobe.exe') { Belegt $n }
 Gut "ffmpeg.exe, ffprobe.exe samt Huelle"
+
+# JPEG XL (#276): djxl packt .jxl-Fotos in ein PNG aus.
+$sh = AlsUnix (Resolve-Path "$PSScriptRoot\windows_jxl.sh").Path
+$rc = Fremd $bash @('-lc', "bash '$sh' '$zielUnix'")
+if ($rc -ne 0) { Schlecht "djxl-Bau fehlgeschlagen (Rueckgabewert $rc)"; exit 1 }
+Belegt 'djxl.exe'
+Gut "djxl.exe samt Huelle"
 
 Titel "Was jetzt da ist"
 $gesamt = (Get-ChildItem $Ziel -File | Measure-Object -Property Length -Sum).Sum

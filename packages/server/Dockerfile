@@ -130,7 +130,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ffmpeg bubblewrap procps \
       libheif-examples libheif-plugin-libde265 libheif-plugin-dav1d \
-      libraw-bin libvips-tools \
+      libraw-bin libvips-tools libjxl-tools \
       tzdata \
       intel-opencl-icd libze-intel-gpu1 libze1 \
  && rm -rf /var/lib/apt/lists/*
@@ -166,12 +166,13 @@ ARG ORT_FASSUNG
 # Dieselben Werkzeuge wie die App unter Linux: ffmpeg für Videos, libheif
 # für HEIC/AVIF (die Dekoder sind eigene Pakete und fehlen ohne sie still),
 # LibRaw für RAW, libvips zum schnellen Verkleinern (#274; ohne es rechnet
-# Dart, langsamer und mit viel mehr Speicher).
+# Dart, langsamer und mit viel mehr Speicher). JPEG XL liest libvips selbst;
+# djxl aus libjxl-tools springt ein, wo es das nicht kann (#276).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       ffmpeg bubblewrap procps \
       libheif-examples libheif-plugin-libde265 libheif-plugin-dav1d \
-      libraw-bin libvips-tools \
+      libraw-bin libvips-tools libjxl-tools \
       tzdata \
  && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system --gid 8790 photovault \

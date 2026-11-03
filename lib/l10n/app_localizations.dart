@@ -14746,7 +14746,7 @@ abstract class AppTexte {
   /// No description provided for @werkzAutoVorschlaegeText.
   ///
   /// In de, this message translates to:
-  /// **'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet; unsichere bleiben Vorschläge.'**
+  /// **'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.'**
   String get werkzAutoVorschlaegeText;
 
   /// No description provided for @werkzAutoVorschlaegeAb.

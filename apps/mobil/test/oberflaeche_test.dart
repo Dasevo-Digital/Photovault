@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show MethodChannel;
+import 'package:flutter/services.dart' show MethodChannel, SystemChannels;
 import 'package:gelaende/flugvideo.dart' show Videoausgang;
 import 'package:gelaende/hoehenprofil.dart';
 import 'package:flutter_map/flutter_map.dart' show FlutterMap, MarkerLayer;
@@ -895,6 +895,68 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Ziehen an der Leiste: Jahre, Monat, spürbare Grenzen (#278)', (
+    tester,
+  ) async {
+    // Vier Jahre, jeden Monat drei Fotos, neueste zuerst.
+    final zeilen = [
+      for (var j = 2025; j >= 2022; j--)
+        for (var m = 12; m >= 1; m--)
+          for (var k = 0; k < 3; k++) amTag('f$j-$m-$k', DateTime(j, m, 15, k)),
+    ];
+    var spuerbar = 0;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (aufruf) async {
+        if (aufruf.method == 'HapticFeedback.vibrate') spuerbar++;
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await rasterMitTagen(tester, zeilen);
+    final scroll = tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position;
+    scroll.jumpTo(10);
+    await tester.pump();
+
+    final griff = find.byKey(const ValueKey('bildlaufleiste'));
+    final zug = await tester.startGesture(tester.getCenter(griff));
+    await tester.pump();
+    for (var i = 0; i < 20; i++) {
+      await zug.moveBy(const Offset(0, 12));
+      await tester.pump();
+    }
+    expect(scroll.pixels, greaterThan(1000));
+    // Die Jahre stehen an der Leiste, ausser dicht am Griff.
+    final jahre = [
+      for (final j in ['2022', '2023', '2024', '2025'])
+        if (find.text(j).evaluate().isNotEmpty) j,
+    ];
+    expect(jahre.length, greaterThanOrEqualTo(2), reason: '$jahre');
+    // Die Blase nennt den Monat, der oben steht – nach der Lage im Raster.
+    final blase = find.descendant(
+      of: find.byWidgetPredicate((w) => w is Material && w.elevation == 2),
+      matching: find.byType(Text),
+    );
+    expect(
+      tester.widget<Text>(blase).data,
+      matches(RegExp(r'^\p{L}+ 202[2-5]$', unicode: true)),
+    );
+    expect(spuerbar, greaterThan(3), reason: 'an jeder Monatsgrenze');
+
+    await zug.up();
+    await tester.pumpAndSettle();
+    for (final j in ['2022', '2023', '2024', '2025']) {
+      expect(find.text(j), findsNothing, reason: 'nur beim Ziehen');
+    }
+  });
+
   testWidgets('Tipp auf das Datum wählt den ganzen Tag, ein zweiter hebt auf', (
     tester,
   ) async {
@@ -1123,6 +1185,74 @@ void main() {
     final a2 = await tester.runAsync(() => db.assetById('a2'));
     expect(a2!.fileCreatedAt, DateTime(2025), reason: 'abgewählt');
     expect(find.text(t.datenHinweis(1)), findsOneWidget);
+  });
+
+  testWidgets('Alte Fotos zeitlich einordnen wie am Rechner (#279)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['a1', 'a2']);
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/aufnahmedaten') {
+        return http.Response(jsonEncode({'vorschlaege': []}), 200);
+      }
+      if (r.url.path != '/api/v1/datierung') return http.Response('{}', 404);
+      return http.Response(
+        jsonEncode({
+          'funde': [
+            {
+              'aufnahme': {'id': 'a1'},
+              'jahr': 1965,
+              'von': 1960,
+              'bis': 1969,
+              'belastbar': true,
+              'uebernommen': false,
+            },
+            {
+              'aufnahme': {'id': 'a2'},
+              'jahr': 1941,
+              'von': 1900,
+              'bis': 1979,
+              'belastbar': false,
+              'uebernommen': false,
+            },
+          ],
+        }),
+        200,
+      );
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Aufnahmedaten(
+            sitzung: sitzung,
+            verbindung: Serververbindung(
+              Uri.parse('https://fotos.example/'),
+              't',
+              client: client,
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Aufnahmedaten)));
+    expect(find.text(t.datierungTitel), findsOneWidget);
+    expect(find.text(t.datierungUm('1965')), findsOneWidget);
+    expect(find.text(t.datierungSpanne('1960', '1969')), findsOneWidget);
+    expect(find.text(t.datierungUnsicher('1900', '1979')), findsOneWidget);
+    // Nur die belastbare zählt.
+    await tester.tap(find.text(t.datierungAlle(1)));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    final a1 = await tester.runAsync(() => db.assetById('a1'));
+    expect(a1!.fileCreatedAt, DateTime(1965, 7, 1, 12));
+    expect(a1.datumGeschaetzt, isTrue);
+    expect(find.text(t.datierungIstUebernommen), findsOneWidget);
+    expect(find.text(t.datierungAlle(1)), findsNothing);
   });
 
   testWidgets('Zwei Fotos vergleichen: gekoppelt, entkoppelt (#197)', (

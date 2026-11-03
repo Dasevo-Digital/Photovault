@@ -130,6 +130,19 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   Timer? _leisteAus;
   final _leisteText = ValueNotifier<String?>(null);
 
+  /// Wo im Raster jeder Monat beginnt, gemessen ab dem Anfang der Liste
+  /// unter [AufnahmenRaster.kopf] (#278): für die Jahreszahlen an der
+  /// Leiste und den Monat beim Ziehen. Die Höhen stehen fest (siehe
+  /// [_baue]), die Stellen sind also genau. Leer ohne Monatsköpfe – dann
+  /// sucht [_monatOben] wie bisher.
+  List<({double ab, DateTime monat})> _monatsmarken = const [];
+  Object? _markenFuer;
+  final _kopf = GlobalKey();
+
+  /// Der Monat, über dem der Finger zuletzt stand – an jeder Grenze tippt
+  /// es einmal spürbar.
+  DateTime? _gezogenerMonat;
+
   /// Wie nah am oberen oder unteren Rand der Finger beim Ziehen stehen
   /// muss, damit das Raster von selbst weiterrollt.
   static const _rollrand = 72.0;
@@ -363,6 +376,29 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     }
   }
 
+  double _kopfHoehe() {
+    final box = _kopf.currentContext?.findRenderObject();
+    return box is RenderBox && box.hasSize ? box.size.height : 0;
+  }
+
+  /// Der Monat ganz oben bei [pixel] nach [_monatsmarken], oder `null`.
+  DateTime? _monatBei(double pixel) {
+    final marken = _monatsmarken;
+    if (marken.isEmpty) return null;
+    final y = pixel - _kopfHoehe() + 1;
+    var unten = 0, oben = marken.length - 1;
+    if (y < marken.first.ab) return marken.first.monat;
+    while (unten < oben) {
+      final mitte = (unten + oben + 1) >> 1;
+      if (marken[mitte].ab <= y) {
+        unten = mitte;
+      } else {
+        oben = mitte - 1;
+      }
+    }
+    return marken[unten].monat;
+  }
+
   /// Der Monat der obersten sichtbaren Kachel.
   String? _monatOben() {
     final box = _flaeche.currentContext?.findRenderObject();
@@ -397,13 +433,71 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             ? 0.0
             : (pos.pixels / max).clamp(0.0, 1.0);
         final oben = anteil * spielraum;
+        final sprache = Localizations.localeOf(context).toLanguageTag();
         void ziehe(Offset global) {
           final box = context.findRenderObject();
           if (box is! RenderBox || pos == null || max <= 0) return;
           final y = box.globalToLocal(global).dy;
           final a = ((y - griff / 2) / spielraum).clamp(0.0, 1.0);
           _scroll.jumpTo(a * max);
-          _leisteText.value = _monatOben();
+          final monat = _monatBei(a * max);
+          if (monat == null) {
+            _leisteText.value = _monatOben();
+            return;
+          }
+          if (monat != _gezogenerMonat) {
+            if (_gezogenerMonat != null) HapticFeedback.selectionClick();
+            _gezogenerMonat = monat;
+          }
+          _leisteText.value = DateFormat.yMMMM(sprache).format(monat);
+        }
+
+        // Beim Ziehen die Jahre an ihrer Stelle auf der Leiste – wie am
+        // Rechner (timeline_scrubber.dart), nur ohne Monatspunkte: Auf
+        // dem Telefon trifft man sie mit dem Daumen ohnehin nicht. Nah am
+        // Griff steht keine, dort steht schon der Monat.
+        final jahre = <Widget>[];
+        if (_leisteGezogen.value && max > 0) {
+          final kopf = _kopfHoehe();
+          final griffMitte = oben + griff / 2;
+          double? zuletzt;
+          int? jahr;
+          for (final m in _monatsmarken) {
+            if (m.monat.year == jahr) continue;
+            jahr = m.monat.year;
+            final y =
+                ((kopf + m.ab) / max).clamp(0.0, 1.0) * spielraum + griff / 2;
+            if (zuletzt != null && (y - zuletzt).abs() < 20) continue;
+            if ((y - griffMitte).abs() < 26) continue;
+            zuletzt = y;
+            jahre.add(
+              Positioned(
+                key: ValueKey('jahr$jahr'),
+                right: 46,
+                top: y - 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: farben.surfaceContainerHighest.withValues(
+                      alpha: 0.9,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '$jahr',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: farben.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }
         }
 
         final text = _leisteText.value;
@@ -415,6 +509,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             duration: const Duration(milliseconds: 200),
             child: Stack(
               children: [
+                ...jahre,
                 if (_leisteGezogen.value && text != null)
                   Positioned(
                     right: 52,
@@ -438,7 +533,11 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                       ),
                     ),
                   ),
+                // Mit Schlüssel: Erscheinen davor Blase und Jahre, rückt der
+                // Griff in der Liste nach hinten. Ohne Schlüssel baute
+                // Flutter ihn dann neu – und der laufende Zug riss ab.
                 Positioned(
+                  key: const ValueKey('griff'),
                   right: 0,
                   top: oben,
                   child: GestureDetector(
@@ -453,6 +552,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                     onVerticalDragEnd: (_) {
                       _leisteGezogen.value = false;
                       _leisteText.value = null;
+                      _gezogenerMonat = null;
                       _gerollt();
                     },
                     child: Container(
@@ -1024,8 +1124,12 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
 
   Widget _baue(BuildContext context, double breite) {
     final zeilen = widget.zeilen;
+    var mitMarken = false;
     final slivers = <Widget>[
-      if (widget.kopf != null) SliverToBoxAdapter(child: widget.kopf),
+      if (widget.kopf != null)
+        SliverToBoxAdapter(
+          child: KeyedSubtree(key: _kopf, child: widget.kopf!),
+        ),
     ];
     final l = widget.liste;
     if (l != null) {
@@ -1137,21 +1241,35 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             : e.von + r.letzterIndex >= tage[e.tag].bis - 1;
       }
 
+      double hoehe(_Eintrag e, double quer) => switch (e.art) {
+        _Art.monat => monatHoehe,
+        _Art.tag => tagHoehe,
+        _Art.reihe =>
+          (e.reihe?.hoehe ?? (quer - 2 * (spalten - 1)) / spalten) +
+              (letzteReihe(e) ? 0.0 : 2.0),
+      };
+      final markenSchluessel = (eintraege, monatHoehe, tagHoehe, breite);
+      if (markenSchluessel != _markenFuer) {
+        _markenFuer = markenSchluessel;
+        final marken = <({double ab, DateTime monat})>[];
+        var y = 0.0;
+        for (final e in eintraege) {
+          if (e.art == _Art.monat) {
+            final t = tage[e.tag].tag;
+            marken.add((ab: y, monat: DateTime(t.year, t.month)));
+          }
+          y += hoehe(e, breite);
+        }
+        _monatsmarken = marken;
+      }
+      mitMarken = true;
+
       slivers.add(
         SliverVariedExtentList.builder(
           itemCount: eintraege.length,
-          itemExtentBuilder: (i, masse) {
-            if (i >= eintraege.length) return null;
-            final e = eintraege[i];
-            return switch (e.art) {
-              _Art.monat => monatHoehe,
-              _Art.tag => tagHoehe,
-              _Art.reihe =>
-                (e.reihe?.hoehe ??
-                        (masse.crossAxisExtent - 2 * (spalten - 1)) / spalten) +
-                    (letzteReihe(e) ? 0.0 : 2.0),
-            };
-          },
+          itemExtentBuilder: (i, masse) => i >= eintraege.length
+              ? null
+              : hoehe(eintraege[i], masse.crossAxisExtent),
           itemBuilder: (context, i) {
             final e = eintraege[i];
             final (:tag, :von, :bis) = tage[e.tag];
@@ -1169,6 +1287,10 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
           },
         ),
       );
+    }
+    if (!mitMarken && _markenFuer != null) {
+      _markenFuer = null;
+      _monatsmarken = const [];
     }
     // Unter dem letzten Rand bleibt Platz für die Leiste.
     slivers.add(

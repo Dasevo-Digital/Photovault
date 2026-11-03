@@ -5,7 +5,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
-import 'package:photo_vault/services/datierung.dart';
+import 'package:kern/services/datierung.dart';
 import 'package:kern/services/embedding_codec.dart';
 
 /// Das Jahrzehnt aus dem Bildvektor – mit künstlichen Vektoren, bei denen
@@ -142,6 +142,36 @@ void main() {
       await anlegen('ohneVektor', geraten: true, vektor: false);
       final ids = {for (final k in await db.datierungskandidaten()) k.asset.id};
       expect(ids, {'geraten', 'canoscan', 'epson'});
+    });
+
+    test('Fundliste: nur was alt aussieht, älteste zuerst, übernommen '
+        'erkannt (#279)', () async {
+      Future<void> mitVektor(String id, Float32List v) async {
+        await anlegen(id, geraten: true, vektor: false);
+        await db
+            .into(db.imageEmbeddings)
+            .insert(
+              ImageEmbeddingsCompanion.insert(
+                assetId: id,
+                vector: blobFromEmbeddingFloats(v),
+              ),
+            );
+      }
+
+      await mitVektor('siebziger', bild({1970: 1, 1960: 0.9, 1980: 0.9}));
+      await mitVektor('zwanziger', bild({1920: 1, 1910: 0.9, 1930: 0.9}));
+      await mitVektor('neu', bild({2020: 1, 2010: 0.9}));
+      final vorher = await datierungsfunde(db, saetze);
+      expect([for (final f in vorher) f.asset.id], ['zwanziger', 'siebziger']);
+      expect(vorher.every((f) => !f.uebernommen), isTrue);
+
+      await db.fuehreAus(
+        JahrSchaetzen('siebziger', vorher.last.datierung.jahr),
+      );
+      final nachher = await datierungsfunde(db, saetze);
+      expect(nachher.last.asset.id, 'siebziger');
+      expect(nachher.last.uebernommen, isTrue);
+      expect(nachher.first.uebernommen, isFalse);
     });
 
     test('übernommen wird die Jahresmitte, weiter als geschätzt', () async {

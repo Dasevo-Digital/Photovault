@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kern/auswertung/auswertungen.dart';
+import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/personenvorschlag.dart';
+import 'package:kern/services/storage_paths.dart';
 
 /// **Die Erkennung war da – gefragt hat sie niemand.**
 ///
@@ -336,6 +340,88 @@ void main() {
       );
       expect(await db.countVorschlaege(), 0);
       expect(await db.countWiedererkennungOffen(), 0);
+    });
+  });
+
+  group('ganze Gruppen, wenn alle Treffer übereinstimmen (#282)', () {
+    Future<FaceData> g(String id) async => (await (db.select(
+      db.faces,
+    )..where((t) => t.id.equals(id))).getSingle());
+
+    test('einig und einer sicher: die ganze Gruppe', () async {
+      await foto('a');
+      final anna = await person('Anna');
+      final bert = await person('Bert');
+      await gesicht('e1', assetId: 'a', vorschlag: anna, wert: 0.74);
+      await gesicht('e2', assetId: 'a', vorschlag: anna, wert: 0.52);
+      await gesicht('e3', assetId: 'a', vorschlag: anna, wert: 0.48);
+      // Gemischt: einer zeigt auf Bert.
+      await gesicht('m1', assetId: 'a', vorschlag: anna, wert: 0.9);
+      await gesicht('m2', assetId: 'a', vorschlag: bert, wert: 0.6);
+      // Einig, aber keiner sicher genug.
+      await gesicht('s1', assetId: 'a', vorschlag: bert, wert: 0.6);
+      await gesicht('s2', assetId: 'a', vorschlag: bert, wert: 0.55);
+      final gruppen = [
+        ['e1', 'e2', 'e3'],
+        ['m1', 'm2'],
+        ['s1', 's2'],
+      ];
+
+      expect(await db.uebernimmEinigeGruppen(gruppen), 0, reason: 'aus');
+      await db.setVorschlaegeAutomatischAb(0.7);
+      expect(await db.uebernimmEinigeGruppen(gruppen), 3);
+      for (final id in ['e1', 'e2', 'e3']) {
+        final f = await g(id);
+        expect(f.personId, anna, reason: id);
+        expect(f.automatischZugeordnet, isTrue);
+      }
+      for (final id in ['m1', 'm2', 's1', 's2']) {
+        expect((await g(id)).personId, isNull, reason: id);
+      }
+    });
+
+    test('ein beiseitegelegtes Gesicht hält die Gruppe zurück', () async {
+      await foto('a');
+      final anna = await person('Anna');
+      await db.setVorschlaegeAutomatischAb(0.7);
+      await gesicht('b1', assetId: 'a', vorschlag: anna, wert: 0.8);
+      await gesicht(
+        'b2',
+        assetId: 'a',
+        vorschlag: anna,
+        wert: 0.6,
+        beiseite: true,
+      );
+      expect(
+        await db.uebernimmEinigeGruppen([
+          ['b1', 'b2'],
+        ]),
+        0,
+      );
+    });
+
+    test('der Lauf der Wiedererkennung gruppiert selbst', () async {
+      await foto('a');
+      final anna = await person('Anna');
+      await gesicht('k1', assetId: 'a', personId: anna, einbettung: [1, 0, 0]);
+      // Drei neue: einander sehr ähnlich, alle nahe an Anna, nur einer
+      // über der Schwelle für das Übernehmen.
+      await gesicht('n1', assetId: 'a', einbettung: [0.96, 0.28, 0]);
+      await gesicht('n2', assetId: 'a', einbettung: [0.8, 0.6, 0]);
+      await gesicht('n3', assetId: 'a', einbettung: [0.84, 0.54, 0]);
+      await db.setVorschlaegeAutomatischAb(0.95);
+      final auswertungen = Auswertungen(
+        db: db,
+        paths: await StoragePaths.forTesting(
+          Directory.systemTemp.createTempSync('pv_einig_'),
+        ),
+        modelle: Modelle(),
+        gesichtsschwelle: () => 0.5,
+      );
+      await auswertungen.backfillWiedererkennung().drain<void>();
+      for (final id in ['n1', 'n2', 'n3']) {
+        expect((await g(id)).personId, anna, reason: id);
+      }
     });
   });
 

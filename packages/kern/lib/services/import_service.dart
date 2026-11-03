@@ -33,6 +33,7 @@ const _imageExtensions = {
   '.heif',
   '.avif',
   '.avifs',
+  '.jxl',
   '.webp',
   '.gif',
   '.bmp',
@@ -688,7 +689,9 @@ class ImportService {
     }
 
     try {
-      final tags = await readExifFromBytes(await file.readAsBytes());
+      final tags = endung == '.jxl'
+          ? await _jxlTags(file)
+          : await readExifFromBytes(await file.readAsBytes());
       return parseExifGps(tags);
     } catch (_) {
       return null;
@@ -758,7 +761,9 @@ class ImportService {
   Future<_ExifMetadata> _readExifMetadata(File datei, String endung) async {
     Map<String, IfdTag> tags = const {};
     try {
-      tags = await readExifFromFile(datei);
+      tags = endung == '.jxl'
+          ? await _jxlTags(datei)
+          : await readExifFromFile(datei);
     } catch (_) {
       // Bleibt leer – der Rückfall unten greift.
     }
@@ -847,7 +852,9 @@ class ImportService {
 
     Map<String, IfdTag> tags = const {};
     try {
-      tags = await readExifFromBytes(await file.readAsBytes());
+      tags = endung == '.jxl'
+          ? await _jxlTags(file)
+          : await readExifFromBytes(await file.readAsBytes());
     } catch (_) {
       // Bleibt leer – der Rückfall unten greift.
     }
@@ -919,7 +926,9 @@ class ImportService {
         // zweites `readAsBytes` fuer die vier Bytes, die [kennungAus]
         // ansieht – gemessen 38 s gegen 31 s fuer denselben Lauf.
         rohbytes = await file.readAsBytes();
-        tags = await readExifFromBytes(rohbytes);
+        tags = endung == '.jxl'
+            ? await _jxlTags(file)
+            : await readExifFromBytes(rohbytes);
       }
     } catch (_) {
       // Bleibt leer – unten entscheidet das Format, was das bedeutet.
@@ -1022,4 +1031,13 @@ class _ExifMetadata {
   /// `zeitversatz.dart`) – jede vierte Datei traegt ihn.
   final int? versatzMinuten;
   const _ExifMetadata(this.date, this.gps, this.camera, {this.versatzMinuten});
+}
+
+/// Die EXIF-Angaben einer JPEG-XL-Datei (#276). `package:exif` kennt das
+/// Format nicht; die Angaben stehen dort in einem eigenen Kasten (siehe
+/// [leseJxlExif]). Leer, wenn keiner da ist.
+Future<Map<String, IfdTag>> _jxlTags(File datei) async {
+  final tiff = leseJxlExif(datei);
+  if (tiff == null) return const {};
+  return readExifFromBytes(tiff);
 }

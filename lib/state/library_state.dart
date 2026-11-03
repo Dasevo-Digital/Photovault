@@ -51,7 +51,7 @@ import '../services/serienvorschlag.dart';
 import 'package:kern/services/modell_halter.dart';
 import '../services/platform/folder_access.dart';
 import 'package:kern/services/asset_display_path.dart';
-import '../services/datierung.dart';
+import 'package:kern/services/datierung.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
@@ -1936,14 +1936,9 @@ class LibraryState extends ChangeNotifier {
   Future<Map<int, Float32List>?> datierungssaetze() async {
     final schon = _datierungssaetze;
     if (schon != null) return schon;
-    final saetze = await clipTextHalter.mit((clip) async {
-      return {
-        for (final j in datierungJahrzehnte)
-          j: mittlererVektor([
-            for (final satz in datierungsSaetze(j)) await clip.embedText(satz),
-          ]),
-      };
-    });
+    final saetze = await clipTextHalter.mit(
+      (clip) => datierungssaetzeMit(clip.embedText),
+    );
     return _datierungssaetze = saetze;
   }
 

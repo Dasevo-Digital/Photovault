@@ -666,7 +666,7 @@
   "einstPapierkorb": "Papierkorb automatisch leeren",
   "einstPapierkorbText": "Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.",
   "einstVorschlaege": "Sichere Vorschläge automatisch übernehmen",
-  "einstVorschlaegeText": "Erkannte Gesichter, die einer Person sehr ähnlich sind, werden ohne Rückfrage zugeordnet.",
+  "einstVorschlaegeText": "Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.",
   "einstAuswerten": "KI-Auswertung nach dem Import automatisch nachholen",
   "einstAuswertenText": "Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.",
   "einstUebersetzen": "Suche und Schlagwörter übersetzen",
@@ -880,6 +880,45 @@
   "diashowAnhalten": "Anhalten",
   "diashowWeiter": "Weiter",
   "diashowBeenden": "Diashow beenden",
+  "diashowAlsVideo": "Als Video speichern",
+  "diashowVideoTitel": "Diashow als Video speichern",
+  "diashowVideoUmfang": "{n} Fotos, gut {s} Sekunden.",
+  "@diashowVideoUmfang": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "diashowVideoErste": "Die ersten {n} von {m} Fotos, gut {s} Sekunden.",
+  "@diashowVideoErste": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      },
+      "s": {
+        "type": "int"
+      }
+    }
+  },
+  "diashowVideoTitelfeld": "Titel",
+  "diashowVideoUntertitel": "Untertitel",
+  "diashowVideoErstellen": "Erstellen",
+  "diashowVideoWirdErstellt": "Video wird erstellt …",
+  "diashowVideoFehler": "Das Video ließ sich nicht schreiben. {grund}",
+  "@diashowVideoFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "betrachterMehr": "Mehr",
   "bibOrte": "Orte",
   "orteLeer": "Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.",
@@ -1154,6 +1193,50 @@
   "datenNurTag": "nur der Tag, bleibt geschätzt",
   "datenGeschaetzt": "geschätzt",
   "datenOhneServer": "Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.",
+  "datierungTitel": "Alte Fotos zeitlich einordnen",
+  "datierungEinleitung": "Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Ist die Spanne zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres; das Datum bleibt als geschätzt markiert.",
+  "datierungOhneModell": "Für die Schätzung braucht der Server das Modell der Bildsuche (CLIP).",
+  "datierungKeine": "Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.",
+  "datierungUm": "um {jahr}",
+  "@datierungUm": {
+    "placeholders": {
+      "jahr": {
+        "type": "String"
+      }
+    }
+  },
+  "datierungSpanne": "{von} bis {bis}",
+  "@datierungSpanne": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
+  "datierungUnsicher": "zu unsicher ({von} bis {bis})",
+  "@datierungUnsicher": {
+    "placeholders": {
+      "von": {
+        "type": "String"
+      },
+      "bis": {
+        "type": "String"
+      }
+    }
+  },
+  "datierungUebernehmen": "Übernehmen",
+  "datierungIstUebernommen": "Übernommen",
+  "datierungAlle": "{anzahl, plural, =1{1 Schätzung übernehmen} other{{anzahl} Schätzungen übernehmen}}",
+  "@datierungAlle": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "angabenNameNennt": "Der Dateiname nennt {d}",
   "@angabenNameNennt": {
     "placeholders": {

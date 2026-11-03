@@ -996,6 +996,7 @@ const _einordnung = <String, _Art>{
   'setFaceSimilarityThreshold': _Art.befehl,
   'setVorschlaegeAutomatischAb': _Art.befehl,
   'uebernimmSichereVorschlaege': _Art.ergebnis,
+  'uebernimmEinigeGruppen': _Art.ergebnis,
   'setAutoAnalyzeAfterImport': _Art.befehl,
   'setzeUebersetzeSucheUndTags': _Art.befehl,
   'setzeUebersetzeBeschreibungen': _Art.nutzer,

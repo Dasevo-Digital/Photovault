@@ -106,9 +106,13 @@ Gut "flutter"
 if (WerkzeugeUmziehen $Wurzel $Werkzeuge) {
   Gut "Werkzeuge aus build\windows\werkzeuge herausgeholt (siehe windows_werkzeugort.ps1)"
 }
-if (-not (Test-Path "$Werkzeuge\heif-dec.exe")) {
-  Schlecht "Werkzeuge fehlen unter $Werkzeuge - erst tool\windows_werkzeuge.ps1 laufen lassen"
-  exit 1
+# djxl kam mit #276 dazu. Ein Werkzeugordner von vorher hat es nicht - dann
+# einmal neu beschaffen, statt ein Paket ohne JPEG XL auszuliefern.
+foreach ($n in 'heif-dec.exe', 'djxl.exe') {
+  if (-not (Test-Path "$Werkzeuge\$n")) {
+    Schlecht "$n fehlt unter $Werkzeuge - erst tool\windows_werkzeuge.ps1 laufen lassen"
+    exit 1
+  }
 }
 Gut "Werkzeuge liegen bereit: $Werkzeuge"
 
@@ -295,7 +299,8 @@ if ($Pruefen) {
       # gar nicht lesen kann. Ohne Argument gibt es seine Hilfe aus.
       @{ n = 'raw-identify.exe'; a = @() }
       @{ n = 'ffmpeg.exe';     a = @('-hide_banner', '-version') }
-      @{ n = 'ffprobe.exe';    a = @('-hide_banner', '-version') })) {
+      @{ n = 'ffprobe.exe';    a = @('-hide_banner', '-version') }
+      @{ n = 'djxl.exe';       a = @('--version') })) {
     $e = ImPaket $w.n $w.a
     if ($e.aus -match 'nicht gefunden|not found|0xc000007b|kann nicht gefunden') {
       Schlecht ("{0}: {1}" -f $w.n, ($e.aus -split "`n")[0])
@@ -387,6 +392,17 @@ if ($Pruefen) {
       Gut ("HEIC ausgepackt ({0:N0} Bytes JPEG)" -f (Get-Item $raus).Length)
     } else {
       Schlecht "HEIC liess sich nicht auspacken: $($u.aus)"
+    }
+  }
+  $probe = "$Wurzel\test\fixtures\jxl\gross_1001x777.jxl"
+  if (Test-Path $probe) {
+    $raus = Join-Path $env:TEMP 'pv_paketprobe.png'
+    Remove-Item $raus -Force -ErrorAction SilentlyContinue
+    $u = ImPaket 'djxl.exe' @($probe, $raus)
+    if ((Test-Path $raus) -and (Get-Item $raus).Length -gt 1000) {
+      Gut ("JPEG XL ausgepackt ({0:N0} Bytes PNG)" -f (Get-Item $raus).Length)
+    } else {
+      Schlecht "JPEG XL liess sich nicht auspacken: $($u.aus)"
     }
   }
 }

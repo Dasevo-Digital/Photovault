@@ -14,6 +14,7 @@ import '../services/blur_detection.dart';
 import '../services/clip_service.dart';
 import '../services/embedding_codec.dart';
 import '../services/eye_state_service.dart';
+import '../services/face_clustering_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/florence_captioning_service.dart';
 import '../services/import_service.dart';
@@ -484,13 +485,40 @@ class Auswertungen {
       // geschieht hier ueber das Abbestellen des Stroms, mitten in der
       // Schleife.
       if (done % 200 == 0) {
-        await db.merkeVorschlaege(ergebnisse);
+        await db.merkeVorschlaege(ergebnisse, uebernehmen: false);
         ergebnisse.clear();
         yield ImportProgress(done, gesichter.length, getan: gefunden);
       }
     }
-    await db.merkeVorschlaege(ergebnisse);
+    await db.merkeVorschlaege(ergebnisse, uebernehmen: false);
+    await _uebernimmVonSelbst();
     yield ImportProgress(done, gesichter.length, getan: gefunden);
+  }
+
+  /// Was die Bibliothek von selbst übernehmen lässt (`vorschlaegeAutomatisch
+  /// Ab`): erst ganze Gruppen, in denen jeder Treffer auf dieselbe Person
+  /// zeigt (#282, siehe [AppDatabase.uebernimmEinigeGruppen]), dann die
+  /// sicheren einzelnen. In dieser Reihenfolge, weil ein sicheres Gesicht
+  /// die Gruppe trägt – einzeln vorab übernommen, fehlte es ihr.
+  ///
+  /// Über alle offenen Vorschläge, nicht nur die dieses Laufs: Brach ein
+  /// früherer Lauf ab, holt der nächste das Übernehmen nach. Gruppiert
+  /// wird nur, was einen Vorschlag hat – meist ein paar Hundert Gesichter,
+  /// nicht die Tausende ohne –, mit der allgemeinen Schwelle.
+  Future<void> _uebernimmVonSelbst() async {
+    if (await db.vorschlaegeAutomatischAbWert() == null) return;
+    final offen = await db.offeneVorschlaegeMitEinbettung();
+    if (offen.isEmpty) return;
+    if (offen.length >= 2) {
+      final gruppen = await berechne(
+        clusterFaces,
+        FaceClusterInput({
+          for (final f in offen) f.id: floatsFromEmbeddingBlob(f.embedding!),
+        }, gesichtsschwelle()),
+      );
+      await db.uebernimmEinigeGruppen(gruppen);
+    }
+    await db.uebernimmSichereVorschlaege([for (final f in offen) f.id]);
   }
 
   Stream<ImportProgress> backfillVideobilder({bool alle = false}) async* {
