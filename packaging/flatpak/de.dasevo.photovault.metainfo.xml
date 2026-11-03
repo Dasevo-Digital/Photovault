@@ -75,6 +75,17 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.52.0" date="2026-11-03">
+      <description>
+        <p>Sign in with a passkey in the browser, on the phone and on the computer – without a password and without a TOTP code, because the device checks your face, fingerprint or PIN. Passkeys work over HTTPS and belong to the server address they were added for.</p>
+        <p>AI denoise in Develop removes noise from high-ISO photos with NAFNet, on the device and with adjustable strength.</p>
+        <p>JPEG XL files are now recognised, imported and shown, including size, orientation and EXIF data.</p>
+        <p>Dragging the timeline handle shows the years along the bar; in the browser it covers the whole timeline and loads distant months on release.</p>
+        <p>Dating old photos and saving a slideshow as a video are now also available in the browser and on the phone.</p>
+        <p>Face recognition can name whole groups when every face points to the same person; browser and phone now use the same threshold scale as the computer.</p>
+        <p>Re-rendering all developments no longer drops tone curve, colour mixer, colour table, clarity and vignette.</p>
+      </description>
+    </release>
     <release version="3.51.0" date="2026-11-02">
       <description>
         <p>Photos edited in the iPhone Photos app are now backed up as well; the server stacks the edit over the original, which stays behind it as a variant.</p>
