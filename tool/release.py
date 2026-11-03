@@ -17,7 +17,10 @@ bauen         Linux (Flatpak) und Windows (Zip) auf den Testrechnern, macOS
               hier, die Server-Pakete mit Docker; alles in den Ordner
               <upload_basis>/PhotoVault-Release-v<x>-Upload, dazu
               SHA256SUMS.txt. Die .app-Bündel unter build/ werden danach
-              entfernt, damit Spotlight sie nicht findet.
+              entfernt, damit Spotlight sie nicht findet. Auf den
+              Testrechnern entsteht derselbe Ordner mit Paket und Summen,
+              wie ihn der Installer dort sucht. Scheitert eine Plattform,
+              laufen die anderen zu Ende; der Fehler kommt am Schluss.
 entwurf       Gitea-Freigabe als Entwurf mit RELEASE-TEXT-v<x>.md aus dem
               Ordner und allen Dateien. Ein vorhandener Entwurf wird
               ergänzt, nicht verdoppelt; ein schon veröffentlichtes
@@ -52,6 +55,7 @@ und wird nirgends gespeichert oder ausgegeben.
 """
 
 import argparse
+import base64
 import hashlib
 import json
 import os
@@ -288,38 +292,28 @@ def bauen(args):
         windows = subprocess.Popen(['ssh', z['windows_ssh'], 'powershell -NoProfile -ExecutionPolicy Bypass -File pv_windows_bau.ps1'],
                                    stdout=windows_log, stderr=subprocess.STDOUT)
 
+    # Scheitert hier etwas, laufen Linux und Windows trotzdem zu Ende und
+    # kommen in den Ordner (#286); der Fehler kommt am Schluss.
+    fehler = []
+    fertig = []
     if 'mac' in nur:
-        lauf(['flutter', 'build', 'macos', '--release'])
-        app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
-        fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
-        if fassung_app != fassung:
-            sys.exit(f'Die App meldet {fassung_app}, nicht {fassung}.')
-        lauf(['rm', '-rf', str(u / 'Photo Vault.app')])
-        lauf(['ditto', str(app), str(u / 'Photo Vault.app')])
-        lauf(['rm', '-f', str(u / f'PhotoVault-{fassung}-macos.zip')])
-        lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', f'PhotoVault-{fassung}-macos.zip'], cwd=u)
-        # Die Bündel unter build/ fänden Spotlight und Launchpad – und
-        # öffneten womöglich die echte Bibliothek. Vorher prüfen, dass
-        # keins läuft.
-        if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
-            print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
-        else:
-            lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
+        try:
+            _baue_mac(fassung, u)
+        except SystemExit as e:
+            fehler.append(f'macOS: {e}')
 
     if 'server' in nur:
-        commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
-        for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
-            lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
-                  '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
-                  '--output', f'type=local,dest={a / ziel}', '.'])
-        for arch in ['amd64', 'arm64']:
-            lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
-                  str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])
+        try:
+            _baue_server(fassung, marke, a, u)
+        except SystemExit as e:
+            fehler.append(f'Server: {e}')
 
     if windows is not None:
         if windows.wait() != 0 or 'BAU-ENDE 0' not in (a / 'windows_bau.log').read_text(errors='replace'):
-            sys.exit(f'Windows-Bau gescheitert – siehe {a / "windows_bau.log"}.')
-        lauf(['scp', '-q', f'{z["windows_ssh"]}:Desktop/PhotoVault-{fassung}-windows-x64.zip', str(u)])
+            fehler.append(f'Windows-Bau gescheitert – siehe {a / "windows_bau.log"}.')
+        else:
+            lauf(['scp', '-q', f'{z["windows_ssh"]}:Desktop/PhotoVault-{fassung}-windows-x64.zip', str(u)])
+            fertig.append('windows')
 
     if 'linux' in nur:
         flatpak = f'Desktop/PhotoVault-{fassung}-x86_64.flatpak'
@@ -334,10 +328,46 @@ def bauen(args):
             time.sleep(20)
         log = lauf(['ssh', z['linux_ssh'], f'grep -E "✗|FEHLER" ~/pv_bau_{fassung}.log | head -5; test -f ~/{flatpak} && echo DA'], ausgabe=True, pruefen=False)
         if 'DA' not in log:
-            sys.exit(f'Flatpak fehlt:\n{log}')
-        lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
+            fehler.append(f'Flatpak fehlt:\n{log}')
+        else:
+            lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
+            fertig.append('linux')
 
     summen(u, fassung)
+    for plattform in fertig:
+        fern_bereitlegen(z, plattform, fassung, u)
+    if fehler:
+        sys.exit('\n'.join(fehler))
+
+
+def _baue_mac(fassung, u):
+    lauf(['flutter', 'build', 'macos', '--release'])
+    app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
+    fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
+    if fassung_app != fassung:
+        sys.exit(f'Die App meldet {fassung_app}, nicht {fassung}.')
+    lauf(['rm', '-rf', str(u / 'Photo Vault.app')])
+    lauf(['ditto', str(app), str(u / 'Photo Vault.app')])
+    lauf(['rm', '-f', str(u / f'PhotoVault-{fassung}-macos.zip')])
+    lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', f'PhotoVault-{fassung}-macos.zip'], cwd=u)
+    # Die Bündel unter build/ fänden Spotlight und Launchpad – und
+    # öffneten womöglich die echte Bibliothek. Vorher prüfen, dass
+    # keins läuft.
+    if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
+        print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
+    else:
+        lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
+
+
+def _baue_server(fassung, marke, a, u):
+    commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
+    for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
+        lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
+              '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
+              '--output', f'type=local,dest={a / ziel}', '.'])
+    for arch in ['amd64', 'arm64']:
+        lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
+              str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])
 
 
 def summen(u, fassung):
@@ -352,6 +382,57 @@ def summen(u, fassung):
         zeilen.append(f'{h.hexdigest()}  {name}')
     (u / 'SHA256SUMS.txt').write_text('\n'.join(zeilen) + '\n')
     print('\n'.join(z[:16] + z[64:] for z in zeilen))
+
+
+def fern_bereitlegen(z, plattform, fassung, u, runner=None):
+    """Legt auf dem Testrechner [plattform] den Upload-Ordner an, wie ihn
+    der Installer dort sucht: das Paket und SHA256SUMS.txt daneben (#286).
+
+    `bauen` lässt das Paket auf dem Desktop des Testrechners liegen, ohne
+    Prüfsummen; der Installer verweigert es dann („Die Prüfsummenliste
+    fehlt“). Bei 3.52.0 und 3.53.0 musste der Ordner von Hand entstehen.
+    Liegt das Paket dort gar nicht, kommt es von hier. Lässt sich beliebig
+    oft aufrufen.
+    """
+    # Die Konsole von Windows schreibt nicht immer UTF-8.
+    run = runner or (lambda befehl: subprocess.run(befehl, text=True, capture_output=True, errors='replace'))
+    ordner = f'PhotoVault-Release-v{fassung}-Upload'
+    if plattform == 'windows':
+        host, name = z['windows_ssh'], f'PhotoVault-{fassung}-windows-x64.zip'
+        # Wie der Installer (installieren/windows.ps1): der Desktop des
+        # Kontos, auch wenn er umgeleitet ist; scp braucht ihn relativ zum
+        # Profil.
+        code = (
+            "$d=[Environment]::GetFolderPath('Desktop'); "
+            f"$o=Join-Path $d '{ordner}'; "
+            "New-Item -ItemType Directory -Force -Path $o | Out-Null; "
+            f"$z=Join-Path $d '{name}'; "
+            "if (Test-Path -LiteralPath $z) { Move-Item -Force -LiteralPath $z -Destination $o }; "
+            "$r=$o; if ($o.StartsWith($env:USERPROFILE + '\\')) { $r=$o.Substring($env:USERPROFILE.Length + 1) }; "
+            "'ZIEL ' + ($r -replace '\\\\', '/'); "
+            f"if (Test-Path -LiteralPath (Join-Path $o '{name}')) {{ 'DA' }}"
+        )
+        befehl = 'powershell -NoProfile -EncodedCommand ' + base64.b64encode(code.encode('utf-16le')).decode()
+    else:
+        host, name = z['linux_ssh'], f'PhotoVault-{fassung}-x86_64.flatpak'
+        # Wie der Installer (installation.py): ~/Desktop.
+        befehl = (f'mkdir -p ~/Desktop/{ordner} && '
+                  f'if [ -f ~/Desktop/{name} ]; then mv -f ~/Desktop/{name} ~/Desktop/{ordner}/; fi; '
+                  f'echo "ZIEL Desktop/{ordner}"; test -f ~/Desktop/{ordner}/{name} && echo DA')
+    r = run(['ssh', '-o', 'BatchMode=yes', host, befehl])
+    zeilen = (r.stdout or '').splitlines()
+    ziel = next((x[5:].strip() for x in zeilen if x.startswith('ZIEL ')), None)
+    if r.returncode != 0 or not ziel:
+        sys.exit(f'{plattform}: Upload-Ordner nicht angelegt.\n{r.stdout}{r.stderr}')
+    if 'DA' not in (x.strip() for x in zeilen):
+        if not (u / name).exists():
+            sys.exit(f'{plattform}: {name} fehlt hier und dort.')
+        print(f'› {name} nach {host}:{ziel}', flush=True)
+        if run(['scp', '-q', str(u / name), f'{host}:{ziel}/{name}']).returncode != 0:
+            sys.exit(f'{plattform}: {name} nicht übertragen.')
+    if run(['scp', '-q', str(u / 'SHA256SUMS.txt'), f'{host}:{ziel}/SHA256SUMS.txt']).returncode != 0:
+        sys.exit(f'{plattform}: SHA256SUMS.txt nicht übertragen.')
+    print(f'› {plattform}: {ziel} mit {name} und SHA256SUMS.txt', flush=True)
 
 
 # --- entwurf ----------------------------------------------------------------------
@@ -407,9 +488,13 @@ def einspielen(args):
     u = upload_ordner(z, fassung)
     from installation import FernInstallation, MacInstallation, Installationsfehler
     try:
+        # Auch hier: Wurde mit einem älteren Skript oder mit --nur gebaut,
+        # fehlt der Ordner sonst (#286).
         if args.linux:
+            fern_bereitlegen(z, 'linux', fassung, u)
             print(json.dumps(FernInstallation('linux', z['linux_ssh'], fassung).ausfuehren(), ensure_ascii=False))
         if args.windows:
+            fern_bereitlegen(z, 'windows', fassung, u)
             print(json.dumps(FernInstallation('windows', z['windows_ssh'], fassung).ausfuehren(), ensure_ascii=False))
         if args.mac:
             print(json.dumps(MacInstallation(fassung, u / 'Photo Vault.app', Path('/Applications/Photo Vault.app'),

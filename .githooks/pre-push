@@ -8,14 +8,41 @@
 set -euo pipefail
 
 zero=0000000000000000000000000000000000000000
+remote=${1:-origin}
 commit=""
+# Nur Tags, deren Commit der Server auf main schon hat? Den hat dieser
+# Hook beim Push von main geprüft. release.py vorbereiten pusht erst main,
+# dann die Marke – und der zweite volle Lauf kostete jede Fassung eine
+# Viertelstunde (#287).
+schon_geprueft=1
 while read -r _ local_sha remote_ref _; do
   [ "$local_sha" = "$zero" ] && continue # deleting a ref
   case "$remote_ref" in
-    refs/heads/main | refs/tags/*) commit=$(git rev-parse "$local_sha^{commit}") ;;
+    refs/heads/main)
+      commit=$(git rev-parse "$local_sha^{commit}")
+      schon_geprueft=0
+      ;;
+    refs/tags/*)
+      commit=$(git rev-parse "$local_sha^{commit}")
+      if ! git rev-parse -q --verify "refs/remotes/$remote/main" >/dev/null ||
+        ! git merge-base --is-ancestor "$commit" "refs/remotes/$remote/main"; then
+        schon_geprueft=0
+      fi
+      ;;
   esac
 done
 [ -z "$commit" ] && exit 0
+if [ "$schon_geprueft" = 1 ]; then
+  # Die Datenschutzprüfung trotzdem: Sie liest auch die Marken, und sie
+  # dauert Sekunden.
+  cd "$(git rev-parse --show-toplevel)"
+  if ! tool/pruefe_repository_datenschutz.sh >&2; then
+    echo "pre-push: failed: tool/pruefe_repository_datenschutz.sh (push cancelled; skip with --no-verify)" >&2
+    exit 1
+  fi
+  echo "pre-push: $(git rev-parse --short "$commit") liegt geprüft auf $remote/main – nur Datenschutz" >&2
+  exit 0
+fi
 
 root=$(git rev-parse --show-toplevel)
 # Each run logs to a file of its own: hooks of other repositories may run at
