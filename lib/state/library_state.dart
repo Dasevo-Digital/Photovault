@@ -27,9 +27,7 @@ import '../services/entwicklung_ablegen.dart';
 import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
-import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/datumsvorschlag.dart' as datumsvorschlag;
-import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/speicher_rueckgabe.dart';
 import 'package:kern/services/translation_service.dart';
 import 'package:kern/services/embedding_codec.dart';
@@ -2115,16 +2113,11 @@ class LibraryState extends ChangeNotifier {
     yield ImportProgress(0, entries.length);
     for (final (asset, settings) in entries) {
       try {
-        final adjustments = DevelopAdjustments(
-          exposure: settings.exposure,
-          temperature: settings.temperature,
-          tint: settings.tint,
-          contrast: settings.contrast,
-          shadows: settings.shadows,
-          highlights: settings.highlights,
-          sharpness: settings.sharpness,
-          noiseReduction: settings.noiseReduction,
-          lensCorrectionEnabled: settings.lensCorrectionEnabled,
+        // Alle Regler, auch Kurve, Mischer und Farbtabelle – bis 3.51 nur
+        // die acht Grundregler, und jedes Foto kam ohne sie zurück (#283).
+        final adjustments = reglerAusEinstellungen(
+          settings,
+          lut: await ladeFarbtabelle(paths, settings.lutPath),
         );
         final masks = await db.masksForAsset(asset.id);
         final bytes = await NativeImageConverter.developImage(
@@ -2150,24 +2143,15 @@ class LibraryState extends ChangeNotifier {
           quality: 0.92,
         );
         if (bytes != null) {
+          // Die gespeicherte Zeile, wie sie ist: Neu gerendert wird, nicht
+          // neu eingestellt. Eine eigene Aufzählung der Spalten vergässe
+          // beim nächsten neuen Regler wieder einen.
           await legeEntwicklungAb(
             db: db,
             paths: paths,
             assetId: asset.id,
             jpeg: bytes,
-            einstellungen: DevelopSettingsCompanion.insert(
-              assetId: asset.id,
-              exposure: Value(settings.exposure),
-              temperature: Value(settings.temperature),
-              tint: Value(settings.tint),
-              contrast: Value(settings.contrast),
-              shadows: Value(settings.shadows),
-              highlights: Value(settings.highlights),
-              sharpness: Value(settings.sharpness),
-              noiseReduction: Value(settings.noiseReduction),
-              lensCorrectionEnabled: Value(settings.lensCorrectionEnabled),
-              updatedAt: DateTime.now(),
-            ),
+            einstellungen: settings.toCompanion(false),
           );
         }
       } catch (e) {
@@ -2937,49 +2921,19 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Lädt eine Farbtabelle, wenn eine hinterlegt ist.
-  ///
-  /// Fehlt die `.cube`-Datei inzwischen, wird ohne sie übertragen statt
-  /// abzubrechen: Der Rest der Werte ist deswegen nicht falsch, und ein
-  /// Abbruch mitten in einer Auswahl wäre die schlechtere Antwort.
-  Future<CubeLut?> _ladeLut(String? relativerPfad) async {
-    if (relativerPfad == null) return null;
-    try {
-      return parseCubeLut(await paths.absolute(relativerPfad).readAsString());
-    } catch (e) {
-      debugPrint('Farbtabelle $relativerPfad nicht lesbar: $e');
-      return null;
-    }
-  }
-
   /// Baut aus einem gespeicherten Reglerstand einen übertragbaren Satz.
   ///
   /// Klarheit, Vignette und Farbtabelle wandern mit. Bis 1.9.5 taten sie
   /// das nicht – ein kopierter „Look" liess ausgerechnet das weg, was ihn
-  /// ausmacht, und niemand sah, dass etwas fehlte.
+  /// ausmacht, und niemand sah, dass etwas fehlte. Die Regler kommen aus
+  /// [reglerAusEinstellungen], derselben Stelle wie beim Neu-Rendern.
   Future<Entwicklungswerte> _werteAus(
     DevelopSettingsData d, {
     String? quellAssetId,
   }) async => Entwicklungswerte(
-    regler: DevelopAdjustments(
-      exposure: d.exposure,
-      temperature: d.temperature,
-      tint: d.tint,
-      contrast: d.contrast,
-      shadows: d.shadows,
-      highlights: d.highlights,
-      sharpness: d.sharpness,
-      noiseReduction: d.noiseReduction,
-      clarity: d.clarity,
-      vignette: d.vignette,
-      lensCorrectionEnabled: d.lensCorrectionEnabled,
-      // Kurve und Mischer gehören genauso zur Entwicklung wie die
-      // Regler. Ohne sie übernähme das Ziel die Belichtung, aber nicht
-      // die Gradation.
-      toneCurve: toneCurveAus(d.toneCurveJson),
-      colorMixer: colorMixerAus(d.colorMixerJson),
-      lut: await _ladeLut(d.lutPath),
-      lutStrength: d.lutStrength,
+    regler: reglerAusEinstellungen(
+      d,
+      lut: await ladeFarbtabelle(paths, d.lutPath),
     ),
     lutPath: d.lutPath,
     toneCurveJson: d.toneCurveJson,

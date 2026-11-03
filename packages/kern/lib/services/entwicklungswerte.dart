@@ -1,5 +1,8 @@
+import '../db/database.dart';
+import '../protokoll.dart';
 import 'cube_lut.dart';
 import 'develop_color.dart';
+import 'storage_paths.dart';
 
 /// Regler-Werte des DevelopScreen für [NativeImageConverter.developImage] –
 /// unveränderlich, damit sich ein Satz Einstellungen einfach speichern/
@@ -157,4 +160,54 @@ class MaskAdjustmentLayer {
     'path': maskFilePath,
     ...adjustments.toChannelMap(),
   };
+}
+
+/// Alle Regler einer gespeicherten Entwicklung – auch Klarheit, Vignette,
+/// Kurve, Farbmischer und Farbtabelle. [lut] ist die schon geladene Tabelle
+/// aus [DevelopSettingsData.lutPath] (siehe [ladeFarbtabelle]).
+///
+/// **Eine Stelle für alle Wege, die aus der Datenbank rendern** (#283):
+/// das Neu-Rendern aller Entwicklungen, das Übertragen einer Entwicklung
+/// und die Vorlage für Restaurierung und Entrauschen. Bis 3.51 baute jeder
+/// davon seine eigene Liste, und zwei davon kannten nur die acht
+/// Grundregler: „Alle Entwicklungen neu rendern“ schrieb jedes Foto ohne
+/// Kurve, Mischer und Farbtabelle neu, und die Restaurierung rechnete auf
+/// einer Vorlage ohne sie.
+DevelopAdjustments reglerAusEinstellungen(
+  DevelopSettingsData d, {
+  CubeLut? lut,
+}) => DevelopAdjustments(
+  exposure: d.exposure,
+  temperature: d.temperature,
+  tint: d.tint,
+  contrast: d.contrast,
+  shadows: d.shadows,
+  highlights: d.highlights,
+  sharpness: d.sharpness,
+  noiseReduction: d.noiseReduction,
+  clarity: d.clarity,
+  vignette: d.vignette,
+  lensCorrectionEnabled: d.lensCorrectionEnabled,
+  toneCurve: toneCurveAus(d.toneCurveJson),
+  colorMixer: colorMixerAus(d.colorMixerJson),
+  lut: lut,
+  lutStrength: d.lutStrength,
+);
+
+/// Lädt die Farbtabelle unter [relativerPfad], wenn eine hinterlegt ist.
+///
+/// Fehlt die `.cube`-Datei inzwischen, geht es ohne sie weiter statt
+/// abzubrechen: Der Rest der Werte ist deswegen nicht falsch, und ein
+/// Abbruch mitten in einer Auswahl wäre die schlechtere Antwort.
+Future<CubeLut?> ladeFarbtabelle(
+  StoragePaths paths,
+  String? relativerPfad,
+) async {
+  if (relativerPfad == null) return null;
+  try {
+    return parseCubeLut(await paths.absolute(relativerPfad).readAsString());
+  } catch (e) {
+    protokoll('Farbtabelle $relativerPfad nicht lesbar: $e');
+    return null;
+  }
 }

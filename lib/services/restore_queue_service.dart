@@ -385,18 +385,13 @@ class RestoreQueueService {
     // voller Auflösung über den nativen Kanal – das `image`-Dart-Paket
     // kann RAW-Originale nicht selbst dekodieren (siehe DevelopScreen).
     final settings = await _db.developSettingsForAsset(asset.id);
+    // Alle Regler, auch Kurve, Mischer und Farbtabelle – bis 3.51 nur die
+    // acht Grundregler, und die Vorlage wich vom entwickelten Bild ab (#283).
     final adjustments = settings == null
         ? DevelopAdjustments.neutral
-        : DevelopAdjustments(
-            exposure: settings.exposure,
-            temperature: settings.temperature,
-            tint: settings.tint,
-            contrast: settings.contrast,
-            shadows: settings.shadows,
-            highlights: settings.highlights,
-            sharpness: settings.sharpness,
-            noiseReduction: settings.noiseReduction,
-            lensCorrectionEnabled: settings.lensCorrectionEnabled,
+        : reglerAusEinstellungen(
+            settings,
+            lut: await ladeFarbtabelle(_paths, settings.lutPath),
           );
     final masks = await _db.masksForAsset(asset.id);
     final maskLayers = [
