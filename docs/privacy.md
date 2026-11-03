@@ -1,6 +1,6 @@
 # Privacy Policy
 
-As of 3 November 2026 · Photo Vault 3.52.0
+As of 3 November 2026 · Photo Vault 3.53.0
 
 ## In short
 

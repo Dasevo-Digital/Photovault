@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.53.0" date="2026-11-03">
+      <description>
+        <p>Albums can now be shared with other accounts on the same server, to view or to contribute. They appear under “Shared with me” in the browser and on the phone; contributions go straight into the owner's album.</p>
+        <p>A converter that hangs on a broken file no longer blocks every following full-resolution view on the server.</p>
+        <p>AI restoration and denoise results now reach the server and connected devices, each under a new file name.</p>
+        <p>The server removes converted copies of deleted, locked or outdated items and limits its video cache.</p>
+      </description>
+    </release>
     <release version="3.52.0" date="2026-11-03">
       <description>
         <p>Sign in with a passkey in the browser, on the phone and on the computer – without a password and without a TOTP code, because the device checks your face, fingerprint or PIN. Passkeys work over HTTPS and belong to the server address they were added for.</p>
