@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 4;
+  static const schema = 5;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -147,6 +147,26 @@ class Serverdatenbank {
         BEGIN;
         ALTER TABLE konten ADD COLUMN anmelde_stand INTEGER NOT NULL DEFAULT 0;
         PRAGMA user_version = 4;
+        COMMIT;
+      ''');
+    }
+    if (stand < 5) {
+      // Passkeys (#277): nur der öffentliche Schlüssel als COSE, an den
+      // Hostnamen gebunden, unter dem er angelegt wurde.
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS passkeys (
+          id TEXT PRIMARY KEY,
+          konto TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          name TEXT NOT NULL,
+          rp TEXT NOT NULL,
+          schluessel BLOB NOT NULL,
+          zaehler INTEGER NOT NULL DEFAULT 0,
+          angelegt INTEGER NOT NULL,
+          zuletzt INTEGER
+        );
+        CREATE INDEX IF NOT EXISTS passkeys_konto ON passkeys(konto);
+        PRAGMA user_version = 5;
         COMMIT;
       ''');
     }

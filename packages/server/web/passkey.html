@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Photo Vault</title>
+<link rel="stylesheet" href="app.css">
+<link rel="icon" href="symbol.png" type="image/png">
+</head>
+<!-- Passkeys für das Telefon (#277): Hier fragt der Browser nach dem
+     Passkey, nicht die App – siehe passkey_api.dart. -->
+<body data-seite="passkey">
+<main id="anmeldung" class="karte">
+  <h1 id="titel">Mit Passkey anmelden</h1>
+  <label id="name-feld" hidden>Name des Passkeys <input id="name" autocomplete="off" maxlength="80" placeholder="z. B. iPhone"></label>
+  <button id="los" type="button">Weiter mit Passkey</button>
+  <p id="meldung" class="leise" role="status"></p>
+</main>
+<script src="texte.js"></script>
+<script src="passkeys.js"></script>
+</body>
+</html>

@@ -1554,6 +1554,48 @@ class AppTexteDe extends AppTexte {
       'Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten.';
 
   @override
+  String get modellNafnetTitel => 'KI-Entrauschen (NAFNet)';
+
+  @override
+  String get modellNafnetText =>
+      'Entfernt Bildrauschen aus Fotos mit hoher ISO, ohne die Auflösung zu ändern – im Entwickeln, mit einstellbarer Stärke. Trainiert auf echtem Sensorrauschen (SIDD). Rechnet auf dem Gerät, je Foto etwa eine halbe bis eine Minute.';
+
+  @override
+  String get modellNafnetLizenz => 'MIT (NAFNet, Megvii Research)';
+
+  @override
+  String get entwEntrauschen => 'KI-Entrauschen …';
+
+  @override
+  String get entwEntrauschenModellFehlt =>
+      'KI-Entrauschen: erst das Modell unter Einstellungen → KI-Modelle laden';
+
+  @override
+  String get entwEntrauschenTitel => 'KI-Entrauschen';
+
+  @override
+  String get entwEntrauschenText =>
+      'Das Foto geht in seiner jetzigen Entwicklung in voller Grösse durch ein Netz, das auf echtem Sensorrauschen trainiert ist. Das Ergebnis wird wie eine Restaurierung angezeigt und lässt sich mit „Restaurierung entfernen“ wieder zurücknehmen. Feine Strukturen glättet das Netz mit – mit der Stärke lässt sich davon etwas zurückholen.';
+
+  @override
+  String entwEntrauschenStaerke(String prozent) {
+    return 'Stärke $prozent %';
+  }
+
+  @override
+  String entwEntrauschenLaeuft(int fertig, int gesamt) {
+    return 'Entrausche … $fertig von $gesamt Kacheln';
+  }
+
+  @override
+  String get entwEntrauschenFertig => 'Entrauscht.';
+
+  @override
+  String entwEntrauschenFehler(String grund) {
+    return 'Entrauschen fehlgeschlagen: $grund';
+  }
+
+  @override
   String get modellEsrganLizenz =>
       'BSD-3-Clause (Real-ESRGAN-Originalgewichte)';
 
@@ -9283,6 +9325,21 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get serverAnmelden => 'Anmelden';
+
+  @override
+  String get serverPasskey => 'Mit Passkey anmelden';
+
+  @override
+  String get serverPasskeyUnbekannt =>
+      'Dieser Server kennt noch keine Passkeys.';
+
+  @override
+  String get serverPasskeySeite =>
+      'Angemeldet. Zurück zu Photo Vault – dieses Fenster lässt sich schliessen.';
+
+  @override
+  String get serverPasskeyAbgebrochen =>
+      'Die Anmeldung mit Passkey wurde nicht abgeschlossen.';
 
   @override
   String get serverNichtErreichbar =>

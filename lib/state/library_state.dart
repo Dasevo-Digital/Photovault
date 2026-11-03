@@ -260,6 +260,7 @@ class LibraryState extends ChangeNotifier {
     ...modelle.alle,
     segmentationHalter,
     if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
+    if (restoreQueue.entrauschHalter != null) restoreQueue.entrauschHalter!,
   ];
 
   /// Kein eigenes ONNX-Modell (siehe ai_tagging_service.dart) – braucht nur
@@ -1324,6 +1325,9 @@ class LibraryState extends ChangeNotifier {
     if (restoreQueue.restoreHalter != null) {
       _retiredHalters.add(restoreQueue.restoreHalter!);
     }
+    if (restoreQueue.entrauschHalter != null) {
+      _retiredHalters.add(restoreQueue.entrauschHalter!);
+    }
 
     segmentationHalter = ModellHalter<SegmentationService>(
       name: 'Segmentierung',
@@ -1335,6 +1339,12 @@ class LibraryState extends ChangeNotifier {
       name: 'KI-Restaurierung',
       installiert: RestoreService.isAvailable(_modelsDir!),
       laden: () => RestoreService.load(_modelsDir!),
+      entsorgen: (s) => s.dispose(),
+    );
+    restoreQueue.entrauschHalter = ModellHalter<Entrauschdienst>(
+      name: 'KI-Entrauschen',
+      installiert: Entrauschdienst.isAvailable(_modelsDir!),
+      laden: () => Entrauschdienst.load(_modelsDir!),
       entsorgen: (s) => s.dispose(),
     );
   }

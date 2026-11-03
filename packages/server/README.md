@@ -217,6 +217,24 @@ Schema `photovault:`), und den Code löst nur ein, wer den Prüfer der App
 kennt (PKCE) – eine untergeschobene Anmeldeadresse bringt einem Fremden
 nichts.
 
+## Passkeys
+
+Ohne Einstellung: Wer angemeldet ist, legt unter Einstellungen → Konto
+einen Passkey an – im Browser, auf dem Telefon („Eigenes Konto“) oder am
+Rechner. Angemeldet wird dann mit „Mit Passkey anmelden“, ohne Passwort.
+Weil das Gerät dabei Gesicht, Fingerabdruck oder PIN prüft, folgt kein
+TOTP-Code, auch wenn TOTP Pflicht ist.
+
+Ein Passkey gehört zu dem Hostnamen, unter dem er angelegt wurde, und
+geht nur über HTTPS (oder `localhost`). Wer den Server unter einer
+anderen Adresse erreicht – im Heimnetz über die IP, von aussen über den
+Namen –, braucht je Adresse einen eigenen. Telefon und Rechner fragen
+nicht selbst nach dem Passkey, sondern öffnen dafür `/app/passkey.html`
+im Browser; zurück geht es wie bei OIDC über einen Port auf demselben
+Gerät mit PKCE. Der Server hält nur den öffentlichen Schlüssel
+(`server.sqlite`, Tabelle `passkeys`); eine Herkunftsbescheinigung des
+Geräts wird nicht verlangt.
+
 ## Docker
 
 Das Bild bringt alles mit: den Server, die ONNX Runtime 1.28.3 und die

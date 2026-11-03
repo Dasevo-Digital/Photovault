@@ -837,6 +837,41 @@
   "modellOcecLizenz": "MIT",
   "modellEsrganTitel": "KI-Restaurierung – Real-ESRGAN x4",
   "modellEsrganText": "Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten.",
+  "modellNafnetTitel": "KI-Entrauschen (NAFNet)",
+  "modellNafnetText": "Entfernt Bildrauschen aus Fotos mit hoher ISO, ohne die Auflösung zu ändern – im Entwickeln, mit einstellbarer Stärke. Trainiert auf echtem Sensorrauschen (SIDD). Rechnet auf dem Gerät, je Foto etwa eine halbe bis eine Minute.",
+  "modellNafnetLizenz": "MIT (NAFNet, Megvii Research)",
+  "entwEntrauschen": "KI-Entrauschen …",
+  "entwEntrauschenModellFehlt": "KI-Entrauschen: erst das Modell unter Einstellungen → KI-Modelle laden",
+  "entwEntrauschenTitel": "KI-Entrauschen",
+  "entwEntrauschenText": "Das Foto geht in seiner jetzigen Entwicklung in voller Grösse durch ein Netz, das auf echtem Sensorrauschen trainiert ist. Das Ergebnis wird wie eine Restaurierung angezeigt und lässt sich mit „Restaurierung entfernen“ wieder zurücknehmen. Feine Strukturen glättet das Netz mit – mit der Stärke lässt sich davon etwas zurückholen.",
+  "entwEntrauschenStaerke": "Stärke {prozent} %",
+  "@entwEntrauschenStaerke": {
+    "placeholders": {
+      "prozent": {
+        "type": "String"
+      }
+    }
+  },
+  "entwEntrauschenLaeuft": "Entrausche … {fertig} von {gesamt} Kacheln",
+  "@entwEntrauschenLaeuft": {
+    "placeholders": {
+      "fertig": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      }
+    }
+  },
+  "entwEntrauschenFertig": "Entrauscht.",
+  "entwEntrauschenFehler": "Entrauschen fehlgeschlagen: {grund}",
+  "@entwEntrauschenFehler": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "modellEsrganLizenz": "BSD-3-Clause (Real-ESRGAN-Originalgewichte)",
   "modellEnDeTitel": "Übersetzung Englisch → Deutsch – OPUS-MT",
   "modellEnDeText": "Übersetzt die automatisch erzeugten Bildbeschreibungen ins Deutsche. Das Beschreibungsmodell selbst liefert nur Englisch; ohne diese Ergänzung muss man auf Englisch suchen, was man auf Deutsch sieht. Rund 100 MB.",
@@ -5904,6 +5939,10 @@
   "serverPasswort": "Passwort",
   "serverGeraet": "Name dieses Geräts",
   "serverAnmelden": "Anmelden",
+  "serverPasskey": "Mit Passkey anmelden",
+  "serverPasskeyUnbekannt": "Dieser Server kennt noch keine Passkeys.",
+  "serverPasskeySeite": "Angemeldet. Zurück zu Photo Vault – dieses Fenster lässt sich schliessen.",
+  "serverPasskeyAbgebrochen": "Die Anmeldung mit Passkey wurde nicht abgeschlossen.",
   "serverNichtErreichbar": "Unter dieser Adresse antwortet kein Server.",
   "serverKeinPhotoVault": "Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.",
   "serverNurHttps": "Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.",

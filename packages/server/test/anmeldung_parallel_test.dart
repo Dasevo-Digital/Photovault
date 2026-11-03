@@ -297,7 +297,7 @@ void main() {
     },
   );
 
-  test('Serverdatenbank 3 wird mit vorhandenen Konten auf 4 gehoben', () async {
+  test('Serverdatenbank 3 wird mit vorhandenen Konten angehoben', () async {
     final ordner = await Directory.systemTemp.createTemp(
       'pv_konten_migration_',
     );
@@ -317,10 +317,48 @@ void main() {
             .single['anmelde_stand'],
         0,
       );
-      expect(dateibank.db.select('PRAGMA user_version').single.columnAt(0), 4);
+      expect(
+        dateibank.db.select('PRAGMA user_version').single.columnAt(0),
+        Serverdatenbank.schema,
+      );
     } finally {
       dateibank.schliesse();
       await ordner.delete(recursive: true);
     }
   });
+
+  test(
+    'Serverdatenbank 4 bekommt die Passkeys, die Konten bleiben (#277)',
+    () async {
+      final ordner = await Directory.systemTemp.createTemp(
+        'pv_konten_migration_',
+      );
+      final datei = File('${ordner.path}/server.sqlite');
+      var dateibank = Serverdatenbank.oeffne(datei);
+      try {
+        dateibank.db.execute(
+          "INSERT INTO konten (id, name, angelegt) VALUES ('konto', 'pruefkonto', 1)",
+        );
+        dateibank.db.execute('DROP TABLE passkeys');
+        dateibank.db.execute('PRAGMA user_version = 4');
+        dateibank.schliesse();
+        dateibank = Serverdatenbank.oeffne(datei);
+        expect(
+          dateibank.db.select('SELECT name FROM konten').single['name'],
+          'pruefkonto',
+        );
+        expect(
+          dateibank.db.select('SELECT count(*) AS n FROM passkeys').single['n'],
+          0,
+        );
+        expect(
+          dateibank.db.select('PRAGMA user_version').single.columnAt(0),
+          5,
+        );
+      } finally {
+        dateibank.schliesse();
+        await ordner.delete(recursive: true);
+      }
+    },
+  );
 }

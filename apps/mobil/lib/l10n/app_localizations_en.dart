@@ -2394,6 +2394,49 @@ class AppTexteEn extends AppTexte {
       'The check runs on the server and needs a connection.';
 
   @override
+  String get anmeldenPasskey => 'Sign in with a passkey';
+
+  @override
+  String get anmeldenPasskeyUnbekannt =>
+      'This server does not support passkeys yet.';
+
+  @override
+  String get anmeldenPasskeySeite =>
+      'Signed in. Back to the app – you can close this window.';
+
+  @override
+  String get anmeldenPasskeyAbgebrochen =>
+      'Signing in with a passkey was not completed.';
+
+  @override
+  String get eigenPasskeys => 'Passkeys';
+
+  @override
+  String get eigenPasskeysText =>
+      'A passkey signs you in without a password – with your face, fingerprint or device code. It only works for this server\'s address, and no TOTP code follows it.';
+
+  @override
+  String get eigenPasskeyHinzufuegen => 'Add passkey';
+
+  @override
+  String get eigenPasskeyImBrowser =>
+      'The passkey is being added in the browser.';
+
+  @override
+  String get eigenPasskeyAngelegt => 'The passkey has been added.';
+
+  @override
+  String get eigenPasskeyNieBenutzt => 'never used';
+
+  @override
+  String get eigenPasskeyEntfernen => 'Remove';
+
+  @override
+  String eigenPasskeyEntfernenFrage(String name) {
+    return 'Remove the passkey “$name”? It stays on the device but can no longer sign in.';
+  }
+
+  @override
   String get datierungTitel => 'Date old photos';
 
   @override

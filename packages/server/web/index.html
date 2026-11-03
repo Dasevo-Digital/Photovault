@@ -86,6 +86,7 @@
     <label>Konto <input name="name" autocomplete="username" required autofocus></label>
     <label>Passwort <input name="passwort" type="password" autocomplete="current-password" required></label>
     <button type="submit">Anmelden</button>
+    <button id="passkey-anmelden" type="button" class="zweitrangig" hidden>Mit Passkey anmelden</button>
   </form>
   <form id="form-totp" hidden>
     <p id="totp-hinweis"></p>
@@ -312,6 +313,17 @@
     </section>
     <h3>Geräte</h3>
     <ul id="geraete"></ul>
+    <!-- Passkeys (#277): anlegen und entfernen; angemeldet wird damit
+         auf der Anmeldeseite. -->
+    <div id="passkey-feld" hidden>
+      <h3>Passkeys</h3>
+      <div class="karte schmal">
+        <p class="leise klein">Ein Passkey meldet ohne Passwort an – mit Fingerabdruck, Gesicht oder der PIN des Geräts. Er gilt nur für diese Adresse des Servers, und auf ihn folgt kein TOTP-Code.</p>
+        <ul id="passkeys"></ul>
+        <p><button id="passkey-hinzufuegen" type="button">Passkey hinzufügen …</button></p>
+        <p id="passkey-meldung" class="leise"></p>
+      </div>
+    </div>
     <h3>Passwort ändern</h3>
     <form id="form-passwort" class="karte schmal">
       <label>Aktuelles Passwort <input name="alt" type="password" autocomplete="current-password" required></label>
@@ -643,6 +655,7 @@
 </div>
 
 <script src="texte.js"></script>
+<script src="passkeys.js"></script>
 <script src="app.js"></script>
 <!-- entwickeln.js, lebensbaum.js und stammbaum.js lädt app.js erst, wenn sie gebraucht werden. -->
 <script src="hochladen.js"></script>

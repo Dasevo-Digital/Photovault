@@ -7,6 +7,7 @@ import 'package:shelf/shelf.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'konten/kontodienst.dart';
+import 'konten/passkeys.dart';
 import 'packen.dart';
 
 /// Die Weboberfläche: ihre Dateien unter `/app/` und die Anmeldung im
@@ -198,6 +199,31 @@ class Webapi {
       anfrage,
       await konten.bestaetige(vorgang, code, adresse: absender.von(anfrage)),
     );
+  }
+
+  /// `{antwort}` aus `navigator.credentials.get` → Cookie (#277). Auf
+  /// einen Passkey folgt kein TOTP-Code, siehe konten/passkeys.dart.
+  Future<Response> passkey(Request anfrage) async {
+    final k = await _koerper(anfrage);
+    final antwort = k?['antwort'];
+    if (antwort is! Map<String, Object?>) {
+      return _json({'fehler': 'Antwort fehlt'}, status: 400);
+    }
+    try {
+      return _ergebnis(
+        anfrage,
+        await konten.meldeMitPasskeyAn(
+          () => konten.passkeys.pruefeAnmeldung(
+            herkunft: anfrage.headers['origin'] ?? '',
+            antwort: antwort,
+          ),
+          geraet: _geraetName(anfrage),
+          adresse: absender.von(anfrage),
+        ),
+      );
+    } on PasskeyFehler catch (f) {
+      return _json({'fehler': f.text}, status: 401);
+    }
   }
 
   /// Meldet den Browser ab und nimmt ihm das Cookie.

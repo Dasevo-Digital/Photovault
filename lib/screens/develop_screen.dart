@@ -26,6 +26,7 @@ import '../services/histogram.dart';
 import 'package:kern/services/modell_halter.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
+import '../services/restore_service.dart' show Restaurierungslauf;
 import '../services/segmentation_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../services/vector_mask_service.dart';
@@ -415,6 +416,17 @@ class _DevelopScreenState extends _EntwickelnBasis
                     widget.restoreQueue?.restoreHalter?.installiert != true)
                 ? null
                 : _enqueueRestore,
+          ),
+          IconButton(
+            icon: const Icon(Icons.grain),
+            tooltip: widget.restoreQueue?.entrauschHalter?.installiert != true
+                ? AppTexte.of(context).entwEntrauschenModellFehlt
+                : AppTexte.of(context).entwEntrauschen,
+            onPressed:
+                (_saving ||
+                    widget.restoreQueue?.entrauschHalter?.installiert != true)
+                ? null
+                : _entrauschen,
           ),
           IconButton(
             icon: const Icon(Icons.auto_fix_high_outlined),

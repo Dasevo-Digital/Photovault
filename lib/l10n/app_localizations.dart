@@ -2615,6 +2615,72 @@ abstract class AppTexte {
   /// **'Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten.'**
   String get modellEsrganText;
 
+  /// No description provided for @modellNafnetTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Entrauschen (NAFNet)'**
+  String get modellNafnetTitel;
+
+  /// No description provided for @modellNafnetText.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernt Bildrauschen aus Fotos mit hoher ISO, ohne die Auflösung zu ändern – im Entwickeln, mit einstellbarer Stärke. Trainiert auf echtem Sensorrauschen (SIDD). Rechnet auf dem Gerät, je Foto etwa eine halbe bis eine Minute.'**
+  String get modellNafnetText;
+
+  /// No description provided for @modellNafnetLizenz.
+  ///
+  /// In de, this message translates to:
+  /// **'MIT (NAFNet, Megvii Research)'**
+  String get modellNafnetLizenz;
+
+  /// No description provided for @entwEntrauschen.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Entrauschen …'**
+  String get entwEntrauschen;
+
+  /// No description provided for @entwEntrauschenModellFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Entrauschen: erst das Modell unter Einstellungen → KI-Modelle laden'**
+  String get entwEntrauschenModellFehlt;
+
+  /// No description provided for @entwEntrauschenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'KI-Entrauschen'**
+  String get entwEntrauschenTitel;
+
+  /// No description provided for @entwEntrauschenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Foto geht in seiner jetzigen Entwicklung in voller Grösse durch ein Netz, das auf echtem Sensorrauschen trainiert ist. Das Ergebnis wird wie eine Restaurierung angezeigt und lässt sich mit „Restaurierung entfernen“ wieder zurücknehmen. Feine Strukturen glättet das Netz mit – mit der Stärke lässt sich davon etwas zurückholen.'**
+  String get entwEntrauschenText;
+
+  /// No description provided for @entwEntrauschenStaerke.
+  ///
+  /// In de, this message translates to:
+  /// **'Stärke {prozent} %'**
+  String entwEntrauschenStaerke(String prozent);
+
+  /// No description provided for @entwEntrauschenLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Entrausche … {fertig} von {gesamt} Kacheln'**
+  String entwEntrauschenLaeuft(int fertig, int gesamt);
+
+  /// No description provided for @entwEntrauschenFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Entrauscht.'**
+  String get entwEntrauschenFertig;
+
+  /// No description provided for @entwEntrauschenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Entrauschen fehlgeschlagen: {grund}'**
+  String entwEntrauschenFehler(String grund);
+
   /// No description provided for @modellEsrganLizenz.
   ///
   /// In de, this message translates to:
@@ -14220,6 +14286,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Anmelden'**
   String get serverAnmelden;
+
+  /// No description provided for @serverPasskey.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Passkey anmelden'**
+  String get serverPasskey;
+
+  /// No description provided for @serverPasskeyUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Server kennt noch keine Passkeys.'**
+  String get serverPasskeyUnbekannt;
+
+  /// No description provided for @serverPasskeySeite.
+  ///
+  /// In de, this message translates to:
+  /// **'Angemeldet. Zurück zu Photo Vault – dieses Fenster lässt sich schliessen.'**
+  String get serverPasskeySeite;
+
+  /// No description provided for @serverPasskeyAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Anmeldung mit Passkey wurde nicht abgeschlossen.'**
+  String get serverPasskeyAbgebrochen;
 
   /// No description provided for @serverNichtErreichbar.
   ///

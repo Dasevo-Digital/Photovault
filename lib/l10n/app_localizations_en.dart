@@ -1539,6 +1539,48 @@ class AppTexteEn extends AppTexte {
       'Scales a photo up by a factor of four and removes noise along the way. Runs as a background queue (Settings/Develop) and takes several minutes depending on the size of the photo.';
 
   @override
+  String get modellNafnetTitel => 'AI denoise (NAFNet)';
+
+  @override
+  String get modellNafnetText =>
+      'Removes noise from high-ISO photos without changing the resolution – in Develop, with adjustable strength. Trained on real sensor noise (SIDD). Runs on the device, about half a minute to a minute per photo.';
+
+  @override
+  String get modellNafnetLizenz => 'MIT (NAFNet, Megvii Research)';
+
+  @override
+  String get entwEntrauschen => 'AI denoise …';
+
+  @override
+  String get entwEntrauschenModellFehlt =>
+      'AI denoise: first download the model under Settings → AI models';
+
+  @override
+  String get entwEntrauschenTitel => 'AI denoise';
+
+  @override
+  String get entwEntrauschenText =>
+      'The photo, as currently developed, goes through a network trained on real sensor noise at full size. The result is shown like a restoration and can be undone with “Remove restoration”. The network also smooths fine structure – the strength brings some of it back.';
+
+  @override
+  String entwEntrauschenStaerke(String prozent) {
+    return 'Strength $prozent %';
+  }
+
+  @override
+  String entwEntrauschenLaeuft(int fertig, int gesamt) {
+    return 'Denoising … $fertig of $gesamt tiles';
+  }
+
+  @override
+  String get entwEntrauschenFertig => 'Denoised.';
+
+  @override
+  String entwEntrauschenFehler(String grund) {
+    return 'Denoising failed: $grund';
+  }
+
+  @override
   String get modellEsrganLizenz =>
       'BSD-3-Clause (original Real-ESRGAN weights)';
 
@@ -9234,6 +9276,21 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get serverAnmelden => 'Sign in';
+
+  @override
+  String get serverPasskey => 'Sign in with a passkey';
+
+  @override
+  String get serverPasskeyUnbekannt =>
+      'This server does not support passkeys yet.';
+
+  @override
+  String get serverPasskeySeite =>
+      'Signed in. Back to Photo Vault – you can close this window.';
+
+  @override
+  String get serverPasskeyAbgebrochen =>
+      'Signing in with a passkey was not completed.';
 
   @override
   String get serverNichtErreichbar => 'No server responds at this address.';

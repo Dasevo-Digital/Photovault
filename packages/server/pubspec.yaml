@@ -21,6 +21,9 @@ dependencies:
   onnxruntime_api:
     path: ../../third_party/onnxruntime_api
   path: ^1.9.0
+  # Die Unterschriften der Passkeys prüfen (ECDSA P-256, RSA; #277) –
+  # cryptography hat beides nur ausserhalb von reinem Dart.
+  pointycastle: ^4.0.0
   # Der QR-Code fürs TOTP-Einrichten im Terminal.
   qr: ^3.0.2
   shelf: ^1.4.2

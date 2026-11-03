@@ -45,6 +45,10 @@ class _EigenesKontoState extends State<EigenesKonto> {
   bool _oidcMoeglich = false;
   bool _verknuepft = false;
 
+  /// Die Passkeys des Kontos (#277) – `null` bei einem Server, der keine
+  /// kennt.
+  List<Map<String, Object?>>? _passkeys;
+
   @override
   void initState() {
     super.initState();
@@ -57,14 +61,23 @@ class _EigenesKontoState extends State<EigenesKonto> {
       final g = await widget.verbindung.hole('api/v1/geraete');
       // Ein älterer Server kennt die Frage nicht – dann eben ohne.
       var oidc = false;
+      List<Map<String, Object?>>? passkeys;
       try {
         final z = await widget.verbindung.hole('api/v1/zustand');
         oidc = (z['anmeldung'] as Map?)?['oidc'] == true;
+        if ((z['anmeldung'] as Map?)?['passkeys'] == true) {
+          final p = await widget.verbindung.hole('api/v1/konto/passkeys');
+          passkeys = [
+            for (final x in (p['passkeys'] as List? ?? const []))
+              (x as Map).cast<String, Object?>(),
+          ];
+        }
       } catch (_) {}
       if (!mounted) return;
       setState(() {
         _konto = k;
         _oidcMoeglich = oidc;
+        _passkeys = passkeys;
         _geraete = [
           for (final x in (g['geraete'] as List? ?? const []))
             (x as Map).cast<String, Object?>(),
@@ -100,6 +113,71 @@ class _EigenesKontoState extends State<EigenesKonto> {
       final r = await widget.verbindung.anfrage(
         'DELETE',
         'api/v1/geraete/${Uri.encodeComponent('${g['id']}')}',
+      );
+      if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
+      await _lade();
+    } catch (x) {
+      bote.showSnackBar(SnackBar(content: Text('$x')));
+    }
+  }
+
+  /// Einen Passkey anlegen (#277): Die Seite des Servers fragt im Browser
+  /// der App danach – dort gehört er hin, an die Adresse des Servers. Wann
+  /// sie fertig ist, sagt der Browser nicht; die Liste schaut deshalb eine
+  /// Weile nach, ob einer dazukam.
+  Future<void> _passkeyAnlegen() async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    try {
+      final d = await widget.verbindung.schicke(
+        'api/v1/konto/passkeys/ticket',
+        const {},
+      );
+      final vorher = _passkeys?.length ?? 0;
+      await widget.oeffne(
+        widget.verbindung.basis.resolve('${d['adresse']}'.substring(1)),
+      );
+      bote.showSnackBar(SnackBar(content: Text(t.eigenPasskeyImBrowser)));
+      for (var i = 0; i < 100 && mounted; i++) {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        await _lade();
+        if ((_passkeys?.length ?? 0) > vorher) {
+          await closeInAppWebView().catchError((_) {});
+          bote
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(t.eigenPasskeyAngelegt)));
+          return;
+        }
+      }
+    } catch (x) {
+      bote.showSnackBar(SnackBar(content: Text('$x')));
+    }
+  }
+
+  Future<void> _passkeyEntfernen(Map<String, Object?> p) async {
+    final t = AppTexte.of(context);
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(t.eigenPasskeyEntfernenFrage('${p['name']}')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.abbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.eigenPasskeyEntfernen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    final bote = ScaffoldMessenger.of(context);
+    try {
+      final r = await widget.verbindung.anfrage(
+        'DELETE',
+        'api/v1/konto/passkeys/${Uri.encodeComponent('${p['id']}')}',
       );
       if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
       await _lade();
@@ -231,6 +309,40 @@ class _EigenesKontoState extends State<EigenesKonto> {
             ),
           ),
         ),
+        if (_passkeys case final passkeys?) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              t.eigenPasskeys,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Text(
+              t.eigenPasskeysText,
+              style: TextStyle(color: farben.onSurfaceVariant),
+            ),
+          ),
+          for (final p in passkeys)
+            ListTile(
+              leading: const Icon(Icons.fingerprint),
+              title: Text('${p['name']}'),
+              subtitle: Text(switch (DateTime.tryParse('${p['zuletzt']}')) {
+                final z? => t.eigenZuletzt(zeit.format(z.toLocal())),
+                null => t.eigenPasskeyNieBenutzt,
+              }, style: TextStyle(color: farben.onSurfaceVariant)),
+              trailing: TextButton(
+                onPressed: () => _passkeyEntfernen(p),
+                child: Text(t.eigenPasskeyEntfernen),
+              ),
+            ),
+          ListTile(
+            leading: const Icon(Icons.add),
+            title: Text(t.eigenPasskeyHinzufuegen),
+            onTap: _passkeyAnlegen,
+          ),
+        ],
         if (_oidcMoeglich)
           ListTile(
             leading: const Icon(Icons.badge_outlined),

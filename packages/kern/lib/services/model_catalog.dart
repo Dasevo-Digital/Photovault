@@ -360,6 +360,32 @@ class ModelCatalog {
     ],
   );
 
+  /// NAFNet, auf echtem Sensorrauschen trainiert (SIDD, width32) – für das
+  /// KI-Entrauschen im Entwickeln (#275), wie Lightroom „Entrauschen",
+  /// Capture One 16.8 und darktable 5.6 „Neural Restore". Dieselben
+  /// Gewichte wie bei darktable; deren Export liegt nur als Zip mit fester
+  /// Kachelgrösse vor, dieser hat eine dynamische Eingabe. Beide gegen
+  /// einander gerechnet: höchstens 3,6e-7 Abweichung. Auf den Commit
+  /// festgelegt, weil das Verzeichnis nur einen Betreuer hat.
+  ///
+  /// Eingabe `input` [1,3,h,w] float32 RGB 0..1, Ausgabe `output` gleich
+  /// gross; h und w müssen Vielfache von 16 sein (das Auffüllen im Netz
+  /// fiel beim Export weg). Auf der CPU gemessen rund 0,5 s je Kachel von
+  /// 512 Pixeln, mit CoreML um ein Vielfaches langsamer – deshalb nur CPU.
+  /// Code MIT (megvii-research/NAFNet), Gewichte die offiziellen.
+  static const entrauschen = ModelCatalogEntry(
+    id: 'denoise_nafnet_sidd_w32',
+    sourceUrl: 'https://huggingface.co/tomfl/obscura-models',
+    files: [
+      ModelFile(
+        'denoise_nafnet_sidd_w32.onnx',
+        'https://huggingface.co/tomfl/obscura-models/resolve/d55684db2a6d43c29bed6223c6bbf0fb11bbcdae/nafnet-sidd-w32.onnx',
+        '092dc37894ee36f3ceef1359f73b0e566a24c9194138458cfd92b56d8f74647a',
+        117085438,
+      ),
+    ],
+  );
+
   /// Gemeinsames Wörterbuch beider Übersetzungsrichtungen.
   ///
   /// Die `tokenizer.json` von `Xenova/opus-mt-en-de` und
@@ -626,6 +652,7 @@ class ModelCatalog {
     spracherkennung,
     eyeState,
     neuralRestore,
+    entrauschen,
     inpainting,
     kolorieren,
     kratzer,

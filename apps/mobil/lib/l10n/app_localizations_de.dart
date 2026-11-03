@@ -2404,6 +2404,48 @@ class AppTexteDe extends AppTexte {
       'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.';
 
   @override
+  String get anmeldenPasskey => 'Mit Passkey anmelden';
+
+  @override
+  String get anmeldenPasskeyUnbekannt =>
+      'Dieser Server kennt noch keine Passkeys.';
+
+  @override
+  String get anmeldenPasskeySeite =>
+      'Angemeldet. Zurück zur App – dieses Fenster lässt sich schliessen.';
+
+  @override
+  String get anmeldenPasskeyAbgebrochen =>
+      'Die Anmeldung mit Passkey wurde nicht abgeschlossen.';
+
+  @override
+  String get eigenPasskeys => 'Passkeys';
+
+  @override
+  String get eigenPasskeysText =>
+      'Ein Passkey meldet ohne Passwort an – mit Gesicht, Fingerabdruck oder Gerätecode. Er gilt nur für die Adresse dieses Servers, und auf ihn folgt kein TOTP-Code.';
+
+  @override
+  String get eigenPasskeyHinzufuegen => 'Passkey hinzufügen';
+
+  @override
+  String get eigenPasskeyImBrowser => 'Der Passkey wird im Browser angelegt.';
+
+  @override
+  String get eigenPasskeyAngelegt => 'Der Passkey ist angelegt.';
+
+  @override
+  String get eigenPasskeyNieBenutzt => 'noch nie benutzt';
+
+  @override
+  String get eigenPasskeyEntfernen => 'Entfernen';
+
+  @override
+  String eigenPasskeyEntfernenFrage(String name) {
+    return 'Den Passkey „$name“ entfernen? Auf dem Gerät bleibt er liegen, anmelden lässt sich damit nicht mehr.';
+  }
+
+  @override
   String get datierungTitel => 'Alte Fotos zeitlich einordnen';
 
   @override

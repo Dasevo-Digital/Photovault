@@ -291,6 +291,12 @@ extension BearbeitungsAbfragen on AppDatabase {
     );
   });
 
+  /// Trägt eine Restaurierung ohne Auftrag ein – das KI-Entrauschen (#275).
+  Future<void> setzeRestauriert(String assetId, String restoredRelativePath) =>
+      (update(assets)..where((t) => t.id.equals(assetId))).write(
+        AssetsCompanion(restoredRelativePath: Value(restoredRelativePath)),
+      );
+
   /// Crash-Safety: setzt beim App-Start jeden Auftrag, der beim letzten
   /// Beenden noch `running` war (die App wurde mitten in der Verarbeitung
   /// beendet/ist abgestürzt), zurück auf `queued` – ohne Teil-Kacheln zu

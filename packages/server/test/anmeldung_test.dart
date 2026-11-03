@@ -471,7 +471,11 @@ void main() {
 
     test('anmelden, Konto und Geräte ansehen, abmelden', () async {
       final zustand = await jsonAus(await frag('GET', '/api/v1/zustand'));
-      expect(zustand['anmeldung'], {'totp': true, 'oidc': false});
+      expect(zustand['anmeldung'], {
+        'totp': true,
+        'oidc': false,
+        'passkeys': true,
+      });
 
       final token = await melde('erika');
       final konto = await jsonAus(

@@ -2727,6 +2727,7 @@ async function zeigeKonto() {
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
   zeigeBeitraege().catch(() => {});
   zeigeOidc(k).catch(() => {});
+  zeigePasskeys().catch((x) => { $('passkey-meldung').textContent = x.message; });
   const g = await api('/api/v1/geraete');
   const ul = $('geraete');
   ul.replaceChildren();
@@ -2745,6 +2746,58 @@ async function zeigeKonto() {
     ul.append(li);
   }
 }
+
+// --- Passkeys des Kontos (#277) --------------------------------------------------
+
+async function zeigePasskeys() {
+  $('passkey-feld').hidden = !passkeysMoeglich();
+  if (!passkeysMoeglich()) return;
+  const d = await api('/api/v1/konto/passkeys');
+  const ul = $('passkeys');
+  ul.replaceChildren();
+  if (!d.passkeys.length) ul.append(el('li', 'leise', t('Noch keiner.')));
+  for (const p of d.passkeys) {
+    const li = el('li');
+    const zuletzt = p.zuletzt ? t('zuletzt {datum}', { datum: datumZeit.format(new Date(p.zuletzt)) }) : t('noch nie benutzt');
+    li.append(el('span', null, `${p.name} · ${t('angelegt {datum}', { datum: datum.format(new Date(p.angelegt)) })} · ${zuletzt}`));
+    const b = el('button', null, t('Entfernen'));
+    b.type = 'button';
+    b.addEventListener('click', async () => {
+      if (!confirm(t('Den Passkey „{name}“ entfernen? Auf dem Gerät bleibt er liegen, anmelden lässt sich damit nicht mehr.', { name: p.name }))) return;
+      try { await api(`/api/v1/konto/passkeys/${encodeURIComponent(p.id)}`, { methode: 'DELETE' }); await zeigePasskeys(); } catch (y) { $('passkey-meldung').textContent = y.message; }
+    });
+    li.append(b);
+    ul.append(li);
+  }
+}
+
+$('passkey-hinzufuegen').addEventListener('click', async () => {
+  const name = prompt(t('Wie soll der Passkey heissen? Etwa nach dem Gerät, auf dem er liegt.'), '');
+  if (name === null) return;
+  $('passkey-meldung').textContent = '';
+  try {
+    const o = await api('/api/v1/konto/passkeys/optionen', { methode: 'POST', json: {} });
+    const antwort = await passkeyAnlegen(o.optionen);
+    await api('/api/v1/konto/passkeys', { methode: 'POST', json: { antwort, name: name.trim() } });
+    $('passkey-meldung').textContent = t('Der Passkey ist angelegt.');
+    await zeigePasskeys();
+  } catch (x) {
+    $('passkey-meldung').textContent = passkeyAbgebrochen(x) ? t('Abgebrochen.') : x.message;
+  }
+});
+
+// Anmelden mit Passkey: Das Gerät bietet an, was es für diesen Server hat.
+$('passkey-anmelden').hidden = !passkeysMoeglich();
+$('passkey-anmelden').addEventListener('click', async () => {
+  fehler('');
+  try {
+    const o = await api('/api/v1/anmelden/passkey/optionen', { methode: 'POST', json: {} });
+    const antwort = await passkeyBestaetigen(o.optionen);
+    await nachAnmeldung(await api('/api/v1/web/anmelden/passkey', { methode: 'POST', json: { antwort } }));
+  } catch (x) {
+    if (!passkeyAbgebrochen(x)) fehler(x.message);
+  }
+});
 
 $('form-codes').addEventListener('submit', async (e) => {
   e.preventDefault();

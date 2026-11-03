@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:uuid/uuid.dart';
 
@@ -95,6 +97,11 @@ class RestoreQueueService {
   /// (App noch nicht initialisiert) bleibt die Warteschlange nutzbar für
   /// bereits vorhandene Aufträge, [enqueue] schlägt aber fehl.
   ModellHalter<RestoreService>? restoreHalter;
+
+  /// Das Modell für das KI-Entrauschen (#275) – hier, weil es dieselbe
+  /// Vorlage braucht ([entwickeltesJpeg]) und sein Ergebnis gleich abgelegt
+  /// wird ([legeRestauriertAb]). Es läuft nicht über die Warteschlange.
+  ModellHalter<Entrauschdienst>? entrauschHalter;
 
   bool _processing = false;
   String? _activeJobId;
@@ -306,49 +313,7 @@ class RestoreQueueService {
         return;
       }
 
-      // Eingabe: das bereits entwickelte Bild (aktuelle Regler/Masken) in
-      // voller Auflösung über den nativen Kanal – das `image`-Dart-Paket
-      // kann RAW-Originale nicht selbst dekodieren (siehe DevelopScreen).
-      final settings = await _db.developSettingsForAsset(job.assetId);
-      final adjustments = settings == null
-          ? DevelopAdjustments.neutral
-          : DevelopAdjustments(
-              exposure: settings.exposure,
-              temperature: settings.temperature,
-              tint: settings.tint,
-              contrast: settings.contrast,
-              shadows: settings.shadows,
-              highlights: settings.highlights,
-              sharpness: settings.sharpness,
-              noiseReduction: settings.noiseReduction,
-              lensCorrectionEnabled: settings.lensCorrectionEnabled,
-            );
-      final masks = await _db.masksForAsset(job.assetId);
-      final maskLayers = [
-        for (final m in masks)
-          MaskAdjustmentLayer(
-            maskFilePath: _paths.absolute(m.maskRelativePath).path,
-            adjustments: DevelopAdjustments(
-              exposure: m.exposure,
-              temperature: m.temperature,
-              tint: m.tint,
-              contrast: m.contrast,
-              shadows: m.shadows,
-              highlights: m.highlights,
-              sharpness: m.sharpness,
-              noiseReduction: m.noiseReduction,
-            ),
-          ),
-      ];
-
-      final sourceFile = _paths.absolute(asset.relativePath);
-      final jpegBytes = await NativeImageConverter.developImage(
-        sourceFile,
-        adjustments: adjustments,
-        masks: maskLayers,
-        maxDimension: targetWidth > targetHeight ? targetWidth : targetHeight,
-        quality: 0.95,
-      );
+      final jpegBytes = await entwickeltesJpeg(asset);
       if (jpegBytes == null) {
         await _db.markRestoreJobStatus(
           job.id,
@@ -408,5 +373,69 @@ class RestoreQueueService {
     } finally {
       halter!.zurueckgeben();
     }
+  }
+
+  /// Das Foto so, wie es entwickelt ist (Regler und Masken), in voller
+  /// Auflösung als JPEG – die Vorlage für die Restaurierung und für das
+  /// KI-Entrauschen (#275). `null`, wenn es sich nicht rendern liess.
+  Future<Uint8List?> entwickeltesJpeg(AssetData asset) async {
+    // Ohne bekannte Grösse: so gross, wie der Wandler es hergibt.
+    final kante = math.max(asset.widthPx ?? 0, asset.heightPx ?? 0);
+    // Eingabe: das bereits entwickelte Bild (aktuelle Regler/Masken) in
+    // voller Auflösung über den nativen Kanal – das `image`-Dart-Paket
+    // kann RAW-Originale nicht selbst dekodieren (siehe DevelopScreen).
+    final settings = await _db.developSettingsForAsset(asset.id);
+    final adjustments = settings == null
+        ? DevelopAdjustments.neutral
+        : DevelopAdjustments(
+            exposure: settings.exposure,
+            temperature: settings.temperature,
+            tint: settings.tint,
+            contrast: settings.contrast,
+            shadows: settings.shadows,
+            highlights: settings.highlights,
+            sharpness: settings.sharpness,
+            noiseReduction: settings.noiseReduction,
+            lensCorrectionEnabled: settings.lensCorrectionEnabled,
+          );
+    final masks = await _db.masksForAsset(asset.id);
+    final maskLayers = [
+      for (final m in masks)
+        MaskAdjustmentLayer(
+          maskFilePath: _paths.absolute(m.maskRelativePath).path,
+          adjustments: DevelopAdjustments(
+            exposure: m.exposure,
+            temperature: m.temperature,
+            tint: m.tint,
+            contrast: m.contrast,
+            shadows: m.shadows,
+            highlights: m.highlights,
+            sharpness: m.sharpness,
+            noiseReduction: m.noiseReduction,
+          ),
+        ),
+    ];
+
+    final sourceFile = _paths.absolute(asset.relativePath);
+    final jpegBytes = await NativeImageConverter.developImage(
+      sourceFile,
+      adjustments: adjustments,
+      masks: maskLayers,
+      maxDimension: kante > 0 ? kante : 16384,
+      quality: 0.95,
+    );
+    return jpegBytes;
+  }
+
+  /// Legt [jpeg] als Restaurierung von [assetId] ab – so, wie die
+  /// Warteschlange ein Ergebnis ablegt, nur ohne Auftrag (das
+  /// KI-Entrauschen läuft im Entwickeln selbst, #275).
+  Future<void> legeRestauriertAb(String assetId, Uint8List jpeg) async {
+    final relativePath = _paths.restoredRelativePath(assetId);
+    final outFile = _paths.absolute(relativePath);
+    await outFile.parent.create(recursive: true);
+    await outFile.writeAsBytes(jpeg);
+    vergissAlleBilder();
+    await _db.setzeRestauriert(assetId, relativePath);
   }
 }

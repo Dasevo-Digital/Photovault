@@ -1193,6 +1193,25 @@
   "datenNurTag": "nur der Tag, bleibt geschätzt",
   "datenGeschaetzt": "geschätzt",
   "datenOhneServer": "Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.",
+  "anmeldenPasskey": "Mit Passkey anmelden",
+  "anmeldenPasskeyUnbekannt": "Dieser Server kennt noch keine Passkeys.",
+  "anmeldenPasskeySeite": "Angemeldet. Zurück zur App – dieses Fenster lässt sich schliessen.",
+  "anmeldenPasskeyAbgebrochen": "Die Anmeldung mit Passkey wurde nicht abgeschlossen.",
+  "eigenPasskeys": "Passkeys",
+  "eigenPasskeysText": "Ein Passkey meldet ohne Passwort an – mit Gesicht, Fingerabdruck oder Gerätecode. Er gilt nur für die Adresse dieses Servers, und auf ihn folgt kein TOTP-Code.",
+  "eigenPasskeyHinzufuegen": "Passkey hinzufügen",
+  "eigenPasskeyImBrowser": "Der Passkey wird im Browser angelegt.",
+  "eigenPasskeyAngelegt": "Der Passkey ist angelegt.",
+  "eigenPasskeyNieBenutzt": "noch nie benutzt",
+  "eigenPasskeyEntfernen": "Entfernen",
+  "eigenPasskeyEntfernenFrage": "Den Passkey „{name}“ entfernen? Auf dem Gerät bleibt er liegen, anmelden lässt sich damit nicht mehr.",
+  "@eigenPasskeyEntfernenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "datierungTitel": "Alte Fotos zeitlich einordnen",
   "datierungEinleitung": "Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Ist die Spanne zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres; das Datum bleibt als geschätzt markiert.",
   "datierungOhneModell": "Für die Schätzung braucht der Server das Modell der Bildsuche (CLIP).",

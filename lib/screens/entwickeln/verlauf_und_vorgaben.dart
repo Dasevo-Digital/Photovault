@@ -531,6 +531,120 @@ mixin _Verlauf on _EntwickelnBasis {
     }
   }
 
+  // --- KI-Entrauschen (#275) --------------------------------------------
+
+  /// Entrauscht das Foto in seiner jetzigen Entwicklung mit NAFNet und legt
+  /// das Ergebnis als Restaurierung ab – zurückzunehmen wie eine. Hier und
+  /// nicht in der Warteschlange: Ein Foto dauert Sekunden bis gut eine
+  /// Minute, nicht Minuten wie Real-ESRGAN; auf das Ergebnis wartet man.
+  Future<void> _entrauschen() async {
+    final queue = widget.restoreQueue;
+    final halter = queue?.entrauschHalter;
+    if (queue == null || halter == null) return;
+    final t = AppTexte.of(context);
+    var staerke = 0.7;
+    final los = await showDialog<bool>(
+      context: context,
+      builder: (dialog) => StatefulBuilder(
+        builder: (dialog, setze) => AlertDialog(
+          title: Text(t.entwEntrauschenTitel),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.entwEntrauschenText),
+                const SizedBox(height: 16),
+                Text(t.entwEntrauschenStaerke('${(staerke * 100).round()}')),
+                Slider(
+                  value: staerke,
+                  min: 0.2,
+                  max: 1,
+                  divisions: 8,
+                  onChanged: (v) => setze(() => staerke = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialog, false),
+              child: Text(t.allgAbbrechen),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialog, true),
+              child: Text(t.allgStarten),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (los != true || !mounted) return;
+    setState(() => _saving = true);
+    final stand = ValueNotifier((0, 0));
+    final navigator = Navigator.of(context);
+    var abgebrochen = false;
+    var offen = true;
+    Restaurierungslauf? lauf;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          content: ValueListenableBuilder(
+            valueListenable: stand,
+            builder: (_, s, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(t.entwEntrauschenLaeuft(s.$1, s.$2)),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: s.$2 == 0 ? null : s.$1 / s.$2),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                abgebrochen = true;
+                lauf?.abbrechen();
+              },
+              child: Text(t.allgAbbrechen),
+            ),
+          ],
+        ),
+      ).whenComplete(() => offen = false),
+    );
+    var fertig = false;
+    final dienst = await halter.leihen();
+    try {
+      if (dienst == null) throw StateError(t.entwEntrauschenModellFehlt);
+      final vorlage = await queue.entwickeltesJpeg(widget.asset);
+      if (vorlage == null) throw StateError(t.entwRestaurierungFehler(''));
+      if (abgebrochen) return;
+      lauf = dienst.starteJpeg(
+        vorlage,
+        staerke: staerke,
+        onProgress: (f, g) => stand.value = (f, g),
+      );
+      final ergebnis = await lauf.ergebnis;
+      if (ergebnis == null || abgebrochen) return;
+      await queue.legeRestauriertAb(widget.asset.id, ergebnis);
+      fertig = true;
+    } catch (e) {
+      melde.fehler(t.entwEntrauschenFehler('$e'));
+    } finally {
+      halter.zurueckgeben();
+      if (offen) navigator.pop();
+      stand.dispose();
+      if (mounted) setState(() => _saving = false);
+    }
+    if (fertig && mounted) {
+      melde.erfolg(t.entwEntrauschenFertig);
+      Navigator.of(context).pop(true);
+    }
+  }
+
   /// Entfernt ein vorhandenes Restaurierungs-Ergebnis (Muster: [_reset]) –
   /// betrifft nur die Datei-Referenz, die globalen Entwickeln-Regler und
   /// Masken bleiben unangetastet.

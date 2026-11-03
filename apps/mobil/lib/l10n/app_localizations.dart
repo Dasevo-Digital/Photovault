@@ -3757,6 +3757,78 @@ abstract class AppTexte {
   /// **'Die Prüfung läuft auf dem Server – dafür braucht es eine Verbindung.'**
   String get datenOhneServer;
 
+  /// No description provided for @anmeldenPasskey.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Passkey anmelden'**
+  String get anmeldenPasskey;
+
+  /// No description provided for @anmeldenPasskeyUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Server kennt noch keine Passkeys.'**
+  String get anmeldenPasskeyUnbekannt;
+
+  /// No description provided for @anmeldenPasskeySeite.
+  ///
+  /// In de, this message translates to:
+  /// **'Angemeldet. Zurück zur App – dieses Fenster lässt sich schliessen.'**
+  String get anmeldenPasskeySeite;
+
+  /// No description provided for @anmeldenPasskeyAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Anmeldung mit Passkey wurde nicht abgeschlossen.'**
+  String get anmeldenPasskeyAbgebrochen;
+
+  /// No description provided for @eigenPasskeys.
+  ///
+  /// In de, this message translates to:
+  /// **'Passkeys'**
+  String get eigenPasskeys;
+
+  /// No description provided for @eigenPasskeysText.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Passkey meldet ohne Passwort an – mit Gesicht, Fingerabdruck oder Gerätecode. Er gilt nur für die Adresse dieses Servers, und auf ihn folgt kein TOTP-Code.'**
+  String get eigenPasskeysText;
+
+  /// No description provided for @eigenPasskeyHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Passkey hinzufügen'**
+  String get eigenPasskeyHinzufuegen;
+
+  /// No description provided for @eigenPasskeyImBrowser.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Passkey wird im Browser angelegt.'**
+  String get eigenPasskeyImBrowser;
+
+  /// No description provided for @eigenPasskeyAngelegt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Passkey ist angelegt.'**
+  String get eigenPasskeyAngelegt;
+
+  /// No description provided for @eigenPasskeyNieBenutzt.
+  ///
+  /// In de, this message translates to:
+  /// **'noch nie benutzt'**
+  String get eigenPasskeyNieBenutzt;
+
+  /// No description provided for @eigenPasskeyEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get eigenPasskeyEntfernen;
+
+  /// No description provided for @eigenPasskeyEntfernenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Den Passkey „{name}“ entfernen? Auf dem Gerät bleibt er liegen, anmelden lässt sich damit nicht mehr.'**
+  String eigenPasskeyEntfernenFrage(String name);
+
   /// No description provided for @datierungTitel.
   ///
   /// In de, this message translates to:

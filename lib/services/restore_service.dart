@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/services.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
@@ -98,61 +100,155 @@ class RestoreService {
     int quality = 92,
     void Function(int done, int total)? onProgress,
   }) {
-    final post = ReceivePort();
-    final lauf = Restaurierungslauf._();
-    unawaited(
-      Isolate.spawn(
-        _restaurierungImIsolat,
-        (
-          token: RootIsolateToken.instance!,
-          session: _session,
-          jpeg: TransferableTypedData.fromList([quelle]),
-          qualitaet: quality,
-          antwort: post.sendPort,
-        ),
-        onError: post.sendPort,
-        onExit: post.sendPort,
-        debugName: 'KI-Restaurierung',
-      ).catchError((Object e) {
-        post.close();
-        lauf._fertig.completeError(e);
-        return Isolate.current;
-      }),
+    return _starte(
+      _session,
+      quelle,
+      quality: quality,
+      onProgress: onProgress,
+      art: (
+        kachel: kachelGroesse(),
+        overlap: overlap,
+        massstab: scaleFactor,
+        vielfaches: 1,
+        staerke: 1.0,
+      ),
     );
-    Uint8List? ergebnis;
-    Object? fehler;
-    post.listen((nachricht) {
-      switch (nachricht) {
-        case SendPort p:
-          lauf._verbinde(p);
-        case ('fortschritt', int fertig, int gesamt):
-          onProgress?.call(fertig, gesamt);
-        case ('fertig', TransferableTypedData daten):
-          ergebnis = daten.materialize().asUint8List();
-          if (!lauf._fertig.isCompleted) lauf._fertig.complete(ergebnis);
-        case ('fertig', null):
-          if (!lauf._fertig.isCompleted) lauf._fertig.complete(null);
-        case [final meldung, final stapel]:
-          // Ein unbehandelter Fehler im Isolat kommt als Paar aus
-          // Meldung und Stapel an (onError).
-          fehler = StateError('$meldung\n$stapel');
-        case null:
-          // onExit: Das Isolat ist beendet – mit oder ohne Ergebnis.
-          post.close();
-          if (lauf._fertig.isCompleted) return;
-          if (fehler != null) {
-            lauf._fertig.completeError(fehler!);
-          } else {
-            lauf._fertig.complete(ergebnis);
-          }
-      }
-    });
-    return lauf;
   }
 
   Future<void> dispose() async {
     await _session.close();
   }
+}
+
+/// Was den einen Lauf vom anderen unterscheidet: Kachelgrösse und
+/// Überlappung, wie stark das Netz vergrössert, auf welches Vielfache eine
+/// Kachel aufzufüllen ist, und wie viel vom Ergebnis über das Original
+/// kommt (1 = alles).
+typedef _Laufart = ({
+  int kachel,
+  int overlap,
+  int massstab,
+  int vielfaches,
+  double staerke,
+});
+
+/// **KI-Entrauschen** mit NAFNet (siehe model_catalog.dart: `entrauschen`,
+/// #275) – derselbe Weg wie [RestoreService]: kachelweise in einem eigenen
+/// Isolat, nur ohne Vergrösserung. Die Kanten jeder Kachel werden auf ein
+/// Vielfaches von 16 aufgefüllt (das verlangt der Export), danach wieder
+/// abgeschnitten.
+///
+/// **Stärke.** NAFNet ist auf das Rauschen von fünf Telefonen trainiert und
+/// glättet feine Strukturen mit – an einem rauschfreien Testbild kamen nur
+/// 28 dB zurück. Das Ergebnis wird deshalb mit dem Original gemischt; der
+/// Regler steht anfangs auf 70 %.
+///
+/// **Nur auf der CPU.** Mit CoreML und dynamischer Eingabe dauerte eine
+/// Kachel von 512 Pixeln 42 bis 52 s statt 0,5 s.
+class Entrauschdienst {
+  Entrauschdienst._(this._session);
+
+  final OrtSession _session;
+
+  static const datei = 'denoise_nafnet_sidd_w32.onnx';
+  static const kachelGroesse = 512;
+  static const overlap = 32;
+
+  static bool isAvailable(String modelsDir) =>
+      File('$modelsDir/$datei').existsSync();
+
+  static Future<Entrauschdienst> load(String modelsDir) async {
+    final session = await OnnxRuntime().createSession(
+      '$modelsDir/$datei',
+      options: modelloptionen(providers: [OrtProvider.CPU]),
+    );
+    return Entrauschdienst._(session);
+  }
+
+  /// Entrauscht das JPEG [quelle] in einem eigenen Isolat; [staerke] von 0
+  /// bis 1 mischt das Ergebnis über das Original.
+  Restaurierungslauf starteJpeg(
+    Uint8List quelle, {
+    double staerke = 0.7,
+    int quality = 92,
+    void Function(int done, int total)? onProgress,
+  }) => _starte(
+    _session,
+    quelle,
+    quality: quality,
+    onProgress: onProgress,
+    art: (
+      kachel: kachelGroesse,
+      overlap: overlap,
+      massstab: 1,
+      vielfaches: 16,
+      staerke: staerke.clamp(0.0, 1.0),
+    ),
+  );
+
+  Future<void> dispose() async {
+    await _session.close();
+  }
+}
+
+Restaurierungslauf _starte(
+  OrtSession session,
+  Uint8List quelle, {
+  required int quality,
+  required _Laufart art,
+  void Function(int done, int total)? onProgress,
+}) {
+  final post = ReceivePort();
+  final lauf = Restaurierungslauf._();
+  unawaited(
+    Isolate.spawn(
+      _restaurierungImIsolat,
+      (
+        token: RootIsolateToken.instance!,
+        session: session,
+        jpeg: TransferableTypedData.fromList([quelle]),
+        qualitaet: quality,
+        art: art,
+        antwort: post.sendPort,
+      ),
+      onError: post.sendPort,
+      onExit: post.sendPort,
+      debugName: 'KI-Restaurierung',
+    ).catchError((Object e) {
+      post.close();
+      lauf._fertig.completeError(e);
+      return Isolate.current;
+    }),
+  );
+  Uint8List? ergebnis;
+  Object? fehler;
+  post.listen((nachricht) {
+    switch (nachricht) {
+      case SendPort p:
+        lauf._verbinde(p);
+      case ('fortschritt', int fertig, int gesamt):
+        onProgress?.call(fertig, gesamt);
+      case ('fertig', TransferableTypedData daten):
+        ergebnis = daten.materialize().asUint8List();
+        if (!lauf._fertig.isCompleted) lauf._fertig.complete(ergebnis);
+      case ('fertig', null):
+        if (!lauf._fertig.isCompleted) lauf._fertig.complete(null);
+      case [final meldung, final stapel]:
+        // Ein unbehandelter Fehler im Isolat kommt als Paar aus
+        // Meldung und Stapel an (onError).
+        fehler = StateError('$meldung\n$stapel');
+      case null:
+        // onExit: Das Isolat ist beendet – mit oder ohne Ergebnis.
+        post.close();
+        if (lauf._fertig.isCompleted) return;
+        if (fehler != null) {
+          lauf._fertig.completeError(fehler!);
+        } else {
+          lauf._fertig.complete(ergebnis);
+        }
+    }
+  });
+  return lauf;
 }
 
 /// EIN Forward-Pass für eine einzelne Kachel. try/finally analog zu
@@ -162,7 +258,13 @@ class RestoreService {
 ///
 /// Frei stehend statt als Methode: Das Isolat aus
 /// [RestoreService.restoreJpeg] hat nur die Sitzung, nicht den Dienst.
-Future<img.Image> _rechneKachel(OrtSession session, img.Image tile) async {
+Future<img.Image> _rechneKachel(
+  OrtSession session,
+  img.Image kachel, {
+  int massstab = RestoreService.scaleFactor,
+  int vielfaches = 1,
+}) async {
+  final tile = fuelleAuf(kachel, vielfaches);
   final width = tile.width;
   final height = tile.height;
   final ebene = width * height;
@@ -181,8 +283,8 @@ Future<img.Image> _rechneKachel(OrtSession session, img.Image tile) async {
     liveTensors.addAll(outputs.values);
     final outputRaw = await outputs['output']!.asFlattenedList();
 
-    final outWidth = width * RestoreService.scaleFactor;
-    final outHeight = height * RestoreService.scaleFactor;
+    final outWidth = width * massstab;
+    final outHeight = height * massstab;
     final channelSize = outWidth * outHeight;
     // Getypt lesen, wenn die Plattform getypt liefert (macOS, Linux):
     // Dann kostet jeder Wert keine Umwandlung über `num`.
@@ -206,7 +308,14 @@ Future<img.Image> _rechneKachel(OrtSession session, img.Image tile) async {
         );
       }
     }
-    return result;
+    if (identical(tile, kachel)) return result;
+    return img.copyCrop(
+      result,
+      x: 0,
+      y: 0,
+      width: kachel.width * massstab,
+      height: kachel.height * massstab,
+    );
   } finally {
     for (final v in liveTensors) {
       try {
@@ -258,13 +367,15 @@ class Restaurierungslauf {
 
 class _Abgebrochen implements Exception {}
 
-/// Der Lauf im Isolat – siehe [RestoreService.starteJpeg].
+/// Der Lauf im Isolat – siehe [RestoreService.starteJpeg] und
+/// [Entrauschdienst.starteJpeg].
 Future<void> _restaurierungImIsolat(
   ({
     RootIsolateToken token,
     OrtSession session,
     TransferableTypedData jpeg,
     int qualitaet,
+    _Laufart art,
     SendPort antwort,
   })
   a,
@@ -291,9 +402,9 @@ Future<void> _restaurierungImIsolat(
     if (quelle == null) Isolate.exit(a.antwort, ('fertig', null));
     final ergebnis = await processInTiles(
       quelle,
-      tileSize: RestoreService.kachelGroesse(),
-      overlap: RestoreService.overlap,
-      scaleFactor: RestoreService.scaleFactor,
+      tileSize: a.art.kachel,
+      overlap: a.art.overlap,
+      scaleFactor: a.art.massstab,
       infer: (kachel) async {
         // Vor jeder Kachel: angehalten wird zwischen zwei Kacheln, nie
         // mitten in einer.
@@ -301,13 +412,21 @@ Future<void> _restaurierungImIsolat(
           await (weiter ??= Completer<void>()).future;
         }
         if (abgebrochen) throw _Abgebrochen();
-        return _rechneKachel(a.session, kachel);
+        return _rechneKachel(
+          a.session,
+          kachel,
+          massstab: a.art.massstab,
+          vielfaches: a.art.vielfaches,
+        );
       },
       onProgress: (fertig, gesamt) =>
           a.antwort.send(('fortschritt', fertig, gesamt)),
       isCancelled: () => abgebrochen,
     );
     if (abgebrochen) Isolate.exit(a.antwort, ('fertig', null));
+    if (a.art.staerke < 1 && a.art.massstab == 1) {
+      mische(quelle, ergebnis, a.art.staerke);
+    }
     final jpeg = img.encodeJpg(ergebnis, quality: a.qualitaet);
     // Isolate.exit statt send: Der Kanal zur Plattform hält einen eigenen
     // Port offen, und ein Isolat mit offenem Port endet nie von selbst.
@@ -319,4 +438,42 @@ Future<void> _restaurierungImIsolat(
     await abo.cancel();
     eingang.close();
   }
+}
+
+/// Legt [ergebnis] mit [staerke] über [original] – in [ergebnis]. Beide
+/// gleich gross.
+@visibleForTesting
+void mische(img.Image original, img.Image ergebnis, double staerke) {
+  final rest = 1 - staerke;
+  for (final p in ergebnis) {
+    final o = original.getPixel(p.x, p.y);
+    p
+      ..r = (p.r * staerke + o.r * rest).round()
+      ..g = (p.g * staerke + o.g * rest).round()
+      ..b = (p.b * staerke + o.b * rest).round();
+  }
+}
+
+/// Füllt [kachel] rechts und unten auf ein Vielfaches von [vielfaches]
+/// auf – mit den Randpixeln, nicht mit Schwarz, sonst sähe das Netz eine
+/// Kante, die es nicht gibt. Passt sie schon, kommt sie selbst zurück.
+@visibleForTesting
+img.Image fuelleAuf(img.Image kachel, int vielfaches) {
+  final breite = (kachel.width + vielfaches - 1) ~/ vielfaches * vielfaches;
+  final hoehe = (kachel.height + vielfaches - 1) ~/ vielfaches * vielfaches;
+  if (breite == kachel.width && hoehe == kachel.height) return kachel;
+  final aus = img.Image(width: breite, height: hoehe);
+  for (var y = 0; y < hoehe; y++) {
+    for (var x = 0; x < breite; x++) {
+      aus.setPixel(
+        x,
+        y,
+        kachel.getPixel(
+          math.min(x, kachel.width - 1),
+          math.min(y, kachel.height - 1),
+        ),
+      );
+    }
+  }
+  return aus;
 }

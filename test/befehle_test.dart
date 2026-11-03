@@ -1074,6 +1074,7 @@ const _einordnung = <String, _Art>{
   'clearAutoBackupDestination': _Art.lokal,
   'createRestoreJob': _Art.lokal,
   'completeRestoreJob': _Art.lokal,
+  'setzeRestauriert': _Art.lokal,
   'deleteRestoreJob': _Art.lokal,
   'markRestoreJobStatus': _Art.lokal,
   'requeueRestoreJob': _Art.lokal,

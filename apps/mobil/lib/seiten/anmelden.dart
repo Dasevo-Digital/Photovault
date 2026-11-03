@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kern/abgleich/anmeldung.dart';
+import 'package:kern/abgleich/passkey_anmeldung.dart';
 import 'package:kern/abgleich/konten.dart' show grundAus;
 import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -28,7 +29,16 @@ class Anmelden extends StatefulWidget {
     super.key,
     required this.sitzung,
     @visibleForTesting this.anmeldungFuer = Anmeldung.new,
+    this.oeffne = _imBrowserDerApp,
   });
+
+  /// Öffnet die Seite des Servers, auf der der Passkey gefragt wird (#277)
+  /// – im Browser der App, wie die OIDC-Verknüpfung.
+  final Future<void> Function(Uri adresse) oeffne;
+
+  static Future<void> _imBrowserDerApp(Uri adresse) async {
+    await launchUrl(adresse, mode: LaunchMode.inAppBrowserView);
+  }
 
   final Sitzung sitzung;
 
@@ -130,6 +140,45 @@ class _AnmeldenState extends State<Anmelden> {
         geraet: _geraet.text.trim(),
       ),
     );
+  });
+
+  /// Mit Passkey statt Name und Passwort (#277), siehe
+  /// kern/abgleich/passkey_anmeldung.dart.
+  Future<void> _mitPasskey() => _mitArbeit(() async {
+    final t = AppTexte.of(context);
+    final server = serveradresseAus(_adresse.text);
+    if (server == null) {
+      _fehler = t.anmeldenNichtErreichbar;
+      return;
+    }
+    if (!ohneTlsErlaubt(server)) {
+      _fehler = t.anmeldenNurHttps;
+      return;
+    }
+    _anmeldung?.schliesse();
+    final a = _anmeldung = widget.anmeldungFuer(server);
+    _server = server;
+    final z = await a.zustand();
+    if ((z['anmeldung'] as Map?)?['passkeys'] != true) {
+      _fehler = t.anmeldenPasskeyUnbekannt;
+      return;
+    }
+    final p = PasskeyAnmeldung(server);
+    try {
+      final s = await p.melde(
+        geraet: _geraet.text.trim(),
+        oeffne: widget.oeffne,
+        antwort: t.anmeldenPasskeySeite,
+      );
+      await closeInAppWebView().catchError((_) {});
+      if (s == null) {
+        _fehler = t.anmeldenPasskeyAbgebrochen;
+        return;
+      }
+      _verarbeite(s);
+    } finally {
+      p.schliesse();
+    }
   });
 
   Future<void> _erstesAnlegen() => _mitArbeit(() async {
@@ -274,6 +323,12 @@ class _AnmeldenState extends State<Anmelden> {
       FilledButton(
         onPressed: _arbeitet ? null : _anmelden,
         child: Text(t.anmeldenAnmelden),
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(
+        icon: const Icon(Icons.fingerprint),
+        label: Text(t.anmeldenPasskey),
+        onPressed: _arbeitet ? null : _mitPasskey,
       ),
     ],
     _Schritt.erstesKonto => [

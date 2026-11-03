@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/passkey_anmeldung.dart';
 import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/umzug.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -15,6 +16,7 @@ import 'package:path/path.dart' as p;
 import '../l10n/app_localizations.dart';
 import '../services/library_location.dart';
 import '../services/meldungsdienst.dart';
+import '../services/platform/webseite_oeffnen.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/qr_bild.dart';
 import 'einstellungen/einstellungsstand.dart';
@@ -97,6 +99,45 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       if (mounted) setState(() => _arbeitet = false);
     }
   }
+
+  /// Mit Passkey statt Name und Passwort (#277): Die Seite des Servers
+  /// fragt im Browser danach und schickt ihn auf einen Port nur auf diesem
+  /// Rechner zurück, siehe kern/abgleich/passkey_anmeldung.dart.
+  Future<void> _mitPasskey() => _mitArbeit(() async {
+    final t = AppTexte.of(context);
+    final server = serveradresseAus(_adresse.text);
+    if (server == null) {
+      _fehler = t.serverNichtErreichbar;
+      return;
+    }
+    if (!ohneTlsErlaubt(server)) {
+      _fehler = t.serverNurHttps;
+      return;
+    }
+    _anmeldung?.schliesse();
+    final a = _anmeldung = widget.anmeldungFuer(server);
+    _server = server;
+    final zustand = await a.zustand();
+    if ((zustand['anmeldung'] as Map?)?['passkeys'] != true) {
+      _fehler = t.serverPasskeyUnbekannt;
+      return;
+    }
+    final p = PasskeyAnmeldung(server);
+    try {
+      final s = await p.melde(
+        geraet: _geraet.text.trim(),
+        oeffne: (adresse) => oeffneWebseite('$adresse'),
+        antwort: t.serverPasskeySeite,
+      );
+      if (s == null) {
+        _fehler = t.serverPasskeyAbgebrochen;
+        return;
+      }
+      _verarbeite(s);
+    } finally {
+      p.schliesse();
+    }
+  });
 
   Future<void> _anmelden() => _mitArbeit(() async {
     final t = AppTexte.of(context);
@@ -383,6 +424,12 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
       FilledButton(
         onPressed: _arbeitet ? null : _anmelden,
         child: Text(t.serverAnmelden),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      OutlinedButton.icon(
+        icon: const Icon(Icons.fingerprint),
+        label: Text(t.serverPasskey),
+        onPressed: _arbeitet ? null : _mitPasskey,
       ),
     ],
     _Schritt.erstesKonto => [

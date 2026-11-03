@@ -11,6 +11,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 
 import 'bremse.dart';
+import 'passkeys.dart';
 import 'passwort.dart';
 import 'serverdatenbank.dart';
 import 'totp.dart';
@@ -191,6 +192,9 @@ class Kontodienst {
 
   /// Was Gäste über Links hochgeladen haben (Issue #106).
   late final beitraege = Gastbeitraege(_sdb, uhr: _uhr);
+
+  /// Die Passkeys der Konten (#277).
+  late final passkeys = Passkeys(_db, uhr: _uhr);
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);
@@ -562,6 +566,40 @@ class Kontodienst {
       [kontoId, _hash(_normalisiereCode(code))],
     );
     return _db.updatedRows == 1;
+  }
+
+  /// Meldet mit einem Passkey an (#277): [pruefe] liefert das Konto oder
+  /// wirft. Ein Passkey mit geprüftem Menschen zählt als beide Faktoren –
+  /// danach folgt kein TOTP-Code. Wer an der Adresse zu oft scheitert,
+  /// wird gebremst wie beim Passwort; ein gesperrtes Konto bleibt zu.
+  Future<Anmeldeergebnis> meldeMitPasskeyAn(
+    Future<String> Function() pruefe, {
+    required String geraet,
+    required String adresse,
+  }) async {
+    final warte = bremse.wartezeit(adresse);
+    if (warte != null) return Abgewiesen(warte: warte);
+    final String kontoId;
+    try {
+      kontoId = await pruefe();
+    } on PasskeyFehler {
+      bremse.fehlschlag(adresse);
+      rethrow;
+    }
+    final z = _zeile(kontoId);
+    if (z == null) return const Abgewiesen();
+    final gesperrt = z['gesperrt_bis'] as int?;
+    if (gesperrt != null && gesperrt > _uhr().millisecondsSinceEpoch) {
+      return Abgewiesen(
+        warte: Duration(milliseconds: gesperrt - _uhr().millisecondsSinceEpoch),
+      );
+    }
+    return _meldeNachPruefungAn(
+      kontoId,
+      z['anmelde_stand'] as int,
+      geraet,
+      adresse,
+    );
   }
 
   /// Ein Gerät für [kontoId] anmelden – nach bestandener Prüfung (auch

@@ -51,6 +51,7 @@ import 'konten/kontodienst.dart';
 import 'konten_api.dart';
 import 'gastpruefung.dart';
 import 'oidc.dart';
+import 'passkey_api.dart';
 import 'packen.dart';
 import 'rechnen.dart';
 import 'sicherung.dart';
@@ -90,6 +91,7 @@ Handler baueApi({
   final von = absender ?? Absender();
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
+  final passkeys = Passkeyapi(konten, von);
   final video = Videofassungen();
   final api = _Api(
     bibliotheken,
@@ -227,6 +229,20 @@ Handler baueApi({
       (Request r) => oberflaeche?.sitzung(r) ?? Response.notFound('nicht da'),
     )
     ..post('/api/v1/anmelden/totp', anmeldung.totp)
+    ..post(
+      '/api/v1/web/anmelden/passkey',
+      (Request r) => oberflaeche?.passkey(r) ?? Response.notFound('nicht da'),
+    )
+    ..post('/api/v1/anmelden/passkey/optionen', passkeys.anmeldeoptionen)
+    ..post('/api/v1/anmelden/passkey', passkeys.anmeldenFuerGeraet)
+    ..post('/api/v1/anmelden/passkey/einloesen', passkeys.einloesen)
+    ..get('/api/v1/konto/passkeys', passkeys.liste)
+    ..post('/api/v1/konto/passkeys/optionen', passkeys.anlegeoptionen)
+    ..post('/api/v1/konto/passkeys/ticket', passkeys.ticket)
+    ..post('/api/v1/konto/passkeys', passkeys.anlegen)
+    ..delete('/api/v1/konto/passkeys/<id>', passkeys.entfernen)
+    ..post('/api/v1/passkeys/ticket/optionen', passkeys.ticketoptionen)
+    ..post('/api/v1/passkeys/ticket', passkeys.ticketanlegen)
     ..get('/api/v1/anmelden/oidc', anmeldung.oidcStart)
     ..get('/api/v1/anmelden/oidc/zurueck', anmeldung.oidcZurueck)
     ..post('/api/v1/anmelden/oidc/einloesen', anmeldung.oidcEinloesen)
@@ -464,6 +480,12 @@ Handler baueApi({
             'api/v1/anmelden/oidc/einloesen',
             'api/v1/web/anmelden',
             'api/v1/web/anmelden/totp',
+            'api/v1/web/anmelden/passkey',
+            'api/v1/anmelden/passkey/optionen',
+            'api/v1/anmelden/passkey',
+            'api/v1/anmelden/passkey/einloesen',
+            'api/v1/passkeys/ticket/optionen',
+            'api/v1/passkeys/ticket',
             'app',
           },
           offenPraefixe: {'app/', 'teilen/', 'api/v1/teilen/'},
@@ -556,6 +578,7 @@ class _Api {
         'anmeldung': {
           'totp': konten.totpPflicht,
           'oidc': oidc != null,
+          'passkeys': true,
           // Nur von dort kann die Weboberfläche verknüpfen (#182).
           if (oidc case final o?) 'weboberflaeche': '${o.e.weboberflaeche}',
         },

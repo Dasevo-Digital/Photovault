@@ -122,6 +122,11 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 .karte label { display: block; margin: 12px 0 4px; color: var(--leise); }
 .karte input { display: block; width: 100%; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 .karte button[type=submit] { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+/* Passkeys (#277): zweitrangig unter dem Anmelden, auf der eigenen Seite
+   der einzige Knopf. */
+.karte button.zweitrangig { margin-top: 10px; width: 100%; padding: 10px; border: 1px solid var(--rand); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; }
+body[data-seite=passkey] #los { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+body[data-seite=passkey] #los:disabled { opacity: .5; }
 .karte code { user-select: all; word-break: break-all; }
 .fehler { color: var(--fehler); min-height: 1.4em; }
 .leise { color: var(--leise); text-align: center; padding: 16px; }
