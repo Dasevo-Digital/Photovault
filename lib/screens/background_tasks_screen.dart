@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/bildwerkzeuge.dart';
+import 'package:kern/services/ocr_service.dart' show texterkennungsstand;
 import '../l10n/app_localizations.dart';
 import '../state/hintergrundlauf.dart';
 import '../state/library_state.dart';
@@ -952,7 +954,9 @@ List<Aufgabe> _aufgaben(
     titel: t.aufgOcrTitel,
     stufe: Analysestufe.texterkennung,
     beschreibung: t.aufgOcrText,
-    offeneZahl: () => library.db.countOcrBackfill(),
+    offeneZahl: () => library.db.countOcrBackfill(
+      stand: texterkennungsstand(Bildwerkzeuge.standard),
+    ),
     // Auf macOS immer verfügbar (Vision-Framework), sonst erst mit
     // den beiden nachgeladenen Modellen.
     nichtVerfuegbar: _modelHint(

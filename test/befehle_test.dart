@@ -1020,6 +1020,7 @@ const _einordnung = <String, _Art>{
   'setOcrResult': _Art.ergebnis,
   'setTranskript': _Art.ergebnis,
   'vermerkeHerkunft': _Art.ergebnis,
+  'vermerkeUnlesbar': _Art.ergebnis,
   'setSharpnessScore': _Art.ergebnis,
   'setLocationNames': _Art.ergebnis,
   'setLocationNamesBulk': _Art.ergebnis,

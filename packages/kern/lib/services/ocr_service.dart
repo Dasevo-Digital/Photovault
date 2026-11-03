@@ -10,6 +10,8 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import '../berechne.dart';
 import '../protokoll.dart';
+import 'bildwerkzeuge.dart';
+import 'model_processing_state.dart';
 import 'onnx_hardswish.dart';
 import 'textstellen.dart';
 import 'modellthreads.dart';
@@ -686,6 +688,15 @@ img.Image richteStelleAus(img.Image bild, OcrStelle s, int breite, int hoehe) {
   }
   return ziel;
 }
+
+/// Womit die Texterkennung liest – ändert sich das, kommen Fotos, deren
+/// Schrift sich nicht lesen liess ([LesungLiefertNichts]), wieder dran
+/// (#270). Mit den Modellen (und ihrer Zeilenführung) ist es ihr
+/// Fingerabdruck; liest das System selbst (Apple Vision), ein eigener
+/// Name – Vision kann lesen, woran die Modelle scheiterten.
+String texterkennungsstand(Bildwerkzeuge werkzeuge) => werkzeuge.liestTextSelbst
+    ? 'Apple Vision'
+    : ModelProcessingState.currentFingerprints(macos: false)['ocr']!;
 
 /// Es wurde Schrift gefunden, aber keine einzige Stelle liess sich lesen.
 ///

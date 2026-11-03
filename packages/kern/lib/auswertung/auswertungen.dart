@@ -637,7 +637,8 @@ class Auswertungen {
   }
 
   Stream<ImportProgress> backfillOcrText({bool alle = false}) async* {
-    final assets = await db.assetsForOcrBackfill(alle: alle);
+    final stand = texterkennungsstand(bildwerkzeuge);
+    final assets = await db.assetsForOcrBackfill(alle: alle, stand: stand);
     if (assets.isEmpty) {
       yield ImportProgress(0, 0);
       return;
@@ -702,12 +703,20 @@ class Auswertungen {
         } on LesungLiefertNichts catch (e) {
           // NICHT als leeres Ergebnis speichern: Das Foto würde als
           // durchsucht vermerkt und nach einer Reparatur nie wieder
-          // drankommen. Es bleibt offen, der Lauf geht weiter.
+          // drankommen. Es bleibt offen – aber erst für einen neuen Stand,
+          // nicht für jeden Lauf (#270).
           protokoll(
             'Texterkennung: ${e.stellen} Stellen mit Schrift in '
-            '${asset.originalFileName}, keine lesbar – Foto bleibt offen.',
+            '${asset.originalFileName}, keine lesbar – erst mit neuem '
+            'Modell wieder.',
           );
-          failed = true;
+          // Als Ergebnis dieses Stands vermerkt – kein Grund mehr, einen
+          // vollen Lauf nach einem Modellwechsel als gescheitert zu werten.
+          await db.vermerkeUnlesbar(
+            asset.id,
+            stand: stand,
+            geraet: rechner.geraet,
+          );
         } catch (e) {
           failed = true;
           protokoll(

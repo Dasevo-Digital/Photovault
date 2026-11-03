@@ -750,18 +750,49 @@ extension NachtragsAbfragen on AppDatabase {
   /// [alle] liest auch bereits durchsuchte Aufnahmen erneut. Das wird nur
   /// nach einem Modellwechsel angeboten; sonst bleibt der reguläre Lauf
   /// inkrementell und spart unnötige lokale Inferenz.
-  Future<List<AssetData>> assetsForOcrBackfill({bool alle = false}) =>
+  ///
+  /// Mit [stand] (siehe `texterkennungsstand`) bleiben Fotos aussen vor,
+  /// deren Schrift sich mit genau diesem Stand schon nicht lesen liess
+  /// (#270): Am Server kamen dieselben vier DNG in drei Tagen fünfmal
+  /// dran, jedes Mal vergeblich. Ein neues Modell, eine neue Zeilenführung
+  /// oder ein anderes Gerät mit anderer Lesart nimmt sie wieder.
+  Future<List<AssetData>> assetsForOcrBackfill({
+    bool alle = false,
+    String? stand,
+  }) =>
       (select(assets)..where(
             (t) => alle
                 ? _auswertbar(t) &
                       t.isTrashed.equals(false) &
                       t.isLocked.equals(false)
-                : _ocrOffen(t),
+                : _ocrOffen(t, stand),
           ))
           .get();
 
   /// Zählvariante von [assetsForOcrBackfill], siehe [countLocationBackfill].
-  Future<int> countOcrBackfill() => _countWhere(_ocrOffen(assets));
+  Future<int> countOcrBackfill({String? stand}) =>
+      _countWhere(_ocrOffen(assets, stand));
+
+  /// Unter dieser Art steht in [Ergebnisherkunft], dass ein Foto Schrift
+  /// zeigt, die sich nicht lesen liess – mit dem Stand im Feld `modell`.
+  static const texterkennungUnlesbar = 'texterkennungUnlesbar';
+
+  /// Merkt sich, dass die Schrift auf [assetId] mit [stand] nicht lesbar
+  /// war (#270).
+  Future<void> vermerkeUnlesbar(
+    String assetId, {
+    required String stand,
+    required String geraet,
+  }) => into(ergebnisherkunft).insertOnConflictUpdate(
+    ErgebnisherkunftCompanion.insert(
+      assetId: assetId,
+      art: texterkennungUnlesbar,
+      modell: stand,
+      geraet: geraet,
+      beschleuniger: '',
+      zeit: DateTime.now(),
+    ),
+  );
 
   /// Auf wie vielen Aufnahmen überhaupt Text erkannt worden ist.
   ///
@@ -801,14 +832,26 @@ extension NachtragsAbfragen on AppDatabase {
       t.type.equals('IMAGE') |
       (t.type.equals('VIDEO') & t.previewRelativePath.isNotNull());
 
-  Expression<bool> _ocrOffen($AssetsTable t) =>
-      _auswertbar(t) &
-      t.isTrashed.equals(false) &
-      t.isLocked.equals(false) &
-      (t.ocrScanned.equals(false) |
-          (t.ocrText.isNotNull() &
-              t.ocrText.equals('').not() &
-              t.ocrBoxen.isNull()));
+  Expression<bool> _ocrOffen($AssetsTable t, [String? stand]) {
+    final offen =
+        _auswertbar(t) &
+        t.isTrashed.equals(false) &
+        t.isLocked.equals(false) &
+        (t.ocrScanned.equals(false) |
+            (t.ocrText.isNotNull() &
+                t.ocrText.equals('').not() &
+                t.ocrBoxen.isNull()));
+    if (stand == null) return offen;
+    final h = ergebnisherkunft;
+    return offen &
+        t.id.isNotInQuery(
+          selectOnly(h)
+            ..addColumns([h.assetId])
+            ..where(
+              h.art.equals(texterkennungUnlesbar) & h.modell.equals(stand),
+            ),
+        );
+  }
 
   /// Setzt das Ergebnis der KI-Bildbeschreibung (siehe FlorenceCaptioningService) –
   /// analog zu [setOcrResult].

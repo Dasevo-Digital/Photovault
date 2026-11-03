@@ -176,6 +176,29 @@ void main() {
       expect(await db.assetsForOcrBackfill(), isEmpty);
     });
 
+    test(
+      'unlesbare Schrift kommt erst mit neuem Stand wieder dran (#270)',
+      () async {
+        await lege('dng');
+        await db.vermerkeUnlesbar('dng', stand: 'modell-a', geraet: 'Server');
+        expect(await db.assetsForOcrBackfill(stand: 'modell-a'), isEmpty);
+        expect(await db.countOcrBackfill(stand: 'modell-a'), 0);
+        // Ein neues Modell, eine andere Lesart (Apple Vision) – oder wer
+        // ohne Stand fragt wie die Rechenhilfe am Server.
+        expect(
+          [
+            for (final a in await db.assetsForOcrBackfill(stand: 'modell-b'))
+              a.id,
+          ],
+          ['dng'],
+        );
+        expect(
+          [for (final a in await db.assetsForOcrBackfill()) a.id],
+          ['dng'],
+        );
+      },
+    );
+
     test('gesperrte Fotos bleiben aussen vor, auch im neuen Fall', () async {
       await lege('tresor', text: 'geheim', gescannt: true, gesperrt: true);
       expect(await db.assetsForOcrBackfill(), isEmpty);
