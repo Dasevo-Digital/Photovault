@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 
 import 'auswertungsdienst.dart';
 import 'bibliothek.dart';
+import 'fassungen_aufraeumen.dart';
 import 'rechnen.dart';
 import 'hochladen.dart';
 
@@ -109,6 +110,12 @@ class Bibliotheken {
         if (n > 0) protokoll('$n verdeckte Aufnahmen in Ordnung gebracht');
       } catch (e) {
         protokoll('Verdeckte Aufnahmen nicht geprüft: $e');
+      }
+      try {
+        final n = await raeumeFassungenAuf(b);
+        if (n > 0) protokoll('$n gewandelte Fassungen aufgeräumt');
+      } catch (e) {
+        protokoll('Gewandelte Fassungen nicht aufgeräumt: $e');
       }
       auswertung.anstossen();
       return Kontobereich(b, hochladen, auswertung, vergabe);

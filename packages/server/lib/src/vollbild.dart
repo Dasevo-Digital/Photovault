@@ -6,6 +6,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
+import 'fassungen_aufraeumen.dart';
+
 /// Fotos in voller Auflösung für Browser und Handy, die HEIC, DNG oder CR3
 /// nicht selbst lesen (#256).
 ///
@@ -112,39 +114,7 @@ class Vollbilder {
     final teil = File('${datei.path}.teil');
     await teil.writeAsBytes(bytes, flush: true);
     await teil.rename(datei.path);
-    await _begrenze(speicher, datei);
+    await begrenzeZwischenspeicher(speicher, grenze, behalten: datei);
     return datei;
-  }
-
-  /// Hält [speicher] unter [grenze]: die ältesten zuerst, bis vier Fünftel
-  /// frei sind, damit nicht jede nächste Wandlung wieder aufräumt. Die
-  /// Zeit wird beim Ausliefern nicht aufgefrischt – sie steckt im ETag,
-  /// und der Browser soll seine Kopie behalten dürfen.
-  Future<void> _begrenze(Directory speicher, File behalten) async {
-    final dateien = <(File, int, DateTime)>[];
-    var summe = 0;
-    await for (final e in speicher.list(followLinks: false)) {
-      if (e is! File || e.path == behalten.path) continue;
-      try {
-        final s = await e.stat();
-        dateien.add((e, s.size, s.modified));
-        summe += s.size;
-      } on FileSystemException {
-        // Zwischen Auflisten und Messen gelöscht.
-      }
-    }
-    summe += await behalten.length();
-    if (summe <= grenze) return;
-    dateien.sort((a, b) => a.$3.compareTo(b.$3));
-    final ziel = grenze * 4 ~/ 5;
-    for (final (f, bytes, _) in dateien) {
-      if (summe <= ziel) break;
-      try {
-        await f.delete();
-        summe -= bytes;
-      } on FileSystemException {
-        // Gerade weg – dann eben beim nächsten Mal.
-      }
-    }
   }
 }

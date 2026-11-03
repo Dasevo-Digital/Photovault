@@ -8,6 +8,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/fassungen_aufraeumen.dart';
 import 'package:photo_vault_server/src/vollbild.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -226,6 +227,49 @@ void main() {
     );
     expect(gefragt, isFalse);
   });
+
+  test(
+    'beim Öffnen gehen Fassungen, die zu nichts mehr gehören (#261)',
+    () async {
+      final vollbild = Directory(p.join(b.ordner.path, 'vollbild'));
+      final abspielbar = Directory(p.join(b.ordner.path, 'abspielbar'));
+      File lege(Directory d, String name) => File(p.join(d.path, name))
+        ..parent.createSync(recursive: true)
+        ..writeAsBytesSync([1]);
+
+      await aufnahme('k', 'heic');
+      expect((await voll('k')).statusCode, 200);
+      final heute = vollbild.listSync().single as File;
+      final vorher = lege(vollbild, 'k-000000000000.jpg');
+      await aufnahme('t', 'heic');
+      await b.db.fuehreAus(const InDenPapierkorb(['t']));
+      final papierkorb = Vollbilder.ziel(
+        vollbild,
+        't',
+        b.pfade.absolute('originals/t.heic').path,
+      )..writeAsBytesSync([1]);
+      await aufnahme('z', 'heic', gesperrt: true);
+      final gesperrt = lege(vollbild, 'z-bbbbbbbbbbbb.jpg');
+      final geloescht = lege(vollbild, 'weg-aaaaaaaaaaaa.jpg');
+      await aufnahme('v', 'mov', typ: 'VIDEO');
+      final video = lege(abspielbar, 'v.mp4');
+      final gekuerzt = lege(abspielbar, 'v-gekuerzt.mp4');
+      final halb = lege(abspielbar, 'v.mp4.teil');
+      final videoWeg = lege(abspielbar, 'weg.mp4');
+
+      expect(await raeumeFassungenAuf(b), 6);
+
+      expect(heute.existsSync(), isTrue, reason: 'was der Betrachter zeigt');
+      expect(papierkorb.existsSync(), isTrue, reason: 'lässt sich zurückholen');
+      expect(video.existsSync(), isTrue);
+      expect(vorher.existsSync(), isFalse, reason: 'eine ältere Fassung');
+      expect(gesperrt.existsSync(), isFalse, reason: 'gesperrt');
+      expect(geloescht.existsSync(), isFalse, reason: 'gibt es nicht mehr');
+      expect(gekuerzt.existsSync(), isFalse, reason: 'nicht mehr gekürzt');
+      expect(halb.existsSync(), isFalse, reason: 'abgebrochene Wandlung');
+      expect(videoWeg.existsSync(), isFalse);
+    },
+  );
 
   test('der Zwischenspeicher bleibt unter seiner Grenze', () async {
     final speicher = Directory('${ordner.path}/speicher');

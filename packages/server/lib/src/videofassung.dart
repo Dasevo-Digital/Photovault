@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'fassungen_aufraeumen.dart';
+
 /// Videos als H.264 für Browser, die das Original nicht abspielen.
 ///
 /// **Warum.** Das iPhone filmt in HEVC, oft in HDR. Chrome unter Linux,
@@ -21,12 +23,18 @@ import 'package:path/path.dart' as p;
 ///
 /// Die Fassungen liegen neben der Bibliothek, nicht in ihr: Die Sicherung
 /// nimmt nur, was in der Datenbank steht, und ein Zwischenspeicher gehört
-/// nicht aufs NAS.
+/// nicht aufs NAS. Zusammen höchstens [grenze] Bytes, die ältesten gehen
+/// zuerst – bis 3.52 wuchs der Ordner ohne Ende (#261).
 class Videofassungen {
-  Videofassungen({this.ffmpeg = 'ffmpeg', this.ffprobe = 'ffprobe'});
+  Videofassungen({
+    this.ffmpeg = 'ffmpeg',
+    this.ffprobe = 'ffprobe',
+    this.grenze = 10 * 1024 * 1024 * 1024,
+  });
 
   final String ffmpeg;
   final String ffprobe;
+  final int grenze;
 
   final _laufend = <String, Future<File?>>{};
   Future<void> _reihe = Future.value();
@@ -111,6 +119,7 @@ class Videofassungen {
       return null;
     }
     await teil.rename(datei.path);
+    await begrenzeZwischenspeicher(datei.parent, grenze, behalten: datei);
     return datei;
   }
 
