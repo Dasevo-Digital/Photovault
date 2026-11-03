@@ -277,15 +277,23 @@ if ($Pruefen) {
   # sich heif-dec.exe auch dann, wenn es im Paket fehlte: Es liegt hier
   # unter C:\msys64. Auf einer fremden Maschine gaebe es das nicht.
   $sauber = "$env:SystemRoot\System32;$env:SystemRoot"
+  # Mit 'Continue': djxl schreibt seine Kopfzeile nach stderr, und unter
+  # 'Stop' wertet PowerShell 5.1 schon das als Abbruch - der Aufruf endete
+  # dann, bevor die Datei geschrieben war (Bau von 3.52.0, #276).
   function ImPaket($exe, $argumente) {
     $alt = $env:PATH
+    $vorher = $ErrorActionPreference
     try {
       $env:PATH = $sauber
+      $ErrorActionPreference = 'Continue'
       $aus = & "$Paket\tools\$exe" @argumente 2>&1 | Out-String
       return @{ rc = $LASTEXITCODE; aus = $aus }
     } catch {
       return @{ rc = -1; aus = "$_" }
-    } finally { $env:PATH = $alt }
+    } finally {
+      $env:PATH = $alt
+      $ErrorActionPreference = $vorher
+    }
   }
 
   # Vorhandensein genuegt nicht - aufrufen. Unter Linux lag einmal ein
