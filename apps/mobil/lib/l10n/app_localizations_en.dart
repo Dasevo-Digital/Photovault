@@ -2742,102 +2742,6 @@ class AppTexteEn extends AppTexte {
   String get startfehlerErneut => 'Try again';
 
   @override
-  String get geteiltMitMir => 'Shared with me';
-
-  @override
-  String geteiltVon(String name) {
-    return 'by $name';
-  }
-
-  @override
-  String geteiltAlbumVon(String name) {
-    return 'Shared by $name';
-  }
-
-  @override
-  String geteiltBeigetragenVon(String name) {
-    return 'Contributed by $name';
-  }
-
-  @override
-  String get geteiltHinzufuegen => 'Add photos';
-
-  @override
-  String get geteiltVerlassen => 'Stop showing';
-
-  @override
-  String geteiltVerlassenFrage(String name, String besitzer) {
-    return 'Stop showing “$name”? The photos stay with $besitzer; only $besitzer can share it again.';
-  }
-
-  @override
-  String get geteiltNichtMehr => 'This album is no longer shared with you.';
-
-  @override
-  String geteiltLaedtHoch(int i, int n) {
-    return 'Uploading $i of $n …';
-  }
-
-  @override
-  String geteiltHinzugefuegt(int n) {
-    String _temp0 = intl.Intl.pluralLogic(
-      n,
-      locale: localeName,
-      other: '$n items added',
-      one: '1 item added',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get geteiltNurAnsehen => 'You can no longer add to this album.';
-
-  @override
-  String get geteiltSpeicherVoll => 'The server storage is full.';
-
-  @override
-  String geteiltFehler(String name) {
-    return '“$name” failed.';
-  }
-
-  @override
-  String get geteiltOffline => 'The server cannot be reached right now.';
-
-  @override
-  String get geteiltLeer => 'The album is empty.';
-
-  @override
-  String get kontenTeilen => 'Share with accounts';
-
-  @override
-  String kontenTeilenTitel(String titel) {
-    return 'Share “$titel” with accounts';
-  }
-
-  @override
-  String get kontenTeilenHinweis =>
-      'Other accounts on this server see the album under “Shared with me” – in the browser and on the phone.';
-
-  @override
-  String get kontenBeitragenHinweis =>
-      'Anyone allowed to contribute adds photos and videos directly to this album. They go into your library.';
-
-  @override
-  String get kontenAnsehen => 'View';
-
-  @override
-  String get kontenBeitragen => 'Contribute';
-
-  @override
-  String get kontenNiemand => 'Not shared with anyone.';
-
-  @override
-  String get kontenKeineAnderen => 'There is no other account on this server.';
-
-  @override
-  String get kontenTeilenKnopf => 'Share';
-
-  @override
   String get fotosWaehlen => 'Choose photos';
 
   @override
@@ -2851,15 +2755,4 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get fotosEinstellungen => 'Settings';
-
-  @override
-  String get geteiltEntfernen => 'Remove from album';
-
-  @override
-  String geteiltEntfernenFrage(String name) {
-    return 'Remove your contribution “$name” from the album? If it is in no other album, it goes to the owner\'s trash.';
-  }
-
-  @override
-  String get geteiltEntfernt => 'Removed from the album';
 }

@@ -11,7 +11,8 @@ import 'angaben.dart' show groesseText;
 import 'raster.dart';
 import 'diashow.dart';
 import 'freigaben.dart';
-import 'geteilte_alben.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
+import 'geteilt_handy.dart';
 
 /// Die Alben der Bibliothek, jedes mit seinem Titelbild – darunter die
 /// intelligenten Alben, die gemerkten Suchen (#187), und was andere Konten
@@ -77,11 +78,7 @@ class Alben extends StatelessWidget {
                 ),
               ),
             ],
-            GeteilteAlben(
-              verbindung: sitzung.abgleich?.verbindung,
-              raster: raster,
-              ablage: sitzung.paths.geteiltDir,
-            ),
+            GeteilteAlben(zugang: teilungszugang(sitzung), raster: raster),
           ],
         );
       },
@@ -381,7 +378,7 @@ class AlbumSeite extends StatelessWidget {
         ),
         if (sitzung.abgleich?.verbindung case final v?)
           IconButton(
-            tooltip: AppTexte.of(context).kontenTeilen,
+            tooltip: teilenTexte(context).kontenTeilen,
             icon: const Icon(Icons.group_add_outlined),
             onPressed: () => mitKontenTeilen(
               context,

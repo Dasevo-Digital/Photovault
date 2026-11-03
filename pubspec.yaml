@@ -75,6 +75,8 @@ dependencies:
     path: packages/kern
   abgleich_ui:
     path: packages/abgleich_ui
+  teilen_ui:
+    path: packages/teilen_ui
   zierbild:
     path: packages/zierbild
   # Die Landschaft unter einer Spur und der Flug darüber – mit der

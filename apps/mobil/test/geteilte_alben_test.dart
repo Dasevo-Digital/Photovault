@@ -8,7 +8,7 @@ import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
-import 'package:photo_vault_mobil/seiten/geteilte_alben.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 
 /// Alben zwischen Konten teilen (#105) auf dem Telefon – dieselben Wege
 /// wie im Browser, gegen einen gestellten Server.
@@ -65,7 +65,7 @@ void main() {
           body: CustomScrollView(
             slivers: [
               GeteilteAlben(
-                verbindung: v,
+                zugang: Teilungszugang(verbindung: v),
                 raster: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 200,
                   childAspectRatio: 0.82,
@@ -97,7 +97,7 @@ void main() {
           body: CustomScrollView(
             slivers: [
               GeteilteAlben(
-                verbindung: v,
+                zugang: Teilungszugang(verbindung: v),
                 raster: const SliverGridDelegateWithMaxCrossAxisExtent(
                   maxCrossAxisExtent: 200,
                 ),
@@ -177,15 +177,17 @@ void main() {
     await tester.pumpWidget(
       app(
         GeteiltesAlbumSeite(
-          verbindung: v,
           album: album,
-          waehle: (_) async => [
-            Beitragsdatei(
-              name: 'IMG_1.HEIC',
-              geaendert: DateTime.utc(2026, 8, 2, 10),
-              datei: () async => foto,
-            ),
-          ],
+          zugang: Teilungszugang(
+            verbindung: v,
+            waehle: (_) async => [
+              Beitragsdatei(
+                name: 'IMG_1.HEIC',
+                geaendert: DateTime.utc(2026, 8, 2, 10),
+                datei: () async => foto,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -238,7 +240,12 @@ void main() {
       client: client,
     );
     await tester.pumpWidget(
-      app(GeteiltesAlbumSeite(verbindung: v, album: album)),
+      app(
+        GeteiltesAlbumSeite(
+          zugang: Teilungszugang(verbindung: v, waehle: (_) async => []),
+          album: album,
+        ),
+      ),
     );
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
@@ -368,7 +375,7 @@ void main() {
                 zurueck = await Navigator.of(context).push<bool>(
                   MaterialPageRoute(
                     builder: (_) => GeteilterBetrachter(
-                      verbindung: v,
+                      zugang: Teilungszugang(verbindung: v),
                       album: album,
                       aufnahmen: aufnahmen,
                       start: 0,
@@ -440,8 +447,7 @@ void main() {
         body: CustomScrollView(
           slivers: [
             GeteilteAlben(
-              verbindung: v,
-              ablage: ordner,
+              zugang: Teilungszugang(verbindung: v, ablage: ordner),
               raster: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: 200,
                 childAspectRatio: 0.82,

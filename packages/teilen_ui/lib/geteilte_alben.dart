@@ -7,14 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
-import 'package:photo_manager/photo_manager.dart';
-import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
-import 'package:video_player/video_player.dart';
 
-import '../l10n/app_localizations.dart';
+import 'l10n/teilen_texte.dart';
 
 // Alben zwischen Konten teilen (#105) – wie im Browser (web/app.js,
-// zeigeGeteiltesAlbum und oeffneKontenDialog).
+// zeigeGeteiltesAlbum und oeffneKontenDialog), für Telefon und Rechner
+// dieselbe Oberfläche (#289).
 //
 // Ein Album, das ein anderes Konto teilt, liegt nicht in der Kopie dieses
 // Telefons: Es gehört zur Bibliothek des Besitzers. Raster und Betrachter
@@ -24,6 +22,64 @@ import '../l10n/app_localizations.dart';
 // sein Ordner beim nächsten Blick auf die Albenliste.
 
 String _k(String s) => Uri.encodeComponent(s);
+
+/// Die Texte dieses Pakets – ohne dass die App sie anmelden muss: in der
+/// Sprache, die gerade gilt.
+TeilenTexte teilenTexte(BuildContext context) =>
+    Localizations.of<TeilenTexte>(context, TeilenTexte) ??
+    lookupTeilenTexte(_sprache(Localizations.localeOf(context)));
+
+Locale _sprache(Locale l) =>
+    TeilenTexte.supportedLocales.any((s) => s.languageCode == l.languageCode)
+    ? Locale(l.languageCode)
+    : const Locale('de');
+
+/// Spielt ein Video aus einem geteilten Album – jede App mit ihrem eigenen
+/// Spieler (video_player am Telefon, media_kit am Rechner).
+typedef Videobauer = Widget Function(BuildContext context, Fernvideo video);
+
+/// Was ein Spieler für ein Video vom Server braucht.
+class Fernvideo {
+  const Fernvideo({
+    required this.wiedergabe,
+    required this.kopf,
+    required this.fassung,
+  });
+
+  /// Das Video, wie der Betrachter es zeigt (gekürzt, sonst das Original).
+  final Uri wiedergabe;
+
+  /// Die Anmeldung für jeden Abruf.
+  final Map<String, String> kopf;
+
+  /// Spielt das Gerät [wiedergabe] nicht (HEVC), wartet dies auf die
+  /// H.264-Fassung des Servers und gibt ihre Adresse – `null`, wenn sie
+  /// sich nicht erzeugen lässt oder [abgebrochen] es sagt.
+  final Future<Uri?> Function({bool Function()? abgebrochen}) fassung;
+}
+
+/// Was eine App für geteilte Alben mitbringt.
+class Teilungszugang {
+  const Teilungszugang({
+    required this.verbindung,
+    this.ablage,
+    this.waehle,
+    this.video,
+  });
+
+  final Serververbindung verbindung;
+
+  /// Wohin die Bilder kommen (`StoragePaths.geteiltDir`), oder `null`:
+  /// dann nur in den Bildspeicher.
+  final Directory? ablage;
+
+  /// Wer die Dateien zum Beitragen wählt – die Fotomediathek am Telefon,
+  /// der Dateidialog am Rechner. Ohne gibt es keinen Knopf dafür.
+  final Future<List<Beitragsdatei>> Function(BuildContext context)? waehle;
+
+  /// Ohne zeigt ein Video nur ein Zeichen.
+  final Videobauer? video;
+}
 
 /// Ein Bild vom Server über [verbindung], das nicht in der Bibliothek
 /// liegt – mit [ablage] einmal geholt und danach von dort.
@@ -192,18 +248,11 @@ class GeteilteAufnahme {
 /// oder nichts, solange nichts geteilt ist (oder der Server es nicht
 /// kann, oder das Telefon offline ist).
 class GeteilteAlben extends StatefulWidget {
-  const GeteilteAlben({
-    super.key,
-    required this.verbindung,
-    required this.raster,
-    this.ablage,
-  });
+  const GeteilteAlben({super.key, required this.zugang, required this.raster});
 
-  final Serververbindung? verbindung;
+  /// `null` ohne Server.
+  final Teilungszugang? zugang;
   final SliverGridDelegate raster;
-
-  /// Wohin die Bilder kommen (`StoragePaths.geteiltDir`).
-  final Directory? ablage;
 
   @override
   State<GeteilteAlben> createState() => _GeteilteAlbenState();
@@ -219,7 +268,7 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
   }
 
   Future<void> _lade() async {
-    final v = widget.verbindung;
+    final v = widget.zugang?.verbindung;
     if (v == null) return;
     try {
       final d = await v.hole('api/v1/geteilt');
@@ -239,7 +288,7 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
   /// Was nicht mehr geteilt ist, hat auf diesem Telefon nichts mehr zu
   /// suchen: Es sind Bilder aus der Bibliothek eines anderen.
   Future<void> _raeumeAuf(List<GeteiltesAlbum> liste) async {
-    final a = widget.ablage;
+    final a = widget.zugang?.ablage;
     if (a == null || !await a.exists()) return;
     final noch = {for (final x in liste) GeteiltesAlbum._sicher(x.id)};
     await for (final e in a.list(followLinks: false)) {
@@ -255,8 +304,8 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
 
   @override
   Widget build(BuildContext context) {
-    final v = widget.verbindung;
-    if (v == null || _alben.isEmpty) {
+    final z = widget.zugang;
+    if (z == null || _alben.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     return SliverMainAxisGroup(
@@ -265,7 +314,7 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Text(
-              AppTexte.of(context).geteiltMitMir,
+              teilenTexte(context).geteiltMitMir,
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
@@ -275,12 +324,8 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
           sliver: SliverGrid.builder(
             gridDelegate: widget.raster,
             itemCount: _alben.length,
-            itemBuilder: (context, i) => _GeteilteKachel(
-              verbindung: v,
-              ablage: widget.ablage,
-              album: _alben[i],
-              geaendert: _lade,
-            ),
+            itemBuilder: (context, i) =>
+                _GeteilteKachel(zugang: z, album: _alben[i], geaendert: _lade),
           ),
         ),
       ],
@@ -290,20 +335,18 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
 
 class _GeteilteKachel extends StatelessWidget {
   const _GeteilteKachel({
-    required this.verbindung,
-    required this.ablage,
+    required this.zugang,
     required this.album,
     required this.geaendert,
   });
 
-  final Serververbindung verbindung;
-  final Directory? ablage;
+  final Teilungszugang zugang;
   final GeteiltesAlbum album;
   final VoidCallback geaendert;
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final farben = Theme.of(context).colorScheme;
     final titel = album.titelbild;
     return InkWell(
@@ -311,11 +354,7 @@ class _GeteilteKachel extends StatelessWidget {
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => GeteiltesAlbumSeite(
-              verbindung: verbindung,
-              album: album,
-              ablage: ablage,
-            ),
+            builder: (_) => GeteiltesAlbumSeite(zugang: zugang, album: album),
           ),
         );
         geaendert();
@@ -331,8 +370,8 @@ class _GeteilteKachel extends StatelessWidget {
                     ? ColoredBox(color: farben.surfaceContainerHighest)
                     : _FernMiniatur(
                         album.bild(
-                          verbindung,
-                          ablage,
+                          zugang.verbindung,
+                          zugang.ablage,
                           titel,
                           'miniatur',
                           album.titelstand,
@@ -389,19 +428,12 @@ class _FernMiniatur extends StatelessWidget {
 class GeteiltesAlbumSeite extends StatefulWidget {
   const GeteiltesAlbumSeite({
     super.key,
-    required this.verbindung,
+    required this.zugang,
     required this.album,
-    this.ablage,
-    this.waehle,
   });
 
-  final Serververbindung verbindung;
+  final Teilungszugang zugang;
   final GeteiltesAlbum album;
-  final Directory? ablage;
-
-  /// Wer die Fotos zum Beitragen wählt – im Betrieb die Fotomediathek
-  /// ([waehleFotos]), in Tests eine feste Liste.
-  final Future<List<Beitragsdatei>> Function(BuildContext context)? waehle;
 
   @override
   State<GeteiltesAlbumSeite> createState() => _GeteiltesAlbumSeiteState();
@@ -420,7 +452,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
 
   Future<void> _lade() async {
     try {
-      final d = await widget.verbindung.hole(
+      final d = await widget.zugang.verbindung.hole(
         'api/v1/geteilt/${_k(widget.album.id)}',
       );
       final a = (d['album'] as Map? ?? const {}).cast<String, Object?>();
@@ -444,7 +476,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
       if (!mounted) return;
       if (e.status == 404) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AppTexte.of(context).geteiltNichtMehr)),
+          SnackBar(content: Text(teilenTexte(context).geteiltNichtMehr)),
         );
         Navigator.of(context).pop();
         return;
@@ -456,7 +488,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
   }
 
   Future<void> _verlassen() async {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final ja = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -477,12 +509,12 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
     final bote = ScaffoldMessenger.of(context);
     final weg = Navigator.of(context);
     try {
-      await widget.verbindung.anfrage(
+      await widget.zugang.verbindung.anfrage(
         'DELETE',
         'api/v1/geteilt/${_k(_album.id)}',
       );
       // Die Bilder gehören jemand anderem.
-      final a = widget.ablage;
+      final a = widget.zugang.ablage;
       final hier = a == null
           ? null
           : Directory(p.join(a.path, GeteiltesAlbum._sicher(_album.id)));
@@ -496,9 +528,11 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
   }
 
   Future<void> _hinzufuegen() async {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final bote = ScaffoldMessenger.of(context);
-    final dateien = await (widget.waehle ?? waehleFotos)(context);
+    final waehle = widget.zugang.waehle;
+    if (waehle == null) return;
+    final dateien = await waehle(context);
     if (dateien.isEmpty || !mounted) return;
     final stand = ValueNotifier<(int, double)>((0, 0));
     final dialog = showDialog<void>(
@@ -531,7 +565,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
           meldung = t.geteiltFehler(d.name);
           continue;
         }
-        await widget.verbindung.schickeDatei(
+        await widget.zugang.verbindung.schickeDatei(
           'api/v1/geteilt/${_k(_album.id)}/beitrag',
           datei,
           parameter: {
@@ -567,7 +601,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final a = _aufnahmen;
     return Scaffold(
       appBar: AppBar(
@@ -582,7 +616,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
           ],
         ),
         actions: [
-          if (_album.beitragen)
+          if (_album.beitragen && widget.zugang.waehle != null)
             IconButton(
               tooltip: t.geteiltHinzufuegen,
               icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -630,9 +664,8 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
                               .push<bool>(
                                 MaterialPageRoute(
                                   builder: (_) => GeteilterBetrachter(
-                                    verbindung: widget.verbindung,
+                                    zugang: widget.zugang,
                                     album: _album,
-                                    ablage: widget.ablage,
                                     aufnahmen: a,
                                     start: i,
                                   ),
@@ -645,8 +678,8 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
                           children: [
                             _FernMiniatur(
                               _album.bild(
-                                widget.verbindung,
-                                widget.ablage,
+                                widget.zugang.verbindung,
+                                widget.zugang.ablage,
                                 a[i].id,
                                 'miniatur',
                                 a[i].stand,
@@ -681,16 +714,14 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
 class GeteilterBetrachter extends StatefulWidget {
   const GeteilterBetrachter({
     super.key,
-    required this.verbindung,
+    required this.zugang,
     required this.album,
     required this.aufnahmen,
     required this.start,
-    this.ablage,
   });
 
-  final Serververbindung verbindung;
+  final Teilungszugang zugang;
   final GeteiltesAlbum album;
-  final Directory? ablage;
   final List<GeteilteAufnahme> aufnahmen;
   final int start;
 
@@ -708,11 +739,32 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
     super.dispose();
   }
 
+  Fernvideo _video(GeteilteAufnahme x) {
+    final v = widget.zugang.verbindung;
+    final pfad = widget.album.datei(x.id, 'abspielbar');
+    return Fernvideo(
+      wiedergabe: v.adresse(widget.album.datei(x.id, 'wiedergabe')),
+      kopf: {'authorization': 'Bearer ${v.token}'},
+      fassung: ({abgebrochen}) async {
+        // Die Fassung entsteht beim ersten Abruf; der Server sagt 202,
+        // solange er umwandelt.
+        for (var i = 0; i < 900; i++) {
+          if (abgebrochen?.call() ?? false) return null;
+          final r = await v.anfrage('GET', '$pfad?pruefen=1');
+          if (r.statusCode == 200) return v.adresse(pfad);
+          if (r.statusCode != 202) return null;
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+        return null;
+      },
+    );
+  }
+
   /// Den eigenen Beitrag wieder aus dem Album nehmen (#290). Beim
   /// Besitzer kommt er in den Papierkorb, solange er in keinem anderen
   /// seiner Alben liegt.
   Future<void> _entferne(GeteilteAufnahme a) async {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final ja = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -733,7 +785,7 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
     final bote = ScaffoldMessenger.of(context);
     final weg = Navigator.of(context);
     try {
-      final r = await widget.verbindung.anfrage(
+      final r = await widget.zugang.verbindung.anfrage(
         'DELETE',
         'api/v1/geteilt/${_k(widget.album.id)}/aufnahmen/${_k(a.id)}',
       );
@@ -749,7 +801,7 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final a = widget.aufnahmen[_index];
     final sprache = Localizations.localeOf(context).toLanguageTag();
     final klein = Theme.of(
@@ -793,19 +845,21 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
         itemBuilder: (context, i) {
           final x = widget.aufnahmen[i];
           if (x.video) {
-            return _FernVideo(
-              verbindung: widget.verbindung,
-              album: widget.album,
-              aufnahme: x,
-            );
+            return widget.zugang.video?.call(context, _video(x)) ??
+                const Center(
+                  child: Icon(
+                    Icons.videocam_off_outlined,
+                    color: Colors.white54,
+                  ),
+                );
           }
           return InteractiveViewer(
             maxScale: 6,
             child: Center(
               child: Image(
                 image: widget.album.bild(
-                  widget.verbindung,
-                  widget.ablage,
+                  widget.zugang.verbindung,
+                  widget.zugang.ablage,
                   x.id,
                   'ansicht',
                   x.stand,
@@ -817,8 +871,8 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
                     ? kind
                     : Image(
                         image: widget.album.bild(
-                          widget.verbindung,
-                          widget.ablage,
+                          widget.zugang.verbindung,
+                          widget.zugang.ablage,
                           x.id,
                           'miniatur',
                           x.stand,
@@ -838,124 +892,7 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
   }
 }
 
-/// Ein Video aus einem geteilten Album: so, wie es ist, sonst die
-/// H.264-Fassung des Servers.
-class _FernVideo extends StatefulWidget {
-  const _FernVideo({
-    required this.verbindung,
-    required this.album,
-    required this.aufnahme,
-  });
-
-  final Serververbindung verbindung;
-  final GeteiltesAlbum album;
-  final GeteilteAufnahme aufnahme;
-
-  @override
-  State<_FernVideo> createState() => _FernVideoState();
-}
-
-class _FernVideoState extends State<_FernVideo> {
-  VideoPlayerController? _spieler;
-  var _fehler = false;
-  var _weg = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _starte();
-  }
-
-  Future<bool> _bereit(VideoPlayerController c) async {
-    try {
-      await c.initialize();
-      if (c.value.size.width > 0) return true;
-    } catch (_) {
-      // Spielt das Telefon nicht – dann die Fassung.
-    }
-    await c.dispose();
-    return false;
-  }
-
-  Future<void> _starte() async {
-    final v = widget.verbindung;
-    final kopf = {'authorization': 'Bearer ${v.token}'};
-    final id = widget.aufnahme.id;
-    VideoPlayerController? s = VideoPlayerController.networkUrl(
-      v.adresse(widget.album.datei(id, 'wiedergabe')),
-      httpHeaders: kopf,
-    );
-    if (!await _bereit(s)) {
-      s = null;
-      final pfad = widget.album.datei(id, 'abspielbar');
-      for (var i = 0; i < 900 && !_weg; i++) {
-        final r = await v.anfrage('GET', '$pfad?pruefen=1');
-        if (r.statusCode == 200) {
-          final c = VideoPlayerController.networkUrl(
-            v.adresse(pfad),
-            httpHeaders: kopf,
-          );
-          if (await _bereit(c)) s = c;
-          break;
-        }
-        if (r.statusCode != 202) break;
-        await Future<void>.delayed(const Duration(seconds: 1));
-      }
-    }
-    if (_weg) {
-      await s?.dispose();
-      return;
-    }
-    setState(() {
-      _spieler = s;
-      _fehler = s == null;
-    });
-  }
-
-  @override
-  void dispose() {
-    _weg = true;
-    _spieler?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = _spieler;
-    if (_fehler) {
-      return const Center(
-        child: Icon(Icons.videocam_off_outlined, color: Colors.white54),
-      );
-    }
-    if (s == null) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white54),
-      );
-    }
-    return GestureDetector(
-      onTap: () => setState(() => s.value.isPlaying ? s.pause() : s.play()),
-      child: Center(
-        child: AspectRatio(
-          aspectRatio: s.value.aspectRatio,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              VideoPlayer(s),
-              if (!s.value.isPlaying)
-                const Icon(
-                  Icons.play_circle_outline,
-                  color: Colors.white70,
-                  size: 64,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Fotos wählen ----------------------------------------------------------
+// --- Beiträge --------------------------------------------------------------
 
 /// Eine Datei, die in ein geteiltes Album soll. [datei] holt sie erst beim
 /// Hochladen – aus der Fotomediathek kann das ein Download aus iCloud sein.
@@ -971,166 +908,6 @@ class Beitragsdatei {
   final Future<File?> Function() datei;
 }
 
-/// Die Fotomediathek zum Wählen, die neuesten zuerst.
-Future<List<Beitragsdatei>> waehleFotos(BuildContext context) async {
-  final zugriff = await PhotoManager.requestPermissionExtend();
-  if (!context.mounted) return const [];
-  if (!zugriff.hasAccess) {
-    final t = AppTexte.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(t.fotosKeinZugriff),
-        action: SnackBarAction(
-          label: t.fotosEinstellungen,
-          onPressed: PhotoManager.openSetting,
-        ),
-      ),
-    );
-    return const [];
-  }
-  final gewaehlt = await Navigator.of(context).push<List<AssetEntity>>(
-    MaterialPageRoute(builder: (_) => const _Fotowahl()),
-  );
-  return [
-    for (final e in gewaehlt ?? const <AssetEntity>[])
-      Beitragsdatei(
-        // `title` ist unter iOS oft leer; erst `titleAsync` fragt nach.
-        name: switch (await e.titleAsync) {
-          final n when n.isNotEmpty => n,
-          _ => '${e.id}.jpg',
-        },
-        geaendert: e.createDateTime,
-        datei: () => e.originFile,
-      ),
-  ];
-}
-
-class _Fotowahl extends StatefulWidget {
-  const _Fotowahl();
-
-  @override
-  State<_Fotowahl> createState() => _FotowahlState();
-}
-
-class _FotowahlState extends State<_Fotowahl> {
-  static const _seite = 120;
-  AssetPathEntity? _alle;
-  final _eintraege = <AssetEntity>[];
-  final _gewaehlt = <AssetEntity>[];
-  var _ende = false;
-  var _laedt = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _naechste();
-  }
-
-  Future<void> _naechste() async {
-    if (_laedt || _ende) return;
-    _laedt = true;
-    try {
-      _alle ??= (await PhotoManager.getAssetPathList(
-        type: RequestType.common,
-        onlyAll: true,
-      )).firstOrNull;
-      final alle = _alle;
-      if (alle == null) {
-        _ende = true;
-        return;
-      }
-      final neu = await alle.getAssetListPaged(
-        page: _eintraege.length ~/ _seite,
-        size: _seite,
-      );
-      if (!mounted) return;
-      setState(() {
-        _eintraege.addAll(neu);
-        _ende = neu.length < _seite;
-      });
-    } finally {
-      _laedt = false;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(t.fotosWaehlen),
-        actions: [
-          TextButton(
-            onPressed: _gewaehlt.isEmpty
-                ? null
-                : () => Navigator.of(context).pop(_gewaehlt),
-            child: Text(t.fotosHinzufuegen(_gewaehlt.length)),
-          ),
-        ],
-      ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(2),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 110,
-          mainAxisSpacing: 2,
-          crossAxisSpacing: 2,
-        ),
-        itemCount: _eintraege.length,
-        itemBuilder: (context, i) {
-          if (i >= _eintraege.length - 30) _naechste();
-          final e = _eintraege[i];
-          final stelle = _gewaehlt.indexOf(e);
-          return GestureDetector(
-            onTap: () => setState(
-              () => stelle < 0 ? _gewaehlt.add(e) : _gewaehlt.remove(e),
-            ),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                AssetEntityImage(
-                  e,
-                  isOriginal: false,
-                  thumbnailSize: const ThumbnailSize.square(240),
-                  fit: BoxFit.cover,
-                ),
-                if (e.type == AssetType.video)
-                  const Positioned(
-                    right: 4,
-                    bottom: 4,
-                    child: Icon(
-                      Icons.play_circle_outline,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: CircleAvatar(
-                    radius: 11,
-                    backgroundColor: stelle < 0
-                        ? Colors.black38
-                        : Theme.of(context).colorScheme.primary,
-                    child: stelle < 0
-                        ? null
-                        : Text(
-                            '${stelle + 1}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white,
-                            ),
-                          ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 // --- Für den Besitzer ------------------------------------------------------
 
 /// „Mit Konten teilen“ für das eigene Album [albumId].
@@ -1141,12 +918,45 @@ Future<void> mitKontenTeilen(
   required String titel,
 }) async {
   if (verbindung == null) return;
+  final blatt = _KontenBlatt(
+    verbindung: verbindung,
+    albumId: albumId,
+    titel: titel,
+  );
+  // Am Rechner ein Dialog, am Telefon ein Blatt von unten.
+  if (MediaQuery.sizeOf(context).width >= 600) {
+    await showDialog<void>(
+      context: context,
+      builder: (c) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                blatt,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 12, 12),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(c),
+                    child: Text(teilenTexte(c).schliessen),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
   await showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) =>
-        _KontenBlatt(verbindung: verbindung, albumId: albumId, titel: titel),
+    builder: (_) => blatt,
   );
 }
 
@@ -1213,7 +1023,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
       });
     } on ParallelWaitError<dynamic, dynamic> {
       if (mounted) {
-        setState(() => _fehler = AppTexte.of(context).geteiltOffline);
+        setState(() => _fehler = teilenTexte(context).geteiltOffline);
       }
     }
   }
@@ -1226,7 +1036,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
       return;
     } on KeineVerbindung {
       if (mounted) {
-        setState(() => _fehler = AppTexte.of(context).geteiltOffline);
+        setState(() => _fehler = teilenTexte(context).geteiltOffline);
       }
       return;
     }
@@ -1250,7 +1060,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTexte.of(context);
+    final t = teilenTexte(context);
     final geteilt = _geteilt;
     DropdownButton<bool> recht(bool wert, ValueChanged<bool> neu) =>
         DropdownButton<bool>(

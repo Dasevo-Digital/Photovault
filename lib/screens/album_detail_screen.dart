@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -271,6 +272,19 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                   icon: const Icon(Icons.ios_share),
                   tooltip: AppTexte.of(context).albumExportieren,
                   onPressed: () => _exportAlbum(context, assets),
+                ),
+              // Mit anderen Konten des Servers teilen (#105, #289) – nur in
+              // einer verbundenen Bibliothek; das Album liegt dort.
+              if (widget.library.abgleich?.verbindung case final v?)
+                IconButton(
+                  icon: const Icon(Icons.group_add_outlined),
+                  tooltip: teilenTexte(context).kontenTeilen,
+                  onPressed: () => mitKontenTeilen(
+                    context,
+                    v,
+                    albumId: widget.albumId,
+                    titel: widget.albumName,
+                  ),
                 ),
             ],
           ),

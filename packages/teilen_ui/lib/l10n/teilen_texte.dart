@@ -1,0 +1,313 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart' as intl;
+
+import 'teilen_texte_de.dart';
+import 'teilen_texte_en.dart';
+
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of TeilenTexte
+/// returned by `TeilenTexte.of(context)`.
+///
+/// Applications need to include `TeilenTexte.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/teilen_texte.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: TeilenTexte.localizationsDelegates,
+///   supportedLocales: TeilenTexte.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the TeilenTexte.supportedLocales
+/// property.
+abstract class TeilenTexte {
+  TeilenTexte(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+
+  final String localeName;
+
+  static TeilenTexte of(BuildContext context) {
+    return Localizations.of<TeilenTexte>(context, TeilenTexte)!;
+  }
+
+  static const LocalizationsDelegate<TeilenTexte> delegate =
+      _TeilenTexteDelegate();
+
+  /// A list of this localizations delegate along with the default localizations
+  /// delegates.
+  ///
+  /// Returns a list of localizations delegates containing this delegate along with
+  /// GlobalMaterialLocalizations.delegate, GlobalCupertinoLocalizations.delegate,
+  /// and GlobalWidgetsLocalizations.delegate.
+  ///
+  /// Additional delegates can be added by appending to this list in
+  /// MaterialApp. This list does not have to be used at all if a custom list
+  /// of delegates is preferred or required.
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
+
+  /// A list of this localizations delegate's supported locales.
+  static const List<Locale> supportedLocales = <Locale>[
+    Locale('de'),
+    Locale('en'),
+  ];
+
+  /// No description provided for @geteiltMitMir.
+  ///
+  /// In de, this message translates to:
+  /// **'Geteilt mit mir'**
+  String get geteiltMitMir;
+
+  /// No description provided for @geteiltVon.
+  ///
+  /// In de, this message translates to:
+  /// **'von {name}'**
+  String geteiltVon(String name);
+
+  /// No description provided for @geteiltAlbumVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Geteilt von {name}'**
+  String geteiltAlbumVon(String name);
+
+  /// No description provided for @geteiltBeigetragenVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Beigetragen von {name}'**
+  String geteiltBeigetragenVon(String name);
+
+  /// No description provided for @geteiltHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos hinzufügen'**
+  String get geteiltHinzufuegen;
+
+  /// No description provided for @geteiltVerlassen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr anzeigen'**
+  String get geteiltVerlassen;
+
+  /// No description provided for @geteiltVerlassenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ nicht mehr anzeigen? Die Fotos bleiben bei {besitzer}; teilen kann nur {besitzer} es wieder.'**
+  String geteiltVerlassenFrage(String name, String besitzer);
+
+  /// No description provided for @geteiltNichtMehr.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Album ist nicht mehr mit dir geteilt.'**
+  String get geteiltNichtMehr;
+
+  /// No description provided for @geteiltLaedtHoch.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade {i} von {n} hoch …'**
+  String geteiltLaedtHoch(int i, int n);
+
+  /// No description provided for @geteiltHinzugefuegt.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme hinzugefügt} other{{n} Aufnahmen hinzugefügt}}'**
+  String geteiltHinzugefuegt(int n);
+
+  /// No description provided for @geteiltNurAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Du darfst in dieses Album nichts mehr legen.'**
+  String get geteiltNurAnsehen;
+
+  /// No description provided for @geteiltSpeicherVoll.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers ist voll.'**
+  String get geteiltSpeicherVoll;
+
+  /// No description provided for @geteiltFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ ging nicht.'**
+  String geteiltFehler(String name);
+
+  /// No description provided for @geteiltOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist gerade nicht zu erreichen.'**
+  String get geteiltOffline;
+
+  /// No description provided for @geteiltLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Album ist leer.'**
+  String get geteiltLeer;
+
+  /// No description provided for @geteiltEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus dem Album entfernen'**
+  String get geteiltEntfernen;
+
+  /// No description provided for @geteiltEntfernenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.'**
+  String geteiltEntfernenFrage(String name);
+
+  /// No description provided for @geteiltEntfernt.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus dem Album entfernt'**
+  String get geteiltEntfernt;
+
+  /// No description provided for @kontenTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Konten teilen'**
+  String get kontenTeilen;
+
+  /// No description provided for @kontenTeilenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'„{titel}“ mit Konten teilen'**
+  String kontenTeilenTitel(String titel);
+
+  /// No description provided for @kontenTeilenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere Konten dieses Servers sehen das Album unter „Geteilt mit mir“ – im Browser und auf dem Telefon.'**
+  String get kontenTeilenHinweis;
+
+  /// No description provided for @kontenBeitragenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer beitragen darf, legt Fotos und Videos direkt in dieses Album. Sie kommen in deine Bibliothek.'**
+  String get kontenBeitragenHinweis;
+
+  /// No description provided for @kontenAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansehen'**
+  String get kontenAnsehen;
+
+  /// No description provided for @kontenBeitragen.
+  ///
+  /// In de, this message translates to:
+  /// **'Beitragen'**
+  String get kontenBeitragen;
+
+  /// No description provided for @kontenNiemand.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit niemandem geteilt.'**
+  String get kontenNiemand;
+
+  /// No description provided for @kontenKeineAnderen.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Server gibt es kein weiteres Konto.'**
+  String get kontenKeineAnderen;
+
+  /// No description provided for @kontenTeilenKnopf.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilen'**
+  String get kontenTeilenKnopf;
+
+  /// No description provided for @abbrechen.
+  ///
+  /// In de, this message translates to:
+  /// **'Abbrechen'**
+  String get abbrechen;
+
+  /// No description provided for @entfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get entfernen;
+
+  /// No description provided for @schliessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Schliessen'**
+  String get schliessen;
+}
+
+class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {
+  const _TeilenTexteDelegate();
+
+  @override
+  Future<TeilenTexte> load(Locale locale) {
+    return SynchronousFuture<TeilenTexte>(lookupTeilenTexte(locale));
+  }
+
+  @override
+  bool isSupported(Locale locale) =>
+      <String>['de', 'en'].contains(locale.languageCode);
+
+  @override
+  bool shouldReload(_TeilenTexteDelegate old) => false;
+}
+
+TeilenTexte lookupTeilenTexte(Locale locale) {
+  // Lookup logic when only language code is specified.
+  switch (locale.languageCode) {
+    case 'de':
+      return TeilenTexteDe();
+    case 'en':
+      return TeilenTexteEn();
+  }
+
+  throw FlutterError(
+    'TeilenTexte.delegate failed to load unsupported locale "$locale". This is likely '
+    'an issue with the localizations generation tool. Please file an issue '
+    'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
+  );
+}

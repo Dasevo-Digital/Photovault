@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
@@ -11,6 +12,7 @@ import '../widgets/asset_thumbnail_tile.dart';
 import 'package:kern/services/search_filters.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'album_detail_screen.dart';
+import 'geteilt_rechner.dart';
 import 'search_screen.dart';
 import '../widgets/einfuegbares_menue.dart';
 
@@ -70,28 +72,31 @@ class AlbumsScreen extends StatelessWidget {
             builder: (context, gespeicherte) {
               final albums = alben.data ?? const <AlbumData>[];
               final klug = gespeicherte.data ?? const <SavedSearchData>[];
-              if (albums.isEmpty && klug.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(AppTexte.of(context).albenLeer),
-                        const SizedBox(height: AppSpacing.md),
-                        // Auch hier: sagen, wo das Fehlende herkommt.
-                        Text(
-                          AppTexte.of(context).albenIntelligentWoher,
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+              // Was andere Konten mit diesem teilen (#289) – nur mit Server.
+              final zugang = teilungszugang(library);
+              final leer = Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(AppTexte.of(context).albenLeer),
+                    const SizedBox(height: AppSpacing.md),
+                    // Auch hier: sagen, wo das Fehlende herkommt.
+                    Text(
+                      AppTexte.of(context).albenIntelligentWoher,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
-                );
+                  ],
+                ),
+              );
+              if (albums.isEmpty && klug.isEmpty && zugang == null) {
+                return Center(child: leer);
               }
               return CustomScrollView(
                 slivers: [
+                  if (albums.isEmpty && klug.isEmpty)
+                    SliverToBoxAdapter(child: Center(child: leer)),
                   // Die intelligenten Alben zuerst: Sie sind die kleinere
                   // Gruppe und wuerden unter zwanzig gewoehnlichen Alben
                   // nicht mehr gefunden. Ueberschriften nur, wenn es
@@ -128,6 +133,7 @@ class AlbumsScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                  GeteilteAlben(zugang: zugang, raster: _Kachelfeld.raster),
                   const SliverToBoxAdapter(child: SizedBox(height: 80)),
                 ],
               );
@@ -165,16 +171,19 @@ class _Kachelfeld extends StatelessWidget {
   final int anzahl;
   final Widget Function(BuildContext, int) bauen;
 
+  /// Auch für die geteilten Alben, damit alle Kacheln gleich gross sind.
+  static const raster = SliverGridDelegateWithMaxCrossAxisExtent(
+    maxCrossAxisExtent: 220,
+    mainAxisSpacing: 16,
+    crossAxisSpacing: 16,
+    childAspectRatio: 1.1,
+  );
+
   @override
   Widget build(BuildContext context) => SliverPadding(
     padding: const EdgeInsets.all(AppSpacing.lg),
     sliver: SliverGrid(
-      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 220,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 1.1,
-      ),
+      gridDelegate: raster,
       delegate: SliverChildBuilderDelegate(bauen, childCount: anzahl),
     ),
   );

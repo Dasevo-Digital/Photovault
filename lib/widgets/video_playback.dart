@@ -97,6 +97,28 @@ class VideoPlaybackController {
     }
   }
 
+  /// Wie [open], aber vom Server: ein Video aus einem Album, das ein
+  /// anderes Konto teilt (#289), mit der Anmeldung in [kopf].
+  Future<bool> openUrl(
+    Uri adresse, {
+    Map<String, String> kopf = const {},
+    bool loop = false,
+  }) async {
+    if (_disposed) return false;
+    try {
+      await setLooping(loop);
+      await _player.open(
+        Media(adresse.toString(), httpHeaders: kopf),
+        play: false,
+      );
+      await _awaitReady();
+      _ready = true;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Wartet auf die erste sinnvolle Dauer und Breite. Ohne dieses Warten
   /// stünde direkt nach `open()` noch Duration.zero in `state`, und die
   /// Bildschirme würden mit einer Dauer von 0 rechnen.
