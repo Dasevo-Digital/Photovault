@@ -353,7 +353,7 @@ void main() {
         );
         expect(
           dateibank.db.select('PRAGMA user_version').single.columnAt(0),
-          5,
+          Serverdatenbank.schema,
         );
       } finally {
         dateibank.schliesse();

@@ -4254,6 +4254,174 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Erneut versuchen'**
   String get startfehlerErneut;
+
+  /// No description provided for @geteiltMitMir.
+  ///
+  /// In de, this message translates to:
+  /// **'Geteilt mit mir'**
+  String get geteiltMitMir;
+
+  /// No description provided for @geteiltVon.
+  ///
+  /// In de, this message translates to:
+  /// **'von {name}'**
+  String geteiltVon(String name);
+
+  /// No description provided for @geteiltAlbumVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Geteilt von {name}'**
+  String geteiltAlbumVon(String name);
+
+  /// No description provided for @geteiltBeigetragenVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Beigetragen von {name}'**
+  String geteiltBeigetragenVon(String name);
+
+  /// No description provided for @geteiltHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos hinzufügen'**
+  String get geteiltHinzufuegen;
+
+  /// No description provided for @geteiltVerlassen.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr anzeigen'**
+  String get geteiltVerlassen;
+
+  /// No description provided for @geteiltVerlassenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ nicht mehr anzeigen? Die Fotos bleiben bei {besitzer}; teilen kann nur {besitzer} es wieder.'**
+  String geteiltVerlassenFrage(String name, String besitzer);
+
+  /// No description provided for @geteiltNichtMehr.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Album ist nicht mehr mit dir geteilt.'**
+  String get geteiltNichtMehr;
+
+  /// No description provided for @geteiltLaedtHoch.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade {i} von {n} hoch …'**
+  String geteiltLaedtHoch(int i, int n);
+
+  /// No description provided for @geteiltHinzugefuegt.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{1 Aufnahme hinzugefügt} other{{n} Aufnahmen hinzugefügt}}'**
+  String geteiltHinzugefuegt(int n);
+
+  /// No description provided for @geteiltNurAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Du darfst in dieses Album nichts mehr legen.'**
+  String get geteiltNurAnsehen;
+
+  /// No description provided for @geteiltSpeicherVoll.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Speicher des Servers ist voll.'**
+  String get geteiltSpeicherVoll;
+
+  /// No description provided for @geteiltFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ ging nicht.'**
+  String geteiltFehler(String name);
+
+  /// No description provided for @geteiltOffline.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist gerade nicht zu erreichen.'**
+  String get geteiltOffline;
+
+  /// No description provided for @geteiltLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Album ist leer.'**
+  String get geteiltLeer;
+
+  /// No description provided for @kontenTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Konten teilen'**
+  String get kontenTeilen;
+
+  /// No description provided for @kontenTeilenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'„{titel}“ mit Konten teilen'**
+  String kontenTeilenTitel(String titel);
+
+  /// No description provided for @kontenTeilenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Andere Konten dieses Servers sehen das Album unter „Geteilt mit mir“ – im Browser und auf dem Telefon.'**
+  String get kontenTeilenHinweis;
+
+  /// No description provided for @kontenBeitragenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer beitragen darf, legt Fotos und Videos direkt in dieses Album. Sie kommen in deine Bibliothek.'**
+  String get kontenBeitragenHinweis;
+
+  /// No description provided for @kontenAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansehen'**
+  String get kontenAnsehen;
+
+  /// No description provided for @kontenBeitragen.
+  ///
+  /// In de, this message translates to:
+  /// **'Beitragen'**
+  String get kontenBeitragen;
+
+  /// No description provided for @kontenNiemand.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit niemandem geteilt.'**
+  String get kontenNiemand;
+
+  /// No description provided for @kontenKeineAnderen.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Server gibt es kein weiteres Konto.'**
+  String get kontenKeineAnderen;
+
+  /// No description provided for @kontenTeilenKnopf.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilen'**
+  String get kontenTeilenKnopf;
+
+  /// No description provided for @fotosWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos wählen'**
+  String get fotosWaehlen;
+
+  /// No description provided for @fotosHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinzufügen ({n})'**
+  String fotosHinzufuegen(int n);
+
+  /// No description provided for @fotosKeinZugriff.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Zugriff auf die Fotos lässt sich nichts auswählen.'**
+  String get fotosKeinZugriff;
+
+  /// No description provided for @fotosEinstellungen.
+  ///
+  /// In de, this message translates to:
+  /// **'Einstellungen'**
+  String get fotosEinstellungen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

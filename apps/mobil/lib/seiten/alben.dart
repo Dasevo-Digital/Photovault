@@ -11,9 +11,11 @@ import 'angaben.dart' show groesseText;
 import 'raster.dart';
 import 'diashow.dart';
 import 'freigaben.dart';
+import 'geteilte_alben.dart';
 
 /// Die Alben der Bibliothek, jedes mit seinem Titelbild – darunter die
-/// intelligenten Alben, die gemerkten Suchen (#187).
+/// intelligenten Alben, die gemerkten Suchen (#187), und was andere Konten
+/// mit diesem teilen (#105).
 class Alben extends StatelessWidget {
   const Alben({super.key, required this.sitzung});
 
@@ -31,9 +33,6 @@ class Alben extends StatelessWidget {
         if (alben == null) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (alben.isEmpty && suchen.isEmpty) {
-          return Center(child: Text(t.albenLeer));
-        }
         const raster = SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: 200,
           mainAxisSpacing: 12,
@@ -42,6 +41,13 @@ class Alben extends StatelessWidget {
         );
         return CustomScrollView(
           slivers: [
+            if (alben.isEmpty && suchen.isEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.all(32),
+                sliver: SliverToBoxAdapter(
+                  child: Center(child: Text(t.albenLeer)),
+                ),
+              ),
             SliverPadding(
               padding: const EdgeInsets.all(12),
               sliver: SliverGrid.builder(
@@ -71,6 +77,10 @@ class Alben extends StatelessWidget {
                 ),
               ),
             ],
+            GeteilteAlben(
+              verbindung: sitzung.abgleich?.verbindung,
+              raster: raster,
+            ),
           ],
         );
       },
@@ -368,6 +378,17 @@ class AlbumSeite extends StatelessWidget {
             titel: album.name,
           ),
         ),
+        if (sitzung.abgleich?.verbindung case final v?)
+          IconButton(
+            tooltip: AppTexte.of(context).kontenTeilen,
+            icon: const Icon(Icons.group_add_outlined),
+            onPressed: () => mitKontenTeilen(
+              context,
+              v,
+              albumId: album.id,
+              titel: album.name,
+            ),
+          ),
         _OfflineAlbumKnopf(sitzung: sitzung, albumId: album.id),
       ],
     ),

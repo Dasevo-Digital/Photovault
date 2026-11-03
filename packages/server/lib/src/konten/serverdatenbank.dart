@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:sqlite3/sqlite3.dart';
 
 /// Was der Server über seine Nutzer weiss: Konten, angemeldete Geräte,
-/// Wiederherstellungscodes, Verknüpfungen mit einem OIDC-Anbieter und die
-/// Freigaben nach aussen.
+/// Wiederherstellungscodes, Verknüpfungen mit einem OIDC-Anbieter, die
+/// Freigaben nach aussen und die Alben, die Konten untereinander teilen.
 ///
 /// Getrennt von den Bibliotheken (eine je Konto, Schema der App), weil es
 /// keine Bibliothek gibt, zu der diese Daten gehören – und weil eine
@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 5;
+  static const schema = 6;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -167,6 +167,34 @@ class Serverdatenbank {
         );
         CREATE INDEX IF NOT EXISTS passkeys_konto ON passkeys(konto);
         PRAGMA user_version = 5;
+        COMMIT;
+      ''');
+    }
+    if (stand < 6) {
+      // Alben zwischen Konten teilen (#105): wer welches Album mit wem
+      // teilt, und was ein anderes Konto in ein geteiltes Album gelegt hat.
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS albumteilungen (
+          id TEXT PRIMARY KEY,
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          album TEXT NOT NULL,
+          empfaenger TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          beitragen INTEGER NOT NULL DEFAULT 0,
+          angelegt INTEGER NOT NULL,
+          UNIQUE (besitzer, album, empfaenger)
+        );
+        CREATE INDEX IF NOT EXISTS albumteilungen_empfaenger
+          ON albumteilungen(empfaenger);
+        CREATE TABLE IF NOT EXISTS kontobeitraege (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          aufnahme TEXT NOT NULL,
+          von TEXT REFERENCES konten(id) ON DELETE SET NULL,
+          name TEXT NOT NULL,
+          angelegt INTEGER NOT NULL,
+          PRIMARY KEY (besitzer, aufnahme)
+        );
+        PRAGMA user_version = 6;
         COMMIT;
       ''');
     }

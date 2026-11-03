@@ -114,6 +114,13 @@ processed on the server and stored as a sanitised copy without embedded
 metadata. The server and its reverse proxy may process technically necessary
 connection data such as IP address and time.
 
+**Albums between accounts.** When an account shares an album with another
+account on the same server, that account sees the items in it in the same
+versions as the owner, including originals with embedded metadata such as the
+capture location. The owner's own marks (favourite, rating, colour label) stay
+with the owner. Files uploaded by an account allowed to contribute go into the
+owner's library; the server records which account they came from.
+
 **Maps in the browser and the mobile app.** Even with your own server, the
 browser interface and the mobile app fetch map tiles **directly** from the
 services, not through the Photo Vault Server: the map from OpenStreetMap

@@ -129,6 +129,14 @@ eingebettete Metadaten gespeichert. Server und vorgeschalteter Proxy können
 hierbei technisch notwendige Verbindungsdaten wie IP-Adresse und Zeitpunkt
 verarbeiten.
 
+**Alben zwischen Konten.** Teilt ein Konto ein Album mit einem anderen Konto
+desselben Servers, sieht dieses die Aufnahmen darin in denselben Fassungen wie
+der Besitzer, Originale mit eingebetteten Metadaten wie dem Aufnahmeort
+eingeschlossen. Eigene Markierungen des Besitzers (Favorit, Bewertung,
+Farbmarke) bleiben bei ihm. Was ein Konto mit dem Recht zum Beitragen
+hochlädt, kommt in die Bibliothek des Besitzers; der Server vermerkt dazu,
+von welchem Konto es stammt.
+
 **Karten in Browser und Handy-App.** Auch mit eigenem Server holen
 Browseroberfläche und Handy-App Kartenkacheln **direkt** bei den Diensten,
 nicht über den Photo Vault Server: die Karte bei OpenStreetMap

@@ -178,5 +178,39 @@ class Serververbindung {
     if (r.statusCode != 204) throw Serverfehler(r.statusCode, text);
   }
 
+  /// Schickt [datei] als Körper an [pfad] (`POST`), Stück für Stück statt
+  /// im Speicher – für Fotos und Videos in ein Album, das ein anderes
+  /// Konto teilt (#105). [fortschritt] bekommt gesendete und gesamte
+  /// Bytes. Die Antwort ist JSON wie bei [schicke].
+  Future<Map<String, Object?>> schickeDatei(
+    String pfad,
+    File datei, {
+    Map<String, String>? parameter,
+    void Function(int gesendet, int gesamt)? fortschritt,
+    Duration zeitlimit = const Duration(minutes: 30),
+  }) async {
+    final gesamt = await datei.length();
+    final anfrage = http.StreamedRequest('POST', adresse(pfad, parameter))
+      ..headers.addAll(_kopf)
+      ..headers['content-type'] = 'application/octet-stream'
+      ..contentLength = gesamt;
+    var gesendet = 0;
+    unawaited(
+      datei
+          .openRead()
+          .map((stueck) {
+            gesendet += stueck.length;
+            fortschritt?.call(gesendet, gesamt);
+            return stueck;
+          })
+          .pipe(anfrage.sink)
+          .catchError((Object e) => anfrage.sink.addError(e)),
+    );
+    return _json(
+      () async => http.Response.fromStream(await _http.send(anfrage)),
+      zeitlimit,
+    );
+  }
+
   void schliesse() => _http.close();
 }

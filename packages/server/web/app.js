@@ -41,6 +41,12 @@ const anzahlText = (n) => (n === 1 ? t('1 Aufnahme') : t('{n} Aufnahmen', { n })
 // einer Bearbeitung bis zu einen Tag lang das alte Bild.
 const bildUrl = (id, art, stand) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/${art}${stand ? `?v=${encodeURIComponent(stand)}` : ''}`;
 const miniaturUrl = (id, stand) => bildUrl(id, 'miniatur', stand);
+// Die Dateien der gezeigten Liste: aus der eigenen Bibliothek oder aus
+// einem Album, das ein anderes Konto teilt (#105, `liste.fremd`). Raster,
+// Betrachter, Video, Diashow und Herunterladen gehen hierüber; Karten und
+// Personen zeigen immer Eigenes und nehmen [bildUrl].
+const fremdeListe = () => !!(liste && liste.fremd);
+const aufnahmeUrl = (id, art, stand) => `${(liste && liste.fremd) || '/api/v1/aufnahmen'}/${encodeURIComponent(id)}/${art}${stand ? `?v=${encodeURIComponent(stand)}` : ''}`;
 const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
 const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
 const monatJahr = new Intl.DateTimeFormat(GEBIET, { month: 'long', year: 'numeric' });
@@ -438,8 +444,9 @@ function kachel(a, index) {
   img.decoding = 'async';
   img.alt = '';
   img.draggable = false;
-  img.src = miniaturUrl(a.id, a.stand);
+  img.src = aufnahmeUrl(a.id, 'miniatur', a.stand);
   k.append(img);
+  if (a.von) k.title = t('Beigetragen von {name}', { name: a.von });
   if (liste && liste.alsListe) {
     // In der Liste trägt die Zeile die Angaben statt der Marken – Auswahl,
     // Ziehen, Pfeiltasten und Betrachter bleiben dieselben wie bei Kacheln.
@@ -458,6 +465,9 @@ function kachel(a, index) {
     // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.
     if (zieh.schlucke) { zieh.schlucke = false; return; }
     // Wie am Rechner: Umschalt nimmt alles bis hierher dazu, Strg/⌘ eine.
+    // Aus einem geteilten Album lässt sich nichts auswählen: Alles, was
+    // die Auswahl kann, ändert die eigene Bibliothek.
+    if (fremdeListe()) { setzeRahmen(index, false); oeffne(index); return; }
     if (e.shiftKey && rahmen >= 0) { waehleBereich(rahmen, index); setzeRahmen(index, false); return; }
     if (e.metaKey || e.ctrlKey) { schalteAuswahl(a.id, k); setzeRahmen(index, false); return; }
     setzeRahmen(index, false);
@@ -639,7 +649,7 @@ async function schwebeStart(k, a) {
   schwebe.video = v;
   // Sichtbar erst mit dem ersten Bild – bis dahin bleibt das Standbild.
   v.addEventListener('playing', () => { if (lauf === schwebe.lauf) k.classList.add('schwebt'); });
-  const original = `/api/v1/aufnahmen/${encodeURIComponent(id)}/wiedergabe`;
+  const original = aufnahmeUrl(id, 'wiedergabe');
   // Wie im Betrachter: Kann der Browser kein HEVC, die H.264-Fassung des
   // Servers. Ein Bewegungsteil vom iPhone ist immer HEVC, da gleich.
   const fassung = async () => {
@@ -949,7 +959,21 @@ async function zeigeAlben() {
   const d = await api('/api/v1/alben');
   if (d.alben.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Alben.')));
   for (const a of d.alben) {
-    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`));
+    $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`, {
+      kennzeichen: a.geteilt ? t('Geteilt') : null,
+    }));
+  }
+  // Was andere Konten mit diesem teilen (#105).
+  const g = await api('/api/v1/geteilt').catch(() => ({ alben: [] }));
+  if (g.alben.length) {
+    $('karten').append(el('h3', 'karten-abschnitt', t('Geteilt mit mir')));
+    for (const a of g.alben) {
+      const basis = `/api/v1/geteilt/${encodeURIComponent(a.id)}/aufnahmen`;
+      const bild = a.titelbild ? `${basis}/${encodeURIComponent(a.titelbild)}/miniatur${a.titelstand ? `?v=${encodeURIComponent(a.titelstand)}` : ''}` : null;
+      $('karten').append(karte(bild, a.name, anzahlText(a.anzahl), `#/geteilt/${encodeURIComponent(a.id)}`, {
+        zusatz: t('von {name}', { name: a.besitzer }),
+      }));
+    }
   }
   // Die gemerkten Suchen – wie am Rechner (#187).
   const k = await api('/api/v1/intelligente-alben').catch(() => ({ alben: [] }));
@@ -1046,8 +1070,150 @@ async function zeigeAlbum(id) {
   const diashow = el('button', 'knopf', t('Diashow'));
   diashow.type = 'button';
   diashow.addEventListener('click', () => starteDiashow(liste.aufnahmen, 0));
-  kopf.append(diashow, teilen);
+  const konten = el('button', 'knopf', t('Mit Konten teilen …'));
+  konten.type = 'button';
+  konten.addEventListener('click', () => oeffneKontenDialog(d.album.id, d.album.name));
+  kopf.append(diashow, teilen, konten);
   zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.album.name);
+}
+
+// --- Alben zwischen Konten teilen (#105) ---------------------------------------
+//
+// Der Besitzer teilt ein Album mit anderen Konten dieses Servers, jedes
+// zum Ansehen oder zum Beitragen. Sie finden es unter „Geteilt mit mir“ –
+// hier und auf dem Telefon. Was sie beitragen, kommt ohne Rückfrage in die
+// Bibliothek des Besitzers und ins Album.
+
+let kontenAlbum = null;
+
+async function oeffneKontenDialog(album, name) {
+  kontenAlbum = album;
+  $('konten-titel').textContent = t('„{name}“ mit Konten teilen', { name });
+  $('konten-meldung').textContent = '';
+  $('konten-dialog').showModal();
+  await zeigeTeilungen();
+}
+
+async function zeigeTeilungen() {
+  const album = kontenAlbum;
+  const pfad = `/api/v1/alben/${encodeURIComponent(album)}/teilungen`;
+  let teilungen, andere;
+  try {
+    [teilungen, andere] = await Promise.all([api(pfad), api('/api/v1/konten/andere')]);
+  } catch (x) { $('konten-meldung').textContent = x.message; return; }
+  if (album !== kontenAlbum) return;
+  const zeilen = $('konten-liste');
+  zeilen.replaceChildren();
+  for (const z of teilungen.teilungen) {
+    const zeile = el('li', 'teilungszeile');
+    const recht = el('select');
+    recht.append(new Option(t('Ansehen'), ''), new Option(t('Beitragen'), '1'));
+    recht.value = z.beitragen ? '1' : '';
+    recht.setAttribute('aria-label', t('Recht von {name}', { name: z.name }));
+    recht.addEventListener('change', () => teileMit(z.konto, recht.value === '1'));
+    const weg = el('button', 'knopf', t('Entfernen'));
+    weg.type = 'button';
+    weg.addEventListener('click', async () => {
+      try { await api(`${pfad}/${encodeURIComponent(z.konto)}`, { methode: 'DELETE' }); } catch (x) { $('konten-meldung').textContent = x.message; return; }
+      await zeigeTeilungen();
+    });
+    zeile.append(el('span', 'name', z.name), recht, weg);
+    zeilen.append(zeile);
+  }
+  if (!teilungen.teilungen.length) zeilen.append(el('li', 'leise', t('Mit niemandem geteilt.')));
+  const schon = new Set(teilungen.teilungen.map((z) => z.konto));
+  const frei = andere.konten.filter((k) => !schon.has(k.id));
+  const wahl = $('konten-wahl');
+  wahl.replaceChildren(...frei.map((k) => new Option(k.name, k.id)));
+  $('konten-neu').hidden = !frei.length;
+  if (!andere.konten.length) zeilen.append(el('li', 'leise', t('Auf diesem Server gibt es kein weiteres Konto.')));
+}
+
+async function teileMit(konto, beitragen) {
+  try {
+    await api(`/api/v1/alben/${encodeURIComponent(kontenAlbum)}/teilungen/${encodeURIComponent(konto)}`, { methode: 'PUT', json: { beitragen } });
+  } catch (x) { $('konten-meldung').textContent = x.message; return; }
+  await zeigeTeilungen();
+  // Die Karte in der Albenliste trägt das Kennzeichen erst nach dem Neuladen.
+}
+
+$('konten-hinzu').addEventListener('click', () => {
+  const konto = $('konten-wahl').value;
+  if (konto) teileMit(konto, $('konten-recht').value === '1');
+});
+
+// Ein Album, das ein anderes Konto teilt: dasselbe Raster und derselbe
+// Betrachter, die Dateien über die Teilung (`liste.fremd`).
+async function zeigeGeteiltesAlbum(id) {
+  markiereNav('alben');
+  zeigeBereich(['raster']);
+  let d;
+  try {
+    d = await api(`/api/v1/geteilt/${encodeURIComponent(id)}`);
+  } catch (x) {
+    if (x.status === 404) { meldung(t('Dieses Album ist nicht mehr mit dir geteilt.')); location.hash = '#/alben'; return; }
+    throw x;
+  }
+  const kopf = el('div', 'reisekopf');
+  kopf.append(el('span', 'leise', t('Geteilt von {name}', { name: d.album.besitzer })));
+  const diashow = el('button', 'knopf', t('Diashow'));
+  diashow.type = 'button';
+  diashow.addEventListener('click', () => starteDiashow(liste.aufnahmen, 0));
+  kopf.append(diashow);
+  if (d.album.beitragen) {
+    const wahl = el('input');
+    wahl.type = 'file';
+    wahl.accept = 'image/*,video/*';
+    wahl.multiple = true;
+    wahl.hidden = true;
+    const hinzu = el('button', 'knopf', t('Fotos hinzufügen …'));
+    hinzu.type = 'button';
+    hinzu.addEventListener('click', () => wahl.click());
+    const stand = el('span', 'leise klein');
+    wahl.addEventListener('change', async () => {
+      const dateien = [...wahl.files];
+      wahl.value = '';
+      if (!dateien.length) return;
+      hinzu.disabled = true;
+      let gut = 0;
+      for (let i = 0; i < dateien.length; i++) {
+        const status = await schickeBeitrag(id, dateien[i], (anteil) => {
+          stand.textContent = t('{i} von {n} · {p} %', { i: i + 1, n: dateien.length, p: Math.round(anteil * 100) });
+        });
+        if (status === 201) gut++;
+        else if (status === 507) { meldung(t('Der Speicher des Servers ist voll.')); break; }
+        else if (status === 403 || status === 404) { meldung(t('Du darfst in dieses Album nichts mehr legen.')); break; }
+        else meldung(t('„{name}“ ging nicht (Fehler {n}).', { name: dateien[i].name, n: status }));
+      }
+      hinzu.disabled = false;
+      stand.textContent = '';
+      if (gut) { meldung(t('{n} hinzugefügt', { n: gut })); await zeigeGeteiltesAlbum(id); }
+    });
+    kopf.append(hinzu, wahl, stand);
+  }
+  const verlassen = el('button', 'knopf', t('Nicht mehr anzeigen'));
+  verlassen.type = 'button';
+  verlassen.addEventListener('click', async () => {
+    if (!confirm(t('„{name}“ nicht mehr anzeigen? Die Fotos bleiben bei {besitzer}; teilen kann nur {besitzer} es wieder.', { name: d.album.name, besitzer: d.album.besitzer }))) return;
+    try { await api(`/api/v1/geteilt/${encodeURIComponent(id)}`, { methode: 'DELETE' }); location.hash = '#/alben'; } catch (x) { meldung(x.message); }
+  });
+  kopf.append(verlassen);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf, fremd: `/api/v1/geteilt/${encodeURIComponent(id)}/aufnahmen` }, d.album.name);
+}
+
+// Eine Datei ins geteilte Album – als XHR, damit der Fortschritt sichtbar
+// ist. Gibt den Status zurück (0 ohne Verbindung).
+function schickeBeitrag(id, datei, fortschritt) {
+  return new Promise((fertig) => {
+    const x = new XMLHttpRequest();
+    const q = new URLSearchParams({ name: datei.name, geaendert: String(datei.lastModified || Date.now()) });
+    x.open('POST', `/api/v1/geteilt/${encodeURIComponent(id)}/beitrag?${q}`);
+    x.setRequestHeader('X-PV-Web', '1');
+    x.upload.addEventListener('progress', (e) => { if (e.lengthComputable) fortschritt(e.loaded / e.total); });
+    x.onload = () => fertig(x.status);
+    x.onerror = () => fertig(0);
+    x.send(datei);
+  });
 }
 
 // --- Als Link teilen (Issue #106) ------------------------------------------
@@ -3023,6 +3189,7 @@ let auswahlModus = false;
 const auswahl = new Set();
 
 function schalteAuswahl(id, k) {
+  if (fremdeListe()) return;
   if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id);
   k.classList.toggle('gewaehlt', auswahl.has(id));
   const a = liste && liste.aufnahmen[Number(k.dataset.index)];
@@ -3108,7 +3275,7 @@ function ziehBeginn(i, art) {
   const a = liste && liste.aufnahmen[i];
   clearTimeout(halteUhr);
   druck = null;
-  if (!a) return;
+  if (!a || fremdeListe()) return;
   auswahlModus = true;
   Object.assign(zieh, { anker: i, letzter: i, art, waehlt: !auswahl.has(a.id), vorher: new Set(auswahl), schlucke: true, von: i, zu: i });
   if (navigator.vibrate) navigator.vibrate(8);
@@ -3666,7 +3833,7 @@ async function teile(aufnahmen) {
   const dateien = [];
   try {
     for (const a of aufnahmen) {
-      const r = await fetch(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`, { credentials: 'same-origin' });
+      const r = await fetch(aufnahmeUrl(a.id, 'original'), { credentials: 'same-origin' });
       if (!r.ok) throw new Error(t('Fehler {n}', { n: r.status }));
       const b = await r.blob();
       dateien.push(new File([b], a.name || a.id, { type: b.type || 'application/octet-stream', lastModified: Date.parse(a.aufgenommen) || Date.now() }));
@@ -3788,7 +3955,7 @@ function oeffneVergleich(paar) {
   vergleich.gekoppelt = true;
   paar.forEach((a, i) => {
     const f = vergleichFelder[i];
-    f.querySelector('img').src = bildUrl(a.id, 'ansicht', a.stand);
+    f.querySelector('img').src = aufnahmeUrl(a.id, 'ansicht', a.stand);
     f.querySelector('figcaption').textContent = a.name || '';
   });
   vergleichZurueck();
@@ -3876,8 +4043,8 @@ const JPEG_GROESSEN = [
   { kante: 2048, text: 'JPEG – 2048 px' },
   { kante: 1024, text: 'JPEG – 1024 px' },
 ];
-const originalUrl = (id) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/original`;
-const jpegUrl = (id, kante) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/jpeg${kante ? `?kante=${kante}` : ''}`;
+const originalUrl = (id) => aufnahmeUrl(id, 'original');
+const jpegUrl = (id, kante) => `${aufnahmeUrl(id, 'jpeg')}${kante ? `?kante=${kante}` : ''}`;
 const jpegName = (a) => `${(a.name || 'Foto').replace(/\.[^.]+$/, '')}.jpg`;
 
 // Nacheinander, damit der Browser jede als eigene Datei anbietet.
@@ -4023,7 +4190,7 @@ function holeVoll(a) {
       if (lauf !== vollLauf) return;
       const voll = new Image();
       voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
-      voll.src = bildUrl(a.id, 'voll', a.stand);
+      voll.src = aufnahmeUrl(a.id, 'voll', a.stand);
     }, 400);
   }, { once: true });
 }
@@ -4052,17 +4219,19 @@ function oeffne(i) {
     video.hidden = true;
     bild.hidden = false;
     holeVoll(a);
-    bild.src = bildUrl(a.id, 'ansicht', a.stand);
+    bild.src = aufnahmeUrl(a.id, 'ansicht', a.stand);
   }
-  $('bearbeiten').hidden = a.art === 'video';
-  $('gesichter-knopf').hidden = a.art === 'video';
+  // Was die eigene Bibliothek ändert, fehlt in einem geteilten Album.
+  const fremd = fremdeListe();
+  $('bearbeiten').hidden = a.art === 'video' || fremd;
+  $('gesichter-knopf').hidden = a.art === 'video' || fremd;
   setzeAufziehen(false);
-  $('aufziehen-knopf').hidden = a.art === 'video' || !gesichterAn;
-  $('gesichtsmenue-knopf').hidden = a.art === 'video' || !gesichterAn;
+  $('aufziehen-knopf').hidden = a.art === 'video' || !gesichterAn || fremd;
+  $('gesichtsmenue-knopf').hidden = a.art === 'video' || !gesichterAn || fremd;
   zeigeRahmen();
   const korb = !!liste.papierkorb;
-  $('favorit').hidden = korb;
-  $('weg').hidden = korb;
+  $('favorit').hidden = korb || fremd;
+  $('weg').hidden = korb || fremd;
   $('holen').hidden = !korb;
   $('teilen').hidden = !teilenMoeglich;
   $('live').hidden = !(a.art !== 'video' && a.partner);
@@ -4073,9 +4242,9 @@ function oeffne(i) {
   blickZurueck(false);
   $('betrachter').classList.remove('still');
   $('betrachter').style.removeProperty('background');
-  $('angaben').textContent = `${datumZeit.format(new Date(a.aufgenommen))} · ${a.name}`;
+  $('angaben').textContent = `${datumZeit.format(new Date(a.aufgenommen))} · ${a.name}${a.von ? ` · ${t('von {name}', { name: a.von })}` : ''}`;
   $('favorit').textContent = a.favorit ? '♥' : '♡';
-  $('laden').href = `/api/v1/aufnahmen/${encodeURIComponent(a.id)}/original`;
+  $('laden').href = aufnahmeUrl(a.id, 'original');
   $('laden').download = a.name || '';
   $('betrachter').hidden = false;
   zeigeAngaben();
@@ -4117,7 +4286,7 @@ async function zeigeRahmen() {
   rahmenflaeche.querySelectorAll('.rahmen').forEach((r) => r.remove());
   rahmenDaten = null;
   const a = liste && liste.aufnahmen[offen];
-  if (!gesichterAn || !a || a.art === 'video') { legeRahmenflaeche(); return; }
+  if (!gesichterAn || !a || a.art === 'video' || fremdeListe()) { legeRahmenflaeche(); return; }
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (_) { return; }
   if (!liste || liste.aufnahmen[offen] !== a) return;
@@ -4277,7 +4446,7 @@ const kannHevc = (() => {
   return ['hvc1.1.6.L93.B0', 'hvc1.2.4.L123.B0'].every((c) => v.canPlayType(`video/mp4; codecs="${c}"`));
 })();
 let videoLauf = 0;
-const fassungUrl = (id, pruefen) => `/api/v1/aufnahmen/${encodeURIComponent(id)}/abspielbar${pruefen ? '?pruefen=1' : ''}`;
+const fassungUrl = (id, pruefen) => `${aufnahmeUrl(id, 'abspielbar')}${pruefen ? '?pruefen=1' : ''}`;
 
 function videoHinweis(text) {
   $('video-hinweis').textContent = text || '';
@@ -4287,7 +4456,7 @@ function videoHinweis(text) {
 function spieleVideo(id, { live = false } = {}) {
   const video = $('video');
   const lauf = videoLauf;
-  const original = `/api/v1/aufnahmen/${encodeURIComponent(id)}/wiedergabe`;
+  const original = aufnahmeUrl(id, 'wiedergabe');
   let gewechselt = false;
   const wechsle = () => {
     if (gewechselt || lauf !== videoLauf) return;
@@ -4409,6 +4578,17 @@ async function zeigeAngaben() {
   const a = liste && liste.aufnahmen[offen];
   const feld = $('angaben-feld');
   if (!a || !angabenOffen) return;
+  if (fremdeListe()) {
+    // Ein geteiltes Album: nur, was die Liste weiss – die Angaben der
+    // Bibliothek gehören dem Besitzer.
+    feld.replaceChildren(
+      el('p', '', datumZeit.format(new Date(a.aufgenommen))),
+      el('p', 'leise', a.name || ''),
+      ...(a.breite && a.hoehe ? [el('p', 'leise', `${a.breite} × ${a.hoehe}`)] : []),
+      ...(a.von ? [el('p', 'leise', t('Beigetragen von {name}', { name: a.von }))] : []),
+    );
+    return;
+  }
   feld.replaceChildren(el('p', 'neben', t('Lade …')));
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
@@ -4743,7 +4923,7 @@ function starteDiashow(aufnahmen, ab = 0) {
   zeigeDia(dia.i);
 }
 
-function diaUrl(a) { return bildUrl(a.id, 'ansicht', a.stand); }
+function diaUrl(a) { return aufnahmeUrl(a.id, 'ansicht', a.stand); }
 
 // Geladen und möglichst dekodiert. decode() hängt in manchen Lagen (etwa
 // wenn die Seite im Hintergrund nicht zeichnet) – deshalb mit Frist.
@@ -4872,7 +5052,7 @@ function maleDiavideoTitel(c, titel, untertitel) {
 // So gross, dass es das Video füllt – nicht grösser, wie am Rechner.
 async function ladeDiavideoBild(a) {
   try {
-    const blob = await (await fetch(bildUrl(a.id, 'ansicht', a.stand), { credentials: 'same-origin' })).blob();
+    const blob = await (await fetch(aufnahmeUrl(a.id, 'ansicht', a.stand), { credentials: 'same-origin' })).blob();
     const roh = await createImageBitmap(blob);
     const m = Math.max(DIAVIDEO.breite / roh.width, DIAVIDEO.hoehe / roh.height) * 1.1;
     if (m >= 1) return roh;
@@ -5092,6 +5272,7 @@ function setzeRahmen(i, sichtbar = true) {
 }
 
 function waehleBereich(von, bis) {
+  if (fremdeListe()) return;
   const [a0, a1] = von < bis ? [von, bis] : [bis, von];
   for (let i = a0; i <= a1; i++) auswahl.add(liste.aufnahmen[i].id);
   zeichneAuswahl(a0, a1);
@@ -5259,8 +5440,9 @@ document.addEventListener('keydown', async (e) => {
       if (taste === 'Escape') schliesse();
       else if (taste === 'ArrowLeft') oeffne(offen - 1);
       else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); oeffne(offen + 1); }
-      else if (taste === 'f' || taste === 'F') await setzeFavorit([a]);
       else if (taste === 'i' || taste === 'I') setzeAngabenOffen(!angabenOffen);
+      else if (liste.fremd) return;
+      else if (taste === 'f' || taste === 'F') await setzeFavorit([a]);
       else if (/^[0-5]$/.test(taste)) await setzeSterne([a], Number(taste));
       else if (FARBTASTEN[taste]) await setzeFarbe([a], FARBTASTEN[taste]);
       else if ((taste === 'Delete' || taste === 'Backspace') && !liste.papierkorb) await inDenKorb([a]);
@@ -5269,7 +5451,7 @@ document.addEventListener('keydown', async (e) => {
     if (taste === '?') { e.preventDefault(); zeigeKuerzel(); return; }
     if (taste === '/' && !strg) { e.preventDefault(); location.hash = '#/suche'; return; }
     if ($('bereich-raster').hidden || !liste || !liste.kacheln || !liste.kacheln.length) return;
-    if (strg && (taste === 'a' || taste === 'A')) {
+    if (strg && (taste === 'a' || taste === 'A') && !liste.fremd) {
       e.preventDefault();
       for (const x of liste.aufnahmen) auswahl.add(x.id);
       zeichneAuswahl();
@@ -5295,6 +5477,7 @@ document.addEventListener('keydown', async (e) => {
       if (e.shiftKey) waehleBereich(rahmenAnker, rahmen);
       return;
     }
+    if (liste.fremd) { if (taste === 'Enter' && rahmen >= 0) oeffne(rahmen); return; }
     const ziele = tastenziele();
     if (taste === 'Enter' && rahmen >= 0) oeffne(rahmen);
     else if (taste === ' ' && rahmen >= 0 && liste.kacheln[rahmen].classList.contains('rahmen')) { e.preventDefault(); schalteAuswahl(liste.aufnahmen[rahmen].id, liste.kacheln[rahmen]); }
@@ -5318,6 +5501,7 @@ async function zeigeWeg() {
     switch (teile[0]) {
       case 'suche': zeigeSuche(); break;
       case 'alben': await (teile[1] === 'klug' ? zeigeIntelligentesAlbum(teile[2]) : teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
+      case 'geteilt': await zeigeGeteiltesAlbum(teile[1]); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'ignoriert': await zeigeIgnoriert(); break;
       case 'konto': await zeigeKonto(); break;

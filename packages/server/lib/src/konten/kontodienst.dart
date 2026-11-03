@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 
+import '../albumteilungen.dart';
 import '../freigaben.dart';
 import '../gastbeitraege.dart';
 import 'package:kern/abgleich/anmeldung.dart' show kontonameGueltig;
@@ -195,6 +196,9 @@ class Kontodienst {
 
   /// Die Passkeys der Konten (#277).
   late final passkeys = Passkeys(_db, uhr: _uhr);
+
+  /// Welche Alben die Konten untereinander teilen (#105).
+  late final albumteilungen = Albumteilungen(_sdb, uhr: _uhr);
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);

@@ -479,6 +479,27 @@
   </form>
 </dialog>
 
+<dialog id="konten-dialog">
+  <form method="dialog" id="form-konten">
+    <h3 id="konten-titel">Mit Konten teilen</h3>
+    <p class="leise klein">Andere Konten dieses Servers sehen das Album unter „Geteilt mit mir“ – im Browser und auf dem Telefon.</p>
+    <ul id="konten-liste" class="teilungsliste"></ul>
+    <div id="konten-neu" class="teilungszeile">
+      <select id="konten-wahl" aria-label="Konto"></select>
+      <select id="konten-recht" aria-label="Recht">
+        <option value="">Ansehen</option>
+        <option value="1">Beitragen</option>
+      </select>
+      <button type="button" id="konten-hinzu">Teilen</button>
+    </div>
+    <p class="leise klein">Wer beitragen darf, legt Fotos und Videos direkt in dieses Album. Sie kommen in deine Bibliothek.</p>
+    <p id="konten-meldung" class="fehler"></p>
+    <menu>
+      <button type="submit">Schliessen</button>
+    </menu>
+  </form>
+</dialog>
+
 <dialog id="gesicht-dialog">
   <form method="dialog" id="form-gesicht">
     <h3 id="gesicht-titel"></h3>

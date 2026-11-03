@@ -111,6 +111,10 @@ class Bibliotheken {
       } catch (e) {
         protokoll('Verdeckte Aufnahmen nicht geprüft: $e');
       }
+      // Beiträge anderer Konten, die beim letzten Lauf mitten im Hochladen
+      // waren (#105) – jetzt schreibt keiner hinein.
+      final beitraege = Directory(p.join(b.ordner.path, 'kontobeitraege'));
+      if (await beitraege.exists()) await beitraege.delete(recursive: true);
       try {
         final n = await raeumeFassungenAuf(b);
         if (n > 0) protokoll('$n gewandelte Fassungen aufgeräumt');

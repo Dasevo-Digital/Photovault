@@ -859,3 +859,11 @@ body.landschaft-offen { overflow: hidden; }
   .l-flugbild { right: 8px; top: 56px; }
   .l-flugbild img { width: 34vw; }
 }
+
+/* Alben zwischen Konten teilen (#105) */
+.teilungsliste { list-style: none; padding: 0; margin: 12px 0; }
+.teilungszeile { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.teilungszeile .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.teilungszeile select { padding: 6px 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+#konten-neu select:first-child { flex: 1; min-width: 0; }
+.teilungszeile button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }

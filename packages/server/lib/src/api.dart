@@ -40,6 +40,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'abgleich_api.dart';
+import 'albumteilungen.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'bibliothek.dart';
@@ -56,6 +57,7 @@ import 'packen.dart';
 import 'rechnen.dart';
 import 'sicherung.dart';
 import 'speicher.dart';
+import 'teilung_api.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 import 'videofassung.dart';
@@ -99,6 +101,7 @@ Handler baueApi({
     video,
     netz,
     vollbilder: Vollbilder(),
+    teilungen: konten.albumteilungen,
   );
   final freigabe = Freigabeapi(
     dienst: konten.freigaben,
@@ -109,6 +112,12 @@ Handler baueApi({
     oeffentlich: oeffentlich,
     beitraege: konten.beitraege,
     pruefung: gastpruefung,
+    speicher: speicher,
+  );
+  final teilung = Teilungsapi(
+    konten: konten,
+    bibliotheken: bibliotheken,
+    datei: api.dateiAus,
     speicher: speicher,
   );
   final abgleich = Abgleichsapi(bibliotheken);
@@ -304,6 +313,19 @@ Handler baueApi({
     ..get('/api/v1/papierkorb', api.papierkorb)
     ..get('/api/v1/alben', api.alben)
     ..get('/api/v1/alben/<id>', api.album)
+    // Alben zwischen Konten teilen (#105).
+    ..get('/api/v1/konten/andere', teilung.andereKonten)
+    ..get('/api/v1/alben/<id>/teilungen', teilung.vonAlbum)
+    ..put('/api/v1/alben/<id>/teilungen/<konto>', teilung.teile)
+    ..delete('/api/v1/alben/<id>/teilungen/<konto>', teilung.nichtMehrTeilen)
+    ..get('/api/v1/geteilt', teilung.mitMir)
+    ..get('/api/v1/geteilt/<id>', teilung.album)
+    ..delete('/api/v1/geteilt/<id>', teilung.verlassen)
+    ..post('/api/v1/geteilt/<id>/beitrag', teilung.beitrag)
+    ..get(
+      '/api/v1/geteilt/<id>/aufnahmen/<aufnahme>/<art>',
+      teilung.aufnahmedatei,
+    )
     ..get('/api/v1/personen', api.personen)
     ..get('/api/v1/personen/<id>', api.person)
     ..get('/api/v1/personen/<id>/vorschlaege', api.personVorschlaege)
@@ -547,7 +569,11 @@ class _Api {
     this.videofassungen,
     this._netz, {
     required this.vollbilder,
+    this.teilungen,
   });
+
+  /// Mit wem die Alben geteilt sind (#105) – für die Albenliste.
+  final Albumteilungen? teilungen;
 
   /// Für Overpass – nur in Tests gesetzt, sonst ein eigener je Abruf.
   final http.Client? _netz;
@@ -572,7 +598,11 @@ class _Api {
       _json({
         'dienst': 'photo-vault',
         'protokoll': protokollFassung,
-        'funktionen': {'konfliktpruefung': 1, 'importplan': 2},
+        'funktionen': {
+          'konfliktpruefung': 1,
+          'importplan': 2,
+          'albenTeilen': 1,
+        },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
         'anmeldung': {
@@ -1576,6 +1606,13 @@ class _Api {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final liste = await db.alleAlben();
     final anzahlen = await db.albumAnzahlen();
+    // Mit wie vielen Konten jedes Album geteilt ist.
+    final geteilt = <String, int>{};
+    for (final t
+        in teilungen?.vonBesitzer(kontoVon(anfrage).id) ??
+            const <Albumteilung>[]) {
+      geteilt[t.album] = (geteilt[t.album] ?? 0) + 1;
+    }
     return _json({
       'alben': [
         for (final a in liste)
@@ -1584,6 +1621,7 @@ class _Api {
             'name': a.name,
             'anzahl': anzahlen[a.id] ?? 0,
             'titelbild': (await db.albumTitelbild(a))?.id,
+            'geteilt': ?geteilt[a.id],
           },
       ],
     });
@@ -1593,11 +1631,19 @@ class _Api {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final a = (await db.alleAlben()).where((x) => x.id == id).firstOrNull;
     if (a == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final aufnahmen = await db.albumAufnahmen(id);
+    // Was andere Konten in ein geteiltes Album gelegt haben (#105).
+    final von =
+        teilungen?.beitragende(
+          kontoVon(anfrage).id,
+          aufnahmen.map((x) => x.id),
+        ) ??
+        const {};
     return _json({
       'album': {'id': a.id, 'name': a.name},
       'aufnahmen': [
-        for (final x in await db.albumAufnahmen(id))
-          zeileAlsJson(Rasterzeile.aus(x)),
+        for (final x in aufnahmen)
+          {...zeileAlsJson(Rasterzeile.aus(x)), 'von': ?von[x.id]?.name},
       ],
     });
   }
@@ -1843,9 +1889,21 @@ class _Api {
   /// Teilabruf (`Range`), damit sich ein Video abspielen lässt, ohne es
   /// ganz zu laden.
   Future<Response> datei(Request anfrage, String id, String art) async {
-    final b = (await _bereich(anfrage)).bibliothek;
-    final a = await b.db.assetById(id);
+    final bereich = await _bereich(anfrage);
+    final a = await bereich.bibliothek.db.assetById(id);
     if (a == null || a.isLocked) return Response.notFound(null);
+    return dateiAus(anfrage, bereich, a, art);
+  }
+
+  /// Die Auslieferung zu [datei] für eine schon gefundene Aufnahme – auch
+  /// für Alben, die ein anderes Konto teilt (#105).
+  Future<Response> dateiAus(
+    Request anfrage,
+    Kontobereich bereich,
+    AssetData a,
+    String art,
+  ) async {
+    final b = bereich.bibliothek;
     if (art == 'abspielbar') return _abspielbar(anfrage, b, a);
     if (art == 'jpeg') return _alsJpeg(anfrage, b, a);
     if (art == 'voll') return _voll(anfrage, b, a);
