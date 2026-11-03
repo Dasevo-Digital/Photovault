@@ -75,6 +75,16 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.54.0" date="2026-11-03">
+      <description>
+        <p>Albums shared by other accounts now also appear on the computer, and own albums can be shared with accounts from there.</p>
+        <p>Anyone allowed to contribute to a shared album can remove their own contributions again.</p>
+        <p>The phone keeps the pictures of shared albums instead of downloading them on every visit.</p>
+        <p>The upload status no longer reports a server error while a large file is being imported.</p>
+        <p>Text recognition no longer rereads photos whose text it cannot read until its model changes.</p>
+        <p>Stacks and Live Photos load faster in large libraries.</p>
+      </description>
+    </release>
     <release version="3.53.0" date="2026-11-03">
       <description>
         <p>Albums can now be shared with other accounts on the same server, to view or to contribute. They appear under “Shared with me” in the browser and on the phone; contributions go straight into the owner's album.</p>
