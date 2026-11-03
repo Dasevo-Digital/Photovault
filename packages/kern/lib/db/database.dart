@@ -397,6 +397,9 @@ class AppDatabase extends _$AppDatabase {
       }
       await stufeAuf(m, from, to);
     },
+    // Nach onCreate und onUpgrade, bei jedem Öffnen: Indizes ohne eigene
+    // Schemastufe (siehe [indizesOhneStufe]).
+    beforeOpen: (_) => indizesOhneStufe(),
   );
 
   /// Öffnet (bzw. legt beim ersten Start an) die SQLite-Datei der

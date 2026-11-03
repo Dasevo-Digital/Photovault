@@ -113,6 +113,26 @@ extension Migrationsschritte on AppDatabase {
     'ON reise_aufnahmen (asset_id)',
   );
 
+  /// Indizes, die keine eigene Schemastufe brauchen (#268): Ein Index
+  /// ändert keine Zeile, und eine ältere Fassung öffnet die Bibliothek mit
+  /// ihm genauso. `IF NOT EXISTS` macht jedes weitere Öffnen zum Nullschritt.
+  ///
+  /// Die Stapel einer Aufnahme (`assetsInStack`, `sichtbaresTitelbild`) und
+  /// ihr Live-Photo-Partner (`zugehoerige`) lasen ohne sie die ganze
+  /// Tabelle – am Server bei 8922 Aufnahmen eine Millisekunde, aber teils
+  /// je Stapel in einer Schleife. Teilindizes: Die meisten Aufnahmen
+  /// gehören zu keinem Stapel und keinem Partner.
+  Future<void> indizesOhneStufe() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assets_stack_id '
+      'ON assets (stack_id) WHERE stack_id IS NOT NULL',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assets_linked_asset_id '
+      'ON assets (linked_asset_id) WHERE linked_asset_id IS NOT NULL',
+    );
+  }
+
   Future<void> _createIndicesV55(Migrator m) async {
     // Die Punkte einer Spur werden immer am Stück und in ihrer
     // Reihenfolge geholt; ohne Index wäre das bei zehntausend Punkten je
