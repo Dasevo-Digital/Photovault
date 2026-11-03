@@ -148,10 +148,11 @@ void main() {
             createdAt: DateTime(2026, 2, 1),
           ),
         );
-    await db.completeRestoreJob(
-      'j1',
-      'v1',
-      await datei('restored/v1.jpg', 'RESTAURIERT'),
+    await db.fuehreAus(
+      RestaurierungSpeichern(
+        'v1',
+        await datei('restored/v1.jpg', 'RESTAURIERT'),
+      ),
     );
     await db.saveVideoTrim(
       'v1',

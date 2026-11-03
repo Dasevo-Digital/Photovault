@@ -15,7 +15,8 @@ import 'package:path/path.dart' as p;
 ///                                       nicht direkt darstellbare Formate)
 ///     developed/{assetId}-{zeit}.jpg (nur mit Entwicklungs-Anpassungen, siehe DevelopScreen;
 ///                                       bis 3.50.0 developed/{assetId}.jpg)
-///     restored/{assetId}.jpg         (nur mit KI-Restaurierung, siehe RestoreQueueService)
+///     restored/{assetId}-{zeit}.jpg  (nur mit KI-Restaurierung oder -Entrauschen, siehe RestoreQueueService;
+///                                       bis 3.52 restored/{assetId}.jpg)
 ///     trimmed/{assetId}.mp4          (nur mit Video-Zuschnitt, siehe VideoTrimScreen)
 ///     masks/{maskId}.png             (KI-Objektmasken, siehe MaskEditor)
 ///     luts/{name}.cube               (importierte Farbtabellen)
@@ -126,12 +127,15 @@ class StoragePaths {
     '$assetId-${DateTime.now().microsecondsSinceEpoch}.jpg',
   );
 
-  /// Ergebnis einer KI-Restaurierung (siehe RestoreQueueService,
-  /// RestoreJobs) – separat von [developedRelativePath], da beide
-  /// unabhängig voneinander existieren können (Restaurierung nimmt das
-  /// bereits entwickelte Ergebnis als Eingabe, falls vorhanden).
-  String restoredRelativePath(String assetId) =>
-      p.join('restored', '$assetId.jpg');
+  /// Wohin ein neues Ergebnis einer KI-Restaurierung oder des
+  /// KI-Entrauschens kommt (siehe RestoreQueueService) – separat von der
+  /// Entwicklung, da beide unabhängig voneinander existieren können (die
+  /// Restaurierung nimmt das entwickelte Bild als Eingabe). Ein neuer Name
+  /// je Ergebnis wie bei [neuerEntwicklungspfad] (#284).
+  String neuerRestaurierungspfad(String assetId) => p.join(
+    'restored',
+    '$assetId-${DateTime.now().microsecondsSinceEpoch}.jpg',
+  );
 
   /// Ergebnis des nicht-destruktiven Video-Zuschnitts (siehe
   /// VideoTrimScreen) – separat von [originalRelativePath], die

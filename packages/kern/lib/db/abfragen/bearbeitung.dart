@@ -270,31 +270,19 @@ extension BearbeitungsAbfragen on AppDatabase {
   Future<void> deleteRestoreJob(String id) =>
       (delete(restoreJobs)..where((t) => t.id.equals(id))).go();
 
-  /// Schließt einen erfolgreichen Auftrag transaktional ab: setzt
-  /// `Assets.restoredRelativePath` UND markiert den Auftrag `done` in einem
-  /// Zug (Muster: [saveDevelopResult]) – verhindert einen inkonsistenten
-  /// Zwischenstand (Job "done", aber Asset zeigt noch nicht auf das
-  /// Ergebnis, oder umgekehrt).
-  Future<void> completeRestoreJob(
-    String jobId,
-    String assetId,
-    String restoredRelativePath,
-  ) => transaction(() async {
-    await (update(assets)..where((t) => t.id.equals(assetId))).write(
-      AssetsCompanion(restoredRelativePath: Value(restoredRelativePath)),
-    );
-    await (update(restoreJobs)..where((t) => t.id.equals(jobId))).write(
-      RestoreJobsCompanion(
-        status: const Value('done'),
-        completedAt: Value(DateTime.now()),
-      ),
-    );
-  });
-
-  /// Trägt eine Restaurierung ohne Auftrag ein – das KI-Entrauschen (#275).
+  /// Trägt das Ergebnis einer Restaurierung oder des KI-Entrauschens ein
+  /// (Befehl RestaurierungSpeichern). Den Auftrag schliesst der Aufrufer
+  /// selbst ab: Der Befehl geht an den Server, die Warteschlange nicht.
   Future<void> setzeRestauriert(String assetId, String restoredRelativePath) =>
       (update(assets)..where((t) => t.id.equals(assetId))).write(
         AssetsCompanion(restoredRelativePath: Value(restoredRelativePath)),
+      );
+
+  /// Nimmt eine Restaurierung zurück (Befehl RestaurierungZuruecksetzen).
+  /// Die Datei löscht der Aufrufer.
+  Future<void> verwirfRestaurierung(String assetId) =>
+      (update(assets)..where((t) => t.id.equals(assetId))).write(
+        const AssetsCompanion(restoredRelativePath: Value(null)),
       );
 
   /// Crash-Safety: setzt beim App-Start jeden Auftrag, der beim letzten

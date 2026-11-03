@@ -520,6 +520,52 @@ final class EntwicklungSpeichern extends Befehl<void> {
   );
 }
 
+/// Das Ergebnis einer KI-Restaurierung oder des KI-Entrauschens eintragen
+/// (#284). Wie bei [EntwicklungSpeichern] geht die Datei vorher ihren
+/// eigenen Weg; der Befehl trägt nur ihren Pfad. Bis 3.52 lief das am
+/// Server vorbei: Handy und Browser sahen eine Restaurierung vom Rechner
+/// nie.
+final class RestaurierungSpeichern extends Befehl<void> {
+  const RestaurierungSpeichern(this.id, this.pfad);
+
+  static RestaurierungSpeichern aus(Map<String, Object?> w) =>
+      RestaurierungSpeichern(w['id']! as String, w['pfad']! as String);
+
+  final String id;
+
+  /// Der relative Pfad des Ergebnisses (`restored/<id>-<zeit>.jpg`).
+  final String pfad;
+
+  @override
+  String get art => 'restaurierungSpeichern';
+
+  @override
+  Map<String, Object?> get werte => {'id': id, 'pfad': pfad};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setzeRestauriert(id, pfad);
+}
+
+/// Eine Restaurierung zurücknehmen; das Foto zeigt wieder die
+/// Entwicklung oder das Original.
+final class RestaurierungZuruecksetzen extends Befehl<void> {
+  const RestaurierungZuruecksetzen(this.id);
+
+  static RestaurierungZuruecksetzen aus(Map<String, Object?> w) =>
+      RestaurierungZuruecksetzen(w['id']! as String);
+
+  final String id;
+
+  @override
+  String get art => 'restaurierungZuruecksetzen';
+
+  @override
+  Map<String, Object?> get werte => {'id': id};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.verwirfRestaurierung(id);
+}
+
 /// Die Regler einer Maske ändern (ihre Form bleibt).
 final class MaskeneinstellungAendern extends Befehl<void> {
   MaskeneinstellungAendern(this.maskeId, Insertable<DevelopMaskData> aenderung)

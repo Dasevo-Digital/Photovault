@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
-import 'bilddekodierung.dart';
+import 'entwicklung_ablegen.dart';
 import 'package:kern/services/modell_halter.dart';
 import 'native_image_converter.dart';
 import 'restore_service.dart';
@@ -354,16 +354,13 @@ class RestoreQueueService {
         return;
       }
 
-      final relativePath = _paths.restoredRelativePath(job.assetId);
-      final outFile = _paths.absolute(relativePath);
-      await outFile.parent.create(recursive: true);
-      await outFile.writeAsBytes(ergebnis);
-
-      // Der Pfad ist je Aufnahme derselbe (`restored/{id}.jpg`). Wer ein
-      // Ergebnis verwirft und neu rechnen laesst, bekaeme sonst das alte
-      // Bild aus dem Bildspeicher zu sehen - siehe [vergissAlleBilder].
-      vergissAlleBilder();
-      await _db.completeRestoreJob(job.id, job.assetId, relativePath);
+      await legeRestaurierungAb(
+        db: _db,
+        paths: _paths,
+        assetId: job.assetId,
+        jpeg: ergebnis,
+      );
+      await _db.markRestoreJobStatus(job.id, 'done');
     } catch (e) {
       await _db.markRestoreJobStatus(
         job.id,
@@ -425,12 +422,6 @@ class RestoreQueueService {
   /// Legt [jpeg] als Restaurierung von [assetId] ab – so, wie die
   /// Warteschlange ein Ergebnis ablegt, nur ohne Auftrag (das
   /// KI-Entrauschen läuft im Entwickeln selbst, #275).
-  Future<void> legeRestauriertAb(String assetId, Uint8List jpeg) async {
-    final relativePath = _paths.restoredRelativePath(assetId);
-    final outFile = _paths.absolute(relativePath);
-    await outFile.parent.create(recursive: true);
-    await outFile.writeAsBytes(jpeg);
-    vergissAlleBilder();
-    await _db.setzeRestauriert(assetId, relativePath);
-  }
+  Future<void> legeRestauriertAb(String assetId, Uint8List jpeg) =>
+      legeRestaurierungAb(db: _db, paths: _paths, assetId: assetId, jpeg: jpeg);
 }

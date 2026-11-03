@@ -282,6 +282,8 @@ void main() {
         ),
         'developed/a1.jpg',
       ),
+      const RestaurierungSpeichern('a1', 'restored/a1-1.jpg'),
+      const RestaurierungZuruecksetzen('a1'),
       MaskeneinstellungAendern(
         4,
         const DevelopMasksCompanion(
@@ -394,6 +396,8 @@ void main() {
       EntwicklungZuruecksetzen() => 'entwicklungZuruecksetzen',
       EntwicklungSpeichern() => 'entwicklungSpeichern',
       MaskeneinstellungAendern() => 'maskeneinstellungAendern',
+      RestaurierungSpeichern() => 'restaurierungSpeichern',
+      RestaurierungZuruecksetzen() => 'restaurierungZuruecksetzen',
     };
 
     test('jede Art hat ein Beispiel und ist zum Lesen eingetragen', () {
@@ -1073,8 +1077,8 @@ const _einordnung = <String, _Art>{
   'setLastAutoBackupAt': _Art.lokal,
   'clearAutoBackupDestination': _Art.lokal,
   'createRestoreJob': _Art.lokal,
-  'completeRestoreJob': _Art.lokal,
-  'setzeRestauriert': _Art.lokal,
+  'setzeRestauriert': _Art.befehl,
+  'verwirfRestaurierung': _Art.befehl,
   'deleteRestoreJob': _Art.lokal,
   'markRestoreJobStatus': _Art.lokal,
   'requeueRestoreJob': _Art.lokal,

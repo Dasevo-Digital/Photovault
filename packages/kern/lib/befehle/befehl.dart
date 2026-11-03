@@ -186,6 +186,8 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'entwicklungZuruecksetzen': EntwicklungZuruecksetzen.aus,
   'entwicklungSpeichern': EntwicklungSpeichern.aus,
   'maskeneinstellungAendern': MaskeneinstellungAendern.aus,
+  'restaurierungSpeichern': RestaurierungSpeichern.aus,
+  'restaurierungZuruecksetzen': RestaurierungZuruecksetzen.aus,
 };
 
 List<String> _kennungen(Object? werte) => (werte! as List).cast<String>();

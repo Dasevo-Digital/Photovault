@@ -202,24 +202,6 @@ void main() {
     },
   );
 
-  test(
-    'completeRestoreJob setzt Assets.restoredRelativePath und den Job-Status transaktional',
-    () async {
-      final assetId = await insertAsset('a');
-      await db.createRestoreJob(
-        job(id: 'job1', assetId: assetId, createdAt: DateTime(2024, 1, 1)),
-      );
-
-      await db.completeRestoreJob('job1', assetId, 'restored/a.jpg');
-
-      final asset = await db.assetById(assetId);
-      expect(asset?.restoredRelativePath, 'restored/a.jpg');
-      final updatedJob = (await db.watchRestoreJobs().first).single;
-      expect(updatedJob.status, 'done');
-      expect(updatedJob.completedAt, isNotNull);
-    },
-  );
-
   test('deleteRestoreJob entfernt nur den angegebenen Auftrag', () async {
     final assetId = await insertAsset('a');
     await db.createRestoreJob(

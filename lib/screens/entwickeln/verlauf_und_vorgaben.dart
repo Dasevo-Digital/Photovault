@@ -651,7 +651,7 @@ mixin _Verlauf on _EntwickelnBasis {
   Future<void> _removeRestoredResult() async {
     final relativePath = widget.asset.restoredRelativePath;
     if (relativePath == null) return;
-    await widget.db.clearMissingRestoredPath(widget.asset.id);
+    await widget.db.fuehreAus(RestaurierungZuruecksetzen(widget.asset.id));
     final file = widget.paths.absolute(relativePath);
     if (await file.exists()) await file.delete();
     if (mounted) Navigator.of(context).pop(true);

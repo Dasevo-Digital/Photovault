@@ -69,7 +69,7 @@ Future<Set<Bearbeitungsart>> originalWiederherstellen({
   }
   if (arten.contains(Bearbeitungsart.restauriert)) {
     await loesche(asset.restoredRelativePath);
-    await db.clearMissingRestoredPath(asset.id);
+    await db.fuehreAus(RestaurierungZuruecksetzen(asset.id));
   }
   if (arten.contains(Bearbeitungsart.zugeschnitten)) {
     await loesche(asset.trimmedRelativePath);

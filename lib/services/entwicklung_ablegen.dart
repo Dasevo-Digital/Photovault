@@ -28,9 +28,47 @@ Future<String> legeEntwicklungAb({
   required String assetId,
   required Uint8List jpeg,
   required Insertable<DevelopSettingsData> einstellungen,
+}) async => _lege(
+  db: db,
+  paths: paths,
+  ordner: 'developed',
+  vorher: (await db.assetById(assetId))?.developedRelativePath,
+  neu: paths.neuerEntwicklungspfad(assetId),
+  jpeg: jpeg,
+  befehl: (neu) => EntwicklungSpeichern(assetId, einstellungen, neu),
+);
+
+/// Legt das Ergebnis einer KI-Restaurierung oder des KI-Entrauschens von
+/// [assetId] ab – genau wie [legeEntwicklungAb], unter `restored/` (#284).
+///
+/// Bis 3.52 schrieb der Rechner jedes Ergebnis nach `restored/<id>.jpg`
+/// und trug es nur bei sich ein. In einer verbundenen Bibliothek erfuhr
+/// der Server nichts davon; Handy und Browser zeigten weiter das Bild
+/// davor.
+Future<String> legeRestaurierungAb({
+  required AppDatabase db,
+  required StoragePaths paths,
+  required String assetId,
+  required Uint8List jpeg,
+}) async => _lege(
+  db: db,
+  paths: paths,
+  ordner: 'restored',
+  vorher: (await db.assetById(assetId))?.restoredRelativePath,
+  neu: paths.neuerRestaurierungspfad(assetId),
+  jpeg: jpeg,
+  befehl: (neu) => RestaurierungSpeichern(assetId, neu),
+);
+
+Future<String> _lege({
+  required AppDatabase db,
+  required StoragePaths paths,
+  required String ordner,
+  required String? vorher,
+  required String neu,
+  required Uint8List jpeg,
+  required Befehl<void> Function(String neu) befehl,
 }) async {
-  final vorher = (await db.assetById(assetId))?.developedRelativePath;
-  final neu = paths.neuerEntwicklungspfad(assetId);
   final datei = paths.absolute(neu);
   await datei.parent.create(recursive: true);
   await datei.writeAsBytes(jpeg, flush: true);
@@ -40,15 +78,15 @@ Future<String> legeEntwicklungAb({
     } catch (e) {
       throw EntwicklungNichtAbgelegt(e);
     }
-    await db.fuehreAus(EntwicklungSpeichern(assetId, einstellungen, neu));
+    await db.fuehreAus(befehl(neu));
   } catch (_) {
     if (await datei.exists()) await datei.delete();
     rethrow;
   }
-  // Nur, was wirklich eine Entwicklung war – nie ein Original.
+  // Nur, was wirklich ein Ergebnis dieser Art war – nie ein Original.
   if (vorher != null &&
       vorher != neu &&
-      p.isWithin('developed', p.normalize(vorher))) {
+      p.isWithin(ordner, p.normalize(vorher))) {
     final alt = paths.absolute(vorher);
     if (await alt.exists()) await alt.delete();
   }
@@ -56,7 +94,8 @@ Future<String> legeEntwicklungAb({
 }
 
 /// Der Server (oder wer sonst [StoragePaths.ablege] ist) hat die Datei
-/// einer Entwicklung nicht genommen; nichts ist eingetragen.
+/// einer Entwicklung oder Restaurierung nicht genommen; nichts ist
+/// eingetragen.
 class EntwicklungNichtAbgelegt implements Exception {
   const EntwicklungNichtAbgelegt(this.ursache);
 
