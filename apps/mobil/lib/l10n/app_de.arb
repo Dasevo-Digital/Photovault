@@ -1410,5 +1410,9 @@
   "fotosHinzufuegen": "Hinzufügen ({n})",
   "@fotosHinzufuegen": {"placeholders": {"n": {"type": "int"}}},
   "fotosKeinZugriff": "Ohne Zugriff auf die Fotos lässt sich nichts auswählen.",
-  "fotosEinstellungen": "Einstellungen"
+  "fotosEinstellungen": "Einstellungen",
+  "geteiltEntfernen": "Aus dem Album entfernen",
+  "geteiltEntfernenFrage": "Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.",
+  "@geteiltEntfernenFrage": {"placeholders": {"name": {"type": "String"}}},
+  "geteiltEntfernt": "Aus dem Album entfernt"
 }

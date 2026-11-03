@@ -29,6 +29,7 @@ class Zwischenspeicher {
     paths.developedDir,
     paths.restoredDir,
     paths.trimmedDir,
+    paths.geteiltDir,
   ];
 
   Future<List<File>> _dateien() async {

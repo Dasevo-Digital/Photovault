@@ -80,6 +80,7 @@ class Alben extends StatelessWidget {
             GeteilteAlben(
               verbindung: sitzung.abgleich?.verbindung,
               raster: raster,
+              ablage: sitzung.paths.geteiltDir,
             ),
           ],
         );

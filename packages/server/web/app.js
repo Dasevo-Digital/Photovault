@@ -767,6 +767,8 @@ function zeigeListe(neu, titel) {
   $('raster-kopf').replaceChildren(...(liste.kopf ? [liste.kopf] : []));
   $('raster-kopf').hidden = !liste.kopf;
   $('ansichtsleiste').hidden = !liste.zeitleiste;
+  // Aus einem geteilten Album lässt sich nichts auswählen (#292).
+  $('auswaehlen').hidden = !!liste.fremd;
   liste.roh = [];
   $('raster').classList.toggle('liste', !!liste.alsListe);
   if (liste.alsListe) { legeListenspalten(); $('raster').append(listenkopf()); }
@@ -1199,6 +1201,19 @@ async function zeigeGeteiltesAlbum(id) {
   });
   kopf.append(verlassen);
   zeigeListe({ aufnahmen: d.aufnahmen, kopf, fremd: `/api/v1/geteilt/${encodeURIComponent(id)}/aufnahmen` }, d.album.name);
+}
+
+// Den eigenen Beitrag wieder aus einem geteilten Album nehmen (#290).
+// Beim Besitzer landet er im Papierkorb, solange er in keinem anderen
+// seiner Alben liegt.
+async function entferneBeitrag(a) {
+  if (!confirm(t('Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.', { name: a.name || '' }))) return;
+  try {
+    await api(`${liste.fremd}/${encodeURIComponent(a.id)}`, { methode: 'DELETE' });
+  } catch (x) { $('angaben').textContent = x.message; return; }
+  liste.aufnahmen = liste.aufnahmen.filter((x) => x.id !== a.id);
+  schliesse();
+  neuZeichnen();
 }
 
 // Eine Datei ins geteilte Album – als XHR, damit der Fortschritt sichtbar
@@ -4231,7 +4246,10 @@ function oeffne(i) {
   zeigeRahmen();
   const korb = !!liste.papierkorb;
   $('favorit').hidden = korb || fremd;
-  $('weg').hidden = korb || fremd;
+  // In einem geteilten Album nur bei eigenen Beiträgen (#290).
+  $('weg').hidden = korb || (fremd && !a.eigene);
+  $('weg').title = fremd ? t('Aus dem Album entfernen') : t('In den Papierkorb');
+  $('weg').setAttribute('aria-label', $('weg').title);
   $('holen').hidden = !korb;
   $('teilen').hidden = !teilenMoeglich;
   $('live').hidden = !(a.art !== 'video' && a.partner);
@@ -4710,6 +4728,7 @@ async function nimmAusListe(a, art) {
 }
 $('weg').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
+  if (a && fremdeListe()) { await entferneBeitrag(a); return; }
   if (!a || !confirm(t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.'))) return;
   try { await nimmAusListe(a, 'inDenPapierkorb'); } catch (x) { $('angaben').textContent = x.message; }
 });
@@ -5496,6 +5515,7 @@ async function zeigeWeg() {
   if (!sitzung) return;
   schliesse();
   auswahlAufheben();
+  $('auswaehlen').hidden = false;
   const teile = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
   try {
     switch (teile[0]) {

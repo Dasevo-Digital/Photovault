@@ -309,6 +309,64 @@ void main() {
     expect(noch['aufnahme'], neu);
   });
 
+  test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
+    final (strand, _, _) = await urlaub();
+    await teile(max.id, beitragen: true);
+    final id = (await mitMir(maxToken)).single['id']! as String;
+    Future<String> schicke(int farbe, String name) async {
+      final bytes = jpeg(farbe);
+      final r = await frag(
+        'POST',
+        '/api/v1/geteilt/$id/beitrag?name=$name',
+        token: maxToken,
+        kopf: {'content-length': '${bytes.length}'},
+        inhalt: bytes,
+      );
+      return (await jsonAus(r))['aufnahme']! as String;
+    }
+
+    final see = await schicke(40, 'see.jpg');
+    final wald = await schicke(160, 'wald.jpg');
+    Future<Response> entferne(String a, [String? token]) => frag(
+      'DELETE',
+      '/api/v1/geteilt/$id/aufnahmen/$a',
+      token: token ?? maxToken,
+    );
+
+    expect((await entferne(strand)).statusCode, 403, reason: 'Erikas Foto');
+    expect(
+      (await entferne(see, moritzToken)).statusCode,
+      404,
+      reason: 'Moritz kennt die Teilung nicht',
+    );
+
+    final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    // Erika hat „wald“ auch in ein eigenes Album gelegt.
+    await befehl(erikaToken, 'albumAnlegen', {
+      'albumId': 'natur',
+      'name': 'Natur',
+      'angelegtAm': '2026-10-18T10:00:00Z',
+    });
+    await befehl(erikaToken, 'albumFuellen', {
+      'albumId': 'natur',
+      'ids': [wald],
+    });
+
+    final r1 = await entferne(see);
+    expect(r1.statusCode, 200);
+    expect((await jsonAus(r1))['papierkorb'], true);
+    expect((await b.db.assetById(see))!.isTrashed, isTrue);
+
+    final r2 = await entferne(wald);
+    expect((await jsonAus(r2))['papierkorb'], false, reason: 'noch in „Natur“');
+    expect((await b.db.assetById(wald))!.isTrashed, isFalse);
+
+    final im = [for (final a in await b.db.albumAufnahmen('urlaub')) a.id];
+    expect(im, isNot(contains(see)));
+    expect(im, isNot(contains(wald)));
+    expect(im, contains(strand));
+  });
+
   test('Erika hört auf zu teilen, Max verlässt ein Album', () async {
     await urlaub();
     await teile(max.id);

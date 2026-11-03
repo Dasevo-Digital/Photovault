@@ -903,5 +903,8 @@
   "fotosWaehlen": "Choose photos",
   "fotosHinzufuegen": "Add ({n})",
   "fotosKeinZugriff": "Without access to your photos nothing can be chosen.",
-  "fotosEinstellungen": "Settings"
+  "fotosEinstellungen": "Settings",
+  "geteiltEntfernen": "Remove from album",
+  "geteiltEntfernenFrage": "Remove your contribution “{name}” from the album? If it is in no other album, it goes to the owner's trash.",
+  "geteiltEntfernt": "Removed from the album"
 }

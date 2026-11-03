@@ -359,6 +359,40 @@ class Teilungsapi {
     }
   }
 
+  /// Nimmt eine Aufnahme, die das Konto der Anfrage beigetragen hat,
+  /// wieder aus dem Album (#290). Liegt sie in keinem anderen Album des
+  /// Besitzers, kommt sie in dessen Papierkorb – von dort holt er sie
+  /// zurück, wenn er sie behalten will. → 200 `{papierkorb}`; 403, wenn
+  /// sie nicht von diesem Konto kam.
+  Future<Response> beitragEntfernen(
+    Request r,
+    String id,
+    String aufnahme,
+  ) async {
+    final g = await _geteilt(r, id);
+    if (g == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final von = _dienst.beitragende(g.teilung.besitzer, [aufnahme])[aufnahme];
+    if (von?.konto != kontoVon(r).id) {
+      return _json({'fehler': 'nicht dein Beitrag'}, status: 403);
+    }
+    final db = g.bereich.bibliothek.db;
+    final alben = {
+      for (final z in await (db.select(
+        db.albumAssets,
+      )..where((t) => t.assetId.equals(aufnahme))).get())
+        z.albumId,
+    };
+    if (!alben.contains(g.album.id)) {
+      return _json({'fehler': 'nicht im Album'}, status: 404);
+    }
+    // Als Befehle wie jede andere Änderung: So erfahren die Geräte des
+    // Besitzers davon.
+    await db.fuehreAus(AusAlbumNehmen(g.album.id, [aufnahme]));
+    final papierkorb = alben.length == 1;
+    if (papierkorb) await db.fuehreAus(InDenPapierkorb([aufnahme]));
+    return _json({'papierkorb': papierkorb});
+  }
+
   /// Der Empfänger will das Album nicht mehr sehen.
   Future<Response> verlassen(Request r, String id) async {
     final ich = kontoVon(r).id;

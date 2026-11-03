@@ -322,6 +322,10 @@ Handler baueApi({
     ..get('/api/v1/geteilt/<id>', teilung.album)
     ..delete('/api/v1/geteilt/<id>', teilung.verlassen)
     ..post('/api/v1/geteilt/<id>/beitrag', teilung.beitrag)
+    ..delete(
+      '/api/v1/geteilt/<id>/aufnahmen/<aufnahme>',
+      teilung.beitragEntfernen,
+    )
     ..get(
       '/api/v1/geteilt/<id>/aufnahmen/<aufnahme>/<art>',
       teilung.aufnahmedatei,

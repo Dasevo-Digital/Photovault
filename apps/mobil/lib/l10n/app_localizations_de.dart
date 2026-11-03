@@ -2864,4 +2864,15 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get fotosEinstellungen => 'Einstellungen';
+
+  @override
+  String get geteiltEntfernen => 'Aus dem Album entfernen';
+
+  @override
+  String geteiltEntfernenFrage(String name) {
+    return 'Deinen Beitrag „$name“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.';
+  }
+
+  @override
+  String get geteiltEntfernt => 'Aus dem Album entfernt';
 }

@@ -64,6 +64,11 @@ class StoragePaths {
   Directory get previewsDir => Directory(p.join(root.path, 'previews'));
   Directory get developedDir => Directory(p.join(root.path, 'developed'));
   Directory get restoredDir => Directory(p.join(root.path, 'restored'));
+
+  /// Bilder aus Alben, die ein anderes Konto teilt (#105, #291) – nur in
+  /// einer verbundenen Kopie, je Teilung ein Ordner. Zählt zum
+  /// [Zwischenspeicher].
+  Directory get geteiltDir => Directory(p.join(root.path, 'geteilt'));
   Directory get trimmedDir => Directory(p.join(root.path, 'trimmed'));
 
   /// Importierte Farbtabellen (`.cube`).

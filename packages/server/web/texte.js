@@ -830,6 +830,10 @@ const EN = {
   'Konto unbekannt': 'Unknown account',
   'nur ansehen': 'view only',
   'zu viele Empfänger': 'too many recipients',
+  'Aus dem Album entfernen': 'Remove from album',
+  'Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.': 'Remove your contribution “{name}” from the album? If it is in no other album, it goes to the owner\'s trash.',
+  'nicht dein Beitrag': 'not your contribution',
+  'nicht im Album': 'not in the album',
 };
 
 function t(deutsch, werte) {

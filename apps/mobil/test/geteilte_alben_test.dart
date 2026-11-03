@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/seiten/geteilte_alben.dart';
@@ -326,5 +327,152 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(geteilt.single['beitragen'], true);
+  });
+
+  testWidgets('den eigenen Beitrag entfernen, nur ihn (#290)', (tester) async {
+    final geloescht = <String>[];
+    final client = MockClient((r) async {
+      if (r.method == 'DELETE') {
+        geloescht.add(r.url.path);
+        return json({'papierkorb': true});
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    final aufnahmen = [
+      GeteilteAufnahme(
+        id: 'fremd',
+        video: false,
+        name: 'strand.jpg',
+        aufgenommen: DateTime(2026, 8),
+      ),
+      GeteilteAufnahme(
+        id: 'mein',
+        video: false,
+        name: 'see.jpg',
+        aufgenommen: DateTime(2026, 8),
+        von: 'max',
+        eigene: true,
+      ),
+    ];
+    bool? zurueck;
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () async =>
+                zurueck = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => GeteilterBetrachter(
+                      verbindung: v,
+                      album: album,
+                      aufnahmen: aufnahmen,
+                      start: 0,
+                    ),
+                  ),
+                ),
+            child: const Text('auf'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('auf'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Aus dem Album entfernen'), findsNothing);
+
+    await tester.drag(find.byType(PageView), const Offset(-600, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Beigetragen von max'), findsOneWidget);
+    await tester.tap(find.byTooltip('Aus dem Album entfernen'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(TextButton, 'Aus dem Album entfernen'),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(geloescht, ['/api/v1/geteilt/t1/aufnahmen/mein']);
+    expect(zurueck, isTrue, reason: 'das Album lädt danach neu');
+  });
+
+  testWidgets('Bilder bleiben auf dem Telefon, Fremdes geht (#291)', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_geteilt_ablage_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    // Von einem Album, das nicht mehr geteilt ist.
+    Directory('${ordner.path}/weg').createSync();
+    final png = img.encodePng(img.Image(width: 4, height: 4));
+    var bilder = 0;
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/geteilt') {
+        return json({
+          'alben': [
+            {
+              'id': 't1',
+              'name': 'Urlaub',
+              'besitzer': 'erika',
+              'anzahl': 1,
+              'titelbild': 'a1',
+              'titelstand': 's9',
+            },
+          ],
+        });
+      }
+      if (r.url.path.endsWith('/miniatur')) {
+        bilder++;
+        return http.Response.bytes(png, 200);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    Widget liste() => app(
+      Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            GeteilteAlben(
+              verbindung: v,
+              ablage: ordner,
+              raster: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
+                childAspectRatio: 0.82,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpWidget(liste());
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      );
+      await tester.pump();
+    }
+    final abgelegt = File('${ordner.path}/t1/a1.miniatur.s9');
+    expect(abgelegt.existsSync(), isTrue);
+    expect(Directory('${ordner.path}/weg').existsSync(), isFalse);
+    expect(bilder, 1);
+
+    // Ein neuer Blick: aus der Ablage, nicht vom Server.
+    imageCache.clear();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(liste());
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 30)),
+      );
+      await tester.pump();
+    }
+    expect(bilder, 1);
   });
 }

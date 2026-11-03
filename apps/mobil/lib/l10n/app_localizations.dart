@@ -4422,6 +4422,24 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Einstellungen'**
   String get fotosEinstellungen;
+
+  /// No description provided for @geteiltEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus dem Album entfernen'**
+  String get geteiltEntfernen;
+
+  /// No description provided for @geteiltEntfernenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.'**
+  String geteiltEntfernenFrage(String name);
+
+  /// No description provided for @geteiltEntfernt.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus dem Album entfernt'**
+  String get geteiltEntfernt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
 import 'package:video_player/video_player.dart';
@@ -17,18 +18,21 @@ import '../l10n/app_localizations.dart';
 //
 // Ein Album, das ein anderes Konto teilt, liegt nicht in der Kopie dieses
 // Telefons: Es gehört zur Bibliothek des Besitzers. Raster und Betrachter
-// holen deshalb alles direkt vom Server, und nur der Bildspeicher hält es
-// vor.
+// holen deshalb alles direkt vom Server. Miniaturen und Ansichten bleiben
+// danach unter `geteilt/<Teilung>/` liegen (#291) – im Zwischenspeicher
+// der Kopie, mit seiner Grenze; ist ein Album nicht mehr geteilt, geht
+// sein Ordner beim nächsten Blick auf die Albenliste.
 
 String _k(String s) => Uri.encodeComponent(s);
 
 /// Ein Bild vom Server über [verbindung], das nicht in der Bibliothek
-/// liegt.
+/// liegt – mit [ablage] einmal geholt und danach von dort.
 class FernBild extends ImageProvider<FernBild> {
-  const FernBild(this.verbindung, this.pfad);
+  const FernBild(this.verbindung, this.pfad, {this.ablage});
 
   final Serververbindung verbindung;
   final String pfad;
+  final File? ablage;
 
   @override
   Future<FernBild> obtainKey(ImageConfiguration configuration) =>
@@ -43,9 +47,26 @@ class FernBild extends ImageProvider<FernBild> {
       );
 
   Future<ui.Codec> _lade(FernBild key, ImageDecoderCallback decode) async {
+    final a = ablage;
     try {
+      if (a != null && await a.exists()) {
+        // Die Zeit des Zugriffs entscheidet, was der Zwischenspeicher
+        // zuerst räumt (siehe StoragePaths.bereit).
+        unawaited(a.setLastModified(DateTime.now()).catchError((_) {}));
+        return await decode(await ui.ImmutableBuffer.fromFilePath(a.path));
+      }
       final r = await verbindung.anfrage('GET', pfad);
       if (r.statusCode != 200) throw Serverfehler(r.statusCode, '');
+      if (a != null) {
+        try {
+          await a.parent.create(recursive: true);
+          final teil = File('${a.path}.teil');
+          await teil.writeAsBytes(r.bodyBytes, flush: true);
+          await teil.rename(a.path);
+        } on FileSystemException {
+          // Kein Platz oder gerade geräumt: Das Bild zeigt sich trotzdem.
+        }
+      }
       return await decode(await ui.ImmutableBuffer.fromUint8List(r.bodyBytes));
     } catch (_) {
       // Offline: nicht im Bildspeicher behalten, der nächste Blick holt es.
@@ -98,6 +119,32 @@ class GeteiltesAlbum {
   String datei(String aufnahme, String art, [String? stand]) =>
       'api/v1/geteilt/${_k(id)}/aufnahmen/${_k(aufnahme)}/$art'
       '${stand == null ? '' : '?v=${_k(stand)}'}';
+
+  /// Das Bild [art] von [aufnahme]; mit [ablage] unter
+  /// `<ablage>/<Teilung>/` vorgehalten. [stand] steckt im Dateinamen: Eine
+  /// neue Fassung beim Besitzer ist eine neue Datei.
+  FernBild bild(
+    Serververbindung verbindung,
+    Directory? ablage,
+    String aufnahme,
+    String art, [
+    String? stand,
+  ]) => FernBild(
+    verbindung,
+    datei(aufnahme, art, stand),
+    ablage: ablage == null
+        ? null
+        : File(
+            p.join(
+              ablage.path,
+              _sicher(id),
+              '${_sicher(aufnahme)}.$art${stand == null ? '' : '.${_sicher(stand)}'}',
+            ),
+          ),
+  );
+
+  static String _sicher(String s) =>
+      s.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
 }
 
 /// Eine Aufnahme darin – was die Liste des Servers über sie sagt.
@@ -109,6 +156,7 @@ class GeteilteAufnahme {
     required this.aufgenommen,
     this.dauer,
     this.von,
+    this.eigene = false,
     this.stand,
   });
 
@@ -121,6 +169,7 @@ class GeteilteAufnahme {
         DateTime.fromMillisecondsSinceEpoch(0),
     dauer: (j['dauer'] as num?)?.toDouble(),
     von: j['von'] as String?,
+    eigene: j['eigene'] == true,
     stand: j['stand'] as String?,
   );
 
@@ -132,6 +181,10 @@ class GeteilteAufnahme {
 
   /// Wer sie beigetragen hat, wenn nicht der Besitzer.
   final String? von;
+
+  /// Ob dieses Konto sie beigetragen hat – dann darf es sie wieder
+  /// entfernen (#290).
+  final bool eigene;
   final String? stand;
 }
 
@@ -143,10 +196,14 @@ class GeteilteAlben extends StatefulWidget {
     super.key,
     required this.verbindung,
     required this.raster,
+    this.ablage,
   });
 
   final Serververbindung? verbindung;
   final SliverGridDelegate raster;
+
+  /// Wohin die Bilder kommen (`StoragePaths.geteiltDir`).
+  final Directory? ablage;
 
   @override
   State<GeteilteAlben> createState() => _GeteilteAlbenState();
@@ -171,10 +228,28 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
           GeteiltesAlbum.aus((x as Map).cast<String, Object?>()),
       ];
       if (mounted) setState(() => _alben = liste);
+      await _raeumeAuf(liste);
     } on KeineVerbindung {
       // Offline: Was geteilt ist, kommt beim nächsten Öffnen.
     } on Serverfehler {
       // Ein Server vor 3.53 kennt keine geteilten Alben.
+    }
+  }
+
+  /// Was nicht mehr geteilt ist, hat auf diesem Telefon nichts mehr zu
+  /// suchen: Es sind Bilder aus der Bibliothek eines anderen.
+  Future<void> _raeumeAuf(List<GeteiltesAlbum> liste) async {
+    final a = widget.ablage;
+    if (a == null || !await a.exists()) return;
+    final noch = {for (final x in liste) GeteiltesAlbum._sicher(x.id)};
+    await for (final e in a.list(followLinks: false)) {
+      if (e is Directory && !noch.contains(p.basename(e.path))) {
+        try {
+          await e.delete(recursive: true);
+        } on FileSystemException {
+          // Beim nächsten Mal.
+        }
+      }
     }
   }
 
@@ -202,6 +277,7 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
             itemCount: _alben.length,
             itemBuilder: (context, i) => _GeteilteKachel(
               verbindung: v,
+              ablage: widget.ablage,
               album: _alben[i],
               geaendert: _lade,
             ),
@@ -215,11 +291,13 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
 class _GeteilteKachel extends StatelessWidget {
   const _GeteilteKachel({
     required this.verbindung,
+    required this.ablage,
     required this.album,
     required this.geaendert,
   });
 
   final Serververbindung verbindung;
+  final Directory? ablage;
   final GeteiltesAlbum album;
   final VoidCallback geaendert;
 
@@ -233,8 +311,11 @@ class _GeteilteKachel extends StatelessWidget {
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) =>
-                GeteiltesAlbumSeite(verbindung: verbindung, album: album),
+            builder: (_) => GeteiltesAlbumSeite(
+              verbindung: verbindung,
+              album: album,
+              ablage: ablage,
+            ),
           ),
         );
         geaendert();
@@ -249,9 +330,12 @@ class _GeteilteKachel extends StatelessWidget {
                 child: titel == null
                     ? ColoredBox(color: farben.surfaceContainerHighest)
                     : _FernMiniatur(
-                        FernBild(
+                        album.bild(
                           verbindung,
-                          album.datei(titel, 'miniatur', album.titelstand),
+                          ablage,
+                          titel,
+                          'miniatur',
+                          album.titelstand,
                         ),
                       ),
               ),
@@ -307,11 +391,13 @@ class GeteiltesAlbumSeite extends StatefulWidget {
     super.key,
     required this.verbindung,
     required this.album,
+    this.ablage,
     this.waehle,
   });
 
   final Serververbindung verbindung;
   final GeteiltesAlbum album;
+  final Directory? ablage;
 
   /// Wer die Fotos zum Beitragen wählt – im Betrieb die Fotomediathek
   /// ([waehleFotos]), in Tests eine feste Liste.
@@ -395,6 +481,14 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
         'DELETE',
         'api/v1/geteilt/${_k(_album.id)}',
       );
+      // Die Bilder gehören jemand anderem.
+      final a = widget.ablage;
+      final hier = a == null
+          ? null
+          : Directory(p.join(a.path, GeteiltesAlbum._sicher(_album.id)));
+      if (hier != null && await hier.exists()) {
+        await hier.delete(recursive: true).catchError((_) => hier);
+      }
       weg.pop();
     } on KeineVerbindung {
       bote.showSnackBar(SnackBar(content: Text(t.geteiltOffline)));
@@ -531,23 +625,31 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
                           ),
                       itemCount: a.length,
                       itemBuilder: (context, i) => GestureDetector(
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => GeteilterBetrachter(
-                              verbindung: widget.verbindung,
-                              album: _album,
-                              aufnahmen: a,
-                              start: i,
-                            ),
-                          ),
-                        ),
+                        onTap: () async {
+                          final geaendert = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute(
+                                  builder: (_) => GeteilterBetrachter(
+                                    verbindung: widget.verbindung,
+                                    album: _album,
+                                    ablage: widget.ablage,
+                                    aufnahmen: a,
+                                    start: i,
+                                  ),
+                                ),
+                              );
+                          if (geaendert == true) await _lade();
+                        },
                         child: Stack(
                           fit: StackFit.expand,
                           children: [
                             _FernMiniatur(
-                              FernBild(
+                              _album.bild(
                                 widget.verbindung,
-                                _album.datei(a[i].id, 'miniatur', a[i].stand),
+                                widget.ablage,
+                                a[i].id,
+                                'miniatur',
+                                a[i].stand,
                               ),
                             ),
                             if (a[i].video)
@@ -583,10 +685,12 @@ class GeteilterBetrachter extends StatefulWidget {
     required this.album,
     required this.aufnahmen,
     required this.start,
+    this.ablage,
   });
 
   final Serververbindung verbindung;
   final GeteiltesAlbum album;
+  final Directory? ablage;
   final List<GeteilteAufnahme> aufnahmen;
   final int start;
 
@@ -602,6 +706,45 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
   void dispose() {
     _seiten.dispose();
     super.dispose();
+  }
+
+  /// Den eigenen Beitrag wieder aus dem Album nehmen (#290). Beim
+  /// Besitzer kommt er in den Papierkorb, solange er in keinem anderen
+  /// seiner Alben liegt.
+  Future<void> _entferne(GeteilteAufnahme a) async {
+    final t = AppTexte.of(context);
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        content: Text(t.geteiltEntfernenFrage(a.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(t.abbrechen),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(t.geteiltEntfernen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    final bote = ScaffoldMessenger.of(context);
+    final weg = Navigator.of(context);
+    try {
+      final r = await widget.verbindung.anfrage(
+        'DELETE',
+        'api/v1/geteilt/${_k(widget.album.id)}/aufnahmen/${_k(a.id)}',
+      );
+      if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);
+      bote.showSnackBar(SnackBar(content: Text(t.geteiltEntfernt)));
+      weg.pop(true);
+    } on Serverfehler {
+      bote.showSnackBar(SnackBar(content: Text(t.geteiltFehler(a.name))));
+    } on KeineVerbindung {
+      bote.showSnackBar(SnackBar(content: Text(t.geteiltOffline)));
+    }
   }
 
   @override
@@ -634,6 +777,14 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
             ),
           ],
         ),
+        actions: [
+          if (a.eigene)
+            IconButton(
+              tooltip: t.geteiltEntfernen,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _entferne(a),
+            ),
+        ],
       ),
       body: PageView.builder(
         controller: _seiten,
@@ -652,9 +803,12 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
             maxScale: 6,
             child: Center(
               child: Image(
-                image: FernBild(
+                image: widget.album.bild(
                   widget.verbindung,
-                  widget.album.datei(x.id, 'ansicht', x.stand),
+                  widget.ablage,
+                  x.id,
+                  'ansicht',
+                  x.stand,
                 ),
                 fit: BoxFit.contain,
                 gaplessPlayback: true,
@@ -662,9 +816,12 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
                     fortschritt == null
                     ? kind
                     : Image(
-                        image: FernBild(
+                        image: widget.album.bild(
                           widget.verbindung,
-                          widget.album.datei(x.id, 'miniatur', x.stand),
+                          widget.ablage,
+                          x.id,
+                          'miniatur',
+                          x.stand,
                         ),
                         fit: BoxFit.contain,
                       ),

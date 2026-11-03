@@ -2851,4 +2851,15 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get fotosEinstellungen => 'Settings';
+
+  @override
+  String get geteiltEntfernen => 'Remove from album';
+
+  @override
+  String geteiltEntfernenFrage(String name) {
+    return 'Remove your contribution “$name” from the album? If it is in no other album, it goes to the owner\'s trash.';
+  }
+
+  @override
+  String get geteiltEntfernt => 'Removed from the album';
 }
