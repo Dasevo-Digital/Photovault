@@ -164,12 +164,26 @@ class Hochladen {
     );
   }
 
+  /// Wie viel von [id] angekommen ist. Nach dem letzten Stück legt
+  /// [_importiere] die Datei unter ihrem Namen in einen eigenen Ordner, und
+  /// bis das Ergebnis dasteht, gibt es die `.teil`-Datei nicht mehr. Bis
+  /// 3.53 warf das jede Abfrage in dieser Zeit als 500 (#262) – ein HEAD
+  /// vom Telefon während des Imports einer grossen DNG. Angekommen ist in
+  /// dem Moment alles.
+  Future<int> _erhalten(String id, Map<String, Object?> a) async {
+    final laenge = a['laenge']! as int;
+    if (a['ergebnis'] != null) return laenge;
+    try {
+      return await _teil(id).length();
+    } on PathNotFoundException {
+      return laenge;
+    }
+  }
+
   Future<Response> stand(Request anfrage, String id) async {
     final a = await _lies(id);
     if (a == null) return Response.notFound(null, headers: _tus);
-    final versatz = a['ergebnis'] != null
-        ? a['laenge']! as int
-        : await _teil(id).length();
+    final versatz = await _erhalten(id, a);
     return Response.ok(
       null,
       headers: {
@@ -190,9 +204,7 @@ class Hochladen {
         'id': id,
         'name': a['name'],
         'laenge': a['laenge'],
-        'erhalten': a['ergebnis'] != null
-            ? a['laenge']
-            : await _teil(id).length(),
+        'erhalten': await _erhalten(id, a),
         'ergebnis': a['ergebnis'],
       }),
       headers: {'content-type': 'application/json; charset=utf-8'},
