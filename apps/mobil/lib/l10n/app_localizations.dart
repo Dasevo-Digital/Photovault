@@ -187,10 +187,46 @@ abstract class AppTexte {
   /// **'Der Papierkorb ist leer.'**
   String get bibPapierkorbLeer;
 
+  /// No description provided for @bibPapierkorbLeeren.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb leeren'**
+  String get bibPapierkorbLeeren;
+
+  /// No description provided for @bibEndgueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Endgültig löschen'**
+  String get bibEndgueltig;
+
+  /// No description provided for @bibEndgueltigTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Die Aufnahme endgültig löschen?} other{{n} Aufnahmen endgültig löschen?}}'**
+  String bibEndgueltigTitel(int n);
+
+  /// No description provided for @bibEndgueltigText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.'**
+  String get bibEndgueltigText;
+
+  /// No description provided for @bibEndgueltigServerZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.'**
+  String get bibEndgueltigServerZuAlt;
+
+  /// No description provided for @bibEndgueltigFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Endgültig löschen hat nicht geklappt.'**
+  String get bibEndgueltigFehler;
+
   /// No description provided for @bibPapierkorbHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Zurückholen geht hier; endgültig löschen am Rechner.'**
+  /// **'Lange drücken wählt aus – dann zurückholen oder endgültig löschen.'**
   String get bibPapierkorbHinweis;
 
   /// No description provided for @zeitleisteLeer.

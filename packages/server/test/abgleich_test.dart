@@ -93,13 +93,16 @@ void main() {
 
   /// Ein Gerät: angemeldet, mit Abzug, eingerichtet – aber ohne Schleife;
   /// die Schritte ruft der Prüfstand selbst.
-  Future<(AppDatabase, Abgleich)> geraet(String name) async {
+  Future<(AppDatabase, Abgleich)> geraet(
+    String name, {
+    StoragePaths? ablage,
+  }) async {
     final token = konten.meldeAn(erika.id, name, 'x').token;
     final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
     final datei = File('${ordner.path}/$name/library.sqlite');
     await Abgleich.holeAbzug(v, datei);
     final db = AppDatabase(NativeDatabase(datei));
-    final a = Abgleich(db, v);
+    final a = Abgleich(db, v, ablage: ablage);
     await a.richteEin();
     geraete.add((db, a));
     return (db, a);
@@ -113,6 +116,51 @@ void main() {
               .customSelect('SELECT count(*) AS n FROM pv_ausgang')
               .getSingle())
           .read<int>('n');
+
+  test('löscht der Server endgültig, räumt das Gerät seine geholten '
+      'Dateien weg (#296)', () async {
+    final s = await serverDb();
+    await aufnahme(s, 'weg');
+    await aufnahme(s, 'bleibt');
+    final ablage = await StoragePaths.oeffne(
+      Directory('${ordner.path}/Telefon/library'),
+    );
+    final (db, a) = await geraet('Telefon', ablage: ablage);
+    // Was das Gerät geholt hat: Original und Miniatur beider Aufnahmen.
+    for (final id in ['weg', 'bleibt']) {
+      await s.customStatement(
+        'UPDATE assets SET thumbnail_relative_path = ? WHERE id = ?',
+        ['thumbnails/$id.jpg', id],
+      );
+    }
+    await a.empfange();
+    File datei(String rel) => ablage.absolute(rel)
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync('x');
+    final geholt = [
+      for (final id in ['weg', 'bleibt']) ...[
+        datei('originals/$id.jpg'),
+        datei('thumbnails/$id.jpg'),
+      ],
+    ];
+
+    await s.fuehreAus(const InDenPapierkorb(['weg']));
+    expect(
+      await leereImBereich(
+        await bibliotheken.fuer(erika.id),
+        erika.id,
+        ids: ['weg'],
+      ),
+      ['weg'],
+    );
+    await a.empfange();
+
+    expect(await db.assetsByIds(['weg']), isEmpty);
+    expect(geholt[0].existsSync(), isFalse);
+    expect(geholt[1].existsSync(), isFalse);
+    expect(geholt[2].existsSync(), isTrue);
+    expect(geholt[3].existsSync(), isTrue);
+  });
 
   test('Abzug, danach die Änderungen des Servers', () async {
     final s = await serverDb();

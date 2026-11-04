@@ -54,8 +54,36 @@ class AppTexteEn extends AppTexte {
   String get bibPapierkorbLeer => 'The trash is empty.';
 
   @override
+  String get bibPapierkorbLeeren => 'Empty trash';
+
+  @override
+  String get bibEndgueltig => 'Delete permanently';
+
+  @override
+  String bibEndgueltigTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Delete $n items permanently?',
+      one: 'Delete the item permanently?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibEndgueltigText =>
+      'This cannot be undone and applies on all devices.';
+
+  @override
+  String get bibEndgueltigServerZuAlt =>
+      'The server cannot delete permanently yet. Please update the server first.';
+
+  @override
+  String get bibEndgueltigFehler => 'Permanent deletion failed.';
+
+  @override
   String get bibPapierkorbHinweis =>
-      'Restore here; delete permanently on the computer.';
+      'Long-press to select – then restore or delete permanently.';
 
   @override
   String get zeitleisteLeer =>

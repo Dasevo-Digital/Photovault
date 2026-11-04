@@ -89,6 +89,10 @@ Future<void> main(List<String> argumente) async {
     bibliotheken: bibliotheken,
     um: e.sicherungUm,
   )..starte();
+  final papierkorb = Papierkorbablauf(
+    konten: konten,
+    bibliotheken: bibliotheken,
+  )..starte();
   if (e.sicherung != null) {
     protokoll(
       'Sicherung nach ${e.sicherung!.path}, täglich um '
@@ -176,6 +180,7 @@ Future<void> main(List<String> argumente) async {
   await server.close();
   speicher.beende();
   sicherung.beende();
+  papierkorb.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
   sdb.schliesse();

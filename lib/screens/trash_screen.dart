@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
+import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/db/database.dart';
 import '../services/groessentext.dart';
 import '../state/library_state.dart';
@@ -58,11 +59,32 @@ class _TrashScreenState extends State<TrashScreen> {
     );
   }
 
-  Future<void> _permanentlyDelete(List<AssetData> toDelete) async {
-    for (final asset in toDelete) {
-      await widget.library.deleteAssetFilesFromDisk(asset);
+  /// Ohne [toDelete] der ganze Papierkorb. Im verbundenen Betrieb löscht
+  /// der Server (#296); was dabei schiefgeht, steht unten in der Leiste.
+  Future<bool> _permanentlyDelete([List<AssetData>? toDelete]) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    try {
+      await widget.library.endgueltigLoeschen(toDelete);
+      return true;
+    } on PapierkorbServerZuAlt {
+      bote.showSnackBar(SnackBar(content: Text(t.papierkorbServerZuAlt)));
+    } catch (e) {
+      bote.showSnackBar(
+        SnackBar(content: Text(t.papierkorbLoeschenFehler('$e'))),
+      );
     }
-    await widget.library.db.deleteAssetRows(toDelete.map((a) => a.id).toList());
+    return false;
+  }
+
+  Future<void> _leeren(int anzahl) async {
+    final t = AppTexte.of(context);
+    final confirm = await _confirm(
+      t.papierkorbEndgueltigTitel,
+      t.papierkorbLeerenText(anzahl),
+    );
+    if (confirm != true || !mounted) return;
+    await _permanentlyDelete();
   }
 
   @override
@@ -145,12 +167,25 @@ class _TrashScreenState extends State<TrashScreen> {
                 final toDelete = await widget.library.db.assetsByIds(
                   _selected.toList(),
                 );
-                await _permanentlyDelete(toDelete);
+                if (!mounted) return;
+                if (!await _permanentlyDelete(toDelete)) return;
                 if (!mounted) return;
                 setState(() => _selected.clear());
               },
             ),
-          ],
+          ] else
+            StreamBuilder<List<AssetData>>(
+              stream: _papierkorbstrom,
+              builder: (context, papierkorb) {
+                final n = papierkorb.data?.length ?? 0;
+                if (n == 0) return const SizedBox.shrink();
+                return IconButton(
+                  tooltip: AppTexte.of(context).papierkorbLeeren,
+                  icon: const Icon(Icons.delete_sweep_outlined),
+                  onPressed: () => _leeren(n),
+                );
+              },
+            ),
         ],
       ),
       body: StreamBuilder<List<AssetData>>(

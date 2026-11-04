@@ -54,8 +54,36 @@ class AppTexteDe extends AppTexte {
   String get bibPapierkorbLeer => 'Der Papierkorb ist leer.';
 
   @override
+  String get bibPapierkorbLeeren => 'Papierkorb leeren';
+
+  @override
+  String get bibEndgueltig => 'Endgültig löschen';
+
+  @override
+  String bibEndgueltigTitel(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen endgültig löschen?',
+      one: 'Die Aufnahme endgültig löschen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get bibEndgueltigText =>
+      'Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.';
+
+  @override
+  String get bibEndgueltigServerZuAlt =>
+      'Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.';
+
+  @override
+  String get bibEndgueltigFehler => 'Endgültig löschen hat nicht geklappt.';
+
+  @override
   String get bibPapierkorbHinweis =>
-      'Zurückholen geht hier; endgültig löschen am Rechner.';
+      'Lange drücken wählt aus – dann zurückholen oder endgültig löschen.';
 
   @override
   String get zeitleisteLeer =>

@@ -41,6 +41,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'abgleich_api.dart';
 import 'albumteilungen.dart';
+import 'papierkorb.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'bibliothek.dart';
@@ -311,6 +312,7 @@ Handler baueApi({
     ..get('/api/v1/kalender/<jahr>', rueckblick.monate)
     ..get('/api/v1/kalender/<jahr>/<monat>', rueckblick.monat)
     ..get('/api/v1/papierkorb', api.papierkorb)
+    ..post('/api/v1/papierkorb/leeren', api.papierkorbLeeren)
     ..get('/api/v1/alben', api.alben)
     ..get('/api/v1/alben/<id>', api.album)
     // Alben zwischen Konten teilen (#105).
@@ -621,6 +623,8 @@ class _Api {
           'konfliktpruefung': 1,
           'importplan': 2,
           'albenTeilen': 1,
+          // Endgültig löschen und die Frist des Papierkorbs (#296).
+          'papierkorb': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
@@ -1617,6 +1621,41 @@ class _Api {
       'aufnahmen': [
         for (final a in await db.papierkorb()) zeileAlsJson(Rasterzeile.aus(a)),
       ],
+    });
+  }
+
+  /// Löscht endgültig aus dem Papierkorb (#296): `{"ids": [...]}` die
+  /// ausgewählten, `{"alle": true}` alles darin. Kein Befehl – Befehle
+  /// ändern nur die Datenbank, hier gehen Dateien mit, und zwar erst, wenn
+  /// die Zeilen sicher fort sind (siehe `leerePapierkorb`). Die Geräte
+  /// erfahren es über den Abgleich.
+  Future<Response> papierkorbLeeren(Request anfrage) async {
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final ids = k is Map ? k['ids'] : null;
+    final alle = k is Map && k['alle'] == true;
+    if (ids == null && !alle) {
+      return _json({'fehler': 'ids oder alle fehlt'}, status: 400);
+    }
+    if (ids != null &&
+        (ids is! List || ids.length > 50000 || ids.any((i) => i is! String))) {
+      return _json({'fehler': 'ids'}, status: 400);
+    }
+    final konto = kontoVon(anfrage).id;
+    final bereich = await _bereich(anfrage);
+    final weg = await leereImBereich(
+      bereich,
+      konto,
+      teilungen: teilungen,
+      ids: alle ? null : (ids! as List).cast<String>(),
+    );
+    return _json({
+      'geloescht': weg.length,
+      'stand': await bereich.bibliothek.protokoll.stand(),
     });
   }
 

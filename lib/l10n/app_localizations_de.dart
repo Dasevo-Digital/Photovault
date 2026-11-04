@@ -3700,6 +3700,29 @@ class AppTexteDe extends AppTexte {
   String get papierkorbLeer => 'Der Papierkorb ist leer.';
 
   @override
+  String get papierkorbLeeren => 'Papierkorb leeren';
+
+  @override
+  String papierkorbLeerenText(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: 'Ein Foto',
+    );
+    return '$_temp0 unwiderruflich löschen? Im verbundenen Betrieb gilt das auf allen Geräten.';
+  }
+
+  @override
+  String get papierkorbServerZuAlt =>
+      'Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.';
+
+  @override
+  String papierkorbLoeschenFehler(String fehler) {
+    return 'Endgültig löschen fehlgeschlagen: $fehler';
+  }
+
+  @override
   String get videoNichtGeoeffnet => 'Video konnte nicht geöffnet werden.';
 
   @override

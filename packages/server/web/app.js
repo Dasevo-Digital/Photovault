@@ -758,6 +758,7 @@ function zeigeListe(neu, titel) {
   $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
+  $('auswahl-endgueltig').hidden = !liste.papierkorb;
   letzterTag = null;
   letzterMonat = null;
   schwebeEnde();
@@ -938,8 +939,29 @@ async function zeigePapierkorb() {
   markiereNav('papierkorb');
   zeigeBereich(['raster']);
   const d = await api('/api/v1/papierkorb');
-  zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true }, t('Papierkorb'));
+  let kopf = null;
+  if (d.aufnahmen.length > 0) {
+    // Endgültig löschen (#296) – vorher ging das nur am Rechner ohne Server.
+    kopf = el('div', 'reisekopf');
+    const leeren = el('button', 'knopf', t('Papierkorb leeren'));
+    leeren.type = 'button';
+    leeren.addEventListener('click', () => endgueltigLoeschen(null, d.aufnahmen.length));
+    kopf.append(leeren);
+  }
+  zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true, kopf }, t('Papierkorb'));
   if (d.aufnahmen.length === 0) $('ende').textContent = t('Der Papierkorb ist leer.');
+}
+
+// Löscht [aufnahmen] endgültig – ohne sie den ganzen Papierkorb (#296).
+async function endgueltigLoeschen(aufnahmen, anzahl) {
+  const n = aufnahmen ? aufnahmen.length : anzahl;
+  if (!confirm(n === 1 ? t('Eine Aufnahme endgültig löschen? Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.') : t('{n} Aufnahmen endgültig löschen? Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.', { n }))) return;
+  try {
+    const r = await api('/api/v1/papierkorb/leeren', { methode: 'POST', json: aufnahmen ? { ids: aufnahmen.map((a) => a.id) } : { alle: true } });
+    auswahlAufheben();
+    await zeigePapierkorb();
+    $('ende').textContent = t('{n} endgültig gelöscht', { n: r.geloescht });
+  } catch (x) { alert(x.message); }
 }
 
 function karte(bildUrl, titel, untertitel, ziel, { zusatz, kennzeichen } = {}) {
@@ -4219,6 +4241,8 @@ $('auswahl-papierkorb').addEventListener('click', async () => {
     neuZeichnen();
   } catch (x) { alert(x.message); }
 });
+
+$('auswahl-endgueltig').addEventListener('click', () => endgueltigLoeschen(gewaehlte()));
 
 $('auswahl-zurueck').addEventListener('click', async () => {
   const g = gewaehlte();

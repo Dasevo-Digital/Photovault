@@ -10,6 +10,7 @@ import 'aufnahmedaten.dart';
 import 'duplikate.dart';
 import 'einstellungen.dart';
 import 'karte.dart';
+import 'loeschen.dart';
 import 'orte.dart';
 import 'personen.dart';
 import 'raster.dart';
@@ -397,8 +398,7 @@ class Favoriten extends StatelessWidget {
   );
 }
 
-/// Was im Papierkorb liegt – zurückholen geht hier, endgültig löschen am
-/// Rechner.
+/// Was im Papierkorb liegt – zurückholen und endgültig löschen (#296).
 class Papierkorb extends StatelessWidget {
   const Papierkorb({super.key, required this.sitzung});
 
@@ -419,10 +419,27 @@ class Papierkorb extends StatelessWidget {
         zeilen: [for (final a in daten) Rasterzeile.aus(a)],
         papierkorb: true,
         kopf: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Text(
-            t.bibPapierkorbHinweis,
-            style: Theme.of(context).textTheme.bodySmall,
+          padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  t.bibPapierkorbHinweis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              TextButton.icon(
+                icon: const Icon(Icons.delete_sweep_outlined),
+                label: Text(t.bibPapierkorbLeeren),
+                onPressed: () async {
+                  if (await frageEndgueltig(context, daten.length) != true) {
+                    return;
+                  }
+                  if (!context.mounted) return;
+                  await loescheEndgueltig(context, sitzung);
+                },
+              ),
+            ],
           ),
         ),
       );

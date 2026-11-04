@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/papierkorb.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sicherung/telefonloeschung.dart';
@@ -101,4 +102,50 @@ Future<void> loescheVomTelefon(
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(t.vomTelefonGeloescht(n))));
   unawaited(sitzung.sicherung?.zaehleUngesicherte());
+}
+
+/// Die Rückfrage vor dem endgültigen Löschen aus dem Papierkorb (#296).
+Future<bool?> frageEndgueltig(BuildContext context, int anzahl) {
+  final t = AppTexte.of(context);
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(t.bibEndgueltigTitel(anzahl)),
+      content: Text(t.bibEndgueltigText),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(t.abbrechen),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+          ),
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(t.bibEndgueltig),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Löscht [ids] – ohne sie den ganzen Papierkorb – endgültig am Server
+/// und sagt unten Bescheid, wenn es nicht ging. `true`, wenn es ging.
+Future<bool> loescheEndgueltig(
+  BuildContext context,
+  Sitzung sitzung, [
+  List<String>? ids,
+]) async {
+  final t = AppTexte.of(context);
+  final bote = ScaffoldMessenger.of(context);
+  try {
+    await sitzung.endgueltigLoeschen(ids);
+    return true;
+  } on PapierkorbServerZuAlt {
+    bote.showSnackBar(SnackBar(content: Text(t.bibEndgueltigServerZuAlt)));
+  } catch (_) {
+    bote.showSnackBar(SnackBar(content: Text(t.bibEndgueltigFehler)));
+  }
+  return false;
 }

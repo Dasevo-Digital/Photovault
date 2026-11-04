@@ -15,7 +15,20 @@
   "bibAlle": "Alle",
   "bibFavoritenLeer": "Noch keine Favoriten.",
   "bibPapierkorbLeer": "Der Papierkorb ist leer.",
-  "bibPapierkorbHinweis": "Zurückholen geht hier; endgültig löschen am Rechner.",
+  "bibPapierkorbLeeren": "Papierkorb leeren",
+  "bibEndgueltig": "Endgültig löschen",
+  "bibEndgueltigTitel": "{n, plural, =1{Die Aufnahme endgültig löschen?} other{{n} Aufnahmen endgültig löschen?}}",
+  "@bibEndgueltigTitel": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "bibEndgueltigText": "Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.",
+  "bibEndgueltigServerZuAlt": "Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.",
+  "bibEndgueltigFehler": "Endgültig löschen hat nicht geklappt.",
+  "bibPapierkorbHinweis": "Lange drücken wählt aus – dann zurückholen oder endgültig löschen.",
   "zeitleisteLeer": "Noch keine Aufnahmen. Was auf den Server kommt, erscheint hier.",
   "albenLeer": "Noch keine Alben.",
   "personenLeer": "Noch keine benannten Personen. Personen benennt man am Rechner.",

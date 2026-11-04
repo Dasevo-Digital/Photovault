@@ -9,6 +9,8 @@ import 'package:sqlite3/sqlite3.dart' as roh;
 
 import '../db/database.dart';
 import '../protokoll.dart' as meldung;
+import '../services/papierkorb_leeren.dart';
+import '../services/storage_paths.dart';
 import 'abgleichsplan.dart';
 import 'protokoll.dart';
 import 'befehlsbasis.dart';
@@ -99,7 +101,7 @@ class Abgleichszustand {
 /// Vorwegnahme. Die offenen Befehle werden deshalb danach noch einmal
 /// angewandt – dieselbe Reihenfolge wie später auf dem Server.
 class Abgleich {
-  Abgleich(this.db, this.verbindung, {SecretKey? fallschluessel})
+  Abgleich(this.db, this.verbindung, {SecretKey? fallschluessel, this.ablage})
     : protokoll = Protokoll(db),
       _festerFallschluessel = fallschluessel;
 
@@ -108,6 +110,10 @@ class Abgleich {
   final AppDatabase db;
   final Serververbindung verbindung;
   final Protokoll protokoll;
+
+  /// Die Ablage der Kopie. Mit ihr gehen die geholten Dateien einer
+  /// Aufnahme mit, die der Server endgültig gelöscht hat (#296).
+  final StoragePaths? ablage;
   final Zone _betriebszone = Zone.current;
 
   final _zustand = StreamController<Abgleichszustand>.broadcast();
@@ -485,8 +491,10 @@ class Abgleich {
       ];
       final bis = a['bis']! as int;
       if (zeilen.isNotEmpty || bis != stand) {
+        var weg = const <String>{};
         final tabellen = await db.transaction(() async {
           if (bis <= await _stand()) return <String>{};
+          weg = await _dateienGeloeschter(zeilen);
           final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
           await db.customStatement(
             'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
@@ -498,6 +506,7 @@ class Abgleich {
           return t;
         });
         _meldeAenderung(tabellen);
+        await _raeumeAuf(weg);
       }
       stand = bis;
       w = Duration.zero;
@@ -600,7 +609,9 @@ class Abgleich {
           Zeilenstand.ausJson(z.cast<String, Object?>()),
       ]);
     }
+    var weg = const <String>{};
     final tabellen = await db.transaction(() async {
+      weg = await _dateienGeloeschter(zeilen);
       final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
       await db.customStatement(
         'DELETE FROM pv_aenderungen WHERE ausgang IN ($liste)',
@@ -609,7 +620,32 @@ class Abgleich {
       return t;
     });
     _meldeAenderung(tabellen);
+    await _raeumeAuf(weg);
     await _melde();
+  }
+
+  /// Die geholten Dateien der Aufnahmen, deren Zeile [zeilen] löschen –
+  /// gelesen, solange es die Zeilen noch gibt.
+  Future<Set<String>> _dateienGeloeschter(List<Zeilenstand> zeilen) async {
+    final a = ablage;
+    if (a == null) return const {};
+    final ids = [
+      for (final z in zeilen)
+        if (z.tabelle == 'assets' && z.werte == null)
+          if (z.schluessel.firstOrNull case final String id) id,
+    ];
+    return ids.isEmpty ? const {} : dateienVonAufnahmen(db, a, ids);
+  }
+
+  /// Nach dem Abschluss: Erst jetzt ist sicher, dass die Zeilen fort sind.
+  Future<void> _raeumeAuf(Set<String> dateien) async {
+    final a = ablage;
+    if (a == null || dateien.isEmpty) return;
+    try {
+      await loescheVerwaisteDateien(db, a, dateien);
+    } catch (e) {
+      meldung.protokoll('Dateien gelöschter Aufnahmen nicht aufgeräumt: $e');
+    }
   }
 
   Future<Set<String>> _schluesselVon(String nummern) async => {

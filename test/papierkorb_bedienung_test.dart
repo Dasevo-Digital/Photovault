@@ -166,6 +166,46 @@ void main() {
     await abbauen(tester);
   });
 
+  testWidgets('„Papierkorb leeren“ steht da und fragt vorher (#296)', (
+    tester,
+  ) async {
+    await imPapierkorb('a');
+    await tester.pumpWidget(bildschirm());
+    await tester.pump();
+    await tester.pump();
+    final t = AppTexte.of(tester.element(find.byType(TrashScreen)));
+
+    await tester.tap(find.byTooltip(t.papierkorbLeeren));
+    await tester.pumpAndSettle();
+    expect(find.text(t.papierkorbLeerenText(1)), findsOneWidget);
+    await tester.tap(find.text(t.allgAbbrechen));
+    await tester.pumpAndSettle();
+    expect(await db.papierkorb(), hasLength(1), reason: 'abgebrochen');
+
+    await abbauen(tester);
+  });
+
+  test('ohne Auswahl geht der ganze Papierkorb, sonst nichts (#296)', () async {
+    await imPapierkorb('a');
+    await imPapierkorb('b');
+    await db
+        .into(db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'c',
+            originalFileName: 'c.jpg',
+            relativePath: 'originals/c.jpg',
+            checksum: 'pruef-c',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026),
+            importedAt: DateTime(2026),
+          ),
+        );
+    expect(await library.endgueltigLoeschen(), 2);
+    expect(await db.papierkorb(), isEmpty);
+    expect(await db.assetsByIds(['c']), hasLength(1));
+  });
+
   testWidgets('ein leerer Papierkorb nennt keinen Umfang', (tester) async {
     await tester.pumpWidget(bildschirm());
     await tester.pump();

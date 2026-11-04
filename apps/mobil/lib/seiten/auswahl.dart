@@ -200,6 +200,13 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     aufheben();
   }
 
+  Future<void> _endgueltig(BuildContext context) async {
+    final ids = _ids;
+    if (await frageEndgueltig(context, ids.length) != true) return;
+    if (!context.mounted) return;
+    if (await loescheEndgueltig(context, widget.sitzung, ids)) aufheben();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
@@ -252,6 +259,11 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                     icon: Icons.restore_from_trash_outlined,
                     text: t.auswahlZurueckholen,
                     onPressed: _zurueckholen,
+                  ),
+                  _Aktion(
+                    icon: Icons.delete_forever_outlined,
+                    text: t.bibEndgueltig,
+                    onPressed: () => _endgueltig(context),
                   ),
                 ],
               ),

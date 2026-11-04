@@ -6221,6 +6221,30 @@ abstract class AppTexte {
   /// **'Der Papierkorb ist leer.'**
   String get papierkorbLeer;
 
+  /// No description provided for @papierkorbLeeren.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierkorb leeren'**
+  String get papierkorbLeeren;
+
+  /// No description provided for @papierkorbLeerenText.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Ein Foto} other{{anzahl} Fotos}} unwiderruflich löschen? Im verbundenen Betrieb gilt das auf allen Geräten.'**
+  String papierkorbLeerenText(int anzahl);
+
+  /// No description provided for @papierkorbServerZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.'**
+  String get papierkorbServerZuAlt;
+
+  /// No description provided for @papierkorbLoeschenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Endgültig löschen fehlgeschlagen: {fehler}'**
+  String papierkorbLoeschenFehler(String fehler);
+
   /// No description provided for @videoNichtGeoeffnet.
   ///
   /// In de, this message translates to:

@@ -2042,6 +2042,24 @@
     }
   },
   "papierkorbLeer": "Der Papierkorb ist leer.",
+  "papierkorbLeeren": "Papierkorb leeren",
+  "papierkorbLeerenText": "{anzahl, plural, =1{Ein Foto} other{{anzahl} Fotos}} unwiderruflich löschen? Im verbundenen Betrieb gilt das auf allen Geräten.",
+  "@papierkorbLeerenText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "papierkorbServerZuAlt": "Der Server kann noch nicht endgültig löschen. Bitte erst den Server aktualisieren.",
+  "papierkorbLoeschenFehler": "Endgültig löschen fehlgeschlagen: {fehler}",
+  "@papierkorbLoeschenFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "videoNichtGeoeffnet": "Video konnte nicht geöffnet werden.",
   "videoZuschneidenFehler": "Zuschneiden fehlgeschlagen.",
   "videoZuschneiden": "Zuschneiden",

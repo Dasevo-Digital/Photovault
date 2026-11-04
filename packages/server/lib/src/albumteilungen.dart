@@ -219,6 +219,19 @@ class Albumteilungen {
     [besitzer, album],
   );
 
+  /// [besitzer] hat [aufnahmen] endgültig gelöscht (#296): Was andere dazu
+  /// beigetragen haben, braucht keinen Hinweis mehr.
+  void vergissBeitraege(String besitzer, List<String> aufnahmen) {
+    for (var i = 0; i < aufnahmen.length; i += 500) {
+      final teil = aufnahmen.sublist(i, min(i + 500, aufnahmen.length));
+      _sdb.db.execute(
+        'DELETE FROM kontobeitraege WHERE besitzer = ? AND aufnahme IN '
+        '(${List.filled(teil.length, '?').join(', ')})',
+        [besitzer, ...teil],
+      );
+    }
+  }
+
   /// Wer welche der [aufnahmen] von [besitzer] beigetragen hat: Kennung →
   /// Konto (`null`, wenn es das Konto nicht mehr gibt) und Name. Was der
   /// Besitzer selbst hat, fehlt.

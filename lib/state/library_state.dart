@@ -57,6 +57,8 @@ import 'package:kern/services/reverse_geocoder.dart';
 import '../widgets/mini_location_map.dart'
     show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
+import 'package:kern/abgleich/papierkorb.dart';
+import 'package:kern/services/papierkorb_leeren.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../services/vault_crypto.dart';
 import '../services/tresor_dateiwechsel.dart';
@@ -1066,6 +1068,7 @@ class LibraryState extends ChangeNotifier {
       fallschluessel: ablage == null
           ? null
           : await Fallschluessel.lade(db, ablage),
+      ablage: paths,
     );
     await a.richteEin();
     final beschaffung = Dateibeschaffung(paths, s)..binde();
@@ -3336,33 +3339,11 @@ class LibraryState extends ChangeNotifier {
   /// beim Sperren nie eine unverschlüsselte Kopie einer dieser
   /// Zusatzdateien zurückbleibt (Audit-Fund: `trimmedRelativePath` und
   /// `DevelopMasks.maskRelativePath` fehlten hier ursprünglich).
-  /// **Alle Dateien, die zu einem Foto gehören – an einer Stelle.**
-  ///
-  /// Diese Liste stand dreimal fast gleich im Quelltext: beim
-  /// Verschlüsseln, beim Entschlüsseln und beim endgültigen Löschen. Sie
-  /// ist zweimal auseinandergelaufen, und beide Male fiel es erst einer
-  /// Prüfrunde auf – zuerst fehlten Videozuschnitt und Objektmasken,
-  /// danach der XMP-Beipackzettel. Wer eine Dateiart hinzufügt, trägt sie
-  /// hier ein und ist damit überall richtig.
-  ///
-  /// Nicht vorhandene Dateien stehen mit in der Liste; die drei
-  /// Verwender kommen damit zurecht.
-  Future<List<String>> dateienVon(AssetData asset) async => [
-    asset.relativePath,
-    // Der Beipackzettel neben dem Original: Er trägt Beschreibung,
-    // Schlagwörter, Bewertung und Ort im Klartext. Beim Sperren blieb
-    // er liegen – genau das, wovor der gesperrte Ordner schützen soll
-    // (dieselbe Überlegung wie bei metadata.json in backup_service).
-    paths.xmpSidecarPath(asset.relativePath),
-    if (asset.thumbnailRelativePath != null) asset.thumbnailRelativePath!,
-    if (asset.previewRelativePath != null) asset.previewRelativePath!,
-    if (asset.developedRelativePath != null) asset.developedRelativePath!,
-    if (asset.restoredRelativePath != null) asset.restoredRelativePath!,
-    if (asset.trimmedRelativePath != null) asset.trimmedRelativePath!,
-    for (final face in await db.facesForAsset(asset.id))
-      if (face.cropRelativePath != null) face.cropRelativePath!,
-    for (final mask in await db.masksForAsset(asset.id)) mask.maskRelativePath,
-  ];
+  /// **Alle Dateien, die zu einem Foto gehören.** Die Liste steht im
+  /// Kern ([dateienDerAufnahme]), damit der Server beim endgültigen Löschen
+  /// dieselben Dateien erwischt wie die App (#296).
+  Future<List<String>> dateienVon(AssetData asset) =>
+      dateienDerAufnahme(db, paths, asset);
 
   static const _privateMetadataMagic = <int>[0x50, 0x56, 0x4d, 0x31];
 
@@ -4019,6 +4000,32 @@ class LibraryState extends ChangeNotifier {
       await paths.deletePermanently(relPath);
     }
     await paths.deletePermanently(paths.vaultMetadataRelativePath(asset.id));
+  }
+
+  /// Löscht [aufnahmen] endgültig aus dem Papierkorb – ohne Angabe alles
+  /// darin. Gibt zurück, wie viele gingen.
+  ///
+  /// Im verbundenen Betrieb löscht der Server (#296), samt seinen Dateien;
+  /// die Kopie hier erfährt es über den Abgleich, der dabei auch die
+  /// geholten Dateien wegräumt. Ohne Server wie bisher: erst die Dateien,
+  /// dann die Zeilen.
+  Future<int> endgueltigLoeschen([List<AssetData>? aufnahmen]) async {
+    if (verbunden) {
+      final a = abgleich;
+      if (a == null) throw StateError('pv_nur_ueber_server');
+      final n = await leereServerpapierkorb(
+        a.verbindung,
+        ids: aufnahmen?.map((x) => x.id),
+      );
+      a.jetzt();
+      return n;
+    }
+    final weg = aufnahmen ?? await db.papierkorb();
+    for (final asset in weg) {
+      await deleteAssetFilesFromDisk(asset);
+    }
+    await db.deleteAssetRows(weg.map((a) => a.id).toList());
+    return weg.length;
   }
 
   /// Prüft, ob im Papierkorb liegende Assets älter als das eingestellte

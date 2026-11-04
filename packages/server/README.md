@@ -97,9 +97,15 @@ nach Tagen ohne Verbindung.
 - Dateien kommen bei Bedarf (`/dateien/<pfad>`); Miniaturen und
   Gesichtsausschnitte lädt die App im Hintergrund vor.
 - Was in der Kopie Dateien schreiben würde (Sperren, Entwickeln,
-  endgültig löschen, Videoschnitt, Restaurieren), geht verbunden noch
-  nicht; die App sagt es. Importieren lädt zum Server hoch, und die
-  Auswertung läuft dort.
+  Videoschnitt, Restaurieren), geht verbunden noch nicht; die App sagt
+  es. Importieren lädt zum Server hoch, und die Auswertung läuft dort.
+- **Papierkorb (#296):** Endgültig löscht der Server – auf Wunsch eines
+  Geräts oder des Browsers (`POST /papierkorb/leeren`) und nach der Frist
+  aus den Einstellungen der Bibliothek, die er alle sechs Stunden prüft
+  (aus, solange niemand sie einschaltet). Erst gehen die Zeilen, dann die
+  Dateien samt gewandelten Fassungen. Die Geräte erfahren es über den
+  Abgleich und räumen dabei auch ihre geholten Dateien weg, Miniaturen und
+  Gesichtsausschnitte eingeschlossen.
 
 **Umzug:** Eine Bibliothek, die bisher nur auf einem Rechner lag, zieht
 mit allen Dateien in eine leere Bibliothek des Servers (Einstellungen →
@@ -677,6 +683,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /aufnahmen/<id>/voll` | das Foto in voller Auflösung für den Betrachter: JPEG, PNG, WebP und GIF unverändert, HEIC, RAW und DNG als JPEG in Originalgrösse ohne Angaben, einmal gewandelt und neben der Bibliothek aufgehoben (höchstens 2 GB, `vollbild/`); 422, wenn es sich nicht wandeln lässt (Issue #256) |
 | `POST /pruefsummen` | `{pruefsummen: [SHA-256 …]}` → `{vorhanden: {pruefsumme: kennung}}` – was schon da ist (Sicherung der Kamerarolle) |
 | `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
+| `GET /papierkorb`, `POST /papierkorb/leeren` | was im Papierkorb liegt; `{ids}` oder `{alle: true}` löscht endgültig → `{geloescht, stand}` (Issue #296) |
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |
 | `GET /auswertung` | ob ausgewertet wird, Stufe und Fortschritt; der Beschleuniger und seine Gegenproben |

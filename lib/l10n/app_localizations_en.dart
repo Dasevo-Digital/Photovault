@@ -3673,6 +3673,29 @@ class AppTexteEn extends AppTexte {
   String get papierkorbLeer => 'The trash is empty.';
 
   @override
+  String get papierkorbLeeren => 'Empty trash';
+
+  @override
+  String papierkorbLeerenText(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: 'one photo',
+    );
+    return 'Delete $_temp0 for good? When connected, this applies on all devices.';
+  }
+
+  @override
+  String get papierkorbServerZuAlt =>
+      'The server cannot delete permanently yet. Please update the server first.';
+
+  @override
+  String papierkorbLoeschenFehler(String fehler) {
+    return 'Permanent deletion failed: $fehler';
+  }
+
+  @override
   String get videoNichtGeoeffnet => 'The video could not be opened.';
 
   @override

@@ -1302,6 +1302,10 @@
     }
   },
   "papierkorbLeer": "The trash is empty.",
+  "papierkorbLeeren": "Empty trash",
+  "papierkorbLeerenText": "Delete {anzahl, plural, =1{one photo} other{{anzahl} photos}} for good? When connected, this applies on all devices.",
+  "papierkorbServerZuAlt": "The server cannot delete permanently yet. Please update the server first.",
+  "papierkorbLoeschenFehler": "Permanent deletion failed: {fehler}",
   "videoNichtGeoeffnet": "The video could not be opened.",
   "videoZuschneidenFehler": "Trimming failed.",
   "videoZuschneiden": "Trim",

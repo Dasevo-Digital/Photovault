@@ -23,4 +23,5 @@ export 'src/konten/totp.dart' show Totp;
 export 'src/konten/tresorschluessel.dart' show Tresorschluessel;
 export 'src/oidc.dart' show Oidc, OidcEinstellungen;
 export 'src/onnx_ffi.dart' show FfiOnnxPlattform, geprueftFassung;
+export 'src/papierkorb.dart' show Papierkorbablauf, leereImBereich;
 export 'src/verwaltung.dart' show hilfe, qrImTerminal, verwalte;

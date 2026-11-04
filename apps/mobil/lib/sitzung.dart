@@ -1,3 +1,4 @@
+import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
 import 'lokal/fallschluesselablage.dart';
 import 'dart:async';
@@ -61,6 +62,17 @@ class Sitzung extends ChangeNotifier {
   /// Die Sicherung der Kamerarolle (siehe `sicherung/`).
   Sicherungsdienst? sicherung;
   StreamSubscription<Abgleichszustand>? _abo;
+
+  /// Löscht endgültig aus dem Papierkorb (#296) – [ids] oder ohne sie
+  /// alles darin. Das macht der Server; die Kopie hier erfährt es über den
+  /// Abgleich, der dabei auch die geholten Dateien wegräumt.
+  Future<int> endgueltigLoeschen([List<String>? ids]) async {
+    final a = abgleich;
+    if (a == null) throw StateError('pv_nicht_verbunden');
+    final n = await leereServerpapierkorb(a.verbindung, ids: ids);
+    a.jetzt();
+    return n;
+  }
 
   /// Warum die Kopie nicht aufging ([Sitzungszustand.fehler]).
   String? startfehler;
@@ -136,6 +148,7 @@ class Sitzung extends ChangeNotifier {
           Directory(p.join(ordner.path, 'private_schluessel')),
         ),
       ),
+      ablage: paths,
     );
     await a.richteEin();
     Dateibeschaffung(paths, s).binde();
