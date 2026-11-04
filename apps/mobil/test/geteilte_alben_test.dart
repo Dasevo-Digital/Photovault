@@ -481,4 +481,73 @@ void main() {
     }
     expect(bilder, 1);
   });
+
+  testWidgets(
+    'neue Beiträge in eigenen Alben: zeigen, öffnen, gesehen (#295)',
+    (tester) async {
+      final rufe = <String>[];
+      var gesehen = false;
+      final client = MockClient((r) async {
+        rufe.add('${r.method} ${r.url.path}');
+        if (r.url.path == '/api/v1/kontobeitraege') {
+          return json({
+            'alben': gesehen
+                ? []
+                : [
+                    {
+                      'id': 'urlaub',
+                      'name': 'Urlaub',
+                      'anzahl': 2,
+                      'von': ['max', 'moritz'],
+                    },
+                  ],
+          });
+        }
+        if (r.method == 'POST' && r.url.path.endsWith('/gesehen')) {
+          gesehen = true;
+          return http.Response('', 204);
+        }
+        return http.Response('', 404);
+      });
+      final v = Serververbindung(
+        Uri.parse('https://fotos.example/'),
+        't',
+        client: client,
+      );
+      String? geoeffnet;
+      await tester.pumpWidget(
+        app(
+          Scaffold(
+            body: CustomScrollView(
+              slivers: [
+                NeueBeitraege(
+                  verbindung: v,
+                  oeffne: (id, name) async => geoeffnet = id,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Neu in deinen geteilten Alben'), findsOneWidget);
+      expect(find.text('„Urlaub“: 2 neue Aufnahmen'), findsOneWidget);
+      expect(find.text('von max, moritz'), findsOneWidget);
+
+      await tester.tap(find.text('„Urlaub“: 2 neue Aufnahmen'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        rufe,
+        contains('POST /api/v1/alben/urlaub/kontobeitraege/gesehen'),
+      );
+      expect(geoeffnet, 'urlaub');
+      expect(find.text('Neu in deinen geteilten Alben'), findsNothing);
+    },
+  );
 }

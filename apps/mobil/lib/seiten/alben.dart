@@ -42,6 +42,19 @@ class Alben extends StatelessWidget {
         );
         return CustomScrollView(
           slivers: [
+            // Was andere Konten in eigene Alben gelegt haben (#295).
+            NeueBeitraege(
+              verbindung: sitzung.abgleich?.verbindung,
+              oeffne: (id, name) async {
+                final a = alben.where((x) => x.id == id).firstOrNull;
+                if (a == null) return;
+                await Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AlbumSeite(sitzung: sitzung, album: a),
+                  ),
+                );
+              },
+            ),
             if (alben.isEmpty && suchen.isEmpty)
               SliverPadding(
                 padding: const EdgeInsets.all(32),
@@ -315,11 +328,15 @@ class _AlbumKachel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => InkWell(
     borderRadius: BorderRadius.circular(12),
-    onTap: () => Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => AlbumSeite(sitzung: sitzung, album: album),
-      ),
-    ),
+    onTap: () {
+      // Neue Beiträge darin sind damit gesehen (#295).
+      beitraegeGesehen(sitzung.abgleich?.verbindung, album.id);
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => AlbumSeite(sitzung: sitzung, album: album),
+        ),
+      );
+    },
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

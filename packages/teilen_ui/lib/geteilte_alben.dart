@@ -1156,3 +1156,110 @@ class _KontenBlattState extends State<_KontenBlatt> {
     );
   }
 }
+
+// --- Neue Beiträge für den Besitzer (#295) ---------------------------------
+
+/// Der Besitzer hat [albumId] geöffnet: Was andere Konten hineingelegt
+/// haben, gilt als gesehen. Offline bleibt es neu – beim nächsten Mal.
+Future<void> beitraegeGesehen(
+  Serververbindung? verbindung,
+  String albumId,
+) async {
+  if (verbindung == null) return;
+  try {
+    await verbindung.anfrage(
+      'POST',
+      'api/v1/alben/${_k(albumId)}/kontobeitraege/gesehen',
+    );
+  } on KeineVerbindung {
+    // Beim nächsten Öffnen.
+  }
+}
+
+/// Über den Alben: wo andere Konten seit dem letzten Blick etwas
+/// beigetragen haben – oder nichts, solange es nichts Neues gibt.
+/// [oeffne] führt in das eigene Album (die Apps zeigen es selbst).
+class NeueBeitraege extends StatefulWidget {
+  const NeueBeitraege({
+    super.key,
+    required this.verbindung,
+    required this.oeffne,
+  });
+
+  final Serververbindung? verbindung;
+  final Future<void> Function(String albumId, String name) oeffne;
+
+  @override
+  State<NeueBeitraege> createState() => _NeueBeitraegeState();
+}
+
+class _NeueBeitraegeState extends State<NeueBeitraege> {
+  List<({String id, String name, int anzahl, List<String> von})> _neu =
+      const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _lade();
+  }
+
+  Future<void> _lade() async {
+    final v = widget.verbindung;
+    if (v == null) return;
+    try {
+      final d = await v.hole('api/v1/kontobeitraege');
+      final liste = [
+        for (final x in (d['alben'] as List? ?? const []))
+          if (x case {'id': final String id, 'name': final String name})
+            (
+              id: id,
+              name: name,
+              anzahl: (x['anzahl'] as num?)?.toInt() ?? 0,
+              von: [for (final n in (x['von'] as List? ?? const [])) '$n'],
+            ),
+      ];
+      if (mounted) setState(() => _neu = liste);
+    } on KeineVerbindung {
+      // Offline: beim nächsten Öffnen.
+    } on Serverfehler {
+      // Ein Server vor 3.55 kennt das nicht.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_neu.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final t = teilenTexte(context);
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+        child: Card(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text(
+                  t.neueBeitraegeTitel,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              for (final n in _neu)
+                ListTile(
+                  leading: const Icon(Icons.group_outlined),
+                  title: Text(t.neueBeitraegeAlbum(n.name, n.anzahl)),
+                  subtitle: Text(t.neueBeitraegeVon(n.von.join(', '))),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () async {
+                    await beitraegeGesehen(widget.verbindung, n.id);
+                    await widget.oeffne(n.id, n.name);
+                    await _lade();
+                  },
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

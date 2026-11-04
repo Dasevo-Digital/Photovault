@@ -93,8 +93,27 @@ class AlbumsScreen extends StatelessWidget {
               if (albums.isEmpty && klug.isEmpty && zugang == null) {
                 return Center(child: leer);
               }
+              Future<void> oeffneAlbum(String id, String name) async {
+                // Neue Beiträge darin sind damit gesehen (#295).
+                await beitraegeGesehen(zugang?.verbindung, id);
+                if (!context.mounted) return;
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => AlbumDetailScreen(
+                      library: library,
+                      albumId: id,
+                      albumName: name,
+                    ),
+                  ),
+                );
+              }
+
               return CustomScrollView(
                 slivers: [
+                  NeueBeitraege(
+                    verbindung: zugang?.verbindung,
+                    oeffne: oeffneAlbum,
+                  ),
                   if (albums.isEmpty && klug.isEmpty)
                     SliverToBoxAdapter(child: Center(child: leer)),
                   // Die intelligenten Alben zuerst: Sie sind die kleinere
@@ -121,15 +140,8 @@ class AlbumsScreen extends StatelessWidget {
                       bauen: (context, i) => _Albumkachel(
                         album: albums[i],
                         library: library,
-                        onTippen: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => AlbumDetailScreen(
-                              library: library,
-                              albumId: albums[i].id,
-                              albumName: albums[i].name,
-                            ),
-                          ),
-                        ),
+                        onTippen: () =>
+                            oeffneAlbum(albums[i].id, albums[i].name),
                       ),
                     ),
                   ],

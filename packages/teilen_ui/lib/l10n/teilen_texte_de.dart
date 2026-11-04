@@ -125,4 +125,23 @@ class TeilenTexteDe extends TeilenTexte {
 
   @override
   String get schliessen => 'Schliessen';
+
+  @override
+  String get neueBeitraegeTitel => 'Neu in deinen geteilten Alben';
+
+  @override
+  String neueBeitraegeAlbum(String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '„$name“: $n neue Aufnahmen',
+      one: '„$name“: 1 neue Aufnahme',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String neueBeitraegeVon(String namen) {
+    return 'von $namen';
+  }
 }

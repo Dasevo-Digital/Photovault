@@ -29,5 +29,8 @@
   "kontenTeilenKnopf": "Share",
   "abbrechen": "Cancel",
   "entfernen": "Remove",
-  "schliessen": "Close"
+  "schliessen": "Close",
+  "neueBeitraegeTitel": "New in your shared albums",
+  "neueBeitraegeAlbum": "{n, plural, =1{“{name}”: 1 new item} other{“{name}”: {n} new items}}",
+  "neueBeitraegeVon": "from {namen}"
 }

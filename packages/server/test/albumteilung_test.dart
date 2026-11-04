@@ -367,6 +367,82 @@ void main() {
     expect(im, contains(strand));
   });
 
+  test(
+    'Erika erfährt von neuen Beiträgen, bis sie das Album öffnet (#295)',
+    () async {
+      await urlaub();
+      await teile(max.id, beitragen: true);
+      final id = (await mitMir(maxToken)).single['id']! as String;
+      Future<Map<String, Object?>> neu() async => jsonAus(
+        await frag('GET', '/api/v1/kontobeitraege', token: erikaToken),
+      );
+      expect((await neu())['alben'], isEmpty);
+
+      for (final (farbe, name) in [(40, 'see.jpg'), (160, 'wald.jpg')]) {
+        final bytes = jpeg(farbe);
+        await frag(
+          'POST',
+          '/api/v1/geteilt/$id/beitrag?name=$name',
+          token: maxToken,
+          kopf: {'content-length': '${bytes.length}'},
+          inhalt: bytes,
+        );
+      }
+      final alben = ((await neu())['alben']! as List).cast<Map>();
+      expect(alben.single['id'], 'urlaub');
+      expect(alben.single['name'], 'Urlaub');
+      expect(alben.single['anzahl'], 2);
+      expect(alben.single['von'], ['max']);
+      expect(alben.single['titelbild'], isNotNull);
+      // Max sieht nichts davon – es geht um Erikas Alben.
+      expect(
+        (await jsonAus(
+          await frag('GET', '/api/v1/kontobeitraege', token: maxToken),
+        ))['alben'],
+        isEmpty,
+      );
+
+      expect(
+        (await frag(
+          'POST',
+          '/api/v1/alben/urlaub/kontobeitraege/gesehen',
+          token: erikaToken,
+        )).statusCode,
+        204,
+      );
+      expect((await neu())['alben'], isEmpty);
+    },
+  );
+
+  test('Serverdatenbank 6: Beiträge von vorher gelten als gesehen', () async {
+    final ordner = await Directory.systemTemp.createTemp('pv_teilung_mig7_');
+    final datei = File('${ordner.path}/server.sqlite');
+    var bank = Serverdatenbank.oeffne(datei);
+    try {
+      bank.db.execute(
+        "INSERT INTO konten (id, name, angelegt) VALUES ('k', 'erika', 1)",
+      );
+      bank.db.execute('DROP INDEX kontobeitraege_neu');
+      bank.db.execute('ALTER TABLE kontobeitraege DROP COLUMN gesehen');
+      bank.db.execute('ALTER TABLE kontobeitraege DROP COLUMN album');
+      bank.db.execute(
+        'INSERT INTO kontobeitraege (besitzer, aufnahme, von, name, angelegt) '
+        "VALUES ('k', 'a1', NULL, 'max', 1)",
+      );
+      bank.db.execute('PRAGMA user_version = 6');
+      bank.schliesse();
+      bank = Serverdatenbank.oeffne(datei);
+      expect(
+        bank.db.select('SELECT gesehen FROM kontobeitraege').single['gesehen'],
+        1,
+      );
+      expect(bank.db.select('PRAGMA user_version').single.columnAt(0), 7);
+    } finally {
+      bank.schliesse();
+      await ordner.delete(recursive: true);
+    }
+  });
+
   test('Erika hört auf zu teilen, Max verlässt ein Album', () async {
     await urlaub();
     await teile(max.id);
@@ -453,7 +529,10 @@ void main() {
         bank.db.select('SELECT count(*) AS n FROM albumteilungen').single['n'],
         0,
       );
-      expect(bank.db.select('PRAGMA user_version').single.columnAt(0), 6);
+      expect(
+        bank.db.select('PRAGMA user_version').single.columnAt(0),
+        Serverdatenbank.schema,
+      );
     } finally {
       bank.schliesse();
       await ordner.delete(recursive: true);

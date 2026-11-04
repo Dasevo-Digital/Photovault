@@ -958,11 +958,17 @@ async function zeigeAlben() {
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Alben');
   $('karten').replaceChildren();
-  const d = await api('/api/v1/alben');
+  const [d, neu] = await Promise.all([
+    api('/api/v1/alben'),
+    // Was andere in geteilte Alben gelegt haben (#295).
+    api('/api/v1/kontobeitraege').catch(() => ({ alben: [] })),
+  ]);
+  const neuIn = new Map(neu.alben.map((x) => [x.id, x.anzahl]));
   if (d.alben.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Alben.')));
   for (const a of d.alben) {
+    const n = neuIn.get(a.id);
     $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`, {
-      kennzeichen: a.geteilt ? t('Geteilt') : null,
+      kennzeichen: n ? t('{n} neu', { n }) : a.geteilt ? t('Geteilt') : null,
     }));
   }
   // Was andere Konten mit diesem teilen (#105).
@@ -1064,8 +1070,18 @@ async function zeigeOrt(land, stadt) {
 async function zeigeAlbum(id) {
   markiereNav('alben');
   zeigeBereich(['raster']);
-  const d = await api(`/api/v1/alben/${encodeURIComponent(id)}`);
+  const [d, neu] = await Promise.all([
+    api(`/api/v1/alben/${encodeURIComponent(id)}`),
+    api('/api/v1/kontobeitraege').catch(() => ({ alben: [] })),
+  ]);
   const kopf = el('div', 'reisekopf');
+  // Neue Beiträge anderer Konten (#295): einmal sagen, dann gelten sie als
+  // gesehen.
+  const hier = neu.alben.find((x) => x.id === id);
+  if (hier) {
+    kopf.append(el('span', 'leise', t('{n} neu von {namen}', { n: hier.anzahl, namen: hier.von.join(', ') })));
+    api(`/api/v1/alben/${encodeURIComponent(id)}/kontobeitraege/gesehen`, { methode: 'POST' }).catch(() => {});
+  }
   const teilen = el('button', 'knopf', t('Als Link teilen …'));
   teilen.type = 'button';
   teilen.addEventListener('click', () => oeffneLinkDialog({ album: d.album.id }, d.album.name));

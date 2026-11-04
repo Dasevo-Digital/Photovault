@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 6;
+  static const schema = 7;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -195,6 +195,24 @@ class Serverdatenbank {
           PRIMARY KEY (besitzer, aufnahme)
         );
         PRAGMA user_version = 6;
+        COMMIT;
+      ''');
+    }
+    if (stand < 7) {
+      // Neue Beiträge für den Besitzer (#295): in welches Album, und ob er
+      // sie schon gesehen hat. Was vorher kam, gilt als gesehen. Nur, was
+      // fehlt – wie die anderen Schritte lässt sich dieser wiederholen.
+      final spalten = {
+        for (final z in db.select('PRAGMA table_info(kontobeitraege)'))
+          z['name'] as String,
+      };
+      db.execute('''
+        BEGIN;
+        ${spalten.contains('album') ? '' : 'ALTER TABLE kontobeitraege ADD COLUMN album TEXT;'}
+        ${spalten.contains('gesehen') ? '' : 'ALTER TABLE kontobeitraege ADD COLUMN gesehen INTEGER NOT NULL DEFAULT 1;'}
+        CREATE INDEX IF NOT EXISTS kontobeitraege_neu
+          ON kontobeitraege(besitzer, album) WHERE gesehen = 0;
+        PRAGMA user_version = 7;
         COMMIT;
       ''');
     }

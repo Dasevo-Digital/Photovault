@@ -172,6 +172,44 @@ class Teilungsapi {
     return Response(204);
   }
 
+  /// Was andere Konten in die eigenen Alben gelegt haben und noch nicht
+  /// angesehen ist (#295): `{alben: [{id, name, anzahl, von: [...],
+  /// zuletzt, titelbild?}]}`, das jüngste zuerst. Gezählt wird nur, was
+  /// noch im Album liegt.
+  Future<Response> neueBeitraege(Request r) async {
+    final ich = kontoVon(r).id;
+    final neu = _dienst.neueBeitraege(ich);
+    if (neu.isEmpty) return _json({'alben': const []});
+    final db = (await bibliotheken.fuer(ich)).bibliothek.db;
+    final alben = {for (final a in await db.alleAlben()) a.id: a};
+    final liste = <Map<String, Object?>>[];
+    for (final n in neu) {
+      final album = alben[n.album];
+      if (album == null) continue;
+      final drin = {for (final a in await db.albumAufnahmen(album.id)) a.id};
+      final noch = [
+        for (final a in n.aufnahmen)
+          if (drin.contains(a)) a,
+      ];
+      if (noch.isEmpty) continue;
+      liste.add({
+        'id': album.id,
+        'name': album.name,
+        'anzahl': noch.length,
+        'von': n.von,
+        'zuletzt': n.zuletzt.toUtc().toIso8601String(),
+        'titelbild': noch.last,
+      });
+    }
+    return _json({'alben': liste});
+  }
+
+  /// Der Besitzer hat [album] geöffnet: Seine neuen Beiträge sind gesehen.
+  Future<Response> beitraegeGesehen(Request r, String album) async {
+    _dienst.beitraegeGesehen(kontoVon(r).id, album);
+    return Response(204);
+  }
+
   // --- Für den Empfänger ---------------------------------------------------
 
   /// Die Teilung [id] mit dem Album dahinter, wenn sie für das Konto der
@@ -330,6 +368,7 @@ class Teilungsapi {
           aufnahme: aufnahme,
           von: ich.id,
           name: ich.name,
+          album: g.album.id,
         );
         try {
           await b.nachbearbeitung.neueAufnahme(aufnahme);

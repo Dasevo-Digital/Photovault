@@ -834,6 +834,8 @@ const EN = {
   'Deinen Beitrag „{name}“ aus dem Album entfernen? Liegt er in keinem anderen Album, kommt er in den Papierkorb des Besitzers.': 'Remove your contribution “{name}” from the album? If it is in no other album, it goes to the owner\'s trash.',
   'nicht dein Beitrag': 'not your contribution',
   'nicht im Album': 'not in the album',
+  '{n} neu': '{n} new',
+  '{n} neu von {namen}': '{n} new from {namen}',
 };
 
 function t(deutsch, werte) {

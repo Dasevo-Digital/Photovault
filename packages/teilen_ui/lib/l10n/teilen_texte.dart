@@ -277,6 +277,24 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Schliessen'**
   String get schliessen;
+
+  /// No description provided for @neueBeitraegeTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu in deinen geteilten Alben'**
+  String get neueBeitraegeTitel;
+
+  /// No description provided for @neueBeitraegeAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{„{name}“: 1 neue Aufnahme} other{„{name}“: {n} neue Aufnahmen}}'**
+  String neueBeitraegeAlbum(String name, int n);
+
+  /// No description provided for @neueBeitraegeVon.
+  ///
+  /// In de, this message translates to:
+  /// **'von {namen}'**
+  String neueBeitraegeVon(String namen);
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

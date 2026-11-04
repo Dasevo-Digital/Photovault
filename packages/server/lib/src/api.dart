@@ -315,6 +315,11 @@ Handler baueApi({
     ..get('/api/v1/alben/<id>', api.album)
     // Alben zwischen Konten teilen (#105).
     ..get('/api/v1/konten/andere', teilung.andereKonten)
+    ..get('/api/v1/kontobeitraege', teilung.neueBeitraege)
+    ..post(
+      '/api/v1/alben/<id>/kontobeitraege/gesehen',
+      teilung.beitraegeGesehen,
+    )
     ..get('/api/v1/alben/<id>/teilungen', teilung.vonAlbum)
     ..put('/api/v1/alben/<id>/teilungen/<konto>', teilung.teile)
     ..delete('/api/v1/alben/<id>/teilungen/<konto>', teilung.nichtMehrTeilen)

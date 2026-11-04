@@ -167,10 +167,56 @@ class Albumteilungen {
     required String aufnahme,
     required String von,
     required String name,
+    required String album,
   }) => _sdb.db.execute(
     'INSERT OR IGNORE INTO kontobeitraege (besitzer, aufnahme, von, name, '
-    'angelegt) VALUES (?, ?, ?, ?, ?)',
-    [besitzer, aufnahme, von, name, _uhr().millisecondsSinceEpoch],
+    'angelegt, album, gesehen) VALUES (?, ?, ?, ?, ?, ?, 0)',
+    [besitzer, aufnahme, von, name, _uhr().millisecondsSinceEpoch, album],
+  );
+
+  /// Was andere in die Alben von [besitzer] gelegt haben und er noch nicht
+  /// gesehen hat (#295), je Album: Aufnahmen, wer, und wann zuletzt.
+  List<
+    ({String album, List<String> aufnahmen, List<String> von, DateTime zuletzt})
+  >
+  neueBeitraege(String besitzer) {
+    final je =
+        <String, ({List<String> aufnahmen, Set<String> von, int zuletzt})>{};
+    for (final z in _sdb.db.select(
+      'SELECT album, aufnahme, name, angelegt FROM kontobeitraege '
+      'WHERE besitzer = ? AND gesehen = 0 AND album IS NOT NULL '
+      'ORDER BY angelegt',
+      [besitzer],
+    )) {
+      final album = z['album']! as String;
+      final e = je.putIfAbsent(
+        album,
+        () => (aufnahmen: <String>[], von: <String>{}, zuletzt: 0),
+      );
+      e.aufnahmen.add(z['aufnahme']! as String);
+      e.von.add(z['name']! as String);
+      je[album] = (
+        aufnahmen: e.aufnahmen,
+        von: e.von,
+        zuletzt: z['angelegt']! as int,
+      );
+    }
+    return [
+      for (final MapEntry(:key, :value) in je.entries)
+        (
+          album: key,
+          aufnahmen: value.aufnahmen,
+          von: value.von.toList(),
+          zuletzt: DateTime.fromMillisecondsSinceEpoch(value.zuletzt),
+        ),
+    ]..sort((a, b) => b.zuletzt.compareTo(a.zuletzt));
+  }
+
+  /// [besitzer] hat [album] angesehen: Was darin neu war, ist es nicht mehr.
+  void beitraegeGesehen(String besitzer, String album) => _sdb.db.execute(
+    'UPDATE kontobeitraege SET gesehen = 1 '
+    'WHERE besitzer = ? AND album = ? AND gesehen = 0',
+    [besitzer, album],
   );
 
   /// Wer welche der [aufnahmen] von [besitzer] beigetragen hat: Kennung →

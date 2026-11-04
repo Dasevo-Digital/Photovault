@@ -98,5 +98,25 @@
   "kontenTeilenKnopf": "Teilen",
   "abbrechen": "Abbrechen",
   "entfernen": "Entfernen",
-  "schliessen": "Schliessen"
+  "schliessen": "Schliessen",
+  "neueBeitraegeTitel": "Neu in deinen geteilten Alben",
+  "neueBeitraegeAlbum": "{n, plural, =1{„{name}“: 1 neue Aufnahme} other{„{name}“: {n} neue Aufnahmen}}",
+  "neueBeitraegeVon": "von {namen}",
+  "@neueBeitraegeAlbum": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "@neueBeitraegeVon": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  }
 }
