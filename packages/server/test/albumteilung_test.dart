@@ -436,12 +436,142 @@ void main() {
         bank.db.select('SELECT gesehen FROM kontobeitraege').single['gesehen'],
         1,
       );
-      expect(bank.db.select('PRAGMA user_version').single.columnAt(0), 7);
+      expect(
+        bank.db.select('PRAGMA user_version').single.columnAt(0),
+        Serverdatenbank.schema,
+      );
     } finally {
       bank.schliesse();
       await ordner.delete(recursive: true);
     }
   });
+
+  test(
+    'Partnerfreigabe: Max sieht Erikas ganze Bibliothek, blätternd (#293)',
+    () async {
+      final (strand, berg, privat) = await urlaub();
+      Future<Response> partner(String methode, String pfad, String token) =>
+          frag(methode, '/api/v1/partner$pfad', token: token);
+
+      expect(
+        ((await jsonAus(await partner('GET', '', maxToken)))['mitMir']!
+            as List),
+        isEmpty,
+      );
+      expect((await partner('PUT', '/${max.id}', erikaToken)).statusCode, 204);
+      expect(
+        (await partner('PUT', '/${erika.id}', erikaToken)).statusCode,
+        404,
+      );
+
+      final p = await jsonAus(await partner('GET', '', maxToken));
+      final mitMir = (p['mitMir']! as List).cast<Map>().single;
+      expect(mitMir['name'], 'erika');
+      expect(mitMir['anzahl'], 3);
+      final meine =
+          (await jsonAus(await partner('GET', '', erikaToken)))['meine']!
+              as List;
+      expect([for (final x in meine.cast<Map>()) x['name']], ['max']);
+
+      // Seitenweise, ohne Erikas Marken.
+      final eins = await jsonAus(
+        await partner('GET', '/von/${erika.id}/aufnahmen?anzahl=2', maxToken),
+      );
+      final zwei = await jsonAus(
+        await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen?anzahl=2&nach=${Uri.encodeQueryComponent('${eins['weiter']}')}',
+          maxToken,
+        ),
+      );
+      final ids = [
+        for (final z in [
+          ...eins['aufnahmen']! as List,
+          ...zwei['aufnahmen']! as List,
+        ])
+          (z as Map)['id'],
+      ];
+      expect(ids.toSet(), {strand, berg, privat});
+      expect(ids, hasLength(3), reason: 'nichts doppelt');
+      expect(zwei['weiter'], isNull);
+      expect(
+        [
+          ...eins['aufnahmen']! as List,
+        ].any((z) => (z as Map).containsKey('favorit')),
+        isFalse,
+      );
+      expect(
+        (await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen/$privat/miniatur',
+          maxToken,
+        )).statusCode,
+        200,
+      );
+
+      // Moritz sieht nichts.
+      expect(
+        (await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen',
+          moritzToken,
+        )).statusCode,
+        404,
+      );
+      expect(
+        (await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen/$privat/miniatur',
+          moritzToken,
+        )).statusCode,
+        404,
+      );
+
+      // Gesperrtes nie.
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      await (b.db.update(b.db.assets)..where((t) => t.id.equals(privat))).write(
+        const AssetsCompanion(isLocked: Value(true)),
+      );
+      final danach = await jsonAus(
+        await partner('GET', '/von/${erika.id}/aufnahmen', maxToken),
+      );
+      expect([
+        for (final z in danach['aufnahmen']! as List) (z as Map)['id'],
+      ], isNot(contains(privat)));
+      expect(
+        (await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen/$privat/miniatur',
+          maxToken,
+        )).statusCode,
+        404,
+      );
+
+      // Max verlässt die Freigabe – oder Erika hebt sie auf.
+      expect(
+        (await partner('DELETE', '/von/${erika.id}', maxToken)).statusCode,
+        204,
+      );
+      expect(
+        (await partner(
+          'GET',
+          '/von/${erika.id}/aufnahmen',
+          maxToken,
+        )).statusCode,
+        404,
+      );
+      await partner('PUT', '/${max.id}', erikaToken);
+      expect(
+        (await partner('DELETE', '/${max.id}', erikaToken)).statusCode,
+        204,
+      );
+      expect(
+        ((await jsonAus(await partner('GET', '', maxToken)))['mitMir']!
+            as List),
+        isEmpty,
+      );
+    },
+  );
 
   test('Erika hört auf zu teilen, Max verlässt ein Album', () async {
     await urlaub();

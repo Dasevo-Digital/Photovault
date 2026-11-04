@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 7;
+  static const schema = 8;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -213,6 +213,23 @@ class Serverdatenbank {
         CREATE INDEX IF NOT EXISTS kontobeitraege_neu
           ON kontobeitraege(besitzer, album) WHERE gesehen = 0;
         PRAGMA user_version = 7;
+        COMMIT;
+      ''');
+    }
+    if (stand < 8) {
+      // Partnerfreigabe (#293): Ein Konto lässt ein anderes seine ganze
+      // Bibliothek sehen.
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS partnerfreigaben (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          partner TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          angelegt INTEGER NOT NULL,
+          PRIMARY KEY (besitzer, partner)
+        );
+        CREATE INDEX IF NOT EXISTS partnerfreigaben_partner
+          ON partnerfreigaben(partner);
+        PRAGMA user_version = 8;
         COMMIT;
       ''');
     }

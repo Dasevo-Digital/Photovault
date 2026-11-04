@@ -1,4 +1,5 @@
 import 'package:abgleich_ui/abgleichsuebersicht.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/konten.dart';
@@ -162,6 +163,13 @@ class Konto extends StatelessWidget {
                   abmelden: () => _abmelden(context),
                 ),
                 GeteilteLinks(verbindung: a.verbindung),
+                // Die ganze Bibliothek für ein anderes Konto (#293).
+                ListTile(
+                  leading: const Icon(Icons.people_outline),
+                  title: Text(teilenTexte(context).bibliothekTeilen),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => bibliothekTeilen(context, a.verbindung),
+                ),
                 _KontenZugang(sitzung, a.verbindung),
               ],
               FutureBuilder<PackageInfo>(

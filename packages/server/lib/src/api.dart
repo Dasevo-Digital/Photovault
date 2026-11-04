@@ -316,6 +316,16 @@ Handler baueApi({
     // Alben zwischen Konten teilen (#105).
     ..get('/api/v1/konten/andere', teilung.andereKonten)
     ..get('/api/v1/kontobeitraege', teilung.neueBeitraege)
+    // Partnerfreigabe (#293).
+    ..get('/api/v1/partner', teilung.partner)
+    ..put('/api/v1/partner/<konto>', teilung.partnerSetzen)
+    ..delete('/api/v1/partner/<konto>', teilung.partnerEntfernen)
+    ..delete('/api/v1/partner/von/<konto>', teilung.partnerVerlassen)
+    ..get('/api/v1/partner/von/<konto>/aufnahmen', teilung.partnerAufnahmen)
+    ..get(
+      '/api/v1/partner/von/<konto>/aufnahmen/<aufnahme>/<art>',
+      teilung.partnerDatei,
+    )
     ..post(
       '/api/v1/alben/<id>/kontobeitraege/gesehen',
       teilung.beitraegeGesehen,

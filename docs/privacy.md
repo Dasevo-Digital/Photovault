@@ -119,7 +119,9 @@ account on the same server, that account sees the items in it in the same
 versions as the owner, including originals with embedded metadata such as the
 capture location. The owner's own marks (favourite, rating, colour label) stay
 with the owner. Files uploaded by an account allowed to contribute go into the
-owner's library; the server records which account they came from.
+owner's library; the server records which account they came from. An account
+can likewise let another account view its whole library; locked items and the
+trash stay excluded.
 
 **Maps in the browser and the mobile app.** Even with your own server, the
 browser interface and the mobile app fetch map tiles **directly** from the

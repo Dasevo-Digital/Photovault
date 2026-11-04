@@ -295,6 +295,48 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'von {namen}'**
   String neueBeitraegeVon(String namen);
+
+  /// No description provided for @partnerBibliothekVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek von {name}'**
+  String partnerBibliothekVon(String name);
+
+  /// No description provided for @partnerGanzeBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Ganze Bibliothek'**
+  String get partnerGanzeBibliothek;
+
+  /// No description provided for @partnerNichtMehr.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist nicht mehr mit dir geteilt.'**
+  String get partnerNichtMehr;
+
+  /// No description provided for @partnerVerlassenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.'**
+  String partnerVerlassenFrage(String name);
+
+  /// No description provided for @bibliothekTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek teilen'**
+  String get bibliothekTeilen;
+
+  /// No description provided for @bibliothekTeilenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek teilen'**
+  String get bibliothekTeilenTitel;
+
+  /// No description provided for @bibliothekTeilenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.'**
+  String get bibliothekTeilenHinweis;
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

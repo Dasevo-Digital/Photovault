@@ -971,10 +971,21 @@ async function zeigeAlben() {
       kennzeichen: n ? t('{n} neu', { n }) : a.geteilt ? t('Geteilt') : null,
     }));
   }
-  // Was andere Konten mit diesem teilen (#105).
-  const g = await api('/api/v1/geteilt').catch(() => ({ alben: [] }));
-  if (g.alben.length) {
+  // Was andere Konten mit diesem teilen (#105) – Alben und ganze
+  // Bibliotheken (#293).
+  const [g, p] = await Promise.all([
+    api('/api/v1/geteilt').catch(() => ({ alben: [] })),
+    api('/api/v1/partner').catch(() => ({ mitMir: [] })),
+  ]);
+  if (g.alben.length || p.mitMir.length) {
     $('karten').append(el('h3', 'karten-abschnitt', t('Geteilt mit mir')));
+    for (const b of p.mitMir) {
+      const basis = `/api/v1/partner/von/${encodeURIComponent(b.konto)}/aufnahmen`;
+      const bild = b.titelbild ? `${basis}/${encodeURIComponent(b.titelbild)}/miniatur${b.titelstand ? `?v=${encodeURIComponent(b.titelstand)}` : ''}` : null;
+      $('karten').append(karte(bild, t('Bibliothek von {name}', { name: b.name }), anzahlText(b.anzahl), `#/partner/${encodeURIComponent(b.konto)}`, {
+        kennzeichen: t('Ganze Bibliothek'),
+      }));
+    }
     for (const a of g.alben) {
       const basis = `/api/v1/geteilt/${encodeURIComponent(a.id)}/aufnahmen`;
       const bild = a.titelbild ? `${basis}/${encodeURIComponent(a.titelbild)}/miniatur${a.titelstand ? `?v=${encodeURIComponent(a.titelstand)}` : ''}` : null;
@@ -1159,6 +1170,77 @@ $('konten-hinzu').addEventListener('click', () => {
   const konto = $('konten-wahl').value;
   if (konto) teileMit(konto, $('konten-recht').value === '1');
 });
+
+// --- Partnerfreigabe (#293) -----------------------------------------------------
+//
+// Die ganze Bibliothek für ein anderes Konto zum Ansehen: verwaltet auf der
+// Kontoseite, zu sehen unter „Geteilt mit mir“ als blätternde Zeitleiste.
+
+async function zeigePartner() {
+  const [p, andere] = await Promise.all([api('/api/v1/partner'), api('/api/v1/konten/andere')]);
+  const zeilen = $('partner');
+  zeilen.replaceChildren();
+  for (const k of p.meine) {
+    const zeile = el('li', 'teilungszeile');
+    const weg = el('button', 'knopf', t('Entfernen'));
+    weg.type = 'button';
+    weg.addEventListener('click', async () => {
+      try { await api(`/api/v1/partner/${encodeURIComponent(k.konto)}`, { methode: 'DELETE' }); } catch (x) { meldung(x.message); return; }
+      await zeigePartner();
+    });
+    zeile.append(el('span', 'name', k.name), weg);
+    zeilen.append(zeile);
+  }
+  if (!p.meine.length) zeilen.append(el('li', 'leise', t('Mit niemandem geteilt.')));
+  const schon = new Set(p.meine.map((k) => k.konto));
+  const frei = andere.konten.filter((k) => !schon.has(k.id));
+  $('partner-wahl').replaceChildren(...frei.map((k) => new Option(k.name, k.id)));
+  $('partner-neu').hidden = !frei.length;
+}
+
+$('partner-hinzu').addEventListener('click', async () => {
+  const konto = $('partner-wahl').value;
+  if (!konto) return;
+  try { await api(`/api/v1/partner/${encodeURIComponent(konto)}`, { methode: 'PUT' }); } catch (x) { meldung(x.message); return; }
+  await zeigePartner();
+});
+
+async function zeigePartnerbibliothek(konto) {
+  markiereNav('alben');
+  zeigeBereich(['raster']);
+  const basis = `/api/v1/partner/von/${encodeURIComponent(konto)}/aufnahmen`;
+  let weiter = null;
+  const seite = async () => {
+    const d = await api(`${basis}?anzahl=300${weiter ? `&nach=${encodeURIComponent(weiter)}` : ''}`);
+    weiter = d.weiter;
+    return d;
+  };
+  let erste;
+  try {
+    erste = await seite();
+  } catch (x) {
+    if (x.status === 404) { meldung(t('Diese Bibliothek ist nicht mehr mit dir geteilt.')); location.hash = '#/alben'; return; }
+    throw x;
+  }
+  const kopf = el('div', 'reisekopf');
+  const diashow = el('button', 'knopf', t('Diashow'));
+  diashow.type = 'button';
+  diashow.addEventListener('click', () => starteDiashow(liste.aufnahmen, 0));
+  const verlassen = el('button', 'knopf', t('Nicht mehr anzeigen'));
+  verlassen.type = 'button';
+  verlassen.addEventListener('click', async () => {
+    if (!confirm(t('Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.', { name: erste.name }))) return;
+    try { await api(`/api/v1/partner/von/${encodeURIComponent(konto)}`, { methode: 'DELETE' }); location.hash = '#/alben'; } catch (x) { meldung(x.message); }
+  });
+  kopf.append(diashow, verlassen);
+  zeigeListe({
+    aufnahmen: erste.aufnahmen,
+    nachTagen: true,
+    kopf,
+    fremd: basis,
+    mehr: erste.weiter ? () => seite() : null,
+  }, t('Bibliothek von {name}', { name: erste.name }));
+}
 
 // Ein Album, das ein anderes Konto teilt: dasselbe Raster und derselbe
 // Betrachter, die Dateien über die Teilung (`liste.fremd`).
@@ -2922,6 +3004,7 @@ async function zeigeKonto() {
   $('verwaltung').hidden = !k.verwalter;
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
+  zeigePartner().catch((x) => $('partner').replaceChildren(el('li', 'fehler', x.message)));
   zeigeBeitraege().catch(() => {});
   zeigeOidc(k).catch(() => {});
   zeigePasskeys().catch((x) => { $('passkey-meldung').textContent = x.message; });
@@ -5538,6 +5621,7 @@ async function zeigeWeg() {
       case 'suche': zeigeSuche(); break;
       case 'alben': await (teile[1] === 'klug' ? zeigeIntelligentesAlbum(teile[2]) : teile[1] ? zeigeAlbum(teile[1]) : zeigeAlben()); break;
       case 'geteilt': await zeigeGeteiltesAlbum(teile[1]); break;
+      case 'partner': await zeigePartnerbibliothek(teile[1]); break;
       case 'personen': await (teile[1] ? zeigePerson(teile[1]) : zeigePersonen()); break;
       case 'ignoriert': await zeigeIgnoriert(); break;
       case 'konto': await zeigeKonto(); break;

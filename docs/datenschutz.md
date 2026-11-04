@@ -135,7 +135,9 @@ der Besitzer, Originale mit eingebetteten Metadaten wie dem Aufnahmeort
 eingeschlossen. Eigene Markierungen des Besitzers (Favorit, Bewertung,
 Farbmarke) bleiben bei ihm. Was ein Konto mit dem Recht zum Beitragen
 hochlädt, kommt in die Bibliothek des Besitzers; der Server vermerkt dazu,
-von welchem Konto es stammt.
+von welchem Konto es stammt. Ebenso kann ein Konto einem anderen seine ganze
+Bibliothek zum Ansehen freigeben; gesperrte Aufnahmen und der Papierkorb
+bleiben davon ausgenommen.
 
 **Karten in Browser und Handy-App.** Auch mit eigenem Server holen
 Browseroberfläche und Handy-App Kartenkacheln **direkt** bei den Diensten,

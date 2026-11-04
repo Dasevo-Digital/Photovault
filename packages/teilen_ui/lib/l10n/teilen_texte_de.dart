@@ -144,4 +144,31 @@ class TeilenTexteDe extends TeilenTexte {
   String neueBeitraegeVon(String namen) {
     return 'von $namen';
   }
+
+  @override
+  String partnerBibliothekVon(String name) {
+    return 'Bibliothek von $name';
+  }
+
+  @override
+  String get partnerGanzeBibliothek => 'Ganze Bibliothek';
+
+  @override
+  String get partnerNichtMehr =>
+      'Diese Bibliothek ist nicht mehr mit dir geteilt.';
+
+  @override
+  String partnerVerlassenFrage(String name) {
+    return 'Die Bibliothek von $name nicht mehr anzeigen? Teilen kann nur $name sie wieder.';
+  }
+
+  @override
+  String get bibliothekTeilen => 'Bibliothek teilen';
+
+  @override
+  String get bibliothekTeilenTitel => 'Bibliothek teilen';
+
+  @override
+  String get bibliothekTeilenHinweis =>
+      'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.';
 }

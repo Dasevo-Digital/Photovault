@@ -836,6 +836,12 @@ const EN = {
   'nicht im Album': 'not in the album',
   '{n} neu': '{n} new',
   '{n} neu von {namen}': '{n} new from {namen}',
+  'Bibliothek teilen': 'Share library',
+  'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.': 'Accounts listed here see your whole library under “Shared with me” – without locked items and trash, view only.',
+  'Bibliothek von {name}': 'Library of {name}',
+  'Ganze Bibliothek': 'Whole library',
+  'Diese Bibliothek ist nicht mehr mit dir geteilt.': 'This library is no longer shared with you.',
+  'Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.': 'Stop showing the library of {name}? Only {name} can share it again.',
 };
 
 function t(deutsch, werte) {

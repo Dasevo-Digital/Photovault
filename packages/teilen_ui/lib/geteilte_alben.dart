@@ -151,7 +151,21 @@ class GeteiltesAlbum {
     required this.anzahl,
     this.titelbild,
     this.titelstand,
+    this.partner,
   });
+
+  /// Die ganze Bibliothek eines anderen Kontos (#293) – im Raster und im
+  /// Betrachter wie ein Album, nur zum Ansehen.
+  factory GeteiltesAlbum.partner(Map<String, Object?> j) => GeteiltesAlbum(
+    id: 'partner-${j['konto']}',
+    name: '${j['name'] ?? ''}',
+    besitzer: '${j['name'] ?? ''}',
+    beitragen: false,
+    anzahl: (j['anzahl'] as num?)?.toInt() ?? 0,
+    titelbild: j['titelbild'] as String?,
+    titelstand: j['titelstand'] as String?,
+    partner: '${j['konto']}',
+  );
 
   factory GeteiltesAlbum.aus(Map<String, Object?> j) => GeteiltesAlbum(
     id: '${j['id']}',
@@ -172,8 +186,15 @@ class GeteiltesAlbum {
   final String? titelbild;
   final String? titelstand;
 
+  /// Bei einer Partnerfreigabe das Konto, dessen Bibliothek es ist.
+  final String? partner;
+
+  String get _basis => partner == null
+      ? 'api/v1/geteilt/${_k(id)}'
+      : 'api/v1/partner/von/${_k(partner!)}';
+
   String datei(String aufnahme, String art, [String? stand]) =>
-      'api/v1/geteilt/${_k(id)}/aufnahmen/${_k(aufnahme)}/$art'
+      '$_basis/aufnahmen/${_k(aufnahme)}/$art'
       '${stand == null ? '' : '?v=${_k(stand)}'}';
 
   /// Das Bild [art] von [aufnahme]; mit [ablage] unter
@@ -272,7 +293,14 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
     if (v == null) return;
     try {
       final d = await v.hole('api/v1/geteilt');
+      // Ganze Bibliotheken zuerst (#293); ein Server vor 3.55 kennt sie
+      // nicht – dann eben nur die Alben.
+      final p = await v
+          .hole('api/v1/partner')
+          .catchError((Object _) => <String, Object?>{});
       final liste = [
+        for (final x in (p['mitMir'] as List? ?? const []))
+          GeteiltesAlbum.partner((x as Map).cast<String, Object?>()),
         for (final x in (d['alben'] as List? ?? const []))
           GeteiltesAlbum.aus((x as Map).cast<String, Object?>()),
       ];
@@ -354,7 +382,9 @@ class _GeteilteKachel extends StatelessWidget {
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (_) => GeteiltesAlbumSeite(zugang: zugang, album: album),
+            builder: (_) => album.partner == null
+                ? GeteiltesAlbumSeite(zugang: zugang, album: album)
+                : PartnerBibliothekSeite(zugang: zugang, bibliothek: album),
           ),
         );
         geaendert();
@@ -381,9 +411,17 @@ class _GeteilteKachel extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(album.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           Text(
-            t.geteiltVon(album.besitzer),
+            album.partner == null
+                ? album.name
+                : t.partnerBibliothekVon(album.besitzer),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            album.partner == null
+                ? t.geteiltVon(album.besitzer)
+                : t.partnerGanzeBibliothek,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall,
@@ -1258,6 +1296,392 @@ class _NeueBeitraegeState extends State<NeueBeitraege> {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- Partnerfreigabe (#293) ------------------------------------------------
+
+/// Die ganze Bibliothek eines anderen Kontos, seitenweise vom Server – wie
+/// im Browser (web/app.js, zeigePartnerbibliothek).
+class PartnerBibliothekSeite extends StatefulWidget {
+  const PartnerBibliothekSeite({
+    super.key,
+    required this.zugang,
+    required this.bibliothek,
+  });
+
+  final Teilungszugang zugang;
+
+  /// Aus [GeteiltesAlbum.partner].
+  final GeteiltesAlbum bibliothek;
+
+  @override
+  State<PartnerBibliothekSeite> createState() => _PartnerBibliothekSeiteState();
+}
+
+class _PartnerBibliothekSeiteState extends State<PartnerBibliothekSeite> {
+  final _aufnahmen = <GeteilteAufnahme>[];
+  String? _weiter;
+  var _ende = false;
+  var _laedt = false;
+  Object? _fehler;
+
+  String get _konto => widget.bibliothek.partner!;
+
+  @override
+  void initState() {
+    super.initState();
+    _naechste();
+  }
+
+  Future<void> _naechste() async {
+    if (_laedt || _ende) return;
+    _laedt = true;
+    try {
+      final d = await widget.zugang.verbindung.hole(
+        'api/v1/partner/von/${_k(_konto)}/aufnahmen',
+        parameter: {'anzahl': '300', 'nach': ?_weiter},
+      );
+      if (!mounted) return;
+      setState(() {
+        _aufnahmen.addAll([
+          for (final x in (d['aufnahmen'] as List? ?? const []))
+            GeteilteAufnahme.aus((x as Map).cast<String, Object?>()),
+        ]);
+        _weiter = d['weiter'] as String?;
+        _ende = _weiter == null;
+        _fehler = null;
+      });
+    } on Serverfehler catch (e) {
+      if (!mounted) return;
+      if (e.status == 404) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(teilenTexte(context).partnerNichtMehr)),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
+      setState(() => _fehler = e);
+    } on KeineVerbindung catch (e) {
+      if (mounted) setState(() => _fehler = e);
+    } finally {
+      _laedt = false;
+    }
+  }
+
+  Future<void> _verlassen() async {
+    final t = teilenTexte(context);
+    final name = widget.bibliothek.besitzer;
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        content: Text(t.partnerVerlassenFrage(name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(t.abbrechen),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(t.geteiltVerlassen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    final bote = ScaffoldMessenger.of(context);
+    final weg = Navigator.of(context);
+    try {
+      await widget.zugang.verbindung.anfrage(
+        'DELETE',
+        'api/v1/partner/von/${_k(_konto)}',
+      );
+      final a = widget.zugang.ablage;
+      final hier = a == null
+          ? null
+          : Directory(
+              p.join(a.path, GeteiltesAlbum._sicher(widget.bibliothek.id)),
+            );
+      if (hier != null && await hier.exists()) {
+        await hier.delete(recursive: true).catchError((_) => hier);
+      }
+      weg.pop();
+    } on KeineVerbindung {
+      bote.showSnackBar(SnackBar(content: Text(t.geteiltOffline)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = teilenTexte(context);
+    final b = widget.bibliothek;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(t.partnerBibliothekVon(b.besitzer)),
+        actions: [
+          PopupMenuButton<void>(
+            itemBuilder: (_) => [
+              PopupMenuItem<void>(
+                onTap: _verlassen,
+                child: Text(t.geteiltVerlassen),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: _aufnahmen.isEmpty
+          ? Center(
+              child: _fehler != null
+                  ? Text(t.geteiltOffline)
+                  : _ende
+                  ? Text(t.geteiltLeer)
+                  : const CircularProgressIndicator(),
+            )
+          : GridView.builder(
+              padding: const EdgeInsets.all(2),
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 130,
+                mainAxisSpacing: 2,
+                crossAxisSpacing: 2,
+              ),
+              itemCount: _aufnahmen.length,
+              itemBuilder: (context, i) {
+                if (i >= _aufnahmen.length - 60) _naechste();
+                final a = _aufnahmen[i];
+                return GestureDetector(
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => GeteilterBetrachter(
+                        zugang: widget.zugang,
+                        album: b,
+                        aufnahmen: List.of(_aufnahmen),
+                        start: i,
+                      ),
+                    ),
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      _FernMiniatur(
+                        b.bild(
+                          widget.zugang.verbindung,
+                          widget.zugang.ablage,
+                          a.id,
+                          'miniatur',
+                          a.stand,
+                        ),
+                      ),
+                      if (a.video)
+                        const Positioned(
+                          right: 4,
+                          bottom: 4,
+                          child: Icon(
+                            Icons.play_circle_outline,
+                            color: Colors.white,
+                            size: 20,
+                            shadows: [
+                              Shadow(color: Colors.black54, blurRadius: 4),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
+    );
+  }
+}
+
+/// „Bibliothek teilen“: Wen dieses Konto seine ganze Bibliothek sehen lässt
+/// (#293) – am Rechner als Dialog, am Telefon als Blatt von unten.
+Future<void> bibliothekTeilen(
+  BuildContext context,
+  Serververbindung? verbindung,
+) async {
+  if (verbindung == null) return;
+  final blatt = _PartnerBlatt(verbindung: verbindung);
+  if (MediaQuery.sizeOf(context).width >= 600) {
+    await showDialog<void>(
+      context: context,
+      builder: (c) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                blatt,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 0, 12, 12),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(c),
+                    child: Text(teilenTexte(c).schliessen),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (_) => blatt,
+  );
+}
+
+class _PartnerBlatt extends StatefulWidget {
+  const _PartnerBlatt({required this.verbindung});
+
+  final Serververbindung verbindung;
+
+  @override
+  State<_PartnerBlatt> createState() => _PartnerBlattState();
+}
+
+class _PartnerBlattState extends State<_PartnerBlatt> {
+  List<(String, String)>? _meine;
+  List<(String, String)> _andere = const [];
+  String? _neu;
+  String? _fehler;
+
+  @override
+  void initState() {
+    super.initState();
+    _lade();
+  }
+
+  Future<void> _lade() async {
+    try {
+      final (d, k) = await (
+        widget.verbindung.hole('api/v1/partner'),
+        widget.verbindung.hole('api/v1/konten/andere'),
+      ).wait;
+      if (!mounted) return;
+      final meine = [
+        for (final x in (d['meine'] as List? ?? const []))
+          if (x case {'konto': final konto, 'name': final name})
+            ('$konto', '$name'),
+      ];
+      final schon = {for (final m in meine) m.$1};
+      setState(() {
+        _meine = meine;
+        _andere = [
+          for (final x in (k['konten'] as List? ?? const []))
+            if (x case {'id': final id, 'name': final name})
+              if (!schon.contains('$id')) ('$id', '$name'),
+        ];
+        _neu = _andere.isEmpty ? null : _andere.first.$1;
+        _fehler = null;
+      });
+    } on ParallelWaitError<dynamic, dynamic> {
+      if (mounted) {
+        setState(() => _fehler = teilenTexte(context).geteiltOffline);
+      }
+    }
+  }
+
+  Future<void> _aendere(String methode, String konto) async {
+    try {
+      final r = await widget.verbindung.anfrage(
+        methode,
+        'api/v1/partner/${_k(konto)}',
+      );
+      if (r.statusCode != 204) throw Serverfehler(r.statusCode, r.body);
+    } on Serverfehler catch (e) {
+      if (mounted) setState(() => _fehler = e.text);
+      return;
+    } on KeineVerbindung {
+      if (mounted) {
+        setState(() => _fehler = teilenTexte(context).geteiltOffline);
+      }
+      return;
+    }
+    await _lade();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = teilenTexte(context);
+    final meine = _meine;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              t.bibliothekTeilenTitel,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(t.bibliothekTeilenHinweis),
+            const SizedBox(height: 12),
+            if (meine == null && _fehler == null)
+              const Center(child: CircularProgressIndicator())
+            else if (meine != null) ...[
+              if (meine.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(t.kontenNiemand),
+                ),
+              for (final (konto, name) in meine)
+                Row(
+                  children: [
+                    Expanded(child: Text(name)),
+                    IconButton(
+                      tooltip: t.entfernen,
+                      icon: const Icon(Icons.close),
+                      onPressed: () => _aendere('DELETE', konto),
+                    ),
+                  ],
+                ),
+              if (_andere.isNotEmpty)
+                Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: _neu,
+                        items: [
+                          for (final (id, name) in _andere)
+                            DropdownMenuItem(value: id, child: Text(name)),
+                        ],
+                        onChanged: (w) => setState(() => _neu = w),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: _neu == null
+                          ? null
+                          : () => _aendere('PUT', _neu!),
+                      child: Text(t.kontenTeilenKnopf),
+                    ),
+                  ],
+                )
+              else if (meine.isEmpty)
+                Text(t.kontenKeineAnderen),
+            ],
+            if (_fehler case final f?)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  f,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
+          ],
         ),
       ),
     );

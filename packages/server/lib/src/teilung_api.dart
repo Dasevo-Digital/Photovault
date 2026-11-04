@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:drift/drift.dart' show BooleanExpressionOperators;
+import 'package:drift/drift.dart' show BooleanExpressionOperators, Variable;
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/protokoll.dart';
@@ -441,6 +441,141 @@ class Teilungsapi {
     }
     _dienst.entferne(id, ich);
     return Response(204);
+  }
+  // --- Partnerfreigabe (#293) ---------------------------------------------
+  //
+  // Ein Konto lässt ein anderes seine ganze Bibliothek sehen – wie ein
+  // geteiltes Album, nur ohne Album: die Zeitleiste, seitenweise, ohne
+  // Gesperrtes und Papierkorb, ohne die Marken des Besitzers. Beitragen
+  // geht hier nicht; dafür gibt es geteilte Alben.
+
+  /// `{meine: [{konto, name}], mitMir: [{konto, name, anzahl, titelbild?,
+  /// titelstand?}]}` – wen dieses Konto seine Bibliothek sehen lässt, und
+  /// wessen Bibliothek es sieht.
+  Future<Response> partner(Request r) async {
+    final ich = kontoVon(r).id;
+    final mitMir = <Map<String, Object?>>[];
+    for (final besitzer in _dienst.partnerMit(ich)) {
+      final k = konten.konto(besitzer);
+      if (k == null) continue;
+      final db = (await bibliotheken.fuer(besitzer)).bibliothek.db;
+      final anzahl = await db
+          .customSelect(
+            'SELECT count(*) AS n FROM assets WHERE $rasterSichtbar',
+          )
+          .getSingle();
+      final titel = await db
+          .customSelect(
+            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar '
+            'ORDER BY file_created_at DESC, id DESC LIMIT 1',
+          )
+          .getSingleOrNull();
+      final t = titel == null ? null : Rasterzeile.ausZeile(titel);
+      mitMir.add({
+        'konto': k.id,
+        'name': k.name,
+        'anzahl': anzahl.read<int>('n'),
+        'titelbild': ?t?.id,
+        if (t != null) 'titelstand': bildstand(t),
+      });
+    }
+    return _json({
+      'meine': [
+        for (final p in _dienst.partnerVon(ich))
+          if (konten.konto(p) case final k?) {'konto': k.id, 'name': k.name},
+      ],
+      'mitMir': mitMir,
+    });
+  }
+
+  /// Lässt [konto] die eigene Bibliothek sehen.
+  Response partnerSetzen(Request r, String konto) {
+    final ich = kontoVon(r).id;
+    if (konto == ich || konten.konto(konto) == null) {
+      return _json({'fehler': 'Konto unbekannt'}, status: 404);
+    }
+    _dienst.partnerSetzen(ich, konto);
+    return Response(204);
+  }
+
+  /// Hört auf, [konto] die eigene Bibliothek sehen zu lassen.
+  Response partnerEntfernen(Request r, String konto) {
+    _dienst.partnerEntfernen(kontoVon(r).id, konto);
+    return Response(204);
+  }
+
+  /// Will die Bibliothek von [konto] nicht mehr sehen.
+  Response partnerVerlassen(Request r, String konto) {
+    _dienst.partnerEntfernen(konto, kontoVon(r).id);
+    return Response(204);
+  }
+
+  /// Die Zeitleiste von [konto], wenn es die Anfrage sie sehen lässt:
+  /// `{name, aufnahmen: [...], weiter}` – `?nach=` blättert weiter (wie
+  /// `/api/v1/aufnahmen`), `?anzahl=` höchstens 1000.
+  Future<Response> partnerAufnahmen(Request r, String konto) async {
+    if (!_dienst.istPartner(konto, kontoVon(r).id)) {
+      return _json({'fehler': 'unbekannt'}, status: 404);
+    }
+    final db = (await bibliotheken.fuer(konto)).bibliothek.db;
+    final q = r.url.queryParameters;
+    final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
+    final nach = q['nach']?.split('~');
+    final ab = nach != null && nach.length == 2
+        ? (
+            zeit: DateTime.fromMillisecondsSinceEpoch(
+              int.tryParse(nach[0]) ?? 0,
+            ),
+            id: nach[1],
+          )
+        : null;
+    final zeilen = await db
+        .customSelect(
+          'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
+          '${ab == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
+          ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
+          variables: [
+            if (ab != null) ...[
+              Variable<DateTime>(ab.zeit),
+              Variable<DateTime>(ab.zeit),
+              Variable<String>(ab.id),
+            ],
+            Variable<int>(anzahl),
+          ],
+          readsFrom: {db.assets},
+        )
+        .get();
+    final liste = [for (final z in zeilen) Rasterzeile.ausZeile(z)];
+    return _json({
+      'name': konten.konto(konto)?.name ?? '',
+      'aufnahmen': [
+        for (final z in liste)
+          zeileAlsJson(z)
+            ..remove('favorit')
+            ..remove('bewertung')
+            ..remove('farbe'),
+      ],
+      'weiter': liste.length < anzahl
+          ? null
+          : '${liste.last.fileCreatedAt.millisecondsSinceEpoch}~${liste.last.id}',
+    });
+  }
+
+  /// Eine Datei aus der Bibliothek von [konto] – nichts Gesperrtes, nichts
+  /// aus dem Papierkorb.
+  Future<Response> partnerDatei(
+    Request r,
+    String konto,
+    String aufnahme,
+    String art,
+  ) async {
+    if (!_arten.contains(art) || !_dienst.istPartner(konto, kontoVon(r).id)) {
+      return Response.notFound(null);
+    }
+    final bereich = await bibliotheken.fuer(konto);
+    final a = await bereich.bibliothek.db.assetById(aufnahme);
+    if (a == null || a.isLocked || a.isTrashed) return Response.notFound(null);
+    return datei(r, bereich, a, art);
   }
 }
 

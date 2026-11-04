@@ -244,4 +244,48 @@ class Albumteilungen {
     }
     return ergebnis;
   }
+
+  // --- Partnerfreigabe (#293) -----------------------------------------------
+
+  /// [besitzer] lässt [partner] seine ganze Bibliothek sehen.
+  void partnerSetzen(String besitzer, String partner) {
+    if (besitzer == partner) throw ArgumentError('mit sich selbst teilen');
+    _sdb.db.execute(
+      'INSERT OR IGNORE INTO partnerfreigaben (besitzer, partner, angelegt) '
+      'VALUES (?, ?, ?)',
+      [besitzer, partner, _uhr().millisecondsSinceEpoch],
+    );
+  }
+
+  /// Hebt die Freigabe auf – der Besitzer, oder der Partner, der die
+  /// Bibliothek nicht mehr sehen will.
+  void partnerEntfernen(String besitzer, String partner) => _sdb.db.execute(
+    'DELETE FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
+    [besitzer, partner],
+  );
+
+  /// Wen [besitzer] seine Bibliothek sehen lässt.
+  List<String> partnerVon(String besitzer) => [
+    for (final z in _sdb.db.select(
+      'SELECT partner FROM partnerfreigaben WHERE besitzer = ? '
+      'ORDER BY angelegt',
+      [besitzer],
+    ))
+      z['partner']! as String,
+  ];
+
+  /// Wer [partner] seine Bibliothek sehen lässt.
+  List<String> partnerMit(String partner) => [
+    for (final z in _sdb.db.select(
+      'SELECT besitzer FROM partnerfreigaben WHERE partner = ? '
+      'ORDER BY angelegt',
+      [partner],
+    ))
+      z['besitzer']! as String,
+  ];
+
+  bool istPartner(String besitzer, String partner) => _sdb.db.select(
+    'SELECT 1 FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
+    [besitzer, partner],
+  ).isNotEmpty;
 }

@@ -118,5 +118,26 @@
         "type": "String"
       }
     }
+  },
+  "partnerBibliothekVon": "Bibliothek von {name}",
+  "partnerGanzeBibliothek": "Ganze Bibliothek",
+  "partnerNichtMehr": "Diese Bibliothek ist nicht mehr mit dir geteilt.",
+  "partnerVerlassenFrage": "Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.",
+  "bibliothekTeilen": "Bibliothek teilen",
+  "bibliothekTeilenTitel": "Bibliothek teilen",
+  "bibliothekTeilenHinweis": "Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.",
+  "@partnerBibliothekVon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@partnerVerlassenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

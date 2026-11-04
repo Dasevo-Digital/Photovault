@@ -550,4 +550,162 @@ void main() {
       expect(find.text('Neu in deinen geteilten Alben'), findsNothing);
     },
   );
+
+  testWidgets('Partnerfreigabe: Karte, blätternde Seite, freigeben (#293)', (
+    tester,
+  ) async {
+    final abrufe = <Uri>[];
+    var freigegeben = <String>[];
+    Map<String, Object?> zeile(int i) => {
+      'id': 'a$i',
+      'art': 'bild',
+      'name': 'IMG_$i.JPG',
+      'aufgenommen': '2026-08-01T10:00:00Z',
+    };
+    final client = MockClient((r) async {
+      abrufe.add(r.url);
+      switch (r.url.path) {
+        case '/api/v1/geteilt':
+          return json({'alben': []});
+        case '/api/v1/partner':
+          return json({
+            'meine': [
+              for (final k in freigegeben) {'konto': k, 'name': 'max'},
+            ],
+            'mitMir': [
+              {'konto': 'k-erika', 'name': 'erika', 'anzahl': 400},
+            ],
+          });
+        case '/api/v1/konten/andere':
+          return json({
+            'konten': [
+              {'id': 'k-max', 'name': 'max'},
+            ],
+          });
+        case '/api/v1/partner/von/k-erika/aufnahmen':
+          final weiter = r.url.queryParameters['nach'];
+          return json({
+            'name': 'erika',
+            'aufnahmen': [
+              for (var i = 0; i < (weiter == null ? 300 : 100); i++)
+                zeile(weiter == null ? i : 300 + i),
+            ],
+            'weiter': weiter == null ? 'seite2' : null,
+          });
+      }
+      if (r.method == 'PUT' && r.url.path == '/api/v1/partner/k-max') {
+        freigegeben = ['k-max'];
+        return http.Response('', 204);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              GeteilteAlben(
+                zugang: Teilungszugang(verbindung: v),
+                raster: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 200,
+                  childAspectRatio: 0.82,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Bibliothek von erika'), findsOneWidget);
+    expect(find.text('Ganze Bibliothek'), findsOneWidget);
+
+    await tester.tap(find.text('Bibliothek von erika'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    // Ans Ende des Rasters: die nächste Seite kommt nach.
+    await tester.drag(find.byType(GridView), const Offset(0, -20000));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    final seiten = [
+      for (final u in abrufe)
+        if (u.path == '/api/v1/partner/von/k-erika/aufnahmen')
+          u.queryParameters['nach'],
+    ];
+    expect(seiten, [null, 'seite2']);
+  });
+
+  testWidgets('Bibliothek teilen: ein Konto wählen und freigeben (#293)', (
+    tester,
+  ) async {
+    final rufe = <String>[];
+    var freigegeben = false;
+    final client = MockClient((r) async {
+      rufe.add('${r.method} ${r.url.path}');
+      if (r.url.path == '/api/v1/partner') {
+        return json({
+          'meine': freigegeben
+              ? [
+                  {'konto': 'k-max', 'name': 'max'},
+                ]
+              : [],
+          'mitMir': [],
+        });
+      }
+      if (r.url.path == '/api/v1/konten/andere') {
+        return json({
+          'konten': [
+            {'id': 'k-max', 'name': 'max'},
+          ],
+        });
+      }
+      if (r.method == 'PUT' && r.url.path == '/api/v1/partner/k-max') {
+        freigegeben = true;
+        return http.Response('', 204);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => bibliothekTeilen(context, v),
+              child: const Text('teilen'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('teilen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Mit niemandem geteilt.'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Teilen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(rufe, contains('PUT /api/v1/partner/k-max'));
+    expect(find.text('max'), findsOneWidget);
+  });
 }

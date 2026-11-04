@@ -1,4 +1,5 @@
 import 'package:abgleich_ui/abgleichsuebersicht.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
@@ -127,6 +128,15 @@ class ServerGruppe extends StatelessWidget {
                       ServerEigenesKontoScreen(verbindung: a.verbindung),
                 ),
               ),
+            ),
+          ),
+          // Die ganze Bibliothek für ein anderes Konto (#293).
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.people_outline),
+              label: Text(teilenTexte(context).bibliothekTeilen),
+              onPressed: () => bibliothekTeilen(context, a.verbindung),
             ),
           ),
           _KontenZugang(a.verbindung),
