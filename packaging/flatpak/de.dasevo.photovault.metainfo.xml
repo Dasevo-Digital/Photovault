@@ -75,6 +75,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.55.0" date="2026-11-04">
+      <description>
+        <p>An account can share its whole library with another account for viewing.</p>
+        <p>Owners of shared albums see when other accounts have added photos.</p>
+        <p>Photos can be deleted permanently on the server, and the automatic emptying of the trash now applies there as well.</p>
+        <p>Re-rendering developed photos no longer fills the edit history with unchanged entries, and the history now keeps clarity, vignette and colour lookup tables.</p>
+        <p>The server build now survives brief network outages.</p>
+      </description>
+    </release>
     <release version="3.54.0" date="2026-11-03">
       <description>
         <p>Albums shared by other accounts now also appear on the computer, and own albums can be shared with accounts from there.</p>
