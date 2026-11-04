@@ -100,6 +100,23 @@ class Wiederholen(unittest.TestCase):
         schlafen.assert_not_called()
 
 
+class BasisImages(unittest.TestCase):
+    """Was vor dem Server-Bau bereitliegen soll, folgt dem Dockerfile."""
+
+    def test_aus_den_arg_vorgaben(self):
+        d = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, d)
+        (d / 'Dockerfile').write_text(
+            'ARG DART_FASSUNG=9.8.7\nARG DEBIAN=forky-slim\nARG UBUNTU=99.04\n'
+            'FROM dart:${DART_FASSUNG} AS bau\nFROM debian:${DEBIAN}\n')
+        self.assertEqual(release.basis_images(d / 'Dockerfile'), ['dart:9.8.7', 'debian:forky-slim'])
+
+    def test_das_echte_dockerfile(self):
+        images = release.basis_images(REPO / 'packages/server/Dockerfile')
+        self.assertEqual(len(images), 2)
+        self.assertTrue(images[0].startswith('dart:'))
+
+
 class PrePush(unittest.TestCase):
     """Ein Tag auf einem schon geprüften main-Commit läuft nicht noch
     einmal durch alle Tests (#287)."""

@@ -373,8 +373,41 @@ def _baue_mac(fassung, u):
         lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
 
 
+def basis_images(dockerfile):
+    """Die Basis-Images, aus denen die Pakete des Servers entstehen – mit
+    den Fassungen aus den ARG-Vorgaben des Dockerfiles, damit beide nicht
+    auseinanderlaufen."""
+    text = Path(dockerfile).read_text()
+    vorgaben = dict(re.findall(r'^ARG ([A-Z_]+)=(\S+)', text, re.M))
+    # Nur die Stufen der Pakete; ubuntu gehört zum Bild für OpenVINO.
+    return [f'dart:{vorgaben["DART_FASSUNG"]}', f'debian:{vorgaben["DEBIAN"]}']
+
+
+def _halte_vor(images, plattformen, versuche=3, pause=30):
+    """Holt [images] für [plattformen] in Dockers Speicher (#294).
+
+    BuildKit fragt ein Basis-Image bei Docker Hub nach, solange es nicht
+    lokal unter seinem Namen liegt – bei 3.54.0 scheiterte der Bau daran
+    eine Stunde lang. Liegt es da, braucht der Bau Docker Hub nicht. Gelingt
+    das Holen nicht, geht es trotzdem weiter: Der Bau fragt dann selbst und
+    wiederholt."""
+    for image in images:
+        for plattform in plattformen:
+            for versuch in range(versuche):
+                r = subprocess.run(['docker', 'pull', '-q', '--platform', plattform, image],
+                                   text=True, capture_output=True)
+                if r.returncode == 0:
+                    print(f'› {image} ({plattform}) liegt bereit', flush=True)
+                    break
+                if versuch + 1 < versuche:
+                    time.sleep(pause)
+            else:
+                print(f'› {image} ({plattform}) nicht geholt – der Bau fragt selbst nach', flush=True)
+
+
 def _baue_server(fassung, marke, a, u):
     commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
+    _halte_vor(basis_images(REPO / 'packages/server/Dockerfile'), ['linux/amd64', 'linux/arm64'])
     for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
         # Das Basis-Image fragt BuildKit bei jedem Bau bei Docker Hub nach.
         lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
