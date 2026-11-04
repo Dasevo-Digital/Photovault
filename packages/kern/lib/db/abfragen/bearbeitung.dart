@@ -14,43 +14,63 @@ extension BearbeitungsAbfragen on AppDatabase {
   /// Speichert die Entwicklungs-Einstellungen und das dazu gerenderte Bild
   /// in einer Transaktion, damit `Assets.developedRelativePath` nie auf
   /// eine DevelopSettings-Zeile zeigt, die (durch einen Fehler mittendrin)
-  /// gar nicht existiert. Schiebt zuvor den bisherigen Stand (falls
-  /// vorhanden) in [DevelopHistory] – ein einfacher, linearer Verlauf ohne
+  /// gar nicht existiert. Schiebt den bisherigen Stand (falls vorhanden)
+  /// in [DevelopHistory] – ein einfacher, linearer Verlauf ohne
   /// Sonderfall-Restore-Pfad: lädt der Nutzer später einen Verlaufs-Eintrag
   /// in die Regler zurück und speichert erneut, landet der gerade ersetzte
   /// Stand wieder ganz normal hier in der Historie.
+  ///
+  /// **Nur ein echter Schritt (#288).** Ändert sich an den Einstellungen
+  /// nichts – „Entwickelte Fotos neu rendern“ legt nur das Bild neu ab –,
+  /// kommt nichts in den Verlauf. Bis 3.54 stand dort nach jedem Neu-Rendern
+  /// ein Eintrag „ohne Änderung“, und weil der Verlauf nur zehn behält,
+  /// verdrängten zehn Läufe jeden echten früheren Stand.
+  ///
+  /// **Der ganze Stand.** Klarheit, Vignette und Farbtabelle haben eigene
+  /// Spalten im Verlauf, wurden aber bis 3.54 nicht hineingeschrieben: Ein
+  /// zurückgeholter Stand kam mit Klarheit 0, ohne Vignette und mit voller
+  /// Stärke der Farbtabelle zurück.
   Future<void> saveDevelopResult(
     String assetId, {
     required Insertable<DevelopSettingsData> settings,
     required String developedRelativePath,
   }) => transaction(() async {
-    final previous = await (select(
+    Future<DevelopSettingsData?> stand() => (select(
       developSettings,
     )..where((t) => t.assetId.equals(assetId))).getSingleOrNull();
-    if (previous != null) {
-      await into(developHistory).insert(
-        DevelopHistoryCompanion.insert(
-          assetId: assetId,
-          exposure: previous.exposure,
-          temperature: Value(previous.temperature),
-          tint: Value(previous.tint),
-          contrast: previous.contrast,
-          shadows: previous.shadows,
-          highlights: Value(previous.highlights),
-          sharpness: previous.sharpness,
-          noiseReduction: previous.noiseReduction,
-          lensCorrectionEnabled: previous.lensCorrectionEnabled,
-          toneCurveJson: Value(previous.toneCurveJson),
-          colorMixerJson: Value(previous.colorMixerJson),
-          createdAt: DateTime.now(),
-        ),
-      );
-      await _pruneDevelopHistory(assetId);
-    }
+    final previous = await stand();
     await into(developSettings).insertOnConflictUpdate(settings);
     await (update(assets)..where((t) => t.id.equals(assetId))).write(
       AssetsCompanion(developedRelativePath: Value(developedRelativePath)),
     );
+    if (previous == null) return;
+    final jetzt = await stand();
+    if (jetzt != null &&
+        previous.copyWith(updatedAt: jetzt.updatedAt) == jetzt) {
+      return;
+    }
+    await into(developHistory).insert(
+      DevelopHistoryCompanion.insert(
+        assetId: assetId,
+        exposure: previous.exposure,
+        temperature: Value(previous.temperature),
+        tint: Value(previous.tint),
+        contrast: previous.contrast,
+        shadows: previous.shadows,
+        highlights: Value(previous.highlights),
+        sharpness: previous.sharpness,
+        noiseReduction: previous.noiseReduction,
+        lensCorrectionEnabled: previous.lensCorrectionEnabled,
+        clarity: Value(previous.clarity),
+        vignette: Value(previous.vignette),
+        lutPath: Value(previous.lutPath),
+        lutStrength: Value(previous.lutStrength),
+        toneCurveJson: Value(previous.toneCurveJson),
+        colorMixerJson: Value(previous.colorMixerJson),
+        createdAt: DateTime.now(),
+      ),
+    );
+    await _pruneDevelopHistory(assetId);
   });
 
   /// Begrenzt [DevelopHistory] auf die neuesten [keep] Einträge pro Asset,

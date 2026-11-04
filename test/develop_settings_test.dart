@@ -234,6 +234,86 @@ void main() {
     },
   );
 
+  test(
+    'dieselben Einstellungen noch einmal: kein Verlaufseintrag (#288)',
+    () async {
+      // „Entwickelte Fotos neu rendern“ legt nur das Bild neu ab. Bis 3.54
+      // stand danach jedes Mal ein Eintrag ohne Änderung im Verlauf, und zehn
+      // Läufe verdrängten jeden echten früheren Stand.
+      final assetId = await insertAsset('a');
+      DevelopSettingsCompanion stand(double belichtung, DateTime wann) =>
+          DevelopSettingsCompanion.insert(
+            assetId: assetId,
+            exposure: Value(belichtung),
+            updatedAt: wann,
+          );
+      await db.saveDevelopResult(
+        assetId,
+        settings: stand(0.5, DateTime(2024, 1, 1)),
+        developedRelativePath: 'developed/a-1.jpg',
+      );
+      await db.saveDevelopResult(
+        assetId,
+        settings: stand(1.0, DateTime(2024, 1, 2)),
+        developedRelativePath: 'developed/a-2.jpg',
+      );
+      expect(await db.developHistoryForAsset(assetId), hasLength(1));
+
+      for (var i = 0; i < 12; i++) {
+        final jetzt = (await db.developSettingsForAsset(assetId))!;
+        await db.saveDevelopResult(
+          assetId,
+          settings: jetzt.copyWith(updatedAt: DateTime(2024, 2, 1 + i)),
+          developedRelativePath: 'developed/a-neu-$i.jpg',
+        );
+      }
+      final verlauf = await db.developHistoryForAsset(assetId);
+      expect(verlauf, hasLength(1), reason: 'Neu-Rendern ist kein Schritt');
+      expect(verlauf.single.exposure, 0.5);
+      expect(
+        (await db.assetById(assetId))!.developedRelativePath,
+        'developed/a-neu-11.jpg',
+        reason: 'das Bild selbst wird trotzdem neu eingetragen',
+      );
+    },
+  );
+
+  test(
+    'Klarheit, Vignette und Farbtabelle wandern in den Verlauf mit (#288)',
+    () async {
+      final assetId = await insertAsset('a');
+      await db.saveDevelopResult(
+        assetId,
+        settings: DevelopSettingsCompanion.insert(
+          assetId: assetId,
+          clarity: const Value(0.4),
+          vignette: const Value(-0.3),
+          lutPath: const Value('luts/film.cube'),
+          lutStrength: const Value(0.6),
+          updatedAt: DateTime(2024, 1, 1),
+        ),
+        developedRelativePath: 'developed/a-1.jpg',
+      );
+      await db.saveDevelopResult(
+        assetId,
+        settings: DevelopSettingsCompanion.insert(
+          assetId: assetId,
+          clarity: const Value(0),
+          vignette: const Value(0),
+          lutPath: const Value(null),
+          lutStrength: const Value(1),
+          updatedAt: DateTime(2024, 1, 2),
+        ),
+        developedRelativePath: 'developed/a-2.jpg',
+      );
+      final eintrag = (await db.developHistoryForAsset(assetId)).single;
+      expect(eintrag.clarity, 0.4);
+      expect(eintrag.vignette, -0.3);
+      expect(eintrag.lutPath, 'luts/film.cube');
+      expect(eintrag.lutStrength, 0.6);
+    },
+  );
+
   test('Tonwertkurve und Farbmischer wandern in den Verlauf mit', () async {
     // Ohne diese beiden Spalten in DevelopHistory führte "Zurück zu diesem
     // Stand" zu einem anderen Bild als damals – und zwar lautlos, weil die
