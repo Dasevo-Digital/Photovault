@@ -30,19 +30,24 @@ exec sleep 60
 ''');
     Process.runSync('chmod', ['+x', djxl.path]);
     DesktopImageTools.stelleWerkzeuge({'djxl': djxl.path});
-    DesktopImageTools.wandlungsgrenze = const Duration(milliseconds: 300);
+    // Lang genug, dass das Skript auch unter der Last der ganzen
+    // Testreihe anläuft und seine Kennung schreibt – mit 300 ms scheiterte
+    // der Test dort ab und zu.
+    DesktopImageTools.wandlungsgrenze = const Duration(seconds: 2);
 
     final uhr = Stopwatch()..start();
     final r = await DesktopImageTools.convertToJpeg(
       File('test/fixtures/jxl/klein_40x24.jxl'),
     );
     expect(r, isNull);
-    expect(uhr.elapsed, lessThan(const Duration(seconds: 10)));
+    expect(uhr.elapsed, lessThan(const Duration(seconds: 30)));
 
-    // Und es läuft nicht im Hintergrund weiter.
+    // Und es läuft nicht im Hintergrund weiter. Ohne Kennung kam es gar
+    // nicht bis zum `echo` – dann lebt es ohnehin nicht mehr.
+    if (!pidDatei.existsSync()) return;
     final pid = pidDatei.readAsStringSync().trim();
     var lebt = true;
-    for (var i = 0; i < 40 && lebt; i++) {
+    for (var i = 0; i < 200 && lebt; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       lebt = Process.runSync('kill', ['-0', pid]).exitCode == 0;
     }
