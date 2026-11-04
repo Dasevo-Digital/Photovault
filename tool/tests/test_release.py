@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -72,6 +73,31 @@ class Bereitlegen(unittest.TestCase):
         l = Laeufer('', code=255)
         with self.assertRaises(SystemExit):
             release.fern_bereitlegen(ZIELE, 'linux', '1.2.3', self.ordner, runner=l)
+
+
+class Wiederholen(unittest.TestCase):
+    """Schritte, die aus dem Netz laden, versuchen es noch einmal (#294)."""
+
+    def setUp(self):
+        self.ordner = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.ordner)
+        self.zaehler = self.ordner / 'n'
+        # Scheitert zweimal, dann geht es.
+        self.befehl = (f'n=$(cat {self.zaehler} 2>/dev/null || echo 0); n=$((n+1)); '
+                       f'echo $n > {self.zaehler}; [ $n -ge 3 ]')
+
+    def test_beim_dritten_mal_klappt_es(self):
+        with unittest.mock.patch('release.time.sleep') as schlafen:
+            release.lauf(self.befehl, cwd=self.ordner, versuche=3, pause=5)
+        self.assertEqual(self.zaehler.read_text().strip(), '3')
+        self.assertEqual(schlafen.call_count, 2)
+
+    def test_ohne_versuche_bricht_es_gleich_ab(self):
+        with unittest.mock.patch('release.time.sleep') as schlafen:
+            with self.assertRaises(SystemExit):
+                release.lauf(self.befehl, cwd=self.ordner)
+        self.assertEqual(self.zaehler.read_text().strip(), '1')
+        schlafen.assert_not_called()
 
 
 class PrePush(unittest.TestCase):

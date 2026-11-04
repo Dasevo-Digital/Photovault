@@ -83,11 +83,24 @@ def ziele():
     return json.loads(KONFIG.read_text())
 
 
-def lauf(befehl, *, cwd=REPO, pruefen=True, ausgabe=False, eingabe=None):
-    """Führt [befehl] aus; mit [ausgabe] kommt stdout zurück."""
-    print('›', befehl if isinstance(befehl, str) else ' '.join(shlex.quote(str(b)) for b in befehl), flush=True)
-    r = subprocess.run(befehl, cwd=cwd, shell=isinstance(befehl, str), text=True,
-                       capture_output=ausgabe, input=eingabe)
+def lauf(befehl, *, cwd=REPO, pruefen=True, ausgabe=False, eingabe=None, versuche=1, pause=90):
+    """Führt [befehl] aus; mit [ausgabe] kommt stdout zurück.
+
+    Mit [versuche] wird ein gescheiterter Schritt nach [pause] Sekunden
+    wiederholt – für alles, was beim Bauen aus dem Netz lädt (#294). Bei
+    3.54.0 scheiterten Docker und Xcode eine Stunde lang an Zeitüberschreitungen
+    zu GitHub und Docker Hub, die jeweils nach Minuten wieder vorbei waren.
+    """
+    text = befehl if isinstance(befehl, str) else ' '.join(shlex.quote(str(b)) for b in befehl)
+    for versuch in range(1, versuche + 1):
+        print('›', text, flush=True)
+        r = subprocess.run(befehl, cwd=cwd, shell=isinstance(befehl, str), text=True,
+                           capture_output=ausgabe, input=eingabe)
+        if r.returncode == 0 or not pruefen or versuch == versuche:
+            break
+        print(f'Schritt scheiterte (Code {r.returncode}) – Versuch {versuch + 1} von {versuche} '
+              f'in {pause} s.', flush=True)
+        time.sleep(pause)
     if pruefen and r.returncode != 0:
         if ausgabe:
             sys.stderr.write(r.stdout + r.stderr)
@@ -341,7 +354,8 @@ def bauen(args):
 
 
 def _baue_mac(fassung, u):
-    lauf(['flutter', 'build', 'macos', '--release'])
+    # Xcode lädt Swift-Pakete (ONNX Runtime) beim ersten Bau eines Baums.
+    lauf(['flutter', 'build', 'macos', '--release'], versuche=3)
     app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
     fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
     if fassung_app != fassung:
@@ -362,9 +376,10 @@ def _baue_mac(fassung, u):
 def _baue_server(fassung, marke, a, u):
     commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
     for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
+        # Das Basis-Image fragt BuildKit bei jedem Bau bei Docker Hub nach.
         lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
               '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
-              '--output', f'type=local,dest={a / ziel}', '.'])
+              '--output', f'type=local,dest={a / ziel}', '.'], versuche=4, pause=120)
     for arch in ['amd64', 'arm64']:
         lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
               str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])

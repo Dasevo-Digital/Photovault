@@ -1,0 +1,6 @@
+# Was der Mac beim Arbeiten erzeugt, gehört nicht in den Linux-Bau des
+# Servers (packages/server/Dockerfile): .dart_tool trägt Hook-Ergebnisse
+# für macOS, build/ die App-Bündel. Ohne sie ist der Kontext gut 250 MB
+# kleiner.
+**/.dart_tool
+**/build

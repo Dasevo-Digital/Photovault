@@ -34,18 +34,28 @@ ARG UBUNTU=26.04
 # `dart build cli` statt `dart compile exe`: sqlite3 bringt seine Bibliothek
 # über einen Bau-Hook mit, und den kennt nur `dart build`. Heraus kommt ein
 # Bündel aus bin/photo_vault_server und lib/libsqlite3.so.
+#
+# Pakete und die Bibliothek, die der Hook von GitHub lädt, liegen in
+# Zwischenspeichern von BuildKit (#294): Bei 3.54.0 hing der Bau eine
+# Stunde lang daran, dass github.com nicht erreichbar war – für eine
+# Datei, die sich nur mit der Fassung von sqlite3 ändert. Der Hook prüft
+# die Prüfsumme einer vorhandenen Datei und lädt nur, wenn sie fehlt.
 FROM dart:${DART_FASSUNG} AS bau
+ARG TARGETARCH
 WORKDIR /quelle
 COPY third_party/onnxruntime_api third_party/onnxruntime_api
 COPY packages/kern packages/kern
 COPY packages/server packages/server
 WORKDIR /quelle/packages/server
-RUN dart pub get --enforce-lockfile
+RUN --mount=type=cache,id=pv-pub-${TARGETARCH},target=/root/.pub-cache \
+    dart pub get --enforce-lockfile
 # Die Fassung ins Programm schreiben (siehe lib/src/fassung.dart).
 ARG PV_FASSUNG=Entwicklung
 ARG PV_COMMIT=
 RUN printf "const serverFassung = '%s';\nconst serverCommit = '%s';\n" "$PV_FASSUNG" "$PV_COMMIT" > lib/src/fassung.dart
-RUN dart build cli -o /aus
+RUN --mount=type=cache,id=pv-pub-${TARGETARCH},target=/root/.pub-cache \
+    --mount=type=cache,id=pv-hooks-${TARGETARCH},target=/quelle/packages/server/.dart_tool/hooks_runner/shared \
+    dart build cli -o /aus
 
 # --- ONNX Runtime ------------------------------------------------------------
 # Das offizielle Paket von Microsoft in genau der Fassung, mit der auch die
