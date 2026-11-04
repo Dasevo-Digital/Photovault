@@ -708,4 +708,159 @@ void main() {
     expect(rufe, contains('PUT /api/v1/partner/k-max'));
     expect(find.text('max'), findsOneWidget);
   });
+
+  testWidgets('Gefällt mir und Kommentare im Betrachter (#297)', (
+    tester,
+  ) async {
+    final anfragen = <String>[];
+    var ich = false;
+    final kommentare = <Map<String, Object?>>[
+      {
+        'id': 'k1',
+        'aufnahme': 'a1',
+        'name': 'erika',
+        'text': 'Schöner Strand',
+        'angelegt': '2026-11-01T10:00:00Z',
+        'eigener': false,
+        'loeschbar': false,
+      },
+    ];
+    final client = MockClient((r) async {
+      anfragen.add('${r.method} ${r.url.path}');
+      if (r.url.path == '/api/v1/geteilt/t1/aktivitaet') {
+        return json({
+          'kommentare': kommentare,
+          'gefaellt': {
+            'a1': {
+              'anzahl': ich ? 2 : 1,
+              'ich': ich,
+              'namen': ['erika', if (ich) 'max'],
+            },
+          },
+        });
+      }
+      if (r.url.path == '/api/v1/geteilt/t1/gefaellt/a1') {
+        ich = r.method == 'PUT';
+        return http.Response('', 204);
+      }
+      if (r.url.path == '/api/v1/geteilt/t1/kommentare' && r.method == 'POST') {
+        final k = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        kommentare.add({
+          'id': 'k2',
+          'aufnahme': k['aufnahme'],
+          'name': 'max',
+          'text': k['text'],
+          'angelegt': '2026-11-02T10:00:00Z',
+          'eigener': true,
+          'loeschbar': true,
+        });
+        return json(kommentare.last, 201);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        GeteilterBetrachter(
+          zugang: Teilungszugang(verbindung: v),
+          album: album,
+          aufnahmen: [
+            GeteilteAufnahme(
+              id: 'a1',
+              video: false,
+              name: 'strand.jpg',
+              aufgenommen: DateTime(2026, 8),
+            ),
+          ],
+          start: 0,
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.thumb_up_outlined), findsOneWidget);
+    expect(find.text('1'), findsWidgets, reason: 'einem gefällt es schon');
+
+    await tester.tap(find.byIcon(Icons.thumb_up_outlined));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(anfragen, contains('PUT /api/v1/geteilt/t1/gefaellt/a1'));
+    expect(find.byIcon(Icons.thumb_up), findsOneWidget);
+
+    // Die Kommentare zu diesem Foto, und ein neuer dazu.
+    await tester.tap(find.byTooltip('Kommentare'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Schöner Strand'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Finde ich auch');
+    await tester.tap(find.byTooltip('Senden'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(anfragen, contains('POST /api/v1/geteilt/t1/kommentare'));
+    expect(find.text('Finde ich auch'), findsOneWidget);
+    expect(kommentare.last['aufnahme'], 'a1', reason: 'zu diesem Foto');
+  });
+
+  testWidgets('beim Besitzer nur, wenn das Album geteilt ist (#297)', (
+    tester,
+  ) async {
+    var geteilt = false;
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/alben/urlaub/aktivitaet') {
+        return json({'kommentare': <Object>[], 'gefaellt': <String, Object>{}});
+      }
+      if (r.url.path == '/api/v1/alben/urlaub/teilungen') {
+        return json({
+          'teilungen': [
+            if (geteilt) {'id': 't1', 'konto': 'm', 'name': 'max'},
+          ],
+        });
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    Future<void> zeige() async {
+      await tester.pumpWidget(
+        app(
+          Scaffold(
+            appBar: AppBar(
+              actions: [
+                Kommentarknopf(
+                  key: UniqueKey(),
+                  ort: Aktivitaetsort.besitzer(v, 'urlaub'),
+                  nurWennGeteilt: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await zeige();
+    expect(find.byTooltip('Kommentare'), findsNothing);
+    geteilt = true;
+    await zeige();
+    expect(find.byTooltip('Kommentare'), findsOneWidget);
+  });
 }

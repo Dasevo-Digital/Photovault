@@ -168,4 +168,40 @@ class TeilenTexteEn extends TeilenTexte {
   @override
   String get bibliothekTeilenHinweis =>
       'Accounts listed here see your whole library under “Shared with me” – without locked items and trash, view only.';
+
+  @override
+  String get kommentare => 'Comments';
+
+  @override
+  String get kommentarSchreiben => 'Write a comment …';
+
+  @override
+  String get kommentarSenden => 'Send';
+
+  @override
+  String get kommentarEntfernen => 'Remove comment';
+
+  @override
+  String get kommentarEntfernenFrage => 'Remove this comment?';
+
+  @override
+  String get kommentareKeine => 'No comments yet.';
+
+  @override
+  String get kommentarZuFoto => 'on a photo';
+
+  @override
+  String get kommentarFehler => 'That did not work. Please try again later.';
+
+  @override
+  String get kommentareHinweis =>
+      'Everyone the album is shared with sees the comments.';
+
+  @override
+  String get gefaelltMir => 'Like';
+
+  @override
+  String gefaelltNamen(String namen) {
+    return 'Liked by $namen';
+  }
 }

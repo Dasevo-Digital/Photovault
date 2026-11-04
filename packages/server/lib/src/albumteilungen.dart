@@ -26,6 +26,29 @@ class Albumteilung {
   final DateTime angelegt;
 }
 
+/// Ein Kommentar in einem geteilten Album (#297) – zum Album selbst
+/// ([aufnahme] leer) oder zu einer Aufnahme darin.
+class Albumkommentar {
+  const Albumkommentar({
+    required this.id,
+    required this.aufnahme,
+    required this.von,
+    required this.name,
+    required this.text,
+    required this.angelegt,
+  });
+
+  final String id;
+  final String? aufnahme;
+
+  /// Das Konto, das ihn schrieb – `null`, wenn es das Konto nicht mehr
+  /// gibt. [name] bleibt stehen.
+  final String? von;
+  final String name;
+  final String text;
+  final DateTime angelegt;
+}
+
 /// Wer welches Album mit wem teilt, in server.sqlite.
 ///
 /// **Warum hier und nicht in der Bibliothek.** Eine Bibliothek gehört
@@ -151,11 +174,20 @@ class Albumteilungen {
     return _sdb.db.updatedRows > 0;
   }
 
-  /// Alle Teilungen eines Albums, das es nicht mehr gibt.
-  void entferneAlbum(String besitzer, String album) => _sdb.db.execute(
-    'DELETE FROM albumteilungen WHERE besitzer = ? AND album = ?',
-    [besitzer, album],
-  );
+  /// Alle Teilungen eines Albums, das es nicht mehr gibt – samt seinen
+  /// Kommentaren und „Gefällt mir“ (#297).
+  void entferneAlbum(String besitzer, String album) {
+    for (final tabelle in const [
+      'albumteilungen',
+      'albumkommentare',
+      'albumgefaellt',
+    ]) {
+      _sdb.db.execute('DELETE FROM $tabelle WHERE besitzer = ? AND album = ?', [
+        besitzer,
+        album,
+      ]);
+    }
+  }
 
   // --- Was andere beigetragen haben ----------------------------------------
 
@@ -221,14 +253,22 @@ class Albumteilungen {
 
   /// [besitzer] hat [aufnahmen] endgültig gelöscht (#296): Was andere dazu
   /// beigetragen haben, braucht keinen Hinweis mehr.
+  ///
+  /// Kommentare und „Gefällt mir“ zu ihnen gehen ebenso (#297).
   void vergissBeitraege(String besitzer, List<String> aufnahmen) {
     for (var i = 0; i < aufnahmen.length; i += 500) {
       final teil = aufnahmen.sublist(i, min(i + 500, aufnahmen.length));
-      _sdb.db.execute(
-        'DELETE FROM kontobeitraege WHERE besitzer = ? AND aufnahme IN '
-        '(${List.filled(teil.length, '?').join(', ')})',
-        [besitzer, ...teil],
-      );
+      for (final tabelle in const [
+        'kontobeitraege',
+        'albumkommentare',
+        'albumgefaellt',
+      ]) {
+        _sdb.db.execute(
+          'DELETE FROM $tabelle WHERE besitzer = ? AND aufnahme IN '
+          '(${List.filled(teil.length, '?').join(', ')})',
+          [besitzer, ...teil],
+        );
+      }
     }
   }
 
@@ -256,6 +296,123 @@ class Albumteilungen {
       }
     }
     return ergebnis;
+  }
+
+  // --- Kommentare und „Gefällt mir“ (#297) ----------------------------------
+
+  /// So lang darf ein Kommentar sein (in Zeichen).
+  static const kommentarHoechstens = 2000;
+
+  /// So viele Kommentare nimmt ein Album höchstens an.
+  static const kommentareJeAlbum = 5000;
+
+  Albumkommentar _kommentarAus(Map<String, Object?> z) => Albumkommentar(
+    id: z['id']! as String,
+    aufnahme: z['aufnahme'] as String?,
+    von: z['von'] as String?,
+    name: z['name']! as String,
+    text: z['text']! as String,
+    angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
+  );
+
+  /// [von] (mit seinem [name] zu diesem Zeitpunkt) schreibt [text] zu
+  /// [album] von [besitzer] – mit [aufnahme] zu diesem Foto.
+  Albumkommentar kommentiere({
+    required String besitzer,
+    required String album,
+    String? aufnahme,
+    required String von,
+    required String name,
+    required String text,
+  }) {
+    final rein = text.trim();
+    if (rein.isEmpty || rein.length > kommentarHoechstens) {
+      throw ArgumentError('Kommentar leer oder zu lang');
+    }
+    final n =
+        _sdb.db.select(
+              'SELECT count(*) AS n FROM albumkommentare '
+              'WHERE besitzer = ? AND album = ?',
+              [besitzer, album],
+            ).single['n']
+            as int;
+    if (n >= kommentareJeAlbum) throw StateError('zu viele Kommentare');
+    final id = _kennung();
+    _sdb.db.execute(
+      'INSERT INTO albumkommentare (id, besitzer, album, aufnahme, von, '
+      'name, text, angelegt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        id,
+        besitzer,
+        album,
+        aufnahme,
+        von,
+        name,
+        rein,
+        _uhr().millisecondsSinceEpoch,
+      ],
+    );
+    return kommentare(besitzer, album).firstWhere((k) => k.id == id);
+  }
+
+  /// Die Kommentare in [album], der älteste zuerst.
+  List<Albumkommentar> kommentare(String besitzer, String album) => [
+    for (final z in _sdb.db.select(
+      'SELECT * FROM albumkommentare WHERE besitzer = ? AND album = ? '
+      'ORDER BY angelegt, id',
+      [besitzer, album],
+    ))
+      _kommentarAus(z),
+  ];
+
+  /// Nimmt den Kommentar [id] aus [album] – [konto] den eigenen, der
+  /// Besitzer des Albums jeden. `false`, wenn es ihn nicht gibt oder
+  /// [konto] nicht darf.
+  bool entferneKommentar(
+    String id, {
+    required String besitzer,
+    required String album,
+    required String konto,
+  }) {
+    _sdb.db.execute(
+      'DELETE FROM albumkommentare WHERE id = ? AND besitzer = ? '
+      'AND album = ? AND (von = ? OR besitzer = ?)',
+      [id, besitzer, album, konto, konto],
+    );
+    return _sdb.db.updatedRows > 0;
+  }
+
+  /// [von] findet [aufnahme] in [album] gut – oder nicht mehr ([an]).
+  void gefaellt(
+    String besitzer,
+    String album,
+    String aufnahme,
+    String von, {
+    required bool an,
+  }) => an
+      ? _sdb.db.execute(
+          'INSERT OR IGNORE INTO albumgefaellt (besitzer, album, aufnahme, '
+          'von, angelegt) VALUES (?, ?, ?, ?, ?)',
+          [besitzer, album, aufnahme, von, _uhr().millisecondsSinceEpoch],
+        )
+      : _sdb.db.execute(
+          'DELETE FROM albumgefaellt WHERE besitzer = ? AND album = ? '
+          'AND aufnahme = ? AND von = ?',
+          [besitzer, album, aufnahme, von],
+        );
+
+  /// Wem welche Aufnahme in [album] gefällt: Aufnahme → Konten, in der
+  /// Reihenfolge, in der sie es sagten.
+  Map<String, List<String>> gefaelltIn(String besitzer, String album) {
+    final je = <String, List<String>>{};
+    for (final z in _sdb.db.select(
+      'SELECT aufnahme, von FROM albumgefaellt WHERE besitzer = ? '
+      'AND album = ? ORDER BY angelegt',
+      [besitzer, album],
+    )) {
+      (je[z['aufnahme']! as String] ??= []).add(z['von']! as String);
+    }
+    return je;
   }
 
   // --- Partnerfreigabe (#293) -----------------------------------------------

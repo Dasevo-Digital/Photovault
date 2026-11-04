@@ -487,6 +487,15 @@
   </form>
 </dialog>
 
+<dialog id="kommentar-dialog">
+  <h3 id="kommentar-titel">Kommentare</h3>
+  <p class="leise klein">Alle, mit denen das Album geteilt ist, sehen die Kommentare und schreiben selbst welche.</p>
+  <div id="kommentar-inhalt"></div>
+  <menu>
+    <button type="button" id="kommentar-zu">Schliessen</button>
+  </menu>
+</dialog>
+
 <dialog id="konten-dialog">
   <form method="dialog" id="form-konten">
     <h3 id="konten-titel">Mit Konten teilen</h3>
@@ -656,6 +665,8 @@
   </figure>
   <button id="vor" type="button" aria-label="Nächste">›</button>
   <button id="favorit" class="oben-links" type="button" aria-label="Favorit">♡</button>
+  <button id="gefaellt" class="oben-links" type="button" aria-label="Gefällt mir" aria-pressed="false" hidden>👍&#xFE0E;</button>
+  <button id="kommentare-knopf" class="oben-links" type="button" aria-label="Kommentare" title="Kommentare" hidden>💬&#xFE0E;</button>
   <a id="laden" class="oben-links" download aria-label="Herunterladen" title="Herunterladen">⤓</a>
   <button id="teilen" class="oben-links" type="button" aria-label="Teilen" title="Teilen" hidden>⇪</button>
   <button id="info" class="oben-links" type="button" aria-label="Angaben" aria-pressed="false">i</button>

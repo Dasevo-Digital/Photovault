@@ -1103,9 +1103,10 @@ async function zeigeOrt(land, stadt) {
 async function zeigeAlbum(id) {
   markiereNav('alben');
   zeigeBereich(['raster']);
-  const [d, neu] = await Promise.all([
+  const [d, neu, teilungen] = await Promise.all([
     api(`/api/v1/alben/${encodeURIComponent(id)}`),
     api('/api/v1/kontobeitraege').catch(() => ({ alben: [] })),
+    api(`/api/v1/alben/${encodeURIComponent(id)}/teilungen`).catch(() => ({ teilungen: [] })),
   ]);
   const kopf = el('div', 'reisekopf');
   // Neue Beiträge anderer Konten (#295): einmal sagen, dann gelten sie als
@@ -1125,7 +1126,10 @@ async function zeigeAlbum(id) {
   konten.type = 'button';
   konten.addEventListener('click', () => oeffneKontenDialog(d.album.id, d.album.name));
   kopf.append(diashow, teilen, konten);
-  zeigeListe({ aufnahmen: d.aufnahmen, kopf }, d.album.name);
+  // Kommentare und „Gefällt mir“, sobald jemand mitschaut (#297).
+  const aktivitaet = teilungen.teilungen.length ? neueAktivitaet(`/api/v1/alben/${encodeURIComponent(id)}`, kopf) : null;
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf, aktivitaet }, d.album.name);
+  if (aktivitaet) ladeAktivitaet();
 }
 
 // --- Alben zwischen Konten teilen (#105) ---------------------------------------
@@ -1320,8 +1324,129 @@ async function zeigeGeteiltesAlbum(id) {
     try { await api(`/api/v1/geteilt/${encodeURIComponent(id)}`, { methode: 'DELETE' }); location.hash = '#/alben'; } catch (x) { meldung(x.message); }
   });
   kopf.append(verlassen);
-  zeigeListe({ aufnahmen: d.aufnahmen, kopf, fremd: `/api/v1/geteilt/${encodeURIComponent(id)}/aufnahmen` }, d.album.name);
+  const aktivitaet = neueAktivitaet(`/api/v1/geteilt/${encodeURIComponent(id)}`, kopf);
+  zeigeListe({ aufnahmen: d.aufnahmen, kopf, fremd: `/api/v1/geteilt/${encodeURIComponent(id)}/aufnahmen`, aktivitaet }, d.album.name);
+  ladeAktivitaet();
 }
+
+// --- Kommentare und „Gefällt mir“ in geteilten Alben (#297) -------------------
+//
+// Für den Besitzer (`/api/v1/alben/<Album>`) und für jeden, mit dem das
+// Album geteilt ist (`/api/v1/geteilt/<Teilung>`): Kommentare zum Album
+// im Kopf, zu einem Foto im Betrachter, dazu „Gefällt mir“ je Foto.
+
+function neueAktivitaet(basis, kopf) {
+  const knopf = el('button', 'knopf', t('Kommentare'));
+  knopf.type = 'button';
+  knopf.addEventListener('click', () => oeffneAlbumkommentare());
+  kopf.append(knopf);
+  return { basis, daten: { kommentare: [], gefaellt: {} }, knopf };
+}
+
+async function ladeAktivitaet() {
+  const akt = liste && liste.aktivitaet;
+  if (!akt) return;
+  let d;
+  try { d = await api(`${akt.basis}/aktivitaet`); } catch (_) { return; }
+  if (!liste || liste.aktivitaet !== akt) return;
+  akt.daten = d;
+  const n = d.kommentare.filter((k) => !k.aufnahme).length;
+  akt.knopf.textContent = n ? t('Kommentare ({n})', { n }) : t('Kommentare');
+  if (!$('betrachter').hidden) zeigeAktivitaetKnoepfe();
+}
+
+// Kommentare zu [aufnahme] (ohne: zum Album) mit einem Feld zum Schreiben.
+function kommentarBereich(aufnahme) {
+  const box = el('div', 'kommentare');
+  const zeichne = () => {
+    const akt = liste && liste.aktivitaet;
+    box.replaceChildren();
+    if (!akt) return;
+    const hier = akt.daten.kommentare.filter((k) => (k.aufnahme || null) === (aufnahme || null));
+    const ul = el('ul', 'kommentarliste');
+    for (const k of hier) {
+      const li = el('li', 'kommentar');
+      const zeile = el('div', 'kommentarkopf');
+      zeile.append(el('span', 'name', k.name), el('span', 'leise klein', datumZeit.format(new Date(k.angelegt))));
+      if (k.loeschbar) {
+        const weg = el('button', 'kommentar-weg', '×');
+        weg.type = 'button';
+        weg.title = t('Kommentar entfernen');
+        weg.setAttribute('aria-label', weg.title);
+        weg.addEventListener('click', async () => {
+          if (!confirm(t('Diesen Kommentar entfernen?'))) return;
+          try { await api(`${akt.basis}/kommentare/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); } catch (x) { meldung(x.message); return; }
+          await ladeAktivitaet();
+          zeichne();
+        });
+        zeile.append(weg);
+      }
+      li.append(zeile, el('p', 'text', k.text));
+      ul.append(li);
+    }
+    if (!hier.length) ul.append(el('li', 'leise', t('Noch keine Kommentare.')));
+    const form = el('form', 'kommentarform');
+    const feld = el('textarea');
+    feld.rows = 2;
+    feld.maxLength = 2000;
+    feld.placeholder = t('Kommentar schreiben …');
+    feld.setAttribute('aria-label', t('Kommentar'));
+    const senden = el('button', 'knopf', t('Senden'));
+    senden.type = 'submit';
+    form.append(feld, senden);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const text = feld.value.trim();
+      if (!text) return;
+      senden.disabled = true;
+      try {
+        await api(`${akt.basis}/kommentare`, { methode: 'POST', json: aufnahme ? { text, aufnahme } : { text } });
+      } catch (x) { meldung(x.message); senden.disabled = false; return; }
+      await ladeAktivitaet();
+      zeichne();
+    });
+    box.append(ul, form);
+  };
+  zeichne();
+  return box;
+}
+
+function oeffneAlbumkommentare() {
+  $('kommentar-titel').textContent = $('raster-titel').textContent || t('Kommentare');
+  $('kommentar-inhalt').replaceChildren(kommentarBereich(null));
+  $('kommentar-dialog').showModal();
+}
+
+// Die beiden Knöpfe im Betrachter: „Gefällt mir“ mit Zahl, Kommentare.
+function zeigeAktivitaetKnoepfe() {
+  const akt = liste && liste.aktivitaet;
+  const a = liste && liste.aufnahmen[offen];
+  const an = !!(akt && a);
+  $('gefaellt').hidden = !an;
+  $('kommentare-knopf').hidden = !an;
+  if (!an) return;
+  const g = akt.daten.gefaellt[a.id];
+  $('gefaellt').textContent = `👍\uFE0E${g && g.anzahl ? ` ${g.anzahl}` : ''}`;
+  $('gefaellt').classList.toggle('aktiv', !!(g && g.ich));
+  $('gefaellt').setAttribute('aria-pressed', String(!!(g && g.ich)));
+  $('gefaellt').title = g && g.namen.length ? t('Gefällt {namen}', { namen: g.namen.join(', ') }) : t('Gefällt mir');
+  const n = akt.daten.kommentare.filter((k) => k.aufnahme === a.id).length;
+  $('kommentare-knopf').textContent = `💬\uFE0E${n ? ` ${n}` : ''}`;
+}
+
+$('gefaellt').addEventListener('click', async () => {
+  const akt = liste && liste.aktivitaet;
+  const a = liste && liste.aufnahmen[offen];
+  if (!akt || !a) return;
+  const ich = !!(akt.daten.gefaellt[a.id] && akt.daten.gefaellt[a.id].ich);
+  try {
+    await api(`${akt.basis}/gefaellt/${encodeURIComponent(a.id)}`, { methode: ich ? 'DELETE' : 'PUT' });
+  } catch (x) { meldung(x.message); return; }
+  await ladeAktivitaet();
+});
+
+$('kommentare-knopf').addEventListener('click', () => setzeAngabenOffen(true));
+$('kommentar-zu').addEventListener('click', () => $('kommentar-dialog').close());
 
 // Den eigenen Beitrag wieder aus einem geteilten Album nehmen (#290).
 // Beim Besitzer landet er im Papierkorb, solange er in keinem anderen
@@ -4301,7 +4426,10 @@ $('form-album').addEventListener('submit', async (e) => {
 function neuZeichnen() {
   if (!liste) return;
   const alt = liste;
-  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten, kopf: alt.kopf }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
+  // Mit `fremd` und `aktivitaet`: Ohne sie lud ein geteiltes Album nach
+  // jedem Umsortieren seine Bilder aus der eigenen Bibliothek – und fand
+  // keines.
+  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten, kopf: alt.kopf, fremd: alt.fremd, aktivitaet: alt.aktivitaet }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
 }
 
 // --- Betrachter ------------------------------------------------------------
@@ -4379,6 +4507,7 @@ function oeffne(i) {
   // Spielt dieser Browser kein HEVC, die Fassung des Bewegungsteils schon
   // jetzt anstossen – dann ist sie da, wenn man auf LIVE zeigt.
   if (a.art !== 'video' && a.partner && !kannHevc) fetch(fassungUrl(a.partner, true), { credentials: 'same-origin' }).catch(() => {});
+  zeigeAktivitaetKnoepfe();
   ordneKnoepfe();
   blickZurueck(false);
   $('betrachter').classList.remove('still');
@@ -4719,10 +4848,14 @@ async function zeigeAngaben() {
   const a = liste && liste.aufnahmen[offen];
   const feld = $('angaben-feld');
   if (!a || !angabenOffen) return;
+  // Kommentare zu diesem Foto, wenn das Album geteilt ist (#297).
+  const kommentare = liste.aktivitaet ? [el('h3', null, t('Kommentare')), kommentarBereich(a.id)] : [];
   if (fremdeListe()) {
     // Ein geteiltes Album: nur, was die Liste weiss – die Angaben der
     // Bibliothek gehören dem Besitzer.
     feld.replaceChildren(
+      ...kommentare,
+      el('h3', null, t('Angaben')),
       el('p', '', datumZeit.format(new Date(a.aufgenommen))),
       el('p', 'leise', a.name || ''),
       ...(a.breite && a.hoehe ? [el('p', 'leise', `${a.breite} × ${a.hoehe}`)] : []),
@@ -4734,7 +4867,7 @@ async function zeigeAngaben() {
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (x) { feld.replaceChildren(el('p', 'fehler', x.message)); return; }
   if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
-  const teile = [];
+  const teile = [...kommentare];
   teile.push(el('h3', null, t('Angaben')));
   const datumsreihe = reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? t('Datum geschätzt') : null);
   if (d.datumsvorschlag) datumsreihe.querySelector('.inhalt').append(datumsvorschlagHinweis(a, d.datumsvorschlag));
@@ -4833,7 +4966,7 @@ function schliesse() {
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
   let i = 0;
-  for (const id of ['favorit', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'gesichtsmenue-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
+  for (const id of ['favorit', 'gefaellt', 'kommentare-knopf', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'gesichtsmenue-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
     if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
   }
 }

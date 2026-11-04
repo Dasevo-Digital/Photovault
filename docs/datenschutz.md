@@ -137,7 +137,12 @@ Farbmarke) bleiben bei ihm. Was ein Konto mit dem Recht zum Beitragen
 hochlädt, kommt in die Bibliothek des Besitzers; der Server vermerkt dazu,
 von welchem Konto es stammt. Ebenso kann ein Konto einem anderen seine ganze
 Bibliothek zum Ansehen freigeben; gesperrte Aufnahmen und der Papierkorb
-bleiben davon ausgenommen.
+bleiben davon ausgenommen. In einem geteilten Album können der Besitzer und
+alle, mit denen es geteilt ist, Kommentare schreiben und Aufnahmen mit
+„Gefällt mir“ markieren. Der Server speichert dazu den Text, das Konto, seinen
+Namen und den Zeitpunkt; alle Beteiligten sehen sie. Wer einen Kommentar
+geschrieben hat, und der Besitzer des Albums können ihn entfernen. Mit dem
+Album oder der endgültig gelöschten Aufnahme gehen auch ihre Kommentare.
 
 **Karten in Browser und Handy-App.** Auch mit eigenem Server holen
 Browseroberfläche und Handy-App Kartenkacheln **direkt** bei den Diensten,

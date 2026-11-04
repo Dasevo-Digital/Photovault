@@ -171,4 +171,41 @@ class TeilenTexteDe extends TeilenTexte {
   @override
   String get bibliothekTeilenHinweis =>
       'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.';
+
+  @override
+  String get kommentare => 'Kommentare';
+
+  @override
+  String get kommentarSchreiben => 'Kommentar schreiben …';
+
+  @override
+  String get kommentarSenden => 'Senden';
+
+  @override
+  String get kommentarEntfernen => 'Kommentar entfernen';
+
+  @override
+  String get kommentarEntfernenFrage => 'Diesen Kommentar entfernen?';
+
+  @override
+  String get kommentareKeine => 'Noch keine Kommentare.';
+
+  @override
+  String get kommentarZuFoto => 'zu einem Foto';
+
+  @override
+  String get kommentarFehler =>
+      'Das hat nicht geklappt. Bitte später noch einmal versuchen.';
+
+  @override
+  String get kommentareHinweis =>
+      'Alle, mit denen das Album geteilt ist, sehen die Kommentare.';
+
+  @override
+  String get gefaelltMir => 'Gefällt mir';
+
+  @override
+  String gefaelltNamen(String namen) {
+    return 'Gefällt $namen';
+  }
 }

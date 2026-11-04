@@ -8,7 +8,10 @@ import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 
+import 'aktivitaet.dart';
 import 'l10n/teilen_texte.dart';
+
+export 'aktivitaet.dart';
 
 // Alben zwischen Konten teilen (#105) – wie im Browser (web/app.js,
 // zeigeGeteiltesAlbum und oeffneKontenDialog), für Telefon und Rechner
@@ -654,6 +657,10 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
           ],
         ),
         actions: [
+          // Kommentare zum Album (#297).
+          Kommentarknopf(
+            ort: Aktivitaetsort.geteilt(widget.zugang.verbindung, _album),
+          ),
           if (_album.beitragen && widget.zugang.waehle != null)
             IconButton(
               tooltip: t.geteiltHinzufuegen,
@@ -771,6 +778,45 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
   late final _seiten = PageController(initialPage: widget.start);
   late int _index = widget.start;
 
+  /// Kommentare und „Gefällt mir“ (#297) – nur in einem geteilten Album,
+  /// nicht in der Bibliothek eines Partners.
+  late final Aktivitaetsort? _ort = widget.album.partner == null
+      ? Aktivitaetsort.geteilt(widget.zugang.verbindung, widget.album)
+      : null;
+  Albumaktivitaet? _aktivitaet;
+
+  @override
+  void initState() {
+    super.initState();
+    _ladeAktivitaet();
+  }
+
+  Future<void> _ladeAktivitaet() async {
+    final o = _ort;
+    if (o == null) return;
+    try {
+      final a = await o.lade();
+      if (mounted) setState(() => _aktivitaet = a);
+    } on Object {
+      // Älterer Server oder kein Netz: ohne Kommentare.
+    }
+  }
+
+  Future<void> _gefaellt(GeteilteAufnahme a) async {
+    final o = _ort;
+    final stand = _aktivitaet;
+    if (o == null || stand == null) return;
+    try {
+      await o.gefaellt(a.id, an: !stand.gefallenVon(a.id).ich);
+      await _ladeAktivitaet();
+    } on Object {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(teilenTexte(context).kommentarFehler)),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _seiten.dispose();
@@ -868,6 +914,43 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
           ],
         ),
         actions: [
+          if (_ort case final o? when _aktivitaet != null) ...[
+            Builder(
+              builder: (context) {
+                final g = _aktivitaet!.gefallenVon(a.id);
+                return TextButton.icon(
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  icon: Icon(
+                    g.ich ? Icons.thumb_up : Icons.thumb_up_outlined,
+                    semanticLabel: t.gefaelltMir,
+                  ),
+                  label: Text(g.anzahl > 0 ? '${g.anzahl}' : ''),
+                  onPressed: () => _gefaellt(a),
+                  onLongPress: g.namen.isEmpty
+                      ? null
+                      : () => ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(t.gefaelltNamen(g.namen.join(', '))),
+                          ),
+                        ),
+                );
+              },
+            ),
+            IconButton(
+              tooltip: t.kommentare,
+              icon: Badge(
+                isLabelVisible: _aktivitaet!.zu(a.id).isNotEmpty,
+                label: Text('${_aktivitaet!.zu(a.id).length}'),
+                child: const Icon(Icons.chat_bubble_outline),
+              ),
+              onPressed: () => zeigeKommentare(
+                context,
+                o,
+                aufnahme: a.id,
+                geaendert: _ladeAktivitaet,
+              ),
+            ),
+          ],
           if (a.eigene)
             IconButton(
               tooltip: t.geteiltEntfernen,

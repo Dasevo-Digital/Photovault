@@ -39,5 +39,16 @@
   "partnerVerlassenFrage": "Stop showing the library of {name}? Only {name} can share it again.",
   "bibliothekTeilen": "Share library",
   "bibliothekTeilenTitel": "Share library",
-  "bibliothekTeilenHinweis": "Accounts listed here see your whole library under “Shared with me” – without locked items and trash, view only."
+  "bibliothekTeilenHinweis": "Accounts listed here see your whole library under “Shared with me” – without locked items and trash, view only.",
+  "kommentare": "Comments",
+  "kommentarSchreiben": "Write a comment …",
+  "kommentarSenden": "Send",
+  "kommentarEntfernen": "Remove comment",
+  "kommentarEntfernenFrage": "Remove this comment?",
+  "kommentareKeine": "No comments yet.",
+  "kommentarZuFoto": "on a photo",
+  "kommentarFehler": "That did not work. Please try again later.",
+  "kommentareHinweis": "Everyone the album is shared with sees the comments.",
+  "gefaelltMir": "Like",
+  "gefaelltNamen": "Liked by {namen}"
 }

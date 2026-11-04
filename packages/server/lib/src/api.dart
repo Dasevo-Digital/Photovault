@@ -333,6 +333,21 @@ Handler baueApi({
       teilung.beitraegeGesehen,
     )
     ..get('/api/v1/alben/<id>/teilungen', teilung.vonAlbum)
+    // Kommentare und „Gefällt mir“ (#297), für den Besitzer …
+    ..get('/api/v1/alben/<id>/aktivitaet', teilung.aktivitaetEigen)
+    ..post('/api/v1/alben/<id>/kommentare', teilung.kommentierenEigen)
+    ..delete('/api/v1/alben/<id>/kommentare/<k>', teilung.kommentarWegEigen)
+    ..put('/api/v1/alben/<id>/gefaellt/<aufnahme>', teilung.gefaelltEigen)
+    ..delete('/api/v1/alben/<id>/gefaellt/<aufnahme>', teilung.gefaelltEigen)
+    // … und für den Empfänger.
+    ..get('/api/v1/geteilt/<id>/aktivitaet', teilung.aktivitaetGeteilt)
+    ..post('/api/v1/geteilt/<id>/kommentare', teilung.kommentierenGeteilt)
+    ..delete('/api/v1/geteilt/<id>/kommentare/<k>', teilung.kommentarWegGeteilt)
+    ..put('/api/v1/geteilt/<id>/gefaellt/<aufnahme>', teilung.gefaelltGeteilt)
+    ..delete(
+      '/api/v1/geteilt/<id>/gefaellt/<aufnahme>',
+      teilung.gefaelltGeteilt,
+    )
     ..put('/api/v1/alben/<id>/teilungen/<konto>', teilung.teile)
     ..delete('/api/v1/alben/<id>/teilungen/<konto>', teilung.nichtMehrTeilen)
     ..get('/api/v1/geteilt', teilung.mitMir)
@@ -625,6 +640,8 @@ class _Api {
           'albenTeilen': 1,
           // Endgültig löschen und die Frist des Papierkorbs (#296).
           'papierkorb': 1,
+          // Kommentare und „Gefällt mir“ in geteilten Alben (#297).
+          'kommentare': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

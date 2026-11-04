@@ -210,6 +210,155 @@ class Teilungsapi {
     return Response(204);
   }
 
+  // --- Kommentare und „Gefällt mir“ (#297) ----------------------------------
+  //
+  // Dieselben Wege für beide Seiten: der Besitzer unter
+  // `/api/v1/alben/<Album>/…`, ein Empfänger unter
+  // `/api/v1/geteilt/<Teilung>/…`. Wer das Album sehen darf, darf auch
+  // etwas dazu sagen – auch ein Empfänger, der nur ansehen darf.
+
+  /// Das Album hinter der Anfrage: das eigene [album] oder das der
+  /// Teilung [teilung].
+  Future<_Ort?> _ort(Request r, {String? album, String? teilung}) async {
+    if (album != null) {
+      final daten = await _eigenesAlbum(r, album);
+      if (daten == null) return null;
+      final b = await bibliotheken.fuer(kontoVon(r).id);
+      return _Ort(kontoVon(r).id, daten, b.bibliothek.db);
+    }
+    final g = await _geteilt(r, teilung!);
+    if (g == null) return null;
+    return _Ort(g.teilung.besitzer, g.album, g.bereich.bibliothek.db);
+  }
+
+  Future<Set<String>> _drin(_Ort o) async => {
+    for (final a in await o.db.albumAufnahmen(o.album.id)) a.id,
+  };
+
+  /// `{kommentare: [{id, aufnahme?, name, text, angelegt, eigener,
+  /// loeschbar}], gefaellt: {Aufnahme: {anzahl, ich, namen}}}` – nur zu
+  /// dem, was gerade im Album liegt.
+  Future<Response> _aktivitaet(Request r, _Ort? o) async {
+    if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final ich = kontoVon(r).id;
+    final drin = await _drin(o);
+    return _json({
+      'kommentare': [
+        for (final k in _dienst.kommentare(o.besitzer, o.album.id))
+          if (k.aufnahme == null || drin.contains(k.aufnahme))
+            {
+              'id': k.id,
+              'aufnahme': ?k.aufnahme,
+              'name': k.name,
+              'text': k.text,
+              'angelegt': k.angelegt.toUtc().toIso8601String(),
+              'eigener': k.von == ich,
+              'loeschbar': k.von == ich || o.besitzer == ich,
+            },
+      ],
+      'gefaellt': {
+        for (final MapEntry(key: aufnahme, value: von)
+            in _dienst.gefaelltIn(o.besitzer, o.album.id).entries)
+          if (drin.contains(aufnahme))
+            aufnahme: {
+              'anzahl': von.length,
+              'ich': von.contains(ich),
+              'namen': [for (final k in von) ?konten.konto(k)?.name],
+            },
+      },
+    });
+  }
+
+  /// `{text, aufnahme?}` → 201 mit dem Kommentar.
+  Future<Response> _kommentiere(Request r, _Ort? o) async {
+    if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final Object? k;
+    try {
+      k = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final text = k is Map ? k['text'] : null;
+    final aufnahme = k is Map ? k['aufnahme'] : null;
+    if (text is! String ||
+        text.trim().isEmpty ||
+        text.trim().length > Albumteilungen.kommentarHoechstens) {
+      return _json({'fehler': 'Kommentar leer oder zu lang'}, status: 400);
+    }
+    if (aufnahme != null &&
+        (aufnahme is! String || !(await _drin(o)).contains(aufnahme))) {
+      return _json({'fehler': 'nicht im Album'}, status: 404);
+    }
+    final ich = kontoVon(r);
+    final Albumkommentar neu;
+    try {
+      neu = _dienst.kommentiere(
+        besitzer: o.besitzer,
+        album: o.album.id,
+        aufnahme: aufnahme as String?,
+        von: ich.id,
+        name: ich.name,
+        text: text,
+      );
+    } on StateError catch (e) {
+      return _json({'fehler': e.message}, status: 409);
+    }
+    return _json({
+      'id': neu.id,
+      'aufnahme': ?neu.aufnahme,
+      'name': neu.name,
+      'text': neu.text,
+      'angelegt': neu.angelegt.toUtc().toIso8601String(),
+      'eigener': true,
+      'loeschbar': true,
+    }, status: 201);
+  }
+
+  /// Den eigenen Kommentar entfernen – der Besitzer des Albums jeden.
+  Response _kommentarWeg(Request r, _Ort? o, String kommentar) {
+    if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final weg = _dienst.entferneKommentar(
+      kommentar,
+      besitzer: o.besitzer,
+      album: o.album.id,
+      konto: kontoVon(r).id,
+    );
+    return weg ? Response(204) : _json({'fehler': 'unbekannt'}, status: 404);
+  }
+
+  /// PUT: „Gefällt mir“; DELETE: nicht mehr.
+  Future<Response> _gefaellt(Request r, _Ort? o, String aufnahme) async {
+    if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    if (!(await _drin(o)).contains(aufnahme)) {
+      return _json({'fehler': 'nicht im Album'}, status: 404);
+    }
+    _dienst.gefaellt(
+      o.besitzer,
+      o.album.id,
+      aufnahme,
+      kontoVon(r).id,
+      an: r.method == 'PUT',
+    );
+    return Response(204);
+  }
+
+  Future<Response> aktivitaetEigen(Request r, String album) async =>
+      _aktivitaet(r, await _ort(r, album: album));
+  Future<Response> aktivitaetGeteilt(Request r, String id) async =>
+      _aktivitaet(r, await _ort(r, teilung: id));
+  Future<Response> kommentierenEigen(Request r, String album) async =>
+      _kommentiere(r, await _ort(r, album: album));
+  Future<Response> kommentierenGeteilt(Request r, String id) async =>
+      _kommentiere(r, await _ort(r, teilung: id));
+  Future<Response> kommentarWegEigen(Request r, String album, String k) async =>
+      _kommentarWeg(r, await _ort(r, album: album), k);
+  Future<Response> kommentarWegGeteilt(Request r, String id, String k) async =>
+      _kommentarWeg(r, await _ort(r, teilung: id), k);
+  Future<Response> gefaelltEigen(Request r, String album, String a) async =>
+      _gefaellt(r, await _ort(r, album: album), a);
+  Future<Response> gefaelltGeteilt(Request r, String id, String a) async =>
+      _gefaellt(r, await _ort(r, teilung: id), a);
+
   // --- Für den Empfänger ---------------------------------------------------
 
   /// Die Teilung [id] mit dem Album dahinter, wenn sie für das Konto der
@@ -577,6 +726,15 @@ class Teilungsapi {
     if (a == null || a.isLocked || a.isTrashed) return Response.notFound(null);
     return datei(r, bereich, a, art);
   }
+}
+
+/// Wo ein Kommentar hingehört: das Album von [besitzer].
+class _Ort {
+  _Ort(this.besitzer, this.album, this.db);
+
+  final String besitzer;
+  final AlbumData album;
+  final AppDatabase db;
 }
 
 class _Geteilt {

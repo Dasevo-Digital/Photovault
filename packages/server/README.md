@@ -683,6 +683,8 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /aufnahmen/<id>/voll` | das Foto in voller Auflösung für den Betrachter: JPEG, PNG, WebP und GIF unverändert, HEIC, RAW und DNG als JPEG in Originalgrösse ohne Angaben, einmal gewandelt und neben der Bibliothek aufgehoben (höchstens 2 GB, `vollbild/`); 422, wenn es sich nicht wandeln lässt (Issue #256) |
 | `POST /pruefsummen` | `{pruefsummen: [SHA-256 …]}` → `{vorhanden: {pruefsumme: kennung}}` – was schon da ist (Sicherung der Kamerarolle) |
 | `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
+| `GET /alben/<id>/aktivitaet`, `GET /geteilt/<id>/aktivitaet` | Kommentare und „Gefällt mir“ eines geteilten Albums, für den Besitzer bzw. einen Empfänger: `{kommentare: [{id, aufnahme?, name, text, angelegt, eigener, loeschbar}], gefaellt: {Aufnahme: {anzahl, ich, namen}}}` (Issue #297) |
+| `POST …/kommentare`, `DELETE …/kommentare/<k>`, `PUT\|DELETE …/gefaellt/<aufnahme>` | unter beiden Wegen: `{text, aufnahme?}` schreibt (höchstens 2000 Zeichen); entfernen darf der Schreiber seinen, der Besitzer jeden |
 | `GET /papierkorb`, `POST /papierkorb/leeren` | was im Papierkorb liegt; `{ids}` oder `{alle: true}` löscht endgültig → `{geloescht, stand}` (Issue #296) |
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |

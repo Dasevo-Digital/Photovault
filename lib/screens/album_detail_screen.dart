@@ -275,7 +275,12 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                 ),
               // Mit anderen Konten des Servers teilen (#105, #289) – nur in
               // einer verbundenen Bibliothek; das Album liegt dort.
-              if (widget.library.abgleich?.verbindung case final v?)
+              if (widget.library.abgleich?.verbindung case final v?) ...[
+                // Was die anderen dazu sagen (#297) – sobald es geteilt ist.
+                Kommentarknopf(
+                  ort: Aktivitaetsort.besitzer(v, widget.albumId),
+                  nurWennGeteilt: true,
+                ),
                 IconButton(
                   icon: const Icon(Icons.group_add_outlined),
                   tooltip: teilenTexte(context).kontenTeilen,
@@ -286,6 +291,7 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                     titel: widget.albumName,
                   ),
                 ),
+              ],
             ],
           ),
           body: assets.isEmpty

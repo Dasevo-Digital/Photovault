@@ -337,6 +337,72 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.'**
   String get bibliothekTeilenHinweis;
+
+  /// No description provided for @kommentare.
+  ///
+  /// In de, this message translates to:
+  /// **'Kommentare'**
+  String get kommentare;
+
+  /// No description provided for @kommentarSchreiben.
+  ///
+  /// In de, this message translates to:
+  /// **'Kommentar schreiben …'**
+  String get kommentarSchreiben;
+
+  /// No description provided for @kommentarSenden.
+  ///
+  /// In de, this message translates to:
+  /// **'Senden'**
+  String get kommentarSenden;
+
+  /// No description provided for @kommentarEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Kommentar entfernen'**
+  String get kommentarEntfernen;
+
+  /// No description provided for @kommentarEntfernenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Diesen Kommentar entfernen?'**
+  String get kommentarEntfernenFrage;
+
+  /// No description provided for @kommentareKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Kommentare.'**
+  String get kommentareKeine;
+
+  /// No description provided for @kommentarZuFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'zu einem Foto'**
+  String get kommentarZuFoto;
+
+  /// No description provided for @kommentarFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das hat nicht geklappt. Bitte später noch einmal versuchen.'**
+  String get kommentarFehler;
+
+  /// No description provided for @kommentareHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle, mit denen das Album geteilt ist, sehen die Kommentare.'**
+  String get kommentareHinweis;
+
+  /// No description provided for @gefaelltMir.
+  ///
+  /// In de, this message translates to:
+  /// **'Gefällt mir'**
+  String get gefaelltMir;
+
+  /// No description provided for @gefaelltNamen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gefällt {namen}'**
+  String gefaelltNamen(String namen);
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

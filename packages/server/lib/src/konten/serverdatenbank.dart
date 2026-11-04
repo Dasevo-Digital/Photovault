@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 8;
+  static const schema = 9;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -230,6 +230,36 @@ class Serverdatenbank {
         CREATE INDEX IF NOT EXISTS partnerfreigaben_partner
           ON partnerfreigaben(partner);
         PRAGMA user_version = 8;
+        COMMIT;
+      ''');
+    }
+    if (stand < 9) {
+      // Kommentare und „Gefällt mir“ in geteilten Alben (#297). Wie die
+      // Teilungen neben den Konten, nicht in der Bibliothek des Besitzers:
+      // Sie stammen von anderen Konten. `aufnahme` leer heisst: zum Album.
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS albumkommentare (
+          id TEXT PRIMARY KEY,
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          album TEXT NOT NULL,
+          aufnahme TEXT,
+          von TEXT REFERENCES konten(id) ON DELETE SET NULL,
+          name TEXT NOT NULL,
+          text TEXT NOT NULL,
+          angelegt INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS albumkommentare_album
+          ON albumkommentare(besitzer, album, angelegt);
+        CREATE TABLE IF NOT EXISTS albumgefaellt (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          album TEXT NOT NULL,
+          aufnahme TEXT NOT NULL,
+          von TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          angelegt INTEGER NOT NULL,
+          PRIMARY KEY (besitzer, album, aufnahme, von)
+        );
+        PRAGMA user_version = 9;
         COMMIT;
       ''');
     }

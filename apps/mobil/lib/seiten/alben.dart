@@ -393,7 +393,12 @@ class AlbumSeite extends StatelessWidget {
             titel: album.name,
           ),
         ),
-        if (sitzung.abgleich?.verbindung case final v?)
+        if (sitzung.abgleich?.verbindung case final v?) ...[
+          // Was die anderen dazu sagen (#297) – sobald es geteilt ist.
+          Kommentarknopf(
+            ort: Aktivitaetsort.besitzer(v, album.id),
+            nurWennGeteilt: true,
+          ),
           IconButton(
             tooltip: teilenTexte(context).kontenTeilen,
             icon: const Icon(Icons.group_add_outlined),
@@ -404,6 +409,7 @@ class AlbumSeite extends StatelessWidget {
               titel: album.name,
             ),
           ),
+        ],
         _OfflineAlbumKnopf(sitzung: sitzung, albumId: album.id),
       ],
     ),
