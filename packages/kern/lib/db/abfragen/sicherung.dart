@@ -210,6 +210,26 @@ extension SicherungsAbfragen on AppDatabase {
           ))
           .get();
 
+  /// Prüfsumme und Grösse von allem, was eine Sicherung enthalten soll –
+  /// dieselbe Menge wie [assetsFuerSicherung], ohne die ganzen Zeilen zu
+  /// laden (#303).
+  Future<List<({String pruefsumme, int bytes})>> sicherungsumfang() async {
+    final zeilen =
+        await (selectOnly(assets)
+              ..addColumns([assets.checksum, assets.fileSizeBytes])
+              ..where(
+                assets.isTrashed.equals(false) & assets.isLocked.equals(false),
+              ))
+            .get();
+    return [
+      for (final z in zeilen)
+        (
+          pruefsumme: z.read(assets.checksum)!,
+          bytes: z.read(assets.fileSizeBytes) ?? 0,
+        ),
+    ];
+  }
+
   /// Alles, was eine Sicherung enthalten soll – ohne Rücksicht auf
   /// [Assets.backedUp] und [Assets.autoBackedUp]. Was davon schon da ist,
   /// sieht die Sicherung am Ziel nach (siehe `BackupService.performBackup`,

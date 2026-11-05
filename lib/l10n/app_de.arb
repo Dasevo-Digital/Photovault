@@ -2173,11 +2173,14 @@
   "stufeBildbeschreibung": "Bildbeschreibung",
   "aktualisierungKeineVeroeffentlichungen": "Keine Veröffentlichungen gefunden.",
   "aktualisierungKeineVersion": "Keine Versionsangabe in der Antwort gefunden.",
-  "backupGrenzeErreicht": "Grenze erreicht – {anzahl} Datei(en) folgen beim nächsten Lauf",
+  "backupGrenzeErreicht": "Grenze erreicht – {anzahl} Datei(en) ({menge}) folgen beim nächsten Lauf",
   "@backupGrenzeErreicht": {
     "placeholders": {
       "anzahl": {
         "type": "int"
+      },
+      "menge": {
+        "type": "String"
       }
     }
   },
@@ -6568,5 +6571,22 @@
     }
   },
   "backupLaeuftBereits": "Eine automatische Sicherung läuft bereits.",
-  "entwMaskeNichtAbgelegt": "Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert."
+  "entwMaskeNichtAbgelegt": "Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert.",
+  "backupStandTitel": "Stand im Zielordner",
+  "backupStandGesichert": "Gesichert: {anzahl} von {gesamt} Dateien ({menge} von {mengeGesamt})",
+  "@backupStandGesichert": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "gesamt": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}, "mengeGesamt": {"type": "String"}}},
+  "backupStandOffen": "{anzahl, plural, =1{Ausstehend: 1 Datei ({menge})} other{Ausstehend: {anzahl} Dateien ({menge})}}",
+  "@backupStandOffen": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}}},
+  "backupStandAlles": "Alles gesichert: {anzahl} Dateien ({menge})",
+  "@backupStandAlles": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}}},
+  "backupStandLeer": "Noch nichts zu sichern.",
+  "backupStandZaehlt": "Wird gezählt …",
+  "backupStandNichtErreichbar": "Der Zielordner ist gerade nicht erreichbar.",
+  "backupStandVom": "Stand vom {datum}. Für den aktuellen Stand die Passphrase entsperren.",
+  "@backupStandVom": {"placeholders": {"datum": {"type": "String"}}},
+  "backupStandGesperrt": "Zum Zählen die Passphrase entsperren – die Dateien im Zielordner tragen verschlüsselte Namen.",
+  "backupStandHinweis": "Originale im Zielordner, ohne Gesperrtes und Papierkorb.",
+  "backupStandNeuZaehlen": "Neu zählen",
+  "backupLaufMenge": "{gesichert} von {gesamt} gesichert, {offen} ausstehend",
+  "@backupLaufMenge": {"placeholders": {"gesichert": {"type": "String"}, "gesamt": {"type": "String"}, "offen": {"type": "String"}}}
 }

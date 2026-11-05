@@ -3969,6 +3969,10 @@ class LibraryState extends ChangeNotifier {
   Stream<BackupProgress> runAutoBackupNow(String ziel) =>
       _sicherung.runAutoBackupNow(ziel);
   Future<void> runAutoBackupIfDue() => _sicherung.runAutoBackupIfDue();
+  Future<Sicherungsstand?> zaehleSicherung(String ziel) =>
+      _sicherung.zaehleSicherung(ziel);
+  Future<Sicherungsstand?> letzterSicherungsstand(String ziel) =>
+      _sicherung.letzterSicherungsstand(ziel);
 
   /// Bricht ab, wenn die Bibliothek verbunden ist – für die Oberfläche,
   /// damit sie es vor dem Ordnerdialog sagt (siehe [restoreFromBackup]).

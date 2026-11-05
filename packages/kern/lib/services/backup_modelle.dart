@@ -34,6 +34,14 @@ class BackupProgress {
   /// eigentlich ein Dateiname erwartet wird.
   final int? grenzeOffen;
 
+  /// Wie viele Bytes dieser [grenzeOffen] Dateien noch fehlen.
+  final int? grenzeOffenBytes;
+
+  /// Wie viel von [gesamtBytes] schon im Ziel liegt (#303) – nur beim
+  /// automatischen Backup, sonst null.
+  final int? gesichertBytes;
+  final int? gesamtBytes;
+
   /// Wie viele Dateien in diesem Lauf nicht gesichert werden konnten –
   /// sonst null.
   ///
@@ -62,12 +70,62 @@ class BackupProgress {
     this.total, {
     this.currentFile,
     this.grenzeOffen,
+    this.grenzeOffenBytes,
+    this.gesichertBytes,
+    this.gesamtBytes,
     this.fehlgeschlagen,
     this.uebernommeneZeilen,
     this.ausschnitteNeu = false,
     this.wiederherstellungsprobe,
     this.wiederherstellung,
   });
+}
+
+/// Wie viel des automatischen Backups im Ziel liegt und wie viel noch
+/// aussteht (#303) – gezählt werden Originale, ohne Gesperrtes und
+/// Papierkorb.
+///
+/// Gehört wie [BackupProbeErgebnis] zum Sicherungsziel und enthält ebenso
+/// weder Dateinamen noch Prüfsummen.
+class Sicherungsstand {
+  const Sicherungsstand({
+    required this.am,
+    required this.gesichert,
+    required this.gesichertBytes,
+    required this.offen,
+    required this.offenBytes,
+  });
+
+  factory Sicherungsstand.ausJson(Map<String, dynamic> j) => Sicherungsstand(
+    am: DateTime.parse(j['am'] as String),
+    gesichert: j['gesichert'] as int,
+    gesichertBytes: j['gesichertBytes'] as int,
+    offen: j['offen'] as int,
+    offenBytes: j['offenBytes'] as int,
+  );
+
+  final DateTime am;
+  final int gesichert;
+  final int gesichertBytes;
+  final int offen;
+  final int offenBytes;
+
+  int get gesamt => gesichert + offen;
+  int get gesamtBytes => gesichertBytes + offenBytes;
+  bool get vollstaendig => offen == 0;
+
+  /// 0 bis 1, nach Bytes – eine Datei von 8 GB wiegt mehr als ein Foto.
+  double get anteil => gesamtBytes == 0
+      ? (gesamt == 0 ? 1 : gesichert / gesamt)
+      : gesichertBytes / gesamtBytes;
+
+  Map<String, Object?> alsJson() => {
+    'am': am.toUtc().toIso8601String(),
+    'gesichert': gesichert,
+    'gesichertBytes': gesichertBytes,
+    'offen': offen,
+    'offenBytes': offenBytes,
+  };
 }
 
 /// Der Nachweis gehört zum Sicherungsziel. Er enthält weder Dateinamen

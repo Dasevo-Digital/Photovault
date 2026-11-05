@@ -1377,7 +1377,7 @@
   "stufeBildbeschreibung": "Captions",
   "aktualisierungKeineVeroeffentlichungen": "No releases found.",
   "aktualisierungKeineVersion": "No version number in the response.",
-  "backupGrenzeErreicht": "Limit reached – {anzahl} file(s) follow on the next run",
+  "backupGrenzeErreicht": "Limit reached – {anzahl} file(s) ({menge}) follow on the next run",
   "backupUebernommen": "{anzahl} entries taken from the database snapshot (people, family tree, trips, activities …)",
   "@backupUebernommen": {
     "placeholders": {
@@ -5043,5 +5043,17 @@
     }
   },
   "backupLaeuftBereits": "An automatic backup is already running.",
-  "entwMaskeNichtAbgelegt": "The server did not accept the mask – it is not saved."
+  "entwMaskeNichtAbgelegt": "The server did not accept the mask – it is not saved.",
+  "backupStandTitel": "Status in the destination folder",
+  "backupStandGesichert": "Backed up: {anzahl} of {gesamt} files ({menge} of {mengeGesamt})",
+  "backupStandOffen": "{anzahl, plural, =1{Pending: 1 file ({menge})} other{Pending: {anzahl} files ({menge})}}",
+  "backupStandAlles": "Everything backed up: {anzahl} files ({menge})",
+  "backupStandLeer": "Nothing to back up yet.",
+  "backupStandZaehlt": "Counting …",
+  "backupStandNichtErreichbar": "The destination folder cannot be reached right now.",
+  "backupStandVom": "Status from {datum}. Unlock the passphrase for the current status.",
+  "backupStandGesperrt": "Unlock the passphrase to count – the files in the destination folder have encrypted names.",
+  "backupStandHinweis": "Originals in the destination folder, without locked items and trash.",
+  "backupStandNeuZaehlen": "Count again",
+  "backupLaufMenge": "{gesichert} of {gesamt} backed up, {offen} pending"
 }

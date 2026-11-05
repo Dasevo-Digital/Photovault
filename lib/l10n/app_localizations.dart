@@ -6594,8 +6594,8 @@ abstract class AppTexte {
   /// No description provided for @backupGrenzeErreicht.
   ///
   /// In de, this message translates to:
-  /// **'Grenze erreicht – {anzahl} Datei(en) folgen beim nächsten Lauf'**
-  String backupGrenzeErreicht(int anzahl);
+  /// **'Grenze erreicht – {anzahl} Datei(en) ({menge}) folgen beim nächsten Lauf'**
+  String backupGrenzeErreicht(int anzahl, String menge);
 
   /// No description provided for @backupUebernommen.
   ///
@@ -15646,6 +15646,83 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert.'**
   String get entwMaskeNichtAbgelegt;
+
+  /// No description provided for @backupStandTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Stand im Zielordner'**
+  String get backupStandTitel;
+
+  /// No description provided for @backupStandGesichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesichert: {anzahl} von {gesamt} Dateien ({menge} von {mengeGesamt})'**
+  String backupStandGesichert(
+    int anzahl,
+    int gesamt,
+    String menge,
+    String mengeGesamt,
+  );
+
+  /// No description provided for @backupStandOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Ausstehend: 1 Datei ({menge})} other{Ausstehend: {anzahl} Dateien ({menge})}}'**
+  String backupStandOffen(int anzahl, String menge);
+
+  /// No description provided for @backupStandAlles.
+  ///
+  /// In de, this message translates to:
+  /// **'Alles gesichert: {anzahl} Dateien ({menge})'**
+  String backupStandAlles(int anzahl, String menge);
+
+  /// No description provided for @backupStandLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nichts zu sichern.'**
+  String get backupStandLeer;
+
+  /// No description provided for @backupStandZaehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Wird gezählt …'**
+  String get backupStandZaehlt;
+
+  /// No description provided for @backupStandNichtErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Zielordner ist gerade nicht erreichbar.'**
+  String get backupStandNichtErreichbar;
+
+  /// No description provided for @backupStandVom.
+  ///
+  /// In de, this message translates to:
+  /// **'Stand vom {datum}. Für den aktuellen Stand die Passphrase entsperren.'**
+  String backupStandVom(String datum);
+
+  /// No description provided for @backupStandGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum Zählen die Passphrase entsperren – die Dateien im Zielordner tragen verschlüsselte Namen.'**
+  String get backupStandGesperrt;
+
+  /// No description provided for @backupStandHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Originale im Zielordner, ohne Gesperrtes und Papierkorb.'**
+  String get backupStandHinweis;
+
+  /// No description provided for @backupStandNeuZaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu zählen'**
+  String get backupStandNeuZaehlen;
+
+  /// No description provided for @backupLaufMenge.
+  ///
+  /// In de, this message translates to:
+  /// **'{gesichert} von {gesamt} gesichert, {offen} ausstehend'**
+  String backupLaufMenge(String gesichert, String gesamt, String offen);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

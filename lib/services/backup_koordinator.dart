@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
+import 'package:path/path.dart' as p;
 import 'backup_service.dart';
 import 'sicherungsziel.dart';
 import 'vault_crypto.dart';
@@ -113,6 +114,24 @@ class BackupKoordinator {
     final mb = config?.autoBackupMaxMbPerRun ?? 0;
     return mb > 0 ? mb * 1024 * 1024 : 0;
   }
+
+  /// Was vom automatischen Backup in [destination] liegt (#303) – `null`,
+  /// solange die Passphrase nicht entsperrt ist: Die Dateinamen im Ziel
+  /// folgen aus dem Schlüssel.
+  Future<Sicherungsstand?> zaehleSicherung(String destination) async {
+    final key = _backupKey;
+    if (key == null) return null;
+    return backupService.sicherungsstand(await oeffneZiel(destination), key);
+  }
+
+  /// Was der letzte Lauf dort hinterlassen hat – geht ohne Schlüssel.
+  Future<Sicherungsstand?> letzterSicherungsstand(String destination) async =>
+      backupService.letzterStand(
+        p.join(
+          await oeffneZiel(destination),
+          BackupService.autoBackupFolderName,
+        ),
+      );
 
   /// Löst das automatische Backup unabhängig vom Intervall manuell aus
   /// (z.B. über den "Jetzt synchronisieren"-Button in den Einstellungen).

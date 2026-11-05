@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
 
+import '../berechne.dart';
 import '../db/database.dart';
 import '../protokoll.dart';
 import 'import_service.dart';
@@ -26,6 +27,7 @@ export 'backup_modelle.dart';
 export 'backup_manifest.dart' show RestorePlan, RestoreDatei;
 
 part 'backup_probe.dart';
+part 'backup_stand.dart';
 
 /// Kopiert die Bibliothek manuell in einen vom Nutzer gewählten Ordner.
 /// Das ist bewusst kein automatischer Cloud-Upload: der Nutzer wählt selbst
@@ -469,8 +471,8 @@ class BackupService {
             pending.skip(done),
             (a) async => aktuell(a, await zielVon(a)),
           )
-        : 0;
-    if (offen == 0) abgebrochenWegenLimit = false;
+        : (anzahl: 0, bytes: 0);
+    if (offen.anzahl == 0) abgebrochenWegenLimit = false;
 
     if (backedUpIds.isNotEmpty && markieren) {
       await _db.markBackedUp(backedUpIds);
@@ -516,7 +518,12 @@ class BackupService {
     }
 
     if (abgebrochenWegenLimit) {
-      yield BackupProgress(done, pending.length, grenzeOffen: offen);
+      yield BackupProgress(
+        done,
+        pending.length,
+        grenzeOffen: offen.anzahl,
+        grenzeOffenBytes: offen.bytes,
+      );
     }
     // Nach der Mengenmeldung, damit sie das letzte Wort hat: Ausgelassene
     // Dateien sind die wichtigere Nachricht.
@@ -535,15 +542,19 @@ class BackupService {
   /// blosse Rest der Liste zu viel: Darin stehen auch die, die längst im
   /// Ziel liegen. Fehlt keine mehr, ist der Lauf vollständig – die Probe
   /// und die Generation stehen ihm dann zu.
-  static Future<int> _fehlenImZiel(
+  static Future<({int anzahl, int bytes})> _fehlenImZiel(
     Iterable<AssetData> rest,
     Future<bool> Function(AssetData) istDa,
   ) async {
     var fehlen = 0;
+    var bytes = 0;
     for (final asset in rest) {
-      if (!await istDa(asset)) fehlen++;
+      if (!await istDa(asset)) {
+        fehlen++;
+        bytes += asset.fileSizeBytes;
+      }
     }
-    return fehlen;
+    return (anzahl: fehlen, bytes: bytes);
   }
 
   /// Verschiebt [von] nach [nach].
@@ -832,8 +843,16 @@ class BackupService {
     var abgebrochenWegenLimit = false;
     final autoBackedUpIds = <String>[];
     var fehlgeschlagen = 0;
+    var fehlgeschlageneBytes = 0;
     var neu = 0;
-    yield BackupProgress(0, pending.length);
+    final gesamtBytes = pending.fold<int>(0, (s, a) => s + a.fileSizeBytes);
+    var gesichertBytes = 0;
+    yield BackupProgress(
+      0,
+      pending.length,
+      gesichertBytes: 0,
+      gesamtBytes: gesamtBytes,
+    );
 
     try {
       for (final asset in pending) {
@@ -871,8 +890,10 @@ class BackupService {
           }
           // Wie in [performBackup]: nur, was noch nicht markiert ist.
           if (!asset.autoBackedUp) autoBackedUpIds.add(asset.id);
+          gesichertBytes += asset.fileSizeBytes;
         } catch (e) {
           fehlgeschlagen++;
+          fehlgeschlageneBytes += asset.fileSizeBytes;
           protokoll(
             'Automatische Sicherung von ${asset.originalFileName} '
             'fehlgeschlagen: $e',
@@ -883,6 +904,8 @@ class BackupService {
           done,
           pending.length,
           currentFile: asset.originalFileName,
+          gesichertBytes: gesichertBytes,
+          gesamtBytes: gesamtBytes,
         );
       }
     } finally {
@@ -907,13 +930,26 @@ class BackupService {
             pending.skip(done),
             (a) async => _liegtImZiel(await zielVon(a)),
           )
-        : 0;
-    if (offen == 0) abgebrochenWegenLimit = false;
+        : (anzahl: 0, bytes: 0);
+    if (offen.anzahl == 0) abgebrochenWegenLimit = false;
 
     if (autoBackedUpIds.isNotEmpty && markieren) {
       await _db.markAutoBackedUp(autoBackedUpIds);
     }
     letzterLaufNeu = neu;
+    // Für die Anzeige, solange die Passphrase nicht entsperrt ist (#303).
+    final offenAnzahl = offen.anzahl + fehlgeschlagen;
+    final offenBytes = offen.bytes + fehlgeschlageneBytes;
+    await merkeStand(
+      backupRoot.path,
+      Sicherungsstand(
+        am: DateTime.now(),
+        gesichert: pending.length - offenAnzahl,
+        gesichertBytes: gesamtBytes - offenBytes,
+        offen: offenAnzahl,
+        offenBytes: offenBytes,
+      ),
+    );
     // Verschlüsselt, wie bei der Sicherung von Hand: Ohne diese Liste fand
     // die Wiederherstellung die namenlosen Dateien nicht – eine
     // automatische Sicherung brachte Namen und Stammbaum zurück, aber kein
@@ -938,7 +974,12 @@ class BackupService {
     }
 
     if (abgebrochenWegenLimit) {
-      yield BackupProgress(done, pending.length, grenzeOffen: offen);
+      yield BackupProgress(
+        done,
+        pending.length,
+        grenzeOffen: offen.anzahl,
+        grenzeOffenBytes: offen.bytes,
+      );
     }
     if (fehlgeschlagen > 0) {
       yield BackupProgress(

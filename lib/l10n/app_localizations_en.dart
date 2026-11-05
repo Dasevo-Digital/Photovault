@@ -3916,8 +3916,8 @@ class AppTexteEn extends AppTexte {
   String get aktualisierungKeineVersion => 'No version number in the response.';
 
   @override
-  String backupGrenzeErreicht(int anzahl) {
-    return 'Limit reached – $anzahl file(s) follow on the next run';
+  String backupGrenzeErreicht(int anzahl, String menge) {
+    return 'Limit reached – $anzahl file(s) ($menge) follow on the next run';
   }
 
   @override
@@ -10221,4 +10221,79 @@ class AppTexteEn extends AppTexte {
   @override
   String get entwMaskeNichtAbgelegt =>
       'The server did not accept the mask – it is not saved.';
+
+  @override
+  String get backupStandTitel => 'Status in the destination folder';
+
+  @override
+  String backupStandGesichert(
+    int anzahl,
+    int gesamt,
+    String menge,
+    String mengeGesamt,
+  ) {
+    final intl.NumberFormat anzahlNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String anzahlString = anzahlNumberFormat.format(anzahl);
+    final intl.NumberFormat gesamtNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String gesamtString = gesamtNumberFormat.format(gesamt);
+
+    return 'Backed up: $anzahlString of $gesamtString files ($menge of $mengeGesamt)';
+  }
+
+  @override
+  String backupStandOffen(int anzahl, String menge) {
+    final intl.NumberFormat anzahlNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String anzahlString = anzahlNumberFormat.format(anzahl);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Pending: $anzahlString files ($menge)',
+      one: 'Pending: 1 file ($menge)',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String backupStandAlles(int anzahl, String menge) {
+    final intl.NumberFormat anzahlNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String anzahlString = anzahlNumberFormat.format(anzahl);
+
+    return 'Everything backed up: $anzahlString files ($menge)';
+  }
+
+  @override
+  String get backupStandLeer => 'Nothing to back up yet.';
+
+  @override
+  String get backupStandZaehlt => 'Counting …';
+
+  @override
+  String get backupStandNichtErreichbar =>
+      'The destination folder cannot be reached right now.';
+
+  @override
+  String backupStandVom(String datum) {
+    return 'Status from $datum. Unlock the passphrase for the current status.';
+  }
+
+  @override
+  String get backupStandGesperrt =>
+      'Unlock the passphrase to count – the files in the destination folder have encrypted names.';
+
+  @override
+  String get backupStandHinweis =>
+      'Originals in the destination folder, without locked items and trash.';
+
+  @override
+  String get backupStandNeuZaehlen => 'Count again';
+
+  @override
+  String backupLaufMenge(String gesichert, String gesamt, String offen) {
+    return '$gesichert of $gesamt backed up, $offen pending';
+  }
 }

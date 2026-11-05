@@ -1164,6 +1164,16 @@ verfügbar. Bei begrenzten oder unvollständigen Sicherungsläufen entsteht
 kein neuer erfolgreicher Nachweis. Auch der Server führt diese Probe aus
 und meldet Fehler an die verbundenen Apps.
 
+**Stand im Zielordner.** Unter **Einstellungen → Automatisches Backup** steht,
+wie viele Dateien und wie viel Speicher schon gesichert sind und was noch
+aussteht – nützlich vor allem mit einer Menge je Lauf. Gezählt wird im Ziel
+selbst, nicht an der Markierung der Aufnahmen: Nach einem Zielwechsel wäre die
+falsch, und ein abgestecktes Laufwerk gilt als nicht erreichbar statt als
+leer. Dafür braucht es die entsperrte Passphrase, weil die Dateien dort
+verschlüsselte Namen tragen. Gesperrt zeigt die Anzeige, was der letzte Lauf
+gesehen hat, mit Datum; dieser Stand liegt neben dem Probennachweis und nennt
+nur Anzahlen und Mengen, keine Dateinamen.
+
 Der Datei-, Ordner- und Kameraimport am Rechner zeigt vor der Übernahme eine
 **Importvorschau**: vorhandene und ausgewählte Dubletten, nicht unterstützte
 oder unlesbare Dateien, geschätzte Aufnahmedaten, Platzbedarf der Originale

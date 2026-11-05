@@ -10,6 +10,7 @@ import 'package:kern/db/database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/backup_service.dart';
 import '../../services/backup_verification_service.dart';
+import '../../services/groessentext.dart';
 import '../../services/meldungsdienst.dart';
 import '../../services/platform/folder_access.dart';
 import '../../services/sicherungsziel.dart';
@@ -20,6 +21,7 @@ import '../../widgets/progress_dialog.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
 import 'backup_probe_status.dart';
+import 'backup_stand.dart';
 
 /// Die Passphrase, mit der Sicherungen verschlüsselt werden.
 class SicherungsschluesselGruppe extends StatelessWidget {
@@ -383,6 +385,22 @@ class AutomatischeSicherungGruppe extends StatelessWidget {
                         : datumZeitText(context, lastRun),
                   ),
                 ),
+                // Wie viel gesichert ist und wie viel aussteht (#303).
+                if (destination != null)
+                  BackupStandAnzeige(
+                    ziel: destination,
+                    letzterLauf: lastRun,
+                    entsperrt: keyReady,
+                    zaehle: stand.library.zaehleSicherung,
+                    gemerkt: stand.library.letzterSicherungsstand,
+                    entsperren: () async {
+                      final ok = await ensureBackupKeyAvailable(
+                        stand.kontext,
+                        stand.library,
+                      );
+                      if (ok && stand.aktiv) stand.reloadBackupSettings();
+                    },
+                  ),
                 if (destination != null)
                   BackupProbeStatus(
                     dienst: stand.library.backupService,
@@ -473,9 +491,19 @@ String _backupZeile(AppTexte t, BackupProgress p) {
   if (p.fehlgeschlagen != null) {
     return t.backupNichtGesichert(p.fehlgeschlagen!);
   }
-  if (p.grenzeOffen != null) return t.backupGrenzeErreicht(p.grenzeOffen!);
-  return '${p.done} / ${p.total}'
+  if (p.grenzeOffen != null) {
+    return t.backupGrenzeErreicht(
+      p.grenzeOffen!,
+      groessentext(p.grenzeOffenBytes ?? 0),
+    );
+  }
+  final zeile =
+      '${p.done} / ${p.total}'
       '${p.currentFile != null ? ' — ${p.currentFile}' : ''}';
+  final gesichert = p.gesichertBytes, gesamt = p.gesamtBytes;
+  if (gesichert == null || gesamt == null) return zeile;
+  // Wie viel schon im Ziel liegt und wie viel aussteht (#303).
+  return '$zeile\n${t.backupLaufMenge(groessentext(gesichert), groessentext(gesamt), groessentext(gesamt - gesichert))}';
 }
 
 String _backupPruefZeile(AppTexte t, BackupPrueffortschritt p) {
