@@ -614,6 +614,12 @@ echter Hardware.
 - **Histogramm** im Entwickeln-Screen, umschaltbar zwischen **Helligkeit**
   (Luma-gewichtet) und **RGB** (die drei Kanäle additiv überlagert) –
   aktualisiert sich live zu den Reglern
+- **Collagen** – zwei bis neun Fotos in einer Vorlage (Raster,
+  nebeneinander, untereinander, gross links oder oben), als Quadrat, 3:2,
+  2:3 oder 9:16, mit Abstand, runden Ecken und Hintergrundfarbe. Die
+  Collage ist ein neues Foto und steht in der Zeitleiste bei ihren Fotos
+  (Aufnahmezeit des jüngsten). Am Rechner ohne Server rechnet der Rechner
+  selbst, sonst – und im Browser und am Handy – der Server
 - **Bildeditor** – Zuschneiden, Drehen, Spiegeln, Geradeziehen,
   Perspektive und Retusche, immer auf dem Original in voller Auflösung
   (HEIC und RAW wandelt das System dafür in voller Grösse). Gespeichert

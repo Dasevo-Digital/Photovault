@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/collage.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:uuid/uuid.dart';
 
 import '../bilder.dart';
@@ -200,6 +202,36 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     aufheben();
   }
 
+  /// Die Collage-Seite (#301), die ältesten Fotos zuerst.
+  Future<void> _collage(BuildContext context) async {
+    final v = sitzung.abgleich?.verbindung;
+    if (v == null) return;
+    final bote = ScaffoldMessenger.of(context);
+    final text = teilenTexte(context).collageGespeichert;
+    final reihe = [...widget.zeilen]
+      ..sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
+    final gespeichert = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => Collageseite(
+          ids: [for (final z in reihe) z.id],
+          zeichne: collageAmServer(v),
+          speichere: (wahl) async {
+            await collageAmServerSpeichern(v, wahl);
+            await sitzung.gleicheAb();
+          },
+          miniatur: (id) => FernBild(
+            v,
+            'api/v1/aufnahmen/${Uri.encodeComponent(id)}/miniatur',
+          ),
+        ),
+      ),
+    );
+    if (gespeichert ?? false) {
+      aufheben();
+      bote.showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
+
   Future<void> _endgueltig(BuildContext context) async {
     final ids = _ids;
     if (await frageEndgueltig(context, ids.length) != true) return;
@@ -301,6 +333,17 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                           aufheben();
                         }
                       },
+                    ),
+                  // Zwei bis neun Fotos als ein neues (#301) – gezeichnet
+                  // am Server.
+                  if (zeilen.length >= collageMindestens &&
+                      zeilen.length <= collageHoechstens &&
+                      zeilen.every((z) => z.type == 'IMAGE') &&
+                      sitzung.abgleich?.verbindung != null)
+                    _Aktion(
+                      icon: Icons.dashboard_customize_outlined,
+                      text: teilenTexte(context).collage,
+                      onPressed: () => _collage(context),
                     ),
                   _Aktion(
                     icon: Icons.slideshow_outlined,

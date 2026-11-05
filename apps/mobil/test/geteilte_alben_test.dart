@@ -1144,4 +1144,87 @@ void main() {
     expect(rufe, contains('POST /api/v1/nachlass/k-max/ablehnen'));
     expect(find.textContaining('max verlangt Zugang'), findsNothing);
   });
+  testWidgets('Collage: Vorlage und Reihenfolge, Vorschau vom Server (#301)', (
+    tester,
+  ) async {
+    final gesendet = <Map<String, Object?>>[];
+    final bild = img.Image(width: 30, height: 30);
+    img.fill(bild, color: img.ColorRgb8(200, 30, 30));
+    final jpeg = img.encodeJpg(bild);
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/collage') {
+        final k = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        gesendet.add(k);
+        return k['vorschau'] == true
+            ? http.Response.bytes(
+                jpeg,
+                200,
+                headers: {'content-type': 'image/jpeg'},
+              )
+            : json({'aufnahme': 'neu', 'ausgang': 'imported'}, 201);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    var gespeichert = false;
+    await tester.binding.setSurfaceSize(const Size(1000, 1600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () async {
+                gespeichert =
+                    await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => Collageseite(
+                          ids: const ['a', 'b', 'c'],
+                          zeichne: collageAmServer(v),
+                          speichere: (w) => collageAmServerSpeichern(v, w),
+                          miniatur: (_) => null,
+                        ),
+                      ),
+                    ) ??
+                    false;
+              },
+              child: const Text('collage'),
+            ),
+          ),
+        ),
+      ),
+    );
+    Future<void> warte() async {
+      // Erst die Verzögerung der Seite, dann die Antwort des Servers.
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.text('collage'));
+    await warte();
+    expect(gesendet.last['vorschau'], true);
+    expect(gesendet.last['vorlage'], 'raster');
+    expect(gesendet.last['ids'], ['a', 'b', 'c']);
+
+    // Gross links, das zweite Foto nach vorn, schwarz.
+    await tester.tap(find.byTooltip('Gross links'));
+    await warte();
+    expect(gesendet.last['vorlage'], 'gross_links');
+    await tester.tap(find.byKey(const ValueKey('collage-b')));
+    await warte();
+    expect(gesendet.last['ids'], ['b', 'a', 'c']);
+
+    await tester.tap(find.text('Speichern'));
+    await warte();
+    expect(gesendet.last.containsKey('vorschau'), false);
+    expect(gesendet.last['vorlage'], 'gross_links');
+    expect(gespeichert, true);
+  });
 }

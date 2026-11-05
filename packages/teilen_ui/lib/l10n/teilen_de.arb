@@ -303,5 +303,24 @@
         "type": "String"
       }
     }
-  }
+  },
+  "collage": "Collage",
+  "collageVorlage": "Vorlage",
+  "collageFormat": "Format",
+  "collageAbstand": "Abstand",
+  "collageEcken": "Ecken",
+  "collageHintergrund": "Hintergrund",
+  "collageReihenfolge": "Reihenfolge",
+  "collageReihenfolgeHinweis": "Ein Tipp setzt ein Foto an den Anfang – bei „Gross links“ und „Gross oben“ wird es das grosse.",
+  "collageRaster": "Raster",
+  "collageReihe": "Nebeneinander",
+  "collageStapel": "Untereinander",
+  "collageGrossLinks": "Gross links",
+  "collageGrossOben": "Gross oben",
+  "collageQuadrat": "Quadrat",
+  "collageQuer": "3:2",
+  "collageHoch": "2:3",
+  "collageStory": "9:16",
+  "collageGespeichert": "Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.",
+  "collageZweiBisNeun": "Eine Collage braucht 2 bis 9 Fotos."
 }

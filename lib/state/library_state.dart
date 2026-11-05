@@ -2010,6 +2010,31 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
+  /// Legt [jpeg] als neues Foto namens [name] in die Bibliothek – etwa eine
+  /// Collage (#301). Nur ohne Server; verbunden legt der Server es an.
+  /// Gibt die Kennung, oder `null`, wenn genau dieses Bild schon da ist
+  /// oder das Einlesen scheitert.
+  Future<String?> sichereNeuesFoto(Uint8List jpeg, String name) async {
+    _nurOhneServer();
+    final ordner = await Directory.systemTemp.createTemp('pv_neu_');
+    try {
+      final ziel = File(p.join(ordner.path, name));
+      await ziel.writeAsBytes(jpeg, flush: true);
+      final ergebnis = await importService.importFile(ziel.path);
+      final id = ergebnis.assetId;
+      if (ergebnis.outcome != ImportOutcome.imported || id == null) {
+        return null;
+      }
+      await _postProcessNewAsset(id);
+      if (await db.autoAnalyzeAfterImportEnabled()) {
+        unawaited(starteHintergrundanalyse());
+      }
+      return id;
+    } finally {
+      await ordner.delete(recursive: true);
+    }
+  }
+
   /// Siehe [Nachbearbeitung.neueAufnahme].
   Future<void> _postProcessNewAsset(String assetId) =>
       nachbearbeitung.neueAufnahme(assetId);

@@ -898,3 +898,21 @@ body.landschaft-offen { overflow: hidden; }
 .nachlasszeile { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: color-mix(in srgb, #d9534f 18%, var(--grund)); border: 1px solid color-mix(in srgb, #d9534f 45%, var(--rand)); margin-bottom: 6px; }
 .nachlasszeile span { flex: 1; }
 .nachlasszeile button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+
+/* Collagen (#301) */
+#collage-dialog { max-width: min(980px, 96vw); }
+.collageflaeche { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(240px, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 720px) { .collageflaeche { grid-template-columns: 1fr; } }
+#collage-bild { width: 100%; max-height: 62vh; object-fit: contain; background: var(--rand); border-radius: 8px; transition: opacity .15s; }
+#collage-bild.laedt { opacity: .55; }
+.collagewahl { display: flex; flex-direction: column; gap: 12px; }
+.collagewahl label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.collagevorlagen { display: flex; flex-wrap: wrap; gap: 6px; }
+.collagevorlagen .gewaehlt { outline: 2px solid var(--akzent); }
+.collagefarben { display: flex; gap: 8px; margin-top: 6px; }
+.farbknopf { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--rand); padding: 0; cursor: pointer; }
+.farbknopf.gewaehlt { outline: 2px solid var(--akzent); outline-offset: 2px; }
+.collagereihe { display: flex; gap: 6px; overflow-x: auto; margin-top: 6px; }
+.collagekachel { flex: none; width: 52px; height: 52px; padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: none; }
+.collagekachel.vorn { border-color: var(--akzent); }
+.collagekachel img { width: 100%; height: 100%; object-fit: cover; display: block; }

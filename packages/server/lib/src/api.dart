@@ -19,7 +19,9 @@ import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/duplikatsuche.dart';
 import 'package:kern/services/embedding_similarity.dart';
 import 'package:kern/services/geometrie.dart' as g;
-import 'package:kern/services/import_service.dart' show Datumsbefund;
+import 'package:kern/services/collage.dart';
+import 'package:kern/services/import_service.dart'
+    show Datumsbefund, ImportOutcome;
 import 'package:kern/services/jpeg_angaben.dart';
 import 'package:kern/services/gesichtsuebersicht.dart' as gesichtsuebersicht;
 import 'package:kern/services/kartengruppen.dart';
@@ -35,6 +37,7 @@ import 'package:kern/services/sortierung.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/stammbaumansicht.dart';
 import 'package:kern/services/zierbaum.dart';
+import 'package:kern/protokoll.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -318,6 +321,8 @@ Handler baueApi({
     ..get('/api/v1/kalender/<jahr>/<monat>', rueckblick.monat)
     ..get('/api/v1/papierkorb', api.papierkorb)
     ..post('/api/v1/papierkorb/leeren', api.papierkorbLeeren)
+    // Collagen (#301) – die fertige ist ein neues Foto.
+    ..post('/api/v1/collage', wennPlatz(api.collage))
     ..get('/api/v1/alben', api.alben)
     ..get('/api/v1/alben/<id>', api.album)
     // Alben zwischen Konten teilen (#105).
@@ -675,6 +680,8 @@ class _Api {
           'partnerfreigabe': 2,
           // Nachlasskontakt (#300).
           'nachlass': 1,
+          // Collagen (#301).
+          'collage': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
@@ -2176,6 +2183,118 @@ class _Api {
       return _json({'fehler': 'nicht umwandelbar'}, status: 422);
     }
     return dateiAntwort(anfrage, fertig);
+  }
+
+  /// Eine Collage aus 2 bis 9 eigenen Fotos (#301): `{ids, vorlage?,
+  /// format?, abstand?, ecken?, hintergrund?: "#rrggbb", vorschau?}`.
+  /// Mit `vorschau` kommt ein kleines JPEG zurück, sonst 201 `{aufnahme,
+  /// ausgang}` – die Collage liegt dann in der Bibliothek, aufgenommen zur
+  /// Zeit des jüngsten Fotos darin.
+  Future<Response> collage(Request anfrage) async {
+    final bereich = await _bereich(anfrage);
+    final b = bereich.bibliothek;
+    final Object? k;
+    try {
+      k = jsonDecode(await anfrage.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    if (k is! Map) return _json({'fehler': 'kein JSON'}, status: 400);
+    final ids = k['ids'];
+    if (ids is! List ||
+        ids.length < collageMindestens ||
+        ids.length > collageHoechstens ||
+        ids.any((x) => x is! String)) {
+      return _json({
+        'fehler': '$collageMindestens bis $collageHoechstens Fotos',
+      }, status: 400);
+    }
+    final aufnahmen = <AssetData>[];
+    for (final id in ids.cast<String>()) {
+      final a = await b.db.assetById(id);
+      if (a == null || a.isTrashed || a.isLocked || a.type != 'IMAGE') {
+        return _json({'fehler': 'Foto unbekannt'}, status: 404);
+      }
+      aufnahmen.add(a);
+    }
+    final vorschau = k['vorschau'] == true;
+    final format =
+        Collageformat.namens(k['format'] as String?) ?? Collageformat.quadrat;
+    // Die Vorschau in einem Drittel der Grösse – schnell genug zum Spielen.
+    final teiler = vorschau ? 4 : 1;
+    final auftrag0 = Collageauftrag(
+      bilder: const [],
+      vorlage: collagevorlage(aufnahmen.length, k['vorlage'] as String?),
+      breite: format.breite ~/ teiler,
+      hoehe: format.hoehe ~/ teiler,
+      abstand: (k['abstand'] as num?)?.toDouble() ?? 0.01,
+      ecken: (k['ecken'] as num?)?.toDouble() ?? 0,
+      hintergrund: collagefarbe(k['hintergrund'] as String?),
+      qualitaet: vorschau ? 80 : 92,
+    );
+    final kante = auftrag0.kante;
+    final bilder = <Uint8List>[];
+    for (final a in aufnahmen) {
+      final datei = b.pfade.absolute(displayRelativePath(a));
+      if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
+        return _json({'fehler': 'Datei fehlt'}, status: 404);
+      }
+      final bytes = await _wandle(b, a, datei, maxDimension: kante);
+      if (bytes == null) {
+        return _json({'fehler': 'nicht umwandelbar'}, status: 422);
+      }
+      bilder.add(bytes);
+    }
+    final juengste = aufnahmen
+        .map((a) => a.fileCreatedAt)
+        .reduce((x, y) => x.isAfter(y) ? x : y);
+    final jpeg = await zeichneCollage(
+      Collageauftrag(
+        bilder: bilder,
+        vorlage: auftrag0.vorlage,
+        breite: auftrag0.breite,
+        hoehe: auftrag0.hoehe,
+        abstand: auftrag0.abstand,
+        ecken: auftrag0.ecken,
+        hintergrund: auftrag0.hintergrund,
+        qualitaet: auftrag0.qualitaet,
+        zeit: juengste,
+      ),
+    );
+    if (vorschau) {
+      return Response.ok(
+        jpeg,
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': '${jpeg.length}',
+          'cache-control': 'private, no-store',
+        },
+      );
+    }
+    final ordner = await Directory.systemTemp.createTemp('pv_collage_');
+    try {
+      final datei = File(p.join(ordner.path, collageDateiname(juengste)));
+      await datei.writeAsBytes(jpeg, flush: true);
+      final ergebnis = await b.importe.importFile(datei.path);
+      final id = ergebnis.assetId;
+      if (ergebnis.outcome != ImportOutcome.imported || id == null) {
+        return _json({
+          'fehler': 'Import gescheitert: ${ergebnis.error}',
+        }, status: 500);
+      }
+      try {
+        await b.nachbearbeitung.neueAufnahme(id);
+      } catch (f) {
+        protokoll('Nachbearbeitung einer Collage gescheitert: $f');
+      }
+      bereich.auswertung.anstossen();
+      return _json({
+        'aufnahme': id,
+        'ausgang': ergebnis.outcome.name,
+      }, status: 201);
+    } finally {
+      await ordner.delete(recursive: true);
+    }
   }
 
   /// Wandelt [datei] von [a] in ein JPEG. Das Werkzeug richtet sich nach

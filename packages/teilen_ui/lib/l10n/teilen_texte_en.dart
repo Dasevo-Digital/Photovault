@@ -375,4 +375,63 @@ class TeilenTexteEn extends TeilenTexte {
   String nachlassAnfrage(String name, String tag) {
     return '$name requests access to your library (legacy contact). Unless you object, $name gets it on $tag.';
   }
+
+  @override
+  String get collage => 'Collage';
+
+  @override
+  String get collageVorlage => 'Layout';
+
+  @override
+  String get collageFormat => 'Format';
+
+  @override
+  String get collageAbstand => 'Spacing';
+
+  @override
+  String get collageEcken => 'Corners';
+
+  @override
+  String get collageHintergrund => 'Background';
+
+  @override
+  String get collageReihenfolge => 'Order';
+
+  @override
+  String get collageReihenfolgeHinweis =>
+      'A tap moves a photo to the front – with “Large left” and “Large on top” it becomes the large one.';
+
+  @override
+  String get collageRaster => 'Grid';
+
+  @override
+  String get collageReihe => 'Side by side';
+
+  @override
+  String get collageStapel => 'Stacked';
+
+  @override
+  String get collageGrossLinks => 'Large left';
+
+  @override
+  String get collageGrossOben => 'Large on top';
+
+  @override
+  String get collageQuadrat => 'Square';
+
+  @override
+  String get collageQuer => '3:2';
+
+  @override
+  String get collageHoch => '2:3';
+
+  @override
+  String get collageStory => '9:16';
+
+  @override
+  String get collageGespeichert =>
+      'Collage saved – it is in the timeline next to its photos.';
+
+  @override
+  String get collageZweiBisNeun => 'A collage needs 2 to 9 photos.';
 }

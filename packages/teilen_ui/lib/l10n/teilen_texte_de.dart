@@ -379,4 +379,63 @@ class TeilenTexteDe extends TeilenTexte {
   String nachlassAnfrage(String name, String tag) {
     return '$name verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt $name ihn am $tag.';
   }
+
+  @override
+  String get collage => 'Collage';
+
+  @override
+  String get collageVorlage => 'Vorlage';
+
+  @override
+  String get collageFormat => 'Format';
+
+  @override
+  String get collageAbstand => 'Abstand';
+
+  @override
+  String get collageEcken => 'Ecken';
+
+  @override
+  String get collageHintergrund => 'Hintergrund';
+
+  @override
+  String get collageReihenfolge => 'Reihenfolge';
+
+  @override
+  String get collageReihenfolgeHinweis =>
+      'Ein Tipp setzt ein Foto an den Anfang – bei „Gross links“ und „Gross oben“ wird es das grosse.';
+
+  @override
+  String get collageRaster => 'Raster';
+
+  @override
+  String get collageReihe => 'Nebeneinander';
+
+  @override
+  String get collageStapel => 'Untereinander';
+
+  @override
+  String get collageGrossLinks => 'Gross links';
+
+  @override
+  String get collageGrossOben => 'Gross oben';
+
+  @override
+  String get collageQuadrat => 'Quadrat';
+
+  @override
+  String get collageQuer => '3:2';
+
+  @override
+  String get collageHoch => '2:3';
+
+  @override
+  String get collageStory => '9:16';
+
+  @override
+  String get collageGespeichert =>
+      'Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.';
+
+  @override
+  String get collageZweiBisNeun => 'Eine Collage braucht 2 bis 9 Fotos.';
 }

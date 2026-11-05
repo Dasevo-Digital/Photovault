@@ -62,6 +62,7 @@
   <symbol id="i-kleiner" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6"/></symbol>
   <symbol id="i-liste" viewBox="0 0 24 24"><rect x="3.5" y="5" width="4" height="3.5" rx=".8"/><rect x="3.5" y="10.25" width="4" height="3.5" rx=".8"/><rect x="3.5" y="15.5" width="4" height="3.5" rx=".8"/><path d="M10 6.75h10.5M10 12h10.5M10 17.25h10.5"/></symbol>
   <symbol id="i-spalten" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15M14.5 4.5v15"/></symbol>
+  <symbol id="i-collage" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="9" height="17" rx="1.5"/><rect x="14.5" y="3.5" width="6" height="7.5" rx="1.5"/><rect x="14.5" y="13" width="6" height="7.5" rx="1.5"/></symbol>
   <symbol id="i-vergleich" viewBox="0 0 24 24"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/></symbol>
   <symbol id="i-groesser" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5l5 5M7.5 10.5h6M10.5 7.5v6"/></symbol>
 </svg>
@@ -420,6 +421,7 @@
     <button id="auswahl-link" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-link"/></svg>Link</button>
     <button id="auswahl-vergleichen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-vergleich"/></svg>Vergleichen</button>
     <button id="auswahl-varianten" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-duplikate"/></svg>Als Varianten stapeln</button>
+    <button id="auswahl-collage" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-collage"/></svg>Collage</button>
     <button id="auswahl-diashow" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-diashow"/></svg>Diashow</button>
     <button id="auswahl-laden" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-laden"/></svg>Herunterladen</button>
     <button id="auswahl-papierkorb" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-papierkorb"/></svg>Papierkorb</button>
@@ -524,6 +526,28 @@
     <p id="konten-meldung" class="fehler"></p>
     <menu>
       <button type="submit">Schliessen</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="collage-dialog">
+  <form method="dialog" id="form-collage">
+    <h3>Collage</h3>
+    <div class="collageflaeche">
+      <img id="collage-bild" alt="Vorschau der Collage">
+      <div class="collagewahl">
+        <div id="collage-vorlagen" class="collagevorlagen"></div>
+        <label>Format <select id="collage-format"></select></label>
+        <label>Abstand <input type="range" id="collage-abstand" min="0" max="50" step="5"></label>
+        <label>Ecken <input type="range" id="collage-ecken" min="0" max="100" step="10"></label>
+        <div><span class="leise klein">Hintergrund</span><div id="collage-farben" class="collagefarben"></div></div>
+        <div><span class="leise klein">Ein Klick setzt ein Foto an den Anfang – bei „Gross links“ und „Gross oben“ wird es das grosse.</span><div id="collage-reihe" class="collagereihe"></div></div>
+      </div>
+    </div>
+    <p id="collage-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="collage-abbrechen">Abbrechen</button>
+      <button type="button" id="collage-speichern">Speichern</button>
     </menu>
   </form>
 </dialog>

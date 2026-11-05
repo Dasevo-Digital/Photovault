@@ -910,6 +910,23 @@ const EN = {
   'nichts offen': 'nothing pending',
   'Gerade erst abgelehnt – später wieder.': 'Just declined – try again later.',
   'höchstens 5 Nachlasskontakte': 'at most 5 legacy contacts',
+  // Collagen (#301).
+  'Collage': 'Collage',
+  'Untereinander': 'Stacked',
+  'Gross links': 'Large left',
+  'Gross oben': 'Large on top',
+  'Quadrat': 'Square',
+  'Abstand': 'Spacing',
+  'Ecken': 'Corners',
+  'Hintergrund': 'Background',
+  'Vorschau der Collage': 'Collage preview',
+  'Ein Klick setzt ein Foto an den Anfang – bei „Gross links“ und „Gross oben“ wird es das grosse.': 'A click moves a photo to the front – with “Large left” and “Large on top” it becomes the large one.',
+  'Eine Collage braucht 2 bis 9 Fotos.': 'A collage needs 2 to 9 photos.',
+  'Collage wird gespeichert …': 'Saving collage …',
+  'Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.': 'Collage saved – it is in the timeline next to its photos.',
+  '2 bis 9 Fotos': '2 to 9 photos',
+  'Foto unbekannt': 'Unknown photo',
+  'Datei fehlt': 'File missing',
 };
 
 function t(deutsch, werte) {

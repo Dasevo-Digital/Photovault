@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -7,12 +8,17 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
+import 'package:kern/services/collage.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import '../l10n/app_localizations.dart';
 import 'namens_dialog.dart' show MitTextsteuerung;
 import '../screens/photo_compare_screen.dart';
 import '../screens/export_presets_screen.dart';
 import '../services/platform/speicherort.dart';
 import '../services/export_service.dart';
+import '../services/bilddekodierung.dart';
+import '../services/native_image_converter.dart';
 import '../services/contact_sheet_service.dart';
 import '../services/secure_share_service.dart';
 import 'pin_dialogs.dart';
@@ -65,6 +71,9 @@ class SelectionActionBar extends StatelessWidget {
   /// einer frei gewählten Hauptversion zusammen.
   final VoidCallback? onCreateVariants;
 
+  /// Zwei bis neun Fotos als Collage (#301) – siehe [collageAktion].
+  final VoidCallback? onCollage;
+
   const SelectionActionBar({
     super.key,
     required this.count,
@@ -79,6 +88,7 @@ class SelectionActionBar extends StatelessWidget {
     required this.onDelete,
     this.onCompare,
     this.onCreateVariants,
+    this.onCollage,
     this.onPasteDevelop,
     this.onApplyPreset,
   });
@@ -159,6 +169,12 @@ class SelectionActionBar extends StatelessWidget {
                     icon: const Icon(Icons.photo_library_outlined),
                     tooltip: t.auswVariantenBilden,
                     onPressed: onCreateVariants,
+                  ),
+                if (onCollage != null)
+                  IconButton(
+                    icon: const Icon(Icons.dashboard_customize_outlined),
+                    tooltip: teilenTexte(context).collage,
+                    onPressed: onCollage,
                   ),
                 IconButton(
                   icon: const Icon(Icons.ios_share),
@@ -263,6 +279,113 @@ VoidCallback? vergleichsAktion(
         ),
       ),
     );
+  };
+}
+
+/// Eine Collage aus der Auswahl (#301): nur für zwei bis neun Fotos. Am
+/// Server zeichnet und speichert er sie; ohne Server rechnet der Rechner
+/// selbst und liest sie ein. [danach] hebt etwa die Auswahl auf.
+VoidCallback? collageAktion(
+  BuildContext context,
+  LibraryState library,
+  List<String> ausgewaehlt, {
+  VoidCallback? danach,
+}) {
+  if (ausgewaehlt.length < collageMindestens ||
+      ausgewaehlt.length > collageHoechstens) {
+    return null;
+  }
+  return () async {
+    final bote = ScaffoldMessenger.of(context);
+    final t = teilenTexte(context);
+    final assets = [...await library.db.assetsByIds(ausgewaehlt)]
+      ..sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
+    if (!context.mounted) return;
+    if (assets.length != ausgewaehlt.length ||
+        assets.any((a) => a.type != 'IMAGE')) {
+      bote.showSnackBar(SnackBar(content: Text(t.collageZweiBisNeun)));
+      return;
+    }
+    final nachId = {for (final a in assets) a.id: a};
+    final v = library.verbunden ? library.abgleich?.verbindung : null;
+    final Collagezeichner zeichne;
+    final Future<void> Function(Collagewahl) speichere;
+    if (v != null) {
+      zeichne = collageAmServer(v);
+      speichere = (w) => collageAmServerSpeichern(v, w);
+    } else {
+      // Quellbilder je Kante nur einmal wandeln – die Vorschau zeichnet
+      // bei jedem Regler neu.
+      final vorrat = <String, Uint8List>{};
+      Future<Collageauftrag> auftrag(
+        Collagewahl w, {
+        required bool vorschau,
+      }) async {
+        final teiler = vorschau ? 4 : 1;
+        final probe = Collageauftrag(
+          bilder: const [],
+          vorlage: collagevorlage(w.ids.length, w.vorlage),
+          breite: w.format.breite ~/ teiler,
+          hoehe: w.format.hoehe ~/ teiler,
+        );
+        final kante = probe.kante;
+        final bilder = <Uint8List>[];
+        for (final id in w.ids) {
+          final a = nachId[id]!;
+          final schluessel = '$id@$kante';
+          final b = vorrat[schluessel] ??=
+              await NativeImageConverter.convertToJpegBytes(
+                library.paths.absolute(displayRelativePath(a)),
+                maxDimension: kante,
+                quality: 0.92,
+              ) ??
+              (throw StateError(a.originalFileName));
+          bilder.add(b);
+        }
+        return Collageauftrag(
+          bilder: bilder,
+          vorlage: probe.vorlage,
+          breite: probe.breite,
+          hoehe: probe.hoehe,
+          abstand: w.abstand,
+          ecken: w.ecken,
+          hintergrund: w.hintergrund,
+          qualitaet: vorschau ? 80 : 92,
+          zeit: assets.last.fileCreatedAt,
+        );
+      }
+
+      zeichne = (w, {required vorschau}) async =>
+          zeichneCollage(await auftrag(w, vorschau: vorschau));
+      speichere = (w) async {
+        final jpeg = await zeichneCollage(await auftrag(w, vorschau: false));
+        await library.sichereNeuesFoto(
+          jpeg,
+          collageDateiname(assets.last.fileCreatedAt),
+        );
+      };
+    }
+    final gespeichert = await Navigator.of(context, rootNavigator: true)
+        .push<bool>(
+          MaterialPageRoute(
+            builder: (_) => Collageseite(
+              ids: [for (final a in assets) a.id],
+              zeichne: zeichne,
+              speichere: speichere,
+              miniatur: (id) => switch (nachId[id]?.thumbnailRelativePath) {
+                final String r => begrenztesBild(
+                  library.paths.absolute(r),
+                  kante: 160,
+                ),
+                null => null,
+              },
+            ),
+          ),
+        );
+    if (gespeichert ?? false) {
+      danach?.call();
+      bote.showSnackBar(SnackBar(content: Text(t.collageGespeichert)));
+    }
   };
 }
 

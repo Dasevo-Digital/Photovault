@@ -727,6 +727,14 @@ class _TimelineScreenState extends State<TimelineScreen>
                     widget.library,
                     _selected.toList(),
                   ),
+                  onCollage: collageAktion(
+                    context,
+                    widget.library,
+                    _selected.toList(),
+                    danach: () {
+                      if (mounted) setState(_selected.clear);
+                    },
+                  ),
                   onCreateVariants: _selected.length >= 2
                       ? () async {
                           final erstellt = await runBatchCreateVariantsDialog(

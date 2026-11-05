@@ -1158,6 +1158,140 @@ async function zeigeAlbum(id) {
   if (aktivitaet) ladeAktivitaet();
 }
 
+// --- Collagen (#301) --------------------------------------------------------------
+//
+// Zwei bis neun Fotos in einer Vorlage, als neues Foto in der Bibliothek.
+// Gezeichnet wird am Server; die Vorschau holt der Browser klein, sobald
+// sich etwas ändert.
+
+const COLLAGE_VORLAGEN = {
+  raster: 'Raster',
+  reihe: 'Nebeneinander',
+  stapel: 'Untereinander',
+  gross_links: 'Gross links',
+  gross_oben: 'Gross oben',
+};
+const COLLAGE_FORMATE = [['quadrat', 'Quadrat', 1], ['quer', '3:2', 1.5], ['hoch', '2:3', 2 / 3], ['story', '9:16', 9 / 16]];
+const COLLAGE_FARBEN = ['#ffffff', '#000000', '#2b2b2b', '#f3ebdd'];
+
+// Welche Vorlagen es für n Fotos gibt – dieselben wie im Kern
+// (packages/kern/lib/services/collage.dart, collagevorlagen).
+function collageVorlagenFuer(n) {
+  const v = ['raster'];
+  if (n > 2 && n <= 4) v.push('reihe');
+  if (n <= 4) v.push('stapel');
+  if (n >= 3) v.push('gross_links', 'gross_oben');
+  return v;
+}
+
+const collage = { ids: [], vorlage: 'raster', format: 'quadrat', abstand: 0.01, ecken: 0, hintergrund: '#ffffff', url: null, nummer: 0, uhr: null };
+
+function oeffneCollage(aufnahmen) {
+  const bilder = aufnahmen.filter((a) => a.art !== 'video' && !a.konto);
+  if (bilder.length < 2 || bilder.length > 9) { meldung(t('Eine Collage braucht 2 bis 9 Fotos.')); return; }
+  // Älteste zuerst – wie sie im Album stünden.
+  bilder.sort((a, b) => new Date(a.aufgenommen) - new Date(b.aufgenommen));
+  Object.assign(collage, { ids: bilder.map((a) => a.id), vorlage: 'raster' });
+  const vor = $('collage-vorlagen');
+  vor.replaceChildren(...collageVorlagenFuer(bilder.length).map((id) => {
+    const b = el('button', 'knopf', t(COLLAGE_VORLAGEN[id]));
+    b.type = 'button';
+    b.dataset.vorlage = id;
+    b.addEventListener('click', () => { collage.vorlage = id; collageZeichnen(); });
+    return b;
+  }));
+  const fmt = $('collage-format');
+  fmt.replaceChildren(...COLLAGE_FORMATE.map(([id, name]) => new Option(t(name), id)));
+  fmt.value = collage.format;
+  const farben = $('collage-farben');
+  farben.replaceChildren(...COLLAGE_FARBEN.map((f) => {
+    const b = el('button', 'farbknopf');
+    b.type = 'button';
+    b.style.background = f;
+    b.dataset.farbe = f;
+    b.setAttribute('aria-label', f);
+    b.addEventListener('click', () => { collage.hintergrund = f; collageZeichnen(); });
+    return b;
+  }));
+  zeigeCollageReihe();
+  $('collage-abstand').value = String(collage.abstand * 1000);
+  $('collage-ecken').value = String(collage.ecken * 1000);
+  $('collage-meldung').textContent = '';
+  $('collage-dialog').showModal();
+  collageZeichnen();
+}
+
+function zeigeCollageReihe() {
+  const reihe = $('collage-reihe');
+  reihe.replaceChildren(...collage.ids.map((id, i) => {
+    const b = el('button', `collagekachel${i === 0 ? ' vorn' : ''}`);
+    b.type = 'button';
+    const img = el('img'); img.alt = ''; img.src = miniaturUrl(id);
+    b.append(img);
+    b.addEventListener('click', () => {
+      if (i === 0) return;
+      collage.ids = [id, ...collage.ids.filter((x) => x !== id)];
+      zeigeCollageReihe();
+      collageZeichnen();
+    });
+    return b;
+  }));
+}
+
+function collageWahl(vorschau) {
+  return { ids: collage.ids, vorlage: collage.vorlage, format: collage.format, abstand: collage.abstand, ecken: collage.ecken, hintergrund: collage.hintergrund, ...(vorschau ? { vorschau: true } : {}) };
+}
+
+function collageZeichnen() {
+  for (const b of $('collage-vorlagen').children) b.classList.toggle('gewaehlt', b.dataset.vorlage === collage.vorlage);
+  for (const b of $('collage-farben').children) b.classList.toggle('gewaehlt', b.dataset.farbe === collage.hintergrund);
+  const [, , seiten] = COLLAGE_FORMATE.find(([id]) => id === collage.format);
+  $('collage-bild').style.aspectRatio = String(seiten);
+  clearTimeout(collage.uhr);
+  collage.uhr = setTimeout(async () => {
+    const nummer = ++collage.nummer;
+    $('collage-bild').classList.add('laedt');
+    try {
+      const r = await fetch('/api/v1/collage', { method: 'POST', credentials: 'same-origin', headers: { 'X-PV-Web': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(collageWahl(true)) });
+      if (!r.ok) { let f = null; try { f = (await r.json()).fehler; } catch (_) { /* leer */ } throw new Error(f ? t(f) : t('Fehler {n}', { n: r.status })); }
+      const blob = await r.blob();
+      if (nummer !== collage.nummer) return;
+      if (collage.url) URL.revokeObjectURL(collage.url);
+      collage.url = URL.createObjectURL(blob);
+      $('collage-bild').src = collage.url;
+      $('collage-meldung').textContent = '';
+    } catch (x) {
+      if (nummer === collage.nummer) $('collage-meldung').textContent = x.message;
+    } finally {
+      if (nummer === collage.nummer) $('collage-bild').classList.remove('laedt');
+    }
+  }, 250);
+}
+
+$('collage-format').addEventListener('change', (e) => { collage.format = e.target.value; collageZeichnen(); });
+$('collage-abstand').addEventListener('input', (e) => { collage.abstand = Number(e.target.value) / 1000; collageZeichnen(); });
+$('collage-ecken').addEventListener('input', (e) => { collage.ecken = Number(e.target.value) / 1000; collageZeichnen(); });
+$('collage-abbrechen').addEventListener('click', () => $('collage-dialog').close());
+$('collage-speichern').addEventListener('click', async () => {
+  const knopf = $('collage-speichern');
+  knopf.disabled = true;
+  $('collage-meldung').textContent = t('Collage wird gespeichert …');
+  try {
+    await api('/api/v1/collage', { methode: 'POST', json: collageWahl(false) });
+    $('collage-dialog').close();
+    auswahlAufheben();
+    zeitleiste.leeren();
+    // Die Ansicht neu – in der Zeitleiste steht die Collage dann schon.
+    await zeigeWeg();
+    meldung(t('Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.'));
+  } catch (x) {
+    $('collage-meldung').textContent = x.message;
+  } finally {
+    knopf.disabled = false;
+  }
+});
+$('auswahl-collage').addEventListener('click', () => oeffneCollage(gewaehlte()));
+
 // --- Nachlasskontakt (#300) -----------------------------------------------------
 //
 // Wen dieses Konto benennt, und für wen es benannt ist – auf der Kontoseite.
@@ -3754,6 +3888,8 @@ function zeigeAuswahl() {
   const n = auswahl.size;
   // Vergleichen gibt es für genau zwei – wie am Rechner.
   $('auswahl-vergleichen').hidden = n !== 2;
+  // Collagen aus 2 bis 9 eigenen Fotos (#301).
+  $('auswahl-collage').hidden = n < 2 || n > 9 || !!liste.papierkorb || fremdeListe();
   $('auswahl-varianten').hidden = n < 2 || !!liste.papierkorb;
   const war = !$('auswahlleiste').hidden;
   $('auswahlleiste').hidden = n === 0;

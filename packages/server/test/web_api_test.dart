@@ -1958,6 +1958,78 @@ void main() {
     },
   );
 
+  test(
+    'Collage: Vorschau, dann als neues Foto zur Zeit des jüngsten (#301)',
+    () async {
+      final a = await ladeHoch(erikaToken, 'a.jpg', 20);
+      final b = await ladeHoch(erikaToken, 'b.jpg', 200);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await (db.update(db.assets)..where((t) => t.id.equals(a))).write(
+        AssetsCompanion(fileCreatedAt: Value(DateTime(2024, 5, 1, 10))),
+      );
+      await (db.update(db.assets)..where((t) => t.id.equals(b))).write(
+        AssetsCompanion(fileCreatedAt: Value(DateTime(2024, 5, 2, 18, 30))),
+      );
+      Future<Response> collage(Map<String, Object?> k, {String? token}) => frag(
+        'POST',
+        '/api/v1/collage',
+        token: token ?? erikaToken,
+        kopf: {'content-type': 'application/json'},
+        inhalt: jsonEncode(k),
+      );
+
+      final v = await collage({
+        'ids': [a, b],
+        'format': 'quer',
+        'abstand': 0.02,
+        'hintergrund': '#000000',
+        'vorschau': true,
+      });
+      expect(v.statusCode, 200);
+      expect(v.headers['content-type'], 'image/jpeg');
+      final klein = img.decodeJpg(
+        Uint8List.fromList(await v.read().expand((x) => x).toList()),
+      )!;
+      expect((klein.width, klein.height), (900, 600));
+      final vorher = await db.select(db.assets).get();
+
+      final r = await collage({
+        'ids': [b, a],
+        'vorlage': 'stapel',
+      });
+      expect(r.statusCode, 201);
+      final neu = (await jsonAus(r))['aufnahme']! as String;
+      final zeile = (await db.assetById(neu))!;
+      expect(zeile.fileCreatedAt, DateTime(2024, 5, 2, 18, 30));
+      expect(zeile.widthPx, 3000);
+      expect(zeile.heightPx, 3000);
+      expect(await db.select(db.assets).get(), hasLength(vorher.length + 1));
+
+      // Ein Foto allein, ein fremdes oder eines im Papierkorb: nein.
+      expect(
+        (await collage({
+          'ids': [a],
+        })).statusCode,
+        400,
+      );
+      expect(
+        (await collage({
+          'ids': [a, b],
+        }, token: maxToken)).statusCode,
+        404,
+      );
+      await (db.update(db.assets)..where((t) => t.id.equals(b))).write(
+        const AssetsCompanion(isTrashed: Value(true)),
+      );
+      expect(
+        (await collage({
+          'ids': [a, b],
+        })).statusCode,
+        404,
+      );
+    },
+  );
+
   test('Als JPEG herunterladen: Grösse, Name, Datum ohne Ort (#210)', () async {
     final id = await ladeHoch(erikaToken, 'Hafen am Abend.jpg', 90);
     final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;

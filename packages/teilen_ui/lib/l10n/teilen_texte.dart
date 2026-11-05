@@ -655,6 +655,120 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'{name} verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt {name} ihn am {tag}.'**
   String nachlassAnfrage(String name, String tag);
+
+  /// No description provided for @collage.
+  ///
+  /// In de, this message translates to:
+  /// **'Collage'**
+  String get collage;
+
+  /// No description provided for @collageVorlage.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorlage'**
+  String get collageVorlage;
+
+  /// No description provided for @collageFormat.
+  ///
+  /// In de, this message translates to:
+  /// **'Format'**
+  String get collageFormat;
+
+  /// No description provided for @collageAbstand.
+  ///
+  /// In de, this message translates to:
+  /// **'Abstand'**
+  String get collageAbstand;
+
+  /// No description provided for @collageEcken.
+  ///
+  /// In de, this message translates to:
+  /// **'Ecken'**
+  String get collageEcken;
+
+  /// No description provided for @collageHintergrund.
+  ///
+  /// In de, this message translates to:
+  /// **'Hintergrund'**
+  String get collageHintergrund;
+
+  /// No description provided for @collageReihenfolge.
+  ///
+  /// In de, this message translates to:
+  /// **'Reihenfolge'**
+  String get collageReihenfolge;
+
+  /// No description provided for @collageReihenfolgeHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Tipp setzt ein Foto an den Anfang – bei „Gross links“ und „Gross oben“ wird es das grosse.'**
+  String get collageReihenfolgeHinweis;
+
+  /// No description provided for @collageRaster.
+  ///
+  /// In de, this message translates to:
+  /// **'Raster'**
+  String get collageRaster;
+
+  /// No description provided for @collageReihe.
+  ///
+  /// In de, this message translates to:
+  /// **'Nebeneinander'**
+  String get collageReihe;
+
+  /// No description provided for @collageStapel.
+  ///
+  /// In de, this message translates to:
+  /// **'Untereinander'**
+  String get collageStapel;
+
+  /// No description provided for @collageGrossLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Gross links'**
+  String get collageGrossLinks;
+
+  /// No description provided for @collageGrossOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Gross oben'**
+  String get collageGrossOben;
+
+  /// No description provided for @collageQuadrat.
+  ///
+  /// In de, this message translates to:
+  /// **'Quadrat'**
+  String get collageQuadrat;
+
+  /// No description provided for @collageQuer.
+  ///
+  /// In de, this message translates to:
+  /// **'3:2'**
+  String get collageQuer;
+
+  /// No description provided for @collageHoch.
+  ///
+  /// In de, this message translates to:
+  /// **'2:3'**
+  String get collageHoch;
+
+  /// No description provided for @collageStory.
+  ///
+  /// In de, this message translates to:
+  /// **'9:16'**
+  String get collageStory;
+
+  /// No description provided for @collageGespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.'**
+  String get collageGespeichert;
+
+  /// No description provided for @collageZweiBisNeun.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine Collage braucht 2 bis 9 Fotos.'**
+  String get collageZweiBisNeun;
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

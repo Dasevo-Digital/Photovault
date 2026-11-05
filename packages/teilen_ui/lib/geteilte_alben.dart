@@ -14,6 +14,7 @@ import 'l10n/teilen_texte.dart';
 import 'regeln.dart';
 
 export 'aktivitaet.dart';
+export 'collage.dart';
 export 'nachlass.dart';
 export 'regeln.dart';
 
