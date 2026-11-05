@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 9;
+  static const schema = 10;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -260,6 +260,42 @@ class Serverdatenbank {
           PRIMARY KEY (besitzer, album, aufnahme, von)
         );
         PRAGMA user_version = 9;
+        COMMIT;
+      ''');
+    }
+    if (stand < 10) {
+      // Alben, die sich selbst füllen (#298): mit den Fotos bestimmter
+      // Personen, wahlweise erst ab einem Datum. `aufgenommen` hält fest,
+      // was die Regel schon einmal hineingelegt hat – nimmt der Besitzer
+      // ein Foto wieder heraus, kommt es nicht zurück.
+      //
+      // Partnerfreigabe eingeschränkt und in der Zeitleiste (#299): `ab`
+      // und `personen` setzt der Besitzer, `in_zeitleiste` der Partner.
+      final spalten = {
+        for (final z in db.select('PRAGMA table_info(partnerfreigaben)'))
+          z['name'] as String,
+      };
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS albumregeln (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          album TEXT NOT NULL,
+          personen TEXT NOT NULL,
+          alle INTEGER NOT NULL DEFAULT 0,
+          ab INTEGER,
+          angelegt INTEGER NOT NULL,
+          PRIMARY KEY (besitzer, album)
+        );
+        CREATE TABLE IF NOT EXISTS albumregel_aufgenommen (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          album TEXT NOT NULL,
+          aufnahme TEXT NOT NULL,
+          PRIMARY KEY (besitzer, album, aufnahme)
+        );
+        ${spalten.contains('ab') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN ab INTEGER;'}
+        ${spalten.contains('personen') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN personen TEXT;'}
+        ${spalten.contains('in_zeitleiste') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN in_zeitleiste INTEGER NOT NULL DEFAULT 0;'}
+        PRAGMA user_version = 10;
         COMMIT;
       ''');
     }

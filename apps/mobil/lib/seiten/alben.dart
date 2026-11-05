@@ -399,6 +399,8 @@ class AlbumSeite extends StatelessWidget {
             ort: Aktivitaetsort.besitzer(v, album.id),
             nurWennGeteilt: true,
           ),
+          // Füllt sich selbst mit Fotos bestimmter Personen (#298).
+          Albumregelknopf(verbindung: v, albumId: album.id, titel: album.name),
           IconButton(
             tooltip: teilenTexte(context).kontenTeilen,
             icon: const Icon(Icons.group_add_outlined),

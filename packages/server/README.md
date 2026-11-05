@@ -685,6 +685,9 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
 | `GET /alben/<id>/aktivitaet`, `GET /geteilt/<id>/aktivitaet` | Kommentare und „Gefällt mir“ eines geteilten Albums, für den Besitzer bzw. einen Empfänger: `{kommentare: [{id, aufnahme?, name, text, angelegt, eigener, loeschbar}], gefaellt: {Aufnahme: {anzahl, ich, namen}}}` (Issue #297) |
 | `POST …/kommentare`, `DELETE …/kommentare/<k>`, `PUT\|DELETE …/gefaellt/<aufnahme>` | unter beiden Wegen: `{text, aufnahme?}` schreibt (höchstens 2000 Zeichen); entfernen darf der Schreiber seinen, der Besitzer jeden |
+| `GET\|PUT\|DELETE /alben/<id>/regel` | ein Album, das sich selbst füllt: `{personen: [Kennung], alle?, ab?: "JJJJ-MM-TT"}` legt die Regel an und füllt gleich → `{regel, dazu}`; danach alle zehn Minuten. Was der Besitzer herausnimmt, kommt nicht zurück; DELETE lässt liegen, was darin ist (Issue #298) |
+| `GET /partner`, `PUT\|DELETE /partner/<konto>` | Partnerfreigabe: `{meine, mitMir}`; PUT mit `{ab?, personen?}` gibt nur frei, was ab dem Tag aufgenommen ist und mindestens eine der Personen zeigt – auch jede einzelne Datei (Issue #293, #299) |
+| `PUT /partner/von/<konto>/zeitleiste` | `{an}` – die Fotos dieses Partners in der eigenen Zeitleiste (`/aufnahmen` in der Vorgabe-Reihenfolge, mit `konto` und `von` an jeder seiner Zeilen, und `/zeitleiste/monate`) |
 | `GET /papierkorb`, `POST /papierkorb/leeren` | was im Papierkorb liegt; `{ids}` oder `{alle: true}` löscht endgültig → `{geloescht, stand}` (Issue #296) |
 | `POST /befehle` | Änderungen als Befehle: einzeln `{art, werte}` oder im Stapel `{befehle: [{kennung, art, werte}]}` – jede Kennung höchstens einmal |
 | `POST/HEAD/PATCH/DELETE /hochladen…` | Hochladen in Stücken nach tus 1.0.0 |

@@ -12,14 +12,17 @@ import 'package:kern/services/groessentext.dart';
 import 'package:kern/services/listengliederung.dart';
 import 'package:kern/services/listenspalten.dart';
 import 'package:kern/services/rasterstufen.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../lokal/lokalbetrachter.dart';
 import '../lokal/ungesichert.dart';
+import '../partnerfotos.dart';
 import '../sitzung.dart';
 import 'auswahl.dart';
 import 'betrachter.dart';
+import 'geteilt_handy.dart';
 
 /// Aufnahmen als Raster – auf Wunsch nach Monaten und Tagen gegliedert,
 /// wie in der Zeitleiste. Ein Tipp öffnet den Betrachter mit genau dieser
@@ -52,6 +55,7 @@ class AufnahmenRaster extends StatefulWidget {
     this.nachTagen = false,
     this.kopf,
     this.lokal = const {},
+    this.partner = const {},
     this.papierkorb = false,
     this.liste,
     this.nachOben,
@@ -77,6 +81,11 @@ class AufnahmenRaster extends StatefulWidget {
   /// nach ihrer Kennung – sie zeigen die Fotomediathek, nicht die
   /// Bibliothek, und lassen sich nicht auswählen.
   final Map<String, LokaleAufnahme> lokal;
+
+  /// Zeilen aus [zeilen] aus der Bibliothek eines Partners (#299) – nur
+  /// zum Ansehen, nicht wählbar, geöffnet im Betrachter der geteilten
+  /// Alben.
+  final Map<String, Partnerfoto> partner;
 
   /// Etwas über dem Raster (z. B. das Suchfeld), das mitscrollt.
   final Widget? kopf;
@@ -601,6 +610,29 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   void _oeffne(int index) {
     final z = widget.zeilen[index];
     final l = widget.lokal[z.id];
+    final f = widget.partner[z.id];
+    final zugang = f == null ? null : teilungszugang(widget.sitzung);
+    if (f != null) {
+      if (zugang == null) return;
+      // Nur die desselben Partners, in der Reihenfolge des Rasters.
+      final seine = [
+        for (final x in widget.zeilen)
+          if (widget.partner[x.id] case final g?
+              when g.bibliothek.partner == f.bibliothek.partner)
+            g,
+      ];
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => GeteilterBetrachter(
+            zugang: zugang,
+            album: f.bibliothek,
+            aufnahmen: [for (final g in seine) g.aufnahme],
+            start: seine.indexOf(f),
+          ),
+        ),
+      );
+      return;
+    }
     final Widget seite;
     if (l != null) {
       // Nur die vom Telefon, in der Reihenfolge des Rasters.
@@ -613,7 +645,9 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     } else {
       final server = [
         for (final x in widget.zeilen)
-          if (!widget.lokal.containsKey(x.id)) x,
+          if (!widget.lokal.containsKey(x.id) &&
+              !widget.partner.containsKey(x.id))
+            x,
       ];
       seite = Betrachter(
         sitzung: widget.sitzung,
@@ -631,10 +665,11 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
 
   /// Was nur auf dem Telefon liegt, lässt sich nicht wählen – es gibt
   /// dafür keinen Befehl.
-  bool _waehlbar(Rasterzeile z) => !widget.lokal.containsKey(z.id);
+  bool _waehlbar(Rasterzeile z) =>
+      !widget.lokal.containsKey(z.id) && !widget.partner.containsKey(z.id);
 
   void _schalte(String id) {
-    if (widget.lokal.containsKey(id)) return;
+    if (widget.lokal.containsKey(id) || widget.partner.containsKey(id)) return;
     _aendereAuswahl(() {
       if (!_auswahl.remove(id)) _auswahl.add(id);
     });
@@ -765,15 +800,26 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
     });
   }
 
+  /// Die Miniatur eines Fotos, das nicht in der Kopie liegt: vom Telefon
+  /// oder von einem Partner.
+  ImageProvider? _fremdesBild(Rasterzeile z) {
+    if (widget.lokal[z.id] case final l?) return l.bild;
+    final f = widget.partner[z.id];
+    final v = widget.sitzung.abgleich?.verbindung;
+    if (f == null || v == null) return null;
+    return f.miniatur(v, widget.sitzung.paths.geteiltDir);
+  }
+
   Widget _kachel(int i) {
     final z = widget.zeilen[i];
     final l = widget.lokal[z.id];
+    final f = widget.partner[z.id];
     final farben = Theme.of(context).colorScheme;
     return MetaData(
       metaData: _Kachelmarke(i),
       behavior: HitTestBehavior.opaque,
       child: GestureDetector(
-        onTap: () => _waehlt && l == null ? _schalte(z.id) : _oeffne(i),
+        onTap: () => _waehlt && _waehlbar(z) ? _schalte(z.id) : _oeffne(i),
         onLongPressStart: (_) => _ziehBeginn(i),
         onLongPressMoveUpdate: (d) => _ziehWeiter(d.globalPosition),
         onLongPressEnd: (_) => _ziehEnde(),
@@ -783,7 +829,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
           child: Miniatur(
             paths: widget.sitzung.paths,
             relativ: z.thumbnailRelativePath,
-            bild: l?.bild,
+            bild: _fremdesBild(z),
             zeile: z,
             format: l == null,
             herz: !_waehlt,
@@ -814,7 +860,11 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                       shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                     ),
                   ),
-                if (_waehlt && l == null)
+                // Aus der Bibliothek eines Partners: sein Anfangsbuchstabe
+                // oben links, wo sonst das Herz sitzt – wie im Browser.
+                if (f != null && !_waehlt)
+                  Positioned(left: 4, top: 4, child: _Partnermarke(f.name)),
+                if (_waehlt && _waehlbar(z))
                   Positioned(
                     left: 4,
                     top: 4,
@@ -946,7 +996,6 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
   /// gewählten Spalten – schmal wie im Browser auf dem Telefon.
   Widget _listenzeile(int i, Listenansicht l, double hoehe) {
     final z = widget.zeilen[i];
-    final lok = widget.lokal[z.id];
     final a = l.angaben[z.id] ?? const Listenangaben();
     final t = AppTexte.of(context);
     final farben = Theme.of(context).colorScheme;
@@ -1018,7 +1067,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
       metaData: _Kachelmarke(i),
       behavior: HitTestBehavior.opaque,
       child: GestureDetector(
-        onTap: () => _waehlt && lok == null ? _schalte(z.id) : _oeffne(i),
+        onTap: () => _waehlt && _waehlbar(z) ? _schalte(z.id) : _oeffne(i),
         onLongPressStart: (_) => _ziehBeginn(i),
         onLongPressMoveUpdate: (d) => _ziehWeiter(d.globalPosition),
         onLongPressEnd: (_) => _ziehEnde(),
@@ -1042,7 +1091,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                           child: Miniatur(
                             paths: widget.sitzung.paths,
                             relativ: z.thumbnailRelativePath,
-                            bild: lok?.bild,
+                            bild: _fremdesBild(z),
                             zeile: z,
                             format: false,
                             herz: false,
@@ -1073,7 +1122,7 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
                           ],
                         ),
                       ),
-                      if (_waehlt && lok == null)
+                      if (_waehlt && _waehlbar(z))
                         Icon(
                           gewaehlt ? Icons.check_circle : Icons.circle_outlined,
                           color: gewaehlt
@@ -1368,4 +1417,33 @@ List<_Tag> _tage(List<Rasterzeile> zeilen, {bool jeMonat = false}) {
     von = bis;
   }
   return tage;
+}
+
+/// Der Anfangsbuchstabe eines Partners auf seinen Kacheln (#299).
+class _Partnermarke extends StatelessWidget {
+  const _Partnermarke(this.name);
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: name,
+    child: Container(
+      width: 18,
+      height: 18,
+      alignment: Alignment.center,
+      decoration: const BoxDecoration(
+        color: Colors.black54,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ),
+  );
 }

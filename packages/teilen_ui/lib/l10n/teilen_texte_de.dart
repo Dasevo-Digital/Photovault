@@ -170,7 +170,7 @@ class TeilenTexteDe extends TeilenTexte {
 
   @override
   String get bibliothekTeilenHinweis =>
-      'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.';
+      'Wer hier steht, sieht deine Bibliothek unter „Geteilt mit mir“ – ganz oder nur ab einem Tag und mit bestimmten Personen, ohne Gesperrtes und Papierkorb, nur zum Ansehen.';
 
   @override
   String get kommentare => 'Kommentare';
@@ -208,4 +208,117 @@ class TeilenTexteDe extends TeilenTexte {
   String gefaelltNamen(String namen) {
     return 'Gefällt $namen';
   }
+
+  @override
+  String get speichern => 'Speichern';
+
+  @override
+  String get automatischFuellen => 'Automatisch füllen';
+
+  @override
+  String automatischTitel(String name) {
+    return '„$name“ automatisch füllen';
+  }
+
+  @override
+  String get automatischHinweis =>
+      'Fotos der gewählten Personen kommen von selbst in dieses Album – auch solche, auf denen sie erst später erkannt werden. Was du herausnimmst, bleibt draussen.';
+
+  @override
+  String get automatischAus => 'Nicht mehr automatisch füllen';
+
+  @override
+  String get automatischAusGemacht =>
+      'Das Album füllt sich nicht mehr selbst. Was darin liegt, bleibt.';
+
+  @override
+  String automatischDazu(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Aufnahmen dazugelegt',
+      one: 'Eine Aufnahme dazugelegt',
+      zero: 'Nichts Neues dazugelegt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regelEine => 'Eine der Personen';
+
+  @override
+  String get regelAlle => 'Alle zusammen';
+
+  @override
+  String get regelMindestensEine => 'Wähle mindestens eine Person.';
+
+  @override
+  String get regelHoechstens => 'Höchstens 20 Personen.';
+
+  @override
+  String regelPersonenFehlen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n gewählte Personen gibt es nicht mehr.',
+      one: 'Eine gewählte Person gibt es nicht mehr.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String regelMit(String namen) {
+    return 'mit $namen';
+  }
+
+  @override
+  String regelZusammen(String namen) {
+    return '$namen zusammen';
+  }
+
+  @override
+  String regelAb(String tag) {
+    return 'ab $tag';
+  }
+
+  @override
+  String get aufgenommenAb => 'Aufgenommen ab';
+
+  @override
+  String get jedesDatum => 'jedes Datum';
+
+  @override
+  String get personSuchen => 'Person suchen';
+
+  @override
+  String get keinePersonGefunden => 'Keine Person gefunden.';
+
+  @override
+  String get keinePersonenMitNamen => 'Noch keine Personen mit Namen.';
+
+  @override
+  String get partnerEinschraenken => 'Einschränken';
+
+  @override
+  String partnerWasSieht(String name) {
+    return 'Was $name sieht';
+  }
+
+  @override
+  String partnerEinschraenkenHinweis(String name) {
+    return 'Ohne Auswahl sieht $name deine ganze Bibliothek. Mit Personen nur Fotos, auf denen mindestens eine davon ist – das gilt für jede Datei, nicht nur für die Liste.';
+  }
+
+  @override
+  String get partnerGanz => 'Die ganze Bibliothek';
+
+  @override
+  String get partnerInZeitleiste => 'In meiner Zeitleiste zeigen';
+
+  @override
+  String get partnerInZeitleisteFern =>
+      'In der Zeitleiste zeigen (Handy und Browser)';
+
+  @override
+  String get partnerEingeschraenkt => 'Nur ein Teil der Bibliothek';
 }

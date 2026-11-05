@@ -125,7 +125,7 @@
   "partnerVerlassenFrage": "Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.",
   "bibliothekTeilen": "Bibliothek teilen",
   "bibliothekTeilenTitel": "Bibliothek teilen",
-  "bibliothekTeilenHinweis": "Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.",
+  "bibliothekTeilenHinweis": "Wer hier steht, sieht deine Bibliothek unter „Geteilt mit mir“ – ganz oder nur ab einem Tag und mit bestimmten Personen, ohne Gesperrtes und Papierkorb, nur zum Ansehen.",
   "@partnerBibliothekVon": {
     "placeholders": {
       "name": {
@@ -157,5 +157,88 @@
         "type": "String"
       }
     }
-  }
+  },
+  "speichern": "Speichern",
+  "automatischFuellen": "Automatisch füllen",
+  "automatischTitel": "„{name}“ automatisch füllen",
+  "@automatischTitel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "automatischHinweis": "Fotos der gewählten Personen kommen von selbst in dieses Album – auch solche, auf denen sie erst später erkannt werden. Was du herausnimmst, bleibt draussen.",
+  "automatischAus": "Nicht mehr automatisch füllen",
+  "automatischAusGemacht": "Das Album füllt sich nicht mehr selbst. Was darin liegt, bleibt.",
+  "automatischDazu": "{n, plural, =0{Nichts Neues dazugelegt} =1{Eine Aufnahme dazugelegt} other{{n} Aufnahmen dazugelegt}}",
+  "@automatischDazu": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "regelEine": "Eine der Personen",
+  "regelAlle": "Alle zusammen",
+  "regelMindestensEine": "Wähle mindestens eine Person.",
+  "regelHoechstens": "Höchstens 20 Personen.",
+  "regelPersonenFehlen": "{n, plural, =1{Eine gewählte Person gibt es nicht mehr.} other{{n} gewählte Personen gibt es nicht mehr.}}",
+  "@regelPersonenFehlen": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "regelMit": "mit {namen}",
+  "@regelMit": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "regelZusammen": "{namen} zusammen",
+  "@regelZusammen": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "regelAb": "ab {tag}",
+  "@regelAb": {
+    "placeholders": {
+      "tag": {
+        "type": "String"
+      }
+    }
+  },
+  "aufgenommenAb": "Aufgenommen ab",
+  "jedesDatum": "jedes Datum",
+  "personSuchen": "Person suchen",
+  "keinePersonGefunden": "Keine Person gefunden.",
+  "keinePersonenMitNamen": "Noch keine Personen mit Namen.",
+  "partnerEinschraenken": "Einschränken",
+  "partnerWasSieht": "Was {name} sieht",
+  "@partnerWasSieht": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerEinschraenkenHinweis": "Ohne Auswahl sieht {name} deine ganze Bibliothek. Mit Personen nur Fotos, auf denen mindestens eine davon ist – das gilt für jede Datei, nicht nur für die Liste.",
+  "@partnerEinschraenkenHinweis": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "partnerGanz": "Die ganze Bibliothek",
+  "partnerInZeitleiste": "In meiner Zeitleiste zeigen",
+  "partnerInZeitleisteFern": "In der Zeitleiste zeigen (Handy und Browser)",
+  "partnerEingeschraenkt": "Nur ein Teil der Bibliothek"
 }

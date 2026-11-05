@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'konten/serverdatenbank.dart';
@@ -47,6 +48,35 @@ class Albumkommentar {
   final String name;
   final String text;
   final DateTime angelegt;
+}
+
+/// Ein Konto lässt ein anderes seine Bibliothek sehen (#293) – ganz oder,
+/// seit #299, nur ab einem Tag und nur mit bestimmten Personen.
+class Partnerfreigabe {
+  const Partnerfreigabe({
+    required this.besitzer,
+    required this.partner,
+    required this.ab,
+    required this.personen,
+    required this.inZeitleiste,
+    required this.angelegt,
+  });
+
+  final String besitzer;
+  final String partner;
+
+  /// Nur, was an oder nach diesem Tag aufgenommen ist; `null`: alles.
+  final DateTime? ab;
+
+  /// Nur Fotos, auf denen mindestens eine dieser Personen ist; `null`:
+  /// alle Fotos.
+  final List<String>? personen;
+
+  /// Der Partner will die Fotos in seiner eigenen Zeitleiste sehen.
+  final bool inZeitleiste;
+  final DateTime angelegt;
+
+  bool get eingeschraenkt => ab != null || personen != null;
 }
 
 /// Wer welches Album mit wem teilt, in server.sqlite.
@@ -175,12 +205,15 @@ class Albumteilungen {
   }
 
   /// Alle Teilungen eines Albums, das es nicht mehr gibt – samt seinen
-  /// Kommentaren und „Gefällt mir“ (#297).
+  /// Kommentaren und „Gefällt mir“ (#297) und der Regel, die es füllte
+  /// (#298).
   void entferneAlbum(String besitzer, String album) {
     for (final tabelle in const [
       'albumteilungen',
       'albumkommentare',
       'albumgefaellt',
+      'albumregeln',
+      'albumregel_aufgenommen',
     ]) {
       _sdb.db.execute('DELETE FROM $tabelle WHERE besitzer = ? AND album = ?', [
         besitzer,
@@ -254,7 +287,8 @@ class Albumteilungen {
   /// [besitzer] hat [aufnahmen] endgültig gelöscht (#296): Was andere dazu
   /// beigetragen haben, braucht keinen Hinweis mehr.
   ///
-  /// Kommentare und „Gefällt mir“ zu ihnen gehen ebenso (#297).
+  /// Kommentare und „Gefällt mir“ zu ihnen gehen ebenso (#297), und was
+  /// eine Albumregel über sie wusste (#298).
   void vergissBeitraege(String besitzer, List<String> aufnahmen) {
     for (var i = 0; i < aufnahmen.length; i += 500) {
       final teil = aufnahmen.sublist(i, min(i + 500, aufnahmen.length));
@@ -262,6 +296,7 @@ class Albumteilungen {
         'kontobeitraege',
         'albumkommentare',
         'albumgefaellt',
+        'albumregel_aufgenommen',
       ]) {
         _sdb.db.execute(
           'DELETE FROM $tabelle WHERE besitzer = ? AND aufnahme IN '
@@ -458,4 +493,89 @@ class Albumteilungen {
     'SELECT 1 FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
     [besitzer, partner],
   ).isNotEmpty;
+
+  Partnerfreigabe _freigabeAus(Map<String, Object?> z) => Partnerfreigabe(
+    besitzer: z['besitzer']! as String,
+    partner: z['partner']! as String,
+    ab: switch (z['ab']) {
+      final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+      _ => null,
+    },
+    personen: switch (z['personen']) {
+      final String j => [for (final p in jsonDecode(j) as List) '$p'],
+      _ => null,
+    },
+    inZeitleiste: z['in_zeitleiste'] == 1,
+    angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
+  );
+
+  /// Die Freigabe von [besitzer] für [partner], wenn es sie gibt.
+  Partnerfreigabe? partnerfreigabe(String besitzer, String partner) {
+    final z = _sdb.db.select(
+      'SELECT * FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
+      [besitzer, partner],
+    );
+    return z.isEmpty ? null : _freigabeAus(z.first);
+  }
+
+  /// Was [besitzer] freigibt, in der Reihenfolge des Freigebens.
+  List<Partnerfreigabe> freigabenVon(String besitzer) => [
+    for (final z in _sdb.db.select(
+      'SELECT * FROM partnerfreigaben WHERE besitzer = ? ORDER BY angelegt',
+      [besitzer],
+    ))
+      _freigabeAus(z),
+  ];
+
+  /// Was [partner] sehen darf, in der Reihenfolge des Freigebens.
+  List<Partnerfreigabe> freigabenMit(String partner) => [
+    for (final z in _sdb.db.select(
+      'SELECT * FROM partnerfreigaben WHERE partner = ? ORDER BY angelegt',
+      [partner],
+    ))
+      _freigabeAus(z),
+  ];
+
+  /// So viele Personen nimmt eine Einschränkung höchstens.
+  static const hoechstensPersonen = 20;
+
+  /// [besitzer] lässt [partner] nur noch sehen, was ab [ab] aufgenommen
+  /// ist und auf dem mindestens eine der [personen] ist (#299). `null`
+  /// hebt die jeweilige Einschränkung auf; eine leere Liste ebenso.
+  void partnerEinschraenken(
+    String besitzer,
+    String partner, {
+    DateTime? ab,
+    List<String>? personen,
+  }) {
+    final rein = personen?.toSet().toList();
+    if (rein != null && rein.length > hoechstensPersonen) {
+      throw ArgumentError('höchstens $hoechstensPersonen Personen');
+    }
+    _sdb.db.execute(
+      'UPDATE partnerfreigaben SET ab = ?, personen = ? '
+      'WHERE besitzer = ? AND partner = ?',
+      [
+        ab?.millisecondsSinceEpoch,
+        rein == null || rein.isEmpty ? null : jsonEncode(rein),
+        besitzer,
+        partner,
+      ],
+    );
+  }
+
+  /// [partner] will die Fotos von [besitzer] in seiner Zeitleiste sehen
+  /// – oder nicht mehr. `false`, wenn es die Freigabe nicht gibt.
+  bool partnerInZeitleiste(
+    String besitzer,
+    String partner, {
+    required bool an,
+  }) {
+    _sdb.db.execute(
+      'UPDATE partnerfreigaben SET in_zeitleiste = ? '
+      'WHERE besitzer = ? AND partner = ?',
+      [an ? 1 : 0, besitzer, partner],
+    );
+    return _sdb.db.updatedRows > 0;
+  }
 }

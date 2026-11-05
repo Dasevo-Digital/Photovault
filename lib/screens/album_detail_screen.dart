@@ -281,6 +281,12 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                   ort: Aktivitaetsort.besitzer(v, widget.albumId),
                   nurWennGeteilt: true,
                 ),
+                // Füllt sich selbst mit Fotos bestimmter Personen (#298).
+                Albumregelknopf(
+                  verbindung: v,
+                  albumId: widget.albumId,
+                  titel: widget.albumName,
+                ),
                 IconButton(
                   icon: const Icon(Icons.group_add_outlined),
                   tooltip: teilenTexte(context).kontenTeilen,

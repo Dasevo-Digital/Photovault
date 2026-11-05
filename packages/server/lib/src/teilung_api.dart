@@ -10,6 +10,7 @@ import 'package:kern/services/import_service.dart' show ImportOutcome;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
+import 'albumregeln.dart';
 import 'albumteilungen.dart';
 import 'anmeldung_api.dart';
 import 'bibliotheken.dart';
@@ -591,32 +592,122 @@ class Teilungsapi {
     _dienst.entferne(id, ich);
     return Response(204);
   }
+  // --- Albumregeln (#298) -------------------------------------------------
+  //
+  // Ein eigenes Album füllt sich selbst mit den Fotos bestimmter Personen.
+  // Gefüllt wird sofort beim Speichern und danach im Takt des
+  // Albumregelablaufs – neue Fotos und neu erkannte Gesichter kommen über
+  // den Abgleich, ohne dass jemand Bescheid sagt.
+
+  Albumregeln get _regeln => konten.albumregeln;
+
+  Future<Map<String, Object?>> _regelJson(AppDatabase db, Albumregel r) async {
+    final da = await vorhandenePersonen(db, r.personen);
+    return {
+      'personen': [
+        for (final p in r.personen)
+          if (da[p] case final name?) {'id': p, 'name': name},
+      ],
+      // Personen, die es nicht mehr gibt (zusammengeführt, gelöscht).
+      'fehlend': r.personen.where((p) => !da.containsKey(p)).length,
+      'alle': r.alle,
+      'ab': ?_tag(r.ab),
+    };
+  }
+
+  /// `{regel: {personen: [{id, name}], fehlend, alle, ab?} | null}`.
+  Future<Response> regel(Request r, String album) async {
+    if (await _eigenesAlbum(r, album) == null) {
+      return _json({'fehler': 'Album unbekannt'}, status: 404);
+    }
+    final ich = kontoVon(r).id;
+    final regel = _regeln.regel(ich, album);
+    final db = (await bibliotheken.fuer(ich)).bibliothek.db;
+    return _json({'regel': regel == null ? null : await _regelJson(db, regel)});
+  }
+
+  /// `{personen: [Kennung], alle?, ab?: "JJJJ-MM-TT"}` → legt die Regel an
+  /// oder ersetzt sie und füllt das Album gleich: `{regel, dazu}`.
+  Future<Response> regelSetzen(Request r, String album) async {
+    if (await _eigenesAlbum(r, album) == null) {
+      return _json({'fehler': 'Album unbekannt'}, status: 404);
+    }
+    final Object? k;
+    try {
+      k = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    if (k is! Map) return _json({'fehler': 'kein JSON'}, status: 400);
+    final personen = _personenAus(k['personen']);
+    if (personen == null ||
+        personen.isEmpty ||
+        personen.length > Albumregeln.hoechstensPersonen) {
+      return _json({
+        'fehler': '1 bis ${Albumregeln.hoechstensPersonen} Personen',
+      }, status: 400);
+    }
+    final ab = _tagAus(k['ab']);
+    if (ab case (fehler: true, tag: _)) {
+      return _json({'fehler': 'Datum unlesbar'}, status: 400);
+    }
+    final ich = kontoVon(r).id;
+    final bereich = await bibliotheken.fuer(ich);
+    final db = bereich.bibliothek.db;
+    if ((await vorhandenePersonen(db, personen)).length != personen.length) {
+      return _json({'fehler': 'Person unbekannt'}, status: 404);
+    }
+    final regel = _regeln.setze(
+      besitzer: ich,
+      album: album,
+      personen: personen,
+      alle: k['alle'] == true,
+      ab: ab.tag,
+    );
+    final dazu = await fuelleAlbum(bereich, _regeln, regel);
+    return _json({'regel': await _regelJson(db, regel), 'dazu': dazu});
+  }
+
+  /// Das Album füllt sich nicht mehr selbst; was darin liegt, bleibt.
+  Future<Response> regelEntfernen(Request r, String album) async {
+    _regeln.entferne(kontoVon(r).id, album);
+    return Response(204);
+  }
+
   // --- Partnerfreigabe (#293) ---------------------------------------------
   //
-  // Ein Konto lässt ein anderes seine ganze Bibliothek sehen – wie ein
-  // geteiltes Album, nur ohne Album: die Zeitleiste, seitenweise, ohne
-  // Gesperrtes und Papierkorb, ohne die Marken des Besitzers. Beitragen
-  // geht hier nicht; dafür gibt es geteilte Alben.
+  // Ein Konto lässt ein anderes seine Bibliothek sehen – wie ein geteiltes
+  // Album, nur ohne Album: die Zeitleiste, seitenweise, ohne Gesperrtes
+  // und Papierkorb, ohne die Marken des Besitzers. Beitragen geht hier
+  // nicht; dafür gibt es geteilte Alben.
+  //
+  // Seit #299 wahlweise nur ab einem Tag und nur mit bestimmten Personen.
+  // Die Einschränkung gilt für alles, auch für jede einzelne Datei – nicht
+  // nur für die Liste.
 
-  /// `{meine: [{konto, name}], mitMir: [{konto, name, anzahl, titelbild?,
-  /// titelstand?}]}` – wen dieses Konto seine Bibliothek sehen lässt, und
-  /// wessen Bibliothek es sieht.
+  /// `{meine: [{konto, name, ab?, personen?: [{id, name}]}], mitMir:
+  /// [{konto, name, anzahl, titelbild?, titelstand?, inZeitleiste,
+  /// eingeschraenkt}]}` – wen dieses Konto seine Bibliothek sehen lässt,
+  /// und wessen Bibliothek es sieht.
   Future<Response> partner(Request r) async {
     final ich = kontoVon(r).id;
     final mitMir = <Map<String, Object?>>[];
-    for (final besitzer in _dienst.partnerMit(ich)) {
-      final k = konten.konto(besitzer);
+    for (final f in _dienst.freigabenMit(ich)) {
+      final k = konten.konto(f.besitzer);
       if (k == null) continue;
-      final db = (await bibliotheken.fuer(besitzer)).bibliothek.db;
+      final db = (await bibliotheken.fuer(f.besitzer)).bibliothek.db;
+      final b = freigabeBedingung(ab: f.ab, personen: f.personen);
       final anzahl = await db
           .customSelect(
-            'SELECT count(*) AS n FROM assets WHERE $rasterSichtbar',
+            'SELECT count(*) AS n FROM assets WHERE $rasterSichtbar${b.sql}',
+            variables: b.werte,
           )
           .getSingle();
       final titel = await db
           .customSelect(
-            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar '
+            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql} '
             'ORDER BY file_created_at DESC, id DESC LIMIT 1',
+            variables: b.werte,
           )
           .getSingleOrNull();
       final t = titel == null ? null : Rasterzeile.ausZeile(titel);
@@ -626,24 +717,80 @@ class Teilungsapi {
         'anzahl': anzahl.read<int>('n'),
         'titelbild': ?t?.id,
         if (t != null) 'titelstand': bildstand(t),
+        'inZeitleiste': f.inZeitleiste,
+        'eingeschraenkt': f.eingeschraenkt,
       });
     }
-    return _json({
-      'meine': [
-        for (final p in _dienst.partnerVon(ich))
-          if (konten.konto(p) case final k?) {'konto': k.id, 'name': k.name},
-      ],
-      'mitMir': mitMir,
-    });
+    final meine = <Map<String, Object?>>[];
+    final freigaben = _dienst.freigabenVon(ich);
+    final eigene = freigaben.any((f) => f.personen != null)
+        ? (await bibliotheken.fuer(ich)).bibliothek.db
+        : null;
+    for (final f in freigaben) {
+      final k = konten.konto(f.partner);
+      if (k == null) continue;
+      final da = f.personen == null || eigene == null
+          ? const <String, String>{}
+          : await vorhandenePersonen(eigene, f.personen!);
+      meine.add({
+        'konto': k.id,
+        'name': k.name,
+        'ab': ?_tag(f.ab),
+        if (f.personen case final ps?)
+          'personen': [
+            for (final p in ps)
+              if (da[p] case final name?) {'id': p, 'name': name},
+          ],
+      });
+    }
+    return _json({'meine': meine, 'mitMir': mitMir});
   }
 
-  /// Lässt [konto] die eigene Bibliothek sehen.
-  Response partnerSetzen(Request r, String konto) {
+  /// Lässt [konto] die eigene Bibliothek sehen. Mit `{ab?, personen?}` im
+  /// Körper nur ab diesem Tag und nur mit diesen Personen (#299) – das
+  /// gilt dann auch für eine schon bestehende Freigabe. Ohne Körper bleibt
+  /// eine bestehende, wie sie ist.
+  Future<Response> partnerSetzen(Request r, String konto) async {
     final ich = kontoVon(r).id;
     if (konto == ich || konten.konto(konto) == null) {
       return _json({'fehler': 'Konto unbekannt'}, status: 404);
     }
+    final text = await r.readAsString();
+    Map<Object?, Object?>? k;
+    if (text.trim().isNotEmpty) {
+      try {
+        final j = jsonDecode(text);
+        if (j is! Map) return _json({'fehler': 'kein JSON'}, status: 400);
+        k = j;
+      } on FormatException {
+        return _json({'fehler': 'kein JSON'}, status: 400);
+      }
+    }
+    DateTime? ab;
+    List<String>? personen;
+    if (k != null) {
+      final tag = _tagAus(k['ab']);
+      if (tag.fehler) return _json({'fehler': 'Datum unlesbar'}, status: 400);
+      ab = tag.tag;
+      if (k['personen'] != null) {
+        personen = _personenAus(k['personen']);
+        if (personen == null ||
+            personen.length > Albumteilungen.hoechstensPersonen) {
+          return _json({
+            'fehler': 'höchstens ${Albumteilungen.hoechstensPersonen} Personen',
+          }, status: 400);
+        }
+        final db = (await bibliotheken.fuer(ich)).bibliothek.db;
+        if ((await vorhandenePersonen(db, personen)).length !=
+            personen.length) {
+          return _json({'fehler': 'Person unbekannt'}, status: 404);
+        }
+      }
+    }
     _dienst.partnerSetzen(ich, konto);
+    if (k != null) {
+      _dienst.partnerEinschraenken(ich, konto, ab: ab, personen: personen);
+    }
     return Response(204);
   }
 
@@ -659,13 +806,27 @@ class Teilungsapi {
     return Response(204);
   }
 
+  /// `{an}` → die Fotos von [konto] in der eigenen Zeitleiste zeigen oder
+  /// nicht mehr (#299).
+  Future<Response> partnerZeitleiste(Request r, String konto) async {
+    final Object? k;
+    try {
+      k = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final an = k is Map && k['an'] == true;
+    return _dienst.partnerInZeitleiste(konto, kontoVon(r).id, an: an)
+        ? Response(204)
+        : _json({'fehler': 'unbekannt'}, status: 404);
+  }
+
   /// Die Zeitleiste von [konto], wenn es die Anfrage sie sehen lässt:
   /// `{name, aufnahmen: [...], weiter}` – `?nach=` blättert weiter (wie
   /// `/api/v1/aufnahmen`), `?anzahl=` höchstens 1000.
   Future<Response> partnerAufnahmen(Request r, String konto) async {
-    if (!_dienst.istPartner(konto, kontoVon(r).id)) {
-      return _json({'fehler': 'unbekannt'}, status: 404);
-    }
+    final f = _dienst.partnerfreigabe(konto, kontoVon(r).id);
+    if (f == null) return _json({'fehler': 'unbekannt'}, status: 404);
     final db = (await bibliotheken.fuer(konto)).bibliothek.db;
     final q = r.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
@@ -678,32 +839,10 @@ class Teilungsapi {
             id: nach[1],
           )
         : null;
-    final zeilen = await db
-        .customSelect(
-          'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
-          '${ab == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
-          ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
-          variables: [
-            if (ab != null) ...[
-              Variable<DateTime>(ab.zeit),
-              Variable<DateTime>(ab.zeit),
-              Variable<String>(ab.id),
-            ],
-            Variable<int>(anzahl),
-          ],
-          readsFrom: {db.assets},
-        )
-        .get();
-    final liste = [for (final z in zeilen) Rasterzeile.ausZeile(z)];
+    final liste = await partnerzeilen(db, f, anzahl: anzahl, nach: ab);
     return _json({
       'name': konten.konto(konto)?.name ?? '',
-      'aufnahmen': [
-        for (final z in liste)
-          zeileAlsJson(z)
-            ..remove('favorit')
-            ..remove('bewertung')
-            ..remove('farbe'),
-      ],
+      'aufnahmen': [for (final z in liste) partnerzeileAlsJson(z)],
       'weiter': liste.length < anzahl
           ? null
           : '${liste.last.fileCreatedAt.millisecondsSinceEpoch}~${liste.last.id}',
@@ -711,22 +850,109 @@ class Teilungsapi {
   }
 
   /// Eine Datei aus der Bibliothek von [konto] – nichts Gesperrtes, nichts
-  /// aus dem Papierkorb.
+  /// aus dem Papierkorb, und bei einer eingeschränkten Freigabe nur, was
+  /// sie zeigt (oder die Videohälfte eines Live Photos darin).
   Future<Response> partnerDatei(
     Request r,
     String konto,
     String aufnahme,
     String art,
   ) async {
-    if (!_arten.contains(art) || !_dienst.istPartner(konto, kontoVon(r).id)) {
-      return Response.notFound(null);
-    }
+    final f = _dienst.partnerfreigabe(konto, kontoVon(r).id);
+    if (!_arten.contains(art) || f == null) return Response.notFound(null);
     final bereich = await bibliotheken.fuer(konto);
-    final a = await bereich.bibliothek.db.assetById(aufnahme);
+    final db = bereich.bibliothek.db;
+    final a = await db.assetById(aufnahme);
     if (a == null || a.isLocked || a.isTrashed) return Response.notFound(null);
+    if (f.eingeschraenkt) {
+      final b = freigabeBedingung(ab: f.ab, personen: f.personen);
+      final kandidaten = [a.id, ?a.linkedAssetId];
+      final drin = await db
+          .customSelect(
+            'SELECT 1 FROM assets WHERE id IN '
+            '(${List.filled(kandidaten.length, '?').join(', ')}) '
+            'AND $rasterSichtbar${b.sql} LIMIT 1',
+            variables: [
+              for (final k in kandidaten) Variable<String>(k),
+              ...b.werte,
+            ],
+          )
+          .getSingleOrNull();
+      if (drin == null) return Response.notFound(null);
+    }
     return datei(r, bereich, a, art);
   }
 }
+
+/// Eine Tageszahl als `JJJJ-MM-TT`, wie sie Browser und Apps schicken.
+String? _tag(DateTime? t) => t == null
+    ? null
+    : '${t.year.toString().padLeft(4, '0')}-'
+          '${t.month.toString().padLeft(2, '0')}-'
+          '${t.day.toString().padLeft(2, '0')}';
+
+/// Liest `JJJJ-MM-TT` als Tagesbeginn in der Ortszeit des Servers, wie
+/// `aufgenommen` in den Zeilen. `null` oder leer heisst: kein Tag.
+({DateTime? tag, bool fehler}) _tagAus(Object? w) {
+  if (w == null || w == '') return (tag: null, fehler: false);
+  if (w is! String) return (tag: null, fehler: true);
+  final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(w);
+  if (m == null) return (tag: null, fehler: true);
+  final t = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
+  if (t.month != int.parse(m[2]!) || t.day != int.parse(m[3]!)) {
+    return (tag: null, fehler: true);
+  }
+  return (tag: t, fehler: false);
+}
+
+/// Eine Liste von Personenkennungen aus dem Körper – `null`, wenn sie
+/// keine ist.
+List<String>? _personenAus(Object? w) {
+  if (w is! List) return null;
+  final ps = <String>[];
+  for (final p in w) {
+    if (p is! String || p.isEmpty || p.length > 100) return null;
+    ps.add(p);
+  }
+  return ps.toSet().toList();
+}
+
+/// Die Zeitleiste einer Partnerfreigabe [f] aus der Bibliothek [db] des
+/// Besitzers, seitenweise nach Aufnahmezeit – für die eigene Seite der
+/// Bibliothek und für die gemischte Zeitleiste (#299).
+Future<List<Rasterzeile>> partnerzeilen(
+  AppDatabase db,
+  Partnerfreigabe f, {
+  required int anzahl,
+  ({DateTime zeit, String id})? nach,
+}) async {
+  final b = freigabeBedingung(ab: f.ab, personen: f.personen);
+  final zeilen = await db
+      .customSelect(
+        'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql}'
+        '${nach == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
+        ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
+        variables: [
+          ...b.werte,
+          if (nach != null) ...[
+            Variable<DateTime>(nach.zeit),
+            Variable<DateTime>(nach.zeit),
+            Variable<String>(nach.id),
+          ],
+          Variable<int>(anzahl),
+        ],
+        readsFrom: {db.assets, db.faces},
+      )
+      .get();
+  return [for (final z in zeilen) Rasterzeile.ausZeile(z)];
+}
+
+/// Eine Zeile aus der Bibliothek eines Partners – ohne die persönlichen
+/// Marken des Besitzers.
+Map<String, Object?> partnerzeileAlsJson(Rasterzeile z) => zeileAlsJson(z)
+  ..remove('favorit')
+  ..remove('bewertung')
+  ..remove('farbe');
 
 /// Wo ein Kommentar hingehört: das Album von [besitzer].
 class _Ort {

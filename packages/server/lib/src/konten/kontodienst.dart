@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 
+import '../albumregeln.dart';
 import '../albumteilungen.dart';
 import '../freigaben.dart';
 import '../gastbeitraege.dart';
@@ -199,6 +200,9 @@ class Kontodienst {
 
   /// Welche Alben die Konten untereinander teilen (#105).
   late final albumteilungen = Albumteilungen(_sdb, uhr: _uhr);
+
+  /// Welche Alben sich selbst füllen (#298).
+  late final albumregeln = Albumregeln(_sdb, uhr: _uhr);
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);

@@ -46,7 +46,13 @@ const miniaturUrl = (id, stand) => bildUrl(id, 'miniatur', stand);
 // Betrachter, Video, Diashow und Herunterladen gehen hierüber; Karten und
 // Personen zeigen immer Eigenes und nehmen [bildUrl].
 const fremdeListe = () => !!(liste && liste.fremd);
-const aufnahmeUrl = (id, art, stand) => `${(liste && liste.fremd) || '/api/v1/aufnahmen'}/${encodeURIComponent(id)}/${art}${stand ? `?v=${encodeURIComponent(stand)}` : ''}`;
+// Fotos eines Partners in der eigenen Zeitleiste (#299) tragen das Konto,
+// dem sie gehören – ihre Dateien kommen über dessen Freigabe, und ändern
+// lässt sich an ihnen nichts.
+const partnerBasis = (konto) => `/api/v1/partner/von/${encodeURIComponent(konto)}/aufnahmen`;
+const fremdeAufnahmen = new Map();
+const fremdeAufnahme = (a) => fremdeListe() || !!(a && a.konto);
+const aufnahmeUrl = (id, art, stand) => `${fremdeAufnahmen.get(id) || (liste && liste.fremd) || '/api/v1/aufnahmen'}/${encodeURIComponent(id)}/${art}${stand ? `?v=${encodeURIComponent(stand)}` : ''}`;
 const datum = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'full' });
 const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeStyle: 'short' });
 const monatJahr = new Intl.DateTimeFormat(GEBIET, { month: 'long', year: 'numeric' });
@@ -426,6 +432,9 @@ function marken(k, a) {
     v.append(kachelzeichen('live'));
     k.append(v);
   }
+  // Aus der Bibliothek eines Partners (#299): sein Anfangsbuchstabe oben
+  // links, wo sonst der Favorit sitzt – den gibt es an fremden Fotos nicht.
+  if (a.konto && a.von) k.append(el('span', 'partnermarke', a.von.slice(0, 1).toUpperCase()));
   if (a.serie && a.serie.titel && a.serie.groesse > 1) {
     const s = el('span', 'schild');
     s.append(kachelzeichen('serie'), document.createTextNode(String(a.serie.groesse)));
@@ -446,7 +455,7 @@ function kachel(a, index) {
   img.draggable = false;
   img.src = aufnahmeUrl(a.id, 'miniatur', a.stand);
   k.append(img);
-  if (a.von) k.title = t('Beigetragen von {name}', { name: a.von });
+  if (a.von) k.title = a.konto ? t('Aus der Bibliothek von {name}', { name: a.von }) : t('Beigetragen von {name}', { name: a.von });
   if (liste && liste.alsListe) {
     // In der Liste trägt die Zeile die Angaben statt der Marken – Auswahl,
     // Ziehen, Pfeiltasten und Betrachter bleiben dieselben wie bei Kacheln.
@@ -467,7 +476,7 @@ function kachel(a, index) {
     // Wie am Rechner: Umschalt nimmt alles bis hierher dazu, Strg/⌘ eine.
     // Aus einem geteilten Album lässt sich nichts auswählen: Alles, was
     // die Auswahl kann, ändert die eigene Bibliothek.
-    if (fremdeListe()) { setzeRahmen(index, false); oeffne(index); return; }
+    if (fremdeAufnahme(a)) { setzeRahmen(index, false); oeffne(index); return; }
     if (e.shiftKey && rahmen >= 0) { waehleBereich(rahmen, index); setzeRahmen(index, false); return; }
     if (e.metaKey || e.ctrlKey) { schalteAuswahl(a.id, k); setzeRahmen(index, false); return; }
     setzeRahmen(index, false);
@@ -743,7 +752,8 @@ function haengeAn(aufnahmen) {
       }
     }
     if (!liste.tage.has(tag)) liste.tage.set(tag, []);
-    liste.tage.get(tag).push(a.id);
+    // Fotos eines Partners (#299) wählt auch der ganze Tag nicht mit.
+    if (!a.konto) liste.tage.get(tag).push(a.id);
     const k = kachel(a, liste.aufnahmen.length);
     liste.kacheln.push(k);
     raster.append(k);
@@ -859,6 +869,11 @@ const zeitleiste = {
     if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
     if (ansicht.liste) q.set('voll', '1');
     const d = await api(`/api/v1/aufnahmen?${q}`);
+    for (const a of d.aufnahmen) {
+      if (!a.konto) continue;
+      fremdeAufnahmen.set(a.id, partnerBasis(a.konto));
+      if (a.partner) fremdeAufnahmen.set(a.partner, partnerBasis(a.konto));
+    }
     this.weiter = d.weiter;
     this.geladen.push(...d.aufnahmen);
     return d;
@@ -990,7 +1005,7 @@ async function zeigeAlben() {
   for (const a of d.alben) {
     const n = neuIn.get(a.id);
     $('karten').append(karte(a.titelbild ? miniaturUrl(a.titelbild) : null, a.name, anzahlText(a.anzahl), `#/alben/${encodeURIComponent(a.id)}`, {
-      kennzeichen: n ? t('{n} neu', { n }) : a.geteilt ? t('Geteilt') : null,
+      kennzeichen: n ? t('{n} neu', { n }) : a.geteilt ? t('Geteilt') : a.automatisch ? t('Automatisch') : null,
     }));
   }
   // Was andere Konten mit diesem teilen (#105) – Alben und ganze
@@ -1103,10 +1118,12 @@ async function zeigeOrt(land, stadt) {
 async function zeigeAlbum(id) {
   markiereNav('alben');
   zeigeBereich(['raster']);
-  const [d, neu, teilungen] = await Promise.all([
+  const [d, neu, teilungen, regel] = await Promise.all([
     api(`/api/v1/alben/${encodeURIComponent(id)}`),
     api('/api/v1/kontobeitraege').catch(() => ({ alben: [] })),
     api(`/api/v1/alben/${encodeURIComponent(id)}/teilungen`).catch(() => ({ teilungen: [] })),
+    // Ein älterer Server kennt keine Regeln (#298): dann ohne Knopf.
+    api(`/api/v1/alben/${encodeURIComponent(id)}/regel`).catch(() => null),
   ]);
   const kopf = el('div', 'reisekopf');
   // Neue Beiträge anderer Konten (#295): einmal sagen, dann gelten sie als
@@ -1126,11 +1143,122 @@ async function zeigeAlbum(id) {
   konten.type = 'button';
   konten.addEventListener('click', () => oeffneKontenDialog(d.album.id, d.album.name));
   kopf.append(diashow, teilen, konten);
+  if (regel) {
+    const r = regel.regel;
+    const fuellen = el('button', 'knopf', r ? t('Automatisch füllen ✓') : t('Automatisch füllen …'));
+    fuellen.type = 'button';
+    fuellen.addEventListener('click', () => oeffneRegelDialog({ art: 'album', id: d.album.id, name: d.album.name }, r));
+    kopf.append(fuellen);
+    if (r) kopf.append(el('span', 'leise', regelText(r)));
+  }
   // Kommentare und „Gefällt mir“, sobald jemand mitschaut (#297).
   const aktivitaet = teilungen.teilungen.length ? neueAktivitaet(`/api/v1/alben/${encodeURIComponent(id)}`, kopf) : null;
   zeigeListe({ aufnahmen: d.aufnahmen, kopf, aktivitaet }, d.album.name);
   if (aktivitaet) ladeAktivitaet();
 }
+
+// --- Alben, die sich selbst füllen (#298), und was ein Partner sieht (#299) ---
+//
+// Ein Dialog für beides: Personen wählen, wahlweise ein Tag. Beim Album
+// dazu, ob eine der Personen genügt oder alle zusammen drauf sein müssen;
+// bei der Partnerfreigabe genügt immer eine.
+
+const tagFormat = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium' });
+const tagText = (t0) => { const [j, m, d] = t0.split('-').map(Number); return tagFormat.format(new Date(j, m - 1, d)); };
+
+// „Anna, Ben · ab 1. Jan. 2020“ – für Album und Partner.
+function regelText(r) {
+  const teile = [];
+  const namen = (r.personen || []).map((p) => p.name);
+  if (namen.length) teile.push(r.alle ? t('{namen} zusammen', { namen: namen.join(' & ') }) : t('mit {namen}', { namen: namen.join(', ') }));
+  if (r.ab) teile.push(t('ab {tag}', { tag: tagText(r.ab) }));
+  return teile.join(' · ');
+}
+
+let regelZiel = null;
+let regelPersonen = [];
+const regelGewaehlt = new Set();
+
+async function oeffneRegelDialog(ziel, vorher) {
+  regelZiel = ziel;
+  regelGewaehlt.clear();
+  for (const p of (vorher && vorher.personen) || []) regelGewaehlt.add(p.id);
+  const album = ziel.art === 'album';
+  $('regel-titel').textContent = album ? t('„{name}“ automatisch füllen', { name: ziel.name }) : t('Was {name} sieht', { name: ziel.name });
+  $('regel-hinweis').textContent = album
+    ? t('Fotos der gewählten Personen kommen von selbst in dieses Album – auch solche, auf denen sie erst später erkannt werden. Was du herausnimmst, bleibt draussen.')
+    : t('Ohne Auswahl sieht {name} deine ganze Bibliothek. Mit Personen nur Fotos, auf denen mindestens eine davon ist – das gilt für jede Datei, nicht nur für die Liste.', { name: ziel.name });
+  $('regel-art').hidden = !album;
+  document.querySelector(`input[name="regel-art"][value="${vorher && vorher.alle ? 'alle' : 'eine'}"]`).checked = true;
+  $('regel-ab').value = (vorher && vorher.ab) || '';
+  $('regel-suche').value = '';
+  $('regel-meldung').textContent = vorher && vorher.fehlend
+    ? (vorher.fehlend === 1 ? t('Eine gewählte Person gibt es nicht mehr.') : t('{n} gewählte Personen gibt es nicht mehr.', { n: vorher.fehlend }))
+    : '';
+  $('regel-weg').hidden = !(album && vorher);
+  $('regel-personen').replaceChildren(el('li', 'leise', t('Lade …')));
+  $('regel-dialog').showModal();
+  try {
+    regelPersonen = (await api('/api/v1/personen')).personen.filter((p) => p.name);
+  } catch (x) { regelPersonen = []; $('regel-meldung').textContent = x.message; }
+  if (regelZiel === ziel) zeigeRegelPersonen();
+}
+
+function zeigeRegelPersonen() {
+  const q = $('regel-suche').value.trim().toLocaleLowerCase(GEBIET);
+  const passt = regelPersonen
+    .filter((p) => !q || p.name.toLocaleLowerCase(GEBIET).includes(q))
+    // Gewählte zuerst, sonst wie der Server sie liefert: die häufigsten oben.
+    .sort((a, b) => Number(regelGewaehlt.has(b.id)) - Number(regelGewaehlt.has(a.id)));
+  const ul = $('regel-personen');
+  ul.replaceChildren();
+  for (const p of passt.slice(0, 300)) {
+    const li = el('li');
+    const l = el('label');
+    const c = el('input');
+    c.type = 'checkbox';
+    c.checked = regelGewaehlt.has(p.id);
+    c.addEventListener('change', () => { if (c.checked) regelGewaehlt.add(p.id); else regelGewaehlt.delete(p.id); });
+    l.append(c, el('span', null, p.name), el('span', 'leise klein anzahl', String(p.anzahl)));
+    li.append(l);
+    ul.append(li);
+  }
+  if (!passt.length) ul.append(el('li', 'leise', regelPersonen.length ? t('Keine Person gefunden.') : t('Noch keine Personen mit Namen.')));
+}
+
+$('regel-suche').addEventListener('input', zeigeRegelPersonen);
+$('regel-abbrechen').addEventListener('click', () => $('regel-dialog').close());
+$('regel-speichern').addEventListener('click', async () => {
+  const z = regelZiel;
+  if (!z) return;
+  const personen = [...regelGewaehlt];
+  const ab = $('regel-ab').value || null;
+  if (personen.length > 20) { $('regel-meldung').textContent = t('Höchstens 20 Personen.'); return; }
+  try {
+    if (z.art === 'album') {
+      if (!personen.length) { $('regel-meldung').textContent = t('Wähle mindestens eine Person.'); return; }
+      const alle = document.querySelector('input[name="regel-art"]:checked').value === 'alle';
+      const r = await api(`/api/v1/alben/${encodeURIComponent(z.id)}/regel`, { methode: 'PUT', json: { personen, alle, ab } });
+      $('regel-dialog').close();
+      meldung(r.dazu === 1 ? t('Eine Aufnahme dazugelegt') : t('{n} Aufnahmen dazugelegt', { n: r.dazu }));
+      await zeigeAlbum(z.id);
+    } else {
+      await api(`/api/v1/partner/${encodeURIComponent(z.konto)}`, { methode: 'PUT', json: { ab, personen } });
+      $('regel-dialog').close();
+      await zeigePartner();
+    }
+  } catch (x) { $('regel-meldung').textContent = x.message; }
+});
+$('regel-weg').addEventListener('click', async () => {
+  const z = regelZiel;
+  if (!z || z.art !== 'album') return;
+  try {
+    await api(`/api/v1/alben/${encodeURIComponent(z.id)}/regel`, { methode: 'DELETE' });
+    $('regel-dialog').close();
+    meldung(t('Das Album füllt sich nicht mehr selbst. Was darin liegt, bleibt.'));
+    await zeigeAlbum(z.id);
+  } catch (x) { $('regel-meldung').textContent = x.message; }
+});
 
 // --- Alben zwischen Konten teilen (#105) ---------------------------------------
 //
@@ -1214,7 +1342,12 @@ async function zeigePartner() {
       try { await api(`/api/v1/partner/${encodeURIComponent(k.konto)}`, { methode: 'DELETE' }); } catch (x) { meldung(x.message); return; }
       await zeigePartner();
     });
-    zeile.append(el('span', 'name', k.name), weg);
+    // Nur ab einem Tag, nur mit bestimmten Personen (#299).
+    const eng = el('button', 'knopf', t('Einschränken …'));
+    eng.type = 'button';
+    eng.addEventListener('click', () => oeffneRegelDialog({ art: 'partner', konto: k.konto, name: k.name }, k.ab || k.personen ? k : null));
+    zeile.append(el('span', 'name', k.name), eng, weg);
+    zeile.append(el('span', 'leise klein einschraenkung', k.ab || k.personen ? regelText(k) : t('Die ganze Bibliothek')));
     zeilen.append(zeile);
   }
   if (!p.meine.length) zeilen.append(el('li', 'leise', t('Mit niemandem geteilt.')));
@@ -1258,6 +1391,23 @@ async function zeigePartnerbibliothek(konto) {
     if (!confirm(t('Die Bibliothek von {name} nicht mehr anzeigen? Teilen kann nur {name} sie wieder.', { name: erste.name }))) return;
     try { await api(`/api/v1/partner/von/${encodeURIComponent(konto)}`, { methode: 'DELETE' }); location.hash = '#/alben'; } catch (x) { meldung(x.message); }
   });
+  // In der eigenen Zeitleiste zeigen (#299) – das gilt für dieses Konto,
+  // im Browser und auf dem Telefon.
+  const stand = (await api('/api/v1/partner').catch(() => ({ mitMir: [] }))).mitMir.find((b) => b.konto === konto);
+  if (stand && stand.inZeitleiste !== undefined) {
+    const schalter = el('label', 'leise');
+    const kasten = el('input');
+    kasten.type = 'checkbox';
+    kasten.checked = !!stand.inZeitleiste;
+    kasten.addEventListener('change', async () => {
+      try {
+        await api(`/api/v1/partner/von/${encodeURIComponent(konto)}/zeitleiste`, { methode: 'PUT', json: { an: kasten.checked } });
+        zeitleiste.leeren();
+      } catch (x) { kasten.checked = !kasten.checked; meldung(x.message); }
+    });
+    schalter.append(kasten, document.createTextNode(` ${t('In meiner Zeitleiste zeigen')}`));
+    kopf.append(schalter);
+  }
   kopf.append(diashow, verlassen);
   zeigeListe({
     aufnahmen: erste.aufnahmen,
@@ -3450,10 +3600,10 @@ let auswahlModus = false;
 const auswahl = new Set();
 
 function schalteAuswahl(id, k) {
-  if (fremdeListe()) return;
+  const a = liste && liste.aufnahmen[Number(k.dataset.index)];
+  if (fremdeAufnahme(a)) return;
   if (auswahl.has(id)) auswahl.delete(id); else auswahl.add(id);
   k.classList.toggle('gewaehlt', auswahl.has(id));
-  const a = liste && liste.aufnahmen[Number(k.dataset.index)];
   zeichneTage(a ? [tagVon(a)] : undefined);
   zeigeAuswahl();
 }
@@ -3536,7 +3686,7 @@ function ziehBeginn(i, art) {
   const a = liste && liste.aufnahmen[i];
   clearTimeout(halteUhr);
   druck = null;
-  if (!a || fremdeListe()) return;
+  if (!a || fremdeAufnahme(a)) return;
   auswahlModus = true;
   Object.assign(zieh, { anker: i, letzter: i, art, waehlt: !auswahl.has(a.id), vorher: new Set(auswahl), schlucke: true, von: i, zu: i });
   if (navigator.vibrate) navigator.vibrate(8);
@@ -3552,6 +3702,7 @@ function wendeAn(bis) {
     if (zieh.vorher.has(id)) auswahl.add(id); else auswahl.delete(id);
   }
   for (let i = von; i <= zu; i++) {
+    if (liste.aufnahmen[i].konto) continue;
     const id = liste.aufnahmen[i].id;
     if (zieh.waehlt) auswahl.add(id); else auswahl.delete(id);
   }
@@ -4488,7 +4639,7 @@ function oeffne(i) {
     bild.src = aufnahmeUrl(a.id, 'ansicht', a.stand);
   }
   // Was die eigene Bibliothek ändert, fehlt in einem geteilten Album.
-  const fremd = fremdeListe();
+  const fremd = fremdeAufnahme(a);
   $('bearbeiten').hidden = a.art === 'video' || fremd;
   $('gesichter-knopf').hidden = a.art === 'video' || fremd;
   setzeAufziehen(false);
@@ -4556,7 +4707,7 @@ async function zeigeRahmen() {
   rahmenflaeche.querySelectorAll('.rahmen').forEach((r) => r.remove());
   rahmenDaten = null;
   const a = liste && liste.aufnahmen[offen];
-  if (!gesichterAn || !a || a.art === 'video' || fremdeListe()) { legeRahmenflaeche(); return; }
+  if (!gesichterAn || !a || a.art === 'video' || fremdeAufnahme(a)) { legeRahmenflaeche(); return; }
   let d;
   try { d = await api(`/api/v1/aufnahmen/${encodeURIComponent(a.id)}/angaben?sprache=${SPRACHE}`); } catch (_) { return; }
   if (!liste || liste.aufnahmen[offen] !== a) return;
@@ -4850,7 +5001,7 @@ async function zeigeAngaben() {
   if (!a || !angabenOffen) return;
   // Kommentare zu diesem Foto, wenn das Album geteilt ist (#297).
   const kommentare = liste.aktivitaet ? [el('h3', null, t('Kommentare')), kommentarBereich(a.id)] : [];
-  if (fremdeListe()) {
+  if (fremdeAufnahme(a)) {
     // Ein geteiltes Album: nur, was die Liste weiss – die Angaben der
     // Bibliothek gehören dem Besitzer.
     feld.replaceChildren(
@@ -4859,7 +5010,7 @@ async function zeigeAngaben() {
       el('p', '', datumZeit.format(new Date(a.aufgenommen))),
       el('p', 'leise', a.name || ''),
       ...(a.breite && a.hoehe ? [el('p', 'leise', `${a.breite} × ${a.hoehe}`)] : []),
-      ...(a.von ? [el('p', 'leise', t('Beigetragen von {name}', { name: a.von }))] : []),
+      ...(a.von ? [el('p', 'leise', a.konto ? t('Aus der Bibliothek von {name}', { name: a.von }) : t('Beigetragen von {name}', { name: a.von }))] : []),
     );
     return;
   }
@@ -4984,6 +5135,7 @@ async function nimmAusListe(a, art) {
 }
 $('weg').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
+  if (a && a.konto) return;
   if (a && fremdeListe()) { await entferneBeitrag(a); return; }
   if (!a || !confirm(t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.'))) return;
   try { await nimmAusListe(a, 'inDenPapierkorb'); } catch (x) { $('angaben').textContent = x.message; }
@@ -5549,7 +5701,7 @@ function setzeRahmen(i, sichtbar = true) {
 function waehleBereich(von, bis) {
   if (fremdeListe()) return;
   const [a0, a1] = von < bis ? [von, bis] : [bis, von];
-  for (let i = a0; i <= a1; i++) auswahl.add(liste.aufnahmen[i].id);
+  for (let i = a0; i <= a1; i++) if (!liste.aufnahmen[i].konto) auswahl.add(liste.aufnahmen[i].id);
   zeichneAuswahl(a0, a1);
 }
 
@@ -5728,7 +5880,7 @@ document.addEventListener('keydown', async (e) => {
     if ($('bereich-raster').hidden || !liste || !liste.kacheln || !liste.kacheln.length) return;
     if (strg && (taste === 'a' || taste === 'A') && !liste.fremd) {
       e.preventDefault();
-      for (const x of liste.aufnahmen) auswahl.add(x.id);
+      for (const x of liste.aufnahmen) if (!x.konto) auswahl.add(x.id);
       zeichneAuswahl();
       return;
     }

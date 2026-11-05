@@ -120,8 +120,13 @@ versions as the owner, including originals with embedded metadata such as the
 capture location. The owner's own marks (favourite, rating, colour label) stay
 with the owner. Files uploaded by an account allowed to contribute go into the
 owner's library; the server records which account they came from. An account
-can likewise let another account view its whole library; locked items and the
-trash stay excluded. In a shared album, the owner and everyone it is shared
+can likewise let another account view its library – if it wishes, only from a
+given date on and only items on which certain people are recognised; locked
+items and the trash stay excluded. The partner can see these items in its own
+timeline; they do not go into its library. An album can fill itself with the
+items of certain people. The server stores which people are chosen and which
+items the rule has already added; if the album is shared, its recipients
+also see items added later. In a shared album, the owner and everyone it is shared
 with can write comments and mark items with “Like”. The server stores the
 text, the account, its name and the time; everyone involved sees them. The
 author of a comment and the owner of the album can remove it. Comments go

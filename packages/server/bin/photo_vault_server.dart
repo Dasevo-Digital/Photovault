@@ -93,6 +93,10 @@ Future<void> main(List<String> argumente) async {
     konten: konten,
     bibliotheken: bibliotheken,
   )..starte();
+  final albumregeln = Albumregelablauf(
+    konten: konten,
+    bibliotheken: bibliotheken,
+  )..starte();
   if (e.sicherung != null) {
     protokoll(
       'Sicherung nach ${e.sicherung!.path}, täglich um '
@@ -181,6 +185,7 @@ Future<void> main(List<String> argumente) async {
   speicher.beende();
   sicherung.beende();
   papierkorb.beende();
+  albumregeln.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
   sdb.schliesse();

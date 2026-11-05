@@ -40,6 +40,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import 'abgleich_api.dart';
+import 'albumregeln.dart';
 import 'albumteilungen.dart';
 import 'papierkorb.dart';
 import 'absender.dart';
@@ -103,6 +104,8 @@ Handler baueApi({
     netz,
     vollbilder: Vollbilder(),
     teilungen: konten.albumteilungen,
+    regeln: konten.albumregeln,
+    kontoname: (id) => konten.konto(id)?.name,
   );
   final freigabe = Freigabeapi(
     dienst: konten.freigaben,
@@ -323,6 +326,8 @@ Handler baueApi({
     ..put('/api/v1/partner/<konto>', teilung.partnerSetzen)
     ..delete('/api/v1/partner/<konto>', teilung.partnerEntfernen)
     ..delete('/api/v1/partner/von/<konto>', teilung.partnerVerlassen)
+    // In der eigenen Zeitleiste zeigen (#299).
+    ..put('/api/v1/partner/von/<konto>/zeitleiste', teilung.partnerZeitleiste)
     ..get('/api/v1/partner/von/<konto>/aufnahmen', teilung.partnerAufnahmen)
     ..get(
       '/api/v1/partner/von/<konto>/aufnahmen/<aufnahme>/<art>',
@@ -333,6 +338,10 @@ Handler baueApi({
       teilung.beitraegeGesehen,
     )
     ..get('/api/v1/alben/<id>/teilungen', teilung.vonAlbum)
+    // Alben, die sich selbst füllen (#298).
+    ..get('/api/v1/alben/<id>/regel', teilung.regel)
+    ..put('/api/v1/alben/<id>/regel', teilung.regelSetzen)
+    ..delete('/api/v1/alben/<id>/regel', teilung.regelEntfernen)
     // Kommentare und „Gefällt mir“ (#297), für den Besitzer …
     ..get('/api/v1/alben/<id>/aktivitaet', teilung.aktivitaetEigen)
     ..post('/api/v1/alben/<id>/kommentare', teilung.kommentierenEigen)
@@ -606,10 +615,19 @@ class _Api {
     this._netz, {
     required this.vollbilder,
     this.teilungen,
+    this.regeln,
+    this.kontoname,
   });
 
-  /// Mit wem die Alben geteilt sind (#105) – für die Albenliste.
+  /// Mit wem die Alben geteilt sind (#105) – für die Albenliste; und wer
+  /// seine Bibliothek in der Zeitleiste dieses Kontos zeigt (#299).
   final Albumteilungen? teilungen;
+
+  /// Welche Alben sich selbst füllen (#298) – für die Albenliste.
+  final Albumregeln? regeln;
+
+  /// Der Name eines anderen Kontos – an den Fotos eines Partners.
+  final String? Function(String konto)? kontoname;
 
   /// Für Overpass – nur in Tests gesetzt, sonst ein eigener je Abruf.
   final http.Client? _netz;
@@ -642,6 +660,10 @@ class _Api {
           'papierkorb': 1,
           // Kommentare und „Gefällt mir“ in geteilten Alben (#297).
           'kommentare': 1,
+          // Alben, die sich selbst füllen (#298).
+          'albumregeln': 1,
+          // Partnerfreigabe eingeschränkt und in der Zeitleiste (#299).
+          'partnerfreigabe': 2,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
@@ -760,12 +782,90 @@ class _Api {
         )
         .get();
     final liste = [for (final z in zeilen) Rasterzeile.ausZeile(z)];
-    return _json({
-      'aufnahmen': await alsJson(liste),
-      'weiter': liste.length < anzahl
-          ? null
-          : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+    // Die Fotos von Partnern, die dieses Konto in seiner Zeitleiste sehen
+    // will (#299) – nach demselben Lesezeichen aus jeder Bibliothek
+    // geholt und eingereiht. Favoriten sind persönlich und bleiben eigen.
+    final partner = nurFavoriten
+        ? const <_Partnerquelle>[]
+        : await _partnerInZeitleiste(anfrage);
+    if (partner.isEmpty) {
+      return _json({
+        'aufnahmen': await alsJson(liste),
+        'weiter': liste.length < anzahl
+            ? null
+            : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+      });
+    }
+    final alle = <({Rasterzeile z, _Partnerquelle? von})>[
+      for (final z in liste) (z: z, von: null),
+    ];
+    for (final p in partner) {
+      for (final z in await partnerzeilen(
+        p.db,
+        p.freigabe,
+        anzahl: anzahl,
+        nach: nach == null ? null : (zeit: nach.zeit, id: nach.id),
+      )) {
+        alle.add((z: z, von: p));
+      }
+    }
+    alle.sort((a, b) {
+      final c = b.z.fileCreatedAt.compareTo(a.z.fileCreatedAt);
+      return c != 0 ? c : b.z.id.compareTo(a.z.id);
     });
+    final seite = alle.take(anzahl).toList();
+    final eigene = [
+      for (final e in seite)
+        if (e.von == null) e.z,
+    ];
+    final eigenJson = {
+      for (final (i, j) in (await alsJson(eigene)).indexed) eigene[i].id: j,
+    };
+    final mehr = <String, Listenangaben>{};
+    if (voll) {
+      for (final p in partner) {
+        mehr.addAll(
+          await p.db.listenangaben([
+            for (final e in seite)
+              if (identical(e.von, p)) e.z.id,
+          ]),
+        );
+      }
+    }
+    return _json({
+      'aufnahmen': [
+        for (final e in seite)
+          if (e.von case final p?)
+            {
+              ...partnerzeileAlsJson(e.z),
+              if (mehr[e.z.id] case final l?) ...listenangabenAlsJson(l),
+              'konto': p.freigabe.besitzer,
+              'von': p.name,
+            }
+          else
+            eigenJson[e.z.id]!,
+      ],
+      'weiter': seite.length < anzahl
+          ? null
+          : _Lesezeichen(seite.last.z.fileCreatedAt, seite.last.z.id).text,
+    });
+  }
+
+  /// Die Partner, deren Fotos das Konto der Anfrage in seiner Zeitleiste
+  /// sehen will (#299).
+  Future<List<_Partnerquelle>> _partnerInZeitleiste(Request anfrage) async {
+    final t = teilungen;
+    if (t == null) return const [];
+    return [
+      for (final f in t.freigabenMit(kontoVon(anfrage).id))
+        if (f.inZeitleiste)
+          if (kontoname?.call(f.besitzer) case final name?)
+            _Partnerquelle(
+              f,
+              (await bibliotheken.fuer(f.besitzer)).bibliothek.db,
+              name,
+            ),
+    ];
   }
 
   /// Wie viele Aufnahmen die Zeitleiste je Monat zeigt, neueste zuerst –
@@ -774,18 +874,40 @@ class _Api {
   /// Servers, wie `aufgenommen` in jeder Zeile (siehe zeilen_json.dart).
   Future<Response> zeitleistenmonate(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final zeilen = await db
-        .customSelect(
-          "SELECT strftime('%Y-%m', file_created_at, 'unixepoch', 'localtime') "
-          'AS m, COUNT(*) AS n FROM assets WHERE $rasterSichtbar '
-          'GROUP BY m ORDER BY m DESC',
-          readsFrom: {db.assets},
-        )
-        .get();
+    final je = <String, int>{};
+    Future<void> zaehle(
+      AppDatabase db,
+      String bedingung,
+      List<Variable<Object>> werte,
+    ) async {
+      for (final z
+          in await db
+              .customSelect(
+                "SELECT strftime('%Y-%m', file_created_at, 'unixepoch', 'localtime') "
+                'AS m, COUNT(*) AS n FROM assets WHERE $rasterSichtbar$bedingung '
+                'GROUP BY m',
+                variables: werte,
+                readsFrom: {db.assets},
+              )
+              .get()) {
+        final m = z.read<String>('m');
+        je[m] = (je[m] ?? 0) + z.read<int>('n');
+      }
+    }
+
+    await zaehle(db, '', const []);
+    // Mit den Fotos der Partner, wie die Zeitleiste sie zeigt (#299).
+    for (final p in await _partnerInZeitleiste(anfrage)) {
+      final b = freigabeBedingung(
+        ab: p.freigabe.ab,
+        personen: p.freigabe.personen,
+      );
+      await zaehle(p.db, b.sql, b.werte);
+    }
+    final monate = je.keys.toList()..sort((a, b) => b.compareTo(a));
     return _json({
       'monate': [
-        for (final z in zeilen)
-          {'monat': z.read<String>('m'), 'anzahl': z.read<int>('n')},
+        for (final m in monate) {'monat': m, 'anzahl': je[m]},
       ],
     });
   }
@@ -1688,6 +1810,11 @@ class _Api {
             const <Albumteilung>[]) {
       geteilt[t.album] = (geteilt[t.album] ?? 0) + 1;
     }
+    final automatisch = {
+      for (final r
+          in regeln?.vonBesitzer(kontoVon(anfrage).id) ?? const <Albumregel>[])
+        r.album,
+    };
     return _json({
       'alben': [
         for (final a in liste)
@@ -1697,6 +1824,7 @@ class _Api {
             'anzahl': anzahlen[a.id] ?? 0,
             'titelbild': (await db.albumTitelbild(a))?.id,
             'geteilt': ?geteilt[a.id],
+            if (automatisch.contains(a.id)) 'automatisch': true,
           },
       ],
     });
@@ -2177,6 +2305,15 @@ class _Api {
 
 /// Wo eine Seite der Zeitleiste endet: Zeitpunkt und Kennung der letzten
 /// Aufnahme, als Text für die Adresse.
+/// Die Bibliothek eines Partners in der Zeitleiste (#299).
+class _Partnerquelle {
+  _Partnerquelle(this.freigabe, this.db, this.name);
+
+  final Partnerfreigabe freigabe;
+  final AppDatabase db;
+  final String name;
+}
+
 class _Lesezeichen {
   const _Lesezeichen(this.zeit, this.id);
 

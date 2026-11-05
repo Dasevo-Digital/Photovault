@@ -7,6 +7,7 @@ import 'package:kern/services/sortierung.dart';
 
 import '../l10n/app_localizations.dart';
 import '../lokal/ungesichert.dart';
+import '../partnerfotos.dart';
 import '../sicherung/dienst.dart';
 import '../sitzung.dart';
 import 'ansichtsleiste.dart';
@@ -132,17 +133,24 @@ class _ZeitleisteState extends State<Zeitleiste> {
       }
       final d = sitzung.sicherung;
       return ListenableBuilder(
-        listenable: Listenable.merge([?d]),
+        listenable: Listenable.merge([?d, sitzung.partnerfotos]),
         builder: (context, _) {
           final t = AppTexte.of(context);
           // Was nur auf dem Telefon liegt, steht nach seinem Datum
-          // dazwischen – das geht nur in der gewohnten Reihenfolge.
+          // dazwischen – das geht nur in der gewohnten Reihenfolge. Ebenso
+          // die Fotos von Partnern (#299).
           final mischen = _sortierung == rastersortierungVorgabe;
           final lokal = mischen
               ? d?.ungesichert ?? const <LokaleAufnahme>[]
               : const <LokaleAufnahme>[];
           final gemischt = mischeMitServer(server, lokal);
-          var zeilen = gemischt.zeilen;
+          final mitPartnern = mischen
+              ? mischeMitPartnern(gemischt.zeilen, sitzung.partnerfotos.value)
+              : (
+                  zeilen: gemischt.zeilen,
+                  partner: const <String, Partnerfoto>{},
+                );
+          var zeilen = mitPartnern.zeilen;
           final nachDatum = nachAufnahmedatum(_sortierung);
           final gliederung = nachDatum ? _gliederung : ListenGruppierung.keine;
           if (_alsListe) {
@@ -178,6 +186,7 @@ class _ZeitleisteState extends State<Zeitleiste> {
                     sitzung: sitzung,
                     zeilen: zeilen,
                     lokal: gemischt.lokal,
+                    partner: mitPartnern.partner,
                     nachTagen: nachDatum,
                     nachOben: widget.nachOben,
                     liste: _alsListe

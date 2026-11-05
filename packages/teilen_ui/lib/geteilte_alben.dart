@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -10,8 +11,10 @@ import 'package:path/path.dart' as p;
 
 import 'aktivitaet.dart';
 import 'l10n/teilen_texte.dart';
+import 'regeln.dart';
 
 export 'aktivitaet.dart';
+export 'regeln.dart';
 
 // Alben zwischen Konten teilen (#105) – wie im Browser (web/app.js,
 // zeigeGeteiltesAlbum und oeffneKontenDialog), für Telefon und Rechner
@@ -68,9 +71,19 @@ class Teilungszugang {
     this.ablage,
     this.waehle,
     this.video,
+    this.zeitleisteMischt = false,
+    this.partnerGeaendert,
   });
 
   final Serververbindung verbindung;
+
+  /// Ob diese App Fotos eines Partners in ihre Zeitleiste mischt (#299) –
+  /// das Telefon ja, der Rechner nicht. Danach heisst der Schalter.
+  final bool zeitleisteMischt;
+
+  /// Ein Partner wird in der Zeitleiste gezeigt oder nicht mehr – oder
+  /// die Freigabe ist weg.
+  final VoidCallback? partnerGeaendert;
 
   /// Wohin die Bilder kommen (`StoragePaths.geteiltDir`), oder `null`:
   /// dann nur in den Bildspeicher.
@@ -155,6 +168,8 @@ class GeteiltesAlbum {
     this.titelbild,
     this.titelstand,
     this.partner,
+    this.inZeitleiste = false,
+    this.eingeschraenkt = false,
   });
 
   /// Die ganze Bibliothek eines anderen Kontos (#293) – im Raster und im
@@ -168,6 +183,8 @@ class GeteiltesAlbum {
     titelbild: j['titelbild'] as String?,
     titelstand: j['titelstand'] as String?,
     partner: '${j['konto']}',
+    inZeitleiste: j['inZeitleiste'] == true,
+    eingeschraenkt: j['eingeschraenkt'] == true,
   );
 
   factory GeteiltesAlbum.aus(Map<String, Object?> j) => GeteiltesAlbum(
@@ -191,6 +208,11 @@ class GeteiltesAlbum {
 
   /// Bei einer Partnerfreigabe das Konto, dessen Bibliothek es ist.
   final String? partner;
+
+  /// Ob dieses Konto die Bibliothek in seiner Zeitleiste sehen will
+  /// (#299), und ob der Besitzer nur einen Teil zeigt.
+  final bool inZeitleiste;
+  final bool eingeschraenkt;
 
   String get _basis => partner == null
       ? 'api/v1/geteilt/${_k(id)}'
@@ -424,6 +446,8 @@ class _GeteilteKachel extends StatelessWidget {
           Text(
             album.partner == null
                 ? t.geteiltVon(album.besitzer)
+                : album.eingeschraenkt
+                ? t.partnerEingeschraenkt
                 : t.partnerGanzeBibliothek,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1406,6 +1430,28 @@ class PartnerBibliothekSeite extends StatefulWidget {
 }
 
 class _PartnerBibliothekSeiteState extends State<PartnerBibliothekSeite> {
+  late var _inZeitleiste = widget.bibliothek.inZeitleiste;
+
+  /// In der eigenen Zeitleiste zeigen oder nicht mehr (#299).
+  Future<void> _zeitleiste(bool an) async {
+    final bote = ScaffoldMessenger.of(context);
+    final t = teilenTexte(context);
+    setState(() => _inZeitleiste = an);
+    try {
+      final r = await widget.zugang.verbindung.anfrage(
+        'PUT',
+        'api/v1/partner/von/${_k(_konto)}/zeitleiste',
+        kopf: const {'content-type': 'application/json'},
+        inhalt: utf8.encode(jsonEncode({'an': an})),
+      );
+      if (r.statusCode != 204) throw Serverfehler(r.statusCode, r.body);
+      widget.zugang.partnerGeaendert?.call();
+    } on Object {
+      if (mounted) setState(() => _inZeitleiste = !an);
+      bote.showSnackBar(SnackBar(content: Text(t.geteiltOffline)));
+    }
+  }
+
   final _aufnahmen = <GeteilteAufnahme>[];
   String? _weiter;
   var _ende = false;
@@ -1491,6 +1537,7 @@ class _PartnerBibliothekSeiteState extends State<PartnerBibliothekSeite> {
       if (hier != null && await hier.exists()) {
         await hier.delete(recursive: true).catchError((_) => hier);
       }
+      widget.zugang.partnerGeaendert?.call();
       weg.pop();
     } on KeineVerbindung {
       bote.showSnackBar(SnackBar(content: Text(t.geteiltOffline)));
@@ -1507,6 +1554,15 @@ class _PartnerBibliothekSeiteState extends State<PartnerBibliothekSeite> {
         actions: [
           PopupMenuButton<void>(
             itemBuilder: (_) => [
+              CheckedPopupMenuItem<void>(
+                checked: _inZeitleiste,
+                onTap: () => _zeitleiste(!_inZeitleiste),
+                child: Text(
+                  widget.zugang.zeitleisteMischt
+                      ? t.partnerInZeitleiste
+                      : t.partnerInZeitleisteFern,
+                ),
+              ),
               PopupMenuItem<void>(
                 onTap: _verlassen,
                 child: Text(t.geteiltVerlassen),
@@ -1633,7 +1689,7 @@ class _PartnerBlatt extends StatefulWidget {
 }
 
 class _PartnerBlattState extends State<_PartnerBlatt> {
-  List<(String, String)>? _meine;
+  List<(String, String, Regel)>? _meine;
   List<(String, String)> _andere = const [];
   String? _neu;
   String? _fehler;
@@ -1654,7 +1710,7 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
       final meine = [
         for (final x in (d['meine'] as List? ?? const []))
           if (x case {'konto': final konto, 'name': final name})
-            ('$konto', '$name'),
+            ('$konto', '$name', Regel.aus(x.cast<String, Object?>())),
       ];
       final schon = {for (final m in meine) m.$1};
       setState(() {
@@ -1719,10 +1775,39 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(t.kontenNiemand),
                 ),
-              for (final (konto, name) in meine)
+              for (final (konto, name, regel) in meine)
                 Row(
                   children: [
-                    Expanded(child: Text(name)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(name),
+                          Text(
+                            regel.leer
+                                ? t.partnerGanz
+                                : regelText(context, regel),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Nur ab einem Tag, nur mit bestimmten Personen (#299).
+                    IconButton(
+                      tooltip: t.partnerEinschraenken,
+                      icon: const Icon(Icons.tune),
+                      onPressed: () async {
+                        if (await partnerEinschraenken(
+                          context,
+                          widget.verbindung,
+                          konto: konto,
+                          name: name,
+                          vorher: regel.leer ? null : regel,
+                        )) {
+                          await _lade();
+                        }
+                      },
+                    ),
                     IconButton(
                       tooltip: t.entfernen,
                       icon: const Icon(Icons.close),

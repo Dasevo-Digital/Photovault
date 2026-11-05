@@ -4,6 +4,8 @@ library;
 
 export 'src/abgleich_api.dart' show abgeleiteteOrdner, hoechstensAbgeleitet;
 export 'src/absender.dart' show Absender;
+export 'src/albumregeln.dart'
+    show Albumregel, Albumregelablauf, Albumregeln, fuelleAlbum;
 export 'src/api.dart' show baueApi, protokollFassung;
 export 'src/auswertungsdienst.dart' show Auswertungsdienst, Auswertungsstand;
 export 'src/beschleuniger.dart' show Beschleuniger;

@@ -167,7 +167,7 @@ class TeilenTexteEn extends TeilenTexte {
 
   @override
   String get bibliothekTeilenHinweis =>
-      'Accounts listed here see your whole library under “Shared with me” – without locked items and trash, view only.';
+      'Accounts listed here see your library under “Shared with me” – all of it, or only from a date on and with certain people; without locked items and trash, view only.';
 
   @override
   String get kommentare => 'Comments';
@@ -204,4 +204,117 @@ class TeilenTexteEn extends TeilenTexte {
   String gefaelltNamen(String namen) {
     return 'Liked by $namen';
   }
+
+  @override
+  String get speichern => 'Save';
+
+  @override
+  String get automatischFuellen => 'Fill automatically';
+
+  @override
+  String automatischTitel(String name) {
+    return 'Fill “$name” automatically';
+  }
+
+  @override
+  String get automatischHinweis =>
+      'Photos of the chosen people go into this album by themselves – also ones on which they are recognized only later. What you take out stays out.';
+
+  @override
+  String get automatischAus => 'Stop filling automatically';
+
+  @override
+  String get automatischAusGemacht =>
+      'The album no longer fills itself. What is in it stays.';
+
+  @override
+  String automatischDazu(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Added $n items',
+      one: 'Added one item',
+      zero: 'Nothing new added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get regelEine => 'One of them';
+
+  @override
+  String get regelAlle => 'All together';
+
+  @override
+  String get regelMindestensEine => 'Choose at least one person.';
+
+  @override
+  String get regelHoechstens => 'At most 20 people.';
+
+  @override
+  String regelPersonenFehlen(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n chosen people no longer exist.',
+      one: 'One chosen person no longer exists.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String regelMit(String namen) {
+    return 'with $namen';
+  }
+
+  @override
+  String regelZusammen(String namen) {
+    return '$namen together';
+  }
+
+  @override
+  String regelAb(String tag) {
+    return 'from $tag';
+  }
+
+  @override
+  String get aufgenommenAb => 'Taken from';
+
+  @override
+  String get jedesDatum => 'any date';
+
+  @override
+  String get personSuchen => 'Search person';
+
+  @override
+  String get keinePersonGefunden => 'No person found.';
+
+  @override
+  String get keinePersonenMitNamen => 'No named people yet.';
+
+  @override
+  String get partnerEinschraenken => 'Restrict';
+
+  @override
+  String partnerWasSieht(String name) {
+    return 'What $name sees';
+  }
+
+  @override
+  String partnerEinschraenkenHinweis(String name) {
+    return 'Without a choice, $name sees your whole library. With people, only photos showing at least one of them – for every file, not just the list.';
+  }
+
+  @override
+  String get partnerGanz => 'The whole library';
+
+  @override
+  String get partnerInZeitleiste => 'Show in my timeline';
+
+  @override
+  String get partnerInZeitleisteFern =>
+      'Show in the timeline (phone and browser)';
+
+  @override
+  String get partnerEingeschraenkt => 'Only part of the library';
 }

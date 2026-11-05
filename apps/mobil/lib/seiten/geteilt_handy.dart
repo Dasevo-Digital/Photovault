@@ -21,6 +21,9 @@ Teilungszugang? teilungszugang(Sitzung sitzung) {
     ablage: sitzung.paths.geteiltDir,
     waehle: waehleFotos,
     video: (context, video) => _GeteiltesVideo(video),
+    // Fotos von Partnern stehen am Telefon in der Zeitleiste (#299).
+    zeitleisteMischt: true,
+    partnerGeaendert: () => unawaited(sitzung.ladePartnerfotos()),
   );
 }
 

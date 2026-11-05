@@ -335,7 +335,7 @@ abstract class TeilenTexte {
   /// No description provided for @bibliothekTeilenHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.'**
+  /// **'Wer hier steht, sieht deine Bibliothek unter „Geteilt mit mir“ – ganz oder nur ab einem Tag und mit bestimmten Personen, ohne Gesperrtes und Papierkorb, nur zum Ansehen.'**
   String get bibliothekTeilenHinweis;
 
   /// No description provided for @kommentare.
@@ -403,6 +403,168 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Gefällt {namen}'**
   String gefaelltNamen(String namen);
+
+  /// No description provided for @speichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get speichern;
+
+  /// No description provided for @automatischFuellen.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch füllen'**
+  String get automatischFuellen;
+
+  /// No description provided for @automatischTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ automatisch füllen'**
+  String automatischTitel(String name);
+
+  /// No description provided for @automatischHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos der gewählten Personen kommen von selbst in dieses Album – auch solche, auf denen sie erst später erkannt werden. Was du herausnimmst, bleibt draussen.'**
+  String get automatischHinweis;
+
+  /// No description provided for @automatischAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr automatisch füllen'**
+  String get automatischAus;
+
+  /// No description provided for @automatischAusGemacht.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Album füllt sich nicht mehr selbst. Was darin liegt, bleibt.'**
+  String get automatischAusGemacht;
+
+  /// No description provided for @automatischDazu.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =0{Nichts Neues dazugelegt} =1{Eine Aufnahme dazugelegt} other{{n} Aufnahmen dazugelegt}}'**
+  String automatischDazu(int n);
+
+  /// No description provided for @regelEine.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine der Personen'**
+  String get regelEine;
+
+  /// No description provided for @regelAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle zusammen'**
+  String get regelAlle;
+
+  /// No description provided for @regelMindestensEine.
+  ///
+  /// In de, this message translates to:
+  /// **'Wähle mindestens eine Person.'**
+  String get regelMindestensEine;
+
+  /// No description provided for @regelHoechstens.
+  ///
+  /// In de, this message translates to:
+  /// **'Höchstens 20 Personen.'**
+  String get regelHoechstens;
+
+  /// No description provided for @regelPersonenFehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'{n, plural, =1{Eine gewählte Person gibt es nicht mehr.} other{{n} gewählte Personen gibt es nicht mehr.}}'**
+  String regelPersonenFehlen(int n);
+
+  /// No description provided for @regelMit.
+  ///
+  /// In de, this message translates to:
+  /// **'mit {namen}'**
+  String regelMit(String namen);
+
+  /// No description provided for @regelZusammen.
+  ///
+  /// In de, this message translates to:
+  /// **'{namen} zusammen'**
+  String regelZusammen(String namen);
+
+  /// No description provided for @regelAb.
+  ///
+  /// In de, this message translates to:
+  /// **'ab {tag}'**
+  String regelAb(String tag);
+
+  /// No description provided for @aufgenommenAb.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufgenommen ab'**
+  String get aufgenommenAb;
+
+  /// No description provided for @jedesDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'jedes Datum'**
+  String get jedesDatum;
+
+  /// No description provided for @personSuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'Person suchen'**
+  String get personSuchen;
+
+  /// No description provided for @keinePersonGefunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Person gefunden.'**
+  String get keinePersonGefunden;
+
+  /// No description provided for @keinePersonenMitNamen.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Personen mit Namen.'**
+  String get keinePersonenMitNamen;
+
+  /// No description provided for @partnerEinschraenken.
+  ///
+  /// In de, this message translates to:
+  /// **'Einschränken'**
+  String get partnerEinschraenken;
+
+  /// No description provided for @partnerWasSieht.
+  ///
+  /// In de, this message translates to:
+  /// **'Was {name} sieht'**
+  String partnerWasSieht(String name);
+
+  /// No description provided for @partnerEinschraenkenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Auswahl sieht {name} deine ganze Bibliothek. Mit Personen nur Fotos, auf denen mindestens eine davon ist – das gilt für jede Datei, nicht nur für die Liste.'**
+  String partnerEinschraenkenHinweis(String name);
+
+  /// No description provided for @partnerGanz.
+  ///
+  /// In de, this message translates to:
+  /// **'Die ganze Bibliothek'**
+  String get partnerGanz;
+
+  /// No description provided for @partnerInZeitleiste.
+  ///
+  /// In de, this message translates to:
+  /// **'In meiner Zeitleiste zeigen'**
+  String get partnerInZeitleiste;
+
+  /// No description provided for @partnerInZeitleisteFern.
+  ///
+  /// In de, this message translates to:
+  /// **'In der Zeitleiste zeigen (Handy und Browser)'**
+  String get partnerInZeitleisteFern;
+
+  /// No description provided for @partnerEingeschraenkt.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur ein Teil der Bibliothek'**
+  String get partnerEingeschraenkt;
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

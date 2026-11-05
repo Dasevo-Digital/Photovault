@@ -136,8 +136,14 @@ eingeschlossen. Eigene Markierungen des Besitzers (Favorit, Bewertung,
 Farbmarke) bleiben bei ihm. Was ein Konto mit dem Recht zum Beitragen
 hochlädt, kommt in die Bibliothek des Besitzers; der Server vermerkt dazu,
 von welchem Konto es stammt. Ebenso kann ein Konto einem anderen seine ganze
-Bibliothek zum Ansehen freigeben; gesperrte Aufnahmen und der Papierkorb
-bleiben davon ausgenommen. In einem geteilten Album können der Besitzer und
+Bibliothek zum Ansehen freigeben – auf Wunsch nur ab einem Tag und nur
+Aufnahmen, auf denen bestimmte Personen erkannt sind; gesperrte Aufnahmen und
+der Papierkorb bleiben davon ausgenommen. Der Partner kann diese Aufnahmen in
+seiner eigenen Zeitleiste sehen; in seine Bibliothek kommen sie dabei nicht.
+Ein Album kann sich selbst mit den Aufnahmen bestimmter Personen füllen. Der
+Server speichert dazu, welche Personen gewählt sind, und welche Aufnahmen die
+Regel schon hineingelegt hat; ist das Album geteilt, sehen die Empfänger
+auch Aufnahmen, die später dazukommen. In einem geteilten Album können der Besitzer und
 alle, mit denen es geteilt ist, Kommentare schreiben und Aufnahmen mit
 „Gefällt mir“ markieren. Der Server speichert dazu den Text, das Konto, seinen
 Namen und den Zeitpunkt; alle Beteiligten sehen sie. Wer einen Kommentar

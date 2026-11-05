@@ -863,4 +863,175 @@ void main() {
     await zeige();
     expect(find.byTooltip('Kommentare'), findsOneWidget);
   });
+  testWidgets('Automatisch füllen: Personen wählen, speichern (#298)', (
+    tester,
+  ) async {
+    Map<String, Object?>? regel;
+    Object? gesendet;
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/alben/kinder/regel' && r.method == 'GET') {
+        return json({'regel': regel});
+      }
+      if (r.url.path == '/api/v1/alben/kinder/regel' && r.method == 'PUT') {
+        gesendet = jsonDecode(r.body);
+        regel = {
+          'personen': [
+            {'id': 'anna', 'name': 'Anna'},
+          ],
+          'fehlend': 0,
+          'alle': false,
+        };
+        return json({'regel': regel, 'dazu': 2});
+      }
+      if (r.url.path == '/api/v1/personen') {
+        return json({
+          'personen': [
+            {'id': 'anna', 'name': 'Anna', 'anzahl': 3},
+            {'id': 'ben', 'name': 'Ben', 'anzahl': 2},
+            {'id': 'leer', 'name': '', 'anzahl': 9},
+          ],
+        });
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          appBar: AppBar(
+            actions: [
+              Albumregelknopf(
+                verbindung: v,
+                albumId: 'kinder',
+                titel: 'Kinder',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Automatisch füllen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('„Kinder“ automatisch füllen'), findsOneWidget);
+    // Personen ohne Namen stehen nicht zur Wahl.
+    expect(find.byType(CheckboxListTile), findsNWidgets(2));
+
+    // Ohne Person kein Speichern.
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wähle mindestens eine Person.'), findsOneWidget);
+    expect(gesendet, isNull);
+
+    await tester.tap(find.text('Anna'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(gesendet, {
+      'personen': ['anna'],
+      'alle': false,
+      'ab': null,
+    });
+    expect(find.text('2 Aufnahmen dazugelegt'), findsOneWidget);
+    expect(find.byTooltip('Automatisch füllen: mit Anna'), findsOneWidget);
+  });
+
+  testWidgets('Bibliothek teilen: einschränken auf Personen (#299)', (
+    tester,
+  ) async {
+    Object? gesendet;
+    final client = MockClient((r) async {
+      if (r.url.path == '/api/v1/partner') {
+        return json({
+          'meine': [
+            {
+              'konto': 'k-max',
+              'name': 'max',
+              if (gesendet != null)
+                'personen': [
+                  {'id': 'ben', 'name': 'Ben'},
+                ],
+            },
+          ],
+          'mitMir': [],
+        });
+      }
+      if (r.url.path == '/api/v1/konten/andere') {
+        return json({
+          'konten': [
+            {'id': 'k-max', 'name': 'max'},
+          ],
+        });
+      }
+      if (r.url.path == '/api/v1/personen') {
+        return json({
+          'personen': [
+            {'id': 'anna', 'name': 'Anna', 'anzahl': 3},
+            {'id': 'ben', 'name': 'Ben', 'anzahl': 2},
+          ],
+        });
+      }
+      if (r.method == 'PUT' && r.url.path == '/api/v1/partner/k-max') {
+        gesendet = jsonDecode(r.body);
+        return http.Response('', 204);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => bibliothekTeilen(context, v),
+              child: const Text('teilen'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('teilen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Die ganze Bibliothek'), findsOneWidget);
+    await tester.tap(find.byTooltip('Einschränken'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Was max sieht'), findsOneWidget);
+    // Bei der Partnerfreigabe genügt immer eine Person.
+    expect(find.text('Alle zusammen'), findsNothing);
+    await tester.tap(find.text('Ben'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(gesendet, {
+      'ab': null,
+      'personen': ['ben'],
+    });
+    expect(find.text('mit Ben'), findsOneWidget);
+  });
 }

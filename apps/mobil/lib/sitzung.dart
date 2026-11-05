@@ -24,6 +24,7 @@ import 'package:path_provider/path_provider.dart';
 
 import 'gemeinsam.dart';
 import 'offline_alben.dart';
+import 'partnerfotos.dart';
 import 'sicherung/dienst.dart';
 
 enum Sitzungszustand { laedt, abgemeldet, bereit, fehler }
@@ -61,6 +62,23 @@ class Sitzung extends ChangeNotifier {
 
   /// Die Sicherung der Kamerarolle (siehe `sicherung/`).
   Sicherungsdienst? sicherung;
+
+  /// Fotos von Partnern, die dieses Konto in seiner Zeitleiste sehen will
+  /// (#299) – vom Server, nicht aus der Kopie.
+  final partnerfotos = ValueNotifier<List<Partnerfoto>>(const []);
+
+  /// Holt [partnerfotos] neu; ohne Netz bleibt, was da ist.
+  Future<void> ladePartnerfotos() async {
+    final a = abgleich;
+    if (a == null) return;
+    try {
+      final neu = await holePartnerfotos(a.verbindung);
+      if (identical(abgleich, a)) partnerfotos.value = neu;
+    } on Object {
+      // Kein Netz oder ein älterer Server.
+    }
+  }
+
   StreamSubscription<Abgleichszustand>? _abo;
 
   /// Löscht endgültig aus dem Papierkorb (#296) – [ids] oder ohne sie
@@ -181,10 +199,12 @@ class Sitzung extends ChangeNotifier {
     unawaited(pruefeServerspeicher());
     unawaited(pruefeServersicherung());
     unawaited(holeServerfassung());
+    unawaited(ladePartnerfotos());
     _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
       pruefeServerspeicher();
       pruefeServersicherung();
       pflegeOfflineUndZwischenspeicher();
+      ladePartnerfotos();
     });
     unawaited(pflegeOfflineUndZwischenspeicher());
   }
@@ -461,6 +481,7 @@ class Sitzung extends ChangeNotifier {
     if (a == null) return;
     await a.sende();
     await a.empfange();
+    await ladePartnerfotos();
   }
 
   /// Meldet das Telefon beim Server ab und löscht die Kopie samt aller
@@ -496,6 +517,7 @@ class Sitzung extends ChangeNotifier {
     final a = abgleich;
     if (a == null) return;
     abgleich = null;
+    partnerfotos.value = const [];
     _speicherUhr?.cancel();
     serverspeicher = null;
     serversicherung = null;

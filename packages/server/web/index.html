@@ -302,7 +302,7 @@
       </form>
     </div>
     <h3>Bibliothek teilen</h3>
-    <p class="leise klein">Wer hier steht, sieht deine ganze Bibliothek unter „Geteilt mit mir“ – ohne Gesperrtes und Papierkorb, nur zum Ansehen.</p>
+    <p class="leise klein">Wer hier steht, sieht deine Bibliothek unter „Geteilt mit mir“ – ganz oder nur ab einem Tag und mit bestimmten Personen, ohne Gesperrtes und Papierkorb, nur zum Ansehen.</p>
     <ul id="partner" class="teilungsliste"></ul>
     <div id="partner-neu" class="teilungszeile">
       <select id="partner-wahl" aria-label="Konto"></select>
@@ -513,6 +513,26 @@
     <p id="konten-meldung" class="fehler"></p>
     <menu>
       <button type="submit">Schliessen</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="regel-dialog">
+  <form method="dialog" id="form-regel">
+    <h3 id="regel-titel">Album automatisch füllen</h3>
+    <p id="regel-hinweis" class="leise klein"></p>
+    <input type="search" id="regel-suche" placeholder="Person suchen" autocomplete="off" aria-label="Person suchen">
+    <ul id="regel-personen" class="regelpersonen"></ul>
+    <div id="regel-art">
+      <label><input type="radio" name="regel-art" value="eine" checked> Eine der Personen ist auf dem Foto</label>
+      <label><input type="radio" name="regel-art" value="alle"> Alle zusammen auf einem Foto</label>
+    </div>
+    <label class="regelab">Aufgenommen ab <input type="date" id="regel-ab"></label>
+    <p id="regel-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="regel-weg" hidden>Nicht mehr automatisch füllen</button>
+      <button type="button" id="regel-abbrechen">Abbrechen</button>
+      <button type="button" id="regel-speichern">Speichern</button>
     </menu>
   </form>
 </dialog>
