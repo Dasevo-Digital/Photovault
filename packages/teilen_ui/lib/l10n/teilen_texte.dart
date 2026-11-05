@@ -565,6 +565,96 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Nur ein Teil der Bibliothek'**
   String get partnerEingeschraenkt;
+
+  /// No description provided for @nachlass.
+  ///
+  /// In de, this message translates to:
+  /// **'Nachlasskontakt'**
+  String get nachlass;
+
+  /// No description provided for @nachlassHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein Nachlasskontakt kann Zugang zu deiner Bibliothek verlangen – etwa, wenn dir etwas zustösst. Widersprichst du nicht innerhalb der Frist, sieht er danach deine ganze Bibliothek unter „Geteilt mit mir“, nur zum Ansehen und Herunterladen. Die Anfrage steht im Browser, am Handy und am Rechner.'**
+  String get nachlassHinweis;
+
+  /// No description provided for @nachlassMeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Deine Nachlasskontakte'**
+  String get nachlassMeine;
+
+  /// No description provided for @nachlassFuerMich.
+  ///
+  /// In de, this message translates to:
+  /// **'Du bist Nachlasskontakt für'**
+  String get nachlassFuerMich;
+
+  /// No description provided for @nachlassKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch niemand benannt.'**
+  String get nachlassKeine;
+
+  /// No description provided for @nachlassBenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Benennen'**
+  String get nachlassBenennen;
+
+  /// No description provided for @nachlassAblehnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablehnen'**
+  String get nachlassAblehnen;
+
+  /// No description provided for @nachlassVerlangen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zugang verlangen'**
+  String get nachlassVerlangen;
+
+  /// No description provided for @nachlassZurueckziehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Anfrage zurückziehen'**
+  String get nachlassZurueckziehen;
+
+  /// No description provided for @nachlassFristTage.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Tage Frist'**
+  String nachlassFristTage(int n);
+
+  /// No description provided for @nachlassOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'verlangt Zugang – ohne Widerspruch ab {tag}'**
+  String nachlassOffen(String tag);
+
+  /// No description provided for @nachlassHatZugang.
+  ///
+  /// In de, this message translates to:
+  /// **'hat Zugang seit {tag}'**
+  String nachlassHatZugang(String tag);
+
+  /// No description provided for @nachlassDuHastZugang.
+  ///
+  /// In de, this message translates to:
+  /// **'Zugang seit {tag} – unter „Geteilt mit mir“'**
+  String nachlassDuHastZugang(String tag);
+
+  /// No description provided for @nachlassVerlangenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Zugang zur Bibliothek von {name} verlangen? {name} sieht die Anfrage und kann {tage} Tage lang widersprechen. Danach siehst du die ganze Bibliothek, nur zum Ansehen und Herunterladen.'**
+  String nachlassVerlangenFrage(String name, int tage);
+
+  /// No description provided for @nachlassAnfrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt {name} ihn am {tag}.'**
+  String nachlassAnfrage(String name, String tag);
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

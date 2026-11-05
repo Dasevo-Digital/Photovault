@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:kern/db/database.dart';
 import 'package:kern/services/search_filters.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:zierbild/bibliothek_eintraege.dart';
 
 import '../l10n/app_localizations.dart';
@@ -217,11 +218,14 @@ class _AnalyseBanner extends StatelessWidget {
         library.verbunden && (library.serversicherung?.warnt ?? false)
         ? t.serverSicherungWarnung
         : null;
+    // Wer Zugang zur Bibliothek verlangt (#300) – fragt selbst beim Server.
+    final nachlass = library.verbunden ? library.abgleich?.verbindung : null;
     if (a == null &&
         laeufe.isEmpty &&
         server == null &&
         speicher == null &&
-        sicherung == null) {
+        sicherung == null &&
+        nachlass == null) {
       return const SizedBox.shrink();
     }
 
@@ -230,6 +234,7 @@ class _AnalyseBanner extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (nachlass != null) NachlassHinweis(verbindung: nachlass),
           if (server != null)
             ListTile(
               dense: true,

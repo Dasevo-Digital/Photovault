@@ -23,6 +23,8 @@ export 'src/konten/passwort.dart' show Passwort;
 export 'src/konten/serverdatenbank.dart' show Serverdatenbank;
 export 'src/konten/totp.dart' show Totp;
 export 'src/konten/tresorschluessel.dart' show Tresorschluessel;
+export 'src/nachlass.dart'
+    show Nachlassablauf, Nachlasskontakt, Nachlasskontakte;
 export 'src/oidc.dart' show Oidc, OidcEinstellungen;
 export 'src/onnx_ffi.dart' show FfiOnnxPlattform, geprueftFassung;
 export 'src/papierkorb.dart' show Papierkorbablauf, leereImBereich;

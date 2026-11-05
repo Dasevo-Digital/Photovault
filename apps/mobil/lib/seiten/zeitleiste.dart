@@ -4,6 +4,7 @@ import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/listengliederung.dart';
 import 'package:kern/services/sortierung.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 
 import '../l10n/app_localizations.dart';
 import '../lokal/ungesichert.dart';
@@ -244,6 +245,9 @@ class _ZeitleisteState extends State<Zeitleiste> {
                               child: Text(t.lokalJetztSichern),
                             ),
                           ),
+                        // Wer Zugang zur Bibliothek verlangt (#300).
+                        if (sitzung.abgleich?.verbindung case final v?)
+                          NachlassHinweis(verbindung: v),
                         Erinnerungsstreifen(
                           sitzung: sitzung,
                           stand: server.length,

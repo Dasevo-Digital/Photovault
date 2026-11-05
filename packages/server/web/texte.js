@@ -891,6 +891,25 @@ const EN = {
   'Person unbekannt': 'Unknown person',
   '1 bis 20 Personen': '1 to 20 people',
   'höchstens 20 Personen': 'at most 20 people',
+  // Nachlasskontakt (#300).
+  'Nachlasskontakt': 'Legacy contact',
+  'Ein Nachlasskontakt kann Zugang zu deiner Bibliothek verlangen – etwa, wenn dir etwas zustösst. Widersprichst du nicht innerhalb der Frist, sieht er danach deine ganze Bibliothek unter „Geteilt mit mir“, nur zum Ansehen und Herunterladen. Die Anfrage steht im Browser, am Handy und am Rechner.': 'A legacy contact can request access to your library – for instance if something happens to you. If you do not object within the waiting period, they then see your whole library under “Shared with me”, to view and download only. The request shows in the browser, on the phone and on the computer.',
+  'Frist': 'Waiting period',
+  'Du bist Nachlasskontakt für': 'You are the legacy contact for',
+  '{n} Tage': '{n} days',
+  'hat Zugang seit {tag}': 'has access since {tag}',
+  'Zugang seit {tag} – unter „Geteilt mit mir“': 'Access since {tag} – under “Shared with me”',
+  'verlangt Zugang – ohne Widerspruch ab {tag}': 'requests access – granted on {tag} unless you object',
+  'Frist: {frist}': 'Waiting period: {frist}',
+  'Noch niemand benannt.': 'Nobody named yet.',
+  'Anfrage zurückziehen': 'Withdraw request',
+  'Zugang verlangen': 'Request access',
+  'Zugang zur Bibliothek von {name} verlangen? {name} sieht die Anfrage und kann {frist} lang widersprechen. Danach siehst du die ganze Bibliothek, nur zum Ansehen und Herunterladen.': 'Request access to the library of {name}? {name} sees the request and can object for {frist}. After that you see the whole library, to view and download only.',
+  '{name} verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt {name} ihn am {tag}.': '{name} requests access to your library (legacy contact). Unless you object, {name} gets it on {tag}.',
+  'Frist unbekannt': 'Unknown waiting period',
+  'nichts offen': 'nothing pending',
+  'Gerade erst abgelehnt – später wieder.': 'Just declined – try again later.',
+  'höchstens 5 Nachlasskontakte': 'at most 5 legacy contacts',
 };
 
 function t(deutsch, werte) {

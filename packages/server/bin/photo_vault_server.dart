@@ -97,6 +97,7 @@ Future<void> main(List<String> argumente) async {
     konten: konten,
     bibliotheken: bibliotheken,
   )..starte();
+  final nachlass = Nachlassablauf(konten)..starte();
   if (e.sicherung != null) {
     protokoll(
       'Sicherung nach ${e.sicherung!.path}, täglich um '
@@ -186,6 +187,7 @@ Future<void> main(List<String> argumente) async {
   sicherung.beende();
   papierkorb.beende();
   albumregeln.beende();
+  nachlass.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
   sdb.schliesse();

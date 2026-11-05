@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 
 import '../albumregeln.dart';
 import '../albumteilungen.dart';
+import '../nachlass.dart';
 import '../freigaben.dart';
 import '../gastbeitraege.dart';
 import 'package:kern/abgleich/anmeldung.dart' show kontonameGueltig;
@@ -203,6 +204,9 @@ class Kontodienst {
 
   /// Welche Alben sich selbst füllen (#298).
   late final albumregeln = Albumregeln(_sdb, uhr: _uhr);
+
+  /// Wer Zugang zur Bibliothek eines Kontos verlangen darf (#300).
+  late final nachlass = Nachlasskontakte(_sdb, uhr: _uhr);
 
   final _vorgaenge = <String, _Vorgang>{};
   static const _vorgangDauer = Duration(minutes: 5);

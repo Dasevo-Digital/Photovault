@@ -690,6 +690,8 @@ class Teilungsapi {
   /// eingeschraenkt}]}` – wen dieses Konto seine Bibliothek sehen lässt,
   /// und wessen Bibliothek es sieht.
   Future<Response> partner(Request r) async {
+    // Was als Nachlass fällig ist, gilt vor dem Nachsehen (#300).
+    konten.nachlass.gibFaelligeFrei();
     final ich = kontoVon(r).id;
     final mitMir = <Map<String, Object?>>[];
     for (final f in _dienst.freigabenMit(ich)) {

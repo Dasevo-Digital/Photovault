@@ -51,6 +51,7 @@ import 'dateiantwort.dart';
 import 'fassung.dart';
 import 'freigabe_api.dart';
 import 'konten/kontodienst.dart';
+import 'nachlass.dart';
 import 'konten_api.dart';
 import 'gastpruefung.dart';
 import 'oidc.dart';
@@ -124,6 +125,7 @@ Handler baueApi({
     datei: api.dateiAus,
     speicher: speicher,
   );
+  final nachlass = Nachlassapi(konten);
   final abgleich = Abgleichsapi(bibliotheken);
   final umzug = Umzugsdienst(bibliotheken);
   final suche = Suchapi(bibliotheken);
@@ -328,6 +330,13 @@ Handler baueApi({
     ..delete('/api/v1/partner/von/<konto>', teilung.partnerVerlassen)
     // In der eigenen Zeitleiste zeigen (#299).
     ..put('/api/v1/partner/von/<konto>/zeitleiste', teilung.partnerZeitleiste)
+    // Nachlasskontakt (#300).
+    ..get('/api/v1/nachlass', nachlass.liste)
+    ..put('/api/v1/nachlass/<konto>', nachlass.benennen)
+    ..delete('/api/v1/nachlass/<konto>', nachlass.entfernen)
+    ..post('/api/v1/nachlass/<konto>/ablehnen', nachlass.ablehnen)
+    ..post('/api/v1/nachlass/von/<konto>/anfordern', nachlass.anfordern)
+    ..delete('/api/v1/nachlass/von/<konto>/anfordern', nachlass.zurueckziehen)
     ..get('/api/v1/partner/von/<konto>/aufnahmen', teilung.partnerAufnahmen)
     ..get(
       '/api/v1/partner/von/<konto>/aufnahmen/<aufnahme>/<art>',
@@ -664,6 +673,8 @@ class _Api {
           'albumregeln': 1,
           // Partnerfreigabe eingeschränkt und in der Zeitleiste (#299).
           'partnerfreigabe': 2,
+          // Nachlasskontakt (#300).
+          'nachlass': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

@@ -14,6 +14,7 @@ import 'l10n/teilen_texte.dart';
 import 'regeln.dart';
 
 export 'aktivitaet.dart';
+export 'nachlass.dart';
 export 'regeln.dart';
 
 // Alben zwischen Konten teilen (#105) – wie im Browser (web/app.js,

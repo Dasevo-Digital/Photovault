@@ -126,7 +126,12 @@ items and the trash stay excluded. The partner can see these items in its own
 timeline; they do not go into its library. An album can fill itself with the
 items of certain people. The server stores which people are chosen and which
 items the rule has already added; if the album is shared, its recipients
-also see items added later. In a shared album, the owner and everyone it is shared
+also see items added later. An account can name other accounts as legacy
+contacts. When a legacy contact requests access, the server stores when that
+happened; the owner sees the request and can object. Unless the owner does so
+within the chosen waiting period, the contact then sees the whole library as
+with a partner share. The server writes request, objection and access to its
+log. In a shared album, the owner and everyone it is shared
 with can write comments and mark items with “Like”. The server stores the
 text, the account, its name and the time; everyone involved sees them. The
 author of a comment and the owner of the album can remove it. Comments go

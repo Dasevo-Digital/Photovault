@@ -77,5 +77,20 @@
   "partnerGanz": "The whole library",
   "partnerInZeitleiste": "Show in my timeline",
   "partnerInZeitleisteFern": "Show in the timeline (phone and browser)",
-  "partnerEingeschraenkt": "Only part of the library"
+  "partnerEingeschraenkt": "Only part of the library",
+  "nachlass": "Legacy contact",
+  "nachlassHinweis": "A legacy contact can request access to your library – for instance if something happens to you. If you do not object within the waiting period, they then see your whole library under “Shared with me”, to view and download only. The request shows in the browser, on the phone and on the computer.",
+  "nachlassMeine": "Your legacy contacts",
+  "nachlassFuerMich": "You are the legacy contact for",
+  "nachlassKeine": "Nobody named yet.",
+  "nachlassBenennen": "Name",
+  "nachlassAblehnen": "Decline",
+  "nachlassVerlangen": "Request access",
+  "nachlassZurueckziehen": "Withdraw request",
+  "nachlassFristTage": "{n} days waiting period",
+  "nachlassOffen": "requests access – granted on {tag} unless you object",
+  "nachlassHatZugang": "has access since {tag}",
+  "nachlassDuHastZugang": "Access since {tag} – under “Shared with me”",
+  "nachlassVerlangenFrage": "Request access to the library of {name}? {name} sees the request and can object for {tage} days. After that you see the whole library, to view and download only.",
+  "nachlassAnfrage": "{name} requests access to your library (legacy contact). Unless you object, {name} gets it on {tag}."
 }

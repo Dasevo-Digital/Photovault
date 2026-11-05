@@ -1034,4 +1034,114 @@ void main() {
     });
     expect(find.text('mit Ben'), findsOneWidget);
   });
+  testWidgets('Nachlasskontakt: benennen, Zugang verlangen, ablehnen (#300)', (
+    tester,
+  ) async {
+    final rufe = <String>[];
+    var benannt = false;
+    var verlangt = false;
+    final client = MockClient((r) async {
+      rufe.add('${r.method} ${r.url.path}');
+      if (r.url.path == '/api/v1/nachlass') {
+        return json({
+          'kontakte': [
+            if (benannt)
+              {
+                'konto': 'k-max',
+                'name': 'max',
+                'frist': 14,
+                if (verlangt) 'angefordert': '2026-11-05T10:00:00Z',
+                if (verlangt) 'faellig': '2026-11-19T10:00:00Z',
+              },
+          ],
+          'fuerMich': [
+            {'konto': 'k-oma', 'name': 'oma', 'frist': 30},
+          ],
+          'fristen': [7, 14, 30, 90],
+        });
+      }
+      if (r.url.path == '/api/v1/konten/andere') {
+        return json({
+          'konten': [
+            {'id': 'k-max', 'name': 'max'},
+            {'id': 'k-oma', 'name': 'oma'},
+          ],
+        });
+      }
+      if (r.method == 'PUT' && r.url.path == '/api/v1/nachlass/k-max') {
+        expect(jsonDecode(r.body), {'frist': 14});
+        benannt = true;
+        return http.Response('', 204);
+      }
+      if (r.method == 'POST' &&
+          r.url.path == '/api/v1/nachlass/von/k-oma/anfordern') {
+        return json({'konto': 'k-oma', 'name': 'oma', 'frist': 30});
+      }
+      if (r.method == 'POST' &&
+          r.url.path == '/api/v1/nachlass/k-max/ablehnen') {
+        verlangt = false;
+        return http.Response('', 204);
+      }
+      return http.Response('', 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => nachlassVerwalten(context, v),
+              child: const Text('nachlass'),
+            ),
+          ),
+        ),
+      ),
+    );
+    Future<void> warte() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await tester.tap(find.text('nachlass'));
+    await warte();
+    expect(find.text('Noch niemand benannt.'), findsOneWidget);
+    // Die Frist wählen, dann benennen.
+    await tester.tap(find.text('30 Tage Frist').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('14 Tage Frist').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Benennen'));
+    await warte();
+    expect(rufe, contains('PUT /api/v1/nachlass/k-max'));
+    expect(find.widgetWithText(ListTile, '14 Tage Frist'), findsOneWidget);
+
+    // Für Oma Zugang verlangen – erst nach der Rückfrage.
+    await tester.tap(find.text('Zugang verlangen'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('30 Tage lang widersprechen'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Zugang verlangen'));
+    await warte();
+    expect(rufe, contains('POST /api/v1/nachlass/von/k-oma/anfordern'));
+
+    await tester.tap(find.text('Schliessen'));
+    await tester.pumpAndSettle();
+
+    // Max verlangt Zugang: Der Hinweis steht da, bis abgelehnt ist.
+    verlangt = true;
+    await tester.pumpWidget(
+      app(Scaffold(body: NachlassHinweis(verbindung: v))),
+    );
+    await warte();
+    expect(find.textContaining('max verlangt Zugang'), findsOneWidget);
+    await tester.tap(find.text('Ablehnen'));
+    await warte();
+    expect(rufe, contains('POST /api/v1/nachlass/k-max/ablehnen'));
+    expect(find.textContaining('max verlangt Zugang'), findsNothing);
+  });
 }

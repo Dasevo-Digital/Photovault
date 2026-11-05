@@ -170,6 +170,13 @@ class Konto extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => bibliothekTeilen(context, a.verbindung),
                 ),
+                // Wer Zugang verlangen darf, wenn einem etwas zustösst (#300).
+                ListTile(
+                  leading: const Icon(Icons.key_outlined),
+                  title: Text(teilenTexte(context).nachlass),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => nachlassVerwalten(context, a.verbindung),
+                ),
                 _KontenZugang(sitzung, a.verbindung),
               ],
               FutureBuilder<PackageInfo>(

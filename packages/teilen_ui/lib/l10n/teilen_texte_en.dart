@@ -317,4 +317,62 @@ class TeilenTexteEn extends TeilenTexte {
 
   @override
   String get partnerEingeschraenkt => 'Only part of the library';
+
+  @override
+  String get nachlass => 'Legacy contact';
+
+  @override
+  String get nachlassHinweis =>
+      'A legacy contact can request access to your library – for instance if something happens to you. If you do not object within the waiting period, they then see your whole library under “Shared with me”, to view and download only. The request shows in the browser, on the phone and on the computer.';
+
+  @override
+  String get nachlassMeine => 'Your legacy contacts';
+
+  @override
+  String get nachlassFuerMich => 'You are the legacy contact for';
+
+  @override
+  String get nachlassKeine => 'Nobody named yet.';
+
+  @override
+  String get nachlassBenennen => 'Name';
+
+  @override
+  String get nachlassAblehnen => 'Decline';
+
+  @override
+  String get nachlassVerlangen => 'Request access';
+
+  @override
+  String get nachlassZurueckziehen => 'Withdraw request';
+
+  @override
+  String nachlassFristTage(int n) {
+    return '$n days waiting period';
+  }
+
+  @override
+  String nachlassOffen(String tag) {
+    return 'requests access – granted on $tag unless you object';
+  }
+
+  @override
+  String nachlassHatZugang(String tag) {
+    return 'has access since $tag';
+  }
+
+  @override
+  String nachlassDuHastZugang(String tag) {
+    return 'Access since $tag – under “Shared with me”';
+  }
+
+  @override
+  String nachlassVerlangenFrage(String name, int tage) {
+    return 'Request access to the library of $name? $name sees the request and can object for $tage days. After that you see the whole library, to view and download only.';
+  }
+
+  @override
+  String nachlassAnfrage(String name, String tag) {
+    return '$name requests access to your library (legacy contact). Unless you object, $name gets it on $tag.';
+  }
 }

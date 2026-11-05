@@ -456,18 +456,28 @@ class Albumteilungen {
   void partnerSetzen(String besitzer, String partner) {
     if (besitzer == partner) throw ArgumentError('mit sich selbst teilen');
     _sdb.db.execute(
-      'INSERT OR IGNORE INTO partnerfreigaben (besitzer, partner, angelegt) '
-      'VALUES (?, ?, ?)',
+      'INSERT INTO partnerfreigaben (besitzer, partner, angelegt) '
+      'VALUES (?, ?, ?) ON CONFLICT (besitzer, partner) DO UPDATE SET '
+      // Von Hand freigegeben: bleibt, auch wenn ein Nachlasszugang geht.
+      'nachlass = 0',
       [besitzer, partner, _uhr().millisecondsSinceEpoch],
     );
   }
 
   /// Hebt die Freigabe auf – der Besitzer, oder der Partner, der die
-  /// Bibliothek nicht mehr sehen will.
-  void partnerEntfernen(String besitzer, String partner) => _sdb.db.execute(
-    'DELETE FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
-    [besitzer, partner],
-  );
+  /// Bibliothek nicht mehr sehen will. Ein Zugang als Nachlasskontakt
+  /// (#300) geht mit; verlangt werden kann er danach wieder.
+  void partnerEntfernen(String besitzer, String partner) {
+    _sdb.db.execute(
+      'DELETE FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
+      [besitzer, partner],
+    );
+    _sdb.db.execute(
+      'UPDATE nachlass SET freigegeben = NULL, angefordert = NULL '
+      'WHERE besitzer = ? AND kontakt = ?',
+      [besitzer, partner],
+    );
+  }
 
   /// Wen [besitzer] seine Bibliothek sehen lässt.
   List<String> partnerVon(String besitzer) => [
@@ -494,15 +504,26 @@ class Albumteilungen {
     [besitzer, partner],
   ).isNotEmpty;
 
+  /// Gilt für eine Freigabe der Zugang als Nachlasskontakt (#300), zeigt
+  /// sie alles – die Einschränkung bleibt gespeichert und gilt wieder,
+  /// wenn der Zugang geht.
+  static const _mitNachlass =
+      'SELECT p.*, EXISTS (SELECT 1 FROM nachlass n WHERE '
+      'n.besitzer = p.besitzer AND n.kontakt = p.partner AND '
+      'n.freigegeben IS NOT NULL) AS nachlass_frei FROM partnerfreigaben p';
+
   Partnerfreigabe _freigabeAus(Map<String, Object?> z) => Partnerfreigabe(
     besitzer: z['besitzer']! as String,
     partner: z['partner']! as String,
     ab: switch (z['ab']) {
-      final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+      final int ms when z['nachlass_frei'] != 1 =>
+        DateTime.fromMillisecondsSinceEpoch(ms),
       _ => null,
     },
     personen: switch (z['personen']) {
-      final String j => [for (final p in jsonDecode(j) as List) '$p'],
+      final String j when z['nachlass_frei'] != 1 => [
+        for (final p in jsonDecode(j) as List) '$p',
+      ],
       _ => null,
     },
     inZeitleiste: z['in_zeitleiste'] == 1,
@@ -512,7 +533,7 @@ class Albumteilungen {
   /// Die Freigabe von [besitzer] für [partner], wenn es sie gibt.
   Partnerfreigabe? partnerfreigabe(String besitzer, String partner) {
     final z = _sdb.db.select(
-      'SELECT * FROM partnerfreigaben WHERE besitzer = ? AND partner = ?',
+      '$_mitNachlass WHERE p.besitzer = ? AND p.partner = ?',
       [besitzer, partner],
     );
     return z.isEmpty ? null : _freigabeAus(z.first);
@@ -530,7 +551,7 @@ class Albumteilungen {
   /// Was [partner] sehen darf, in der Reihenfolge des Freigebens.
   List<Partnerfreigabe> freigabenMit(String partner) => [
     for (final z in _sdb.db.select(
-      'SELECT * FROM partnerfreigaben WHERE partner = ? ORDER BY angelegt',
+      '$_mitNachlass WHERE p.partner = ? ORDER BY p.angelegt',
       [partner],
     ))
       _freigabeAus(z),

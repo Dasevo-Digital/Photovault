@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 10;
+  static const schema = 11;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -296,6 +296,33 @@ class Serverdatenbank {
         ${spalten.contains('personen') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN personen TEXT;'}
         ${spalten.contains('in_zeitleiste') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN in_zeitleiste INTEGER NOT NULL DEFAULT 0;'}
         PRAGMA user_version = 10;
+        COMMIT;
+      ''');
+    }
+    if (stand < 11) {
+      // Nachlasskontakte (#300): wer Zugang zur Bibliothek eines Kontos
+      // verlangen darf, ob er es getan hat, und seit wann er gilt.
+      // `partnerfreigaben.nachlass` markiert eine Freigabe, die erst mit
+      // dem Zugang entstand – sie geht mit ihm.
+      final spalten = {
+        for (final z in db.select('PRAGMA table_info(partnerfreigaben)'))
+          z['name'] as String,
+      };
+      db.execute('''
+        BEGIN;
+        CREATE TABLE IF NOT EXISTS nachlass (
+          besitzer TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          kontakt TEXT NOT NULL REFERENCES konten(id) ON DELETE CASCADE,
+          frist_tage INTEGER NOT NULL,
+          angelegt INTEGER NOT NULL,
+          angefordert INTEGER,
+          abgelehnt INTEGER,
+          freigegeben INTEGER,
+          PRIMARY KEY (besitzer, kontakt)
+        );
+        CREATE INDEX IF NOT EXISTS nachlass_kontakt ON nachlass(kontakt);
+        ${spalten.contains('nachlass') ? '' : 'ALTER TABLE partnerfreigaben ADD COLUMN nachlass INTEGER NOT NULL DEFAULT 0;'}
+        PRAGMA user_version = 11;
         COMMIT;
       ''');
     }

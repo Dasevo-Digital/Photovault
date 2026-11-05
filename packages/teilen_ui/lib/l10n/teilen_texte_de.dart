@@ -321,4 +321,62 @@ class TeilenTexteDe extends TeilenTexte {
 
   @override
   String get partnerEingeschraenkt => 'Nur ein Teil der Bibliothek';
+
+  @override
+  String get nachlass => 'Nachlasskontakt';
+
+  @override
+  String get nachlassHinweis =>
+      'Ein Nachlasskontakt kann Zugang zu deiner Bibliothek verlangen – etwa, wenn dir etwas zustösst. Widersprichst du nicht innerhalb der Frist, sieht er danach deine ganze Bibliothek unter „Geteilt mit mir“, nur zum Ansehen und Herunterladen. Die Anfrage steht im Browser, am Handy und am Rechner.';
+
+  @override
+  String get nachlassMeine => 'Deine Nachlasskontakte';
+
+  @override
+  String get nachlassFuerMich => 'Du bist Nachlasskontakt für';
+
+  @override
+  String get nachlassKeine => 'Noch niemand benannt.';
+
+  @override
+  String get nachlassBenennen => 'Benennen';
+
+  @override
+  String get nachlassAblehnen => 'Ablehnen';
+
+  @override
+  String get nachlassVerlangen => 'Zugang verlangen';
+
+  @override
+  String get nachlassZurueckziehen => 'Anfrage zurückziehen';
+
+  @override
+  String nachlassFristTage(int n) {
+    return '$n Tage Frist';
+  }
+
+  @override
+  String nachlassOffen(String tag) {
+    return 'verlangt Zugang – ohne Widerspruch ab $tag';
+  }
+
+  @override
+  String nachlassHatZugang(String tag) {
+    return 'hat Zugang seit $tag';
+  }
+
+  @override
+  String nachlassDuHastZugang(String tag) {
+    return 'Zugang seit $tag – unter „Geteilt mit mir“';
+  }
+
+  @override
+  String nachlassVerlangenFrage(String name, int tage) {
+    return 'Zugang zur Bibliothek von $name verlangen? $name sieht die Anfrage und kann $tage Tage lang widersprechen. Danach siehst du die ganze Bibliothek, nur zum Ansehen und Herunterladen.';
+  }
+
+  @override
+  String nachlassAnfrage(String name, String tag) {
+    return '$name verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt $name ihn am $tag.';
+  }
 }

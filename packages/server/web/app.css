@@ -892,3 +892,9 @@ body.landschaft-offen { overflow: hidden; }
 .kachel .partnermarke { position: absolute; left: 5px; top: 5px; z-index: 1; width: 18px; height: 18px; border-radius: 50%; background: rgba(0,0,0,.6); color: #fff; font-size: 10px; font-weight: 700; line-height: 18px; text-align: center; pointer-events: none; }
 .teilungszeile { flex-wrap: wrap; }
 .teilungszeile .einschraenkung { flex-basis: 100%; margin-top: -4px; }
+
+/* Nachlasskontakt (#300): wer Zugang verlangt, über der Zeitleiste */
+#nachlass-hinweis { margin: 8px 0 12px; }
+.nachlasszeile { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: color-mix(in srgb, #d9534f 18%, var(--grund)); border: 1px solid color-mix(in srgb, #d9534f 45%, var(--rand)); margin-bottom: 6px; }
+.nachlasszeile span { flex: 1; }
+.nachlasszeile button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }

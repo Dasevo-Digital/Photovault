@@ -903,6 +903,7 @@ async function zeigeFotos() {
   if (zeitleiste.geladen.length === 0) await ladeMehr();
   zeigeErinnerungen().catch(() => {});
   holeZeitleistenmonate().catch(() => {});
+  zeigeNachlassHinweis().catch(() => {});
 }
 
 // Die Favoriten wie in der Bibliothek des Telefons: nach Tagen gegliedert,
@@ -1155,6 +1156,105 @@ async function zeigeAlbum(id) {
   const aktivitaet = teilungen.teilungen.length ? neueAktivitaet(`/api/v1/alben/${encodeURIComponent(id)}`, kopf) : null;
   zeigeListe({ aufnahmen: d.aufnahmen, kopf, aktivitaet }, d.album.name);
   if (aktivitaet) ladeAktivitaet();
+}
+
+// --- Nachlasskontakt (#300) -----------------------------------------------------
+//
+// Wen dieses Konto benennt, und für wen es benannt ist – auf der Kontoseite.
+// Verlangt jemand Zugang, steht das über der Zeitleiste, bis widersprochen
+// oder die Frist um ist.
+
+const nachlassTag = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium' });
+const nachlassDatum = (iso) => nachlassTag.format(new Date(iso));
+const fristText = (n) => t('{n} Tage', { n });
+
+function nachlassStand(e, eigen) {
+  if (e.freigegeben) return eigen ? t('hat Zugang seit {tag}', { tag: nachlassDatum(e.freigegeben) }) : t('Zugang seit {tag} – unter „Geteilt mit mir“', { tag: nachlassDatum(e.freigegeben) });
+  if (e.angefordert) return t('verlangt Zugang – ohne Widerspruch ab {tag}', { tag: nachlassDatum(e.faellig) });
+  return t('Frist: {frist}', { frist: fristText(e.frist) });
+}
+
+async function nachlassTue(pfad, methode, json) {
+  try { await api(pfad, { methode, json }); } catch (x) { meldung(x.message); return false; }
+  await Promise.all([zeigeNachlass().catch(() => {}), zeigeNachlassHinweis().catch(() => {})]);
+  return true;
+}
+
+async function zeigeNachlass() {
+  const [d, andere] = await Promise.all([api('/api/v1/nachlass'), api('/api/v1/konten/andere')]);
+  const meine = $('nachlass-meine');
+  meine.replaceChildren();
+  for (const e of d.kontakte) {
+    const zeile = el('li', 'teilungszeile');
+    const knoepfe = [];
+    if (e.angefordert && !e.freigegeben) {
+      const nein = el('button', 'knopf', t('Ablehnen'));
+      nein.type = 'button';
+      nein.addEventListener('click', () => nachlassTue(`/api/v1/nachlass/${encodeURIComponent(e.konto)}/ablehnen`, 'POST'));
+      knoepfe.push(nein);
+    }
+    const weg = el('button', 'knopf', t('Entfernen'));
+    weg.type = 'button';
+    weg.addEventListener('click', () => nachlassTue(`/api/v1/nachlass/${encodeURIComponent(e.konto)}`, 'DELETE'));
+    knoepfe.push(weg);
+    zeile.append(el('span', 'name', e.name), ...knoepfe, el('span', 'leise klein einschraenkung', nachlassStand(e, true)));
+    meine.append(zeile);
+  }
+  if (!d.kontakte.length) meine.append(el('li', 'leise', t('Noch niemand benannt.')));
+  const schon = new Set(d.kontakte.map((e) => e.konto));
+  const frei = andere.konten.filter((k) => !schon.has(k.id));
+  $('nachlass-wahl').replaceChildren(...frei.map((k) => new Option(k.name, k.id)));
+  const frist = $('nachlass-frist');
+  if (!frist.options.length) {
+    frist.replaceChildren(...d.fristen.map((f) => new Option(fristText(f), String(f))));
+    frist.value = '30';
+  }
+  $('nachlass-neu').hidden = !frei.length;
+
+  const fuer = $('nachlass-fuer');
+  fuer.replaceChildren();
+  $('nachlass-fuer-titel').hidden = !d.fuerMich.length;
+  for (const e of d.fuerMich) {
+    const zeile = el('li', 'teilungszeile');
+    const knoepfe = [];
+    if (!e.freigegeben) {
+      const b = el('button', 'knopf', e.angefordert ? t('Anfrage zurückziehen') : t('Zugang verlangen'));
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        const pfad = `/api/v1/nachlass/von/${encodeURIComponent(e.konto)}/anfordern`;
+        if (e.angefordert) { nachlassTue(pfad, 'DELETE'); return; }
+        if (!confirm(t('Zugang zur Bibliothek von {name} verlangen? {name} sieht die Anfrage und kann {frist} lang widersprechen. Danach siehst du die ganze Bibliothek, nur zum Ansehen und Herunterladen.', { name: e.name, frist: fristText(e.frist) }))) return;
+        nachlassTue(pfad, 'POST');
+      });
+      knoepfe.push(b);
+    }
+    zeile.append(el('span', 'name', e.name), ...knoepfe, el('span', 'leise klein einschraenkung', nachlassStand(e, false)));
+    fuer.append(zeile);
+  }
+}
+
+$('nachlass-hinzu').addEventListener('click', () => {
+  const konto = $('nachlass-wahl').value;
+  if (!konto) return;
+  nachlassTue(`/api/v1/nachlass/${encodeURIComponent(konto)}`, 'PUT', { frist: Number($('nachlass-frist').value) });
+});
+
+// Über der Zeitleiste: wer gerade Zugang verlangt.
+async function zeigeNachlassHinweis() {
+  const box = $('nachlass-hinweis');
+  let d;
+  try { d = await api('/api/v1/nachlass'); } catch (_) { box.hidden = true; return; }
+  const offen = d.kontakte.filter((e) => e.angefordert && !e.freigegeben);
+  box.replaceChildren();
+  box.hidden = !offen.length;
+  for (const e of offen) {
+    const zeile = el('div', 'nachlasszeile');
+    const nein = el('button', 'knopf', t('Ablehnen'));
+    nein.type = 'button';
+    nein.addEventListener('click', () => nachlassTue(`/api/v1/nachlass/${encodeURIComponent(e.konto)}/ablehnen`, 'POST'));
+    zeile.append(el('span', null, t('{name} verlangt Zugang zu deiner Bibliothek (Nachlasskontakt). Ohne Widerspruch bekommt {name} ihn am {tag}.', { name: e.name, tag: nachlassDatum(e.faellig) })), nein);
+    box.append(zeile);
+  }
 }
 
 // --- Alben, die sich selbst füllen (#298), und was ein Partner sieht (#299) ---
@@ -3302,6 +3402,7 @@ async function zeigeKonto() {
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
   zeigePartner().catch((x) => $('partner').replaceChildren(el('li', 'fehler', x.message)));
+  zeigeNachlass().catch((x) => $('nachlass-meine').replaceChildren(el('li', 'fehler', x.message)));
   zeigeBeitraege().catch(() => {});
   zeigeOidc(k).catch(() => {});
   zeigePasskeys().catch((x) => { $('passkey-meldung').textContent = x.message; });

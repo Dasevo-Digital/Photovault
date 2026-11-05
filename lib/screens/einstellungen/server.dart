@@ -139,6 +139,15 @@ class ServerGruppe extends StatelessWidget {
               onPressed: () => bibliothekTeilen(context, a.verbindung),
             ),
           ),
+          // Wer Zugang verlangen darf, wenn einem etwas zustösst (#300).
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: OutlinedButton.icon(
+              icon: const Icon(Icons.key_outlined),
+              label: Text(teilenTexte(context).nachlass),
+              onPressed: () => nachlassVerwalten(context, a.verbindung),
+            ),
+          ),
           _KontenZugang(a.verbindung),
         ],
         if (library.serversicherung != null) ...[

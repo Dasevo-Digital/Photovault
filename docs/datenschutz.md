@@ -143,7 +143,12 @@ seiner eigenen Zeitleiste sehen; in seine Bibliothek kommen sie dabei nicht.
 Ein Album kann sich selbst mit den Aufnahmen bestimmter Personen füllen. Der
 Server speichert dazu, welche Personen gewählt sind, und welche Aufnahmen die
 Regel schon hineingelegt hat; ist das Album geteilt, sehen die Empfänger
-auch Aufnahmen, die später dazukommen. In einem geteilten Album können der Besitzer und
+auch Aufnahmen, die später dazukommen. Ein Konto kann andere Konten als
+Nachlasskontakt benennen. Verlangt ein Nachlasskontakt Zugang, speichert der
+Server, wann das geschah; der Besitzer sieht die Anfrage und kann
+widersprechen. Tut er das nicht innerhalb der gewählten Frist, sieht der
+Kontakt danach die ganze Bibliothek wie bei einer Partnerfreigabe. Der Server
+schreibt Anfrage, Widerspruch und Zugang in sein Protokoll. In einem geteilten Album können der Besitzer und
 alle, mit denen es geteilt ist, Kommentare schreiben und Aufnahmen mit
 „Gefällt mir“ markieren. Der Server speichert dazu den Text, das Konto, seinen
 Namen und den Zeitpunkt; alle Beteiligten sehen sie. Wer einen Kommentar

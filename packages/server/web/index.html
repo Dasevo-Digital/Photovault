@@ -308,6 +308,16 @@
       <select id="partner-wahl" aria-label="Konto"></select>
       <button type="button" id="partner-hinzu">Teilen</button>
     </div>
+    <h3>Nachlasskontakt</h3>
+    <p class="leise klein">Ein Nachlasskontakt kann Zugang zu deiner Bibliothek verlangen – etwa, wenn dir etwas zustösst. Widersprichst du nicht innerhalb der Frist, sieht er danach deine ganze Bibliothek unter „Geteilt mit mir“, nur zum Ansehen und Herunterladen. Die Anfrage steht im Browser, am Handy und am Rechner.</p>
+    <ul id="nachlass-meine" class="teilungsliste"></ul>
+    <div id="nachlass-neu" class="teilungszeile">
+      <select id="nachlass-wahl" aria-label="Konto"></select>
+      <select id="nachlass-frist" aria-label="Frist"></select>
+      <button type="button" id="nachlass-hinzu">Benennen</button>
+    </div>
+    <h3 id="nachlass-fuer-titel" hidden>Du bist Nachlasskontakt für</h3>
+    <ul id="nachlass-fuer" class="teilungsliste"></ul>
     <h3>Geteilte Links</h3>
     <ul id="freigaben"></ul>
     <section id="beitraege-bereich" hidden>
@@ -362,6 +372,7 @@
     </div>
   </section>
   <section id="bereich-raster" hidden>
+    <div id="nachlass-hinweis" hidden></div>
     <div id="erinnerungen" hidden><h2>Erinnerungen</h2><div id="erinnerungen-karten"></div></div>
     <h2 id="raster-titel" hidden></h2>
     <div id="raster-kopf" hidden></div>
