@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:kern/db/database.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -91,6 +92,60 @@ void main() {
       expect(await zurueck.read().expand((b) => b).toList(), neu);
     },
   );
+
+  test('Maske und Schnitt: erst die Datei, dann der Befehl (#109)', () async {
+    Future<Response> befehl(String art, Map<String, Object?> w) async => api(
+      Request(
+        'POST',
+        Uri.parse('http://server/api/v1/befehle'),
+        headers: {
+          'authorization': 'Bearer $token',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode({'art': art, 'werte': w}),
+      ),
+    );
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    expect((await lege('masks/m1.png', [1, 2, 3])).statusCode, 204);
+    final angelegt = await befehl('maskeAnlegen', {
+      'id': 1099511627777,
+      'assetId': 'a1',
+      'pfad': 'masks/m1.png',
+      'name': 'Himmel',
+      'form': null,
+      'angelegt': '2026-11-05T09:00:00.000Z',
+    });
+    expect(angelegt.statusCode, 200, reason: await angelegt.readAsString());
+    final maske = (await db.masksForAsset('a1')).single;
+    expect(maske.id, 1099511627777, reason: 'die Kennung aus dem Befehl');
+    expect(maske.maskRelativePath, 'masks/m1.png');
+
+    expect((await lege('masks/m2.png', [4, 5])).statusCode, 204);
+    await befehl('maskenformAendern', {
+      'maskeId': 1099511627777,
+      'form': '{"art":"kreis"}',
+      'pfad': 'masks/m2.png',
+    });
+    expect(
+      (await db.masksForAsset('a1')).single.maskRelativePath,
+      'masks/m2.png',
+    );
+    await befehl('maskeLoeschen', {'maskeId': 1099511627777});
+    expect(await db.masksForAsset('a1'), isEmpty);
+
+    expect((await lege('trimmed/v1-1.mp4', [9, 9])).statusCode, 204);
+    final schnitt = await befehl('schnittSpeichern', {
+      'assetId': 'v1',
+      'start': 1.5,
+      'ende': 7.25,
+      'pfad': 'trimmed/v1-1.mp4',
+    });
+    expect(schnitt.statusCode, 200, reason: await schnitt.readAsString());
+    final trim = (await db.videoTrimForAsset('v1'))!;
+    expect((trim.startSeconds, trim.endSeconds), (1.5, 7.25));
+    await befehl('schnittZuruecksetzen', {'assetId': 'v1'});
+    expect(await db.videoTrimForAsset('v1'), isNull);
+  });
 
   test(
     'nur Abgeleitetes, nur eine Ebene, nichts Verstecktes, kein Ausbruch',

@@ -91,14 +91,15 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     if (range == null) return;
     setState(() => _saving = true);
 
-    final outputRelativePath = widget.paths.trimmedRelativePath(
-      widget.asset.id,
-    );
+    // Ein neuer Name je Schnitt, und das Original erst holen – verbunden
+    // liegt es beim Server (#109).
+    final outputRelativePath = widget.paths.neuerSchnittpfad(widget.asset.id);
     final outputFile = widget.paths.absolute(outputRelativePath);
     await outputFile.parent.create(recursive: true);
+    final vorher = widget.asset.trimmedRelativePath;
 
     final success = await NativeImageConverter.trimVideo(
-      widget.paths.absolute(widget.asset.relativePath),
+      await widget.paths.bereit(widget.asset.relativePath),
       startSeconds: range.start,
       endSeconds: range.end,
       outputPath: outputFile.path,
@@ -112,20 +113,39 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
       return;
     }
 
-    await widget.db.saveVideoTrim(
-      widget.asset.id,
-      startSeconds: range.start,
-      endSeconds: range.end,
-      trimmedRelativePath: outputRelativePath,
+    try {
+      await widget.paths.abgelegt(outputRelativePath);
+    } catch (_) {
+      if (await outputFile.exists()) await outputFile.delete();
+      if (mounted) {
+        setState(() => _saving = false);
+        melde.fehler(AppTexte.of(context).videoZuschneidenFehler);
+      }
+      return;
+    }
+    await widget.db.fuehreAus(
+      SchnittSpeichern(
+        widget.asset.id,
+        range.start,
+        range.end,
+        outputRelativePath,
+      ),
     );
+    // Der vorige Schnitt hier; am Server bleibt er liegen (siehe
+    // legeEntwicklungAb).
+    if (vorher != null && vorher != outputRelativePath) {
+      final alt = widget.paths.absolute(vorher);
+      if (await alt.exists()) await alt.delete();
+    }
 
     if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _reset() async {
-    await widget.db.resetVideoTrim(widget.asset.id);
+    final vorher = widget.asset.trimmedRelativePath;
+    await widget.db.fuehreAus(SchnittZuruecksetzen(widget.asset.id));
     final trimmedFile = widget.paths.absolute(
-      widget.paths.trimmedRelativePath(widget.asset.id),
+      vorher ?? widget.paths.trimmedRelativePath(widget.asset.id),
     );
     if (await trimmedFile.exists()) await trimmedFile.delete();
     if (mounted) Navigator.of(context).pop(true);

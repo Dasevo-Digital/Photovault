@@ -62,7 +62,7 @@ Future<Set<Bearbeitungsart>> originalWiederherstellen({
     // die 8. Prüfrunde bei den Gesichtsausschnitten gefunden hat.
     for (final maske in await db.masksForAsset(asset.id)) {
       await loesche(maske.maskRelativePath);
-      await db.deleteDevelopMask(maske.id);
+      await db.fuehreAus(MaskeLoeschen(maske.id));
     }
     await loesche(asset.developedRelativePath);
     await db.fuehreAus(EntwicklungZuruecksetzen(asset.id));
@@ -73,7 +73,7 @@ Future<Set<Bearbeitungsart>> originalWiederherstellen({
   }
   if (arten.contains(Bearbeitungsart.zugeschnitten)) {
     await loesche(asset.trimmedRelativePath);
-    await db.resetVideoTrim(asset.id);
+    await db.fuehreAus(SchnittZuruecksetzen(asset.id));
   }
 
   // Der Pfad zur angezeigten Fassung ändert sich nicht, ihr Inhalt

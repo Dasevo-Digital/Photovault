@@ -6567,5 +6567,6 @@
       }
     }
   },
-  "backupLaeuftBereits": "Eine automatische Sicherung läuft bereits."
+  "backupLaeuftBereits": "Eine automatische Sicherung läuft bereits.",
+  "entwMaskeNichtAbgelegt": "Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert."
 }

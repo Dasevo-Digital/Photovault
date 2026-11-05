@@ -15640,6 +15640,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Eine automatische Sicherung läuft bereits.'**
   String get backupLaeuftBereits;
+
+  /// No description provided for @entwMaskeNichtAbgelegt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert.'**
+  String get entwMaskeNichtAbgelegt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

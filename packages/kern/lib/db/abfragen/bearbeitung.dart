@@ -194,10 +194,18 @@ extension BearbeitungsAbfragen on AppDatabase {
   /// gerenderte PNG-Datei selbst überschreibt der Aufrufer direkt (Muster
   /// wie [createDevelopMask]), hier wird nur die Quelle der Wahrheit
   /// (`shapeDefinitionJson`) aktualisiert.
-  Future<void> updateDevelopMaskShape(int id, String shapeDefinitionJson) =>
-      (update(developMasks)..where((t) => t.id.equals(id))).write(
-        DevelopMasksCompanion(shapeDefinitionJson: Value(shapeDefinitionJson)),
-      );
+  ///
+  /// Mit [pfad] auch die neu gerechnete Maskendatei (#109).
+  Future<void> updateDevelopMaskShape(
+    int id,
+    String shapeDefinitionJson, {
+    String? pfad,
+  }) => (update(developMasks)..where((t) => t.id.equals(id))).write(
+    DevelopMasksCompanion(
+      shapeDefinitionJson: Value(shapeDefinitionJson),
+      maskRelativePath: pfad == null ? const Value.absent() : Value(pfad),
+    ),
+  );
 
   /// "Maske entfernen" – der Aufrufer löscht die zugehörige PNG-Datei selbst
   /// von der Platte (Muster wie [resetDevelopSettings]/[resetVideoTrim]).

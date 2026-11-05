@@ -23,9 +23,41 @@ mixin _Masken on _EntwickelnBasis {
   @override
   void _selectGlobalAdjustments() => setState(() => _selectedMaskId = null);
 
+  /// Legt die Maskendatei [relativePath] ab – verbunden zum Server –, und
+  /// `false` mit Meldung, wenn er sie nicht nimmt. Dann geht sie hier weg.
+  Future<bool> _abgelegt(String relativePath) async {
+    try {
+      await widget.paths.abgelegt(relativePath);
+      return true;
+    } catch (e) {
+      final datei = widget.paths.absolute(relativePath);
+      if (await datei.exists()) await datei.delete();
+      if (mounted) {
+        setState(() => _computingMask = false);
+        melde.fehler(AppTexte.of(context).entwMaskeNichtAbgelegt);
+      }
+      return false;
+    }
+  }
+
+  /// Erst die Datei (verbunden am Server), dann der Befehl, der auf sie
+  /// zeigt (#109) – wie beim Speichern einer Entwicklung.
+  Future<bool> _maskeAnlegen(
+    String relativePath,
+    String name, {
+    String? form,
+  }) async {
+    if (!await _abgelegt(relativePath)) return false;
+    await widget.db.fuehreAus(
+      MaskeAnlegen(widget.asset.id, relativePath, name, form: form),
+    );
+    return true;
+  }
+
   @override
   Future<void> _deleteMask(DevelopMaskData mask) async {
-    await widget.db.deleteDevelopMask(mask.id);
+    // Als Befehl – verbunden erfährt so der Server davon (#109).
+    await widget.db.fuehreAus(MaskeLoeschen(mask.id));
     final file = widget.paths.absolute(mask.maskRelativePath);
     if (await file.exists()) await file.delete();
     if (!mounted) return;
@@ -435,14 +467,7 @@ mixin _Masken on _EntwickelnBasis {
     await file.parent.create(recursive: true);
     await file.writeAsBytes(pngBytes);
 
-    await widget.db.createDevelopMask(
-      DevelopMasksCompanion.insert(
-        assetId: widget.asset.id,
-        maskRelativePath: relativePath,
-        label: name,
-        createdAt: DateTime.now(),
-      ),
-    );
+    if (!await _maskeAnlegen(relativePath, name)) return;
     final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
 
     if (!mounted) return;
@@ -495,14 +520,7 @@ mixin _Masken on _EntwickelnBasis {
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(ergebnis.png!);
 
-    await widget.db.createDevelopMask(
-      DevelopMasksCompanion.insert(
-        assetId: widget.asset.id,
-        maskRelativePath: relativePath,
-        label: name,
-        createdAt: DateTime.now(),
-      ),
-    );
+    if (!await _maskeAnlegen(relativePath, name)) return;
     final frisch = await widget.db.masksForAsset(widget.asset.id);
     if (!mounted) return;
     setState(() => _masks = frisch);
@@ -679,25 +697,21 @@ mixin _Masken on _EntwickelnBasis {
       if (existing == null) editingId = null;
     }
 
+    // Auch beim Umformen eine neue Datei (#109): Verbundene Geräte halten
+    // die alte unter ihrem Namen vor.
+    final relativePath = widget.paths.maskRelativePath(const Uuid().v4());
+    final file = widget.paths.absolute(relativePath);
+    await file.parent.create(recursive: true);
+    await file.writeAsBytes(pngBytes);
     if (editingId != null && existing != null) {
-      await widget.paths
-          .absolute(existing.maskRelativePath)
-          .writeAsBytes(pngBytes);
-      await widget.db.updateDevelopMaskShape(editingId, shape.encode());
-    } else {
-      final relativePath = widget.paths.maskRelativePath(const Uuid().v4());
-      final file = widget.paths.absolute(relativePath);
-      await file.parent.create(recursive: true);
-      await file.writeAsBytes(pngBytes);
-      await widget.db.createDevelopMask(
-        DevelopMasksCompanion.insert(
-          assetId: widget.asset.id,
-          maskRelativePath: relativePath,
-          label: name,
-          createdAt: DateTime.now(),
-          shapeDefinitionJson: Value(shape.encode()),
-        ),
+      if (!await _abgelegt(relativePath)) return;
+      await widget.db.fuehreAus(
+        MaskenformAendern(editingId, shape.encode(), relativePath),
       );
+      final alt = widget.paths.absolute(existing.maskRelativePath);
+      if (await alt.exists()) await alt.delete();
+    } else if (!await _maskeAnlegen(relativePath, name, form: shape.encode())) {
+      return;
     }
     final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
 

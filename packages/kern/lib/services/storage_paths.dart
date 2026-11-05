@@ -148,6 +148,14 @@ class StoragePaths {
   String trimmedRelativePath(String assetId) =>
       p.join('trimmed', '$assetId.mp4');
 
+  /// Wohin ein neuer Schnitt kommt – ein neuer Name je Speichern, wie bei
+  /// [neuerEntwicklungspfad]: Verbundene Geräte halten eine Datei unter
+  /// ihrem Namen vor und zeigten sonst den alten Schnitt (#109).
+  String neuerSchnittpfad(String assetId) => p.join(
+    'trimmed',
+    '$assetId-${DateTime.now().microsecondsSinceEpoch}.mp4',
+  );
+
   String faceRelativePath(String faceId) => p.join('faces', '$faceId.jpg');
   String vaultMetadataRelativePath(String assetId) =>
       p.join('vault_metadata', '$assetId.pvm');

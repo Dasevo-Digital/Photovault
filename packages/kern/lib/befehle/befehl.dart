@@ -25,9 +25,8 @@
 /// aus dem Namen ab. Zahl-Kennungen zieht der Befehl beim Erzeugen
 /// ([_neueZahlkennung]). Ausgenommen sind Zeilen, auf die kein Befehl
 /// verweist (Rückmeldungen zur Gesichtserkennung) – die gleicht der
-/// Abgleich selbst an –, und Zeilen, an denen Dateien hängen
-/// (Entwicklungsverlauf, Masken); deren Weg entscheidet das Protokoll für
-/// Dateien.
+/// Abgleich selbst an –, und der Entwicklungsverlauf, an dem Dateien
+/// hängen. Masken ziehen seit #109 ihre Kennung wie die Vorgaben.
 library;
 
 import 'dart:convert';
@@ -186,6 +185,11 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'entwicklungZuruecksetzen': EntwicklungZuruecksetzen.aus,
   'entwicklungSpeichern': EntwicklungSpeichern.aus,
   'maskeneinstellungAendern': MaskeneinstellungAendern.aus,
+  'maskeAnlegen': MaskeAnlegen.aus,
+  'maskenformAendern': MaskenformAendern.aus,
+  'maskeLoeschen': MaskeLoeschen.aus,
+  'schnittSpeichern': SchnittSpeichern.aus,
+  'schnittZuruecksetzen': SchnittZuruecksetzen.aus,
   'restaurierungSpeichern': RestaurierungSpeichern.aus,
   'restaurierungZuruecksetzen': RestaurierungZuruecksetzen.aus,
 };

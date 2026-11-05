@@ -2134,8 +2134,10 @@ class LibraryState extends ChangeNotifier {
   /// ihren gespeicherten Einstellungen neu – z.B. sinnvoll nach einer
   /// Änderung an der nativen Render-Logik selbst. Die Einstellungen bleiben
   /// dabei unverändert, nur das gerenderte Bild wird neu erzeugt.
+  ///
+  /// Auch verbunden (#109): Original und Masken holt [StoragePaths.bereit],
+  /// das Ergebnis legt [legeEntwicklungAb] zum Server.
   Stream<ImportProgress> redevelopAll() async* {
-    _nurOhneServer();
     final entries = await db.assetsWithDevelopSettings();
     var done = 0;
     yield ImportProgress(0, entries.length);
@@ -2154,7 +2156,7 @@ class LibraryState extends ChangeNotifier {
           masks: [
             for (final mask in masks)
               MaskAdjustmentLayer(
-                maskFilePath: paths.absolute(mask.maskRelativePath).path,
+                maskFilePath: (await paths.bereit(mask.maskRelativePath)).path,
                 adjustments: DevelopAdjustments(
                   exposure: mask.exposure,
                   temperature: mask.temperature,
@@ -2922,7 +2924,6 @@ class LibraryState extends ChangeNotifier {
   /// entwickelt wurde. Für Aufrufer ausserhalb des Entwickeln-Bildschirms,
   /// die nur eine Foto-Kennung haben.
   Future<bool> kopiereEntwicklungVon(String assetId) async {
-    _nurOhneServer();
     final s = await db.developSettingsForAsset(assetId);
     if (s == null) return false;
     _kopierteEntwicklung = s;
@@ -3019,7 +3020,6 @@ class LibraryState extends ChangeNotifier {
     List<String> zielIds, {
     Entwicklungswerte? vorgabe,
   }) async* {
-    _nurOhneServer();
     // Ohne [vorgabe] gilt die Zwischenablage. Beides läuft ab hier durch
     // denselben Code – eine zweite Fassung des Übertragungswegs vergässe
     // beim nächsten neuen Regler etwas, ohne dass es auffiele.

@@ -5042,5 +5042,6 @@
       }
     }
   },
-  "backupLaeuftBereits": "An automatic backup is already running."
+  "backupLaeuftBereits": "An automatic backup is already running.",
+  "entwMaskeNichtAbgelegt": "The server did not accept the mask – it is not saved."
 }

@@ -291,6 +291,22 @@ void main() {
           exposure: Value(0.3),
         ),
       ),
+      MaskeAnlegen(
+        'a1',
+        'masks/m1.png',
+        'Himmel',
+        form: '{"art":"kreis"}',
+        id: 1099511627777,
+        angelegt: DateTime.utc(2026, 11, 5, 9),
+      ),
+      const MaskenformAendern(
+        1099511627777,
+        '{"art":"rechteck"}',
+        'masks/m2.png',
+      ),
+      const MaskeLoeschen(1099511627777),
+      const SchnittSpeichern('v1', 1.5, 7.25, 'trimmed/v1-1.mp4'),
+      const SchnittZuruecksetzen('v1'),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
@@ -396,6 +412,11 @@ void main() {
       EntwicklungZuruecksetzen() => 'entwicklungZuruecksetzen',
       EntwicklungSpeichern() => 'entwicklungSpeichern',
       MaskeneinstellungAendern() => 'maskeneinstellungAendern',
+      MaskeAnlegen() => 'maskeAnlegen',
+      MaskenformAendern() => 'maskenformAendern',
+      MaskeLoeschen() => 'maskeLoeschen',
+      SchnittSpeichern() => 'schnittSpeichern',
+      SchnittZuruecksetzen() => 'schnittZuruecksetzen',
       RestaurierungSpeichern() => 'restaurierungSpeichern',
       RestaurierungZuruecksetzen() => 'restaurierungZuruecksetzen',
     };
@@ -979,12 +1000,13 @@ const _einordnung = <String, _Art>{
   // Bearbeiten: Einstellungen sind Befehle, das gerechnete Bild eine Datei
   'resetDevelopSettings': _Art.befehl,
   'saveDevelopResult': _Art.befehl,
-  'createDevelopMask': _Art.datei,
-  'updateDevelopMaskShape': _Art.datei,
+  // Masken und Schnitt (#109): erst die Datei, dann der Befehl.
+  'createDevelopMask': _Art.befehl,
+  'updateDevelopMaskShape': _Art.befehl,
   'updateDevelopMaskAdjustments': _Art.befehl,
-  'deleteDevelopMask': _Art.datei,
-  'saveVideoTrim': _Art.datei,
-  'resetVideoTrim': _Art.datei,
+  'deleteDevelopMask': _Art.befehl,
+  'saveVideoTrim': _Art.befehl,
+  'resetVideoTrim': _Art.befehl,
   // Vorgaben der Bibliothek
   'upsertAutomationRule': _Art.befehl,
   'deleteAutomationRule': _Art.befehl,

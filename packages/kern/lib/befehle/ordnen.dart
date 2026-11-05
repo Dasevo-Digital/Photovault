@@ -597,3 +597,170 @@ final class MaskeneinstellungAendern extends Befehl<void> {
     _zeileAus(db.developMasks, aenderung),
   );
 }
+
+/// Eine neue Maske für [assetId] (#109). Erst liegt die Datei unter
+/// [pfad] – im verbundenen Betrieb schon am Server –, dann kommt der
+/// Befehl, der auf sie zeigt. Die Kennung zieht der Befehl selbst (#107),
+/// damit ein späteres Ändern oder Löschen auf dem Server dieselbe Maske
+/// trifft.
+final class MaskeAnlegen extends Befehl<void> {
+  MaskeAnlegen(
+    this.assetId,
+    this.pfad,
+    this.name, {
+    this.form,
+    int? id,
+    DateTime? angelegt,
+  }) : id = id ?? _neueZahlkennung(),
+       angelegt = angelegt ?? DateTime.now();
+
+  static MaskeAnlegen aus(Map<String, Object?> w) => MaskeAnlegen(
+    w['assetId']! as String,
+    w['pfad']! as String,
+    w['name']! as String,
+    form: w['form'] as String?,
+    id: w['id']! as int,
+    angelegt: DateTime.parse(w['angelegt']! as String),
+  );
+
+  final int id;
+  final String assetId;
+  final String pfad;
+  final String name;
+
+  /// Die Form als JSON ([MaskShapeDefinition]) – `null` bei einer Maske aus
+  /// der KI-Auswahl oder der Tiefenkarte.
+  final String? form;
+  final DateTime angelegt;
+
+  @override
+  String get art => 'maskeAnlegen';
+
+  @override
+  Map<String, Object?> get werte => {
+    'id': id,
+    'assetId': assetId,
+    'pfad': pfad,
+    'name': name,
+    'form': form,
+    'angelegt': angelegt.toUtc().toIso8601String(),
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.createDevelopMask(
+    DevelopMasksCompanion.insert(
+      id: Value(id),
+      assetId: assetId,
+      maskRelativePath: pfad,
+      label: name,
+      createdAt: angelegt,
+      shapeDefinitionJson: Value(form),
+    ),
+  );
+}
+
+/// Eine Vektormaske neu gezeichnet (#109): die neue [form] und die Datei
+/// dazu – unter einem neuen [pfad], damit verbundene Geräte nicht die alte
+/// vorhalten (wie #258).
+final class MaskenformAendern extends Befehl<void> {
+  const MaskenformAendern(this.maskeId, this.form, this.pfad);
+
+  static MaskenformAendern aus(Map<String, Object?> w) => MaskenformAendern(
+    w['maskeId']! as int,
+    w['form']! as String,
+    w['pfad']! as String,
+  );
+
+  final int maskeId;
+  final String form;
+  final String pfad;
+
+  @override
+  String get art => 'maskenformAendern';
+
+  @override
+  Map<String, Object?> get werte => {
+    'maskeId': maskeId,
+    'form': form,
+    'pfad': pfad,
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) =>
+      db.updateDevelopMaskShape(maskeId, form, pfad: pfad);
+}
+
+/// Eine Maske weg (#109). Ihre Datei räumt jedes Gerät bei sich selbst.
+final class MaskeLoeschen extends Befehl<void> {
+  const MaskeLoeschen(this.maskeId);
+
+  static MaskeLoeschen aus(Map<String, Object?> w) =>
+      MaskeLoeschen(w['maskeId']! as int);
+
+  final int maskeId;
+
+  @override
+  String get art => 'maskeLoeschen';
+
+  @override
+  Map<String, Object?> get werte => {'maskeId': maskeId};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.deleteDevelopMask(maskeId);
+}
+
+/// Ein Video zugeschnitten (#109): von [start] bis [ende] Sekunden, das
+/// Ergebnis unter [pfad] – erst die Datei, dann der Befehl.
+final class SchnittSpeichern extends Befehl<void> {
+  const SchnittSpeichern(this.assetId, this.start, this.ende, this.pfad);
+
+  static SchnittSpeichern aus(Map<String, Object?> w) => SchnittSpeichern(
+    w['assetId']! as String,
+    (w['start']! as num).toDouble(),
+    (w['ende']! as num).toDouble(),
+    w['pfad']! as String,
+  );
+
+  final String assetId;
+  final double start;
+  final double ende;
+  final String pfad;
+
+  @override
+  String get art => 'schnittSpeichern';
+
+  @override
+  Map<String, Object?> get werte => {
+    'assetId': assetId,
+    'start': start,
+    'ende': ende,
+    'pfad': pfad,
+  };
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.saveVideoTrim(
+    assetId,
+    startSeconds: start,
+    endSeconds: ende,
+    trimmedRelativePath: pfad,
+  );
+}
+
+/// Ein Video wieder ganz (#109).
+final class SchnittZuruecksetzen extends Befehl<void> {
+  const SchnittZuruecksetzen(this.assetId);
+
+  static SchnittZuruecksetzen aus(Map<String, Object?> w) =>
+      SchnittZuruecksetzen(w['assetId']! as String);
+
+  final String assetId;
+
+  @override
+  String get art => 'schnittZuruecksetzen';
+
+  @override
+  Map<String, Object?> get werte => {'assetId': assetId};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.resetVideoTrim(assetId);
+}

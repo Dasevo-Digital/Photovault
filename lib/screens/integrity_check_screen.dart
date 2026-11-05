@@ -252,7 +252,9 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       case MissingFileKind.faceCrop:
         await widget.library.db.clearMissingFaceCropPath(issue.ownerId);
       case MissingFileKind.mask:
-        await widget.library.db.deleteDevelopMask(int.parse(issue.ownerId));
+        await widget.library.db.fuehreAus(
+          MaskeLoeschen(int.parse(issue.ownerId)),
+        );
     }
     if (!mounted) return;
     setState(() => _report = _withoutMissing(_report!, issue));

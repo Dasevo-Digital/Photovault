@@ -10275,4 +10275,8 @@ class AppTexteDe extends AppTexte {
   @override
   String get backupLaeuftBereits =>
       'Eine automatische Sicherung läuft bereits.';
+
+  @override
+  String get entwMaskeNichtAbgelegt =>
+      'Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert.';
 }
