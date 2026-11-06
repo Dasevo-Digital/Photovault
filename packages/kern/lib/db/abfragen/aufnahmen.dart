@@ -119,7 +119,7 @@ extension AufnahmenAbfragen on AppDatabase {
   }
 
   /// [limit] begrenzt auf die neuesten [limit] Fotos/Videos (per
-  /// `idx_assets_trashed_locked_created` indexgestützt, also auch bei sehr
+  /// `idx_assets_sichtbar` indexgestützt, also auch bei sehr
   /// großen Bibliotheken ein günstiger Index-Walk statt eines vollständigen
   /// Tabellen-Scans). Ohne [limit] wird – wie bisher – die komplette
   /// Zeitleiste geliefert; TimelineScreen nutzt [limit] für ein wachsendes
@@ -256,7 +256,7 @@ extension AufnahmenAbfragen on AppDatabase {
   /// (CalendarScreen) – eine einzelne aggregierte SQL-Abfrage statt (wie
   /// zuvor) die komplette Zeitleiste zu laden und in Dart pro Jahr zu
   /// zählen. `strftime('%Y', ...)` arbeitet auf demselben, bereits über
-  /// `idx_assets_trashed_locked_created` indexierten Filter. Gezählt wird
+  /// `idx_assets_sichtbar` indexierten Filter. Gezählt wird
   /// nach Ortszeit, siehe [_jahrAusdruck].
   Stream<Map<int, int>> watchAssetCountsByYear() =>
       _jahresabfrage().watch().map(_jahreszahlen);

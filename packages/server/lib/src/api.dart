@@ -796,7 +796,9 @@ class _Api {
         .customSelect(
           'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
           '${nurFavoriten ? ' AND is_favorite = 1' : ''}'
-          '${nach == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
+          // Die erste Bedingung gibt dem Index eine Grenze: Am OR allein
+          // ging er sonst bis zur Seite alles durch.
+          '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
           ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
           variables: [
             if (nach != null) ...[
@@ -1185,7 +1187,7 @@ class _Api {
       return _json({'fehler': 'schwelle'}, status: 400);
     }
     final db = (await _bereich(anfrage)).bibliothek.db;
-    final d = await sucheDuplikate(db, schwelle);
+    final d = await _duplikate(db, schwelle);
     return _json({
       'einbettungen': d.einbettungen,
       'ausnahmen': d.ausnahmen,
@@ -1201,6 +1203,45 @@ class _Api {
           },
       ],
     });
+  }
+
+  /// Die letzte Suche je Bibliothek: Sie braucht bei 100.000 Fotos rund
+  /// 18 Sekunden, und die Seite fragt nach jeder Entscheidung neu. Gültig,
+  /// solange sich Einbettungen und Ausnahmen nicht ändern, höchstens
+  /// [_duplikateGueltig] lang: Sterne und Beschreibungen zählen dort mit.
+  final _duplikatsuche =
+      Expando<
+        ({
+          int stand,
+          double schwelle,
+          Set<String> ausnahmen,
+          DateTime zeit,
+          Duplikatergebnis ergebnis,
+        })
+      >();
+  static const _duplikateGueltig = Duration(minutes: 10);
+
+  Future<Duplikatergebnis> _duplikate(AppDatabase db, double schwelle) async {
+    final ausnahmen = await db.duplikatAusnahmeSchluessel();
+    final alt = _duplikatsuche[db];
+    if (alt != null &&
+        alt.stand == db.embeddingsGeneration &&
+        alt.schwelle == schwelle &&
+        DateTime.now().difference(alt.zeit) < _duplikateGueltig &&
+        alt.ausnahmen.length == ausnahmen.length &&
+        alt.ausnahmen.containsAll(ausnahmen)) {
+      return alt.ergebnis;
+    }
+    final stand = db.embeddingsGeneration;
+    final ergebnis = await sucheDuplikate(db, schwelle);
+    _duplikatsuche[db] = (
+      stand: stand,
+      schwelle: schwelle,
+      ausnahmen: ausnahmen,
+      zeit: DateTime.now(),
+      ergebnis: ergebnis,
+    );
+    return ergebnis;
   }
 
   /// Liest das Aufnahmedatum aus einer Datei der Bibliothek, für die
@@ -1539,6 +1580,7 @@ class _Api {
       'aufnahme': zeileAlsJson(Rasterzeile.aus(a)),
       'quelle': browserTauglich ? 'original' : 'vorschau',
       'entwickelt': a.developedRelativePath != null,
+      'masken': (await db.masksForAsset(a.id)).length,
       'einstellungen': e == null
           ? null
           : {
@@ -1724,17 +1766,23 @@ class _Api {
         (double.tryParse(anfrage.url.queryParameters['zoom'] ?? '') ?? 4)
             .clamp(0, 20)
             .toDouble();
-    final orte = [
-      for (final a in await db.assetsWithLocation()) Rasterzeile.aus(a),
-    ];
+    final gruppen = kartengruppenVon(
+      await db.orteKurz(),
+      zoom,
+      breite: (o) => o.breite,
+      laenge: (o) => o.laenge,
+    );
     return _json({
       'gruppen': [
-        for (final g in kartengruppen(orte, zoom))
+        for (final g in gruppen)
           {
-            'breite': gruppenmitte(g).breite,
-            'laenge': gruppenmitte(g).laenge,
+            'breite': g.map((o) => o.breite).reduce((a, b) => a + b) / g.length,
+            'laenge': g.map((o) => o.laenge).reduce((a, b) => a + b) / g.length,
             'anzahl': g.length,
-            'ids': [for (final z in g) z.id],
+            // Die Oberfläche fragt sie nur für eine einzelne Aufnahme oder
+            // ganz nah ab. Bei wenig Zoom machten sie die Antwort 1000-mal so
+            // gross (2 MB bei 100.000 Fotos).
+            if (g.length == 1 || zoom >= 17) 'ids': [for (final o in g) o.id],
           },
       ],
     });
@@ -1855,6 +1903,7 @@ class _Api {
           in regeln?.vonBesitzer(kontoVon(anfrage).id) ?? const <Albumregel>[])
         r.album,
     };
+    final titelbilder = await db.albumTitelbilder(liste);
     return _json({
       'alben': [
         for (final a in liste)
@@ -1862,7 +1911,7 @@ class _Api {
             'id': a.id,
             'name': a.name,
             'anzahl': anzahlen[a.id] ?? 0,
-            'titelbild': (await db.albumTitelbild(a))?.id,
+            'titelbild': titelbilder[a.id],
             'geteilt': ?geteilt[a.id],
             if (automatisch.contains(a.id)) 'automatisch': true,
           },

@@ -382,7 +382,8 @@ mixin _Verlauf on _EntwickelnBasis {
     final maskLayers = _currentMaskLayers();
     // In einer verbundenen Kopie liegt das Original erst hier, wenn es
     // jemand geholt hat (Issue #109).
-    final sourceFile = await widget.paths.bereit(widget.asset.relativePath);
+    final sourceFile = await _originalOderMeldung();
+    if (sourceFile == null) return;
     final bytes = await NativeImageConverter.developImage(
       sourceFile,
       adjustments: adjustments,
@@ -443,31 +444,26 @@ mixin _Verlauf on _EntwickelnBasis {
       return;
     }
 
-    // Nur die gerade ausgewählte Maske kann seit dem letzten Speichern
-    // geänderte Regler-Werte im Speicher haben (siehe _currentMaskLayers) –
-    // alle anderen sind bereits mit der DB konsistent.
-    if (_selectedMaskId != null) {
-      await widget.db.fuehreAus(
-        MaskeneinstellungAendern(
-          _selectedMaskId!,
-          DevelopMasksCompanion(
-            exposure: Value(_maskExposure),
-            temperature: Value(_maskAutoWhiteBalance ? null : _maskTemperature),
-            tint: Value(_maskAutoWhiteBalance ? null : _maskTint),
-            contrast: Value(_maskContrast),
-            shadows: Value(_maskShadows),
-            highlights: Value(_maskHighlights),
-            sharpness: Value(_maskSharpness),
-            noiseReduction: Value(_maskNoiseReduction),
-          ),
-        ),
-      );
+    // Alle Masken, an denen etwas geändert wurde, nicht nur die gewählte.
+    _merkeMaskenentwurf();
+    for (final MapEntry(key: id, value: werte) in _geaenderteMasken.entries) {
+      await widget.db.fuehreAus(MaskeneinstellungAendern(id, werte));
     }
 
     if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _reset() async {
+    // Das löscht die gespeicherte Entwicklung: nicht ohne Rückfrage, wie in
+    // Browser und Handy.
+    final t = AppTexte.of(context);
+    if (!await confirmDialog(
+      context,
+      t.entwZuruecksetzenTitel,
+      t.entwZuruecksetzenText,
+    )) {
+      return;
+    }
     // Der Name wechselt mit jedem Speichern (#258) – also der, auf den die
     // Aufnahme gerade zeigt.
     final entwickelt = (await widget.db.assetById(

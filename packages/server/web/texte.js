@@ -632,6 +632,8 @@ const EN = {
   'Hochladen gescheitert ({n}).': 'Upload failed ({n}).',
   'Änderungen verwerfen?': 'Discard changes?',
   'Die Entwicklung entfernen und das Original zeigen?': 'Remove the edits and show the original?',
+  'Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.': 'Only the computer can render masks: They are missing from the image here.',
+  'Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?': 'The masks of this photo will then be missing from the saved image, on all devices. Save anyway?',
   // Einstellungen
   'Einstellungen der Bibliothek': 'Library settings',
   'Diese Einstellungen stehen in der Bibliothek und gelten für alle verbundenen Geräte.': 'These settings are stored in the library and apply to all connected devices.',

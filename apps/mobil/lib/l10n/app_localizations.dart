@@ -4380,6 +4380,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Nicht zurückhalten'**
   String get sicherungSofortAkku;
+
+  /// No description provided for @entwMaskenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.'**
+  String get entwMaskenHinweis;
+
+  /// No description provided for @entwMaskenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?'**
+  String get entwMaskenFrage;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

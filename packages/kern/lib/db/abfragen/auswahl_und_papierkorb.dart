@@ -301,7 +301,7 @@ extension AuswahlAbfragen on AppDatabase {
       'SELECT v.id AS id, f.trashed_at AS am, f.id IS NULL AS weg '
       'FROM assets v LEFT JOIN assets f ON f.id = v.linked_asset_id '
       "WHERE v.type = 'VIDEO' AND v.linked_asset_id IS NOT NULL "
-      'AND v.is_trashed = 0 AND (f.id IS NULL OR f.is_trashed = 1)',
+      'AND +v.is_trashed = 0 AND (f.id IS NULL OR f.is_trashed = 1)',
       readsFrom: {assets},
     ).get();
     for (final z in videos) {
@@ -324,8 +324,8 @@ extension AuswahlAbfragen on AppDatabase {
     final varianten = await customSelect(
       'SELECT m.id AS id, c.trashed_at AS am FROM assets m '
       'JOIN assets c ON c.stack_id = m.stack_id AND c.is_stack_cover = 1 '
-      "WHERE m.stack_id LIKE 'variante:%' AND m.is_stack_cover = 0 "
-      'AND m.is_trashed = 0 AND c.is_trashed = 1',
+      "WHERE m.stack_id IS NOT NULL AND m.stack_id LIKE 'variante:%' "
+      'AND m.is_stack_cover = 0 AND +m.is_trashed = 0 AND +c.is_trashed = 1',
       readsFrom: {assets},
     ).get();
     for (final z in varianten) {
@@ -347,10 +347,12 @@ extension AuswahlAbfragen on AppDatabase {
     // Was danach noch ohne sichtbares Titelbild dasteht: Serien, gesperrte
     // oder gelöschte Hauptversionen.
     final ohne = await customSelect(
-      'SELECT DISTINCT m.stack_id AS s FROM assets m '
-      'WHERE m.stack_id IS NOT NULL AND m.is_trashed = 0 AND m.is_locked = 0 '
-      'AND NOT EXISTS (SELECT 1 FROM assets c WHERE c.stack_id = m.stack_id '
-      'AND c.is_stack_cover = 1 AND c.is_trashed = 0 AND c.is_locked = 0)',
+      // Gruppiert statt je Mitglied gefragt: Das Öffnen einer Bibliothek mit
+      // 100.000 Fotos hing sonst rund 30 Sekunden an dieser Abfrage.
+      'SELECT stack_id AS s FROM assets WHERE stack_id IS NOT NULL '
+      'GROUP BY stack_id '
+      'HAVING max(is_trashed = 0 AND is_locked = 0) = 1 '
+      'AND max(is_stack_cover = 1 AND is_trashed = 0 AND is_locked = 0) = 0',
       readsFrom: {assets},
     ).get();
     anzahl += await sichtbaresTitelbild([

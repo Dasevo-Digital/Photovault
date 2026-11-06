@@ -30,13 +30,33 @@ extension SerienAbfragen on AppDatabase {
   /// den Abgleich beim Import, ob ein passender Live-Photo-Partner (gleicher
   /// Dateiname, anderer Typ) schon in der Bibliothek liegt.
   Future<List<AssetData>> unlinkedAssetsOfType(String type) =>
+      _unverknuepft(type).get();
+
+  /// Wie [unlinkedAssetsOfType], aber nur mit dem Namensstamm [stamm], ohne
+  /// Rücksicht auf Gross- und Kleinschreibung. Über den Index
+  /// `idx_assets_dateiname`: Der Import jeder Datei las sonst alle
+  /// unverknüpften Aufnahmen.
+  Future<List<AssetData>> unverknuepfteMitStamm(String type, String stamm) {
+    final name = assets.originalFileName.collate(Collate.noCase);
+    return (select(assets)..where(
+          (t) =>
+              t.type.equals(type) &
+              t.isTrashed.equals(false) &
+              t.linkedAssetId.isNull() &
+              name.isBiggerOrEqualValue('$stamm.') &
+              // „/“ folgt in ASCII auf „.“: alles, was mit „stamm.“ beginnt.
+              name.isSmallerThanValue('$stamm/'),
+        ))
+        .get();
+  }
+
+  SimpleSelectStatement<$AssetsTable, AssetData> _unverknuepft(String type) =>
       (select(assets)..where(
-            (t) =>
-                t.type.equals(type) &
-                t.isTrashed.equals(false) &
-                t.linkedAssetId.isNull(),
-          ))
-          .get();
+        (t) =>
+            t.type.equals(type) &
+            t.isTrashed.equals(false) &
+            t.linkedAssetId.isNull(),
+      ));
 
   /// Zählvariante von [unlinkedAssetsOfType], siehe [countLocationBackfill].
   /// Wie viele Aufnahmen dieser Art es gibt – für die Anzeige „betrifft N"

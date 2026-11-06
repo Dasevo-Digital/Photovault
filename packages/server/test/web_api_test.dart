@@ -1440,6 +1440,7 @@ void main() {
       expect(d['quelle'], 'original');
       expect(d['einstellungen'], isNull);
       expect(d.containsKey('kurve'), isFalse);
+      expect(d['masken'], 0);
 
       // Eine Kurve vom Rechner kommt als fertige 256×1-Textur an.
       final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
@@ -1455,9 +1456,22 @@ void main() {
               updatedAt: DateTime(2026, 10, 17),
             ),
           );
+      // Masken rechnet nur der Rechner: Browser und Telefon müssen vor dem
+      // Speichern davon wissen, sonst fehlen sie stumm im Bild.
+      await db
+          .into(db.developMasks)
+          .insert(
+            DevelopMasksCompanion.insert(
+              assetId: a,
+              maskRelativePath: 'masken/himmel.png',
+              label: 'Himmel',
+              createdAt: DateTime(2026, 10, 17),
+            ),
+          );
       d = await jsonAus(
         await frag('GET', '/api/v1/entwickeln/$a', token: erikaToken),
       );
+      expect(d['masken'], 1);
       expect((d['einstellungen']! as Map)['exposure'], 0.5);
       expect(base64Decode(d['kurve']! as String).length, 256 * 4);
       expect(d.containsKey('wuerfel'), isFalse);
@@ -1612,14 +1626,27 @@ void main() {
     );
     expect((fein['gruppen']! as List).length, 3);
 
+    // Kennungen nur, wo die Oberfläche sie braucht: bei einer einzelnen
+    // Aufnahme und ganz nah. Sonst wäre die Antwort 1000-mal so gross.
     final berlin = gruppen.firstWhere((g) => g['anzahl'] == 2);
+    expect(berlin.containsKey('ids'), isFalse);
+    expect(gruppen.firstWhere((g) => g['anzahl'] == 1)['ids'], hasLength(1));
+    final nah = await jsonAus(
+      await frag('GET', '/api/v1/orte?zoom=17', token: erikaToken),
+    );
+    expect([
+      for (final g in (nah['gruppen']! as List).cast<Map>())
+        ...g['ids']! as List,
+    ], containsAll([a, b]));
     final zeilen = await jsonAus(
       await frag(
         'POST',
         '/api/v1/aufnahmen/liste',
         token: erikaToken,
         kopf: {'content-type': 'application/json'},
-        inhalt: jsonEncode({'ids': berlin['ids']}),
+        inhalt: jsonEncode({
+          'ids': [a, b],
+        }),
       ),
     );
     expect(

@@ -343,6 +343,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     }
     if (event.logicalKey == LogicalKeyboardKey.backspace ||
         event.logicalKey == LogicalKeyboardKey.delete) {
+      // Gehalten wiederholt die Taste sich: In der Sichtung ginge so ohne
+      // Rückfrage eine ganze Serie in den Papierkorb.
+      if (event is KeyRepeatEvent) return KeyEventResult.handled;
       if (widget.cullingMode) {
         _rejectCurrent();
       } else if (widget.onDelete != null) {
@@ -374,20 +377,50 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// ungefragt) und [_confirmAndDeleteCurrent] (normales Tastenkürzel, mit
   /// Bestätigung). Ist die Liste danach leer, schließt sich der Screen.
   Future<void> _removeCurrentAndAdvance() async {
-    final rejectedId = _currentAsset.id;
-    final wasLastIndex = _currentIndex == _assets.length - 1;
-    await widget.db.fuehreAus(InDenPapierkorb([rejectedId]));
+    if (_loescht) return;
+    _loescht = true;
+    try {
+      final abgelehnt = _currentAsset;
+      final platz = _currentIndex;
+      final wasLastIndex = platz == _assets.length - 1;
+      await widget.db.fuehreAus(InDenPapierkorb([abgelehnt.id]));
+      if (!mounted) return;
+      final t = AppTexte.of(context);
+      melde.hinweis(
+        t.viewerImPapierkorb,
+        aktion: (
+          beschriftung: t.allgRueckgaengig,
+          beiDruck: () => unawaited(_holeZurueck(abgelehnt, platz)),
+        ),
+      );
+      setState(() => _assets.removeWhere((a) => a.id == abgelehnt.id));
+      if (_assets.isEmpty) {
+        Navigator.of(context).pop();
+        return;
+      }
+      if (wasLastIndex) {
+        final newIndex = _assets.length - 1;
+        setState(() => _currentIndex = newIndex);
+        _controller.jumpToPage(newIndex);
+      }
+    } finally {
+      _loescht = false;
+    }
+  }
+
+  /// Läuft schon ein Löschen, geht kein zweites los: Es träfe das Foto, das
+  /// erst danach zu sehen ist.
+  var _loescht = false;
+
+  Future<void> _holeZurueck(AssetData aufnahme, int platz) async {
+    await widget.db.fuehreAus(AusDemPapierkorb([aufnahme.id]));
     if (!mounted) return;
-    setState(() => _assets.removeWhere((a) => a.id == rejectedId));
-    if (_assets.isEmpty) {
-      Navigator.of(context).pop();
-      return;
-    }
-    if (wasLastIndex) {
-      final newIndex = _assets.length - 1;
-      setState(() => _currentIndex = newIndex);
-      _controller.jumpToPage(newIndex);
-    }
+    final ziel = platz.clamp(0, _assets.length);
+    setState(() {
+      _assets.insert(ziel, aufnahme);
+      _currentIndex = ziel;
+    });
+    _controller.jumpToPage(ziel);
   }
 
   /// Nur im Sichtungs-Modus über das Tastenkürzel erreichbar (siehe
@@ -420,15 +453,17 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     await _refreshCurrentAsset();
   }
 
-  Future<void> _confirmAndDelete() async {
-    if (widget.onDelete == null) return;
+  /// Gibt zurück, ob gelöscht wurde: „Abbrechen“ schloss sonst das Vollbild.
+  Future<bool> _confirmAndDelete() async {
+    if (widget.onDelete == null) return false;
     final confirmed = await confirmDialog(
       context,
       AppTexte.of(context).loeschenTitel(1),
       AppTexte.of(context).loeschenHinweis(1),
     );
-    if (!confirmed) return;
+    if (!confirmed) return false;
     await widget.onDelete!(_currentAsset);
+    return true;
   }
 
   void _showInTimeline() {
@@ -948,8 +983,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 icon: const Icon(Icons.delete_outline),
                 tooltip: AppTexte.of(context).viewerInPapierkorb,
                 onPressed: () async {
-                  await _confirmAndDelete();
-                  if (context.mounted) Navigator.of(context).pop();
+                  final geloescht = await _confirmAndDelete();
+                  if (geloescht && context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                 },
               ),
           ],
@@ -989,6 +1026,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                               itemBuilder: (context, index) {
                                 final a = _assets[index];
                                 return _AssetPage(
+                                  // Mit Key: Nach dem Löschen rückt ein anderes
+                                  // Foto auf denselben Platz, und nach dem
+                                  // Bearbeiten trägt dasselbe Foto eine neue
+                                  // Datei. Ohne ihn blieb das alte Bild
+                                  // stehen, gelöscht wurde aber schon das
+                                  // nächste.
+                                  key: ValueKey(
+                                    '${a.id}|${displayRelativePath(a)}',
+                                  ),
                                   asset: a,
                                   db: widget.db,
                                   paths: widget.paths,
@@ -1394,6 +1440,7 @@ class _AssetPage extends StatefulWidget {
   /// Linien bei einem und zwei Dritteln – auf dem Foto, nicht dem Fenster.
   final bool drittelRaster;
   const _AssetPage({
+    super.key,
     required this.asset,
     required this.db,
     required this.paths,

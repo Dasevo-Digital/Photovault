@@ -11,12 +11,28 @@ List<List<Rasterzeile>> kartengruppen(
   List<Rasterzeile> orte,
   double zoom, {
   double kante = 64,
+}) => kartengruppenVon(
+  orte,
+  zoom,
+  breite: (z) => z.latitude!,
+  laenge: (z) => z.longitude!,
+  kante: kante,
+);
+
+/// Wie [kartengruppen], für Einträge beliebiger Art: Der Server braucht für
+/// die Punkte keine ganzen Zeilen.
+List<List<T>> kartengruppenVon<T>(
+  Iterable<T> orte,
+  double zoom, {
+  required double Function(T) breite,
+  required double Function(T) laenge,
+  double kante = 64,
 }) {
   final welt = 256 * math.pow(2, zoom);
-  final zellen = <(int, int), List<Rasterzeile>>{};
+  final zellen = <(int, int), List<T>>{};
   for (final z in orte) {
-    final x = (z.longitude! + 180) / 360 * welt;
-    final s = math.sin(z.latitude! * math.pi / 180).clamp(-0.9999, 0.9999);
+    final x = (laenge(z) + 180) / 360 * welt;
+    final s = math.sin(breite(z) * math.pi / 180).clamp(-0.9999, 0.9999);
     final y = (0.5 - math.log((1 + s) / (1 - s)) / (4 * math.pi)) * welt;
     zellen.putIfAbsent((x ~/ kante, y ~/ kante), () => []).add(z);
   }

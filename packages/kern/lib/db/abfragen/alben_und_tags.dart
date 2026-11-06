@@ -58,20 +58,48 @@ extension AlbenAbfragen on AppDatabase {
           .get();
 
   /// Wie viele sichtbare Aufnahmen jedes Album hat, nach Kennung.
+  ///
+  /// CROSS JOIN legt die Reihenfolge fest: von den Einträgen der Alben zu den
+  /// Aufnahmen. Sonst geht der Planer alle Aufnahmen durch.
   Future<Map<String, int>> albumAnzahlen() async {
-    final n = albumAssets.assetId.count();
-    final q =
-        selectOnly(
-            albumAssets,
-          ).join([innerJoin(assets, assets.id.equalsExp(albumAssets.assetId))])
-          ..addColumns([albumAssets.albumId, n])
-          ..where(
-            assets.isTrashed.equals(false) & assets.isLocked.equals(false),
-          )
-          ..groupBy([albumAssets.albumId]);
-    return {
-      for (final z in await q.get()) z.read(albumAssets.albumId)!: z.read(n)!,
+    final zeilen = await customSelect(
+      'SELECT aa.album_id AS album, count(*) AS n FROM album_assets aa '
+      'CROSS JOIN assets a ON a.id = aa.asset_id '
+      'WHERE a.is_trashed = 0 AND a.is_locked = 0 GROUP BY aa.album_id',
+      readsFrom: {albumAssets, assets},
+    ).get();
+    return {for (final z in zeilen) z.read<String>('album'): z.read<int>('n')};
+  }
+
+  /// Das Titelbild jedes der [alben], in einem Rutsch: dasselbe wie
+  /// [albumTitelbild], das je Album zwei Abfragen braucht.
+  Future<Map<String, String>> albumTitelbilder(List<AlbumData> alben) async {
+    final neueste = await customSelect(
+      'SELECT aa.album_id AS album, a.id AS id, max(a.file_created_at) '
+      'FROM album_assets aa CROSS JOIN assets a ON a.id = aa.asset_id '
+      'WHERE a.is_trashed = 0 AND a.is_locked = 0 GROUP BY aa.album_id',
+      readsFrom: {albumAssets, assets},
+    ).get();
+    final titel = {
+      for (final z in neueste) z.read<String>('album'): z.read<String>('id'),
     };
+    final gewaehlt = {for (final a in alben) a.id: ?a.coverAssetId};
+    for (final stueck in inStuecken(gewaehlt.values.toSet())) {
+      final q =
+          select(assets).join([
+            innerJoin(albumAssets, albumAssets.assetId.equalsExp(assets.id)),
+          ])..where(
+            assets.id.isIn(stueck) &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false),
+          );
+      for (final z in await q.get()) {
+        final album = z.readTable(albumAssets).albumId;
+        final bild = z.readTable(assets).id;
+        if (gewaehlt[album] == bild) titel[album] = bild;
+      }
+    }
+    return titel;
   }
 
   Future<AssetData?> albumTitelbild(AlbumData album) async {

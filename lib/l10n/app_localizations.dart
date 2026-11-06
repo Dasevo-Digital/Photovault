@@ -15735,6 +15735,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.'**
   String get einstSpeicherortBelegt;
+
+  /// No description provided for @viewerImPapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'In den Papierkorb gelegt.'**
+  String get viewerImPapierkorb;
+
+  /// No description provided for @entwOriginalNichtDa.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Original liegt nicht hier, und der Server ist nicht erreichbar.'**
+  String get entwOriginalNichtDa;
+
+  /// No description provided for @entwZuruecksetzenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Entwicklung entfernen?'**
+  String get entwZuruecksetzenTitel;
+
+  /// No description provided for @entwZuruecksetzenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder.'**
+  String get entwZuruecksetzenText;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

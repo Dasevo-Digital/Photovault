@@ -2,6 +2,15 @@ part of 'database.dart';
 
 /// Anlegen und Aufstufen des Schemas: Indizes, Volltextsuche, Hilfen der Migration.
 extension Migrationsschritte on AppDatabase {
+  /// Ohne Statistik hält der Planer „nicht im Papierkorb, nicht gesperrt“
+  /// für eine scharfe Bedingung, obwohl sie fast alles trifft, und wählt die
+  /// falschen Wege: An 100.000 Fotos kostete allein das die Alben über eine
+  /// Sekunde. 0x10002 prüft alle Tabellen beim Öffnen; ist nichts zu tun,
+  /// kostet es nichts. Ohne `analysis_limit`: Damit wurde die Reparatur beim
+  /// Öffnen zehnmal so langsam.
+  Future<void> statistikPflegen() =>
+      customStatement('PRAGMA optimize = 0x10002');
+
   Future<void> _createAssetSearchFts() async {
     await customStatement('''
       CREATE VIRTUAL TABLE IF NOT EXISTS asset_search_fts USING fts5(
@@ -123,6 +132,28 @@ extension Migrationsschritte on AppDatabase {
   /// je Stapel in einer Schleife. Teilindizes: Die meisten Aufnahmen
   /// gehören zu keinem Stapel und keinem Partner.
   Future<void> indizesOhneStufe() async {
+    // Der Index der Zeitleiste trägt alles, was Zählungen und Monate lesen:
+    // Kalt las eine Monatsliste sonst 84 MB statt 6 MB. Erst der neue, dann
+    // weg mit dem alten.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assets_sichtbar ON assets ('
+      'is_trashed, is_locked, file_created_at DESC, id DESC, '
+      'type, linked_asset_id, stack_id, is_stack_cover)',
+    );
+    await customStatement(
+      'DROP INDEX IF EXISTS idx_assets_trashed_locked_created',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_faces_person_asset '
+      'ON faces (person_id, asset_id)',
+    );
+    await customStatement('DROP INDEX IF EXISTS idx_faces_person_id');
+    // Der Partner eines Live Photos: Der Import jeder Datei las sonst alle
+    // unverknüpften Aufnahmen.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_assets_dateiname '
+      'ON assets (original_file_name COLLATE NOCASE)',
+    );
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_assets_stack_id '
       'ON assets (stack_id) WHERE stack_id IS NOT NULL',

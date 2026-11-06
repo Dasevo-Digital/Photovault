@@ -6590,5 +6590,9 @@
   "backupLaufMenge": "{gesichert} von {gesamt} gesichert, {offen} ausstehend",
   "@backupLaufMenge": {"placeholders": {"gesichert": {"type": "String"}, "gesamt": {"type": "String"}, "offen": {"type": "String"}}},
   "einstSpeicherortInBibliothek": "Dieser Ordner liegt in der Bibliothek selbst. Wähle einen Ordner ausserhalb.",
-  "einstSpeicherortBelegt": "In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner."
+  "einstSpeicherortBelegt": "In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.",
+  "viewerImPapierkorb": "In den Papierkorb gelegt.",
+  "entwOriginalNichtDa": "Das Original liegt nicht hier, und der Server ist nicht erreichbar.",
+  "entwZuruecksetzenTitel": "Entwicklung entfernen?",
+  "entwZuruecksetzenText": "Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder."
 }

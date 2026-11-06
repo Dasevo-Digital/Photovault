@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -372,7 +373,19 @@ class _PeopleScreenState extends State<PeopleScreen>
     });
     await _neuLaden();
     if (!mounted) return;
-    melde.erfolg(AppTexte.of(context).personenAlleIgnoriertMeldung(anzahl));
+    final t = AppTexte.of(context);
+    melde.erfolg(
+      t.personenAlleIgnoriertMeldung(anzahl),
+      aktion: (
+        beschriftung: t.allgRueckgaengig,
+        beiDruck: () => unawaited(_alleZurueckholen(betroffen)),
+      ),
+    );
+  }
+
+  Future<void> _alleZurueckholen(List<String> gesichter) async {
+    await widget.library.db.fuehreAus(GesichterBeiseitelegen(gesichter, false));
+    if (mounted) await _neuLaden();
   }
 
   Future<void> _alleErkennungenLoeschen() async {

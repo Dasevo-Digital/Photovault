@@ -936,7 +936,7 @@ Future<List<Rasterzeile>> partnerzeilen(
   final zeilen = await db
       .customSelect(
         'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql}'
-        '${nach == null ? '' : ' AND (file_created_at < ? OR (file_created_at = ? AND id < ?))'}'
+        '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
         ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
         variables: [
           ...b.werte,

@@ -70,6 +70,7 @@ part 'tabellen/personen.dart';
 part 'tabellen/orte.dart';
 part 'tabellen/einstellungen.dart';
 part 'migration.dart';
+part 'kennung_in.dart';
 part 'abfragen/aufnahmen.dart';
 part 'abfragen/auswahl_und_papierkorb.dart';
 part 'abfragen/einstellungen.dart';
@@ -412,7 +413,10 @@ class AppDatabase extends _$AppDatabase {
     },
     // Nach onCreate und onUpgrade, bei jedem Öffnen: Indizes ohne eigene
     // Schemastufe (siehe [indizesOhneStufe]).
-    beforeOpen: (_) => indizesOhneStufe(),
+    beforeOpen: (_) async {
+      await indizesOhneStufe();
+      await statistikPflegen();
+    },
   );
 
   /// Öffnet (bzw. legt beim ersten Start an) die SQLite-Datei der

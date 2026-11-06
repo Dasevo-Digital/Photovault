@@ -2842,4 +2842,12 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sicherungSofortAkku => 'Nicht zurückhalten';
+
+  @override
+  String get entwMaskenHinweis =>
+      'Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.';
+
+  @override
+  String get entwMaskenFrage =>
+      'Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?';
 }

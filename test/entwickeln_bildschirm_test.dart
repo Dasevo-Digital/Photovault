@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
@@ -204,6 +205,132 @@ void main() {
       await abbauen(tester);
     });
   });
+  group('Mehrere Masken', () {
+    /// **Nur die gewählte Maske wurde gespeichert.** Die Regler zeigen eine
+    /// Maske zur Zeit. Wer an der ersten drehte und zur zweiten wechselte,
+    /// verlor die erste, ohne dass etwas darauf hinwies.
+    late int erste;
+    late int zweite;
+
+    Future<int> maske(String name) => db
+        .into(db.developMasks)
+        .insert(
+          DevelopMasksCompanion.insert(
+            assetId: 'a1',
+            maskRelativePath: 'masken/$name.png',
+            label: name,
+            createdAt: DateTime(2026, 3, 7),
+          ),
+        );
+
+    setUp(() async {
+      erste = await maske('Himmel');
+      zweite = await maske('Wiese');
+    });
+
+    double belichtung(WidgetTester tester) =>
+        tester.widget<Slider>(find.byType(Slider).first).value;
+
+    Future<void> ziehe(WidgetTester tester) async {
+      final griff = await tester.startGesture(
+        tester.getCenter(find.byType(Slider).first),
+      );
+      for (var i = 0; i < 6; i++) {
+        await griff.moveBy(const Offset(8, 0));
+        await tester.pump(const Duration(milliseconds: 25));
+      }
+      await griff.up();
+      await takte(tester, 10);
+    }
+
+    Future<void> waehle(WidgetTester tester, String name) async {
+      await tester.tap(find.text(name));
+      await takte(tester, 10);
+    }
+
+    testWidgets('der Wechsel zur nächsten Maske verliert nichts', (
+      tester,
+    ) async {
+      await zeige(tester);
+      await waehle(tester, 'Himmel');
+      expect(belichtung(tester), 0);
+      await ziehe(tester);
+      final gesetzt = belichtung(tester);
+      expect(gesetzt, isNot(0));
+
+      await waehle(tester, 'Wiese');
+      expect(belichtung(tester), 0, reason: 'die zweite Maske ist unberührt');
+
+      await waehle(tester, 'Himmel');
+      expect(belichtung(tester), gesetzt);
+      await abbauen(tester);
+    });
+
+    testWidgets(
+      'beim Speichern landen alle Masken in der Datenbank',
+      (tester) async {
+        final bild = img.encodeJpg(img.Image(width: 8, height: 8));
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('photo_vault/image_convert'),
+              (aufruf) async => switch (aufruf.method) {
+                'lensCorrectionStatus' => 'keinRaw',
+                'developImage' => bild,
+                _ => null,
+              },
+            );
+        await tester.runAsync(() async {
+          final datei = paths.absolute('originals/a1.jpg');
+          await datei.parent.create(recursive: true);
+          await datei.writeAsBytes(bild);
+        });
+        await zeige(tester);
+        await waehle(tester, 'Himmel');
+        await ziehe(tester);
+        await waehle(tester, 'Wiese');
+        await ziehe(tester);
+
+        await tester.tap(find.byTooltip('Speichern'));
+        // Datei und Datenbank laufen echt, der Takt des Bildschirms nicht:
+        // Beides abwechselnd, bis der Bildschirm sich geschlossen hat.
+        for (var i = 0; i < 40; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump(const Duration(milliseconds: 25));
+          if (find.byType(DevelopScreen).evaluate().isEmpty) break;
+        }
+
+        final masken = await tester.runAsync(() => db.masksForAsset('a1'));
+        final nachId = {for (final m in masken!) m.id: m};
+        expect(nachId[erste]!.exposure, isNot(0));
+        expect(nachId[zweite]!.exposure, isNot(0));
+        await abbauen(tester);
+      },
+      // Unter Linux und Windows rendert der Shader; der braucht im
+      // Prüfstand ein Fenster, das es hier nicht gibt.
+      skip: !Platform.isMacOS,
+    );
+  });
+
+  group('Das Zurücksetzen', () {
+    testWidgets('fragt vorher', (tester) async {
+      await zeige(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('Zurücksetzen'),
+        ),
+      );
+      await takte(tester, 10);
+      expect(find.text('Entwicklung entfernen?'), findsOneWidget);
+      await tester.tap(find.text('Abbrechen'));
+      await takte(tester, 10);
+      expect(find.text('Entwicklung entfernen?'), findsNothing);
+      await abbauen(tester);
+    });
+  });
+
   group(
     'Die Regler wirken beim Ziehen',
     () {

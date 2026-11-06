@@ -1403,5 +1403,7 @@
   "sicherungSofortZuletzt": "Zuletzt von iOS gestartet: {zeit}. {n, plural, =0{Noch keine Datei} =1{Eine Datei} other{{n} Dateien}} im Hintergrund gesichert.",
   "@sicherungSofortZuletzt": {"placeholders": {"zeit": {"type": "String"}, "n": {"type": "int"}}},
   "sicherungSofortAndroidGedrosselt": "Neue Fotos gehen zum Server, wenn Netz und Akku passen. Öffnest du die App selten, hält Android das bis zu rund 30 Minuten zurück.",
-  "sicherungSofortAkku": "Nicht zurückhalten"
+  "sicherungSofortAkku": "Nicht zurückhalten",
+  "entwMaskenHinweis": "Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.",
+  "entwMaskenFrage": "Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?"
 }

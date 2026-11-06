@@ -2,6 +2,11 @@ part of '../database.dart';
 
 /// KI-Schlagwortvokabular.
 extension VokabularAbfragen on AppDatabase {
+  /// Die Aufnahmen, auf denen [personId] zu sehen ist.
+  BaseSelectStatement _fotosVon(String personId) => selectOnly(faces)
+    ..addColumns([faces.assetId])
+    ..where(faces.personId.equals(personId));
+
   // -----------------------------------------------------------------------
   // KI-Tagging-Vokabular (AiTaggingService)
   // -----------------------------------------------------------------------
@@ -84,7 +89,9 @@ extension VokabularAbfragen on AppDatabase {
     ];
 
     if (restrictToIds != null) {
-      wo.add(assets.id.isIn(restrictToIds));
+      // Als ein Wert: Eine Suche nach „jpg“ trifft leicht mehr, als SQLite
+      // an einzelnen Werten nimmt (32766), und scheiterte dann ganz.
+      wo.add(kennungIn(assets.id, restrictToIds));
     }
 
     final text = filters.query.trim();
@@ -230,23 +237,13 @@ extension VokabularAbfragen on AppDatabase {
     }
 
     for (final personId in filters.personIds) {
-      wo.add(
-        existsQuery(
-          select(faces)..where(
-            (f) => f.assetId.equalsExp(assets.id) & f.personId.equals(personId),
-          ),
-        ),
-      );
+      // IN statt EXISTS: EXISTS ging je Aufnahme alle Gesichter der Person
+      // durch. An 100.000 Fotos dauerte das Minuten, so sind es Millisekunden.
+      wo.add(assets.id.isInQuery(_fotosVon(personId)));
     }
 
     for (final personId in filters.ohnePersonIds) {
-      wo.add(
-        notExistsQuery(
-          select(faces)..where(
-            (f) => f.assetId.equalsExp(assets.id) & f.personId.equals(personId),
-          ),
-        ),
-      );
+      wo.add(assets.id.isNotInQuery(_fotosVon(personId)));
     }
     for (final tagId in filters.ohneTagIds) {
       wo.add(

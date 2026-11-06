@@ -139,8 +139,9 @@ class Nachbearbeitung {
     final stem = p
         .basenameWithoutExtension(asset.originalFileName)
         .toLowerCase();
-    final candidates = await db.unlinkedAssetsOfType(
+    final candidates = await db.unverknuepfteMitStamm(
       isImage ? 'VIDEO' : 'IMAGE',
+      p.basenameWithoutExtension(asset.originalFileName),
     );
     AssetData? partner;
     Duration? naechster;

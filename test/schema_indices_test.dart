@@ -21,10 +21,10 @@ void main() {
     final indexNames = rows.map((r) => r.data['name'] as String).toSet();
 
     for (final expected in [
-      'idx_assets_trashed_locked_created',
+      'idx_assets_sichtbar',
       'idx_assets_location',
       'idx_faces_asset_id',
-      'idx_faces_person_id',
+      'idx_faces_person_asset',
       'idx_album_assets_asset_id',
       'idx_assets_trashed_at',
       'idx_assets_gps',

@@ -69,7 +69,7 @@ bool sortierungAbsteigend(Rastersortierung s) =>
 /// Die Reihenfolge als SQL – der Teil hinter `ORDER BY`.
 ///
 /// **Was das kostet.** Nur `file_created_at` (in beiden Richtungen) wird
-/// von `idx_assets_trashed_locked_created` getragen; die übrigen vier
+/// von `idx_assets_sichtbar` getragen; die übrigen vier
 /// brauchen eine Sortierung im Speicher. An einer Bibliothek mit 105.274
 /// Aufnahmen gemessen, Ladefenster 600 Zeilen:
 ///

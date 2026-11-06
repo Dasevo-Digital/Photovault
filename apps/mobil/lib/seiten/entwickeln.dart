@@ -144,6 +144,9 @@ class Entwickeln extends StatefulWidget {
 }
 
 class _EntwickelnState extends State<Entwickeln> {
+  /// Wie viele Masken vom Rechner dieses Foto trägt.
+  var _masken = 0;
+
   AssetData? _a;
   DevelopSettingsData? _e;
   Uint8List? _quelle;
@@ -182,6 +185,7 @@ class _EntwickelnState extends State<Entwickeln> {
 
   Future<void> _lade() async {
     try {
+      _masken = (await _db.masksForAsset(widget.id)).length;
       final a = await _db.assetById(widget.id);
       if (a == null) return;
       final e = await _db.developSettingsForAsset(widget.id);
@@ -367,6 +371,9 @@ class _EntwickelnState extends State<Entwickeln> {
     final t = AppTexte.of(context);
     final quelle = _quelle;
     if (quelle == null || _speichert) return;
+    // Masken kann nur der Rechner rechnen; die neue Datei hätte sie nicht.
+    if (_masken > 0 && !await _frage(t.entwMaskenFrage)) return;
+    if (!mounted) return;
     setState(() {
       _speichert = true;
       _meldung = t.entwRechne(_breite, _hoehe);
@@ -460,6 +467,7 @@ class _EntwickelnState extends State<Entwickeln> {
               e.colorMixerJson != null ||
               e.lutPath != null))
         t.entwVomRechner,
+      if (_masken > 0) t.entwMaskenHinweis,
     ];
     final automatisch = _werte['temperature'] == null;
     final zeigen = _vergleich ? _basis : (_bild ?? _basis);

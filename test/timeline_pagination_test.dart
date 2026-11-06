@@ -191,7 +191,7 @@ void main() {
         'watchTimeline(limit: 500) bei 100.000 Zeilen: ${stopwatch.elapsedMilliseconds} ms',
       );
       // Grosszügige Grenze (die Seite selbst braucht in der Praxis nur
-      // wenige Millisekunden dank idx_assets_trashed_locked_created) – bewusst
+      // wenige Millisekunden dank idx_assets_sichtbar) – bewusst
       // nicht knapper gewählt, um auf einer langsamen/ausgelasteten
       // CI-Maschine nicht flaky zu werden.
       expect(stopwatch.elapsedMilliseconds, lessThan(2000));

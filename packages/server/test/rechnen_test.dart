@@ -118,10 +118,15 @@ void main() {
   test('verteilt, aber keine Aufnahme an zwei zugleich', () async {
     await foto('a');
     await foto('b');
+    // Beide haben dieselbe Zeit; welche zuerst geht, ist nicht festgelegt.
     final erste = await hole(rechner, ['texterkennung'], anzahl: 1);
-    expect(erste.single.datei, 'originals/a.jpg');
+    expect(erste.single.datei, 'originals/${erste.single.aufnahme}.jpg');
     final zweite = await hole(zweiter, ['texterkennung']);
-    expect(zweite.map((a) => a.aufnahme), ['b']);
+    expect(
+      {erste.single.aufnahme, ...zweite.map((a) => a.aufnahme)},
+      {'a', 'b'},
+    );
+    expect(zweite, hasLength(1));
     expect(await hole(rechner, ['texterkennung']), isEmpty);
   });
 

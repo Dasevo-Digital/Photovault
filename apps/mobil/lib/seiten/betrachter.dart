@@ -412,6 +412,9 @@ class _BetrachterState extends State<Betrachter> {
                             ),
                           ),
                         );
+                        // Sonst zeigte der Betrachter weiter die alte Fassung.
+                        _daten.remove(zeile.id);
+                        if (mounted) setState(() {});
                       case 'gesichter':
                         setState(() {
                           _gesichter = !_gesichter;

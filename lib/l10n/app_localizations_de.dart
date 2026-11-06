@@ -10362,4 +10362,18 @@ class AppTexteDe extends AppTexte {
   @override
   String get einstSpeicherortBelegt =>
       'In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.';
+
+  @override
+  String get viewerImPapierkorb => 'In den Papierkorb gelegt.';
+
+  @override
+  String get entwOriginalNichtDa =>
+      'Das Original liegt nicht hier, und der Server ist nicht erreichbar.';
+
+  @override
+  String get entwZuruecksetzenTitel => 'Entwicklung entfernen?';
+
+  @override
+  String get entwZuruecksetzenText =>
+      'Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder.';
 }

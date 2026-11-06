@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -105,8 +107,19 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     await outputFile.parent.create(recursive: true);
     final vorher = widget.asset.trimmedRelativePath;
 
+    final File quelle;
+    try {
+      quelle = await widget.paths.bereit(widget.asset.relativePath);
+    } on Exception {
+      // Weder hier noch beim Server erreichbar: Sonst blieb der Knopf tot.
+      if (mounted) {
+        setState(() => _saving = false);
+        melde.fehler(AppTexte.of(context).videoZuschneidenFehler);
+      }
+      return;
+    }
     final success = await NativeImageConverter.trimVideo(
-      await widget.paths.bereit(widget.asset.relativePath),
+      quelle,
       startSeconds: range.start,
       endSeconds: range.end,
       outputPath: outputFile.path,

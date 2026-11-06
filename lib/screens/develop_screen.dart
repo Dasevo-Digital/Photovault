@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
+import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
@@ -262,6 +263,11 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   // --- KI-Objektmasken -------------------------------------------------
   List<DevelopMaskData> _masks = [];
 
+  /// Was an Masken seit dem Öffnen geändert wurde, nach Kennung. Die Regler
+  /// zeigen nur die gewählte Maske; ohne diese Liste ging beim Wechsel zur
+  /// nächsten verloren, was an der vorigen eingestellt war.
+  final _geaenderteMasken = <int, DevelopMasksCompanion>{};
+
   /// `null` = die globalen Regler oben sind aktiv/sichtbar; sonst die
   /// Auto-Increment-`id` der gerade zum Bearbeiten ausgewählten Maske.
   int? _selectedMaskId;
@@ -347,6 +353,8 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   void _scheduleRerender();
   void _selectMask(DevelopMaskData mask);
   void _selectGlobalAdjustments();
+  void _merkeMaskenentwurf();
+  Future<File?> _originalOderMeldung();
   Future<void> _deleteMask(DevelopMaskData mask);
   Future<void> _startMaskCreation({DevelopMaskData? editingMask});
   void _switchMaskFormType(_MaskFormType type);

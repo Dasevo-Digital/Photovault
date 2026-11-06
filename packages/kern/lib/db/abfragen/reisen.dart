@@ -302,7 +302,7 @@ extension ReisenAbfragen on AppDatabase {
     // Zuordnungen:
     //
     // ```
-    // JOIN        SEARCH a USING idx_assets_trashed_locked_created   36,5 ms
+    // JOIN        SEARCH a USING idx_assets_sichtbar   36,5 ms
     // CROSS JOIN  SCAN z USING COVERING INDEX, SEARCH a (id=?)        0,3 ms
     // ```
     //

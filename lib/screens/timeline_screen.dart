@@ -50,7 +50,7 @@ class _TimelineScreenState extends State<TimelineScreen>
     with Rasterbedienung<TimelineScreen, Rasterzeile> {
   // Wachsendes Ladefenster statt auf einen Schlag die komplette Bibliothek zu
   // laden: `watchRasterzeilen(limit: _windowSize)` bleibt dank
-  // `idx_assets_trashed_locked_created` auch für ein großes Fenster ein
+  // `idx_assets_sichtbar` auch für ein großes Fenster ein
   // günstiger Index-Walk statt eines vollen Tabellen-Scans (SQLite kann die
   // ersten N Zeilen in Sortierreihenfolge direkt aus dem Index lesen). Wird
   // beim Scrollen nahe ans Ende erweitert (siehe [_maybeGrowWindow]) und bei

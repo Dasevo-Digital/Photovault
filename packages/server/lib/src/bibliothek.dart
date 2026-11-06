@@ -97,6 +97,10 @@ class Bibliothek {
       AppDatabase.mitSperrwartezeit(
         NativeDatabase.createInBackground(
           File(p.join(ordner.path, 'library.sqlite')),
+          // Eigene Verbindungen zum Lesen: Mit nur einer wartete eine Seite
+          // der Zeitleiste hinter jeder grossen Abfrage und bis zu 5 Sekunden
+          // hinter dem Abzug für ein neues Gerät.
+          readPool: 4,
           setup: (verbindung) {
             AppDatabase.bereiteVerbindungVor(verbindung);
             verbindung.execute('PRAGMA journal_mode = WAL');

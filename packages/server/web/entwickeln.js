@@ -454,6 +454,8 @@ async function zeigeEntwickeln(id) {
   const hinweise = [];
   if (d.quelle === 'vorschau') hinweise.push(t('Rohformat oder HEIC: Der Browser rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.'));
   if (e.tone_curve_json || e.color_mixer_json || e.lut_path) hinweise.push(t('Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.'));
+  entw.masken = d.masken || 0;
+  if (entw.masken) hinweise.push(t('Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.'));
   entwFehler(hinweise.join(' '));
   $('entw-original').hidden = !d.entwickelt && !d.einstellungen;
   entwFelder();
@@ -462,6 +464,8 @@ async function zeigeEntwickeln(id) {
 
 async function entwSpeichern() {
   if (!entw) return;
+  // Masken kann nur der Rechner rechnen; die neue Datei hätte sie nicht.
+  if (entw.masken && !confirm(t('Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?'))) return;
   const knoepfe = ['entw-speichern', 'entw-zurueck', 'entw-original'].map($);
   for (const b of knoepfe) b.disabled = true;
   const meldung = $('entw-meldung');
@@ -537,6 +541,9 @@ $('entw-original').addEventListener('click', async () => {
   try {
     await befehl('entwicklungZuruecksetzen', { id: entw.id });
     entw.geaendert = false;
+    // Sonst fragte der Betrachter weiter die Adresse der alten Fassung an.
+    const gezeigt = liste && liste.aufnahmen.find((x) => x.id === entw.id);
+    if (gezeigt) gezeigt.stand = `original-${Date.now()}`;
     history.back();
   } catch (x) { $('entw-meldung').textContent = x.message; }
 });

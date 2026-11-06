@@ -408,7 +408,18 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
           await _db.fuehreAus(GesichterBeiseitelegen(ids, true));
         }
         if (!mounted) return;
-        _melde(t.gesichterAlleIgnoriertMeldung(ids.length));
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(t.gesichterAlleIgnoriertMeldung(ids.length)),
+              action: SnackBarAction(
+                label: t.variantenRueckgaengig,
+                onPressed: () =>
+                    _db.fuehreAus(GesichterBeiseitelegen(ids, false)),
+              ),
+            ),
+          );
       case 'loeschen':
         final ja = await showDialog<bool>(
           context: context,

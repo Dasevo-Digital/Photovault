@@ -10304,4 +10304,18 @@ class AppTexteEn extends AppTexte {
   @override
   String get einstSpeicherortBelegt =>
       'This folder already holds a library. Choose an empty folder.';
+
+  @override
+  String get viewerImPapierkorb => 'Moved to trash.';
+
+  @override
+  String get entwOriginalNichtDa =>
+      'The original is not on this device, and the server cannot be reached.';
+
+  @override
+  String get entwZuruecksetzenTitel => 'Remove edits?';
+
+  @override
+  String get entwZuruecksetzenText =>
+      'The saved edits are removed, and the original appears again.';
 }

@@ -4,24 +4,101 @@ part of '../develop_screen.dart';
 mixin _Masken on _EntwickelnBasis {
   // --- KI-Objektmasken ---------------------------------------------------
 
+  /// Hält fest, was an der gewählten Maske eingestellt ist.
+  @override
+  void _merkeMaskenentwurf() {
+    final id = _selectedMaskId;
+    if (id == null) return;
+    final i = _masks.indexWhere((m) => m.id == id);
+    if (i < 0) return;
+    final m = _masks[i];
+    final temperatur = _maskAutoWhiteBalance ? null : _maskTemperature;
+    final tint = _maskAutoWhiteBalance ? null : _maskTint;
+    if (m.exposure == _maskExposure &&
+        m.contrast == _maskContrast &&
+        m.shadows == _maskShadows &&
+        m.highlights == _maskHighlights &&
+        m.sharpness == _maskSharpness &&
+        m.noiseReduction == _maskNoiseReduction &&
+        m.temperature == temperatur &&
+        m.tint == tint) {
+      return;
+    }
+    _geaenderteMasken[id] = DevelopMasksCompanion(
+      exposure: Value(_maskExposure),
+      temperature: Value(temperatur),
+      tint: Value(tint),
+      contrast: Value(_maskContrast),
+      shadows: Value(_maskShadows),
+      highlights: Value(_maskHighlights),
+      sharpness: Value(_maskSharpness),
+      noiseReduction: Value(_maskNoiseReduction),
+    );
+    _masks = [for (final x in _masks) x.id == id ? _mitEntwurf(x) : x];
+  }
+
+  /// [mask] mit dem, was seit dem Öffnen daran geändert wurde.
+  DevelopMaskData _mitEntwurf(DevelopMaskData mask) {
+    final e = _geaenderteMasken[mask.id];
+    if (e == null) return mask;
+    return mask.copyWith(
+      exposure: e.exposure.value,
+      temperature: e.temperature,
+      tint: e.tint,
+      contrast: e.contrast.value,
+      shadows: e.shadows.value,
+      highlights: e.highlights.value,
+      sharpness: e.sharpness.value,
+      noiseReduction: e.noiseReduction.value,
+    );
+  }
+
   @override
   void _selectMask(DevelopMaskData mask) {
+    _merkeMaskenentwurf();
+    final gewaehlt = _masks.firstWhere(
+      (m) => m.id == mask.id,
+      orElse: () => mask,
+    );
     setState(() {
-      _selectedMaskId = mask.id;
-      _maskExposure = mask.exposure;
-      _maskContrast = mask.contrast;
-      _maskShadows = mask.shadows;
-      _maskHighlights = mask.highlights;
-      _maskSharpness = mask.sharpness;
-      _maskNoiseReduction = mask.noiseReduction;
-      _maskAutoWhiteBalance = mask.temperature == null;
-      _maskTemperature = mask.temperature ?? 6500;
-      _maskTint = mask.tint ?? 0;
+      _selectedMaskId = gewaehlt.id;
+      _maskExposure = gewaehlt.exposure;
+      _maskContrast = gewaehlt.contrast;
+      _maskShadows = gewaehlt.shadows;
+      _maskHighlights = gewaehlt.highlights;
+      _maskSharpness = gewaehlt.sharpness;
+      _maskNoiseReduction = gewaehlt.noiseReduction;
+      _maskAutoWhiteBalance = gewaehlt.temperature == null;
+      _maskTemperature = gewaehlt.temperature ?? 6500;
+      _maskTint = gewaehlt.tint ?? 0;
     });
   }
 
   @override
-  void _selectGlobalAdjustments() => setState(() => _selectedMaskId = null);
+  void _selectGlobalAdjustments() {
+    _merkeMaskenentwurf();
+    setState(() => _selectedMaskId = null);
+  }
+
+  /// Das Original, oder `null` mit einer Meldung, wenn es weder hier liegt
+  /// noch der Server erreichbar ist. Sonst drehte die Anzeige ewig, und die
+  /// Knöpfe blieben tot.
+  @override
+  Future<File?> _originalOderMeldung() async {
+    try {
+      return await widget.paths.bereit(widget.asset.relativePath);
+    } on Exception {
+      if (mounted) {
+        setState(() {
+          _rendering = false;
+          _saving = false;
+          _computingMask = false;
+        });
+        melde.fehler(AppTexte.of(context).entwOriginalNichtDa);
+      }
+      return null;
+    }
+  }
 
   /// Legt die Maskendatei [relativePath] ab – verbunden zum Server –, und
   /// `false` mit Meldung, wenn er sie nicht nimmt. Dann geht sie hier weg.
@@ -61,6 +138,7 @@ mixin _Masken on _EntwickelnBasis {
     final file = widget.paths.absolute(mask.maskRelativePath);
     if (await file.exists()) await file.delete();
     if (!mounted) return;
+    _geaenderteMasken.remove(mask.id);
     setState(() {
       _masks = _masks.where((m) => m.id != mask.id).toList();
       if (_selectedMaskId == mask.id) _selectedMaskId = null;
@@ -472,7 +550,7 @@ mixin _Masken on _EntwickelnBasis {
 
     if (!mounted) return;
     setState(() {
-      _masks = refreshedMasks;
+      _masks = [for (final m in refreshedMasks) _mitEntwurf(m)];
       _maskEditMode = false;
       _maskPoints.clear();
       _pendingMaskResult = null;
@@ -496,9 +574,9 @@ mixin _Masken on _EntwickelnBasis {
   Future<void> _tiefenmaskeAnlegen() async {
     final t = AppTexte.of(context);
     setState(() => _computingMask = true);
-    final ergebnis = await NativeImageConverter.tiefenmaske(
-      await widget.paths.bereit(widget.asset.relativePath),
-    );
+    final quelle = await _originalOderMeldung();
+    if (quelle == null) return;
+    final ergebnis = await NativeImageConverter.tiefenmaske(quelle);
     if (!mounted) return;
     setState(() => _computingMask = false);
 
@@ -523,7 +601,7 @@ mixin _Masken on _EntwickelnBasis {
     if (!await _maskeAnlegen(relativePath, name)) return;
     final frisch = await widget.db.masksForAsset(widget.asset.id);
     if (!mounted) return;
-    setState(() => _masks = frisch);
+    setState(() => _masks = [for (final m in frisch) _mitEntwurf(m)]);
     _selectMask(_masks.last);
     _scheduleRerender();
   }
@@ -717,7 +795,7 @@ mixin _Masken on _EntwickelnBasis {
 
     if (!mounted) return;
     setState(() {
-      _masks = refreshedMasks;
+      _masks = [for (final m in refreshedMasks) _mitEntwurf(m)];
       _maskEditMode = false;
       _computingMask = false;
       _draftShape = null;

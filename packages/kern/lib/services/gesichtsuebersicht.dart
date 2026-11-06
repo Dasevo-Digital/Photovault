@@ -52,11 +52,12 @@ Future<GesichterOhneNamen> gesichterOhneNamen(
   int hoechstens = gesichterOhneNamenHoechstens,
 }) async {
   final zeilen =
-      await (db.select(db.faces).join([
-              innerJoin(db.assets, db.assets.id.equalsExp(db.faces.assetId)),
-            ])
+      // Von den Aufnahmen aus, in Zeitleistenfolge: Mit Statistik zöge der
+      // Planer sonst die Gesichter vor und bräuchte das Doppelte.
+      await (db.select(db.assets).join([crossJoin(db.faces)])
             ..where(
-              db.faces.personId.isNull() &
+              db.faces.assetId.equalsExp(db.assets.id) &
+                  db.faces.personId.isNull() &
                   db.faces.isIgnored.equals(false) &
                   db.faces.embedding.isNotNull() &
                   db.assets.isTrashed.equals(false) &

@@ -2830,4 +2830,12 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sicherungSofortAkku => 'Don\'t hold back';
+
+  @override
+  String get entwMaskenHinweis =>
+      'Only the computer can render masks: They are missing from the image here.';
+
+  @override
+  String get entwMaskenFrage =>
+      'The masks of this photo will then be missing from the saved image, on all devices. Save anyway?';
 }

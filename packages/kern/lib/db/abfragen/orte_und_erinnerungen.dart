@@ -25,6 +25,22 @@ extension ErinnerungsAbfragen on AppDatabase {
   Future<List<AssetData>> assetsWithLocation() =>
       (select(assets)..where(_mitOrt)).get();
 
+  /// Nur Kennung und Ort aller Aufnahmen aus [assetsWithLocation]: Für die
+  /// Punkte der Karte reicht das, und ganze Zeilen hielten den Server an.
+  Future<List<({String id, double breite, double laenge})>> orteKurz() async {
+    final q = selectOnly(assets)
+      ..addColumns([assets.id, assets.latitude, assets.longitude])
+      ..where(_mitOrt(assets));
+    return [
+      for (final z in await q.get())
+        (
+          id: z.read(assets.id)!,
+          breite: z.read(assets.latitude)!,
+          laenge: z.read(assets.longitude)!,
+        ),
+    ];
+  }
+
   /// Zählvariante, siehe [countLocationBackfill].
   ///
   /// Gebraucht dort, wo nur die Frage „gibt es überhaupt einen Ort?"

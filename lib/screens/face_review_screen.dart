@@ -16,6 +16,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/asset_info_sheet.dart';
+import '../widgets/bibliotheksbild.dart';
 import '../widgets/gesichtsrahmen.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/pin_dialogs.dart';
@@ -159,9 +160,12 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// Datei, die tatsächlich angezeigt/für Crops verwendet wird: die
   /// konvertierte Vorschau, falls das Originalformat (z.B. HEIC/DNG) von
   /// Flutter nicht direkt gerendert werden kann – sonst das Original.
-  File get _displayFile => widget.library.paths.absolute(
-    _asset.previewRelativePath ?? _asset.relativePath,
-  );
+  String get _displayRelativ =>
+      _asset.previewRelativePath ?? _asset.relativePath;
+
+  /// Holt die Datei in einer verbundenen Bibliothek erst vom Server: Dort
+  /// liegen die grossen Dateien nicht von vornherein auf dem Rechner.
+  Future<File> _displayFile() => widget.library.paths.bereit(_displayRelativ);
 
   /// Seitenverhältnis eines Fotos, dessen Maße nicht in der Datenbank
   /// stehen (in der Praxis eine Handvoll Altfälle).
@@ -176,7 +180,13 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   /// liesse sich so ein Foto hier zwar ohnehin nicht, aber die Rahmen
   /// säßen wenigstens richtig.
   Future<double?> _seitenverhaeltnisAusDatei() async {
-    final bytes = await _displayFile.readAsBytes();
+    final Uint8List bytes;
+    try {
+      bytes = await (await _displayFile()).readAsBytes();
+    } on Exception {
+      // Nicht da und der Server nicht erreichbar: Dann fehlt auch das Bild.
+      return null;
+    }
     try {
       final puffer = await ui.ImmutableBuffer.fromUint8List(bytes);
       final kopf = await ui.ImageDescriptor.encoded(puffer);
@@ -624,6 +634,17 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     );
     if (choice == null) return;
 
+    // Vor dem Anlegen: Sonst bliebe ohne Bild eine leere Person zurück.
+    final File bilddatei;
+    try {
+      bilddatei = await _displayFile();
+    } on Exception {
+      if (mounted) {
+        melde.fehler(AppTexte.of(context).entwOriginalNichtDa);
+      }
+      return;
+    }
+
     String personId;
     if (choice.newName != null) {
       personId = const Uuid().v4();
@@ -639,7 +660,7 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
     await gesichtVonHandAnlegen(
       library: widget.library,
       assetId: _asset.id,
-      bilddatei: _displayFile,
+      bilddatei: bilddatei,
       kasten: normalizedRect,
       personId: personId,
       beiEinbettungsfehler: (e) {
@@ -893,8 +914,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
                     child: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.file(
-                          _displayFile,
+                        bibliotheksbild(
+                          widget.library.paths,
+                          _displayRelativ,
                           fit: BoxFit.fill,
                           // Nur so gross dekodieren, wie es angezeigt wird.
                           // Dieser Bildschirm kann nicht zoomen (anders als
