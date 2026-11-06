@@ -204,8 +204,15 @@ class Serversicherung {
   void _plane() {
     _wecker?.cancel();
     _wecker = Timer(naechsterLauf().difference(_uhr()), () async {
-      await jetzt();
-      _plane();
+      // Im Takt liefe ein Fehler in keine Anfrage, sondern beendete den
+      // ganzen Server, und der nächste Lauf fiele aus.
+      try {
+        await jetzt();
+      } catch (e) {
+        protokoll('Sicherung des Servers gescheitert: $e');
+      } finally {
+        _plane();
+      }
     });
   }
 

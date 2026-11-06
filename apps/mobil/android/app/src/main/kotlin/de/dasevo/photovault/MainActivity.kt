@@ -1,5 +1,6 @@
 package de.dasevo.photovault
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
@@ -34,15 +35,23 @@ class MainActivity : FlutterActivity() {
                     }
                     "akkuFrei" -> antwort.success(akkuFrei)
                     "akkuFreigeben" -> {
+                        // Ein zweiter Tipp, solange der Dialog aufgeht.
+                        akkuAntwort?.success(akkuFrei)
                         akkuAntwort = antwort
-                        @Suppress("BatteryLife")
-                        startActivityForResult(
-                            Intent(
-                                Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
-                                Uri.parse("package:$packageName"),
-                            ),
-                            AKKU_ANFRAGE,
-                        )
+                        try {
+                            @Suppress("BatteryLife")
+                            startActivityForResult(
+                                Intent(
+                                    Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                                    Uri.parse("package:$packageName"),
+                                ),
+                                AKKU_ANFRAGE,
+                            )
+                        } catch (_: ActivityNotFoundException) {
+                            // Nicht jeder Hersteller hat diesen Dialog.
+                            akkuAntwort = null
+                            antwort.success(akkuFrei)
+                        }
                     }
                     else -> antwort.notImplemented()
                 }

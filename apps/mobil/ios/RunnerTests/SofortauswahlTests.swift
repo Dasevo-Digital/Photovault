@@ -190,6 +190,15 @@ final class SofortauswahlTests: XCTestCase {
     XCTAssertEqual(erledigt.count, 1)
   }
 
+  func testEinAltesFotoNachDemLaufDerAppGehtMit() async throws {
+    let a = auswahl(geschafft: Date().addingTimeInterval(-60))
+    try a.merkeNeue()
+    // Wie aus AirDrop, nachdem die App schon alles gesichert hatte.
+    _ = try await legeFotoAn(aufgenommen: Date(timeIntervalSince1970: 1_000_000), name: "K.JPG")
+    try a.merkeNeue()
+    XCTAssertEqual(a.naechste(frei: 10).dateien.count, 1)
+  }
+
   func testEinGeloeschtesFotoFaelltHeraus() async throws {
     let a = auswahl()
     try a.merkeNeue()

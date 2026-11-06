@@ -446,9 +446,18 @@ class Freigabeapi {
         final q = ausDer(a.relativePath);
         if (q == null || !await q.exists()) return Response.notFound(null);
         final antwort = await dateiAntwort(r, q);
-        final name = a.originalFileName.replaceAll(RegExp(r'["\\\r\n]'), '_');
+        // Nur ASCII im einfachen Namen: dart:io lehnt alles andere in einer
+        // Kopfzeile ab, und der Gast wartete ohne Antwort (#311).
+        final einfach = a.originalFileName.replaceAll(
+          RegExp(r'[^A-Za-z0-9._ -]'),
+          '_',
+        );
         return antwort.change(
-          headers: {'content-disposition': 'attachment; filename="$name"'},
+          headers: {
+            'content-disposition':
+                'attachment; filename="$einfach"; '
+                "filename*=UTF-8''${Uri.encodeComponent(a.originalFileName)}",
+          },
         );
     }
     return Response.notFound(null);
@@ -530,11 +539,12 @@ class Freigabeapi {
       var geschrieben = 0;
       final senke = roh.openWrite();
       try {
-        await for (final stueck in r.read()) {
-          geschrieben += stueck.length;
-          if (geschrieben > laenge) break;
-          senke.add(stueck);
-        }
+        await senke.addStream(
+          r.read().takeWhile((stueck) {
+            geschrieben += stueck.length;
+            return geschrieben <= laenge;
+          }),
+        );
       } finally {
         await senke.close();
       }

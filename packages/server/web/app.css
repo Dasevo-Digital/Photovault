@@ -4,6 +4,7 @@
   --text: #1b1b1b;
   --leise: #666;
   --akzent: #0d8a7a;
+  --auf-akzent: #fff;
   --rand: #ddd;
   --fehler: #b3261e;
   color-scheme: light dark;
@@ -15,6 +16,7 @@
     --text: #eee;
     --leise: #aaa;
     --akzent: #4fd1be;
+    --auf-akzent: #06302b;
     --rand: #333;
     --fehler: #ff8a80;
   }
@@ -34,7 +36,7 @@ input { font: inherit; }
 #kopf-titel { flex: 1; min-width: 0; margin: 0; font-size: 1.2em; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #kopf button { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-weight: 560; }
 #kopf button:hover { border-color: color-mix(in srgb, var(--akzent) 55%, var(--rand)); }
-#kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 #kopf .symbol { width: 20px; height: 20px; }
 #konto-knopf { flex: 0 0 36px; height: 36px; margin-left: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #8e4ec6, var(--akzent)); color: #fff; font-weight: 700; text-decoration: none; box-shadow: 0 0 0 2px var(--grund); }
 #konto-knopf.aktiv { box-shadow: 0 0 0 2px var(--grund), 0 0 0 4px var(--akzent); }
@@ -121,11 +123,11 @@ main#inhalt .bib-kopf h2 { margin: 0; font-size: 1.05em; font-weight: 650; }
 .karte h1 { margin-top: 0; }
 .karte label { display: block; margin: 12px 0 4px; color: var(--leise); }
 .karte input { display: block; width: 100%; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
-.karte button[type=submit] { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+.karte button[type=submit] { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; }
 /* Passkeys (#277): zweitrangig unter dem Anmelden, auf der eigenen Seite
    der einzige Knopf. */
 .karte button.zweitrangig { margin-top: 10px; width: 100%; padding: 10px; border: 1px solid var(--rand); border-radius: 8px; background: transparent; color: var(--text); font-weight: 600; }
-body[data-seite=passkey] #los { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+body[data-seite=passkey] #los { margin-top: 16px; width: 100%; padding: 10px; border: 0; border-radius: 8px; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; }
 body[data-seite=passkey] #los:disabled { opacity: .5; }
 .karte code { user-select: all; word-break: break-all; }
 .fehler { color: var(--fehler); min-height: 1.4em; }
@@ -292,7 +294,7 @@ main#inhalt section h2 { font-size: 1.1em; margin: 16px 12px 8px; }
 
 .zeile { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px; }
 .zeile input[type=search] { flex: 1; min-width: 12em; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
-.zeile button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--akzent); color: #fff; font-weight: 600; }
+.zeile button { padding: 8px 14px; border: 0; border-radius: 8px; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; }
 
 #karten { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; padding: 0 12px 24px; }
 .albumkarte { color: var(--text); text-decoration: none; }
@@ -308,7 +310,7 @@ main#inhalt section h2 { font-size: 1.1em; margin: 16px 12px 8px; }
 #raster .kachel.gewaehlt { background: color-mix(in srgb, var(--akzent) 22%, var(--grund)); }
 #raster .kachel.gewaehlt img { transform: scale(0.86); border-radius: 12px; }
 body.waehlt #raster .kachel::before { content: ''; position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 4px rgba(0,0,0,.55); box-sizing: border-box; z-index: 1; }
-#raster .kachel.gewaehlt::after { content: '✓'; position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--akzent); color: #fff; font-size: 14px; line-height: 22px; text-align: center; z-index: 2; box-shadow: 0 0 0 2px #fff; }
+#raster .kachel.gewaehlt::after { content: '✓'; position: absolute; left: 6px; top: 6px; width: 22px; height: 22px; border-radius: 50%; background: var(--akzent); color: var(--auf-akzent); font-size: 14px; line-height: 22px; text-align: center; z-index: 2; box-shadow: 0 0 0 2px #fff; }
 #raster h2.monat { font-size: 1.25em; font-weight: 600; color: var(--text); margin: 22px 10px 0; }
 #raster .tageskopf { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin: 6px 0 2px; padding: 6px 10px; background: none; border: 0; color: var(--text); font-weight: 600; font-size: 0.95em; text-align: left; border-radius: 8px; }
 #raster .tageskopf:hover { background: var(--karte); }
@@ -316,7 +318,7 @@ body.waehlt #raster .kachel::before { content: ''; position: absolute; left: 6px
 #raster .tageskopf .kreis { position: relative; flex: 0 0 22px; height: 22px; border-radius: 50%; border: 2px solid var(--leise); opacity: .55; box-sizing: border-box; }
 #raster .tageskopf:hover .kreis, body.waehlt #raster .tageskopf .kreis { opacity: 1; }
 #raster .tageskopf.alle .kreis { background: var(--akzent); border-color: var(--akzent); opacity: 1; }
-#raster .tageskopf.alle .kreis::after { content: '✓'; position: absolute; inset: 0; color: #fff; font-size: 12px; line-height: 18px; text-align: center; }
+#raster .tageskopf.alle .kreis::after { content: '✓'; position: absolute; inset: 0; color: var(--auf-akzent); font-size: 12px; line-height: 18px; text-align: center; }
 
 /* Das Blatt unter dem Raster, sobald etwas gewählt ist. */
 #auswahlleiste { position: fixed; left: var(--seite); right: 0; bottom: 0; z-index: 5; background: var(--karte); border-top: 1px solid var(--rand); border-radius: 18px 18px 0 0; box-shadow: 0 -4px 18px rgba(0,0,0,.18); padding: 6px 12px calc(10px + env(safe-area-inset-bottom)); max-width: 720px; margin: 0 auto; }
@@ -344,7 +346,7 @@ body.mit-leiste #ende { padding-bottom: 280px; }
 #bildlauf.sichtbar #bildlauf-griff, #bildlauf.zieht #bildlauf-griff { pointer-events: auto; }
 #bildlauf-griff { position: absolute; right: 0; top: 0; width: 40px; height: 44px; border-radius: 22px 0 0 22px; background: var(--karte); border: 1px solid var(--rand); border-right: 0; box-shadow: 0 1px 6px rgba(0,0,0,.3); display: flex; align-items: center; justify-content: center; color: var(--leise); cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; }
 #bildlauf.zieht #bildlauf-griff { cursor: grabbing; }
-#bildlauf-monat { position: absolute; right: 52px; top: 6px; white-space: nowrap; background: var(--akzent); color: #fff; font-weight: 600; padding: 6px 12px; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.3); }
+#bildlauf-monat { position: absolute; right: 52px; top: 6px; white-space: nowrap; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; padding: 6px 12px; border-radius: 16px; box-shadow: 0 1px 6px rgba(0,0,0,.3); }
 #bildlauf-monat.laedt { opacity: .7; }
 /* Die Jahre beim Ziehen (#278), nah am Griff keins – dort steht der Monat. */
 #bildlauf-jahre { position: absolute; right: 46px; top: 0; bottom: 0; width: 64px; pointer-events: none; opacity: 0; transition: opacity .15s; }
@@ -366,7 +368,7 @@ body.mit-leiste #meldung { bottom: 250px; }
 #ablage p { background: var(--karte); color: var(--text); padding: 14px 20px; border-radius: 12px; font-weight: 600; }
 @media (max-width: 520px) {
   #betrachter > button, #laden { width: 38px; height: 38px; line-height: 38px; font-size: 20px; }
-  #betrachter .oben-links { top: 8px; left: calc(8px + var(--platz, 0) * 44px); }
+  #betrachter .oben-links { top: calc(8px + var(--reihe, 0) * 44px); left: calc(8px + var(--platz, 0) * 44px); }
   #zu { top: 8px; right: 8px; }
 }
 
@@ -387,7 +389,7 @@ dialog label { display: block; margin: 10px 0 4px; }
 dialog input[type=text], dialog input:not([type]) { width: 100%; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 16px 0 0; }
 dialog menu button { padding: 8px 14px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
-dialog menu button[type=submit] { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+dialog menu button[type=submit] { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); }
 
 #laden { position: absolute; background: rgba(0,0,0,.45); color: #fff; border-radius: 50%; width: 44px; height: 44px; font-size: 22px; line-height: 44px; text-align: center; text-decoration: none; }
 .karte label.zeile { display: flex; align-items: center; gap: 8px; padding: 12px 0 0; }
@@ -407,7 +409,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 
 /* --- Karte ----------------------------------------------------------------- */
 #karte { height: calc(100vh - var(--kopf) - var(--unten)); background: var(--grund); }
-.punkt { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--akzent); color: #fff; font-weight: 700; font-size: 13px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
+.punkt { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--akzent); color: var(--auf-akzent); font-weight: 700; font-size: 13px; border: 2px solid #fff; box-shadow: 0 1px 6px rgba(0,0,0,.4); }
 .punkt.gross { width: 44px; height: 44px; }
 @media (prefers-color-scheme: dark) {
   /* Nur die Kacheln umkehren – Marker und Bedienelemente bleiben, wie sie sind. */
@@ -444,7 +446,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 #dupl-alle { background: var(--fehler); }
 #bereich-aufnahmedaten .zeile { padding: 12px 0; }
 #bereich-aufnahmedaten .zeile h2 { margin: 0; flex: 1; }
-#daten-uebernehmen { background: var(--akzent); color: #fff; }
+#daten-uebernehmen { background: var(--akzent); color: var(--auf-akzent); }
 .datumszeile { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--rand); cursor: pointer; }
 .datumszeile img { width: 56px; height: 56px; object-fit: cover; border-radius: 8px; flex: none; cursor: zoom-in; background: var(--rand); }
 .datumszeile .inhalt { min-width: 0; }
@@ -465,7 +467,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .dupl .name { margin-top: 6px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dupl .angaben { color: var(--leise); }
 .dupl button { margin-top: 6px; }
-.dupl.beste button { background: var(--akzent); color: #fff; border-color: var(--akzent); }
+.dupl.beste button { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); }
 
 /* --- Angaben im Betrachter, Serien ---------------------------------------- */
 #info { font-size: 20px; font-weight: 700; font-family: Georgia, serif; }
@@ -544,7 +546,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .entw-auto { display: flex; align-items: center; gap: 6px; margin: 14px 0 4px; font-size: 0.9em; }
 .entw-knoepfe { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .entw-knoepfe button { padding: 8px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
-.entw-knoepfe button.haupt { background: var(--akzent); color: #fff; border-color: var(--akzent); font-weight: 600; }
+.entw-knoepfe button.haupt { background: var(--akzent); color: var(--auf-akzent); border-color: var(--akzent); font-weight: 600; }
 .entw-knoepfe button:disabled { opacity: .5; }
 @media (max-width: 760px) {
   .entw { flex-direction: column; }
@@ -601,7 +603,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .ignoriert-kopf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 4px 12px; }
 .ignoriert-kopf .leise { flex: 1 1 12em; text-align: left; }
 .ignoriert-kopf button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
-.ignoriert-kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.ignoriert-kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 .ignoriert-kopf button:disabled { opacity: .45; }
 .ignoriert-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 8px; margin: 0 4px; }
 .ignoriert-raster .gesicht { padding: 0; border: 3px solid transparent; border-radius: 50%; overflow: hidden; background: var(--rand); }
@@ -630,7 +632,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .gesicht-zelle .gesicht { width: 100%; height: 100%; }
 .im-foto { position: absolute; right: -2px; bottom: -2px; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border: 2px solid var(--karte); border-radius: 50%; background: var(--text); color: var(--karte); cursor: pointer; }
 .im-foto .symbol { width: 15px; height: 15px; stroke-width: 2.2; }
-.im-foto:hover { background: var(--akzent); color: #fff; }
+.im-foto:hover { background: var(--akzent); color: var(--auf-akzent); }
 #imfoto-dialog { max-width: min(1100px, calc(100vw - 32px)); padding: 12px; }
 #imfoto-bild { position: relative; display: block; width: fit-content; max-width: 100%; margin: 0 auto; }
 #imfoto-bild img { display: block; max-width: 100%; max-height: calc(100vh - 160px); border-radius: 8px; }
@@ -668,7 +670,7 @@ dialog menu button[type=submit] { background: var(--akzent); color: #fff; border
 .suche-merken:hover { border-color: var(--akzent); }
 .rb-jahrkarte { grid-column: 1 / -1; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, #d6409f 12%, transparent); }
 #vorschlag-dialog { width: min(560px, calc(100vw - 32px)); }
-#gesicht-ja { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--akzent); color: #fff; font-weight: 600; }
+#gesicht-ja { margin-top: 12px; width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; }
 #zusammen-dialog select { width: 100%; padding: 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 .gesichter-reihe { display: flex; flex-wrap: wrap; gap: 10px; }
 .angaben-gesicht { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; padding: 0; border: 0; background: none; color: inherit; font-size: .75em; }
@@ -706,7 +708,7 @@ body.teilen { min-height: 100vh; }
 #teilen-beitragen h2 { margin: 0 0 4px; font-size: 1.05em; }
 #teilen-beitragen .beitragen-kopf { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
 #teilen-beitragen .beitragen-kopf p { margin: 0; }
-#teilen-beitragen .knopf-datei { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--akzent); color: #fff; font-weight: 600; cursor: pointer; flex: none; }
+#teilen-beitragen .knopf-datei { display: inline-flex; align-items: center; padding: 8px 14px; border-radius: 10px; background: var(--akzent); color: var(--auf-akzent); font-weight: 600; cursor: pointer; flex: none; }
 #teilen-beitragen .knopf-datei input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 #teilen-beitragen .knopf-datei:focus-within { outline: 2px solid var(--akzent); outline-offset: 2px; }
 #teilen-beitragen .beitragen-name { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; max-width: 320px; font-size: .9em; }
@@ -751,7 +753,7 @@ body.teilen { min-height: 100vh; }
 .beitrag-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .beitrag .knoepfe { display: flex; gap: 6px; flex: none; }
 .beitrag button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
-.beitrag button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.beitrag button.primaer { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 .beitrag.abgewiesen { opacity: .75; }
 @media (max-width: 560px) { .beitrag { flex-wrap: wrap; } .beitrag .knoepfe { width: 100%; justify-content: flex-end; } }
 
@@ -790,7 +792,7 @@ body.teilen { min-height: 100vh; }
 .spur .knopf-flach, .landschaft .knopf-flach, .landschaft .knopf, .l-videodialog .knopf, .l-videodialog .knopf-flach { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid var(--rand); background: var(--karte); color: var(--text); font-weight: 560; white-space: nowrap; }
 .spur .knopf-flach:hover, .landschaft .knopf-flach:hover { border-color: color-mix(in srgb, var(--akzent) 55%, var(--rand)); }
 .spur .knopf-flach:disabled { opacity: .6; cursor: progress; }
-.landschaft .knopf, .l-videodialog .knopf { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.landschaft .knopf, .l-videodialog .knopf { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 .spur .leise { text-align: left; padding: 0; margin: 4px 0; }
 .hoehenprofil { position: relative; margin-top: 4px; }
 .hoehenprofil svg, .l-profil svg { display: block; width: 100%; height: 140px; touch-action: pan-y; cursor: crosshair; }
@@ -870,7 +872,7 @@ body.landschaft-offen { overflow: hidden; }
 
 /* Kommentare und „Gefällt mir“ in geteilten Alben (#297) */
 #gefaellt, #kommentare-knopf { font-size: 16px; white-space: nowrap; min-width: 44px; width: auto; padding: 0 10px; }
-#gefaellt.aktiv { background: var(--akzent); color: #fff; }
+#gefaellt.aktiv { background: var(--akzent); color: var(--auf-akzent); }
 #kommentar-dialog { max-width: 32em; width: calc(100% - 32px); }
 .kommentare { margin-bottom: 16px; }
 .kommentarliste { list-style: none; padding: 0; margin: 0 0 10px; max-height: 50vh; overflow-y: auto; }

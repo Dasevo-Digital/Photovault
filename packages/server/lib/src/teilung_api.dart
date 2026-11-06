@@ -492,11 +492,12 @@ class Teilungsapi {
       var geschrieben = 0;
       final senke = datei.openWrite();
       try {
-        await for (final stueck in r.read()) {
-          geschrieben += stueck.length;
-          if (geschrieben > laenge) break;
-          senke.add(stueck);
-        }
+        await senke.addStream(
+          r.read().takeWhile((stueck) {
+            geschrieben += stueck.length;
+            return geschrieben <= laenge;
+          }),
+        );
       } finally {
         await senke.close();
       }

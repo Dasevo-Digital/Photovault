@@ -884,16 +884,21 @@ class _Api {
   Future<List<_Partnerquelle>> _partnerInZeitleiste(Request anfrage) async {
     final t = teilungen;
     if (t == null) return const [];
-    return [
-      for (final f in t.freigabenMit(kontoVon(anfrage).id))
-        if (f.inZeitleiste)
-          if (kontoname?.call(f.besitzer) case final name?)
-            _Partnerquelle(
-              f,
-              (await bibliotheken.fuer(f.besitzer)).bibliothek.db,
-              name,
-            ),
-    ];
+    final quellen = <_Partnerquelle>[];
+    for (final f in t.freigabenMit(kontoVon(anfrage).id)) {
+      if (!f.inZeitleiste) continue;
+      final name = kontoname?.call(f.besitzer);
+      if (name == null) continue;
+      try {
+        final bereich = await bibliotheken.fuer(f.besitzer);
+        quellen.add(_Partnerquelle(f, bereich.bibliothek.db, name));
+      } catch (e) {
+        // Eine Bibliothek, die sich nicht öffnen lässt, darf die eigene
+        // Zeitleiste nicht mitreissen.
+        protokoll('Bibliothek eines Partners nicht geöffnet: $e');
+      }
+    }
+    return quellen;
   }
 
   /// Wie viele Aufnahmen die Zeitleiste je Monat zeigt, neueste zuerst –

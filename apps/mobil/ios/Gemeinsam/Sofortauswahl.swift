@@ -73,9 +73,11 @@ final class Sofortauswahl {
         schreibMarke(letzte)
       } catch let f as NSError
         where f.domain == PHPhotosErrorDomain
-        && f.code == PHPhotosError.persistentChangeTokenExpired.rawValue
+        && (f.code == PHPhotosError.persistentChangeTokenExpired.rawValue
+          || f.code == PHPhotosError.persistentChangeDetailsUnavailable.rawValue)
       {
-        // Das Protokoll reicht nicht so weit zurück; die App holt nach.
+        // Das Protokoll reicht nicht so weit zurück; die App holt nach. Ohne
+        // die neue Marke scheiterte jeder weitere Start an derselben Stelle.
         schreibMarke(bibliothek.currentChangeToken)
       }
     } else {
@@ -149,7 +151,11 @@ final class Sofortauswahl {
     let geschafft = einstellungen.geschafft ?? .distantPast
     PHAsset.fetchAssets(withLocalIdentifiers: kennungen, options: nil)
       .enumerateObjects { foto, _, _ in
-        guard (foto.creationDate ?? .distantFuture) > geschafft else { return }
+        // Nicht das Aufnahmedatum: Ein Foto aus AirDrop ist alt und trotzdem
+        // nach dem Lauf der App dazugekommen. Schlimmstenfalls geht eines
+        // doppelt, und das erkennt der Server.
+        guard (foto.modificationDate ?? foto.creationDate ?? .distantFuture) > geschafft
+        else { return }
         if foto.mediaType == .image
           || (foto.mediaType == .video && self.einstellungen.videos)
         {

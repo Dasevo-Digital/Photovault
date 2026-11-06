@@ -10354,4 +10354,12 @@ class AppTexteDe extends AppTexte {
   String backupLaufMenge(String gesichert, String gesamt, String offen) {
     return '$gesichert von $gesamt gesichert, $offen ausstehend';
   }
+
+  @override
+  String get einstSpeicherortInBibliothek =>
+      'Dieser Ordner liegt in der Bibliothek selbst. Wähle einen Ordner ausserhalb.';
+
+  @override
+  String get einstSpeicherortBelegt =>
+      'In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.';
 }

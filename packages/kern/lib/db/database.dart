@@ -202,6 +202,19 @@ class NeuereBibliothek implements Exception {
   String toString() => '$kennung: schema $bibliothek > $programm';
 }
 
+/// [alle] in Portionen für `isIn`: SQLite nimmt je Anweisung höchstens 32766
+/// Werte. Darüber scheiterte zum Beispiel die erste Sicherung einer grossen
+/// Bibliothek, nachdem alle Dateien kopiert waren.
+Iterable<List<T>> inStuecken<T>(Iterable<T> alle, {int groesse = 10000}) sync* {
+  final liste = alle.toList();
+  for (var i = 0; i < liste.length; i += groesse) {
+    yield liste.sublist(
+      i,
+      i + groesse < liste.length ? i + groesse : liste.length,
+    );
+  }
+}
+
 @DriftDatabase(
   tables: [
     Assets,
@@ -474,8 +487,14 @@ class AppDatabase extends _$AppDatabase {
 
   Future<List<AssetData>> assetsByIds(List<String> ids) async {
     if (ids.isEmpty) return [];
-    final rows = await (select(assets)..where((t) => t.id.isIn(ids))).get();
-    final byId = {for (final r in rows) r.id: r};
+    final byId = <String, AssetData>{};
+    for (final stueck in inStuecken(ids)) {
+      for (final r in await (select(
+        assets,
+      )..where((t) => t.id.isIn(stueck))).get()) {
+        byId[r.id] = r;
+      }
+    }
     // Reihenfolge der übergebenen IDs beibehalten (z.B. Ranking nach Ähnlichkeit).
     return ids.map((id) => byId[id]).whereType<AssetData>().toList();
   }

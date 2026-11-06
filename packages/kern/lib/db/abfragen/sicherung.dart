@@ -81,10 +81,13 @@ extension SicherungsAbfragen on AppDatabase {
           ))
           .get();
 
-  Future<void> markBackedUp(List<String> assetIds) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
+  Future<void> markBackedUp(List<String> assetIds) => transaction(() async {
+    for (final stueck in inStuecken(assetIds)) {
+      await (update(assets)..where((t) => t.id.isIn(stueck))).write(
         const AssetsCompanion(backedUp: Value(true)),
       );
+    }
+  });
 
   Future<void> insertBackupRecord(BackupRecordsCompanion record) =>
       into(backupRecords).insert(record);
@@ -238,8 +241,11 @@ extension SicherungsAbfragen on AppDatabase {
     assets,
   )..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))).get();
 
-  Future<void> markAutoBackedUp(List<String> assetIds) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
+  Future<void> markAutoBackedUp(List<String> assetIds) => transaction(() async {
+    for (final stueck in inStuecken(assetIds)) {
+      await (update(assets)..where((t) => t.id.isIn(stueck))).write(
         const AssetsCompanion(autoBackedUp: Value(true)),
       );
+    }
+  });
 }

@@ -62,11 +62,14 @@ Future<List<String>> dateienDerAufnahme(
 /// und der nimmt wie in der App auch Gesperrte mit.
 ///
 /// Eine Datei, auf die eine bleibende Aufnahme noch zeigt, bleibt liegen.
+/// [mitGesperrten] nimmt auch Gesperrte aus [ids] – für den Papierkorb
+/// hinter der PIN.
 Future<List<String>> leerePapierkorb(
   AppDatabase db,
   StoragePaths paths, {
   Iterable<String>? ids,
   DateTime? vor,
+  bool mitGesperrten = false,
 }) async {
   final (weg, dateien) = await db.transaction(() async {
     final List<AssetData> kandidaten;
@@ -79,7 +82,7 @@ Future<List<String>> leerePapierkorb(
       );
       kandidaten = [
         for (final a in await db.assetsByIds(mitPartnern.toList()))
-          if (a.isTrashed && !a.isLocked) a,
+          if (a.isTrashed && (mitGesperrten || !a.isLocked)) a,
       ];
     } else if (vor != null) {
       kandidaten = await db.expiredTrashAssets(vor);

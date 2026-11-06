@@ -44,6 +44,10 @@ class Sicherungsdienst extends ChangeNotifier {
   final Kamerarolle Function(List<String> alben) _rolle;
   final Future<bool> Function(Sicherungseinstellungen e) _netzPasst;
 
+  /// Wie oft ein laufender Lauf nachsieht, ob das Netz noch passt.
+  @visibleForTesting
+  static Duration netzpruefung = const Duration(seconds: 15);
+
   Sicherungseinstellungen get einstellungen => _stand.einstellungen;
 
   Zugriff zugriff = Zugriff.unbekannt;
@@ -179,8 +183,9 @@ class Sicherungsdienst extends ChangeNotifier {
 
   Future<void> _stelleSofort(Sicherungseinstellungen e) async {
     final kann = await _serverKannSofort(e);
-    // Beim Warten auf den Server kann sich die Einstellung geändert haben.
-    if (e.an && !einstellungen.an) return;
+    // Beim Warten auf den Server kann sich die Einstellung geändert haben,
+    // oder der Nutzer hat sich abgemeldet (das ändert sie nicht).
+    if (e.an && (_beendet || _abgemeldet || !einstellungen.an)) return;
     sofort = await stelleSofort(e.an ? einstellungen : e, serverKann: kann);
     await _ladeSofortbericht();
   }
@@ -199,6 +204,7 @@ class Sicherungsdienst extends ChangeNotifier {
   }
 
   var _serverKann = true;
+  var _abgemeldet = false;
 
   Future<void> _ladeSofortbericht() async {
     sofortbericht = await leseSofortbericht();
@@ -292,8 +298,22 @@ class Sicherungsdienst extends ChangeNotifier {
       _nochmal = true;
       return;
     }
-    if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) return;
-    if (!await _netzPasst(mobil ? e.mit(nurWlan: false) : e)) {
+    if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) {
+      // Android beendet die App nicht, wenn der Nutzer den Zugriff in den
+      // Einstellungen erteilt; zurück in der App stand sonst weiter „kein
+      // Zugriff“.
+      try {
+        zugriff = _zugriffAus(
+          await PhotoManager.getPermissionState(requestOption: _option),
+        );
+      } on MissingPluginException {
+        return; // in Tests ohne Telefon
+      }
+      if (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise) return;
+      notifyListeners();
+    }
+    final netz = mobil ? e.mit(nurWlan: false) : e;
+    if (!await _netzPasst(netz)) {
       wartet = e.nurWlan ? Wartegrund.wlan : Wartegrund.netz;
       notifyListeners();
       return;
@@ -303,15 +323,26 @@ class Sicherungsdienst extends ChangeNotifier {
     wartet = null;
     fehler = null;
     notifyListeners();
+    // WorkManager hält an, wenn das Netz nicht mehr passt, die offene App
+    // nicht: Sie lud nach dem Verlassen des WLANs über Mobilfunk weiter.
+    var netzWeg = false;
+    final netzwaechter = Timer.periodic(netzpruefung, (_) async {
+      if (!await _netzPasst(netz)) netzWeg = true;
+    });
     try {
       final beginn = DateTime.now();
-      final bericht = await Sicherungslauf(
-        rolle: _rolle(e.alben),
-        verbindung: _verbindung,
-        stand: _stand,
-        wer: 'app',
-      ).laufe(abbrechen: () => _abbruch || _beendet, meldung: _melde);
+      final bericht =
+          await Sicherungslauf(
+            rolle: _rolle(e.alben),
+            verbindung: _verbindung,
+            stand: _stand,
+            wer: 'app',
+          ).laufe(
+            abbrechen: () => _abbruch || _beendet || netzWeg,
+            meldung: _melde,
+          );
       if (bericht.vollstaendig) unawaited(meldeGeschafft(beginn));
+      if (netzWeg) wartet = e.nurWlan ? Wartegrund.wlan : Wartegrund.netz;
     } on Gesperrt {
       wartet = Wartegrund.hintergrund;
       // Der Lauf im Hintergrund kennt nur die Fotos von seinem Beginn;
@@ -319,9 +350,12 @@ class Sicherungsdienst extends ChangeNotifier {
       _nochmal = true;
       _nachAenderung?.cancel();
       _nachAenderung = Timer(const Duration(minutes: 1), sichere);
-    } on Serverfehler catch (f) {
+    } on Exception catch (f) {
+      // Auch was der Lauf nicht kennt, etwa ein TLS-Fehler hinter einem
+      // Anmeldeportal: Sonst sagte „Jetzt sichern“ gar nichts.
       fehler = f;
     } finally {
+      netzwaechter.cancel();
       _laeuft = false;
       fortschritt = null;
       if (_beendet) {
@@ -383,6 +417,7 @@ class Sicherungsdienst extends ChangeNotifier {
   /// auch nichts eingeplant.
   Future<void> streicheAufgaben() async {
     if (!einstellungen.an) return;
+    _abgemeldet = true;
     await _plane(const Sicherungseinstellungen());
   }
 

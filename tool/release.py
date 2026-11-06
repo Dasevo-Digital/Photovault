@@ -343,6 +343,8 @@ def bauen(args):
         if 'DA' not in log:
             fehler.append(f'Flatpak fehlt:\n{log}')
         else:
+            if '✗' in log or 'FEHLER' in log:
+                print(f'Das Flatpak ist da, die Prüfung meldet aber:\n{log}')
             lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
             fertig.append('linux')
 
@@ -355,7 +357,20 @@ def bauen(args):
 
 def _baue_mac(fassung, u):
     # Xcode lädt Swift-Pakete (ONNX Runtime) beim ersten Bau eines Baums.
-    lauf(['flutter', 'build', 'macos', '--release'], versuche=3)
+    try:
+        lauf(['flutter', 'build', 'macos', '--release'], versuche=3)
+        _packe_mac(fassung, u)
+    finally:
+        # Auch wenn etwas scheitert: Die Bündel unter build/ fänden Spotlight
+        # und Launchpad – und öffneten womöglich die echte Bibliothek. Vorher
+        # prüfen, dass keins läuft.
+        if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
+            print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
+        else:
+            lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
+
+
+def _packe_mac(fassung, u):
     app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
     fassung_app = lauf(['/usr/libexec/PlistBuddy', '-c', 'Print CFBundleShortVersionString', str(app / 'Contents/Info.plist')], ausgabe=True).strip()
     if fassung_app != fassung:
@@ -364,13 +379,6 @@ def _baue_mac(fassung, u):
     lauf(['ditto', str(app), str(u / 'Photo Vault.app')])
     lauf(['rm', '-f', str(u / f'PhotoVault-{fassung}-macos.zip')])
     lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', f'PhotoVault-{fassung}-macos.zip'], cwd=u)
-    # Die Bündel unter build/ fänden Spotlight und Launchpad – und
-    # öffneten womöglich die echte Bibliothek. Vorher prüfen, dass
-    # keins läuft.
-    if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
-        print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
-    else:
-        lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
 
 
 def basis_images(dockerfile):
@@ -515,13 +523,17 @@ def entwurf(args):
         if name in vorhanden:
             if name != 'SHA256SUMS.txt':
                 continue
-            gitea(z, f'/releases/{rid}/assets/{vorhanden[name]}', methode='DELETE', tok=tok)
+            st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]}', methode='DELETE', tok=tok)
+            if st not in (200, 204):
+                sys.exit(f'{name} liess sich nicht ersetzen: {st} {a}')
         g = uuid.uuid4().hex
         daten = (f'--{g}\r\nContent-Disposition: form-data; name="attachment"; filename="{name}"\r\n'
                  f'Content-Type: application/octet-stream\r\n\r\n').encode() + (u / name).read_bytes() + f'\r\n--{g}--\r\n'.encode()
         st, a = gitea(z, f'/releases/{rid}/assets?name={urllib.parse.quote(name)}', daten, 'POST',
                       {'Content-Type': f'multipart/form-data; boundary={g}'}, tok)
         print(name, st, a.get('size') if isinstance(a, dict) else a)
+        if st != 201:
+            sys.exit(f'{name} kam nicht an: {st}')
     _, rel = gitea(z, f'/releases/{rid}', tok=tok)
     print('Freigabe', rel['id'], 'Entwurf' if rel.get('draft') else 'veröffentlicht', len(rel['assets']), 'Dateien')
 
@@ -584,6 +596,13 @@ def veroeffentlichen(args):
     rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
     if rel is None:
         sys.exit('Kein Entwurf zu dieser Fassung.')
+    # Nichts freigeben, dem ein Paket fehlt oder das nur halb oben liegt.
+    u = upload_ordner(z, fassung)
+    oben = {x['name']: x.get('size') for x in rel.get('assets', [])}
+    fehlt = [n for n in dateien(fassung)
+             if (u / n).exists() and oben.get(n) != (u / n).stat().st_size]
+    if fehlt:
+        sys.exit(f'Im Entwurf fehlt oder stimmt nicht: {", ".join(fehlt)}')
     st, r = gitea(z, f'/releases/{rel["id"]}', json.dumps({'draft': False}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     print('Freigabe', r['id'], 'Entwurf' if r['draft'] else 'veröffentlicht', len(r['assets']), 'Dateien')
     sync = os.path.expanduser(z.get('sync_py', '~/Library/Application Support/gitea-github-sync/sync.py'))

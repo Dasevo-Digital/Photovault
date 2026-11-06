@@ -29,7 +29,9 @@ class Speicherfreigabe {
     final aufDemTelefon = <String, String>{};
     for (final e in await rolle.eintraege(videos: true)) {
       final g = gesichert[e.id];
-      if (g != null && g.geaendert == e.geaendert.millisecondsSinceEpoch) {
+      if (g != null &&
+          g.geaendert == e.geaendert.millisecondsSinceEpoch &&
+          !(await e.bearbeitetesVideo?.call() ?? false)) {
         aufDemTelefon[e.id] = g.aufnahme;
       }
     }

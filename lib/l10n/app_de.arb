@@ -6588,5 +6588,7 @@
   "backupStandHinweis": "Originale im Zielordner, ohne Gesperrtes und Papierkorb.",
   "backupStandNeuZaehlen": "Neu zählen",
   "backupLaufMenge": "{gesichert} von {gesamt} gesichert, {offen} ausstehend",
-  "@backupLaufMenge": {"placeholders": {"gesichert": {"type": "String"}, "gesamt": {"type": "String"}, "offen": {"type": "String"}}}
+  "@backupLaufMenge": {"placeholders": {"gesichert": {"type": "String"}, "gesamt": {"type": "String"}, "offen": {"type": "String"}}},
+  "einstSpeicherortInBibliothek": "Dieser Ordner liegt in der Bibliothek selbst. Wähle einen Ordner ausserhalb.",
+  "einstSpeicherortBelegt": "In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner."
 }

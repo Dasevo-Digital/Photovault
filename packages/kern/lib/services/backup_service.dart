@@ -29,6 +29,16 @@ export 'backup_manifest.dart' show RestorePlan, RestoreDatei;
 part 'backup_probe.dart';
 part 'backup_stand.dart';
 
+/// Wo ein Original innerhalb von `originals/` einer Sicherung liegt. Gespeichert
+/// sind die Pfade mit `/` oder, von Windows, mit `\\`, unabhängig davon, wo die
+/// Sicherung gerade läuft. Bis 3.58 blieb unter Windows bei `/` der ganze Pfad
+/// stehen, und die Wiederherstellung fand keine Datei.
+String pfadInDerSicherung(String relativ) {
+  final teile = relativ.split(RegExp(r'[/\\]'));
+  if (teile.length > 1 && teile.first == 'originals') teile.removeAt(0);
+  return p.joinAll(teile);
+}
+
 /// Kopiert die Bibliothek manuell in einen vom Nutzer gewählten Ordner.
 /// Das ist bewusst kein automatischer Cloud-Upload: der Nutzer wählt selbst
 /// einen Ordner (z.B. den lokalen Dropbox- oder Google-Drive-Sync-Ordner),
@@ -329,13 +339,7 @@ class BackupService {
             ),
           )
         : File(
-            p.join(
-              originalsOut.path,
-              asset.relativePath.replaceFirst(
-                'originals${Platform.pathSeparator}',
-                '',
-              ),
-            ),
+            p.join(originalsOut.path, pfadInDerSicherung(asset.relativePath)),
           );
     Future<bool> aktuell(AssetData asset, File ziel) => encryptionKey == null
         ? _stimmtImZiel(asset, ziel, frueher)
@@ -568,7 +572,17 @@ class BackupService {
     try {
       await von.rename(nach.path);
     } on FileSystemException {
-      await von.copy(nach.path);
+      // Auch hier erst unter anderem Namen: Bricht die Kopie ab, bliebe sonst
+      // unter dem endgültigen Namen eine halbe Datei, und jeder spätere
+      // Lauf hielte sie für gesichert.
+      final teil = File('${nach.path}.pv-kopie');
+      try {
+        await von.copy(teil.path);
+        await teil.rename(nach.path);
+      } catch (_) {
+        await _wegwerfen(teil);
+        rethrow;
+      }
       await von.delete();
     }
   }
@@ -647,7 +661,7 @@ class BackupService {
         // ohne den ganzen Zielordner nach jedem möglichen Hash absuchen zu
         // müssen. Bei verschlüsselten Backups liegt das Feld selbst wieder
         // in der verschlüsselten metadata.json.
-        'backupRelativePath': a.relativePath,
+        'backupRelativePath': a.relativePath.replaceAll(r'\', '/'),
         'isFavorite': a.isFavorite,
         'description': a.description,
         'fileCreatedAt': a.fileCreatedAt.toUtc().toIso8601String(),
@@ -720,7 +734,11 @@ class BackupService {
       'wrapped': base64Encode(wrapped),
     };
     final file = File(p.join(backupRoot.path, 'vault.key'));
-    await file.writeAsString(jsonEncode(envelope));
+    // Über eine Zwischendatei: Ein Abbruch darf den Schlüssel einer
+    // vorhandenen Sicherung nicht beschädigen.
+    final teil = File('${file.path}.pv-teil');
+    await teil.writeAsString(jsonEncode(envelope), flush: true);
+    await teil.rename(file.path);
   }
 
   Stream<BackupProgress> restoreFromBackup(
@@ -1008,7 +1026,9 @@ class BackupService {
       await _db.customStatement('VACUUM INTO ?', [snapshotPath]);
       entferneGesperrteAus(snapshotPath);
       final target = File(p.join(backupRoot.path, 'library.sqlite.enc'));
-      await VaultCrypto.encryptFile(snapshotFile, target, encryptionKey);
+      final teil = File('${target.path}.pv-teil');
+      await VaultCrypto.encryptFile(snapshotFile, teil, encryptionKey);
+      await teil.rename(target.path);
       return BackupSchnappschussSpeicher().manifestAusDatei(snapshotFile);
     } finally {
       if (await snapshotFile.exists()) await snapshotFile.delete();

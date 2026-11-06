@@ -655,9 +655,13 @@ extension AufnahmenAbfragen on AppDatabase {
       );
 
   Future<void> setRatingBulk(List<String> assetIds, int rating) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
-        AssetsCompanion(rating: Value(rating)),
-      );
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            AssetsCompanion(rating: Value(rating)),
+          );
+        }
+      });
 
   Future<void> setColorLabel(String assetId, String? colorLabel) =>
       (update(assets)..where((t) => t.id.equals(assetId))).write(
@@ -669,12 +673,20 @@ extension AufnahmenAbfragen on AppDatabase {
   /// Die Auswahlleiste lief vorher in einer Schleife über die Auswahl – bei
   /// 500 markierten Fotos also 500 einzelne Schreibvorgänge statt einem.
   Future<void> setFavoriteBulk(List<String> assetIds, bool value) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
-        AssetsCompanion(isFavorite: Value(value)),
-      );
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            AssetsCompanion(isFavorite: Value(value)),
+          );
+        }
+      });
 
   Future<void> setColorLabelBulk(List<String> assetIds, String? colorLabel) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
-        AssetsCompanion(colorLabel: Value(colorLabel)),
-      );
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            AssetsCompanion(colorLabel: Value(colorLabel)),
+          );
+        }
+      });
 }

@@ -314,7 +314,16 @@ class Albumregelablauf {
 
   Future<void> _pruefe() async {
     final regeln = konten.albumregeln;
-    for (final r in regeln.alle()) {
+    final List<Albumregel> alle;
+    try {
+      alle = regeln.alle();
+    } catch (e) {
+      // Im Takt liefe ein Fehler in keine Anfrage, sondern beendete den
+      // ganzen Server.
+      protokoll('Albumregeln nicht gelesen: $e');
+      return;
+    }
+    for (final r in alle) {
       final name = konten.konto(r.besitzer)?.name ?? r.besitzer;
       try {
         final n = await fuelleAlbum(

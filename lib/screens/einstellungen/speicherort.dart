@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -137,6 +138,18 @@ Future<void> _openInFinder(Einstellungsstand stand, String path) async {
   }
 }
 
+void _meldeHindernis(BuildContext context, Verschiebehindernis hindernis) {
+  final t = AppTexte.of(context);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(switch (hindernis) {
+        Verschiebehindernis.inDerBibliothek => t.einstSpeicherortInBibliothek,
+        Verschiebehindernis.belegt => t.einstSpeicherortBelegt,
+      }),
+    ),
+  );
+}
+
 Future<void> _changeLibraryLocation(Einstellungsstand stand) async {
   final context = stand.kontext;
   final picked = await LibraryLocation.pickFolder(
@@ -148,6 +161,15 @@ Future<void> _changeLibraryLocation(Einstellungsstand stand) async {
     dialogMessage: AppTexte.of(context).einstSpeicherortWaehlen,
   );
   if (picked == null || !context.mounted) return;
+  final hindernis = await LibraryLocation.verschiebehindernis(
+    await LibraryLocation.currentRoot(),
+    Directory(picked.path),
+  );
+  if (!context.mounted) return;
+  if (hindernis != null) {
+    _meldeHindernis(context, hindernis);
+    return;
+  }
 
   final fortschritt = ValueNotifier<BibliotheksVerschiebefortschritt?>(null);
   try {
@@ -186,6 +208,12 @@ Future<void> _resetLibraryLocation(Einstellungsstand stand) async {
     ),
   );
   if (confirmed != true || !context.mounted) return;
+  final hindernis = await LibraryLocation.hindernisBeimZuruecksetzen();
+  if (!context.mounted) return;
+  if (hindernis != null) {
+    _meldeHindernis(context, hindernis);
+    return;
+  }
 
   final fortschritt = ValueNotifier<BibliotheksVerschiebefortschritt?>(null);
   try {

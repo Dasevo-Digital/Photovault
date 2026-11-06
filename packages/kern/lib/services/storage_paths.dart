@@ -99,7 +99,7 @@ class StoragePaths {
   ) {
     final yyyy = fileCreatedAt.year.toString().padLeft(4, '0');
     final mm = fileCreatedAt.month.toString().padLeft(2, '0');
-    return p.join('originals', yyyy, mm, '$assetId$extension');
+    return p.posix.join('originals', yyyy, mm, '$assetId$extension');
   }
 
   ///
@@ -107,27 +107,27 @@ class StoragePaths {
   /// Verbundene Geräte halten Dateien unter ihrem Namen vor, und eine neue
   /// Datei unter dem alten Namen erreichte sie nie.
   String thumbnailRelativePath(String assetId, [String zusatz = '']) =>
-      p.join('thumbnails', '$assetId$zusatz.jpg');
+      p.posix.join('thumbnails', '$assetId$zusatz.jpg');
 
   /// Nur für Formate relevant, die Flutter nicht direkt rendern kann
   /// (HEIC/HEIF, DNG & Co.) – eine größere, konvertierte JPEG-Version für
   /// die Vollbildansicht (Thumbnails bleiben separat und kleiner).
   String previewRelativePath(String assetId, [String zusatz = '']) =>
-      p.join('previews', '$assetId$zusatz.jpg');
+      p.posix.join('previews', '$assetId$zusatz.jpg');
 
   /// Gerendertes Ergebnis der nicht-destruktiven Entwicklung (siehe
   /// DevelopScreen) – separat von [previewRelativePath], damit sich beide
   /// unabhängig regenerieren lassen (die reine Vorschau z.B. beim
   /// HEIC/RAW-Import, das entwickelte Bild nur bei geänderten Reglern).
   String developedRelativePath(String assetId) =>
-      p.join('developed', '$assetId.jpg');
+      p.posix.join('developed', '$assetId.jpg');
 
   /// Wohin eine neue Entwicklung von [assetId] kommt: ein neuer Name je
   /// Speichern (#258). Verbundene Geräte holen eine Datei nur, wenn sie
   /// unter ihrem Namen fehlt (siehe [bereit]) – eine neue Fassung unter
   /// [developedRelativePath] erreichte sie nie. Wie in der Handy-App und
   /// im Browser.
-  String neuerEntwicklungspfad(String assetId) => p.join(
+  String neuerEntwicklungspfad(String assetId) => p.posix.join(
     'developed',
     '$assetId-${DateTime.now().microsecondsSinceEpoch}.jpg',
   );
@@ -137,7 +137,7 @@ class StoragePaths {
   /// Entwicklung, da beide unabhängig voneinander existieren können (die
   /// Restaurierung nimmt das entwickelte Bild als Eingabe). Ein neuer Name
   /// je Ergebnis wie bei [neuerEntwicklungspfad] (#284).
-  String neuerRestaurierungspfad(String assetId) => p.join(
+  String neuerRestaurierungspfad(String assetId) => p.posix.join(
     'restored',
     '$assetId-${DateTime.now().microsecondsSinceEpoch}.jpg',
   );
@@ -146,19 +146,20 @@ class StoragePaths {
   /// VideoTrimScreen) – separat von [originalRelativePath], die
   /// Originaldatei wird nie angetastet.
   String trimmedRelativePath(String assetId) =>
-      p.join('trimmed', '$assetId.mp4');
+      p.posix.join('trimmed', '$assetId.mp4');
 
   /// Wohin ein neuer Schnitt kommt – ein neuer Name je Speichern, wie bei
   /// [neuerEntwicklungspfad]: Verbundene Geräte halten eine Datei unter
   /// ihrem Namen vor und zeigten sonst den alten Schnitt (#109).
-  String neuerSchnittpfad(String assetId) => p.join(
+  String neuerSchnittpfad(String assetId) => p.posix.join(
     'trimmed',
     '$assetId-${DateTime.now().microsecondsSinceEpoch}.mp4',
   );
 
-  String faceRelativePath(String faceId) => p.join('faces', '$faceId.jpg');
+  String faceRelativePath(String faceId) =>
+      p.posix.join('faces', '$faceId.jpg');
   String vaultMetadataRelativePath(String assetId) =>
-      p.join('vault_metadata', '$assetId.pvm');
+      p.posix.join('vault_metadata', '$assetId.pvm');
 
   /// Grauwert-Alphamaske einer KI-Objektmaske (siehe MaskEditor,
   /// SegmentationService.maskToOriginalResolution). Nimmt bewusst eine vom
@@ -166,7 +167,7 @@ class StoragePaths {
   /// Zeile entgegen – die ist erst NACH dem Einfügen der Zeile bekannt, der
   /// Dateiname muss aber schon vorher feststehen, um die Datei zu schreiben.
   String maskRelativePath(String maskFileId) =>
-      p.join('masks', '$maskFileId.png');
+      p.posix.join('masks', '$maskFileId.png');
 
   /// XMP-Sidecar-Pfad zu einer beliebigen bereits vorhandenen Datei (siehe
   /// xmp_writer.dart) – ein Sidecar muss denselben Basisnamen wie die

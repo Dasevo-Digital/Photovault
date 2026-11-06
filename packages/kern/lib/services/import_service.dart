@@ -286,11 +286,11 @@ class ImportService {
       // geholt, und die Dekodierung begrenzt ihren eigenen Lebenszyklus.
       final checksum = (await sha256.bind(sourceFile.openRead()).first)
           .toString();
-      pruefsumme = checksum;
 
       if (erwartetePruefsumme != null && checksum != erwartetePruefsumme) {
         throw const FormatException('pv_import_quelle_geaendert');
       }
+      pruefsumme = checksum;
       if (await _db.checksumExists(checksum)) {
         return ImportResult(filePath, ImportOutcome.duplicateSkipped);
       }

@@ -4354,7 +4354,7 @@ abstract class AppTexte {
   /// No description provided for @sicherungSofortFehler.
   ///
   /// In de, this message translates to:
-  /// **'iOS hat das Einschalten abgelehnt.'**
+  /// **'Das System hat das Einschalten abgelehnt.'**
   String get sicherungSofortFehler;
 
   /// No description provided for @sicherungSofortAndroid.

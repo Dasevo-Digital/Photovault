@@ -1398,7 +1398,7 @@
   "sicherungSofortZugriff": "Braucht Zugriff auf alle Fotos.",
   "sicherungSofortSystem": "Braucht iOS 26.5 oder neuer.",
   "sicherungSofortServer": "Der Server nimmt die Fotos so noch nicht an; er braucht ein Update.",
-  "sicherungSofortFehler": "iOS hat das Einschalten abgelehnt.",
+  "sicherungSofortFehler": "Das System hat das Einschalten abgelehnt.",
   "sicherungSofortAndroid": "Neue Fotos gehen innerhalb von Sekunden zum Server, wenn Netz und Akku passen.",
   "sicherungSofortZuletzt": "Zuletzt von iOS gestartet: {zeit}. {n, plural, =0{Noch keine Datei} =1{Eine Datei} other{{n} Dateien}} im Hintergrund gesichert.",
   "@sicherungSofortZuletzt": {"placeholders": {"zeit": {"type": "String"}, "n": {"type": "int"}}},

@@ -279,6 +279,10 @@ extension GesperrteAbfragen on AppDatabase {
     return personen.length;
   }
 
+  /// Alles Verschlüsselte, anders als [watchLockedAssets] auch im Papierkorb.
+  Future<List<AssetData>> alleGesperrten() =>
+      (select(assets)..where((t) => t.isLocked.equals(true))).get();
+
   Stream<List<AssetData>> watchLockedAssets() {
     final abfrage = select(assets)
       ..where((t) => t.isLocked.equals(true) & t.isTrashed.equals(false))

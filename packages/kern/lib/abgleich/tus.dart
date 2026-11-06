@@ -51,7 +51,17 @@ class TusHochladen {
           int.tryParse(s.headers['upload-offset'] ?? '') != null) {
         ort = fortsetzen;
         versatz = int.parse(s.headers['upload-offset']!);
-        if (versatz >= laenge) return _ergebnis(ort);
+        if (versatz >= laenge) {
+          try {
+            return await _ergebnis(ort);
+          } on _KeinErgebnis {
+            // Der Server fiel beim Import aus und meldet das noch nicht
+            // selbst. Hier warten hiesse, bei jedem Lauf an diesem Foto
+            // hängen zu bleiben und nie zu den Fotos dahinter zu kommen.
+            ort = null;
+            versatz = 0;
+          }
+        }
       } else if (s.statusCode != 404 &&
           s.statusCode != 410 &&
           s.statusCode != 200) {
@@ -97,7 +107,11 @@ class TusHochladen {
             inhalt: bytes,
           );
           if (r.statusCode == 409) {
-            versatz = int.parse(r.headers['upload-offset']!);
+            // Ohne Stand: Der Upload ist fertig, ein anderer Lauf hat ihn
+            // zu Ende gebracht.
+            final stand = int.tryParse(r.headers['upload-offset'] ?? '');
+            if (stand == null) return await _ergebnis(ort);
+            versatz = stand;
             continue;
           }
           if (r.statusCode != 204) throw Serverfehler(r.statusCode, r.body);
@@ -138,8 +152,13 @@ class TusHochladen {
       }
       await Future<void>.delayed(const Duration(seconds: 1));
     }
-    throw KeineVerbindung(TimeoutException('tus', const Duration(minutes: 1)));
+    throw _KeinErgebnis(TimeoutException('tus', const Duration(minutes: 1)));
   }
+}
+
+/// Der Upload ist angekommen, aber ein Ergebnis kam in der Wartezeit nicht.
+class _KeinErgebnis extends KeineVerbindung {
+  _KeinErgebnis(super.grund);
 }
 
 /// [TusHochladen.lade] hat auf Wunsch aufgehört; der Upload lässt sich mit

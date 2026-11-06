@@ -20,6 +20,11 @@ Response _json(Object? daten, {int status = 200}) => Response(
   headers: {'content-type': 'application/json; charset=utf-8'},
 );
 
+/// Wie gesucht wird: `modus=inhalt|text`. Bis 3.58 hiess das wie der Filter
+/// `art=bild|video` und überschrieb ihn bei jeder Textsuche.
+Suchart _suchart(Map<String, String> q) =>
+    (q['modus'] ?? q['art']) == 'text' ? Suchart.text : Suchart.inhalt;
+
 /// Die Bildsuche nach Inhalt für Geräte ohne eigenes Modell (das Telefon):
 /// Der Server übersetzt den Suchtext ins Englische, wenn er das kann, und
 /// bettet ihn mit dem Textteil von CLIP ein. Die Rangfolge rechnet das
@@ -111,7 +116,7 @@ class Suchapi {
       return _json({'fehler': 'text fehlt'}, status: 400);
     }
     final b = (await bibliotheken.fuer(kontoVon(anfrage).id)).bibliothek;
-    final art = q['art'] == 'text' ? Suchart.text : Suchart.inhalt;
+    final art = _suchart(q);
     List<double>? vektor;
     if (text.isNotEmpty && art == Suchart.inhalt) {
       final halter = b.modelle.clipTextHalter;
@@ -243,11 +248,7 @@ class Suchapi {
       SucheMerken(
         sucheId,
         name,
-        alsGespeicherteSuche(
-          filter,
-          text: text,
-          art: q['art'] == 'text' ? Suchart.text : Suchart.inhalt,
-        ),
+        alsGespeicherteSuche(filter, text: text, art: _suchart(q)),
       ),
     );
     return _json({'id': sucheId});

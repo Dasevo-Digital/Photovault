@@ -7,10 +7,14 @@
 'use strict';
 
 const $ = (id) => document.getElementById(id);
+// Was eine Ansicht beim Aufbau lädt, bricht der nächste Weg ab (siehe
+// zeigeWeg): Sonst schriebe eine späte Antwort in die neue Ansicht.
+let wegSignal = null;
 const api = async (pfad, { methode = 'GET', json } = {}) => {
   const antwort = await fetch(pfad, {
     method: methode,
     credentials: 'same-origin',
+    signal: methode === 'GET' && wegSignal ? wegSignal : undefined,
     headers: {
       'X-PV-Web': '1',
       ...(json === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -19,7 +23,12 @@ const api = async (pfad, { methode = 'GET', json } = {}) => {
   });
   let daten = null;
   try { daten = await antwort.json(); } catch (_) { /* keine Daten */ }
-  if (antwort.status === 401) { zeigeAnmeldung(); throw new Error('nicht angemeldet'); }
+  // Nur die abgelaufene Sitzung: Ein falsches Passwort oder ein falscher Code
+  // antworten ebenfalls mit 401 und sollen dort stehen, wo sie eingegeben wurden.
+  if (antwort.status === 401 && (!daten || daten.fehler === 'nicht angemeldet')) {
+    zeigeAnmeldung();
+    throw new Error('nicht angemeldet');
+  }
   if (!antwort.ok) {
     const f = new Error(daten && daten.fehler ? t(daten.fehler) : t('Fehler {n}', { n: antwort.status }));
     f.status = antwort.status;
@@ -376,10 +385,10 @@ $('form-totp').addEventListener('submit', async (e) => {
 
 async function abmelden() {
   try { await api('/api/v1/web/abmelden', { methode: 'POST' }); } catch (_) { /* egal */ }
-  zeitleiste.leeren();
-  $('form-anmelden').reset();
+  // Neu laden statt aufräumen: Suchfilter, Duplikate und andere Listen des
+  // Kontos sähe sonst, wer sich im selben Tab anmeldet.
   location.hash = '#/';
-  zeigeAnmeldung();
+  location.reload();
 }
 $('abmelden').addEventListener('click', abmelden);
 
@@ -705,7 +714,9 @@ function haengeAn(aufnahmen) {
   };
   const gliederung = listenGliederung();
   if (gliederung === 'kamera') {
-    // Neu ordnen und ganz neu zeichnen; die Auswahl hängt an Kennungen.
+    // Neu ordnen und ganz neu zeichnen; die Auswahl hängt an Kennungen. Der
+    // offene Betrachter hängt am Index und muss mitgehen.
+    const gezeigt = offen >= 0 ? liste.aufnahmen[offen] : null;
     liste.roh.push(...aufnahmen);
     liste.aufnahmen = [];
     liste.kacheln = [];
@@ -722,6 +733,7 @@ function haengeAn(aufnahmen) {
       }
     }
     r.append(raster);
+    if (gezeigt) offen = liste.aufnahmen.indexOf(gezeigt);
     return;
   }
   const mitTagen = liste.alsListe ? gliederung === 'tag' : ansicht.tage;
@@ -763,7 +775,14 @@ function haengeAn(aufnahmen) {
   if (liste.nachTagen) zeichneTage();
 }
 
+// Zählt die Listen: Was eine frühere nachlädt, gehört nicht in die jetzige.
+let ansichtNr = 0;
+
 function zeigeListe(neu, titel) {
+  if (!neu.neuGezeichnet) {
+    ansichtNr++;
+    auswahlAufheben();
+  }
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
   $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
@@ -791,18 +810,26 @@ function zeigeListe(neu, titel) {
 
 async function ladeMehr() {
   if (!liste || !liste.mehr || liste.laedt) return;
+  const nr = ansichtNr;
   liste.laedt = true;
   try {
     const d = await liste.mehr();
+    if (nr !== ansichtNr) return;
     haengeAn(d.aufnahmen);
     if (!d.weiter) {
       liste.mehr = null;
       $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Noch keine Aufnahmen.');
     }
   } catch (x) {
-    $('ende').textContent = x.message;
+    if (nr === ansichtNr) $('ende').textContent = x.message;
   } finally {
-    liste.laedt = false;
+    if (nr === ansichtNr) {
+      liste.laedt = false;
+      // Füllt eine Seite den Schirm nicht, bleibt #ende sichtbar, und der
+      // Beobachter meldet keinen neuen Wechsel.
+      const r = $('ende').getBoundingClientRect();
+      if (liste.mehr && r.height && r.top < innerHeight) setTimeout(ladeMehr);
+    }
   }
 }
 
@@ -863,7 +890,13 @@ const zeitleiste = {
   // Grössere Seiten, solange die Leiste zu einem fernen Monat springt.
   seite: 200,
   leeren() { this.weiter = undefined; this.geladen = []; zeitleistenmonate.liste = null; },
-  async mehr() {
+  // Läuft schon eine Anfrage, gilt ihre Antwort auch für den zweiten Aufrufer.
+  // Sonst käme nach Fotos, Favoriten, Fotos dieselbe Seite doppelt.
+  lauf: null,
+  mehr() {
+    return (this.lauf ??= this.hole().finally(() => { this.lauf = null; }));
+  },
+  async hole() {
     const q = new URLSearchParams({ anzahl: String(this.seite) });
     if (this.weiter) q.set('nach', this.weiter);
     if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
@@ -889,7 +922,11 @@ let fotosNachObenGewuenscht = false;
 function fotosNachOben() {
   const schonDa = (location.hash || '#/') === '#/' && liste && liste.zeitleiste && !$('bereich-raster').hidden;
   if (schonDa) window.scrollTo({ top: 0, behavior: 'smooth' });
-  else fotosNachObenGewuenscht = true;
+  else {
+    fotosNachObenGewuenscht = true;
+    // Unter #/ gibt es kein hashchange, das die Zeitleiste zurückholte.
+    if ((location.hash || '#/') === '#/') zeigeWeg();
+  }
 }
 
 async function zeigeFotos() {
@@ -3421,6 +3458,8 @@ function fuelleStaedte() {
   for (const s of ort ? ort.staedte : []) { const x = el('option', null, s); x.value = s; stadt.append(x); }
 }
 
+let suchlauf = 0;
+
 function filterParameter() {
   const q = new URLSearchParams();
   for (const id of suchfilter.personen) q.append('person', id);
@@ -3495,8 +3534,11 @@ $('form-suche').addEventListener('submit', async (e) => {
   if (!text && ![...q.keys()].length) { $('suche-hinweis').textContent = t('Suchtext eingeben oder einen Filter wählen.'); return; }
   $('suche-hinweis').textContent = t('Sucht …');
   try {
-    if (text) { q.set('text', text); q.set('art', f.art.value); }
+    // Eigener Name: `art` ist der Filter bild|video.
+    if (text) { q.set('text', text); q.set('modus', f.art.value); }
+    const lauf = ++suchlauf;
     const d = await api(`/api/v1/suche?${q}`);
+    if (lauf !== suchlauf) return;
     // Seitenweise (#186): Der Server schickt alle Kennungen, die Zeilen nur
     // für die erste Seite; den Rest holt das Raster beim Blättern.
     const ids = d.kennungen || d.aufnahmen.map((a) => a.id);
@@ -3748,6 +3790,7 @@ let leafletKarte = null;
 let karteGruppe = null;  // die zuletzt angetippte Gruppe, für #/karte/gruppe
 let karteMarker = null;
 let karteLauf = 0;
+let orteZoom = null;
 
 async function zeigeKarte() {
   markiereNav('karte');
@@ -3765,8 +3808,12 @@ async function zeigeKarte() {
 }
 
 async function ladeOrte(zentrieren = false) {
+  // Die Antwort hängt nur vom Zoom ab; blosses Verschieben braucht nichts Neues.
+  const zoom = Math.round(leafletKarte.getZoom());
+  if (zoom === orteZoom && !zentrieren) return;
+  orteZoom = zoom;
   const lauf = ++karteLauf;
-  const d = await api(`/api/v1/orte?zoom=${Math.round(leafletKarte.getZoom())}`);
+  const d = await api(`/api/v1/orte?zoom=${zoom}`);
   if (lauf !== karteLauf) return;
   karteMarker.clearLayers();
   const punkte = [];
@@ -3775,7 +3822,10 @@ async function ladeOrte(zentrieren = false) {
     const m = L.marker([g.breite, g.laenge], { icon });
     m.on('click', async () => {
       if (g.anzahl > 1 && leafletKarte.getZoom() < 17) { leafletKarte.setView([g.breite, g.laenge], leafletKarte.getZoom() + 2); return; }
-      const r = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: g.ids } });
+      let r;
+      try {
+        r = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: g.ids } });
+      } catch (x) { meldung(x.message); return; }
       karteGruppe = { aufnahmen: r.aufnahmen, titel: t(g.anzahl === 1 ? '{n} Aufnahme an diesem Ort' : '{n} Aufnahmen an diesem Ort', { n: g.anzahl }) };
       location.hash = '#/karte/gruppe';
     });
@@ -4818,7 +4868,9 @@ function neuZeichnen() {
   // Mit `fremd` und `aktivitaet`: Ohne sie lud ein geteiltes Album nach
   // jedem Umsortieren seine Bilder aus der eigenen Bibliothek – und fand
   // keines.
-  zeigeListe({ aufnahmen: alt.aufnahmen, nachTagen: alt.nachTagen, mehr: alt.mehr, suche: alt.suche, papierkorb: alt.papierkorb, favoriten: alt.favoriten, kopf: alt.kopf, fremd: alt.fremd, aktivitaet: alt.aktivitaet }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
+  // Alles mit: Bisher fehlten `zeitleiste` und `alsListe`, und nach jedem
+  // Favoriten oder Löschen verschwand die Ansichtsleiste.
+  zeigeListe({ ...alt, neuGezeichnet: true }, $('raster-titel').hidden ? null : $('raster-titel').textContent);
 }
 
 // --- Betrachter ------------------------------------------------------------
@@ -5354,11 +5406,18 @@ function schliesse() {
 
 // Die Knöpfe oben links rücken zusammen, wenn einer fehlt.
 function ordneKnoepfe() {
+  // Am Telefon in Reihen: In einer lagen sie sonst unter dem Schliessen-Knopf,
+  // und der Tipp auf × traf den Papierkorb.
+  const spalten = innerWidth <= 520 ? Math.max(1, Math.floor((innerWidth - 62) / 44)) : 99;
   let i = 0;
   for (const id of ['favorit', 'gefaellt', 'kommentare-knopf', 'laden', 'teilen', 'info', 'gesichter-knopf', 'aufziehen-knopf', 'gesichtsmenue-knopf', 'bearbeiten', 'diashow-knopf', 'weg', 'holen', 'live']) {
-    if (!$(id).hidden) $(id).style.setProperty('--platz', String(i++));
+    if ($(id).hidden) continue;
+    $(id).style.setProperty('--platz', String(i % spalten));
+    $(id).style.setProperty('--reihe', String(Math.floor(i / spalten)));
+    i++;
   }
 }
+window.addEventListener('resize', () => { if (offen >= 0) ordneKnoepfe(); });
 
 $('teilen').addEventListener('click', () => { const a = liste && liste.aufnahmen[offen]; if (a) teile([a]); });
 
@@ -6158,8 +6217,15 @@ document.addEventListener('keydown', async (e) => {
 
 // --- Wege ------------------------------------------------------------------
 
+let wegAbbruch = null;
+
 async function zeigeWeg() {
   if (!sitzung) return;
+  if (wegAbbruch) wegAbbruch.abort();
+  const abbruch = wegAbbruch = new AbortController();
+  wegSignal = abbruch.signal;
+  ansichtNr++;
+  suchlauf++;
   schliesse();
   auswahlAufheben();
   $('auswaehlen').hidden = false;
@@ -6202,7 +6268,11 @@ async function zeigeWeg() {
       default: await zeigeFotos();
     }
   } catch (x) {
-    if (x.message !== 'nicht angemeldet') $('ende').textContent = x.message;
+    // Als Meldung: #ende liegt im Raster und wäre in den meisten Ansichten
+    // gar nicht zu sehen.
+    if (x.name !== 'AbortError' && x.message !== 'nicht angemeldet') meldung(x.message, true);
+  } finally {
+    if (wegAbbruch === abbruch) wegSignal = null;
   }
 }
 window.addEventListener('hashchange', zeigeWeg);

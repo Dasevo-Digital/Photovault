@@ -226,12 +226,18 @@ class Nachlassablauf {
   final Duration takt;
   Timer? _wecker;
 
+  /// Fängt alles ab: Im Takt liefe ein Fehler in keine Anfrage, sondern
+  /// beendete den ganzen Server.
   void pruefe() {
-    for (final e in konten.nachlass.gibFaelligeFrei()) {
-      protokoll(
-        'Nachlass: ${konten.konto(e.kontakt)?.name ?? e.kontakt} sieht jetzt '
-        'die Bibliothek von ${konten.konto(e.besitzer)?.name ?? e.besitzer}',
-      );
+    try {
+      for (final e in konten.nachlass.gibFaelligeFrei()) {
+        protokoll(
+          'Nachlass: ${konten.konto(e.kontakt)?.name ?? e.kontakt} sieht jetzt '
+          'die Bibliothek von ${konten.konto(e.besitzer)?.name ?? e.besitzer}',
+        );
+      }
+    } catch (e) {
+      protokoll('Nachlass nicht geprüft: $e');
     }
   }
 

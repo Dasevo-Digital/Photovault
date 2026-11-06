@@ -5055,5 +5055,7 @@
   "backupStandGesperrt": "Unlock the passphrase to count – the files in the destination folder have encrypted names.",
   "backupStandHinweis": "Originals in the destination folder, without locked items and trash.",
   "backupStandNeuZaehlen": "Count again",
-  "backupLaufMenge": "{gesichert} of {gesamt} backed up, {offen} pending"
+  "backupLaufMenge": "{gesichert} of {gesamt} backed up, {offen} pending",
+  "einstSpeicherortInBibliothek": "This folder is inside the library itself. Choose a folder outside it.",
+  "einstSpeicherortBelegt": "This folder already holds a library. Choose an empty folder."
 }

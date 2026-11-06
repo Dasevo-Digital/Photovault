@@ -3166,6 +3166,9 @@ class LibraryState extends ChangeNotifier {
   Future<void> resetLibraryLocation({
     ValueChanged<BibliotheksVerschiebefortschritt>? onProgress,
   }) async {
+    // Vor dem Schliessen: Sonst stünde die App ohne Datenbank da.
+    final hindernis = await LibraryLocation.hindernisBeimZuruecksetzen();
+    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
     await db.close();
     await LibraryLocation.resetToDefault(onProgress: onProgress);
   }
@@ -3325,9 +3328,13 @@ class LibraryState extends ChangeNotifier {
     if (key == null) {
       throw StateError('Der gesperrte Ordner muss vorher entsperrt sein.');
     }
-    final locked = await db.watchLockedAssets().first;
-    for (final asset in locked) {
+    // Auch was im Papierkorb liegt: Ohne den Schlüssel wäre es für immer
+    // verschlüsselt.
+    for (final asset in await db.alleGesperrten()) {
       await unlockAsset(asset);
+    }
+    if ((await db.alleGesperrten()).isNotEmpty) {
+      throw StateError('pv_vault_nicht_leer');
     }
     await db.clearVaultKey();
     _vaultKey = null;
@@ -4051,11 +4058,15 @@ class LibraryState extends ChangeNotifier {
       a.jetzt();
       return n;
     }
-    final weg = aufnahmen ?? await db.papierkorb();
-    for (final asset in weg) {
-      await deleteAssetFilesFromDisk(asset);
-    }
-    await db.deleteAssetRows(weg.map((a) => a.id).toList());
+    // Erst die Zeilen, dann die Dateien, und nur, was noch im Papierkorb
+    // liegt: Bisher blieben nach einer nicht löschbaren Datei Zeilen ohne
+    // Datei zurück, und ein gerade zurückgeholtes Foto ging mit.
+    final weg = await leerePapierkorb(
+      db,
+      paths,
+      ids: aufnahmen?.map((a) => a.id),
+      mitGesperrten: aufnahmen != null,
+    );
     return weg.length;
   }
 
@@ -4073,13 +4084,8 @@ class LibraryState extends ChangeNotifier {
       final cutoff = DateTime.now().subtract(
         Duration(days: config.autoDeleteAfterDays),
       );
-      final expired = await db.expiredTrashAssets(cutoff);
-      for (final asset in expired) {
-        await deleteAssetFilesFromDisk(asset);
-      }
-      if (expired.isNotEmpty) {
-        await db.deleteAssetRows(expired.map((a) => a.id).toList());
-      }
+      _nurOhneServer();
+      await leerePapierkorb(db, paths, vor: cutoff);
       await db.setLastTrashPurgeAt(DateTime.now());
     } catch (e) {
       debugPrint('Automatisches Leeren des Papierkorbs fehlgeschlagen: $e');

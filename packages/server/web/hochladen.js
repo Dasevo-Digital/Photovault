@@ -138,7 +138,9 @@ async function ladeHoch(dateien) {
   // Neues erscheint in der Zeitleiste.
   if (hl.neu) {
     zeitleiste.leeren();
-    if ((location.hash || '#/').replace(/^#\/?/, '') === '') zeigeFotos().catch(() => {});
+    // Nicht unter einem offenen Betrachter: Er hängt am Index der Liste, und
+    // Entf träfe ein anderes Foto als das gezeigte.
+    if ((location.hash || '#/').replace(/^#\/?/, '') === '' && offen < 0) zeigeFotos().catch(() => {});
   }
 }
 

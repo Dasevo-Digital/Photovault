@@ -313,6 +313,69 @@ void main() {
     final befund = await LibraryLocation.wurzelMitBefund();
     expect(befund.unerreichbar, isNull);
   });
+  group('Verschieben (#311)', () {
+    late Directory wurzel;
+    late Directory ort;
+
+    setUp(() {
+      wurzel = Directory.systemTemp.createTempSync('pv_verschieben_');
+      ort = Directory(p.join(wurzel.path, 'alt'))..createSync();
+      File(p.join(ort.path, 'library.sqlite')).writeAsStringSync('db');
+      File(p.join(ort.path, 'library', 'originals', 'a.jpg'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync('foto');
+    });
+    tearDown(() => wurzel.deleteSync(recursive: true));
+
+    test('der angezeigte Ordner selbst taugt nicht als Ziel', () async {
+      expect(
+        await LibraryLocation.verschiebehindernis(
+          ort,
+          Directory(p.join(ort.path, 'library')),
+        ),
+        Verschiebehindernis.inDerBibliothek,
+      );
+    });
+
+    test('auch keiner tiefer in der Bibliothek', () async {
+      expect(
+        await LibraryLocation.verschiebehindernis(
+          ort,
+          Directory(p.join(ort.path, 'library', 'originals')),
+        ),
+        Verschiebehindernis.inDerBibliothek,
+      );
+    });
+
+    test('ein Ordner mit Bibliothek wird nicht überschrieben', () async {
+      final andere = Directory(p.join(wurzel.path, 'andere'))..createSync();
+      File(p.join(andere.path, 'library.sqlite')).writeAsStringSync('fremd');
+      expect(
+        await LibraryLocation.verschiebehindernis(ort, andere),
+        Verschiebehindernis.belegt,
+      );
+    });
+
+    test('ein leerer Ordner neben der Bibliothek taugt', () async {
+      final neu = Directory(p.join(ort.path, 'neu'))..createSync();
+      expect(await LibraryLocation.verschiebehindernis(ort, neu), isNull);
+    });
+
+    test('verschieben nimmt die Verbindung zum Server mit', () async {
+      File(p.join(ort.path, 'verbindung.json')).writeAsStringSync('{}');
+      final neu = Directory(p.join(wurzel.path, 'neu'))..createSync();
+      await LibraryLocation.verschiebe(ort, neu);
+      expect(File(p.join(neu.path, 'verbindung.json')).existsSync(), isTrue);
+      expect(File(p.join(ort.path, 'verbindung.json')).existsSync(), isFalse);
+      expect(
+        File(
+          p.join(neu.path, 'library', 'originals', 'a.jpg'),
+        ).readAsStringSync(),
+        'foto',
+      );
+      expect(Directory(p.join(ort.path, 'library')).existsSync(), isFalse);
+    });
+  });
 }
 
 /// Ersetzt den Sandbox-Zugriff: Ein Ordner gilt als erreichbar, wenn es ihn

@@ -9,6 +9,16 @@ import 'platform/folder_access.dart';
 
 export 'platform/folder_access.dart' show PickedFolder;
 
+/// Warum ein Ordner als neuer Speicherort nicht taugt.
+enum Verschiebehindernis {
+  /// Er liegt in der Bibliothek selbst. Das Löschen der Originale nach dem
+  /// Kopieren nähme die Kopie gleich mit.
+  inDerBibliothek,
+
+  /// Dort liegt schon eine Bibliothek; sie würde überschrieben.
+  belegt,
+}
+
 @immutable
 class BibliotheksVerschiebefortschritt {
   const BibliotheksVerschiebefortschritt({
@@ -705,6 +715,8 @@ class LibraryLocation {
     final oldRoot = await currentRoot();
     final newRoot = Directory(picked.path);
     if (p.equals(oldRoot.path, newRoot.path)) return picked.path;
+    final hindernis = await verschiebehindernis(oldRoot, newRoot);
+    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
 
     if (beforeMove != null) await beforeMove();
 
@@ -742,6 +754,8 @@ class LibraryLocation {
     final oldRoot = await currentRoot();
     final defaultRoot = await _anchorDir();
     if (p.equals(oldRoot.path, defaultRoot.path)) return;
+    final hindernis = await verschiebehindernis(oldRoot, defaultRoot);
+    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
 
     await _moveLibraryData(oldRoot, defaultRoot, onProgress: onProgress);
 
@@ -754,6 +768,43 @@ class LibraryLocation {
       konfig.liste.where((e) => !p.equals(e.path, oldRoot.path)).toList(),
     );
   }
+
+  /// Was gegen [to] als neuen Ort der Bibliothek in [from] spricht – `null`,
+  /// wenn nichts. Die Einstellungen zeigen `<Ort>/library` als Speicherort;
+  /// wer genau diesen Ordner wählte, verlor bis 3.58 die ganze Bibliothek:
+  /// Die Kopie landete darin, und danach wurde er gelöscht.
+  static Future<Verschiebehindernis?> verschiebehindernis(
+    Directory from,
+    Directory to,
+  ) async {
+    final alt = p.canonicalize(p.join(from.path, 'library'));
+    final neu = p.canonicalize(p.join(to.path, 'library'));
+    if (p.equals(alt, neu) || p.isWithin(alt, neu) || p.isWithin(neu, alt)) {
+      return Verschiebehindernis.inDerBibliothek;
+    }
+    if (await File(p.join(to.path, 'library.sqlite')).exists()) {
+      return Verschiebehindernis.belegt;
+    }
+    final ablage = Directory(neu);
+    if (await ablage.exists() && !await ablage.list().isEmpty) {
+      return Verschiebehindernis.belegt;
+    }
+    return null;
+  }
+
+  /// Was gegen das Zurücksetzen auf den Standardordner spricht.
+  static Future<Verschiebehindernis?> hindernisBeimZuruecksetzen() async {
+    final alt = await currentRoot();
+    final standard = await _anchorDir();
+    return p.equals(alt.path, standard.path)
+        ? null
+        : verschiebehindernis(alt, standard);
+  }
+
+  /// [_moveLibraryData] für Tests.
+  @visibleForTesting
+  static Future<void> verschiebe(Directory from, Directory to) =>
+      _moveLibraryData(from, to);
 
   /// Kopiert `library.sqlite` (+ evtl. WAL/SHM-Nebendateien) und den
   /// `library/`-Ordner von [from] nach [to] und löscht die Originale erst,
@@ -783,6 +834,10 @@ class LibraryLocation {
     for (final suffix in ['-wal', '-shm']) {
       await nimmAuf(File('${dbFrom.path}$suffix'), File('${dbTo.path}$suffix'));
     }
+    // Ohne sie öffnete sich die Kopie einer Server-Bibliothek danach als
+    // eigenständige Bibliothek und glich nicht mehr ab.
+    final verbindungFrom = File(p.join(from.path, 'verbindung.json'));
+    await nimmAuf(verbindungFrom, File(p.join(to.path, 'verbindung.json')));
     if (await libFrom.exists()) {
       await for (final entity in libFrom.list(recursive: true)) {
         if (entity is! File) continue;
@@ -814,19 +869,25 @@ class LibraryLocation {
       await datei.ziel.parent.create(recursive: true);
       final ausgabe = datei.ziel.openWrite();
       try {
-        await for (final block in datei.quelle.openRead()) {
-          ausgabe.add(block);
-          kopierteBytes += block.length;
-          melde();
-        }
+        await ausgabe.addStream(
+          datei.quelle.openRead().map((block) {
+            kopierteBytes += block.length;
+            melde();
+            return block;
+          }),
+        );
       } finally {
         await ausgabe.close();
+      }
+      if (await datei.ziel.length() != datei.bytes) {
+        throw FileSystemException('pv_verschieben_kopie', datei.ziel.path);
       }
       kopierteDateien++;
       melde(erzwingen: true);
     }
 
     // Erst nach erfolgreichem Kopieren die Originale löschen.
+    if (await verbindungFrom.exists()) await verbindungFrom.delete();
     if (await dbFrom.exists()) {
       await dbFrom.delete();
       for (final suffix in ['-wal', '-shm']) {

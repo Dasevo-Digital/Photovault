@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -91,6 +92,7 @@ Future<Laufbericht?> sichereImHintergrund({
   if (v == null) return null;
   final stand = Sicherungsstand.oeffne(ordner);
   final verbindung = Serververbindung(v.server, v.token);
+  Timer? netzwaechter;
   try {
     final e = stand.einstellungen;
     if (!e.an || !await netzPasst(e)) return null;
@@ -101,19 +103,32 @@ Future<Laufbericht?> sichereImHintergrund({
       rolle: PhotoManagerRolle(alben: e.alben),
       verbindung: verbindung,
       stand: stand,
-      wer: 'hintergrund',
+      // Je Lauf ein eigener Name: Die Sperre lässt denselben Namen wieder
+      // herein. Mit einem gemeinsamen liefen der Wächter und die periodische
+      // Aufgabe gleichzeitig (#311), und der erste gab die Sperre des
+      // anderen frei.
+      wer: 'hintergrund-${DateTime.now().microsecondsSinceEpoch}',
     );
+    // Eine Aufgabe unter iOS kennt nur „irgendein Netz“: Das WLAN kann
+    // unterwegs wegfallen, und dann ginge es über Mobilfunk weiter.
+    var netzWeg = false;
+    netzwaechter = Timer.periodic(const Duration(seconds: 15), (_) async {
+      if (!await netzPasst(e)) netzWeg = true;
+    });
+    bool halt() => netzWeg || abbrechen();
     // Übergibt die App gerade (siehe [uebergib]), hält ihr Lauf die
-    // Sperre noch, bis sein letztes Stück angekommen ist.
+    // Sperre noch, bis sein letztes Stück angekommen ist. Ein beendeter
+    // Prozess hinterlässt sie für zwei Minuten; so lange wird gewartet.
     for (var versuch = 0; ; versuch++) {
       try {
-        return await lauf.laufe(abbrechen: abbrechen);
+        return await lauf.laufe(abbrechen: halt);
       } on Gesperrt {
-        if (versuch >= 12 || abbrechen()) return null;
+        if (versuch >= 30 || halt()) return null;
         await Future<void>.delayed(const Duration(seconds: 5));
       }
     }
   } finally {
+    netzwaechter?.cancel();
     verbindung.schliesse();
     stand.schliesse();
   }

@@ -127,7 +127,7 @@ class RestorePlaner {
             await VerschluesselteNamen.fuerPruefsumme(a.pruefsumme, schluessel),
           );
         } else {
-          relativ = a.ablage ?? '';
+          relativ = (a.ablage ?? '').replaceAll(r'\', '/');
         }
         final path = p.normalize(p.join(root, relativ));
         if (relativ.isEmpty ||

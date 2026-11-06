@@ -34,7 +34,8 @@ class Dateibeschaffung {
   /// Wo der Server die Datei [relativ] der Bibliothek ausliefert – und
   /// die volle Auflösung eines Fotos (siehe [vollbildPfad]).
   static String adresse(String relativ) {
-    final teile = relativ.split('/');
+    // Eine ältere Kopie unter Windows kann noch `\\` tragen.
+    final teile = relativ.replaceAll(r'\', '/').split('/');
     if (teile.length == 4 && teile[0] == 'previews' && teile[1] == 'voll') {
       return 'api/v1/aufnahmen/${Uri.encodeComponent(teile[2])}/voll';
     }

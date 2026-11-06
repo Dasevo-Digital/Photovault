@@ -63,7 +63,16 @@ class Papierkorbablauf {
   Future<void> pruefe() => _lauf ??= _pruefe().whenComplete(() => _lauf = null);
 
   Future<void> _pruefe() async {
-    for (final k in konten.alle()) {
+    final List<Konto> alle;
+    try {
+      alle = konten.alle();
+    } catch (e) {
+      // Im Takt liefe ein Fehler in keine Anfrage, sondern beendete den
+      // ganzen Server.
+      protokoll('Konten für den Papierkorb nicht gelesen: $e');
+      return;
+    }
+    for (final k in alle) {
       try {
         final bereich = await bibliotheken.fuer(k.id);
         final db = bereich.bibliothek.db;

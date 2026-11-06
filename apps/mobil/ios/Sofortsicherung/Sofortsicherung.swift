@@ -81,7 +81,9 @@ final class Sofortlauf {
   }()
 
   /// Ob es beim nächsten Start noch etwas zu tun gibt.
-  var hatArbeit: Bool { auswahl?.wartet == true || unterwegs() > 0 }
+  var hatArbeit: Bool {
+    auswahl?.wartet == true || unterwegs() > 0 || !auftraege(.acknowledge).isEmpty
+  }
 
   private func auftraege(_ was: PHAssetResourceUploadJob.Action) -> [PHAssetResourceUploadJob] {
     var aus: [PHAssetResourceUploadJob] = []

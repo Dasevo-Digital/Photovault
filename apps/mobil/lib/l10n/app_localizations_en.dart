@@ -2806,7 +2806,7 @@ class AppTexteEn extends AppTexte {
       'The server does not accept photos this way yet; it needs an update.';
 
   @override
-  String get sicherungSofortFehler => 'iOS refused to turn this on.';
+  String get sicherungSofortFehler => 'The system refused to turn this on.';
 
   @override
   String get sicherungSofortAndroid =>

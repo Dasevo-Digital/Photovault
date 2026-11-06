@@ -4,6 +4,11 @@ import Photos
 /// Schaltet die Erweiterung `Sofortsicherung` ein oder aus (#308) und gibt
 /// ihr die Einstellungen der Sicherung mit.
 enum Sofortsteuerung {
+  /// PhotoKit wartet auf seinen Dienst; das soll die Oberfläche nicht
+  /// aufhalten. Eine Warteschlange der Reihe nach, damit eine ältere Einstellung
+  /// nie eine neuere überholt.
+  static let reihe = DispatchQueue(label: "de.dasevo.photovault.sofort", qos: .userInitiated)
+
   /// Was die Sicherung in der Einstellung gerade tut, für die Anzeige:
   /// `an`, `aus`, `system` (iOS zu alt) oder `zugriff` (ohne vollen Zugriff
   /// auf die Fotos startet iOS sie nicht); sonst der Text des Fehlers.

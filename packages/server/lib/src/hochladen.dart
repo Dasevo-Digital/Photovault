@@ -81,6 +81,19 @@ class Hochladen {
   /// würden durcheinander geschrieben.
   final _laeufe = <String, Future<void>>{};
 
+  /// Uploads, deren Datei gerade importiert wird: Die `.teil`-Datei ist dann
+  /// schon fort, das Ergebnis noch nicht da.
+  final _importierend = <String>{};
+
+  /// Ein Upload, der angekommen ist und nie ein Ergebnis bekommen wird: Der
+  /// Server fiel beim Import aus, oder der warf. Bis 3.58 meldete er sich
+  /// als vollständig, und das Telefon wartete bei jedem Lauf vergeblich
+  /// darauf, ohne je zu den Fotos dahinter zu kommen.
+  Future<bool> _verwaist(String id, Map<String, Object?> a) async =>
+      a['ergebnis'] == null &&
+      !_importierend.contains(id) &&
+      !await _teil(id).exists();
+
   Map<String, String> get _tus => const {'tus-resumable': _fassung};
 
   File _teil(String id) => File(p.join(eingang.path, '$id.teil'));
@@ -207,11 +220,15 @@ class Hochladen {
       var geschrieben = 0;
       final senke = _teil(id).openWrite();
       try {
-        await for (final stueck in anfrage.read()) {
-          geschrieben += stueck.length;
-          if (geschrieben > hoechstens) break;
-          senke.add(stueck);
-        }
+        // addStream statt add: Es wartet auf die Platte. Sonst landet bei
+        // schnellem Netz und langsamem Speicher die ganze Datei im
+        // Arbeitsspeicher.
+        await senke.addStream(
+          anfrage.read().takeWhile((stueck) {
+            geschrieben += stueck.length;
+            return geschrieben <= hoechstens;
+          }),
+        );
       } finally {
         await senke.close();
       }
@@ -262,6 +279,10 @@ class Hochladen {
   Future<Response> stand(Request anfrage, String id) async {
     final a = await _lies(id);
     if (a == null) return Response.notFound(null, headers: _tus);
+    if (await _verwaist(id, a)) {
+      await _loesche(id);
+      return Response.notFound(null, headers: _tus);
+    }
     final versatz = await _erhalten(id, a);
     return Response.ok(
       null,
@@ -278,6 +299,10 @@ class Hochladen {
   Future<Response> status(Request anfrage, String id) async {
     final a = await _lies(id);
     if (a == null) return Response.notFound(null);
+    if (await _verwaist(id, a)) {
+      await _loesche(id);
+      return Response.notFound(null);
+    }
     return Response.ok(
       jsonEncode({
         'id': id,
@@ -310,6 +335,10 @@ class Hochladen {
     final a = await _lies(id);
     if (a == null) return Response.notFound(null, headers: _tus);
     if (a['ergebnis'] != null) return Response(409, headers: _tus);
+    if (await _verwaist(id, a)) {
+      await _loesche(id);
+      return Response.notFound(null, headers: _tus);
+    }
     final laenge = a['laenge']! as int;
     final teil = _teil(id);
     final ist = await teil.length();
@@ -344,10 +373,16 @@ class Hochladen {
     if (versatz < laenge) return Response(204, headers: kopf);
 
     final fertig = abschluss;
-    final ergebnis = fertig == null
-        ? await _importiere(id, a)
-        : await fertig(_teil(id), a);
-    await _schreib(id, {...a, 'ergebnis': ergebnis});
+    final Map<String, Object?> ergebnis;
+    _importierend.add(id);
+    try {
+      ergebnis = fertig == null
+          ? await _importiere(id, a)
+          : await fertig(_teil(id), a);
+      await _schreib(id, {...a, 'ergebnis': ergebnis});
+    } finally {
+      _importierend.remove(id);
+    }
     return Response(
       204,
       headers: {
@@ -522,6 +557,15 @@ class Hochladen {
     var weg = 0;
     final grenze = DateTime.now().subtract(alter);
     await for (final e in eingang.list()) {
+      // Der Ordner eines Imports, den ein Neustart abgebrochen hat.
+      if (e is Directory) {
+        final id = p.basename(e.path);
+        if (_kennungMuster.hasMatch(id) && !_importierend.contains(id)) {
+          await e.delete(recursive: true);
+          weg++;
+        }
+        continue;
+      }
       if (e is! File || !e.path.endsWith('.json')) continue;
       final id = p.basenameWithoutExtension(e.path);
       if ((await e.lastModified()).isAfter(grenze)) continue;

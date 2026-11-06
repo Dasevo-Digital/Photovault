@@ -870,12 +870,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                     : AppTexte.of(context).viewerTextZeigen,
                 onPressed: () => setState(() => _textZeigen = !_textZeigen),
               ),
-            IconButton(
-              key: _shareButtonKey,
-              icon: const Icon(Icons.ios_share),
-              tooltip: AppTexte.of(context).viewerTeilen,
-              onPressed: _shareAsset,
-            ),
+            // Unter Linux kann share_plus keine Dateien teilen.
+            if (!Platform.isLinux)
+              IconButton(
+                key: _shareButtonKey,
+                icon: const Icon(Icons.ios_share),
+                tooltip: AppTexte.of(context).viewerTeilen,
+                onPressed: _shareAsset,
+              ),
             IconButton(
               icon: const Icon(Icons.save_alt_outlined),
               tooltip: AppTexte.of(context).viewerExportieren,

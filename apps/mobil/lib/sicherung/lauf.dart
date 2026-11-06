@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -55,6 +56,14 @@ class Sicherungslauf {
     void Function(Fortschritt)? meldung,
   }) async {
     if (!stand.sperre(wer)) throw const Gesperrt();
+    // Ein Stück über langsames Netz oder ein Original aus iCloud kann länger
+    // dauern als die Sperre gilt. Ohne diesen Takt übernahm der andere Lauf
+    // sie, und beide arbeiteten am selben Upload.
+    var verloren = false;
+    final puls = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!stand.sperre(wer)) verloren = true;
+    });
+    bool halt() => verloren || (abbrechen?.call() ?? false);
     var hochgeladen = 0, vorhanden = 0, fehlgeschlagen = 0;
     var gesamt = 0, sicher = 0;
     var vollstaendig = false;
@@ -91,7 +100,7 @@ class Sicherungslauf {
 
       var i = 0;
       while (i < offen.length) {
-        if ((abbrechen?.call() ?? false) || !stand.sperre(wer)) break;
+        if (halt() || !stand.sperre(wer)) break;
         final bereit = <Rolleneintrag, List<(Rollendatei, String)>>{};
         final ergebnis = <String, _Erfolg>{};
         var bytes = 0;
@@ -108,7 +117,7 @@ class Sicherungslauf {
               bytes += await f.datei.length();
             }
           }
-          await _sichere(bereit, ergebnis, abbrechen: abbrechen, melde: melde);
+          await _sichere(bereit, ergebnis, abbrechen: halt, melde: melde);
           for (final r in ergebnis.values) {
             switch (r) {
               case _Erfolg.hochgeladen:
@@ -136,6 +145,7 @@ class Sicherungslauf {
     } on KeineVerbindung {
       // Ohne Netz geht es beim nächsten Lauf weiter.
     } finally {
+      puls.cancel();
       stand.gibFrei(wer);
     }
     final bericht = Laufbericht(
@@ -182,6 +192,13 @@ class Sicherungslauf {
     } on FileSystemException catch (f) {
       _halteSperre();
       _scheitert(x, f.message, aus);
+      return null;
+    } on Exception catch (f) {
+      // photo_manager meldet ein Original, das sich nicht holen lässt, als
+      // PlatformException. Bis 3.58 endete damit der ganze Lauf, ohne
+      // Vermerk, und jeder weitere am selben Foto.
+      _halteSperre();
+      _scheitert(x, '$f', aus);
       return null;
     }
   }

@@ -6,6 +6,7 @@ import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:photo_vault_mobil/sicherung/freigabe.dart';
 import 'dart:math';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -371,6 +372,25 @@ void main() {
       expect(zweiter.vollstaendig, isTrue);
     },
   );
+
+  test('ein Fehler der Plattform trifft nur dieses Foto (#311)', () async {
+    // So meldet photo_manager ein Original, das sich nicht holen lässt.
+    rolle.eintraege_.add(
+      Rolleneintrag(
+        id: 'kaputt',
+        geaendert: DateTime(2025),
+        aufgenommen: DateTime(2025),
+        video: false,
+        dateien: () async =>
+            throw PlatformException(code: 'pm', message: 'iCloud'),
+      ),
+    );
+    rolle.foto('heil', server.jpeg('IMG_HEIL.JPG', 11));
+    final b = await lauf().laufe();
+    expect(b.hochgeladen, 1);
+    expect(b.fehlgeschlagen, 1);
+    expect(stand.fehler.keys, ['kaputt']);
+  });
 
   test('nie zwei Läufe zugleich', () async {
     rolle.foto('f', server.jpeg('IMG_0401.JPG', 140));

@@ -60,9 +60,7 @@ import workmanager_apple
             antwort(FlutterError(code: "werte", message: nil, details: nil))
             return
           }
-          // PhotoKit wartet auf seinen Dienst; die Oberfläche blockiert das
-          // sonst merklich.
-          DispatchQueue.global(qos: .userInitiated).async {
+          Sofortsteuerung.reihe.async {
             let stand = Sofortsteuerung.setze(
               an: an, videos: videos, nurWlan: nurWlan, alben: alben)
             DispatchQueue.main.async { antwort(stand) }
@@ -70,10 +68,13 @@ import workmanager_apple
         case "sofortbericht":
           antwort(Sofortsteuerung.bericht)
         case "sofortGeschafft":
-          if let ms = aufruf.arguments as? Int64 {
-            Sofortsteuerung.geschafft(bis: Date(timeIntervalSince1970: Double(ms) / 1000))
+          let ms = aufruf.arguments as? Int64
+          Sofortsteuerung.reihe.async {
+            if let ms {
+              Sofortsteuerung.geschafft(bis: Date(timeIntervalSince1970: Double(ms) / 1000))
+            }
+            DispatchQueue.main.async { antwort(nil) }
           }
-          antwort(nil)
         default:
           antwort(FlutterMethodNotImplemented)
         }

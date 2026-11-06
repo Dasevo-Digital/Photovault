@@ -257,7 +257,7 @@ void main() {
       final halb = lege(abspielbar, 'v.mp4.teil');
       final videoWeg = lege(abspielbar, 'weg.mp4');
 
-      expect(await raeumeFassungenAuf(b), 6);
+      expect(await raeumeFassungenAuf(b, beimOeffnen: true), 6);
 
       expect(heute.existsSync(), isTrue, reason: 'was der Betrachter zeigt');
       expect(papierkorb.existsSync(), isTrue, reason: 'lässt sich zurückholen');

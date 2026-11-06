@@ -195,14 +195,14 @@ extension AuswahlAbfragen on AppDatabase {
     final alle = await zugehoerige(assetIds);
     // Was schon im Papierkorb liegt, behält seinen Zeitpunkt: Daran
     // erkennt das Zurückholen, was zusammen ging.
-    await (update(
-      assets,
-    )..where((t) => t.id.isIn(alle) & t.isTrashed.equals(false))).write(
-      AssetsCompanion(
-        isTrashed: const Value(true),
-        trashedAt: Value(DateTime.now()),
-      ),
-    );
+    final jetzt = DateTime.now();
+    for (final stueck in inStuecken(alle)) {
+      await (update(
+        assets,
+      )..where((t) => t.id.isIn(stueck) & t.isTrashed.equals(false))).write(
+        AssetsCompanion(isTrashed: const Value(true), trashedAt: Value(jetzt)),
+      );
+    }
     await sichtbaresTitelbild(await _stapelVon(alle));
     _embeddingsGeneration++;
   });
@@ -224,37 +224,42 @@ extension AuswahlAbfragen on AppDatabase {
   }) async {
     final ergebnis = {...assetIds};
     if (ergebnis.isEmpty) return ergebnis;
-    final erst = await (select(
-      assets,
-    )..where((t) => t.id.isIn(ergebnis))).get();
+    final erst = await assetsByIds(ergebnis.toList());
     final stapel = {
       if (varianten)
         for (final a in erst)
           if (a.isStackCover && istVariantenstapel(a.stackId)) a.stackId!,
     };
-    if (stapel.isNotEmpty) {
+    for (final stueck in inStuecken(stapel)) {
       final mitglieder = selectOnly(assets)
         ..addColumns([assets.id])
-        ..where(assets.stackId.isIn(stapel));
+        ..where(assets.stackId.isIn(stueck));
       ergebnis.addAll([
         for (final z in await mitglieder.get()) z.read(assets.id)!,
       ]);
     }
-    final partner = selectOnly(assets)
-      ..addColumns([assets.id, assets.linkedAssetId])
-      ..where(assets.id.isIn(ergebnis) | assets.linkedAssetId.isIn(ergebnis));
-    for (final z in await partner.get()) {
-      ergebnis.add(z.read(assets.id)!);
-      if (z.read(assets.linkedAssetId) case final p?) ergebnis.add(p);
+    // Die Menge wächst unterwegs; gefragt wird einmal nach dem Stand von hier.
+    for (final stueck in inStuecken(ergebnis.toList())) {
+      final partner = selectOnly(assets)
+        ..addColumns([assets.id, assets.linkedAssetId])
+        ..where(assets.id.isIn(stueck) | assets.linkedAssetId.isIn(stueck));
+      for (final z in await partner.get()) {
+        ergebnis.add(z.read(assets.id)!);
+        if (z.read(assets.linkedAssetId) case final p?) ergebnis.add(p);
+      }
     }
     return ergebnis;
   }
 
   Future<Set<String>> _stapelVon(Set<String> ids) async {
-    final q = selectOnly(assets, distinct: true)
-      ..addColumns([assets.stackId])
-      ..where(assets.id.isIn(ids) & assets.stackId.isNotNull());
-    return {for (final z in await q.get()) z.read(assets.stackId)!};
+    final stapel = <String>{};
+    for (final stueck in inStuecken(ids)) {
+      final q = selectOnly(assets, distinct: true)
+        ..addColumns([assets.stackId])
+        ..where(assets.id.isIn(stueck) & assets.stackId.isNotNull());
+      stapel.addAll([for (final z in await q.get()) z.read(assets.stackId)!]);
+    }
+    return stapel;
   }
 
   /// Sorgt dafür, dass jeder der [stapel] ein sichtbares Titelbild hat,
@@ -474,28 +479,32 @@ extension AuswahlAbfragen on AppDatabase {
       ]);
     }
     final alle = await zugehoerige(ids.toList(), varianten: false);
-    await (update(assets)..where((t) => t.id.isIn(alle))).write(
-      const AssetsCompanion(isTrashed: Value(false), trashedAt: Value(null)),
-    );
+    for (final stueck in inStuecken(alle)) {
+      await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+        const AssetsCompanion(isTrashed: Value(false), trashedAt: Value(null)),
+      );
+    }
     await sichtbaresTitelbild(await _stapelVon(alle));
     _embeddingsGeneration++;
   });
 
   /// Löscht die Datenbankzeile endgültig. Das eigentliche Löschen der Datei
   /// auf der Festplatte übernimmt StoragePaths.
-  Future<void> deleteAssetRows(List<String> assetIds) async {
-    await (delete(assets)..where((t) => t.id.isIn(assetIds))).go();
-    // Ausnahmen der Duplikatsuche mit wegräumen. Sie würden sonst als
-    // Zeilen ohne Foto liegen bleiben und niemandem mehr auffallen – ein
-    // Paar, dessen eine Hälfte es nicht mehr gibt, kann nie wieder wirken.
-    await (delete(
-      duplikatAusnahmen,
-    )..where((t) => t.assetA.isIn(assetIds) | t.assetB.isIn(assetIds))).go();
-    await (delete(
-      ergebnisherkunft,
-    )..where((t) => t.assetId.isIn(assetIds))).go();
+  Future<void> deleteAssetRows(List<String> assetIds) => transaction(() async {
+    for (final stueck in inStuecken(assetIds)) {
+      await (delete(assets)..where((t) => t.id.isIn(stueck))).go();
+      // Ausnahmen der Duplikatsuche mit wegräumen. Sie würden sonst als
+      // Zeilen ohne Foto liegen bleiben und niemandem mehr auffallen – ein
+      // Paar, dessen eine Hälfte es nicht mehr gibt, kann nie wieder wirken.
+      await (delete(
+        duplikatAusnahmen,
+      )..where((t) => t.assetA.isIn(stueck) | t.assetB.isIn(stueck))).go();
+      await (delete(
+        ergebnisherkunft,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+    }
     _embeddingsGeneration++;
-  }
+  });
 
   // --- Ausnahmen der Duplikatsuche --------------------------------------
 

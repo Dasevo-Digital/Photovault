@@ -63,16 +63,21 @@ Future<void> begrenzeZwischenspeicher(
 /// die Fassung des ganzen Videos neben der gekürzten). Was im Papierkorb
 /// liegt, bleibt: Es lässt sich zurückholen.
 ///
-/// Läuft beim Öffnen der Bibliothek, bevor eine Anfrage sie erreicht –
-/// deshalb gehen auch halbe Dateien (`.teil`) einer abgebrochenen
-/// Wandlung.
-Future<int> raeumeFassungenAuf(Bibliothek b) async {
+/// [beimOeffnen]: Läuft, bevor eine Anfrage die Bibliothek erreicht. Nur dann
+/// gehen auch halbe Dateien (`.teil`) einer abgebrochenen Wandlung; im
+/// laufenden Betrieb gehörten sie einer Wandlung, die gerade schreibt.
+Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
   final vollbild = Directory(p.join(b.ordner.path, 'vollbild'));
   final abspielbar = Directory(p.join(b.ordner.path, 'abspielbar'));
+  // Die Bilder für Gäste geteilter Links: unverschlüsselt und bis zu 2560 px
+  // gross. Sie gehen mit, sobald das Foto gelöscht oder gesperrt ist.
+  final geteilt = Directory(p.join(b.ordner.path, 'geteilt'));
   final dateien = [
-    for (final d in [vollbild, abspielbar])
+    for (final d in [vollbild, abspielbar, geteilt])
       if (await d.exists())
-        ...(await d.list(followLinks: false).toList()).whereType<File>(),
+        ...(await d.list(followLinks: false).toList()).whereType<File>().where(
+          (f) => beimOeffnen || !f.path.endsWith('.teil'),
+        ),
   ];
   if (dateien.isEmpty) return 0;
 
@@ -81,6 +86,9 @@ Future<int> raeumeFassungenAuf(Bibliothek b) async {
   String? kennung(File f) {
     var name = p.basename(f.path);
     if (name.endsWith('.teil')) return null;
+    if (p.dirname(f.path) == geteilt.path) {
+      return RegExp(r'^(.+)-[am]\.jpg$').firstMatch(name)?.group(1);
+    }
     if (p.dirname(f.path) == vollbild.path) {
       return RegExp(r'^(.+)-[0-9a-f]{12}\.jpg$').firstMatch(name)?.group(1);
     }
@@ -100,6 +108,9 @@ Future<int> raeumeFassungenAuf(Bibliothek b) async {
       b.db.assets,
     )..where((t) => t.id.isIn(teil) & t.isLocked.equals(false))).get();
     for (final a in zeilen) {
+      for (final art in const ['a', 'm']) {
+        behalten.add(p.join(geteilt.path, '${a.id}-$art.jpg'));
+      }
       if (a.type == 'VIDEO') {
         final name = a.trimmedRelativePath != null ? '${a.id}-gekuerzt' : a.id;
         behalten.add(Videofassungen.ziel(abspielbar, name).path);

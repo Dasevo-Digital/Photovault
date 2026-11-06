@@ -160,6 +160,80 @@ void main() {
     expect(await reste(), isEmpty);
   });
 
+  test('was über der Grenze liegt, bleibt draussen', () async {
+    final eingang = Directory(p.join(ordner.path, 'grenze'));
+    final h = Hochladen(eingang, null, hoechstens: 10);
+    final r = await h.inEinemStueck(
+      Request(
+        'PUT',
+        Uri.parse('http://server/api/v1/sofort?name=gross.jpg'),
+        body: Stream.fromIterable([List.filled(8, 1), List.filled(8, 2)]),
+      ),
+    );
+    expect(r.statusCode, 413);
+    expect(eingang.listSync(), isEmpty);
+  });
+
+  group('ein Upload, dessen Import verloren ging (#311)', () {
+    Future<(Hochladen, String)> angekommen() async {
+      final eingang = Directory(p.join(ordner.path, 'tus'))..createSync();
+      final h = Hochladen(
+        eingang,
+        null,
+        abschluss: (datei, _) async => {'ausgang': 'imported'},
+      );
+      final r = await h.anlegen(
+        Request(
+          'POST',
+          Uri.parse('http://s/api/v1/hochladen'),
+          headers: {
+            'tus-resumable': '1.0.0',
+            'upload-length': '5',
+            'upload-metadata': 'pfad ${base64.encode(utf8.encode('a/b.jpg'))}',
+          },
+        ),
+      );
+      final id = p.basename(r.headers['location']!);
+      // Wie nach einem Neustart mitten im Import: Die Datei ist fort, ein
+      // Ergebnis gibt es nicht.
+      File(p.join(eingang.path, '$id.teil')).deleteSync();
+      return (h, id);
+    }
+
+    test('HEAD sagt 404, damit das Telefon neu beginnt', () async {
+      final (h, id) = await angekommen();
+      final r = await h.stand(
+        Request('HEAD', Uri.parse('http://s/api/v1/hochladen/$id')),
+        id,
+      );
+      expect(r.statusCode, 404);
+      final zweite = await h.status(
+        Request('GET', Uri.parse('http://s/api/v1/hochladen/$id')),
+        id,
+      );
+      expect(zweite.statusCode, 404);
+    });
+
+    test('auch GET sagt es, und der Rest ist fort', () async {
+      final (h, id) = await angekommen();
+      final r = await h.status(
+        Request('GET', Uri.parse('http://s/api/v1/hochladen/$id')),
+        id,
+      );
+      expect(r.statusCode, 404);
+      expect(Directory(p.join(ordner.path, 'tus')).listSync(), isEmpty);
+    });
+
+    test('raeumeAuf nimmt den Ordner eines abgebrochenen Imports', () async {
+      final eingang = Directory(p.join(ordner.path, 'tus2'));
+      Directory(
+        p.join(eingang.path, '12345678-1234-1234-1234-123456789012'),
+      ).createSync(recursive: true);
+      expect(await Hochladen(eingang, null).raeumeAuf(), 1);
+      expect(eingang.listSync(), isEmpty);
+    });
+  });
+
   test('eine leere Anfrage nimmt nichts auf', () async {
     final r = await schicke(const <int>[], 'name=leer.jpg');
     expect(r.statusCode, 400);

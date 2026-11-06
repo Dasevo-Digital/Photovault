@@ -73,6 +73,9 @@ class PhotoManagerRolle implements Kamerarolle {
     video: a.type == AssetType.video,
     dateien: () => _dateien(a),
     quelle: a,
+    bearbeitetesVideo: a.type == AssetType.video && Platform.isIOS
+        ? () => a.darwin.hasAdjustments
+        : null,
   );
 
   static Future<List<Rollendatei>?> _dateien(AssetEntity a) async {

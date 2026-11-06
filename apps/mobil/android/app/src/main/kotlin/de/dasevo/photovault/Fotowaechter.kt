@@ -6,6 +6,7 @@ import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -26,15 +27,23 @@ class Fotowaechter(context: Context, params: WorkerParameters) : Worker(context,
     override fun doWork(): Result {
         val nurWlan = inputData.getBoolean(NUR_WLAN, true)
         val nurBeimLaden = inputData.getBoolean(NUR_BEIM_LADEN, false)
-        val lauf =
-            OneTimeWorkRequestBuilder<BackgroundWorker>()
-                .setInputData(workDataOf(BackgroundWorker.DART_TASK_KEY to SICHERUNG))
-                .setConstraints(bedingungen(nurWlan, nurBeimLaden))
-                .build()
-        // Läuft gerade ein Lauf, kennt er das neue Foto womöglich nicht
-        // mehr: Der nächste schliesst sich an.
-        WorkManager.getInstance(applicationContext)
-            .enqueueUniqueWork(LAUF, ExistingWorkPolicy.APPEND_OR_REPLACE, lauf)
+        val wm = WorkManager.getInstance(applicationContext)
+        // Ein wartender Lauf sieht beim Start ohnehin alle Fotos. Ohne diese
+        // Prüfung stapelte sich je Treffer einer, solange das Netz nicht passt.
+        val wartet =
+            wm.getWorkInfosForUniqueWork(LAUF).get().any {
+                it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.BLOCKED
+            }
+        if (!wartet) {
+            val lauf =
+                OneTimeWorkRequestBuilder<BackgroundWorker>()
+                    .setInputData(workDataOf(BackgroundWorker.DART_TASK_KEY to SICHERUNG))
+                    .setConstraints(bedingungen(nurWlan, nurBeimLaden))
+                    .build()
+            // Läuft gerade einer, kennt er das neue Foto womöglich nicht
+            // mehr: Dieser schliesst sich an.
+            wm.enqueueUniqueWork(LAUF, ExistingWorkPolicy.APPEND_OR_REPLACE, lauf)
+        }
         reihe(applicationContext, nurWlan, nurBeimLaden, ExistingWorkPolicy.APPEND_OR_REPLACE)
         return Result.success()
     }

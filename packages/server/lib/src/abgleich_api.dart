@@ -170,9 +170,16 @@ class Abgleichsapi {
   /// dem das Gerät weiterliest.
   Future<Response> abzug(Request anfrage) async {
     final b = await _bib(anfrage);
+    // shelf_router nimmt HEAD mit; der Körper liefe nie, und nur er räumt auf.
+    if (anfrage.method == 'HEAD') return Response.ok(null);
     final tmp = await Directory.systemTemp.createTemp('pv_abzug_');
     final datei = File(p.join(tmp.path, 'library.sqlite'));
-    await b.db.customStatement('VACUUM INTO ?', [datei.path]);
+    try {
+      await b.db.customStatement('VACUUM INTO ?', [datei.path]);
+    } catch (_) {
+      await tmp.delete(recursive: true);
+      rethrow;
+    }
     Stream<List<int>> undWeg() async* {
       try {
         yield* datei.openRead();
@@ -360,13 +367,15 @@ class Abgleichsapi {
     final aus = teil.openWrite();
     var bytes = 0;
     try {
-      await for (final stueck in anfrage.read()) {
-        bytes += stueck.length;
-        if (bytes > laenge) {
-          throw const FormatException('mehr als angekündigt');
-        }
-        aus.add(stueck);
-      }
+      await aus.addStream(
+        anfrage.read().map((stueck) {
+          bytes += stueck.length;
+          if (bytes > laenge) {
+            throw const FormatException('mehr als angekündigt');
+          }
+          return stueck;
+        }),
+      );
       await aus.close();
       if (bytes != laenge) {
         throw const FormatException('weniger als angekündigt');

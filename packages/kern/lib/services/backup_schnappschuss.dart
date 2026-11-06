@@ -131,15 +131,20 @@ class BackupSchnappschussSpeicher {
     SecretKey? schluessel,
   }) async {
     final text = const JsonEncoder.withIndent('  ').convert(manifest.alsJson());
+    // Über eine Zwischendatei: Ein Abbruch darf die Liste einer vorhandenen
+    // Sicherung nicht beschädigen.
+    final teil = File('${ziel.path}.pv-teil');
     if (schluessel == null) {
-      await ziel.writeAsString(text);
+      await teil.writeAsString(text, flush: true);
+      await teil.rename(ziel.path);
       return;
     }
     final dir = await Directory.systemTemp.createTemp('pv_backup_meta_');
     try {
       final klar = File(p.join(dir.path, 'metadata.json'));
       await klar.writeAsString(text);
-      await VaultCrypto.encryptFile(klar, ziel, schluessel);
+      await VaultCrypto.encryptFile(klar, teil, schluessel);
+      await teil.rename(ziel.path);
     } finally {
       await dir.delete(recursive: true);
     }
@@ -209,7 +214,10 @@ class BackupSchnappschussSpeicher {
         final werte = <String, dynamic>{
           'checksum': r['checksum'],
           'originalFileName': r['original_file_name'],
-          'backupRelativePath': r['relative_path'],
+          'backupRelativePath': (r['relative_path'] as String?)?.replaceAll(
+            r'\',
+            '/',
+          ),
           if (spalten.contains('linked_asset_id'))
             'livePartner': ?pruefsummeVon[r['linked_asset_id']],
         };

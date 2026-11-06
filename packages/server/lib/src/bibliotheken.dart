@@ -79,51 +79,59 @@ class Bibliotheken {
     if (!_kennung.hasMatch(kontoId)) {
       throw ArgumentError('keine Kontokennung: $kontoId');
     }
-    return _offen.putIfAbsent(kontoId, () async {
-      final vergabe = Rechenvergabe();
-      final b = await Bibliothek.oeffne(
-        Directory(p.join(wurzel.path, kontoId)),
-        bildwerkzeuge: bildwerkzeuge,
-        modelle: modelle,
-        ortsverzeichnis: ortsverzeichnis,
-        vergabe: vergabe,
-      );
-      final auswertung = Auswertungsdienst(
-        b,
-        ruhe: ruhe,
-        reihe: reihe,
-        vergabe: vergabe,
-        selbst: selbst,
-      );
-      final hochladen = Hochladen(
-        Directory(p.join(eingang.path, kontoId)),
-        b,
-        nachImport: auswertung.anstossen,
-      );
-      await hochladen.raeumeAuf();
-      await _raeumeUmzugsresteAuf(kontoId);
-      // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
-      // einem gelöschten Live-Photo-Foto unsichtbar zurückblieb (#254).
-      // Am Server, damit es auch verbundene Geräte erreicht.
-      try {
-        final n = await b.db.repariereVerdeckteZugehoerige();
-        if (n > 0) protokoll('$n verdeckte Aufnahmen in Ordnung gebracht');
-      } catch (e) {
-        protokoll('Verdeckte Aufnahmen nicht geprüft: $e');
-      }
-      // Beiträge anderer Konten, die beim letzten Lauf mitten im Hochladen
-      // waren (#105) – jetzt schreibt keiner hinein.
-      final beitraege = Directory(p.join(b.ordner.path, 'kontobeitraege'));
-      if (await beitraege.exists()) await beitraege.delete(recursive: true);
-      try {
-        final n = await raeumeFassungenAuf(b);
-        if (n > 0) protokoll('$n gewandelte Fassungen aufgeräumt');
-      } catch (e) {
-        protokoll('Gewandelte Fassungen nicht aufgeräumt: $e');
-      }
-      auswertung.anstossen();
-      return Kontobereich(b, hochladen, auswertung, vergabe);
+    return _offen.putIfAbsent(kontoId, () {
+      final bereich = _oeffne(kontoId);
+      // Scheitert das Öffnen einmal (Platte voll), gälte das sonst bis zum
+      // nächsten Neustart für jede Anfrage dieses Kontos.
+      bereich.then<void>((_) {}, onError: (_) => _offen.remove(kontoId));
+      return bereich;
     });
+  }
+
+  Future<Kontobereich> _oeffne(String kontoId) async {
+    final vergabe = Rechenvergabe();
+    final b = await Bibliothek.oeffne(
+      Directory(p.join(wurzel.path, kontoId)),
+      bildwerkzeuge: bildwerkzeuge,
+      modelle: modelle,
+      ortsverzeichnis: ortsverzeichnis,
+      vergabe: vergabe,
+    );
+    final auswertung = Auswertungsdienst(
+      b,
+      ruhe: ruhe,
+      reihe: reihe,
+      vergabe: vergabe,
+      selbst: selbst,
+    );
+    final hochladen = Hochladen(
+      Directory(p.join(eingang.path, kontoId)),
+      b,
+      nachImport: auswertung.anstossen,
+    );
+    await hochladen.raeumeAuf();
+    await _raeumeUmzugsresteAuf(kontoId);
+    // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
+    // einem gelöschten Live-Photo-Foto unsichtbar zurückblieb (#254).
+    // Am Server, damit es auch verbundene Geräte erreicht.
+    try {
+      final n = await b.db.repariereVerdeckteZugehoerige();
+      if (n > 0) protokoll('$n verdeckte Aufnahmen in Ordnung gebracht');
+    } catch (e) {
+      protokoll('Verdeckte Aufnahmen nicht geprüft: $e');
+    }
+    // Beiträge anderer Konten, die beim letzten Lauf mitten im Hochladen
+    // waren (#105) – jetzt schreibt keiner hinein.
+    final beitraege = Directory(p.join(b.ordner.path, 'kontobeitraege'));
+    if (await beitraege.exists()) await beitraege.delete(recursive: true);
+    try {
+      final n = await raeumeFassungenAuf(b, beimOeffnen: true);
+      if (n > 0) protokoll('$n gewandelte Fassungen aufgeräumt');
+    } catch (e) {
+      protokoll('Gewandelte Fassungen nicht aufgeräumt: $e');
+    }
+    auswertung.anstossen();
+    return Kontobereich(b, hochladen, auswertung, vergabe);
   }
 
   /// Der Eingang eines Umzugs (`eingang/<Konto>.umzug`) – die Notizen zu

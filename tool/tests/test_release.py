@@ -82,9 +82,15 @@ class Wiederholen(unittest.TestCase):
         self.ordner = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.ordner)
         self.zaehler = self.ordner / 'n'
-        # Scheitert zweimal, dann geht es.
-        self.befehl = (f'n=$(cat {self.zaehler} 2>/dev/null || echo 0); n=$((n+1)); '
-                       f'echo $n > {self.zaehler}; [ $n -ge 3 ]')
+        # Scheitert zweimal, dann geht es. Als Liste: Ein Text liefe unter
+        # Windows durch cmd.exe, nicht durch sh.
+        self.befehl = [sys.executable, '-c',
+                       'import pathlib, sys\n'
+                       'p = pathlib.Path(sys.argv[1])\n'
+                       'n = int(p.read_text()) + 1 if p.exists() else 1\n'
+                       'p.write_text(str(n))\n'
+                       'sys.exit(0 if n >= 3 else 1)\n',
+                       str(self.zaehler)]
 
     def test_beim_dritten_mal_klappt_es(self):
         with unittest.mock.patch('release.time.sleep') as schlafen:
@@ -122,6 +128,10 @@ class PrePush(unittest.TestCase):
     einmal durch alle Tests (#287)."""
 
     def setUp(self):
+        # Der Hook ist ein Bash-Skript für Mac und Linux. Unter Windows fände
+        # dieser Aufruf die WSL-Hülle in System32 und liefe gar nicht.
+        if os.name == 'nt':
+            self.skipTest('Der Hook läuft nur auf Mac und Linux.')
         self.repo = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.repo)
 

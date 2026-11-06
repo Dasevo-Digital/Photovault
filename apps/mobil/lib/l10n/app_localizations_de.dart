@@ -2817,7 +2817,8 @@ class AppTexteDe extends AppTexte {
       'Der Server nimmt die Fotos so noch nicht an; er braucht ein Update.';
 
   @override
-  String get sicherungSofortFehler => 'iOS hat das Einschalten abgelehnt.';
+  String get sicherungSofortFehler =>
+      'Das System hat das Einschalten abgelehnt.';
 
   @override
   String get sicherungSofortAndroid =>

@@ -15723,6 +15723,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{gesichert} von {gesamt} gesichert, {offen} ausstehend'**
   String backupLaufMenge(String gesichert, String gesamt, String offen);
+
+  /// No description provided for @einstSpeicherortInBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Ordner liegt in der Bibliothek selbst. Wähle einen Ordner ausserhalb.'**
+  String get einstSpeicherortInBibliothek;
+
+  /// No description provided for @einstSpeicherortBelegt.
+  ///
+  /// In de, this message translates to:
+  /// **'In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.'**
+  String get einstSpeicherortBelegt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {
