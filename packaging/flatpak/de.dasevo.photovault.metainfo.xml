@@ -75,6 +75,17 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.58.0" date="2026-11-06">
+      <description>
+        <p>New photos from the phone reach the server in the background, without the app being open. On iOS the system decides when.</p>
+        <p>Albums can fill themselves with the photos of chosen people, optionally from a date on.</p>
+        <p>Sharing the whole library with another account can be limited to a date and to people, and the shared photos can appear in one's own timeline in the browser and on the phone.</p>
+        <p>Legacy contacts: a named account can request access to the library and gets it unless the owner objects within the waiting period.</p>
+        <p>Collages from two to nine photos, saved as a new photo.</p>
+        <p>On a computer connected to a server, masks, video trimming and copying develop settings now go through the server.</p>
+        <p>The automatic backup shows how much is already backed up and how much is still pending.</p>
+      </description>
+    </release>
     <release version="3.57.2" date="2026-11-06">
       <description>
         <p>Albums can fill themselves with the photos of chosen people, optionally from a date on.</p>
