@@ -68,6 +68,7 @@ import 'package:photo_vault_mobil/seiten/stammbaum.dart';
 import 'package:photo_vault_mobil/seiten/statistik.dart';
 import 'package:photo_vault_mobil/seiten/suche.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
+import 'package:photo_vault_mobil/sicherung/sofort.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
@@ -305,6 +306,74 @@ void main() {
     await tester.scrollUntilVisible(find.text(t.sicherungAlleFotos), 200);
     expect(find.text(t.sicherungAlleFotos), findsOneWidget);
     expect(sicherungKurz(t, dienst), t.sicherungStand(3, 5));
+  });
+
+  testWidgets('die Seite sagt, ob neue Fotos gleich gesichert werden (#308)', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_sofortseite_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    Sicherungsstand.oeffne(ordner)
+      ..einstellungen = const Sicherungseinstellungen(an: true)
+      ..schliesse();
+    final dienst = Sicherungsdienst(
+      ordner: ordner,
+      server: Uri.parse('http://localhost:1/'),
+      token: 'pv1_test',
+    );
+    addTearDown(dienst.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Sicherungsseite(dienst: dienst),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Sicherungsseite)));
+
+    Future<void> zeige(Sofortstand s, {Sofortbericht? bericht}) async {
+      dienst
+        ..sofort = s
+        ..sofortbericht = bericht
+        // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+        ..notifyListeners();
+      await tester.pump();
+    }
+
+    expect(find.text(t.sicherungSofort), findsNothing);
+    for (final (stand, text) in [
+      (Sofortstand.beimLaden, t.sicherungSofortBeimLaden),
+      (Sofortstand.zugriff, t.sicherungSofortZugriff),
+      (Sofortstand.system, t.sicherungSofortSystem),
+      (Sofortstand.server, t.sicherungSofortServer),
+      (Sofortstand.fehler, t.sicherungSofortFehler),
+      (Sofortstand.an, t.sicherungSofortNochNie),
+    ]) {
+      await zeige(stand);
+      expect(find.text(t.sicherungSofort), findsOneWidget);
+      expect(find.text(text), findsOneWidget);
+    }
+
+    await zeige(
+      Sofortstand.an,
+      bericht: Sofortbericht(
+        zeit: DateTime(2026, 11, 6, 9, 30),
+        gesichert: 3,
+        gescheitert: 0,
+        unterwegs: 0,
+      ),
+    );
+    expect(
+      find.textContaining(RegExp(r'3 Dateien im Hintergrund')),
+      findsOneWidget,
+    );
+
+    expect(find.text(t.sicherungSofortAkku), findsNothing);
+    dienst.akkuAusgenommen = false;
+    await zeige(Sofortstand.an);
+    expect(find.text(t.sicherungSofortAkku), findsOneWidget);
   });
 
   testWidgets('Jetzt sichern sagt, woran es hängt (#204)', (tester) async {

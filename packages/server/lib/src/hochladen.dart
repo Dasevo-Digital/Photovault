@@ -164,6 +164,85 @@ class Hochladen {
     );
   }
 
+  /// Eine ganze Datei in einer einzigen Anfrage (`PUT /api/v1/sofort`, #308):
+  /// Der Körper ist die Datei, `?name=` ihr Name, `?geaendert=` ihre
+  /// Aufnahmezeit in Millisekunden.
+  ///
+  /// So kommen Fotos an, wenn die Handy-App nicht läuft: Unter iOS gibt die
+  /// Erweiterung `Sofortsicherung` nur einen Auftrag auf, und das System
+  /// schickt die Datei selbst, wann es ihm passt und in einem Stück – tus
+  /// beherrscht es nicht. Reisst die Verbindung ab, bleibt hier nichts
+  /// liegen: Das System versucht es erneut, und sonst holt die App das
+  /// Foto beim nächsten Lauf nach.
+  ///
+  /// → 201 `{ausgang, aufnahme}`, auch für eine Dublette: Das Foto ist
+  /// dann ja auf dem Server. 422, wenn der Import scheitert.
+  Future<Response> inEinemStueck(Request anfrage) async {
+    final q = anfrage.url.queryParameters;
+    final name = p.basename(q['name'] ?? '');
+    if (name.isEmpty || name == '.' || name == '..') {
+      return _antwort(400, {'fehler': 'Dateiname fehlt'});
+    }
+    if (!unterstuetztesFormat(name)) {
+      return _antwort(415, {
+        'fehler': 'Format nicht unterstützt: ${p.extension(name)}',
+      });
+    }
+    final laenge = anfrage.contentLength;
+    if (laenge != null && laenge > hoechstens) {
+      return _antwort(413, {'fehler': 'Datei zu gross'});
+    }
+    final id = const Uuid().v4();
+    final angaben = <String, Object?>{
+      'laenge': laenge,
+      'name': name,
+      'geaendert': int.tryParse(q['geaendert'] ?? ''),
+      'angelegt': DateTime.now().toUtc().toIso8601String(),
+    };
+    await eingang.create(recursive: true);
+    // Die Angaben zuerst: Nach einem Absturz findet [raeumeAuf] den Rest
+    // nur über sie.
+    await _schreib(id, angaben);
+    try {
+      var geschrieben = 0;
+      final senke = _teil(id).openWrite();
+      try {
+        await for (final stueck in anfrage.read()) {
+          geschrieben += stueck.length;
+          if (geschrieben > hoechstens) break;
+          senke.add(stueck);
+        }
+      } finally {
+        await senke.close();
+      }
+      if (geschrieben > hoechstens) {
+        return _antwort(413, {'fehler': 'Datei zu gross'});
+      }
+      if (geschrieben == 0 || (laenge != null && geschrieben != laenge)) {
+        return _antwort(400, {'fehler': 'unvollständig'});
+      }
+      final ergebnis = await _importiere(id, angaben);
+      // Wann das Telefon liefert, bestimmt das System; ohne diese Spur liesse
+      // sich auf dem Server nicht sehen, ob überhaupt etwas ankommt.
+      protokoll('Sofortsicherung: ${ergebnis['ausgang']}');
+      if (ergebnis['ausgang'] == 'failed') {
+        return _antwort(422, {'fehler': ergebnis['fehler']});
+      }
+      return _antwort(201, {
+        'ausgang': ergebnis['ausgang'],
+        'aufnahme': ergebnis['aufnahme'],
+      });
+    } finally {
+      await _loesche(id);
+    }
+  }
+
+  static Response _antwort(int status, Map<String, Object?> inhalt) => Response(
+    status,
+    body: jsonEncode(inhalt),
+    headers: {'content-type': 'application/json'},
+  );
+
   /// Wie viel von [id] angekommen ist. Nach dem letzten Stück legt
   /// [_importiere] die Datei unter ihrem Namen in einen eigenen Ordner, und
   /// bis das Ergebnis dasteht, gibt es die `.teil`-Datei nicht mehr. Bis

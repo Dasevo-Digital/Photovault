@@ -14,6 +14,7 @@ import 'hintergrund.dart';
 import 'kamerarolle.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
+import 'sofort.dart';
 import 'stand.dart';
 import 'telefonloeschung.dart';
 
@@ -105,7 +106,7 @@ class Sicherungsdienst extends ChangeNotifier {
       zugriff = _zugriffAus(
         await PhotoManager.getPermissionState(requestOption: _option),
       );
-      await planeSicherung(einstellungen);
+      await _plane(einstellungen);
       _beobachte();
     } on MissingPluginException {
       return; // in Tests ohne Telefon
@@ -146,8 +147,63 @@ class Sicherungsdienst extends ChangeNotifier {
 
   Future<void> setze(Sicherungseinstellungen e) async {
     _stand.einstellungen = e;
-    await planeSicherung(e);
+    await _plane(e);
     notifyListeners();
+  }
+
+  /// Ob neue Fotos auch ohne offene App gleich zum Server gehen (#308).
+  Sofortstand sofort = Sofortstand.aus;
+
+  /// Was die Erweiterung unter iOS zuletzt getan hat.
+  Sofortbericht? sofortbericht;
+
+  /// Android: Ob die App von der Akku-Optimierung ausgenommen ist.
+  bool akkuAusgenommen = true;
+
+  /// Android: Fragt nach der Ausnahme von der Akku-Optimierung.
+  Future<void> nimmVomAkkuAus() async {
+    akkuAusgenommen = await akkuFreigeben();
+    if (!_beendet) notifyListeners();
+  }
+
+  Future<void> _plane(Sicherungseinstellungen e) async {
+    await planeSicherung(e);
+    // Fragt den Server; darauf soll die Sicherung nicht warten. Beim
+    // Abmelden muss es dagegen geschehen sein, bevor die Verbindung geht.
+    if (e.an) {
+      unawaited(_stelleSofort(e));
+    } else {
+      await _stelleSofort(e);
+    }
+  }
+
+  Future<void> _stelleSofort(Sicherungseinstellungen e) async {
+    final kann = await _serverKannSofort(e);
+    // Beim Warten auf den Server kann sich die Einstellung geändert haben.
+    if (e.an && !einstellungen.an) return;
+    sofort = await stelleSofort(e.an ? einstellungen : e, serverKann: kann);
+    await _ladeSofortbericht();
+  }
+
+  /// Ohne Antwort des Servers gilt die letzte; schlimmstenfalls scheitern
+  /// ein paar Aufträge, und die App holt die Fotos nach.
+  Future<bool> _serverKannSofort(Sicherungseinstellungen e) async {
+    if (!Platform.isIOS || !e.an) return _serverKann;
+    try {
+      final z = await _verbindung.hole('api/v1/zustand');
+      _serverKann = (z['funktionen'] as Map?)?['sofort'] != null;
+    } on Exception catch (f) {
+      debugPrint('Zustand des Servers nicht gelesen: $f');
+    }
+    return _serverKann;
+  }
+
+  var _serverKann = true;
+
+  Future<void> _ladeSofortbericht() async {
+    sofortbericht = await leseSofortbericht();
+    akkuAusgenommen = await akkuFrei();
+    if (!_beendet) notifyListeners();
   }
 
   /// Die Auswahl der Fotos ändern (iOS: „Ausgewählte Fotos“).
@@ -231,6 +287,7 @@ class Sicherungsdienst extends ChangeNotifier {
   Future<void> sichere({bool mobil = false}) async {
     final e = einstellungen;
     if (_beendet || !e.an) return;
+    unawaited(_ladeSofortbericht());
     if (_laeuft) {
       _nochmal = true;
       return;
@@ -247,12 +304,14 @@ class Sicherungsdienst extends ChangeNotifier {
     fehler = null;
     notifyListeners();
     try {
-      await Sicherungslauf(
+      final beginn = DateTime.now();
+      final bericht = await Sicherungslauf(
         rolle: _rolle(e.alben),
         verbindung: _verbindung,
         stand: _stand,
         wer: 'app',
       ).laufe(abbrechen: () => _abbruch || _beendet, meldung: _melde);
+      if (bericht.vollstaendig) unawaited(meldeGeschafft(beginn));
     } on Gesperrt {
       wartet = Wartegrund.hintergrund;
       // Der Lauf im Hintergrund kennt nur die Fotos von seinem Beginn;
@@ -324,7 +383,7 @@ class Sicherungsdienst extends ChangeNotifier {
   /// auch nichts eingeplant.
   Future<void> streicheAufgaben() async {
     if (!einstellungen.an) return;
-    await planeSicherung(const Sicherungseinstellungen());
+    await _plane(const Sicherungseinstellungen());
   }
 
   @override

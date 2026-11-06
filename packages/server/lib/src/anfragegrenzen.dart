@@ -23,7 +23,8 @@ Middleware anfragegrenzen({
     final dateistrom =
         (r.method == 'PATCH' &&
             RegExp(r'^api/v1/(umzug/)?hochladen/[^/]+$').hasMatch(pfad)) ||
-        (r.method == 'PUT' && pfad.startsWith('api/v1/dateien/')) ||
+        (r.method == 'PUT' &&
+            (pfad.startsWith('api/v1/dateien/') || pfad == 'api/v1/sofort')) ||
         (r.method == 'POST' &&
             RegExp(r'^api/v1/(teilen|geteilt)/[^/]+/beitrag$').hasMatch(pfad));
     if (!{'POST', 'PUT', 'PATCH', 'DELETE'}.contains(r.method) || dateistrom) {

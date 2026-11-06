@@ -2783,4 +2783,51 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get fotosEinstellungen => 'Settings';
+
+  @override
+  String get sicherungSofort => 'Instantly in the background';
+
+  @override
+  String get sicherungSofortNochNie =>
+      'On. iOS decides when new photos go to the server without the app open; it has not started the backup yet.';
+
+  @override
+  String get sicherungSofortBeimLaden =>
+      'Off while “In the background only while charging” is on.';
+
+  @override
+  String get sicherungSofortZugriff => 'Needs access to all photos.';
+
+  @override
+  String get sicherungSofortSystem => 'Needs iOS 26.5 or later.';
+
+  @override
+  String get sicherungSofortServer =>
+      'The server does not accept photos this way yet; it needs an update.';
+
+  @override
+  String get sicherungSofortFehler => 'iOS refused to turn this on.';
+
+  @override
+  String get sicherungSofortAndroid =>
+      'New photos go to the server within seconds when network and battery allow it.';
+
+  @override
+  String sicherungSofortZuletzt(String zeit, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n files',
+      one: 'One file',
+      zero: 'No file',
+    );
+    return 'Last started by iOS: $zeit. $_temp0 backed up in the background.';
+  }
+
+  @override
+  String get sicherungSofortAndroidGedrosselt =>
+      'New photos go to the server when network and battery allow it. If you rarely open the app, Android may hold this back for about 30 minutes.';
+
+  @override
+  String get sicherungSofortAkku => 'Don\'t hold back';
 }

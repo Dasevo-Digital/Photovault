@@ -233,6 +233,7 @@ class ImportService {
     ImportDateiangaben? erwarteteAngaben,
     Future<void> Function(String assetId)? beiEintrag,
   }) async {
+    String? pruefsumme;
     String? unvollstaendigeAssetId;
     File? unvollstaendigesOriginal;
     var datenbankEintragGespeichert = false;
@@ -285,6 +286,7 @@ class ImportService {
       // geholt, und die Dekodierung begrenzt ihren eigenen Lebenszyklus.
       final checksum = (await sha256.bind(sourceFile.openRead()).first)
           .toString();
+      pruefsumme = checksum;
 
       if (erwartetePruefsumme != null && checksum != erwartetePruefsumme) {
         throw const FormatException('pv_import_quelle_geaendert');
@@ -387,6 +389,15 @@ class ImportService {
           unvollstaendigeAssetId,
           unvollstaendigesOriginal,
         );
+      }
+      // Dieselbe Datei kam gleichzeitig ein zweites Mal an (etwa von der App
+      // und der Erweiterung, die neue Fotos im Hintergrund schickt): Zwischen
+      // der Prüfung oben und der Datenbankzeile war sie noch nicht da. Das
+      // ist eine Dublette, kein Fehler.
+      if (pruefsumme != null &&
+          !datenbankEintragGespeichert &&
+          await _db.checksumExists(pruefsumme)) {
+        return ImportResult(filePath, ImportOutcome.duplicateSkipped);
       }
       return ImportResult(filePath, ImportOutcome.failed, error: e.toString());
     }

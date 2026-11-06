@@ -52,6 +52,28 @@ import workmanager_apple
           GemeinsameVerbindung.schreibe(nil)
           WidgetCenter.shared.reloadAllTimelines()
           antwort(nil)
+        case "sofort":
+          guard let w = aufruf.arguments as? [String: Any],
+            let an = w["an"] as? Bool, let videos = w["videos"] as? Bool,
+            let nurWlan = w["nurWlan"] as? Bool, let alben = w["alben"] as? [String]
+          else {
+            antwort(FlutterError(code: "werte", message: nil, details: nil))
+            return
+          }
+          // PhotoKit wartet auf seinen Dienst; die Oberfläche blockiert das
+          // sonst merklich.
+          DispatchQueue.global(qos: .userInitiated).async {
+            let stand = Sofortsteuerung.setze(
+              an: an, videos: videos, nurWlan: nurWlan, alben: alben)
+            DispatchQueue.main.async { antwort(stand) }
+          }
+        case "sofortbericht":
+          antwort(Sofortsteuerung.bericht)
+        case "sofortGeschafft":
+          if let ms = aufruf.arguments as? Int64 {
+            Sofortsteuerung.geschafft(bis: Date(timeIntervalSince1970: Double(ms) / 1000))
+          }
+          antwort(nil)
         default:
           antwort(FlutterMethodNotImplemented)
         }

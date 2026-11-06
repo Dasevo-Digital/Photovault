@@ -2794,4 +2794,51 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get fotosEinstellungen => 'Einstellungen';
+
+  @override
+  String get sicherungSofort => 'Sofort im Hintergrund';
+
+  @override
+  String get sicherungSofortNochNie =>
+      'Eingeschaltet. Wann neue Fotos ohne offene App zum Server gehen, bestimmt iOS; gestartet hat es die Sicherung noch nicht.';
+
+  @override
+  String get sicherungSofortBeimLaden =>
+      'Aus, solange „Im Hintergrund nur beim Laden“ eingeschaltet ist.';
+
+  @override
+  String get sicherungSofortZugriff => 'Braucht Zugriff auf alle Fotos.';
+
+  @override
+  String get sicherungSofortSystem => 'Braucht iOS 26.5 oder neuer.';
+
+  @override
+  String get sicherungSofortServer =>
+      'Der Server nimmt die Fotos so noch nicht an; er braucht ein Update.';
+
+  @override
+  String get sicherungSofortFehler => 'iOS hat das Einschalten abgelehnt.';
+
+  @override
+  String get sicherungSofortAndroid =>
+      'Neue Fotos gehen innerhalb von Sekunden zum Server, wenn Netz und Akku passen.';
+
+  @override
+  String sicherungSofortZuletzt(String zeit, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Dateien',
+      one: 'Eine Datei',
+      zero: 'Noch keine Datei',
+    );
+    return 'Zuletzt von iOS gestartet: $zeit. $_temp0 im Hintergrund gesichert.';
+  }
+
+  @override
+  String get sicherungSofortAndroidGedrosselt =>
+      'Neue Fotos gehen zum Server, wenn Netz und Akku passen. Öffnest du die App selten, hält Android das bis zu rund 30 Minuten zurück.';
+
+  @override
+  String get sicherungSofortAkku => 'Nicht zurückhalten';
 }

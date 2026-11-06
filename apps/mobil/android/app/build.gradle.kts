@@ -101,3 +101,9 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// Der Wächter auf neue Fotos (Fotowaechter.kt); dieselbe Fassung wie im
+// Plugin workmanager.
+dependencies {
+    implementation("androidx.work:work-runtime:2.11.2")
+}

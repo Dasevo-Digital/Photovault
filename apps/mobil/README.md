@@ -52,6 +52,30 @@ verlässt man die App mit offener Arbeit, lädt ein Vordergrunddienst
 Verarbeitungsaufgabe (`BGProcessingTask`), die das System meist nachts am
 Ladekabel laufen lässt.
 
+Für ein gerade aufgenommenes Foto ist das zu selten. Deshalb gibt es
+zusätzlich die Zeile „Sofort im Hintergrund“ (`lib/sicherung/sofort.dart`):
+
+- **Android:** `Fotowaechter.kt` wartet auf neue Einträge im MediaStore und
+  startet einen Lauf. Das Foto ist nach Sekunden auf dem Server, auch wenn der
+  Prozess der App beendet ist. Eine selten geöffnete App hält Android
+  zurück, laut seinen Einstellungen bis zu rund 31 Minuten. „Nicht
+  zurückhalten“ nimmt sie von der Akku-Optimierung aus; der Nutzer bestätigt
+  das im Dialog des Systems.
+- **iOS:** die Erweiterung `ios/Sofortsicherung` (ab iOS 26.5). Das System
+  startet sie, wenn Netz und Akku passen, und lädt die Originale selbst mit
+  `PUT /api/v1/sofort` hoch, auch im gesperrten Telefon. **Wann, bestimmt
+  iOS.** Sie braucht Zugriff auf alle Fotos und bleibt mit „Im Hintergrund
+  nur beim Laden“ aus. `BackgroundUploadURLBase` in ihrer Info.plist dient
+  dem System nur als Prüfung, ob das Netz da ist: Die Adresse muss erreichbar
+  sein, ist aber nicht die des eigenen Servers. Was die Erweiterung nicht
+  schafft, holt die App beim nächsten Lauf nach; eine doppelt geschickte
+  Datei erkennt der Server an der Prüfsumme.
+
+Die Erweiterung läuft nicht im Simulator. Was sie aufgibt, prüft
+`ios/RunnerTests/SofortauswahlTests.swift` dort trotzdem gegen die echte
+Mediathek. Auf dem Gerät hilft Einstellungen → Entwickler → Resource Upload
+Test Mode.
+
 ## Kennungen
 
 | Variante | Android | iOS | Name |

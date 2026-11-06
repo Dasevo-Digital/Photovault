@@ -1,6 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Der Server; ohne diese Zeile geht im Release-Bau kein Netz. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Ohne die Ausnahme hält Android den Wächter auf neue Fotos bei einer
+         selten geöffneten App bis zu rund 30 Minuten zurück (#308). Der Nutzer
+         entscheidet im Dialog des Systems. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"/>
     <!-- Die Sicherung der Kamerarolle (sicherung/). ACCESS_MEDIA_LOCATION,
          weil Android sonst den Ort aus den Originalen entfernt; die
          Teilfreigabe ab Android 14 (USER_SELECTED) behandelt photo_manager. -->

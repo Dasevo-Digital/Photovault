@@ -9,6 +9,7 @@ import 'package:photo_manager/photo_manager.dart';
 import '../l10n/app_localizations.dart';
 import '../sicherung/dienst.dart';
 import '../sicherung/photo_manager_rolle.dart';
+import '../sicherung/sofort.dart';
 
 /// Kamerarolle sichern: ein- und ausschalten, sehen, wie weit es ist, und
 /// was mitgeht.
@@ -217,6 +218,25 @@ class Sicherungsseite extends StatelessWidget {
     _ => const [],
   };
 
+  String _sofortText(AppTexte t, String sprache) {
+    final b = dienst.sofortbericht;
+    return switch (dienst.sofort) {
+      Sofortstand.beimLaden => t.sicherungSofortBeimLaden,
+      Sofortstand.zugriff => t.sicherungSofortZugriff,
+      Sofortstand.system => t.sicherungSofortSystem,
+      Sofortstand.server => t.sicherungSofortServer,
+      Sofortstand.fehler => t.sicherungSofortFehler,
+      _ when Platform.isAndroid && !dienst.akkuAusgenommen =>
+        t.sicherungSofortAndroidGedrosselt,
+      _ when Platform.isAndroid => t.sicherungSofortAndroid,
+      _ when b == null => t.sicherungSofortNochNie,
+      _ => t.sicherungSofortZuletzt(
+        DateFormat.yMd(sprache).add_Hm().format(b.zeit),
+        b.gesichert,
+      ),
+    };
+  }
+
   List<Widget> _stand(BuildContext context, AppTexte t) {
     final f = dienst.fortschritt;
     final b = dienst.letzterLauf;
@@ -268,6 +288,18 @@ class Sicherungsseite extends StatelessWidget {
                 ? f.bytes! / f.von!
                 : (sicher ?? 0) / gesamt,
           ),
+        ),
+      if (dienst.sofort != Sofortstand.aus)
+        ListTile(
+          leading: const Icon(Icons.bolt_outlined),
+          title: Text(t.sicherungSofort),
+          subtitle: Text(_sofortText(t, sprache)),
+          trailing: dienst.akkuAusgenommen
+              ? null
+              : TextButton(
+                  onPressed: dienst.nimmVomAkkuAus,
+                  child: Text(t.sicherungSofortAkku),
+                ),
         ),
       if (fehler != null)
         ListTile(

@@ -4314,6 +4314,72 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Einstellungen'**
   String get fotosEinstellungen;
+
+  /// No description provided for @sicherungSofort.
+  ///
+  /// In de, this message translates to:
+  /// **'Sofort im Hintergrund'**
+  String get sicherungSofort;
+
+  /// No description provided for @sicherungSofortNochNie.
+  ///
+  /// In de, this message translates to:
+  /// **'Eingeschaltet. Wann neue Fotos ohne offene App zum Server gehen, bestimmt iOS; gestartet hat es die Sicherung noch nicht.'**
+  String get sicherungSofortNochNie;
+
+  /// No description provided for @sicherungSofortBeimLaden.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus, solange „Im Hintergrund nur beim Laden“ eingeschaltet ist.'**
+  String get sicherungSofortBeimLaden;
+
+  /// No description provided for @sicherungSofortZugriff.
+  ///
+  /// In de, this message translates to:
+  /// **'Braucht Zugriff auf alle Fotos.'**
+  String get sicherungSofortZugriff;
+
+  /// No description provided for @sicherungSofortSystem.
+  ///
+  /// In de, this message translates to:
+  /// **'Braucht iOS 26.5 oder neuer.'**
+  String get sicherungSofortSystem;
+
+  /// No description provided for @sicherungSofortServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server nimmt die Fotos so noch nicht an; er braucht ein Update.'**
+  String get sicherungSofortServer;
+
+  /// No description provided for @sicherungSofortFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'iOS hat das Einschalten abgelehnt.'**
+  String get sicherungSofortFehler;
+
+  /// No description provided for @sicherungSofortAndroid.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Fotos gehen innerhalb von Sekunden zum Server, wenn Netz und Akku passen.'**
+  String get sicherungSofortAndroid;
+
+  /// No description provided for @sicherungSofortZuletzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt von iOS gestartet: {zeit}. {n, plural, =0{Noch keine Datei} =1{Eine Datei} other{{n} Dateien}} im Hintergrund gesichert.'**
+  String sicherungSofortZuletzt(String zeit, int n);
+
+  /// No description provided for @sicherungSofortAndroidGedrosselt.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Fotos gehen zum Server, wenn Netz und Akku passen. Öffnest du die App selten, hält Android das bis zu rund 30 Minuten zurück.'**
+  String get sicherungSofortAndroidGedrosselt;
+
+  /// No description provided for @sicherungSofortAkku.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht zurückhalten'**
+  String get sicherungSofortAkku;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

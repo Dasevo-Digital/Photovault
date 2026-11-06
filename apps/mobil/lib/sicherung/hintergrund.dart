@@ -12,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
+import 'sofort.dart' show Sofortstand;
 import 'stand.dart';
 
 /// Die Sicherung, wenn die App nicht offen ist.
@@ -36,6 +37,10 @@ import 'stand.dart';
 /// öfter die App benutzt wird. Ein Lauf sichert, was in die Zeit passt; der
 /// nächste macht dort weiter. Mit „Im Hintergrund nur beim Laden“ gibt es
 /// sie nicht: Eine Auffrischung kennt keine Bedingung fürs Laden.
+///
+/// Beides ist für ein gerade aufgenommenes Foto zu selten. Dafür gibt es
+/// zusätzlich [Sofortstand]: unter iOS eine Erweiterung, unter Android einen
+/// Wächter auf neue Einträge (siehe `sofort.dart`).
 ///
 /// Angefangene Uploads gehen beim nächsten Lauf an derselben Stelle weiter.
 const sicherungsaufgabe = 'de.dasevo.photovault.sicherung';

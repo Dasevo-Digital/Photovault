@@ -1391,5 +1391,17 @@
   "fotosHinzufuegen": "Hinzufügen ({n})",
   "@fotosHinzufuegen": {"placeholders": {"n": {"type": "int"}}},
   "fotosKeinZugriff": "Ohne Zugriff auf die Fotos lässt sich nichts auswählen.",
-  "fotosEinstellungen": "Einstellungen"
+  "fotosEinstellungen": "Einstellungen",
+  "sicherungSofort": "Sofort im Hintergrund",
+  "sicherungSofortNochNie": "Eingeschaltet. Wann neue Fotos ohne offene App zum Server gehen, bestimmt iOS; gestartet hat es die Sicherung noch nicht.",
+  "sicherungSofortBeimLaden": "Aus, solange „Im Hintergrund nur beim Laden“ eingeschaltet ist.",
+  "sicherungSofortZugriff": "Braucht Zugriff auf alle Fotos.",
+  "sicherungSofortSystem": "Braucht iOS 26.5 oder neuer.",
+  "sicherungSofortServer": "Der Server nimmt die Fotos so noch nicht an; er braucht ein Update.",
+  "sicherungSofortFehler": "iOS hat das Einschalten abgelehnt.",
+  "sicherungSofortAndroid": "Neue Fotos gehen innerhalb von Sekunden zum Server, wenn Netz und Akku passen.",
+  "sicherungSofortZuletzt": "Zuletzt von iOS gestartet: {zeit}. {n, plural, =0{Noch keine Datei} =1{Eine Datei} other{{n} Dateien}} im Hintergrund gesichert.",
+  "@sicherungSofortZuletzt": {"placeholders": {"zeit": {"type": "String"}, "n": {"type": "int"}}},
+  "sicherungSofortAndroidGedrosselt": "Neue Fotos gehen zum Server, wenn Netz und Akku passen. Öffnest du die App selten, hält Android das bis zu rund 30 Minuten zurück.",
+  "sicherungSofortAkku": "Nicht zurückhalten"
 }

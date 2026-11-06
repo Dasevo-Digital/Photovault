@@ -514,6 +514,13 @@ Handler baueApi({
     )
     ..get('/api/v1/auswertung', api.auswertung)
     ..post('/api/v1/auswertung', api.auswertungAnstossen)
+    // Ein Foto in einem Stück, wie iOS es im Hintergrund schickt (#308).
+    ..put(
+      '/api/v1/sofort',
+      wennPlatz(
+        (Request r) async => (await bereich(r)).hochladen.inEinemStueck(r),
+      ),
+    )
     ..add(
       'OPTIONS',
       '/api/v1/hochladen',
@@ -679,6 +686,8 @@ class _Api {
           'albumregeln': 1,
           // Partnerfreigabe eingeschränkt und in der Zeitleiste (#299).
           'partnerfreigabe': 2,
+          // Fotos in einem Stück, wenn die Handy-App nicht läuft (#308).
+          'sofort': 1,
           // Nachlasskontakt (#300).
           'nachlass': 1,
           // Collagen (#301).
