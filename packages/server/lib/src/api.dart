@@ -62,6 +62,8 @@ import 'oidc.dart';
 import 'passkey_api.dart';
 import 'packen.dart';
 import 'rechnen.dart';
+import 'aussensicherung.dart';
+import 'aussenziel.dart' show Zielfehler;
 import 'sicherung.dart';
 import 'speicher.dart';
 import 'teilung_api.dart';
@@ -92,6 +94,7 @@ Handler baueApi({
   Future<Map<String, Object?>> Function()? beschleunigerZustand,
   Speicherwaechter? speicher,
   Serversicherung? sicherung,
+  Aussensicherung? aussensicherung,
   Directory? web,
   Uri? oeffentlich,
   Gastpruefung? gastpruefung,
@@ -446,9 +449,64 @@ Handler baueApi({
     ..get(
       '/api/v1/sicherung',
       (Request r) => _nurVerwalter(r, () async {
-        return _json(
-          sicherung == null ? const {'stufe': 'aus'} : await sicherung.stand(),
-        );
+        return _json({
+          ...sicherung == null
+              ? const {'stufe': 'aus'}
+              : await sicherung.stand(),
+          'ausserHaus': ?await aussensicherung?.stand(),
+        });
+      }),
+    )
+    ..put(
+      '/api/v1/sicherung/ausser-haus',
+      (Request r) => _nurVerwalter(r, () async {
+        final a = aussensicherung;
+        if (a == null) {
+          return _json({'fehler': 'Nicht verfügbar.'}, status: 409);
+        }
+        final k = jsonDecode(await r.readAsString());
+        if (k is! Map) return _json({'fehler': 'Angaben fehlen'}, status: 400);
+        try {
+          await a.einrichten(k.cast<String, Object?>());
+        } on ArgumentError catch (f) {
+          return _json({'fehler': '${f.message}'}, status: 400);
+        } on StateError catch (f) {
+          return _json({'fehler': f.message}, status: 409);
+        } on Zielfehler catch (f) {
+          return _json({
+            'fehler': 'Das Ziel antwortet nicht wie erwartet: ${f.text}',
+          }, status: 502);
+        } on IOException catch (f) {
+          return _json({
+            'fehler': 'Das Ziel ist nicht erreichbar: $f',
+          }, status: 502);
+        } on TimeoutException {
+          return _json({'fehler': 'Das Ziel antwortet nicht.'}, status: 502);
+        }
+        unawaited(a.jetzt());
+        return _json(await a.stand());
+      }),
+    )
+    ..delete(
+      '/api/v1/sicherung/ausser-haus',
+      (Request r) => _nurVerwalter(r, () async {
+        final a = aussensicherung;
+        if (a == null) {
+          return _json({'fehler': 'Nicht verfügbar.'}, status: 409);
+        }
+        await a.entfernen();
+        return _json(await a.stand());
+      }),
+    )
+    ..post(
+      '/api/v1/sicherung/ausser-haus/jetzt',
+      (Request r) => _nurVerwalter(r, () async {
+        final a = aussensicherung;
+        if (a == null || !a.eingerichtet) {
+          return _json({'fehler': 'Kein Ziel eingerichtet.'}, status: 409);
+        }
+        unawaited(a.jetzt());
+        return _json(await a.stand(), status: 202);
       }),
     )
     ..post(

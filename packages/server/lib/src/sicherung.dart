@@ -61,6 +61,7 @@ class Serversicherung {
     required this.konten,
     required this.bibliotheken,
     this.um = (stunde: 3, minute: 30),
+    this.nachDemLauf,
     DateTime Function()? uhr,
   }) : _uhr = uhr ?? DateTime.now;
 
@@ -74,6 +75,10 @@ class Serversicherung {
 
   /// Wann sie täglich läuft (Ortszeit des Servers).
   final ({int stunde, int minute}) um;
+
+  /// Wenn ein Lauf durch ist, auch ein gescheiterter: Was am Ziel liegt, ist
+  /// in jedem Fall einwandfrei, nur vielleicht nicht vollständig.
+  final Future<void> Function()? nachDemLauf;
   final DateTime Function() _uhr;
 
   static const markeName = 'PHOTOVAULT-SICHERUNGSZIEL.json';
@@ -296,6 +301,15 @@ class Serversicherung {
                 '$neu neue Dateien'
           : 'Sicherung gescheitert: $fehler',
     );
+    final danach = nachDemLauf;
+    if (danach != null) {
+      // Nicht abwarten: Der erste Lauf ausser Haus darf Tage dauern.
+      unawaited(
+        danach().catchError(
+          (Object e) => protokoll('Sicherung ausser Haus gescheitert: $e'),
+        ),
+      );
+    }
   }
 
   /// Der verpackte Schlüssel gehört in die Bibliothek – von dort schreibt

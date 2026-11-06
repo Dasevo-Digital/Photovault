@@ -403,6 +403,11 @@ dialog menu button[type=submit] { background: var(--akzent); color: var(--auf-ak
 .erinnerung span { position: absolute; left: 8px; right: 8px; bottom: 8px; color: #fff; font-weight: 600; text-shadow: 0 0 6px #000; text-align: left; }
 #server-stand, #konten { list-style: none; padding: 0; margin: 0; }
 #server-stand li, #konten li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rand); }
+.aussen-form { display: grid; gap: 8px; max-width: 34em; }
+.aussen-form label { display: grid; gap: 4px; font-size: 0.9em; }
+.aussen-form label[hidden] { display: none; }
+.aussen-form input, .aussen-form select { padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+.aussen-form button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); margin-right: 6px; }
 #konten button, #verwaltung > p button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); margin-left: 6px; }
 #form-konto-neu input { padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
 #anmeldung-fassung { text-align: center; margin-top: 12px; }

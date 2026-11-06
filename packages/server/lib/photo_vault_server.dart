@@ -14,6 +14,17 @@ export 'src/bibliotheken.dart' show Bibliotheken, Kontobereich;
 export 'src/einstellungen.dart' show Einstellungen;
 export 'src/gastpruefung.dart'
     show Abschottung, Gastpruefung, gastPruefen, gastProzessEinrichten;
+export 'src/aussensicherung.dart'
+    show Aussensicherung, AussenzielAngabe, Aussenstufe;
+export 'src/aussenziel.dart'
+    show
+        Aussenziel,
+        S3Ziel,
+        WebdavZiel,
+        Zieldatei,
+        Zielfehler,
+        s3Kodiert,
+        s3Kopf;
 export 'src/sicherung.dart' show Serversicherung, Sicherungsstufe;
 export 'src/speicher.dart'
     show Speicherstand, Speicherstufe, Speicherwaechter, speicherAusDf;

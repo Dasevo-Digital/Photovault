@@ -293,6 +293,25 @@
       <ul id="server-stand"></ul>
       <p><button id="auswertung-anstossen" type="button">Auswertung anstossen</button>
          <button id="sicherung-jetzt" type="button">Jetzt sichern</button></p>
+      <div id="aussen" hidden>
+        <h3>Sicherung außer Haus</h3>
+        <p class="leise">Überträgt die fertig verschlüsselte Sicherung des Servers zu einem Speicher außer Haus. Der Anbieter sieht keine Fotos und keine Dateinamen. Zum Wiederherstellen genügen der Speicher und die Passphrase der Sicherung.</p>
+        <p id="aussen-stand"></p>
+        <form id="form-aussen" class="aussen-form">
+          <label>Art
+            <select name="art"><option value="s3">S3 (Amazon, Backblaze, Hetzner, Wasabi, MinIO …)</option><option value="webdav">WebDAV (Nextcloud, Synology, Storage Box …)</option></select></label>
+          <label>Adresse <input name="adresse" type="url" placeholder="https://s3.eu-central-1.amazonaws.com" autocomplete="off" required></label>
+          <label class="nur-s3">Bucket <input name="bucket" autocomplete="off"></label>
+          <label class="nur-s3">Region <input name="region" placeholder="us-east-1" autocomplete="off"></label>
+          <label><span id="aussen-zugang-text">Schlüssel-ID</span> <input name="zugang" autocomplete="off" required></label>
+          <label><span id="aussen-geheimnis-text">Geheimschlüssel</span> <input name="geheimnis" type="password" autocomplete="new-password"></label>
+          <label>Ordner am Ziel <input name="praefix" placeholder="photovault" autocomplete="off"></label>
+          <label>Höchstens MB je Sekunde <input name="drosselMb" type="number" min="0" step="1" placeholder="ohne Grenze"></label>
+          <p><button type="submit">Prüfen und speichern</button>
+             <button id="aussen-jetzt" type="button" hidden>Jetzt übertragen</button>
+             <button id="aussen-entfernen" type="button" hidden>Ziel entfernen</button></p>
+        </form>
+      </div>
       <h3>Konten</h3>
       <ul id="konten"></ul>
       <form id="form-konto-neu" class="zeile">

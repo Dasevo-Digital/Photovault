@@ -560,6 +560,28 @@ Kennmarke oder 36 Stunden ohne Erfolg erscheinen als Warnung.
 Passphrase eingeben. Soll die Bibliothek wieder auf den Server, danach
 „Diese Bibliothek auf den Server umziehen“.
 
+**Ausser Haus:** Ein Brand oder Einbruch trifft Server und NAS zugleich.
+Darum kann der Server die fertige Sicherung zusätzlich zu einem Speicher
+ausser Haus bringen, nach S3 (Amazon, Backblaze B2, Hetzner, Wasabi, MinIO)
+oder WebDAV (Nextcloud, Synology, Storage Box). Eingerichtet wird das in der
+Weboberfläche als Verwalter unter Konto → „Sicherung ausser Haus“; es braucht
+zuerst die Sicherung aufs NAS.
+
+Übertragen wird, was die Sicherung geschrieben hat, also Fotos, Datenbank
+und Beilage verschlüsselt und Dateinamen als HMAC. Der Anbieter sieht weder
+Fotos noch Dateinamen, wohl aber die Grösse und Anzahl der Dateien und die
+Namen der Konto-Ordner. Der Lauf beginnt nach jeder nächtlichen Sicherung,
+überträgt nur, was fehlt oder sich geändert hat, und macht nach einem Abbruch
+dort weiter; der erste darf also Tage dauern. Danach kommen Stichproben
+zurück und werden mit dem Original verglichen. Fotos werden am Ziel nie
+gelöscht, nur Generationen der Datenbank, die es auch daheim nicht mehr gibt.
+Die Zugangsdaten liegen mit `server.schluessel` verschlüsselt im
+Datenordner, in `aussensicherung.json`.
+
+Zum Wiederherstellen genügen der Speicher und die Passphrase: den Ordner
+`<Konto>_<Kennung>/PhotoVault-AutoBackup` mit einem beliebigen Werkzeug
+herunterladen (rclone, Cyberduck) und in der App wie oben öffnen.
+
 **Mit systemd** braucht das Ziel ein `ReadWritePaths=` (die Einheit
 schützt das Dateisystem sonst gegen Schreiben):
 

@@ -81,6 +81,11 @@ Future<void> main(List<String> argumente) async {
     warnAnteil: e.speicherWarnung,
     mindestFrei: e.speicherMindestGb * 1000 * 1000 * 1000,
   )..starte();
+  final aussensicherung = Aussensicherung(
+    daten: e.daten,
+    wurzel: e.sicherung,
+    tresor: tresor,
+  );
   final sicherung = Serversicherung(
     daten: e.daten,
     ziel: e.sicherung,
@@ -88,6 +93,7 @@ Future<void> main(List<String> argumente) async {
     konten: konten,
     bibliotheken: bibliotheken,
     um: e.sicherungUm,
+    nachDemLauf: aussensicherung.jetzt,
   )..starte();
   final papierkorb = Papierkorbablauf(
     konten: konten,
@@ -129,6 +135,7 @@ Future<void> main(List<String> argumente) async {
       beschleunigerZustand: onnx?.zustand,
       speicher: speicher,
       sicherung: sicherung,
+      aussensicherung: aussensicherung,
       web: e.web,
       oeffentlich: e.oeffentlich,
       gastpruefung: gastpruefung,

@@ -3850,7 +3850,8 @@ async function zeigeVerwaltung() {
     const sv = await api('/api/v1/sicherung');
     zeile(t('Sicherung: {stufe}', { stufe: t(sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sv.fehler : ''));
     $('sicherung-jetzt').hidden = sv.stufe === 'aus' || sv.stufe === 'nichtEingerichtet';
-  } catch (_) { $('sicherung-jetzt').hidden = true; }
+    zeigeAussen(sv.ausserHaus, sv.stufe);
+  } catch (_) { $('sicherung-jetzt').hidden = true; $('aussen').hidden = true; }
   try {
     const a = await api('/api/v1/auswertung');
     zeile(a.laeuft && a.stand ? t('Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}', { stufe: a.stand.stufe, nr: a.stand.stufeNummer, von: a.stand.stufenGesamt, erledigt: a.stand.erledigt, gesamt: a.stand.gesamt }) : t('Auswertung: nichts offen'));
@@ -3868,6 +3869,79 @@ async function zeigeVerwaltung() {
     kl.append(li);
   }
 }
+const aussenStufen = { aus: 'nicht eingerichtet', ausstehend: 'wartet auf den ersten Lauf', fehler: 'gescheitert', veraltet: 'veraltet', ok: 'in Ordnung' };
+const mb = (b) => `${(b / 1048576).toFixed(0)} MB`;
+let aussenUhr = null;
+let aussenGezeigt = '';
+function zeigeAussen(a, stufe) {
+  clearTimeout(aussenUhr);
+  // Ohne eigene Sicherung gibt es nichts zu übertragen.
+  const da = Boolean(a) && a.moeglich && stufe !== 'nichtEingerichtet';
+  $('aussen').hidden = !da;
+  if (!da) return;
+  const teile = [t('Stand: {stufe}', { stufe: t(aussenStufen[a.stufe] || a.stufe) })];
+  if (a.laeuft) {
+    const f = a.fortschritt;
+    teile.push(f ? t('läuft: {n} von {von} Dateien, {mb} von {gesamt}', { n: f.erledigt, von: f.gesamt, mb: mb(f.bytes), gesamt: mb(f.bytesGesamt) }) : t('läuft'));
+  }
+  if (a.letzterErfolg) teile.push(t('zuletzt {datum}', { datum: datumZeit.format(new Date(a.letzterErfolg)) }));
+  if (a.fehler) teile.push(a.fehler === 'pv_stichprobe_abweichend' ? t('Eine Stichprobe stimmt nicht mit dem Original überein.') : a.fehler);
+  $('aussen-stand').textContent = teile.join(' · ');
+  const f = $('form-aussen');
+  const z = a.ziel;
+  // Nur wenn sich am Ziel etwas geändert hat: Der Stand kommt während eines
+  // Laufs immer wieder, und getippt wird dabei vielleicht gerade.
+  if (z && JSON.stringify(z) !== aussenGezeigt) {
+    aussenGezeigt = JSON.stringify(z);
+    f.art.value = z.art;
+    f.adresse.value = z.adresse || '';
+    f.bucket.value = z.bucket || '';
+    f.region.value = z.region || '';
+    f.zugang.value = z.zugang || '';
+    f.praefix.value = z.praefix || '';
+    f.drosselMb.value = z.drosselMb || '';
+  }
+  f.geheimnis.placeholder = z ? t('unverändert') : '';
+  f.geheimnis.required = !z;
+  $('aussen-jetzt').hidden = !z || a.laeuft;
+  $('aussen-entfernen').hidden = !z;
+  aussenArtGeaendert();
+  if (a.laeuft) {
+    aussenUhr = setTimeout(async () => {
+      if (!$('aussen').offsetParent) return;
+      try { const sv = await api('/api/v1/sicherung'); zeigeAussen(sv.ausserHaus, sv.stufe); } catch (_) { /* beim nächsten Öffnen */ }
+    }, 4000);
+  }
+}
+function aussenArtGeaendert() {
+  const f = $('form-aussen');
+  const s3 = f.art.value === 's3';
+  for (const x of f.querySelectorAll('.nur-s3')) x.hidden = !s3;
+  f.bucket.required = s3;
+  f.adresse.placeholder = s3 ? 'https://s3.eu-central-1.amazonaws.com' : 'https://cloud.example.org/remote.php/dav/files/name/';
+  $('aussen-zugang-text').textContent = t(s3 ? 'Schlüssel-ID' : 'Benutzer');
+  $('aussen-geheimnis-text').textContent = t(s3 ? 'Geheimschlüssel' : 'Passwort');
+}
+$('form-aussen').art.addEventListener('change', aussenArtGeaendert);
+$('form-aussen').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const knopf = f.querySelector('button[type=submit]');
+  knopf.disabled = true;
+  try {
+    await api('/api/v1/sicherung/ausser-haus', { methode: 'PUT', json: {
+      art: f.art.value, adresse: f.adresse.value.trim(), bucket: f.bucket.value.trim(), region: f.region.value.trim(),
+      zugang: f.zugang.value.trim(), geheimnis: f.geheimnis.value, praefix: f.praefix.value.trim(), drosselMb: Number(f.drosselMb.value) || null,
+    } });
+    f.geheimnis.value = '';
+    zeigeVerwaltung();
+  } catch (x) { alert(x.message); } finally { knopf.disabled = false; }
+});
+$('aussen-jetzt').addEventListener('click', async () => { try { await api('/api/v1/sicherung/ausser-haus/jetzt', { methode: 'POST', json: {} }); zeigeVerwaltung(); } catch (x) { alert(x.message); } });
+$('aussen-entfernen').addEventListener('click', async () => {
+  if (!confirm(t('Das Ziel vergessen? Was dort liegt, bleibt liegen.'))) return;
+  try { await api('/api/v1/sicherung/ausser-haus', { methode: 'DELETE' }); $('form-aussen').reset(); aussenGezeigt = ''; zeigeVerwaltung(); } catch (x) { alert(x.message); }
+});
 $('auswertung-anstossen').addEventListener('click', async () => { try { await api('/api/v1/auswertung', { methode: 'POST', json: {} }); zeigeVerwaltung(); } catch (x) { alert(x.message); } });
 $('sicherung-jetzt').addEventListener('click', async () => { try { await api('/api/v1/sicherung/jetzt', { methode: 'POST', json: {} }); $('ende').textContent = ''; zeigeVerwaltung(); } catch (x) { alert(x.message); } });
 $('form-konto-neu').addEventListener('submit', async (e) => {

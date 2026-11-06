@@ -35,6 +35,8 @@ dependencies:
   exif: ^3.3.0
   image: ^4.2.0
   uuid: ^4.5.1
+  # Antworten von S3 und WebDAV (aussenziel.dart).
+  xml: ^7.0.1
 
 dev_dependencies:
   lints: ^6.0.0
