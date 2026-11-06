@@ -743,6 +743,9 @@ class Teilungsapi {
             for (final p in ps)
               if (da[p] case final name?) {'id': p, 'name': name},
           ],
+        // Zusammengeführt oder gelöscht: Die Einschränkung gilt weiter.
+        if (f.personen case final ps?)
+          'fehlend': ps.where((p) => !da.containsKey(p)).length,
       });
     }
     return _json({'meine': meine, 'mitMir': mitMir});

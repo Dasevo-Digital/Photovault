@@ -58,12 +58,19 @@ void main() {
         't',
         client: client,
       );
-      final fotos = await holePartnerfotos(v);
+      final geholt = await holePartnerfotos(v);
+      final fotos = geholt.fotos!;
       expect([for (final f in fotos) f.aufnahme.id], ['a', 'b']);
       expect(fotos.first.kennung, 'partner:erika:a');
       expect(fotos.first.name, 'Erika');
       expect(fotos.first.zeile.widthPx, 300);
       expect(gefragt.where((g) => g.contains('moritz')), isEmpty);
+
+      // Nichts geändert: keine Seite wird noch einmal geholt.
+      gefragt.clear();
+      final wieder = await holePartnerfotos(v, bekannt: geholt.stand);
+      expect(wieder.fotos, isNull);
+      expect(gefragt, hasLength(1));
     },
   );
 
@@ -73,7 +80,7 @@ void main() {
       't',
       client: MockClient((_) async => http.Response('', 404)),
     );
-    expect(await holePartnerfotos(v), isEmpty);
+    expect((await holePartnerfotos(v)).fotos, isEmpty);
   });
 
   test('zwischen die eigenen Zeilen nach Datum gereiht', () {

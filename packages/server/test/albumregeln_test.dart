@@ -403,6 +403,22 @@ void main() {
       expect((await partnerIds()), hasLength(5));
     });
 
+    test('fehlt die einzige Person, gilt die Einschränkung weiter', () async {
+      await fotos();
+      await mitJson('PUT', '/api/v1/partner/${max.id}', erikaToken, {
+        'personen': ['ben'],
+      });
+      final db = await erikasDb();
+      await (db.delete(db.people)..where((t) => t.id.equals('ben'))).go();
+      final meine =
+          ((await jsonAus(await partner('GET', '', erikaToken)))['meine']!
+                  as List)
+              .cast<Map>()
+              .single;
+      expect(meine['personen'], isEmpty);
+      expect(meine['fehlend'], 1, reason: 'sonst sähe es nach „alles“ aus');
+    });
+
     test('in der eigenen Zeitleiste – eingereiht, mit Namen', () async {
       final f = await fotos();
       final eigen = await ladeHoch(maxToken, 'max.jpg', 200);
@@ -450,6 +466,19 @@ void main() {
       expect(vonErika['konto'], erika.id);
       expect(vonErika['von'], 'erika');
       expect(z.firstWhere((x) => x['id'] == eigen).containsKey('konto'), false);
+
+      // Bei „älteste zuerst“ fehlen sie in der Liste, also auch im Regler.
+      final ohne = await jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/zeitleiste/monate?sortierung=aufnahmeAlt',
+          token: maxToken,
+        ),
+      );
+      expect(
+        [for (final m in ohne['monate']! as List) (m as Map)['monat']],
+        ['2024-04'],
+      );
 
       // Der Ziehregler zählt mit.
       final monate = await jsonAus(

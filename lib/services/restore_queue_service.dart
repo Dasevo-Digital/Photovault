@@ -394,7 +394,7 @@ class RestoreQueueService {
     final maskLayers = [
       for (final m in masks)
         MaskAdjustmentLayer(
-          maskFilePath: _paths.absolute(m.maskRelativePath).path,
+          maskFilePath: (await _paths.bereit(m.maskRelativePath)).path,
           adjustments: DevelopAdjustments(
             exposure: m.exposure,
             temperature: m.temperature,

@@ -170,7 +170,13 @@ extension BearbeitungsAbfragen on AppDatabase {
   Future<List<DevelopMaskData>> masksForAsset(String assetId) =>
       (select(developMasks)
             ..where((t) => t.assetId.equals(assetId))
-            ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+            // Nach dem Anlegen, nicht nach der Kennung: Die ist seit #109
+            // zufällig, und die Reihenfolge entscheidet, welche Maske die
+            // neueste ist und wie die Ebenen übereinanderliegen.
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
           .get();
 
   /// Für die Bibliotheks-Integritätsprüfung – ein einzelner Full-Table-Select

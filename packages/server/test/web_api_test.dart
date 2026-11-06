@@ -2005,6 +2005,30 @@ void main() {
       expect(zeile.heightPx, 3000);
       expect(await db.select(db.assets).get(), hasLength(vorher.length + 1));
 
+      // Dieselbe Collage noch einmal: Sie liegt schon da, kein Fehler.
+      final nochmal = await collage({
+        'ids': [b, a],
+        'vorlage': 'stapel',
+      });
+      expect(nochmal.statusCode, 200, reason: 'bitgleich, also dieselbe');
+      expect((await jsonAus(nochmal))['aufnahme'], neu);
+      expect(await db.select(db.assets).get(), hasLength(vorher.length + 1));
+
+      // Falsche Typen sind eine 400, kein Absturz.
+      for (final falsch in const [
+        {'format': 3},
+        {'vorlage': 1},
+        {'abstand': 'viel'},
+        {'ecken': true},
+        {'hintergrund': 5},
+      ]) {
+        final r2 = await collage({
+          'ids': [a, b],
+          ...falsch,
+        });
+        expect(r2.statusCode, 400, reason: '$falsch');
+      }
+
       // Ein Foto allein, ein fremdes oder eines im Papierkorb: nein.
       expect(
         (await collage({

@@ -66,14 +66,17 @@ class Sitzung extends ChangeNotifier {
   /// Fotos von Partnern, die dieses Konto in seiner Zeitleiste sehen will
   /// (#299) – vom Server, nicht aus der Kopie.
   final partnerfotos = ValueNotifier<List<Partnerfoto>>(const []);
+  String? _partnerstand;
 
   /// Holt [partnerfotos] neu; ohne Netz bleibt, was da ist.
   Future<void> ladePartnerfotos() async {
     final a = abgleich;
     if (a == null) return;
     try {
-      final neu = await holePartnerfotos(a.verbindung);
-      if (identical(abgleich, a)) partnerfotos.value = neu;
+      final neu = await holePartnerfotos(a.verbindung, bekannt: _partnerstand);
+      if (!identical(abgleich, a)) return;
+      _partnerstand = neu.stand;
+      if (neu.fotos case final f?) partnerfotos.value = f;
     } on Object {
       // Kein Netz oder ein älterer Server.
     }
@@ -481,7 +484,8 @@ class Sitzung extends ChangeNotifier {
     if (a == null) return;
     await a.sende();
     await a.empfange();
-    await ladePartnerfotos();
+    // Nicht darauf warten: Die Liste kann lang sein.
+    unawaited(ladePartnerfotos());
   }
 
   /// Meldet das Telefon beim Server ab und löscht die Kopie samt aller
@@ -518,6 +522,7 @@ class Sitzung extends ChangeNotifier {
     if (a == null) return;
     abgleich = null;
     partnerfotos.value = const [];
+    _partnerstand = null;
     _speicherUhr?.cancel();
     serverspeicher = null;
     serversicherung = null;

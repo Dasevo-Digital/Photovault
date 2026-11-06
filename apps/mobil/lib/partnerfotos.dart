@@ -75,17 +75,35 @@ const partnerfotosHoechstens = 100000;
 /// Holt die Fotos aller Partner, die dieses Konto in seiner Zeitleiste
 /// sehen will, die neuesten zuerst. Ein Server ohne Partnerfreigabe gibt
 /// eine leere Liste.
-Future<List<Partnerfoto>> holePartnerfotos(Serververbindung v) async {
+///
+/// [stand] ist das Merkmal der Liste. Stimmt [bekannt] damit überein, kommt
+/// [fotos] als `null` zurück: Die Liste wird nicht noch einmal geladen, denn
+/// sie kann bei grossen Bibliotheken viele Megabyte schwer sein, und das
+/// Telefon fragt alle 15 Minuten. Das Merkmal kennt Anzahl und neuestes
+/// Foto je Partner; eine neue Fassung eines älteren Fotos kommt also erst
+/// mit der nächsten Änderung oder dem nächsten Start.
+Future<({String stand, List<Partnerfoto>? fotos})> holePartnerfotos(
+  Serververbindung v, {
+  String? bekannt,
+}) async {
   final Map<String, Object?> d;
   try {
     d = await v.hole('api/v1/partner');
   } on Serverfehler catch (e) {
-    if (e.status == 404) return const [];
+    if (e.status == 404) return (stand: '', fotos: const <Partnerfoto>[]);
     rethrow;
   }
+  final partner = [
+    for (final x in (d['mitMir'] as List? ?? const []))
+      if (x is Map && x['inZeitleiste'] == true) x,
+  ];
+  final stand = [
+    for (final x in partner)
+      '${x['konto']}:${x['anzahl']}:${x['titelbild']}:${x['titelstand']}',
+  ].join('|');
+  if (stand == bekannt) return (stand: stand, fotos: null);
   final alle = <Partnerfoto>[];
-  for (final x in (d['mitMir'] as List? ?? const [])) {
-    if (x is! Map || x['inZeitleiste'] != true) continue;
+  for (final x in partner) {
     final b = GeteiltesAlbum.partner(x.cast<String, Object?>());
     String? weiter;
     do {
@@ -101,7 +119,7 @@ Future<List<Partnerfoto>> holePartnerfotos(Serververbindung v) async {
     } while (weiter != null && alle.length < partnerfotosHoechstens);
   }
   alle.sort((a, b) => b.aufnahme.aufgenommen.compareTo(a.aufnahme.aufgenommen));
-  return alle;
+  return (stand: stand, fotos: alle);
 }
 
 /// Reiht [partner] zwischen [zeilen], beide nach Datum absteigend.

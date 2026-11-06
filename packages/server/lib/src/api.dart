@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
 import 'package:kern/auswertung/gesicht_von_hand.dart';
@@ -914,8 +915,15 @@ class _Api {
     }
 
     await zaehle(db, '', const []);
-    // Mit den Fotos der Partner, wie die Zeitleiste sie zeigt (#299).
-    for (final p in await _partnerInZeitleiste(anfrage)) {
+    // Mit den Fotos der Partner, wie die Zeitleiste sie zeigt (#299) – nur
+    // in der gewohnten Reihenfolge, sonst fehlen sie dort.
+    final sortierung = anfrage.url.queryParameters['sortierung'];
+    final mitPartnern =
+        sortierung == null || sortierung == rastersortierungVorgabe.name;
+    for (final p
+        in mitPartnern
+            ? await _partnerInZeitleiste(anfrage)
+            : const <_Partnerquelle>[]) {
       final b = freigabeBedingung(
         ab: p.freigabe.ab,
         personen: p.freigabe.personen,
@@ -2217,19 +2225,29 @@ class _Api {
       }
       aufnahmen.add(a);
     }
+    final vorlage = k['vorlage'], formatname = k['format'];
+    final abstand = k['abstand'], ecken = k['ecken'];
+    final hintergrund = k['hintergrund'];
+    if ((vorlage != null && vorlage is! String) ||
+        (formatname != null && formatname is! String) ||
+        (abstand != null && abstand is! num) ||
+        (ecken != null && ecken is! num) ||
+        (hintergrund != null && hintergrund is! String)) {
+      return _json({'fehler': 'Angaben unlesbar'}, status: 400);
+    }
     final vorschau = k['vorschau'] == true;
     final format =
-        Collageformat.namens(k['format'] as String?) ?? Collageformat.quadrat;
-    // Die Vorschau in einem Drittel der Grösse – schnell genug zum Spielen.
+        Collageformat.namens(formatname as String?) ?? Collageformat.quadrat;
+    // Die Vorschau in einem Viertel der Grösse – schnell genug zum Spielen.
     final teiler = vorschau ? 4 : 1;
     final auftrag0 = Collageauftrag(
       bilder: const [],
-      vorlage: collagevorlage(aufnahmen.length, k['vorlage'] as String?),
+      vorlage: collagevorlage(aufnahmen.length, vorlage as String?),
       breite: format.breite ~/ teiler,
       hoehe: format.hoehe ~/ teiler,
-      abstand: (k['abstand'] as num?)?.toDouble() ?? 0.01,
-      ecken: (k['ecken'] as num?)?.toDouble() ?? 0,
-      hintergrund: collagefarbe(k['hintergrund'] as String?),
+      abstand: (abstand as num?)?.toDouble() ?? 0.01,
+      ecken: (ecken as num?)?.toDouble() ?? 0,
+      hintergrund: collagefarbe(hintergrund as String?),
       qualitaet: vorschau ? 80 : 92,
     );
     final kante = auftrag0.kante;
@@ -2276,6 +2294,13 @@ class _Api {
       final datei = File(p.join(ordner.path, collageDateiname(juengste)));
       await datei.writeAsBytes(jpeg, flush: true);
       final ergebnis = await b.importe.importFile(datei.path);
+      // Dieselbe Collage noch einmal: Sie liegt schon da.
+      if (ergebnis.outcome == ImportOutcome.duplicateSkipped) {
+        final da = await b.kennungFuer(sha256.convert(jpeg).toString());
+        if (da != null) {
+          return _json({'aufnahme': da, 'ausgang': ergebnis.outcome.name});
+        }
+      }
       final id = ergebnis.assetId;
       if (ergebnis.outcome != ImportOutcome.imported || id == null) {
         return _json({

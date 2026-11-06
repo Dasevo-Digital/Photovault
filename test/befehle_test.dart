@@ -719,6 +719,30 @@ void main() {
   /// einem Gerät vorweggenommen und erst später auf dem Server ausgeführt
   /// wird. Geprüft an zwei getrennten Datenbanken: Derselbe Befehl, über
   /// JSON weitergereicht, legt in beiden dieselbe Zeile an.
+  test('Masken bleiben in der Reihenfolge des Anlegens (#109)', () async {
+    final d = AppDatabase(NativeDatabase.memory());
+    addTearDown(d.close);
+    // Zufällige Kennungen: Die jüngere Maske kann die kleinere tragen.
+    await MaskeAnlegen(
+      'a1',
+      'masks/erste.png',
+      'Erste',
+      id: 1 << 44,
+      angelegt: DateTime(2026, 11, 6, 10),
+    ).anwenden(d);
+    await MaskeAnlegen(
+      'a1',
+      'masks/zweite.png',
+      'Zweite',
+      id: 1 << 41,
+      angelegt: DateTime(2026, 11, 6, 11),
+    ).anwenden(d);
+    expect(
+      [for (final m in await d.masksForAsset('a1')) m.label],
+      ['Erste', 'Zweite'],
+    );
+  });
+
   group('Kennungen kommen aus dem Befehl', () {
     late AppDatabase hier, dort;
     setUp(() {

@@ -14,6 +14,7 @@ import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
 import 'package:kern/abgleich/speicher.dart';
@@ -32,6 +33,7 @@ import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
 import 'package:photo_vault_mobil/lokal/ungesichert.dart';
+import 'package:photo_vault_mobil/partnerfotos.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
 import 'package:photo_vault_mobil/seiten/als_jpeg.dart';
@@ -68,6 +70,7 @@ import 'package:photo_vault_mobil/seiten/suche.dart';
 import 'package:photo_vault_mobil/sicherung/dienst.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
+import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:photo_vault_mobil/seiten/zeitleiste.dart';
 import 'package:kern/services/sortierung.dart';
 import 'package:photo_vault_mobil/seiten/vergleich.dart';
@@ -3658,6 +3661,62 @@ void main() {
       expect(find.byType(Lokalbetrachter), findsOneWidget);
       final t = AppTexte.of(tester.element(find.byType(Lokalbetrachter)));
       expect(find.text(t.lokalNochNichtGesichert), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Fotos eines Partners im Raster: Marke, keine Auswahl, Betrachter (#299)',
+    (tester) async {
+      final ordner = Directory.systemTemp.createTempSync('pv_partner_');
+      addTearDown(() => ordner.deleteSync(recursive: true));
+      final pfade = (await tester.runAsync(
+        () => StoragePaths.forTesting(ordner),
+      ))!;
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      final verbindung = Serververbindung(
+        Uri.parse('https://fotos.example/'),
+        't',
+        client: MockClient((_) async => http.Response('', 404)),
+      );
+      final sitzung = Sitzung()
+        ..db = db
+        ..paths = pfade
+        ..abgleich = Abgleich(db, verbindung);
+      final f = Partnerfoto.aus(
+        GeteiltesAlbum.partner({'konto': 'erika', 'name': 'Erika'}),
+        {
+          'id': 'a1',
+          'art': 'bild',
+          'name': 'a1.jpg',
+          'aufgenommen': _spaeter.toIso8601String(),
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: AufnahmenRaster(
+              sitzung: sitzung,
+              zeilen: [f.zeile, _zeile('s1', 0, 0)],
+              partner: {f.kennung: f},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('E'), findsOneWidget, reason: 'Anfangsbuchstabe');
+
+      await tester.longPress(find.byType(Miniatur).at(0));
+      await tester.pump();
+      expect(find.byType(Auswahlleiste), findsNothing, reason: 'nicht wählbar');
+
+      await tester.tap(find.byType(Miniatur).at(0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(GeteilterBetrachter), findsOneWidget);
     },
   );
 

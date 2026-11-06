@@ -56,7 +56,9 @@ class Regel {
   /// Gewählte Personen, die es nicht mehr gibt (zusammengeführt).
   final int fehlend;
 
-  bool get leer => personen.isEmpty && ab == null;
+  /// Nichts eingeschränkt. Fehlende Personen zählen mit: Der Server filtert
+  /// weiter nach ihnen, auch wenn keine Namen mehr übrig sind.
+  bool get leer => personen.isEmpty && ab == null && fehlend == 0;
 }
 
 String _tag(DateTime t) =>
@@ -76,6 +78,7 @@ String regelText(BuildContext context, Regel r) {
           : t.regelMit(namen.join(', ')),
     );
   }
+  if (r.fehlend > 0) teile.add(t.regelPersonenFehlen(r.fehlend));
   if (r.ab case final ab?) {
     teile.add(
       t.regelAb(

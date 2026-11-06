@@ -108,6 +108,15 @@ mixin _Vorschau on _EntwickelnBasis {
       }
     }
     _masks = await widget.db.masksForAsset(widget.asset.id);
+    // Eine Maske von einem anderen Gerät liegt hier noch nicht (#109). Der
+    // Bildaufbau braucht ihre Datei, und er läuft ohne Warten.
+    for (final m in _masks) {
+      try {
+        await widget.paths.bereit(m.maskRelativePath);
+      } on Object {
+        // Ohne Netz: Das Rendern meldet es, statt hier hängenzubleiben.
+      }
+    }
     // Der Ausgangsstand ist der erste Schritt: der einzige Weg ganz
     // zurueck.
     _sitzungBegonnen = true;

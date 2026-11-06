@@ -47,9 +47,16 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   Future<void> _init() async {
     final controller = VideoPlaybackController();
     _controller = controller;
-    final ok = await controller.open(
-      widget.paths.absolute(widget.asset.relativePath),
-    );
+    // Verbunden liegt das Original beim Server (#109). Ohne Netz bleibt
+    // es bei der Meldung unten.
+    var ok = false;
+    try {
+      ok = await controller.open(
+        await widget.paths.bereit(widget.asset.relativePath),
+      );
+    } on Object {
+      ok = false;
+    }
     if (!mounted) return;
     if (!ok) {
       // Ohne diese Prüfung bliebe der Ladekreis für immer stehen, weil

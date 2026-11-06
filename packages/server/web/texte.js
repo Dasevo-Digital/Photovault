@@ -925,6 +925,7 @@ const EN = {
   'Collage wird gespeichert …': 'Saving collage …',
   'Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.': 'Collage saved – it is in the timeline next to its photos.',
   '2 bis 9 Fotos': '2 to 9 photos',
+  'Angaben unlesbar': 'Unreadable settings',
   'Foto unbekannt': 'Unknown photo',
   'Datei fehlt': 'File missing',
 };

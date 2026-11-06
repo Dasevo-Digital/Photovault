@@ -1034,6 +1034,33 @@ void main() {
     });
     expect(find.text('mit Ben'), findsOneWidget);
   });
+  testWidgets('fehlen die Personen, steht dort nicht „ganze Bibliothek“', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) {
+            const r = Regel(fehlend: 1);
+            return Scaffold(
+              body: Column(
+                children: [
+                  Text(r.leer ? 'leer' : 'eingeschränkt'),
+                  Text(regelText(context, r)),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    expect(find.text('eingeschränkt'), findsOneWidget);
+    expect(
+      find.text('Eine gewählte Person gibt es nicht mehr.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('Nachlasskontakt: benennen, Zugang verlangen, ablehnen (#300)', (
     tester,
   ) async {

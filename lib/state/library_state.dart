@@ -2012,8 +2012,9 @@ class LibraryState extends ChangeNotifier {
 
   /// Legt [jpeg] als neues Foto namens [name] in die Bibliothek – etwa eine
   /// Collage (#301). Nur ohne Server; verbunden legt der Server es an.
-  /// Gibt die Kennung, oder `null`, wenn genau dieses Bild schon da ist
-  /// oder das Einlesen scheitert.
+  /// Gibt die Kennung, oder `null`, wenn genau dieses Bild schon da ist.
+  /// Scheitert das Einlesen, ist das ein [StateError] – nichts darf
+  /// „gespeichert“ melden, was nicht angekommen ist.
   Future<String?> sichereNeuesFoto(Uint8List jpeg, String name) async {
     _nurOhneServer();
     final ordner = await Directory.systemTemp.createTemp('pv_neu_');
@@ -2021,9 +2022,10 @@ class LibraryState extends ChangeNotifier {
       final ziel = File(p.join(ordner.path, name));
       await ziel.writeAsBytes(jpeg, flush: true);
       final ergebnis = await importService.importFile(ziel.path);
+      if (ergebnis.outcome == ImportOutcome.duplicateSkipped) return null;
       final id = ergebnis.assetId;
       if (ergebnis.outcome != ImportOutcome.imported || id == null) {
-        return null;
+        throw StateError(ergebnis.error ?? 'pv_import_gescheitert');
       }
       await _postProcessNewAsset(id);
       if (await db.autoAnalyzeAfterImportEnabled()) {

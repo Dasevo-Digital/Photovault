@@ -1405,6 +1405,7 @@ function regelText(r) {
   const teile = [];
   const namen = (r.personen || []).map((p) => p.name);
   if (namen.length) teile.push(r.alle ? t('{namen} zusammen', { namen: namen.join(' & ') }) : t('mit {namen}', { namen: namen.join(', ') }));
+  if (r.fehlend) teile.push(r.fehlend === 1 ? t('Eine gewählte Person gibt es nicht mehr.') : t('{n} gewählte Personen gibt es nicht mehr.', { n: r.fehlend }));
   if (r.ab) teile.push(t('ab {tag}', { tag: tagText(r.ab) }));
   return teile.join(' · ');
 }
@@ -4281,7 +4282,7 @@ function monatsschluessel(d) {
 }
 
 async function holeZeitleistenmonate() {
-  const d = await api('/api/v1/zeitleiste/monate');
+  const d = await api(`/api/v1/zeitleiste/monate?sortierung=${encodeURIComponent(ansicht.sortierung)}`);
   const monate = ansicht.sortierung === 'aufnahmeAlt' ? [...d.monate].reverse() : d.monate;
   const gesamt = monate.reduce((n, m) => n + m.anzahl, 0);
   let vorher = 0;
@@ -5963,7 +5964,8 @@ function tastenziele() {
   if (!liste) return [];
   if (auswahl.size) return gewaehlte();
   const a = liste.aufnahmen[rahmen];
-  return a && rahmen >= 0 && liste.kacheln[rahmen]?.classList.contains('rahmen') ? [a] : [];
+  // An Fotos eines Partners (#299) lässt sich nichts ändern.
+  return a && !a.konto && rahmen >= 0 && liste.kacheln[rahmen]?.classList.contains('rahmen') ? [a] : [];
 }
 
 function erneuereMarken(i) {
@@ -6105,7 +6107,7 @@ document.addEventListener('keydown', async (e) => {
       else if (taste === 'ArrowLeft') oeffne(offen - 1);
       else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); oeffne(offen + 1); }
       else if (taste === 'i' || taste === 'I') setzeAngabenOffen(!angabenOffen);
-      else if (liste.fremd) return;
+      else if (fremdeAufnahme(a)) return;
       else if (taste === 'f' || taste === 'F') await setzeFavorit([a]);
       else if (/^[0-5]$/.test(taste)) await setzeSterne([a], Number(taste));
       else if (FARBTASTEN[taste]) await setzeFarbe([a], FARBTASTEN[taste]);
