@@ -25,6 +25,8 @@ class Suchfilter {
     this.art = MediaTypeFilter.all,
     this.favoriten = false,
     this.kamera,
+    this.ohneAlbum = false,
+    this.herkunft = Aufnahmeherkunft.alle,
   });
 
   /// Alle müssen auf der Aufnahme sein.
@@ -41,6 +43,12 @@ class Suchfilter {
   /// Das Kameramodell.
   final String? kamera;
 
+  /// Nur Aufnahmen, die in keinem Album liegen.
+  final bool ohneAlbum;
+
+  /// Aus einer Kamera oder empfangen, siehe [Aufnahmeherkunft].
+  final Aufnahmeherkunft herkunft;
+
   bool get leer =>
       personen.isEmpty &&
       land == null &&
@@ -49,7 +57,9 @@ class Suchfilter {
       bis == null &&
       art == MediaTypeFilter.all &&
       !favoriten &&
-      kamera == null;
+      kamera == null &&
+      !ohneAlbum &&
+      herkunft == Aufnahmeherkunft.alle;
 
   SearchFilters get alsFilter => SearchFilters(
     personIds: personen,
@@ -60,10 +70,13 @@ class Suchfilter {
     mediaType: art,
     favoritesOnly: favoriten,
     cameraModel: kamera,
+    notInAnyAlbum: ohneAlbum,
+    herkunft: herkunft,
   );
 
   /// Für die Adresse: `person` (mehrfach), `land`, `stadt`, `von`, `bis`
-  /// (`JJJJ-MM-TT`), `art` (`bild`/`video`), `favoriten=1`, `kamera`.
+  /// (`JJJJ-MM-TT`), `art` (`bild`/`video`), `favoriten=1`, `kamera`,
+  /// `ohneAlbum=1`, `herkunft` (`kamera`/`empfangen`).
   static Suchfilter ausParametern(Map<String, List<String>> p) {
     String? eins(String name) {
       final w = p[name];
@@ -92,6 +105,12 @@ class Suchfilter {
       },
       favoriten: eins('favoriten') == '1',
       kamera: eins('kamera'),
+      ohneAlbum: eins('ohneAlbum') == '1',
+      herkunft: switch (eins('herkunft')) {
+        'kamera' => Aufnahmeherkunft.kamera,
+        'empfangen' => Aufnahmeherkunft.empfangen,
+        _ => Aufnahmeherkunft.alle,
+      },
     );
   }
 }

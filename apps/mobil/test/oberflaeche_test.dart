@@ -2184,6 +2184,60 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
+  testWidgets('Suche: nicht in einem Album, auf einem kleinen Telefon', (
+    tester,
+  ) async {
+    // Die Filter sind länger als dieses Telefon hoch: „Anwenden“ muss trotzdem
+    // zu sehen sein, ohne dass man rollt.
+    tester.view.physicalSize = const Size(375, 667);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final (sitzung, db) = await sitzungMit(tester, ['s1', 's2']);
+    await tester.runAsync(() async {
+      await db
+          .into(db.albums)
+          .insert(
+            AlbumsCompanion.insert(
+              id: 'al',
+              name: 'Sommer',
+              createdAt: DateTime(2026),
+            ),
+          );
+      await db
+          .into(db.albumAssets)
+          .insert(AlbumAssetsCompanion.insert(albumId: 'al', assetId: 's1'));
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(body: Suche(sitzung: sitzung)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Filter'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Herkunft'), findsOneWidget);
+    await tester.ensureVisible(find.text('Nicht in einem Album'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nicht in einem Album'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Anwenden'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Filter: Nicht in einem Album'), findsOneWidget);
+    final raster = tester.widget<AufnahmenRaster>(find.byType(AufnahmenRaster));
+    expect([for (final z in raster.zeilen) z.id], ['s2']);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Suche: ein gelöschter Treffer fällt aus der Liste (#235)', (
     tester,
   ) async {

@@ -4392,6 +4392,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?'**
   String get entwMaskenFrage;
+
+  /// No description provided for @sucheFilterHerkunft.
+  ///
+  /// In de, this message translates to:
+  /// **'Herkunft'**
+  String get sucheFilterHerkunft;
+
+  /// No description provided for @sucheFilterHerkunftKamera.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus einer Kamera'**
+  String get sucheFilterHerkunftKamera;
+
+  /// No description provided for @sucheFilterHerkunftEmpfangen.
+  ///
+  /// In de, this message translates to:
+  /// **'Empfangen'**
+  String get sucheFilterHerkunftEmpfangen;
+
+  /// No description provided for @sucheFilterOhneAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht in einem Album'**
+  String get sucheFilterOhneAlbum;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

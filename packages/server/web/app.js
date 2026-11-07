@@ -3463,10 +3463,11 @@ let suchlauf = 0;
 function filterParameter() {
   const q = new URLSearchParams();
   for (const id of suchfilter.personen) q.append('person', id);
-  for (const [name, feld] of [['land', 'filter-land'], ['stadt', 'filter-stadt'], ['von', 'filter-von'], ['bis', 'filter-bis'], ['art', 'filter-art'], ['kamera', 'filter-kamera']]) {
+  for (const [name, feld] of [['land', 'filter-land'], ['stadt', 'filter-stadt'], ['von', 'filter-von'], ['bis', 'filter-bis'], ['art', 'filter-art'], ['kamera', 'filter-kamera'], ['herkunft', 'filter-herkunft']]) {
     if ($(feld).value) q.set(name, $(feld).value);
   }
   if ($('filter-favoriten').checked) q.set('favoriten', '1');
+  if ($('filter-ohne-album').checked) q.set('ohneAlbum', '1');
   return q;
 }
 
@@ -3481,7 +3482,9 @@ function zeigeFilterzeile() {
   if (von || bis) teile.push(`${von || '…'} – ${bis || '…'}`);
   if ($('filter-art').value) teile.push($('filter-art').selectedOptions[0].textContent);
   if ($('filter-kamera').value) teile.push($('filter-kamera').value);
+  if ($('filter-herkunft').value) teile.push($('filter-herkunft').selectedOptions[0].textContent);
   if ($('filter-favoriten').checked) teile.push(t('Favoriten'));
+  if ($('filter-ohne-album').checked) teile.push(t('Nicht in einem Album'));
   $('suche-filterzeile').textContent = teile.length ? `${t('Filter')}: ${teile.join(' · ')}` : '';
   $('suche-filterzeile').hidden = !teile.length;
   $('filter-knopf').classList.toggle('aktiv', teile.length > 0);
@@ -3494,12 +3497,13 @@ $('filter-knopf').addEventListener('click', async () => {
   if (auf) { try { await ladeSuchauswahl(); } catch (x) { $('suche-hinweis').textContent = x.message; } }
 });
 $('filter-land').addEventListener('change', () => { fuelleStaedte(); zeigeFilterzeile(); });
-for (const id of ['filter-stadt', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera', 'filter-favoriten']) $(id).addEventListener('change', zeigeFilterzeile);
+for (const id of ['filter-stadt', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera', 'filter-herkunft', 'filter-favoriten', 'filter-ohne-album']) $(id).addEventListener('change', zeigeFilterzeile);
 $('filter-leeren').addEventListener('click', () => {
   suchfilter.personen.clear();
   for (const b of $('filter-personen').querySelectorAll('[aria-pressed]')) b.setAttribute('aria-pressed', 'false');
-  for (const id of ['filter-land', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera']) $(id).value = '';
+  for (const id of ['filter-land', 'filter-von', 'filter-bis', 'filter-art', 'filter-kamera', 'filter-herkunft']) $(id).value = '';
   $('filter-favoriten').checked = false;
+  $('filter-ohne-album').checked = false;
   fuelleStaedte();
   zeigeFilterzeile();
 });

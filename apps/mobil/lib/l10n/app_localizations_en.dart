@@ -2838,4 +2838,16 @@ class AppTexteEn extends AppTexte {
   @override
   String get entwMaskenFrage =>
       'The masks of this photo will then be missing from the saved image, on all devices. Save anyway?';
+
+  @override
+  String get sucheFilterHerkunft => 'Source';
+
+  @override
+  String get sucheFilterHerkunftKamera => 'From a camera';
+
+  @override
+  String get sucheFilterHerkunftEmpfangen => 'Received';
+
+  @override
+  String get sucheFilterOhneAlbum => 'Not in an album';
 }

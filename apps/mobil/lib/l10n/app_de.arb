@@ -1405,5 +1405,9 @@
   "sicherungSofortAndroidGedrosselt": "Neue Fotos gehen zum Server, wenn Netz und Akku passen. Öffnest du die App selten, hält Android das bis zu rund 30 Minuten zurück.",
   "sicherungSofortAkku": "Nicht zurückhalten",
   "entwMaskenHinweis": "Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.",
-  "entwMaskenFrage": "Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?"
+  "entwMaskenFrage": "Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?",
+  "sucheFilterHerkunft": "Herkunft",
+  "sucheFilterHerkunftKamera": "Aus einer Kamera",
+  "sucheFilterHerkunftEmpfangen": "Empfangen",
+  "sucheFilterOhneAlbum": "Nicht in einem Album"
 }

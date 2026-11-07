@@ -2850,4 +2850,16 @@ class AppTexteDe extends AppTexte {
   @override
   String get entwMaskenFrage =>
       'Die Masken dieses Fotos fehlen dann im gespeicherten Bild, auf allen Geräten. Trotzdem speichern?';
+
+  @override
+  String get sucheFilterHerkunft => 'Herkunft';
+
+  @override
+  String get sucheFilterHerkunftKamera => 'Aus einer Kamera';
+
+  @override
+  String get sucheFilterHerkunftEmpfangen => 'Empfangen';
+
+  @override
+  String get sucheFilterOhneAlbum => 'Nicht in einem Album';
 }

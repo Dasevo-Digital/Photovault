@@ -898,5 +898,9 @@
   "sicherungSofortAndroidGedrosselt": "New photos go to the server when network and battery allow it. If you rarely open the app, Android may hold this back for about 30 minutes.",
   "sicherungSofortAkku": "Don't hold back",
   "entwMaskenHinweis": "Only the computer can render masks: They are missing from the image here.",
-  "entwMaskenFrage": "The masks of this photo will then be missing from the saved image, on all devices. Save anyway?"
+  "entwMaskenFrage": "The masks of this photo will then be missing from the saved image, on all devices. Save anyway?",
+  "sucheFilterHerkunft": "Source",
+  "sucheFilterHerkunftKamera": "From a camera",
+  "sucheFilterHerkunftEmpfangen": "Received",
+  "sucheFilterOhneAlbum": "Not in an album"
 }

@@ -186,7 +186,11 @@ class _SucheState extends State<Suche> {
       if (f.art == MediaTypeFilter.image) t.sucheFilterFotos,
       if (f.art == MediaTypeFilter.video) t.sucheFilterVideos,
       ?f.kamera,
+      if (f.herkunft == Aufnahmeherkunft.kamera) t.sucheFilterHerkunftKamera,
+      if (f.herkunft == Aufnahmeherkunft.empfangen)
+        t.sucheFilterHerkunftEmpfangen,
       if (f.favoriten) t.bibFavoriten,
+      if (f.ohneAlbum) t.sucheFilterOhneAlbum,
     ].join(' · ');
   }
 
@@ -300,7 +304,8 @@ class _SucheState extends State<Suche> {
 }
 
 /// Die Filter der Suche – dieselben wie im Browser: Personen (alle müssen
-/// drauf sein), Land und Stadt, Zeitraum, Art, Kamera, nur Favoriten.
+/// drauf sein), Land und Stadt, Zeitraum, Art, Kamera, Herkunft, nur
+/// Favoriten, nicht in einem Album.
 class _Filterblatt extends StatefulWidget {
   const _Filterblatt({
     required this.sitzung,
@@ -325,6 +330,8 @@ class _FilterblattState extends State<_Filterblatt> {
   late MediaTypeFilter _art = widget.filter.art;
   late String? _kamera = widget.filter.kamera;
   late bool _favoriten = widget.filter.favoriten;
+  late bool _ohneAlbum = widget.filter.ohneAlbum;
+  late Aufnahmeherkunft _herkunft = widget.filter.herkunft;
 
   Suchfilter get _ergebnis => Suchfilter(
     personen: [
@@ -338,6 +345,8 @@ class _FilterblattState extends State<_Filterblatt> {
     art: _art,
     favoriten: _favoriten,
     kamera: _kamera,
+    ohneAlbum: _ohneAlbum,
+    herkunft: _herkunft,
   );
 
   Future<void> _datum(bool anfang) async {
@@ -372,160 +381,209 @@ class _FilterblattState extends State<_Filterblatt> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(t.sucheFilter, style: Theme.of(context).textTheme.titleMedium),
-            if (widget.auswahl.personen.isNotEmpty) ...[
-              titel(t.sucheFilterPersonen),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 children: [
-                  for (final p in widget.auswahl.personen)
-                    FilterChip(
-                      avatar: SizedBox.square(
-                        dimension: 24,
-                        child: Personenbild(
-                          paths: widget.sitzung.paths,
-                          name: p.name,
-                          relativ: p.coverFaceCropPath,
+                  Text(
+                    t.sucheFilter,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (widget.auswahl.personen.isNotEmpty) ...[
+                    titel(t.sucheFilterPersonen),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final p in widget.auswahl.personen)
+                          FilterChip(
+                            avatar: SizedBox.square(
+                              dimension: 24,
+                              child: Personenbild(
+                                paths: widget.sitzung.paths,
+                                name: p.name,
+                                relativ: p.coverFaceCropPath,
+                              ),
+                            ),
+                            label: Text(p.name),
+                            selected: _personen.contains(p.id),
+                            onSelected: (an) => setState(
+                              () => an
+                                  ? _personen.add(p.id)
+                                  : _personen.remove(p.id),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                  titel(t.sucheFilterOrt),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButton<String?>(
+                          isExpanded: true,
+                          value: _land,
+                          items: [
+                            DropdownMenuItem(
+                              value: null,
+                              child: Text(t.sucheFilterAlleLaender),
+                            ),
+                            for (final o in widget.auswahl.orte)
+                              DropdownMenuItem(
+                                value: o.land,
+                                child: Text(landAnzeige(o.land, sprache)),
+                              ),
+                          ],
+                          onChanged: (w) => setState(() {
+                            _land = w;
+                            _stadt = null;
+                          }),
                         ),
                       ),
-                      label: Text(p.name),
-                      selected: _personen.contains(p.id),
-                      onSelected: (an) => setState(
-                        () => an ? _personen.add(p.id) : _personen.remove(p.id),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButton<String?>(
+                          isExpanded: true,
+                          value: _stadt,
+                          items: [
+                            DropdownMenuItem(
+                              value: null,
+                              child: Text(t.sucheFilterAlleStaedte),
+                            ),
+                            for (final s in staedte)
+                              DropdownMenuItem(value: s, child: Text(s)),
+                          ],
+                          onChanged: staedte.isEmpty
+                              ? null
+                              : (w) => setState(() => _stadt = w),
+                        ),
                       ),
-                    ),
-                ],
-              ),
-            ],
-            titel(t.sucheFilterOrt),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButton<String?>(
-                    isExpanded: true,
-                    value: _land,
-                    items: [
-                      DropdownMenuItem(
-                        value: null,
-                        child: Text(t.sucheFilterAlleLaender),
+                    ],
+                  ),
+                  titel(t.sucheFilterZeitraum),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _datum(true),
+                          child: Text(
+                            _von == null
+                                ? t.sucheFilterVon
+                                : datum.format(_von!),
+                          ),
+                        ),
                       ),
-                      for (final o in widget.auswahl.orte)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('–'),
+                      ),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _datum(false),
+                          child: Text(
+                            _bis == null
+                                ? t.sucheFilterBis
+                                : datum.format(_bis!),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  titel(t.sucheFilterArt),
+                  SegmentedButton<MediaTypeFilter>(
+                    segments: [
+                      ButtonSegment(
+                        value: MediaTypeFilter.all,
+                        label: Text(t.sucheFilterAlles),
+                      ),
+                      ButtonSegment(
+                        value: MediaTypeFilter.image,
+                        label: Text(t.sucheFilterFotos),
+                      ),
+                      ButtonSegment(
+                        value: MediaTypeFilter.video,
+                        label: Text(t.sucheFilterVideos),
+                      ),
+                    ],
+                    selected: {_art},
+                    onSelectionChanged: (w) => setState(() => _art = w.first),
+                  ),
+                  if (widget.auswahl.kameras.isNotEmpty) ...[
+                    titel(t.sucheFilterKamera),
+                    DropdownButton<String?>(
+                      isExpanded: true,
+                      value: _kamera,
+                      items: [
                         DropdownMenuItem(
-                          value: o.land,
-                          child: Text(landAnzeige(o.land, sprache)),
+                          value: null,
+                          child: Text(t.sucheFilterAlleKameras),
                         ),
-                    ],
-                    onChanged: (w) => setState(() {
-                      _land = w;
-                      _stadt = null;
-                    }),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButton<String?>(
+                        for (final k in widget.auswahl.kameras)
+                          DropdownMenuItem(value: k, child: Text(k)),
+                      ],
+                      onChanged: (w) => setState(() => _kamera = w),
+                    ),
+                  ],
+                  titel(t.sucheFilterHerkunft),
+                  DropdownButton<Aufnahmeherkunft>(
                     isExpanded: true,
-                    value: _stadt,
+                    value: _herkunft,
                     items: [
                       DropdownMenuItem(
-                        value: null,
-                        child: Text(t.sucheFilterAlleStaedte),
+                        value: Aufnahmeherkunft.alle,
+                        child: Text(t.sucheFilterAlles),
                       ),
-                      for (final s in staedte)
-                        DropdownMenuItem(value: s, child: Text(s)),
+                      DropdownMenuItem(
+                        value: Aufnahmeherkunft.kamera,
+                        child: Text(t.sucheFilterHerkunftKamera),
+                      ),
+                      DropdownMenuItem(
+                        value: Aufnahmeherkunft.empfangen,
+                        child: Text(t.sucheFilterHerkunftEmpfangen),
+                      ),
                     ],
-                    onChanged: staedte.isEmpty
-                        ? null
-                        : (w) => setState(() => _stadt = w),
+                    onChanged: (w) =>
+                        setState(() => _herkunft = w ?? Aufnahmeherkunft.alle),
                   ),
-                ),
-              ],
-            ),
-            titel(t.sucheFilterZeitraum),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _datum(true),
-                    child: Text(
-                      _von == null ? t.sucheFilterVon : datum.format(_von!),
-                    ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t.sucheFilterFavoriten),
+                    value: _favoriten,
+                    onChanged: (w) => setState(() => _favoriten = w),
                   ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('–'),
-                ),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _datum(false),
-                    child: Text(
-                      _bis == null ? t.sucheFilterBis : datum.format(_bis!),
-                    ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(t.sucheFilterOhneAlbum),
+                    value: _ohneAlbum,
+                    onChanged: (w) => setState(() => _ohneAlbum = w),
                   ),
-                ),
-              ],
-            ),
-            titel(t.sucheFilterArt),
-            SegmentedButton<MediaTypeFilter>(
-              segments: [
-                ButtonSegment(
-                  value: MediaTypeFilter.all,
-                  label: Text(t.sucheFilterAlles),
-                ),
-                ButtonSegment(
-                  value: MediaTypeFilter.image,
-                  label: Text(t.sucheFilterFotos),
-                ),
-                ButtonSegment(
-                  value: MediaTypeFilter.video,
-                  label: Text(t.sucheFilterVideos),
-                ),
-              ],
-              selected: {_art},
-              onSelectionChanged: (w) => setState(() => _art = w.first),
-            ),
-            if (widget.auswahl.kameras.isNotEmpty) ...[
-              titel(t.sucheFilterKamera),
-              DropdownButton<String?>(
-                isExpanded: true,
-                value: _kamera,
-                items: [
-                  DropdownMenuItem(
-                    value: null,
-                    child: Text(t.sucheFilterAlleKameras),
-                  ),
-                  for (final k in widget.auswahl.kameras)
-                    DropdownMenuItem(value: k, child: Text(k)),
                 ],
-                onChanged: (w) => setState(() => _kamera = w),
               ),
-            ],
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(t.sucheFilterFavoriten),
-              value: _favoriten,
-              onChanged: (w) => setState(() => _favoriten = w),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, const Suchfilter()),
-                  child: Text(t.sucheFilterZuruecksetzen),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => Navigator.pop(context, _ergebnis),
-                  child: Text(t.sucheFilterAnwenden),
-                ),
-              ],
+            // Fest unten: Die Liste ist länger als ein Telefon hoch, und
+            // „Anwenden“ darf nicht erst nach dem Rollen auftauchen.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              // Bei grosser Systemschrift stehen sie untereinander.
+              child: OverflowBar(
+                alignment: MainAxisAlignment.end,
+                spacing: 8,
+                overflowAlignment: OverflowBarAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, const Suchfilter()),
+                    child: Text(t.sucheFilterZuruecksetzen),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, _ergebnis),
+                    child: Text(t.sucheFilterAnwenden),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

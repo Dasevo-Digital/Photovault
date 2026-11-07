@@ -2524,6 +2524,27 @@ void main() {
     expect(await ids('person=anna'), [c]);
     expect(await ids('favoriten=1'), [b]);
     expect(await ids('kamera=iPhone%2017%20Pro&art=video'), isEmpty);
+    // Dieselben beiden wie am Rechner (Suchfilter.alsFilter).
+    await db
+        .into(db.albums)
+        .insert(
+          AlbumsCompanion.insert(
+            id: 'im-album',
+            name: 'Sommer',
+            createdAt: DateTime(2026),
+          ),
+        );
+    await db
+        .into(db.albumAssets)
+        .insert(AlbumAssetsCompanion.insert(albumId: 'im-album', assetId: a));
+    expect(await ids('ohneAlbum=1&land=Italy'), [c]);
+    await db.customStatement(
+      "UPDATE assets SET camera_make = 'Sony' WHERE id = ?",
+      [c],
+    );
+    expect(await ids('land=Italy&herkunft=kamera'), [c]);
+    expect(await ids('land=Italy&herkunft=empfangen'), [a]);
+    expect(await ids('land=Italy&herkunft=unsinn'), [c, a]);
     // Text und Filter zusammen.
     expect(await ids('art=text&text=strand&land=Germany'), [b]);
     // Ganz ohne beides: 400.
