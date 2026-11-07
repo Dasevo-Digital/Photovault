@@ -62,6 +62,8 @@ import 'oidc.dart';
 import 'passkey_api.dart';
 import 'packen.dart';
 import 'rechnen.dart';
+import 'package:kern/services/regel_anwenden.dart';
+
 import 'aussensicherung.dart';
 import 'aussenziel.dart' show Zielfehler;
 import 'sicherung.dart';
@@ -312,6 +314,8 @@ Handler baueApi({
     ..get('/api/v1/laender/aufnahmen', api.amOrt)
     ..get('/api/v1/statistik', api.statistik)
     ..get('/api/v1/einstellungen', api.einstellungen)
+    ..get('/api/v1/regeln', api.autoregeln)
+    ..post('/api/v1/regeln/<id>/anwenden', api.regelAufVorhandene)
     ..get('/api/v1/entwickeln/<id>', api.entwickeln)
     ..get('/api/v1/stammbaum', api.stammbaum)
     ..get('/api/v1/lebensbaum', api.lebensbaum)
@@ -1587,6 +1591,58 @@ class _Api {
 
   /// Die Einstellungen, die in der Bibliothek stehen und damit für jedes
   /// verbundene Gerät gelten – geändert wird über die Befehle.
+  /// Die Regeln für neue Fotos, und was das Formular zur Auswahl braucht.
+  /// Geändert wird über die Befehle, wie am Rechner.
+  Future<Response> autoregeln(Request anfrage) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    final schlagwoerter = await db.alleTags();
+    return _json({
+      'regeln': [
+        for (final r in await db.allAutomationRules())
+          {
+            'id': r.id,
+            'name': r.name,
+            'ausloeser': r.triggerType,
+            'breite': r.regionCenterLat,
+            'laenge': r.regionCenterLon,
+            'umkreisKm': r.regionRadiusKm,
+            'begriff': r.aiTagTerm,
+            'von': r.dateFrom?.toIso8601String(),
+            'bis': r.dateTo?.toIso8601String(),
+            'album': r.targetAlbumId,
+            'favorit': r.autoFavorite,
+            'schlagwoerter': await db.tagIdsForAutomationRule(r.id),
+          },
+      ],
+      'alben': [
+        for (final a in await db.alleAlben()) {'id': a.id, 'name': a.name},
+      ],
+      'schlagwoerter': [
+        for (final s in schlagwoerter) {'id': s.id, 'name': s.name},
+      ],
+      'kiBegriffe': [
+        for (final v in await db.select(db.aiTagVocabulary).get()) v.term,
+      ],
+    });
+  }
+
+  /// Wendet eine Regel auf die vorhandenen Fotos an. Mit `?probe=1` sagt es
+  /// nur, wie viele es träfe: Das lässt sich nicht zurücknehmen, also soll
+  /// man die Zahl vorher sehen.
+  Future<Response> regelAufVorhandene(Request anfrage, String id) async {
+    final db = (await _bereich(anfrage)).bibliothek.db;
+    AutomationRuleData? regel;
+    for (final r in await db.allAutomationRules()) {
+      if (r.id == id) regel = r;
+    }
+    if (regel == null) return _json({'fehler': 'Regel unbekannt'}, status: 404);
+    return _json({
+      'treffer': anfrage.url.queryParameters['probe'] == '1'
+          ? (await regelTreffer(db, regel)).length
+          : await regelAnwenden(db, regel),
+    });
+  }
+
   Future<Response> einstellungen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final e = await bibliothekseinstellungen(db);

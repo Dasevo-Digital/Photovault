@@ -226,6 +226,10 @@
       <button type="button" id="einst-kuerzel" class="knopf">Anzeigen</button></span></div>
     <div id="einst-liste"></div>
     <p id="einst-meldung" class="leise"></p>
+    <h3>Regeln für neue Fotos</h3>
+    <p class="leise klein">Eine Regel legt passende Fotos beim Hochladen in ein Album, vergibt Schlagwörter oder macht sie zu Favoriten, von jedem Gerät und auch ohne laufenden Rechner.</p>
+    <ul id="autoregeln" class="autoregeln"></ul>
+    <p><button type="button" id="autoregel-neu" class="knopf">Neue Regel</button></p>
   </section>
   <section id="bereich-entwickeln" hidden>
     <div class="entw">
@@ -632,6 +636,45 @@
 </dialog>
 
 <!-- Eine Suche als intelligentes Album merken (#187). -->
+<dialog id="autoregel-dialog">
+  <form method="dialog" id="form-autoregel" class="aussen-form">
+    <h3 id="autoregel-titel">Neue Regel</h3>
+    <label>Name <input name="name" autocomplete="off" required maxlength="200"></label>
+    <label>Bedingung
+      <select name="ausloeser">
+        <option value="location">Ort (Umkreis)</option>
+        <option value="dateRange">Datumsbereich</option>
+        <option value="dateiname">Dateiname enthält</option>
+        <option value="dateiendung">Dateiendung</option>
+        <option value="aiTag">KI-Schlagwort</option>
+      </select></label>
+    <div class="nur-ausloeser" data-ausloeser="location">
+      <label>Ort suchen <input name="ortsuche" type="search" autocomplete="off" maxlength="100"></label>
+      <div id="autoregel-orte" class="ort-vorschlaege"></div>
+      <label>Breitengrad <input name="breite" inputmode="decimal" autocomplete="off"></label>
+      <label>Längengrad <input name="laenge" inputmode="decimal" autocomplete="off"></label>
+      <label>Umkreis in km <input name="umkreis" type="number" min="1" max="20000" step="1" value="25"></label>
+    </div>
+    <div class="nur-ausloeser" data-ausloeser="dateRange">
+      <label>Von <input name="von" type="date"></label>
+      <label>Bis <input name="bis" type="date"></label>
+    </div>
+    <div class="nur-ausloeser" data-ausloeser="dateiname dateiendung">
+      <label><span id="autoregel-text-name">Text</span> <input name="text" autocomplete="off" maxlength="200"></label>
+    </div>
+    <div class="nur-ausloeser" data-ausloeser="aiTag">
+      <label>KI-Schlagwort <select name="begriff"></select></label>
+    </div>
+    <label>In dieses Album <select name="album"></select></label>
+    <label>Schlagwörter <select name="schlagwoerter" multiple size="4"></select></label>
+    <label class="zeile"><input name="favorit" type="checkbox"> Als Favorit markieren</label>
+    <p id="autoregel-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="autoregel-abbrechen">Abbrechen</button>
+      <button type="submit">Speichern</button>
+    </menu>
+  </form>
+</dialog>
 <dialog id="ort-dialog">
   <form method="dialog" id="form-ort">
     <h3 id="ort-titel">Ort setzen</h3>

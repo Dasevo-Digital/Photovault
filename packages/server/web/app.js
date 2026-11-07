@@ -2855,9 +2855,168 @@ function variantenBilden(aufnahmen) {
 
 $('einst-sprache').addEventListener('change', () => spracheWaehlen($('einst-sprache').value));
 
+// Regeln für neue Fotos. Greifen tun sie beim Import, am Server wie am Rechner;
+// hier lassen sie sich pflegen und auf das anwenden, was schon da ist.
+let autoregelStand = null;
+let autoregelId = null;
+const AUSLOESER = { location: 'Ort (Umkreis)', dateRange: 'Datumsbereich', dateiname: 'Dateiname enthält', dateiendung: 'Dateiendung', aiTag: 'KI-Schlagwort' };
+
+function autoregelText(r, d) {
+  const teile = [];
+  if (r.ausloeser === 'location') teile.push(t('Umkreis {km} km', { km: r.umkreisKm }));
+  else if (r.ausloeser === 'dateRange') teile.push(`${(r.von || '').slice(0, 10)} – ${(r.bis || '').slice(0, 10)}`);
+  else teile.push(`${t(AUSLOESER[r.ausloeser] || r.ausloeser)}: ${r.begriff || ''}`);
+  const album = d.alben.find((a) => a.id === r.album);
+  if (album) teile.push(`→ ${album.name}`);
+  const namen = r.schlagwoerter.map((id) => d.schlagwoerter.find((s) => s.id === id)?.name).filter(Boolean);
+  if (namen.length) teile.push(`🏷 ${namen.join(', ')}`);
+  if (r.favorit) teile.push(`♥ ${t('Favorit')}`);
+  return teile.join(' · ');
+}
+
+async function zeigeAutoregeln() {
+  const d = await api('/api/v1/regeln');
+  autoregelStand = d;
+  const ul = $('autoregeln');
+  ul.replaceChildren();
+  if (!d.regeln.length) ul.append(el('li', 'leise', t('Noch keine Regeln.')));
+  for (const r of d.regeln) {
+    const li = el('li');
+    const wer = el('div', 'wer');
+    wer.append(el('div', null, r.name), el('div', 'text', autoregelText(r, d)));
+    const anwenden = el('button', null, t('Auf vorhandene Fotos anwenden'));
+    anwenden.type = 'button';
+    anwenden.addEventListener('click', () => autoregelAnwenden(r).catch((x) => meldung(x.message)));
+    const aendern = el('button', null, t('Bearbeiten'));
+    aendern.type = 'button';
+    aendern.addEventListener('click', () => autoregelDialog(r));
+    const weg = el('button', null, t('Löschen'));
+    weg.type = 'button';
+    weg.addEventListener('click', async () => {
+      if (!confirm(t('Die Regel „{name}“ löschen? Was sie schon getan hat, bleibt.', { name: r.name }))) return;
+      try { await befehl('regelLoeschen', { regelId: r.id }); await zeigeAutoregeln(); } catch (x) { meldung(x.message); }
+    });
+    li.append(wer, anwenden, aendern, weg);
+    ul.append(li);
+  }
+}
+
+async function autoregelAnwenden(r) {
+  const pfad = `/api/v1/regeln/${encodeURIComponent(r.id)}/anwenden`;
+  const probe = await api(`${pfad}?probe=1`, { methode: 'POST', json: {} });
+  if (!probe.treffer) { meldung(t('Kein vorhandenes Foto passt.')); return; }
+  if (!confirm(t('{n} vorhandene Fotos passen zu „{name}“. Regel jetzt auf sie anwenden? Das lässt sich nicht als Ganzes zurücknehmen.', { n: probe.treffer, name: r.name }))) return;
+  const d = await api(pfad, { methode: 'POST', json: {} });
+  meldung(t('Regel auf {n} Fotos angewendet.', { n: d.treffer }));
+}
+
+function autoregelAusloeser() {
+  const f = $('form-autoregel');
+  const a = f.ausloeser.value;
+  for (const x of f.querySelectorAll('.nur-ausloeser')) x.hidden = !x.dataset.ausloeser.split(' ').includes(a);
+  $('autoregel-text-name').textContent = a === 'dateiendung' ? t('Endungen, mit Komma getrennt') : t('Text im Dateinamen');
+}
+
+function autoregelDialog(r) {
+  const d = autoregelStand;
+  const f = $('form-autoregel');
+  f.reset();
+  autoregelId = r ? r.id : null;
+  $('autoregel-titel').textContent = r ? t('Regel bearbeiten') : t('Neue Regel');
+  $('autoregel-meldung').textContent = '';
+  $('autoregel-orte').replaceChildren();
+  const option = (wert, text) => { const o = el('option', null, text); o.value = wert; return o; };
+  f.album.replaceChildren(option('', t('Kein Album')), ...d.alben.map((a) => option(a.id, a.name)));
+  f.schlagwoerter.replaceChildren(...d.schlagwoerter.map((s) => option(s.id, s.name)));
+  f.begriff.replaceChildren(...d.kiBegriffe.map((b) => option(b, b)));
+  if (r) {
+    f.name.value = r.name;
+    f.ausloeser.value = r.ausloeser;
+    f.breite.value = r.breite ?? '';
+    f.laenge.value = r.laenge ?? '';
+    if (r.umkreisKm) f.umkreis.value = r.umkreisKm;
+    f.von.value = (r.von || '').slice(0, 10);
+    f.bis.value = (r.bis || '').slice(0, 10);
+    f.text.value = ['dateiname', 'dateiendung'].includes(r.ausloeser) ? r.begriff || '' : '';
+    if (r.ausloeser === 'aiTag') f.begriff.value = r.begriff || '';
+    f.album.value = r.album || '';
+    for (const o of f.schlagwoerter.options) o.selected = r.schlagwoerter.includes(o.value);
+    f.favorit.checked = r.favorit;
+  }
+  autoregelAusloeser();
+  $('autoregel-dialog').showModal();
+  f.name.focus();
+}
+
+// Dieselben Prüfungen wie am Rechner: Eine Regel mit unmöglichen Werten träfe
+// nie zu, ohne dass es jemand merkt.
+function autoregelWerte(f) {
+  const a = f.ausloeser.value;
+  const zahl = (x) => Number(String(x).trim().replace(',', '.'));
+  const w = { id: autoregelId || neueKennung(), name: f.name.value.trim(), trigger_type: a, region_center_lat: null, region_center_lon: null, region_radius_km: null, ai_tag_term: null, date_from: null, date_to: null, target_album_id: f.album.value || null, auto_favorite: f.favorit.checked };
+  if (!w.name) throw new Error(t('Die Regel braucht einen Namen.'));
+  if (a === 'location') {
+    const breite = zahl(f.breite.value), laenge = zahl(f.laenge.value), km = zahl(f.umkreis.value);
+    if (f.breite.value.trim() === '' || f.laenge.value.trim() === '' || !(breite >= -90 && breite <= 90) || !(laenge >= -180 && laenge <= 180)) throw new Error(t('Breiten- und Längengrad stimmen nicht.'));
+    if (!(km > 0)) throw new Error(t('Der Umkreis stimmt nicht.'));
+    Object.assign(w, { region_center_lat: breite, region_center_lon: laenge, region_radius_km: km });
+  } else if (a === 'dateRange') {
+    if (!f.von.value || !f.bis.value) throw new Error(t('Bitte Start- und Enddatum wählen.'));
+    if (f.von.value > f.bis.value) throw new Error(t('Das Startdatum muss vor dem Enddatum liegen.'));
+    Object.assign(w, { date_from: `${f.von.value}T00:00:00`, date_to: `${f.bis.value}T23:59:59` });
+  } else if (a === 'aiTag') {
+    if (!f.begriff.value) throw new Error(t('Bitte ein KI-Schlagwort wählen.'));
+    w.ai_tag_term = f.begriff.value;
+  } else {
+    const text = f.text.value.trim();
+    const endungen = /^\.?[a-zA-Z0-9]{1,10}$/;
+    if (!text || (a === 'dateiendung' && !text.split(',').every((s) => endungen.test(s.trim())))) throw new Error(t('Der Text stimmt nicht.'));
+    w.ai_tag_term = text;
+  }
+  return w;
+}
+
+$('autoregel-neu').addEventListener('click', () => autoregelDialog(null));
+$('autoregel-abbrechen').addEventListener('click', () => $('autoregel-dialog').close());
+$('form-autoregel').ausloeser.addEventListener('change', autoregelAusloeser);
+$('form-autoregel').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    const regel = autoregelWerte(f);
+    const schlagwortIds = [...f.schlagwoerter.selectedOptions].map((o) => o.value);
+    await befehl('regelSpeichern', { regel });
+    await befehl('regelSchlagwoerterSetzen', { regelId: regel.id, schlagwortIds });
+    $('autoregel-dialog').close();
+    await zeigeAutoregeln();
+  } catch (x) { $('autoregel-meldung').textContent = x.message; }
+});
+let autoregelUhr = null;
+$('form-autoregel').ortsuche.addEventListener('input', () => {
+  clearTimeout(autoregelUhr);
+  autoregelUhr = setTimeout(async () => {
+    const f = $('form-autoregel');
+    const text = f.ortsuche.value.trim();
+    const feld = $('autoregel-orte');
+    if (text.length < 2) { feld.replaceChildren(); return; }
+    try {
+      const d = await api(`/api/v1/orte/suche?text=${encodeURIComponent(text)}`);
+      if (f.ortsuche.value.trim() !== text) return;
+      feld.replaceChildren(...d.treffer.map((o) => {
+        const b = el('button');
+        b.type = 'button';
+        b.append(el('span', 'haupt', o.name), el('span', 'neben', o.herkunft));
+        b.addEventListener('click', () => { f.breite.value = o.breite; f.laenge.value = o.laenge; f.ortsuche.value = o.name; feld.replaceChildren(); });
+        return b;
+      }));
+    } catch (x) { $('autoregel-meldung').textContent = x.message; }
+  }, 150);
+});
+
 async function zeigeEinstellungen() {
   markiereNav('einstellungen');
   zeigeBereich(['einstellungen']);
+  zeigeAutoregeln().catch((x) => { $('einst-meldung').textContent = x.message; });
   let gewaehlt = 'auto';
   try { gewaehlt = localStorage.getItem(SPRACHE_MERKER) || 'auto'; } catch (_) { /* privat */ }
   $('einst-sprache').value = gewaehlt;

@@ -474,6 +474,19 @@ Hinter einem Reverse Proxy braucht `Secure` die Angabe `PV_PROXY` (nur
 einem vertrauten Proxy glaubt der Server `X-Forwarded-Proto: https`).
 Die Prüfungen dazu stehen in `test/web_test.dart`.
 
+## Regeln für neue Fotos
+
+Eine Regel legt passende Fotos in ein Album, vergibt Schlagwörter oder macht
+sie zu Favoriten: nach Ort (Umkreis), Datumsbereich, Dateiname, Dateiendung
+oder KI-Schlagwort. Beim Import greifen Regeln am Server genauso wie am
+Rechner, also auch für alles, was das Handy hochlädt. Regeln mit
+KI-Schlagwort greifen, sobald die Auswertung das Schlagwort vergeben hat.
+
+Angelegt werden sie am Rechner oder in der Weboberfläche unter
+Einstellungen. Dort lässt sich eine Regel auch auf die Fotos anwenden, die
+schon da sind; vorher sagt ein Probelauf, wie viele es träfe. Papierkorb und
+Gesperrtes bleiben dabei aussen vor.
+
 ## Teilen per Link
 
 Ein Album oder eine Auswahl lässt sich als Link teilen (Browser und
