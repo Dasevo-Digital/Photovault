@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.60.0" date="2026-11-07">
+      <description>
+        <p>Photos that are still on the phone open directly from the device, sharp and without a network connection; the neighbouring photos are loaded ahead.</p>
+        <p>Previews are larger (3000 instead of 2048 pixels), and the full resolution is only loaded when zooming. The server renews existing previews in the background.</p>
+      </description>
+    </release>
     <release version="3.59.1" date="2026-11-07">
       <description>
         <p>The browser view updates by itself when something changes on the server, for example when new photos arrive from the phone.</p>
