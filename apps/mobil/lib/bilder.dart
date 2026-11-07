@@ -70,6 +70,52 @@ ImageProvider? vollesBild(StoragePaths paths, AssetData a) {
   );
 }
 
+/// Woher der Betrachter ein Foto nimmt.
+class Bildquelle {
+  const Bildquelle({required this.ansicht, required this.zoom, this.voll});
+
+  /// Was er zeigt – schon auf die Grösse dekodiert, die er braucht.
+  final ImageProvider ansicht;
+
+  /// Was er beim Vergrössern zeigt, ungekürzt.
+  final ImageProvider zoom;
+
+  /// Die volle Auflösung, falls [ansicht] für den Bildschirm zu klein sein
+  /// kann (siehe [reichtFuer]); `null`, wenn sie immer genügt.
+  final ImageProvider? voll;
+}
+
+/// Höchstens so viele Punkte dekodiert der Betrachter, solange niemand
+/// zoomt – mehr zeigt kein Bildschirm.
+const betrachterKante = 3000;
+
+/// Ob ein Bild von [breite] × [hoehe] Pixeln auf einem [schirm] (in Pixeln)
+/// scharf ist, also nicht vergrössert werden muss. Ein Querformat auf dem
+/// hochkant gehaltenen Telefon braucht nur dessen Breite.
+bool reichtFuer(int breite, int hoehe, Size schirm) {
+  final faktor = schirm.width / breite < schirm.height / hoehe
+      ? schirm.width / breite
+      : schirm.height / hoehe;
+  return faktor <= 1.02;
+}
+
+/// Woher der Betrachter [a] nimmt, wenn es vom Server kommt.
+Bildquelle bildquelleVomServer(StoragePaths paths, AssetData a) {
+  final ansicht = BibliotheksBild(paths, displayRelativePath(a));
+  final voll = vollesBild(paths, a);
+  return Bildquelle(
+    ansicht: ResizeImage(
+      ansicht,
+      width: betrachterKante,
+      height: betrachterKante,
+      policy: ResizeImagePolicy.fit,
+      allowUpscaling: false,
+    ),
+    zoom: voll ?? ansicht,
+    voll: voll,
+  );
+}
+
 /// Eine Miniatur im Raster: auf ihre Grösse dekodiert, mit ruhiger Fläche,
 /// solange sie lädt oder fehlt.
 class Miniatur extends StatelessWidget {

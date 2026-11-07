@@ -2664,6 +2664,84 @@ void main() {
     expect(find.text('LIVE'), findsNothing);
   });
 
+  Future<void> zeigeNachbarn(
+    WidgetTester tester,
+    int breite,
+    int hoehe,
+    bool kommtVoll,
+  ) async {
+    PaintingBinding.instance.imageCache.clear();
+    final (sitzung, _) = await sitzungMit(tester, ['n1', 'n2', 'n3']);
+    final db = sitzung.db;
+    await tester.runAsync(() async {
+      for (final id in ['n1', 'n2', 'n3']) {
+        await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+          AssetsCompanion(
+            relativePath: Value('originals/$id.heic'),
+            previewRelativePath: Value('previews/$id.jpg'),
+          ),
+        );
+        final datei = sitzung.paths.absolute('previews/$id.jpg');
+        await datei.parent.create(recursive: true);
+        await datei.writeAsBytes(
+          img.encodeJpg(img.Image(width: breite, height: hoehe)),
+        );
+      }
+    });
+    final geholt = <String>[];
+    sitzung.paths.beschaffe = (relativ) async => geholt.add(relativ);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Betrachter(
+          sitzung: sitzung,
+          zeilen: [_zeile('n1', 0, 0), _zeile('n2', 0, 0), _zeile('n3', 0, 0)],
+          start: 1,
+        ),
+      ),
+    );
+    Future<void> warte(int ms) async {
+      for (var i = 0; i < 12; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump(Duration(milliseconds: ms ~/ 12));
+      }
+    }
+
+    await warte(900);
+    final bereit = PaintingBinding.instance.imageCache;
+    final imZwischenspeicher = <String, bool>{};
+    for (final id in ['n1', 'n3']) {
+      final a = await tester.runAsync(() => db.assetById(id));
+      final q = bildquelleVomServer(sitzung.paths, a!);
+      final schluessel = await q.ansicht.obtainKey(ImageConfiguration.empty);
+      imZwischenspeicher[id] = bereit.containsKey(schluessel);
+    }
+    expect(imZwischenspeicher, {'n1': true, 'n3': true});
+    expect(
+      geholt.where((r) => r.startsWith('previews/voll/')).length,
+      kommtVoll ? 1 : 0,
+    );
+  }
+
+  // Das Testfenster hat 2400 × 1800 Pixel.
+  for (final (breite, hoehe, kommtVoll) in [
+    (2400, 1800, false),
+    (1200, 900, true),
+  ]) {
+    testWidgets(
+      'Betrachter: Die Nachbarn liegen bereit; bei einer Vorschau mit '
+      '$breite Punkten kommt die volle Auflösung '
+      '${kommtVoll ? 'von selbst' : 'nicht'} (#331, #332)',
+      (tester) async {
+        await zeigeNachbarn(tester, breite, hoehe, kommtVoll);
+      },
+    );
+  }
+
   testWidgets('Kacheln tragen die Marken wie am Rechner', (tester) async {
     Rasterzeile mit(
       String id, {

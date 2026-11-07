@@ -10,9 +10,10 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_mobil/bilder.dart';
+import 'package:photo_vault_mobil/lokal/geraetefoto.dart';
 import 'package:photo_vault_mobil/offline_alben.dart';
 
-/// Der Betrachter zeigt jedes Foto in voller Auflösung (#256).
+/// Der Betrachter zeigt jedes Foto scharf (#256, #332).
 ///
 /// Bis 3.49.9 bekam das Handy von HEIC, RAW und DNG nur die Vorschau mit
 /// 2048 Punkten an der langen Seite – und ein iPhone fotografiert in HEIC.
@@ -79,6 +80,58 @@ void main() {
     expect(vollesBild(paths, jpeg), isNull, reason: 'zeigt schon das Original');
     expect(vollesBild(paths, dng), isNull, reason: 'die Entwicklung ist es');
   });
+
+  test('die Vorschau genügt, solange der Bildschirm sie nicht vergrössert '
+      '(#332)', () {
+    const iphone = Size(1206, 2622);
+    const ipad = Size(2048, 2732);
+    expect(reichtFuer(2250, 3000, iphone), isTrue, reason: 'neue Vorschau');
+    expect(reichtFuer(2250, 3000, ipad), isTrue);
+    expect(
+      reichtFuer(1536, 2048, iphone),
+      isTrue,
+      reason: 'ein 4:3-Foto füllt die Breite des schmalen Telefons',
+    );
+    expect(reichtFuer(1536, 2048, ipad), isFalse, reason: 'alte Vorschau');
+    expect(
+      reichtFuer(2048, 1536, iphone),
+      isTrue,
+      reason: 'ein Querformat braucht nur die Breite des Telefons',
+    );
+    expect(reichtFuer(1152, 2048, iphone), isFalse, reason: '9:16, alt');
+    expect(reichtFuer(1206, 2622, iphone), isTrue, reason: 'genau passend');
+  });
+
+  test('vom Server: Vorschau, beim Zoomen die volle Auflösung', () async {
+    final heic = await aufnahme('heic', 'heic');
+    final q = bildquelleVomServer(paths, heic);
+    expect((q.ansicht as ResizeImage).width, betrachterKante);
+    expect(
+      relativ((q.ansicht as ResizeImage).imageProvider),
+      'previews/heic.jpg',
+    );
+    expect(relativ(q.zoom), Dateibeschaffung.vollbildPfad(heic));
+    expect(relativ(q.voll), Dateibeschaffung.vollbildPfad(heic));
+
+    final jpeg = await aufnahme('jpeg', 'jpg', vorschau: false);
+    final o = bildquelleVomServer(paths, jpeg);
+    expect(o.voll, isNull, reason: 'es zeigt schon das Original');
+    expect(relativ(o.zoom), 'originals/jpeg.jpg');
+  });
+
+  test(
+    'vom Telefon kommt nur, was dasselbe zeigt wie der Server (#330)',
+    () async {
+      expect(Geraetefotos.kommtInFrage(await aufnahme('a', 'heic')), isTrue);
+      expect(
+        Geraetefotos.kommtInFrage(
+          await aufnahme('b', 'heic', entwickelt: 'developed/b.jpg'),
+        ),
+        isFalse,
+        reason: 'auf dem Server entwickelt',
+      );
+    },
+  );
 
   test('die volle Auflösung kommt vom eigenen Abruf des Servers', () async {
     final heic = await aufnahme('a-b-c', 'heic');

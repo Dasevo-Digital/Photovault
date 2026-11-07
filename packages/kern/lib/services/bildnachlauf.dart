@@ -20,6 +20,12 @@ const nachlaufOriginalmasse = 'nachlauf-originalmasse-1';
 /// Neue Vorschauen für DNG-Dateien, die LibRaw zu dunkel entwickelt hat.
 const nachlaufRohvorschau = 'nachlauf-rohvorschau-1';
 
+/// Vorschauen aus der Zeit vor [vorschauKante] 3000 neu erzeugen (#332).
+const nachlaufVorschaukante = 'nachlauf-vorschaukante-1';
+
+/// Was früher die längste Vorschau war: Kleinere Fotos ändern sich nicht.
+const _alteVorschauKante = 2048;
+
 /// Formate, deren Grösse bisher aus der gewandelten Vorschau kam.
 const _gewandelteFormate = {
   'heic', 'heif', 'avif', 'avifs', 'psd', 'tif', 'tiff', //
@@ -123,6 +129,96 @@ Future<int> erneuereRohvorschauen(
   }
   fortschritt?.call(kandidaten.length, kandidaten.length);
   return neu;
+}
+
+/// Bringt Vorschauen auf [vorschauKante], höchstens [frist] lang (#332).
+///
+/// Bei 48 Megapixeln dauert eine Wandlung Sekunden, eine Bibliothek also
+/// Stunden. Darum in Etappen: Danach kommt wieder an die Reihe, was neu
+/// hochgeladen wurde, und die nächste Etappe macht bei `weiter` weiter;
+/// `weiter == null` heisst fertig. Geht der Server dazwischen aus, beginnt
+/// die Suche von vorn, überspringt aber, was schon gross genug ist – das
+/// steht im Kopf der Datei.
+///
+/// Neue Dateien bekommen einen neuen Namen, damit verbundene Geräte sie
+/// holen (siehe [erneuereRohvorschauen]). Die Miniatur bleibt, also auch die
+/// Zeile im Raster.
+Future<({int neu, String? weiter})> vergroessereVorschauen(
+  AppDatabase db,
+  StoragePaths paths,
+  ImportService importe, {
+  String? ab,
+  Duration frist = const Duration(minutes: 2),
+  bool Function()? abbrechen,
+}) async {
+  final kandidaten =
+      await (db.selectOnly(db.assets)
+            ..addColumns([db.assets.id])
+            ..where(
+              db.assets.type.equals('IMAGE') &
+                  db.assets.previewRelativePath.isNotNull() &
+                  db.assets.isLocked.equals(false) &
+                  (db.assets.widthPx.isBiggerThanValue(_alteVorschauKante) |
+                      db.assets.heightPx.isBiggerThanValue(_alteVorschauKante)),
+            )
+            ..orderBy([OrderingTerm.asc(db.assets.id)]))
+          .map((z) => z.read(db.assets.id)!)
+          .get();
+  final uhr = Stopwatch()..start();
+  var neu = 0;
+  for (var i = 0; i < kandidaten.length; i++) {
+    final id = kandidaten[i];
+    if (ab != null && id.compareTo(ab) <= 0) continue;
+    if ((abbrechen?.call() ?? false) || (neu > 0 && uhr.elapsed >= frist)) {
+      // Die nächste Etappe beginnt mit dieser Aufnahme. Mindestens eine je
+      // Etappe: Sonst käme ein Foto, das länger dauert als die Frist, nie dran.
+      return (neu: neu, weiter: i == 0 ? '' : kandidaten[i - 1]);
+    }
+    final a = await db.assetById(id);
+    final vorschau = a?.previewRelativePath;
+    if (a == null || vorschau == null) continue;
+    final quelle = paths.absolute(a.relativePath);
+    if (!await quelle.exists()) continue;
+    if (await _schonGross(paths.absolute(vorschau), a)) continue;
+    final relativ = await importe.erneuereVorschau(
+      quelle,
+      a.id,
+      zusatz: naechsterZusatz(a.id, vorschau),
+    );
+    if (relativ == null) continue;
+    await db.updateThumbnailInfo(a.id, previewRelativePath: relativ);
+    try {
+      final alt = paths.absolute(vorschau);
+      if (await alt.exists()) await alt.delete();
+    } on FileSystemException {
+      // Ein Rest bleibt liegen; die Integritätsprüfung findet ihn.
+    }
+    neu++;
+  }
+  return (neu: neu, weiter: null);
+}
+
+/// Ob die Vorschau schon so gross ist, wie sie werden kann. Die ersten
+/// 64 KB genügen: Eine Vorschau trägt keine langen Angaben vor den Massen.
+Future<bool> _schonGross(File vorschau, AssetData a) async {
+  try {
+    final zugriff = await vorschau.open();
+    final Uint8List kopf;
+    try {
+      kopf = await zugriff.read(64 * 1024);
+    } finally {
+      await zugriff.close();
+    }
+    final masse = jpegMasse(kopf);
+    if (masse == null) return false;
+    final lang = masse.$1 > masse.$2 ? masse.$1 : masse.$2;
+    final original = (a.widthPx ?? 0) > (a.heightPx ?? 0)
+        ? (a.widthPx ?? 0)
+        : (a.heightPx ?? 0);
+    return lang >= vorschauKante || lang >= original;
+  } on FileSystemException {
+    return false;
+  }
 }
 
 /// Der nächste freie Zusatz für einen neu erzeugten Dateinamen: aus

@@ -172,6 +172,20 @@ void main() {
       ((await telefon.hole('api/v1/aufnahmen'))['aufnahmen']! as List)
           .cast<Map>();
 
+  test('kennt das Foto des Telefons zu einer Aufnahme (#330)', () {
+    final zeit = DateTime(2026, 3, 4, 5);
+    stand
+      ..erledige('p1', zeit, ausgang: 'hochgeladen', aufnahme: 'a1')
+      ..erledige('p2', zeit, ausgang: 'vorhanden', aufnahme: 'a2')
+      ..erledige('p3', zeit, ausgang: 'abgelehnt', aufnahme: 'a3');
+    final g = stand.gesichertAls('a1');
+    expect(g?.lokal, 'p1');
+    expect(g?.geaendert, zeit.millisecondsSinceEpoch);
+    expect(stand.gesichertAls('a2')?.lokal, 'p2');
+    expect(stand.gesichertAls('a3'), isNull, reason: 'nicht gesichert');
+    expect(stand.gesichertAls('fehlt'), isNull);
+  });
+
   test('der erste Lauf lädt alles hoch, der zweite nichts', () async {
     rolle
       ..foto('a', server.jpeg('IMG_0101.JPG', 10))

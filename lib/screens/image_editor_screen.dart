@@ -223,7 +223,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
 
   /// Das Original in voller Auflösung – nie die Vorschau.
   ///
-  /// Die Vorschau hat höchstens 2048 Pixel (`vorschauKante`) und gibt es
+  /// Die Vorschau hat höchstens 3000 Pixel (`vorschauKante`) und gibt es
   /// für HEIC, RAW, PSD und alle Dateien über 32 MB. Bis 3.49.6 las der
   /// Editor sie statt des Originals, und das Speichern machte aus einem
   /// 48-MP-DNG ein 3-MP-JPEG (#248). HEIC und RAW wandelt jetzt das System

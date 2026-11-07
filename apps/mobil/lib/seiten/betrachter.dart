@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
-import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/gesichtsuebersicht.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -13,6 +12,7 @@ import 'package:video_player/video_player.dart';
 import '../bilder.dart';
 import '../formate.dart';
 import '../l10n/app_localizations.dart';
+import '../lokal/geraetefoto.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
 import 'als_jpeg.dart';
@@ -69,6 +69,16 @@ class _BetrachterState extends State<Betrachter> {
   final _daten = <String, AssetData>{};
   var _leiste = true;
 
+  // Woher jedes Foto kommt (siehe [_quelle]); fertige stehen in [_quellen],
+  // damit eine Seite ihr vorgeladenes Bild schon im ersten Bild zeigt.
+  final _quellen = <String, Bildquelle>{};
+  final _suchen = <String, Future<Bildquelle?>>{};
+  late final _geraet = switch (widget.sitzung.sicherung) {
+    final d? => Geraetefotos(d),
+    null => null,
+  };
+  Timer? _nachbarnUhr;
+
   // Das senkrechte Wischen: wie weit der Finger gezogen hat, ob er gerade
   // zieht (dann folgt das Bild ohne Verzögerung) und ob das Bild
   // vergrössert ist (dann wischt niemand).
@@ -109,6 +119,7 @@ class _BetrachterState extends State<Betrachter> {
   void initState() {
     super.initState();
     _zaehle();
+    _planeNachbarn();
   }
 
   Future<AssetData?> _lade(String id) async {
@@ -119,8 +130,46 @@ class _BetrachterState extends State<Betrachter> {
     return a;
   }
 
+  /// Woher das Foto [id] kommt: vom Telefon, wenn es dort liegt (#330),
+  /// sonst vom Server.
+  Future<Bildquelle?> _quelle(String id) => _suchen[id] ??= _suche(id);
+
+  Future<Bildquelle?> _suche(String id) async {
+    final a = await _lade(id);
+    if (a == null || !mounted) return null;
+    final seite = MediaQuery.sizeOf(context);
+    final dichte = MediaQuery.devicePixelRatioOf(context);
+    final kante = (seite.longestSide * dichte).ceil();
+    final lokal = await _geraet?.quelle(a, kante);
+    final q = lokal ?? bildquelleVomServer(widget.sitzung.paths, a);
+    _quellen[id] = q;
+    return q;
+  }
+
+  /// Die Nachbarn vorladen (#331), sobald die Seite einen Moment steht –
+  /// wer durchwischt, soll nicht jedes Foto laden, an dem er vorbeikommt.
+  void _planeNachbarn() {
+    _nachbarnUhr?.cancel();
+    _nachbarnUhr = Timer(const Duration(milliseconds: 250), _ladeNachbarn);
+  }
+
+  Future<void> _ladeNachbarn() async {
+    final von = _index;
+    for (final i in [von + 1, von - 1]) {
+      if (i < 0 || i >= widget.zeilen.length) continue;
+      final z = widget.zeilen[i];
+      if (z.type != 'IMAGE') continue;
+      final q = await _quelle(z.id);
+      if (!mounted || von != _index) return;
+      if (q == null) continue;
+      // Fehlt das Netz, zeigt die Seite es selbst an.
+      unawaited(precacheImage(q.ansicht, context, onError: (_, _) {}));
+    }
+  }
+
   @override
   void dispose() {
+    _nachbarnUhr?.cancel();
     _seiten.dispose();
     super.dispose();
   }
@@ -596,6 +645,7 @@ class _BetrachterState extends State<Betrachter> {
                 _gezoomt = false;
               });
               _zaehle();
+              _planeNachbarn();
             },
             loadingBuilder: (_, _) => const Center(
               child: CircularProgressIndicator(color: Colors.white54),
@@ -620,6 +670,8 @@ class _BetrachterState extends State<Betrachter> {
                   sitzung: widget.sitzung,
                   zeile: z,
                   lade: _lade,
+                  quelle: _quelle,
+                  fertig: _quellen[z.id],
                   gezoomt: _gezoomt && i == _index,
                   ebene: _gesichter
                       ? Gesichtsebene(
@@ -653,6 +705,8 @@ class _BildSeite extends StatefulWidget {
     required this.sitzung,
     required this.zeile,
     required this.lade,
+    required this.quelle,
+    this.fertig,
     this.gezoomt = false,
     this.ebene,
   });
@@ -661,8 +715,12 @@ class _BildSeite extends StatefulWidget {
   final Rasterzeile zeile;
   final Future<AssetData?> Function(String id) lade;
 
+  /// Woher das Foto kommt – schon bekannt in [fertig].
+  final Future<Bildquelle?> Function(String id) quelle;
+  final Bildquelle? fertig;
+
   /// Ob das Foto gerade vergrössert ist – dann wird es ungekürzt dekodiert,
-  /// sonst auf höchstens 3000 Punkte, mehr zeigt kein Bildschirm.
+  /// sonst auf höchstens [betrachterKante] Punkte.
   final bool gezoomt;
 
   /// Über dem Bild, mit ihm gezoomt – die Gesichtsrahmen (Issue #190).
@@ -677,18 +735,32 @@ class _BildSeiteState extends State<_BildSeite> {
   var _laedt = false;
   var _lauf = 0;
 
-  /// Ob die volle Auflösung kommen darf: erst, wenn das Foto einen Moment
-  /// steht. Wer durchwischt, soll den Server nicht jedes Foto wandeln
-  /// lassen, an dem er vorbeikommt.
+  /// Ob die volle Auflösung kommt, ohne dass jemand zoomt: nur, wenn die
+  /// Vorschau für diesen Bildschirm zu klein ist (#332) – bei Vorschauen
+  /// von vor 3.60, solange der Server sie nicht erneuert hat. Und erst,
+  /// wenn das Foto einen Moment steht: Wer durchwischt, soll den Server
+  /// nicht jedes Foto wandeln lassen, an dem er vorbeikommt.
   var _vollAn = false;
   Timer? _vollUhr;
+  ImageStream? _strom;
+  ImageStreamListener? _hoerer;
 
-  @override
-  void initState() {
-    super.initState();
-    _vollUhr = Timer(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _vollAn = true);
+  /// Hört einmal zu, wie gross [q] tatsächlich ankommt.
+  void _pruefeGroesse(Bildquelle q) {
+    if (q.voll == null || _strom != null) return;
+    final strom = q.ansicht.resolve(createLocalImageConfiguration(context));
+    final hoerer = ImageStreamListener((info, _) {
+      if (!mounted) return;
+      final m = MediaQuery.of(context);
+      final schirm = m.size * m.devicePixelRatio;
+      if (reichtFuer(info.image.width, info.image.height, schirm)) return;
+      _vollUhr ??= Timer(const Duration(milliseconds: 400), () {
+        if (mounted) setState(() => _vollAn = true);
+      });
     });
+    _strom = strom;
+    _hoerer = hoerer;
+    strom.addListener(hoerer);
   }
 
   Future<void> _liveAn() async {
@@ -732,6 +804,7 @@ class _BildSeiteState extends State<_BildSeite> {
   @override
   void dispose() {
     _vollUhr?.cancel();
+    if (_hoerer case final h?) _strom?.removeListener(h);
     _lauf++;
     _live?.dispose();
     super.dispose();
@@ -739,8 +812,8 @@ class _BildSeiteState extends State<_BildSeite> {
 
   ImageProvider _bemessen(ImageProvider bild) => ResizeImage(
     bild,
-    width: 3000,
-    height: 3000,
+    width: betrachterKante,
+    height: betrachterKante,
     policy: ResizeImagePolicy.fit,
     allowUpscaling: false,
   );
@@ -757,24 +830,23 @@ class _BildSeiteState extends State<_BildSeite> {
             ),
             fit: BoxFit.contain,
           );
-    final bild = FutureBuilder<AssetData?>(
-      future: widget.lade(zeile.id),
+    final bild = FutureBuilder<Bildquelle?>(
+      future: widget.quelle(zeile.id),
+      initialData: widget.fertig,
       builder: (context, snap) {
-        final a = snap.data;
-        if (a == null) return Center(child: miniatur);
-        final paths = widget.sitzung.paths;
-        final ansicht = BibliotheksBild(paths, displayRelativePath(a));
-        final voll = _vollAn ? vollesBild(paths, a) : null;
+        final q = snap.data;
+        if (q == null) return Center(child: miniatur);
+        _pruefeGroesse(q);
         // Darüber die volle Auflösung, beim Zoomen ungekürzt dekodiert.
         // Bis sie da ist – und ohne Netz – bleibt die Ansicht darunter
         // stehen; ein Stapel statt eines Wechsels, damit dabei nichts
         // aufblitzt.
-        final oben = voll ?? (widget.gezoomt ? ansicht : null);
+        final oben = widget.gezoomt ? q.zoom : (_vollAn ? q.voll : null);
         return Stack(
           fit: StackFit.expand,
           children: [
             Image(
-              image: _bemessen(ansicht),
+              image: q.ansicht,
               fit: BoxFit.contain,
               gaplessPlayback: true,
               frameBuilder: (context, kind, frame, sofort) =>

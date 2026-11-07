@@ -5233,6 +5233,9 @@ function holeVoll(a) {
     if (lauf !== vollLauf) return;
     const lang = Math.max(a.breite || 0, a.hoehe || 0);
     if (Math.max(bild.naturalWidth, bild.naturalHeight) >= lang) return;
+    // Die Vorschau reicht, solange das Fenster sie nicht vergrössert (#332).
+    const dichte = window.devicePixelRatio || 1;
+    if (Math.min(innerWidth * dichte / bild.naturalWidth, innerHeight * dichte / bild.naturalHeight) <= 1.02) return;
     // Erst nach kurzem Verweilen, wie in der Handy-App (#266): Wer mit den
     // Pfeiltasten durch HEIC oder RAW blättert, stiess sonst für jedes Foto
     // eine Wandlung am Server an.

@@ -76,6 +76,10 @@ class Sicherungsstand {
         .any((z) => z['name'] == 'grund')) {
       db.execute('ALTER TABLE erledigt ADD COLUMN grund TEXT');
     }
+    // Der Betrachter fragt je Foto, das er zeigt (siehe [gesichertAls]).
+    db.execute(
+      'CREATE INDEX IF NOT EXISTS erledigt_aufnahme ON erledigt (aufnahme)',
+    );
     return Sicherungsstand._(db);
   }
 
@@ -203,6 +207,21 @@ class Sicherungsstand {
         aufnahme: z['aufnahme'] as String,
       ),
   };
+
+  /// Das Foto auf dem Telefon, das als [aufnahme] gesichert ist, und wann
+  /// es zuletzt geändert war; `null`, wenn es keins gibt.
+  ({String lokal, int geaendert})? gesichertAls(String aufnahme) {
+    final z = _db.select(
+      "SELECT lokal, geaendert FROM erledigt WHERE ausgang IN ('hochgeladen', 'vorhanden') "
+      'AND aufnahme = ? LIMIT 1',
+      [aufnahme],
+    );
+    if (z.isEmpty) return null;
+    return (
+      lokal: z.first['lokal'] as String,
+      geaendert: z.first['geaendert'] as int,
+    );
+  }
 
   /// Die Kennungen auf dem Telefon, die als [aufnahmen] (Kennungen auf dem
   /// Server) gesichert sind – hochgeladen oder dort schon vorhanden.

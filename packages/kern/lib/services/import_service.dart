@@ -136,7 +136,12 @@ decodeAndResizeThumbnailMitVorschau(Uint8List bytes) {
 }
 
 /// Die längere Kante einer Vorschau – dieselbe wie bei HEIC und RAW.
-const int vorschauKante = 2048;
+///
+/// Mehr als jeder Bildschirm eines Telefons oder Tablets (bis 2868 Punkte):
+/// Die Vorschau ist damit schon scharf, und die volle Auflösung braucht es
+/// nur beim Zoomen (#332). Bis 3.59 waren es 2048 Punkte; davon wurden die
+/// Fotos weich und erst Sekunden später scharf.
+const int vorschauKante = 3000;
 
 enum ImportOutcome { imported, duplicateSkipped, failed }
 
@@ -495,6 +500,24 @@ class ImportService {
       modell: a.exif.camera.model ?? a.video.geraet,
       istBild: istBild,
     );
+  }
+
+  /// Nur die Vorschau neu, unter dem Namen mit [zusatz] – Miniatur und
+  /// Zeilen der Liste bleiben, wie sie sind (siehe vergroessereVorschauen).
+  /// `null`, wenn kein Wandler sie erzeugen konnte.
+  Future<String?> erneuereVorschau(
+    File sourceFile,
+    String assetId, {
+    required String zusatz,
+  }) async {
+    final bytes = await _bild.convertToJpegBytes(
+      sourceFile,
+      maxDimension: vorschauKante,
+    );
+    if (bytes == null) return null;
+    final relativ = _paths.previewRelativePath(assetId, zusatz);
+    await _paths.absolute(relativ).writeAsBytes(bytes);
+    return relativ;
   }
 
   Future<void> _raeumeImportresteAuf(String assetId, File? original) async {

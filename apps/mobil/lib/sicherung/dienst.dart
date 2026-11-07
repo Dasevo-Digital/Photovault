@@ -86,6 +86,10 @@ class Sicherungsdienst extends ChangeNotifier {
   /// Der letzte Fehler, der den ganzen Lauf beendete.
   Object? fehler;
 
+  /// Siehe [Sicherungsstand.gesichertAls].
+  ({String lokal, int geaendert})? gesichertAls(String aufnahme) =>
+      _stand.gesichertAls(aufnahme);
+
   Laufbericht? get letzterLauf => _stand.letzterLauf;
   Map<String, String> get fehlgeschlagen => _stand.fehler;
   int get abgelehnt => _stand.anzahlAbgelehnt;

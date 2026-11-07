@@ -15,6 +15,10 @@ import 'sitzung.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Ein Foto in Bildschirmgrösse belegt dekodiert rund 20 MB. Mit den üblichen
+  // 100 MB verdrängten die Miniaturen des Rasters die vorgeladenen Nachbarn
+  // im Betrachter (#331).
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 256 * 1024 * 1024;
   // Meldungen aus dem Kern über debugPrint, wie in der Desktop-App.
   protokollZiel = debugPrint;
   // Die Sicherung der Kamerarolle im Hintergrund (sicherung/hintergrund.dart).

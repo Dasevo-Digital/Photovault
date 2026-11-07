@@ -79,6 +79,10 @@ class Auswertungsdienst {
 
   Timer? _warte;
   late final Timer _freigabe;
+
+  /// Wo die nächste Etappe der Vorschauen beginnt (siehe
+  /// [_vorschauEtappe]); nach einem Neustart wieder von vorn.
+  String? _vorschauAb;
   Future<void>? _lauf;
   bool _nochmal = false;
   bool _beendet = false;
@@ -219,6 +223,37 @@ class Auswertungsdienst {
       } catch (e) {
         protokoll('Nachlauf $schluessel gescheitert: $e');
       }
+    }
+    await _vorschauEtappe();
+  }
+
+  /// Vorschauen auf die neue Grösse bringen (#332), immer nur für kurze
+  /// Zeit: Das dauert Stunden, und neue Fotos sollen derweil nicht warten.
+  /// Nach jeder Etappe kommt die Auswertung an die Reihe, dann die nächste.
+  Future<void> _vorschauEtappe() async {
+    final db = bibliothek.db;
+    if (_beendet || await db.aufgabeFertigAm(nachlaufVorschaukante) != null) {
+      return;
+    }
+    try {
+      final r = await vergroessereVorschauen(
+        db,
+        bibliothek.pfade,
+        bibliothek.importe,
+        ab: _vorschauAb,
+        abbrechen: () => _beendet,
+      );
+      if (_beendet) return;
+      if (r.neu > 0) protokoll('Nachlauf Vorschauen: ${r.neu} neu');
+      _vorschauAb = r.weiter;
+      if (r.weiter == null) {
+        await db.merkeAufgabenlauf(nachlaufVorschaukante);
+        protokoll('Nachlauf Vorschauen fertig');
+      } else {
+        _nochmal = true;
+      }
+    } catch (e) {
+      protokoll('Nachlauf Vorschauen gescheitert: $e');
     }
   }
 

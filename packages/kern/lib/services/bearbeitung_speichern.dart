@@ -27,7 +27,7 @@ typedef Bearbeitungsergebnis = ({
 /// **Bis 3.49.6** ersetzte die bearbeitete Fassung das Original: ein JPEG
 /// am Ort, alles andere (HEIC, RAW, PSD …) als neue `.jpg`, und das alte
 /// Original wurde endgültig gelöscht. Weil der Editor bei diesen Formaten
-/// und bei Dateien über 32 MB nur die Vorschau mit höchstens 2048 Pixeln
+/// und bei Dateien über 32 MB nur die Vorschau mit höchstens 3000 Pixeln
 /// gelesen hatte, wurde aus einem 48-MP-DNG nach einmal Drehen ein JPEG
 /// mit 3 MP – ohne Weg zurück.
 ///
