@@ -713,6 +713,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /umzug/beginnen`, `GET /umzug/stand`, `…/umzug/hochladen` (tus), `POST /umzug/abschliessen` | Umzug einer bestehenden Bibliothek |
 | `GET /bibliothek` | Schema, Zahl der Aufnahmen |
 | `GET /aufnahmen?anzahl=300&nach=…` | Zeitleiste, neueste zuerst; `weiter` der Antwort ist `nach` der nächsten Seite |
+| `GET /ansicht/stand?bisher=…&warten=25` | `{stand}` – kehrt zurück, sobald der Stand von `bisher` abweicht oder die Zeit um ist (höchstens 30 s); damit bleibt die Weboberfläche von selbst aktuell, auch mit den Fotos von Partnern in der eigenen Zeitleiste |
 | `GET /aufnahmen/<id>` | alle Angaben einer Aufnahme |
 | `GET /aufnahmen/<id>/miniatur\|vorschau\|original` | die Datei, mit `Range` |
 | `GET /aufnahmen/<id>/voll` | das Foto in voller Auflösung für den Betrachter: JPEG, PNG, WebP und GIF unverändert, HEIC, RAW und DNG als JPEG in Originalgrösse ohne Angaben, einmal gewandelt und neben der Bibliothek aufgehoben (höchstens 2 GB, `vollbild/`); 422, wenn es sich nicht wandeln lässt (Issue #256) |

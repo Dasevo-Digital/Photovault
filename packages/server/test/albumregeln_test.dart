@@ -419,6 +419,71 @@ void main() {
       expect(meine['fehlend'], 1, reason: 'sonst sähe es nach „alles“ aus');
     });
 
+    test('der Stand der Ansicht meldet Änderungen, auch von Partnern '
+        '(#329)', () async {
+      await fotos();
+      Future<String> stand({String? bisher, int warten = 0}) async {
+        final q =
+            'warten=$warten'
+            '${bisher == null ? '' : '&bisher=${Uri.encodeQueryComponent(bisher)}'}';
+        final r = await frag(
+          'GET',
+          '/api/v1/ansicht/stand?$q',
+          token: maxToken,
+        );
+        expect(r.statusCode, 200);
+        return (await jsonAus(r))['stand']! as String;
+      }
+
+      // Ohne `bisher` sofort, damit die Seite weiss, wo sie steht.
+      final anfang = await stand(warten: 30);
+
+      // Nichts geändert: Die Anfrage wartet und meldet denselben Stand.
+      final uhr = Stopwatch()..start();
+      expect(await stand(bisher: anfang, warten: 1), anfang);
+      expect(uhr.elapsedMilliseconds, greaterThanOrEqualTo(900));
+
+      // Eine Änderung beendet das Warten, nicht erst die Zeit.
+      uhr.reset();
+      final eigenes = stand(bisher: anfang, warten: 20);
+      await ladeHoch(maxToken, 'max.jpg', 200);
+      final nachUpload = await eigenes;
+      expect(nachUpload, isNot(anfang));
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 15)));
+
+      await mitJson('PUT', '/api/v1/partner/${max.id}', erikaToken, {
+        'ab': '2024-01-01',
+      });
+
+      // Fotos der Partnerin zählen erst, wenn sie in der Zeitleiste stehen.
+      final ohnePartner = await stand();
+      final kurz = stand(bisher: ohnePartner, warten: 1);
+      await ladeHoch(erikaToken, 'erika1.jpg', 7);
+      expect(await kurz, ohnePartner);
+
+      await mitJson(
+        'PUT',
+        '/api/v1/partner/von/${erika.id}/zeitleiste',
+        maxToken,
+        {'an': true},
+      );
+      final mitPartner = await stand();
+      expect(mitPartner, isNot(ohnePartner));
+      final vonPartnerin = stand(bisher: mitPartner, warten: 20);
+      await ladeHoch(erikaToken, 'erika2.jpg', 245);
+      expect(await vonPartnerin, isNot(mitPartner));
+
+      // Wie jede Anfrage nur mit Anmeldung.
+      expect(
+        (await frag(
+          'GET',
+          '/api/v1/ansicht/stand',
+          token: 'falsch',
+        )).statusCode,
+        401,
+      );
+    });
+
     test('in der eigenen Zeitleiste – eingereiht, mit Namen', () async {
       final f = await fotos();
       final eigen = await ladeHoch(maxToken, 'max.jpg', 200);

@@ -10,6 +10,11 @@ const $ = (id) => document.getElementById(id);
 // Was eine Ansicht beim Aufbau lädt, bricht der nächste Weg ab (siehe
 // zeigeWeg): Sonst schriebe eine späte Antwort in die neue Ansicht.
 let wegSignal = null;
+// Ein Lauf, den eine Änderung am Server anstösst, nicht der Nutzer (#329):
+// Er lässt stehen, was gleich geblieben ist, und zeichnet den Rest ohne
+// Sprung neu.
+let stillerLauf = false;
+const live = { stand: null, abbruch: null, laeuft: false, faellig: false, nochmal: false, uhr: null, zuletzt: 0, abstand: 5000 };
 const api = async (pfad, { methode = 'GET', json } = {}) => {
   const antwort = await fetch(pfad, {
     method: methode,
@@ -73,6 +78,8 @@ let sitzung = null;   // {name, verwalter, geraet}
 
 function zeigeAnmeldung() {
   sitzung = null;
+  if (live.abbruch) live.abbruch.abort();
+  live.stand = null;
   $('kopf').hidden = true;
   $('nav').hidden = true;
   $('inhalt').hidden = true;
@@ -84,7 +91,7 @@ function zeigeAnmeldung() {
 
 function zeigeBereich(name) {
   for (const s of document.querySelectorAll('#inhalt > section')) s.hidden = true;
-  $('ohne-namen').hidden = true;
+  if (!stillerLauf) $('ohne-namen').hidden = true;
   for (const b of name) $(`bereich-${b}`).hidden = false;
 }
 
@@ -454,6 +461,11 @@ function marken(k, a) {
 }
 
 function kachel(a, index) {
+  const vorrat = kachelVorrat && kachelVorrat.get(a.id);
+  if (vorrat && vorrat.zeile === JSON.stringify(a)) {
+    vorrat.k.dataset.index = index;
+    return vorrat.k;
+  }
   const k = el('button', 'kachel');
   k.type = 'button';
   k.dataset.index = index;
@@ -482,6 +494,8 @@ function kachel(a, index) {
   k.addEventListener('click', (e) => {
     // Nach dem Ziehen kommt noch ein Klick – der gehört zum Ziehen.
     if (zieh.schlucke) { zieh.schlucke = false; return; }
+    // Aus dem Element: Eine Kachel wandert mit, wenn oben Neues dazukommt.
+    const index = Number(k.dataset.index);
     // Wie am Rechner: Umschalt nimmt alles bis hierher dazu, Strg/⌘ eine.
     // Aus einem geteilten Album lässt sich nichts auswählen: Alles, was
     // die Auswahl kann, ändert die eigene Bibliothek.
@@ -778,13 +792,48 @@ function haengeAn(aufnahmen) {
 // Zählt die Listen: Was eine frühere nachlädt, gehört nicht in die jetzige.
 let ansichtNr = 0;
 
+// Bilder blitzen auf, wenn eine Kachel neu entsteht. Darum nimmt ein stiller
+// Lauf (#329) die vorhandenen wieder, solange sich an der Zeile nichts änderte.
+let kachelVorrat = null;
+
+// Die oberste Kachel im Fenster und wo sie steht: Kommt darüber etwas dazu,
+// bleibt sie dort. Am Anfang der Liste bleibt es beim Anfang, damit Neues
+// zu sehen ist.
+function bildlaufAnker() {
+  const k = liste.kacheln;
+  if (window.scrollY < 8 || !k.length) return null;
+  const oben = $('kopf').getBoundingClientRect().bottom;
+  let von = 0, bis = k.length - 1;
+  while (von < bis) {
+    const mitte = (von + bis) >> 1;
+    if (k[mitte].getBoundingClientRect().bottom > oben) bis = mitte; else von = mitte + 1;
+  }
+  return { id: liste.aufnahmen[von].id, y: k[von].getBoundingClientRect().top };
+}
+
+function stelleBildlaufWieder(anker) {
+  const i = liste.aufnahmen.findIndex((a) => a.id === anker.id);
+  if (i >= 0) window.scrollBy({ top: liste.kacheln[i].getBoundingClientRect().top - anker.y, behavior: 'instant' });
+}
+
 function zeigeListe(neu, titel) {
+  const still = stillerLauf && !neu.neuGezeichnet && !!liste;
+  let anker = null, gerahmt = null;
+  if (still) {
+    const bisher = liste.roh.length ? liste.roh : liste.aufnahmen;
+    const titelBisher = $('raster-titel').hidden ? '' : $('raster-titel').textContent;
+    if ((titel || '') === titelBisher && JSON.stringify(bisher) === JSON.stringify(neu.aufnahmen || [])) return;
+    if (ansichtGesperrt()) { live.nochmal = true; return; }
+    anker = bildlaufAnker();
+    gerahmt = liste.aufnahmen[rahmen] ? liste.aufnahmen[rahmen].id : null;
+    kachelVorrat = new Map(liste.aufnahmen.map((a, i) => [a.id, { k: liste.kacheln[i], zeile: JSON.stringify(a) }]));
+  }
   if (!neu.neuGezeichnet) {
     ansichtNr++;
     auswahlAufheben();
   }
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
-  $('erinnerungen').hidden = true;
+  if (!still) $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
   $('auswahl-ort').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
@@ -807,10 +856,15 @@ function zeigeListe(neu, titel) {
   $('ende').textContent = '';
   haengeAn(neu.aufnahmen || []);
   if (!liste.mehr) $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Keine Aufnahmen.');
+  if (still) {
+    kachelVorrat = null;
+    rahmen = liste.aufnahmen.findIndex((a) => a.id === gerahmt);
+    if (anker) stelleBildlaufWieder(anker);
+  }
 }
 
 async function ladeMehr() {
-  if (!liste || !liste.mehr || liste.laedt) return;
+  if (!liste || !liste.mehr || liste.laedt || stillerLauf) return;
   const nr = ansichtNr;
   liste.laedt = true;
   try {
@@ -885,6 +939,19 @@ function seitenverhaeltnis(a) {
 
 // Die Zeitleiste merkt sich ihr Lesezeichen, damit ein Wechsel in ein
 // Album nicht alles neu lädt.
+// Die ersten `anzahl` Aufnahmen einer Liste, die seitenweise kommt, von vorn –
+// für den stillen Lauf (#329). `hole(nach, n)` liefert eine Seite.
+async function seitenBis(hole, anzahl) {
+  const aufnahmen = [];
+  let weiter;
+  do {
+    const d = await hole(weiter, Math.min(1000, Math.max(200, anzahl - aufnahmen.length)));
+    aufnahmen.push(...d.aufnahmen);
+    weiter = d.weiter;
+  } while (weiter && aufnahmen.length < anzahl);
+  return { aufnahmen, weiter: weiter ?? null };
+}
+
 const zeitleiste = {
   weiter: undefined,
   geladen: [],
@@ -898,8 +965,14 @@ const zeitleiste = {
     return (this.lauf ??= this.hole().finally(() => { this.lauf = null; }));
   },
   async hole() {
-    const q = new URLSearchParams({ anzahl: String(this.seite) });
-    if (this.weiter) q.set('nach', this.weiter);
+    const d = await this.holeSeite(this.weiter, this.seite);
+    this.weiter = d.weiter;
+    this.geladen.push(...d.aufnahmen);
+    return d;
+  },
+  async holeSeite(nach, anzahl) {
+    const q = new URLSearchParams({ anzahl: String(anzahl) });
+    if (nach) q.set('nach', nach);
     if (ansicht.sortierung !== 'aufnahmeNeu') q.set('sortierung', ansicht.sortierung);
     if (ansicht.liste) q.set('voll', '1');
     const d = await api(`/api/v1/aufnahmen?${q}`);
@@ -908,9 +981,16 @@ const zeitleiste = {
       fremdeAufnahmen.set(a.id, partnerBasis(a.konto));
       if (a.partner) fremdeAufnahmen.set(a.partner, partnerBasis(a.konto));
     }
-    this.weiter = d.weiter;
-    this.geladen.push(...d.aufnahmen);
     return d;
+  },
+  // Holt so viel neu, wie geladen ist. Nichts übernehmen, wenn die Liste
+  // gerade nicht wechseln darf: Das Lesezeichen passte sonst nicht mehr zu ihr.
+  async frisch(anzahl) {
+    const d = await seitenBis((nach, n) => this.holeSeite(nach, n), anzahl);
+    if (ansichtGesperrt()) { live.nochmal = true; return false; }
+    this.weiter = d.weiter;
+    this.geladen = d.aufnahmen;
+    return true;
   },
 };
 
@@ -930,10 +1010,18 @@ function fotosNachOben() {
   }
 }
 
+const zeitleistenAngaben = () => ({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, alsListe: ansicht.liste, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
+
 async function zeigeFotos() {
   markiereNav('fotos');
   zeigeBereich(['raster']);
-  zeigeListe({ aufnahmen: zeitleiste.geladen, nachTagen: nachDatum(), zeitleiste: true, alsListe: ansicht.liste, mehr: zeitleiste.weiter === null ? null : () => zeitleiste.mehr() });
+  if (stillerLauf && liste && liste.zeitleiste) {
+    if (!await zeitleiste.frisch(liste.aufnahmen.length)) return;
+    zeigeListe(zeitleistenAngaben());
+    await holeZeitleistenmonate();
+    return;
+  }
+  zeigeListe(zeitleistenAngaben());
   if (fotosNachObenGewuenscht) {
     fotosNachObenGewuenscht = false;
     window.scrollTo(0, 0);
@@ -948,10 +1036,13 @@ async function zeigeFotos() {
 // seitenweise wie die Zeitleiste.
 const favoriten = {
   weiter: undefined,
+  holeSeite(nach, anzahl) {
+    const q = new URLSearchParams({ anzahl: String(anzahl), favoriten: '1' });
+    if (nach) q.set('nach', nach);
+    return api(`/api/v1/aufnahmen?${q}`);
+  },
   async mehr() {
-    const q = new URLSearchParams({ anzahl: '200', favoriten: '1' });
-    if (this.weiter) q.set('nach', this.weiter);
-    const d = await api(`/api/v1/aufnahmen?${q}`);
+    const d = await this.holeSeite(this.weiter, 200);
     this.weiter = d.weiter;
     return d;
   },
@@ -960,6 +1051,13 @@ const favoriten = {
 async function zeigeFavoriten() {
   markiereNav('favoriten');
   zeigeBereich(['raster']);
+  if (stillerLauf && liste && liste.favoriten) {
+    const d = await seitenBis((nach, n) => favoriten.holeSeite(nach, n), liste.aufnahmen.length);
+    if (ansichtGesperrt()) { live.nochmal = true; return; }
+    favoriten.weiter = d.weiter;
+    zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true, favoriten: true, mehr: d.weiter ? () => favoriten.mehr() : null }, t('Favoriten'));
+    return;
+  }
   favoriten.weiter = undefined;
   zeigeListe({ aufnahmen: [], nachTagen: true, favoriten: true, mehr: () => favoriten.mehr() }, t('Favoriten'));
   await ladeMehr();
@@ -1033,12 +1131,16 @@ async function zeigeAlben() {
   markiereNav('alben');
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Alben');
-  $('karten').replaceChildren();
-  const [d, neu] = await Promise.all([
+  const [d, neu, g, p, k] = await Promise.all([
     api('/api/v1/alben'),
     // Was andere in geteilte Alben gelegt haben (#295).
     api('/api/v1/kontobeitraege').catch(() => ({ alben: [] })),
+    api('/api/v1/geteilt').catch(() => ({ alben: [] })),
+    api('/api/v1/partner').catch(() => ({ mitMir: [] })),
+    api('/api/v1/intelligente-alben').catch(() => ({ alben: [] })),
   ]);
+  if (unveraendert([d, neu, g, p, k])) return;
+  $('karten').replaceChildren();
   const neuIn = new Map(neu.alben.map((x) => [x.id, x.anzahl]));
   if (d.alben.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Alben.')));
   for (const a of d.alben) {
@@ -1049,10 +1151,6 @@ async function zeigeAlben() {
   }
   // Was andere Konten mit diesem teilen (#105) – Alben und ganze
   // Bibliotheken (#293).
-  const [g, p] = await Promise.all([
-    api('/api/v1/geteilt').catch(() => ({ alben: [] })),
-    api('/api/v1/partner').catch(() => ({ mitMir: [] })),
-  ]);
   if (g.alben.length || p.mitMir.length) {
     $('karten').append(el('h3', 'karten-abschnitt', t('Geteilt mit mir')));
     for (const b of p.mitMir) {
@@ -1071,7 +1169,6 @@ async function zeigeAlben() {
     }
   }
   // Die gemerkten Suchen – wie am Rechner (#187).
-  const k = await api('/api/v1/intelligente-alben').catch(() => ({ alben: [] }));
   if (k.alben.length) {
     $('karten').append(el('h3', 'karten-abschnitt', t('Intelligente Alben')));
     for (const a of k.alben) {
@@ -1119,9 +1216,10 @@ async function zeigeOrte() {
   markiereNav('orte');
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Orte');
-  $('karten').replaceChildren();
   const d = await api(`/api/v1/laender?sprache=${SPRACHE}`);
   orteListe = d.laender;
+  if (unveraendert(d)) return;
+  $('karten').replaceChildren();
   if (!d.laender.length) $('karten').append(el('p', 'leise', t('Noch keine Orte. Sie entstehen, sobald Aufnahmen einen Ort tragen und die Ortsdaten eingerichtet sind.')));
   for (const l of d.laender) {
     const n = l.staedte.length;
@@ -2148,8 +2246,9 @@ async function zeigeReisen() {
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Reisen');
   const ziel = $('karten');
-  ziel.replaceChildren();
   const d = await api(`/api/v1/reisen?sprache=${SPRACHE}`);
+  if (unveraendert(d)) return;
+  ziel.replaceChildren();
   if (d.reisen.length === 0) ziel.append(el('p', 'leise abschnitt', t('Noch keine Reisen.')));
   for (const r of d.reisen) ziel.append(reisekarte(r));
   ziel.append(el('h3', 'abschnitt', t('Aktivitäten')));
@@ -2457,6 +2556,7 @@ async function zeigeStatistik() {
   markiereNav('statistik');
   zeigeBereich(['statistik']);
   const s = await api('/api/v1/statistik');
+  if (unveraendert(s)) return;
   $('stat-leer').hidden = s.insgesamt > 0;
   $('stat-diagramme').hidden = s.insgesamt === 0;
   $('stat-kennzahlen').replaceChildren(
@@ -3087,8 +3187,9 @@ async function zeigePersonen() {
   markiereNav('personen');
   zeigeBereich(['karten']);
   $('karten-titel').textContent = t('Personen');
-  $('karten').replaceChildren();
   const d = await api('/api/v1/personen');
+  if (unveraendert(d)) return;
+  $('karten').replaceChildren();
   if (d.personen.length === 0) $('karten').append(el('p', 'leise', t('Noch keine Personen.')));
   for (const p of d.personen) {
     const bild = p.bild ? `/api/v1/dateien/${p.bild.split('/').map(encodeURIComponent).join('/')}` : null;
@@ -3096,7 +3197,8 @@ async function zeigePersonen() {
     k.classList.add('person');
     $('karten').append(k);
   }
-  zeigeOhneNamen().catch(() => {});
+  // Gruppen, an denen gerade jemand arbeitet, bleiben im stillen Lauf stehen.
+  if (!stillerLauf) zeigeOhneNamen().catch(() => {});
 }
 
 // --- Gesichter benennen ----------------------------------------------------
@@ -3966,6 +4068,9 @@ async function zeigeKarte() {
     karteMarker = L.layerGroup().addTo(leafletKarte);
     leafletKarte.on('moveend', () => ladeOrte());
     await ladeOrte(true);
+  } else if (stillerLauf) {
+    orteZoom = null;
+    await ladeOrte();
   } else {
     setTimeout(() => leafletKarte.invalidateSize(), 50);
   }
@@ -4659,7 +4764,7 @@ async function springeZuMonat(schluessel) {
   zeitleiste.seite = 1000;
   try {
     for (let i = 0; i < 400 && !monatskopf(schluessel) && liste && liste.mehr; i++) {
-      if (liste.laedt) { await new Promise((fertig) => setTimeout(fertig, 60)); continue; }
+      if (liste.laedt || stillerLauf) { await new Promise((fertig) => setTimeout(fertig, 60)); continue; }
       await ladeMehr();
     }
   } finally {
@@ -6526,17 +6631,21 @@ document.addEventListener('keydown', async (e) => {
 
 let wegAbbruch = null;
 
-async function zeigeWeg() {
+async function zeigeWeg(art) {
   if (!sitzung) return;
   if (wegAbbruch) wegAbbruch.abort();
   const abbruch = wegAbbruch = new AbortController();
   wegSignal = abbruch.signal;
-  ansichtNr++;
-  suchlauf++;
-  schliesse();
-  auswahlAufheben();
-  $('auswaehlen').hidden = false;
-  const teile = location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
+  const still = stillerLauf = art === 'still';
+  if (!still) {
+    ansichtNr++;
+    suchlauf++;
+    schliesse();
+    auswahlAufheben();
+    $('auswaehlen').hidden = false;
+    $('karten').replaceChildren();
+  }
+  const teile = wegTeile();
   try {
     switch (teile[0]) {
       case 'suche': zeigeSuche(); break;
@@ -6577,12 +6686,126 @@ async function zeigeWeg() {
   } catch (x) {
     // Als Meldung: #ende liegt im Raster und wäre in den meisten Ansichten
     // gar nicht zu sehen.
-    if (x.name !== 'AbortError' && x.message !== 'nicht angemeldet') meldung(x.message, true);
+    if (!still && x.name !== 'AbortError' && x.message !== 'nicht angemeldet') meldung(x.message, true);
   } finally {
-    if (wegAbbruch === abbruch) wegSignal = null;
+    if (wegAbbruch === abbruch) { wegSignal = null; stillerLauf = false; }
   }
 }
 window.addEventListener('hashchange', zeigeWeg);
+
+// --- Von selbst aktuell (#329) ------------------------------------------------
+//
+// Was ein anderes Gerät ändert – vor allem neue Fotos vom Handy –, kommt ohne
+// Neuladen an. Die Seite fragt den Server, und der antwortet, sobald sich sein
+// Protokoll ändert. Nur im sichtbaren Tab: Jeder wartende Tab hielte sonst eine
+// der wenigen Verbindungen, die ein Browser je Server hat.
+//
+// Während jemand etwas tut, bleibt die Ansicht stehen und kommt danach dran:
+// Betrachter, Auswahl, Dialog, Eingabe, Ziehen. Scrollt jemand weiter unten,
+// bleibt das Foto dort, wo es ist, auch wenn oben neue dazukommen.
+
+function wegTeile() {
+  return location.hash.replace(/^#\/?/, '').split('/').map(decodeURIComponent);
+}
+
+// Ein stiller Lauf lässt stehen, was dieselbe Antwort bekäme.
+let letzteAntwort = null;
+function unveraendert(d) {
+  const text = JSON.stringify(d);
+  const gleich = stillerLauf && text === letzteAntwort;
+  letzteAntwort = text;
+  return gleich;
+}
+
+function ansichtGesperrt() {
+  const fokus = document.activeElement;
+  return (!!wegSignal && !stillerLauf) || offen >= 0
+    || !$('diashow').hidden || !$('vergleich').hidden
+    || auswahl.size > 0 || auswahlModus
+    || !!(liste && liste.laedt) || zeitleiste.seite !== 200
+    || bildlauf.zieht || zieh.anker !== null || schwebe.kachel !== null
+    || !!document.querySelector('dialog[open]')
+    || !!(fokus && fokus.matches('input, textarea, select'));
+}
+
+// Was sich neu holen lässt, ohne jemandem etwas wegzunehmen. Nicht dabei:
+// Formulare, Suchergebnisse, gemerkte Suchen (die rechnen am Server) und
+// Ansichten aus fremden Bibliotheken, deren Änderungen hier nicht ankommen.
+function ansichtLebt() {
+  const [wurzel, teil] = wegTeile();
+  if (wurzel === 'alben') return teil !== 'klug';
+  if (wurzel === 'karte') return !teil;
+  return ['', 'favoriten', 'papierkorb', 'personen', 'orte', 'reisen', 'statistik'].includes(wurzel);
+}
+
+function plane(warte) {
+  // Während einer Prüfung nicht: Ihr Ende plant selbst und kennt den Abstand.
+  if (live.uhr !== null || stillerLauf) return;
+  live.uhr = setTimeout(pruefeAnsicht, warte ?? Math.max(1000, live.zuletzt + live.abstand - performance.now()));
+}
+
+async function pruefeAnsicht() {
+  live.uhr = null;
+  if (!live.faellig || stillerLauf || !sitzung || document.hidden) return;
+  if (ansichtGesperrt()) { plane(2000); return; }
+  live.faellig = false;
+  const beginn = performance.now();
+  // Liegt die Zeitleiste im Hintergrund, lädt sie beim Zurückkommen frisch.
+  if (wegTeile()[0] !== '') zeitleiste.leeren();
+  orteListe = null;
+  if (ansichtLebt()) {
+    await zeigeWeg('still');
+    const ende = $('ende').getBoundingClientRect();
+    if (liste && liste.mehr && ende.height && ende.top < innerHeight) ladeMehr();
+  }
+  live.zuletzt = performance.now();
+  // Bibliotheken, an denen der Server lange rechnet, ändern sich ständig;
+  // die Prüfung soll davon nur einen kleinen Teil der Zeit brauchen.
+  live.abstand = Math.max(5000, 20 * (live.zuletzt - beginn));
+  if (live.nochmal) { live.nochmal = false; live.faellig = true; }
+  if (live.faellig) plane();
+}
+
+async function lausche() {
+  if (live.laeuft) return;
+  live.laeuft = true;
+  let fehlversuche = 0;
+  while (sitzung && !document.hidden) {
+    const abbruch = live.abbruch = new AbortController();
+    let pause = 0;
+    try {
+      const q = new URLSearchParams({ warten: '25' });
+      if (live.stand !== null) q.set('bisher', live.stand);
+      const antwort = await fetch(`/api/v1/ansicht/stand?${q}`, { credentials: 'same-origin', signal: abbruch.signal, headers: { 'X-PV-Web': '1' } });
+      if (antwort.status === 401) { zeigeAnmeldung(); break; }
+      if (!antwort.ok) throw new Error(String(antwort.status));
+      const d = await antwort.json();
+      fehlversuche = 0;
+      if (live.stand !== null && d.stand !== live.stand) {
+        live.faellig = true;
+        plane();
+        // Solange der Server schreibt, nicht bei jeder Zeile neu fragen.
+        pause = 2000;
+      }
+      live.stand = d.stand;
+    } catch (x) {
+      if (x.name === 'AbortError') break;
+      // Server weg oder Rechner aufgewacht: Mit dem alten Stand holt die
+      // nächste Antwort nach, was dazwischen geschah.
+      fehlversuche++;
+      pause = Math.min(30000, 1000 * 2 ** fehlversuche);
+    }
+    if (pause) await new Promise((fertig) => setTimeout(fertig, pause));
+  }
+  live.laeuft = false;
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (live.abbruch) live.abbruch.abort(); return; }
+  if (!sitzung) return;
+  lausche();
+  if (live.faellig) plane();
+});
 
 async function starte() {
   sitzung = await api('/api/v1/web/sitzung');
@@ -6595,6 +6818,7 @@ async function starte() {
   $('konto-knopf').textContent = (sitzung.name || '?').trim().charAt(0).toUpperCase();
   $('konto-knopf').title = `${t('Konto')}: ${sitzung.name}`;
   await oidcZurueck();
+  lausche();
   await zeigeWeg();
 }
 

@@ -280,6 +280,7 @@ Handler baueApi({
     ..get('/api/v1/bibliothek', api.bibliothek)
     ..get('/api/v1/aufnahmen', api.aufnahmen)
     ..get('/api/v1/zeitleiste/monate', api.zeitleistenmonate)
+    ..get('/api/v1/ansicht/stand', api.ansichtsstand)
     ..get('/api/v1/aufnahmen/<id>', api.aufnahme)
     ..get('/api/v1/aufnahmen/<id>/angaben', api.angaben)
     ..post('/api/v1/aufnahmen/<id>/gesichter', api.gesichtAnlegen)
@@ -956,7 +957,7 @@ class _Api {
       if (name == null) continue;
       try {
         final bereich = await bibliotheken.fuer(f.besitzer);
-        quellen.add(_Partnerquelle(f, bereich.bibliothek.db, name));
+        quellen.add(_Partnerquelle(f, bereich.bibliothek, name));
       } catch (e) {
         // Eine Bibliothek, die sich nicht öffnen lässt, darf die eigene
         // Zeitleiste nicht mitreissen.
@@ -964,6 +965,49 @@ class _Api {
       }
     }
     return quellen;
+  }
+
+  /// `?bisher=…&warten=25` → `{stand}`: ob sich geändert hat, was die
+  /// Weboberfläche zeigt (#329).
+  ///
+  /// Mit `warten` (Sekunden, höchstens 30) hält die Anfrage an, bis der Stand
+  /// von `bisher` abweicht oder die Zeit um ist. Anders als die Änderungen des
+  /// Abgleichs trägt die Antwort keine Zeilen, denn der Browser hält keine
+  /// Kopie, und sie zählt die Bibliotheken der Partner in der eigenen
+  /// Zeitleiste mit. Der Stand ist nur zum Vergleichen da: Fällt ein Partner
+  /// weg, wird er nicht grösser, aber ein anderer.
+  Future<Response> ansichtsstand(Request anfrage) async {
+    final q = anfrage.url.queryParameters;
+    final bisher = q['bisher'];
+    final warten = Duration(
+      seconds: (int.tryParse(q['warten'] ?? '') ?? 0).clamp(0, 30),
+    );
+    final quellen = [
+      (await _bereich(anfrage)).bibliothek,
+      for (final p in await _partnerInZeitleiste(anfrage)) p.bibliothek,
+    ];
+    bool schliesst() => quellen.any((b) => b.wirdGeschlossen);
+    Future<String> stand() async =>
+        [for (final b in quellen) await b.protokoll.stand()].join('.');
+    try {
+      final ende = DateTime.now().add(warten);
+      var jetzt = await stand();
+      while (jetzt == bisher && !schliesst() && DateTime.now().isBefore(ende)) {
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+        if (!schliesst()) jetzt = await stand();
+      }
+      if (schliesst()) {
+        return _json({'fehler': 'Server wird beendet.'}, status: 503);
+      }
+      return _json({'stand': jetzt});
+    } catch (_) {
+      // Wie bei den Änderungen des Abgleichs: Die Datenbank kann genau
+      // zwischen Prüfung und Abfrage geschlossen werden.
+      if (schliesst()) {
+        return _json({'fehler': 'Server wird beendet.'}, status: 503);
+      }
+      rethrow;
+    }
   }
 
   /// Wie viele Aufnahmen die Zeitleiste je Monat zeigt, neueste zuerst –
@@ -2675,11 +2719,13 @@ class _Api {
 /// Aufnahme, als Text für die Adresse.
 /// Die Bibliothek eines Partners in der Zeitleiste (#299).
 class _Partnerquelle {
-  _Partnerquelle(this.freigabe, this.db, this.name);
+  _Partnerquelle(this.freigabe, this.bibliothek, this.name);
 
   final Partnerfreigabe freigabe;
-  final AppDatabase db;
+  final Bibliothek bibliothek;
   final String name;
+
+  AppDatabase get db => bibliothek.db;
 }
 
 class _Lesezeichen {
