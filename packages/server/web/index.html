@@ -439,6 +439,7 @@
     <button id="auswahl-teilen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-teilen"/></svg>Teilen</button>
     <button id="auswahl-favorit" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-favoriten"/></svg>Favorit</button>
     <button id="auswahl-album" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-alben"/></svg>Album</button>
+    <button id="auswahl-ort" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-karte"/></svg> Ort</button>
     <button id="auswahl-link" type="button"><svg class="symbol zeichen" aria-hidden="true"><use href="#i-link"/></svg>Link</button>
     <button id="auswahl-vergleichen" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-vergleich"/></svg>Vergleichen</button>
     <button id="auswahl-varianten" type="button" hidden><svg class="symbol zeichen" aria-hidden="true"><use href="#i-duplikate"/></svg>Als Varianten stapeln</button>
@@ -631,6 +632,18 @@
 </dialog>
 
 <!-- Eine Suche als intelligentes Album merken (#187). -->
+<dialog id="ort-dialog">
+  <form method="dialog" id="form-ort">
+    <h3 id="ort-titel">Ort setzen</h3>
+    <label>Ort <input name="ort" type="search" autocomplete="off" placeholder="z. B. Goslar oder Paris, Frankreich" maxlength="100"></label>
+    <div id="ort-vorschlaege" class="ort-vorschlaege"></div>
+    <p id="ort-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="ort-entfernen" hidden>Ort entfernen</button>
+      <button type="button" id="ort-abbrechen">Abbrechen</button>
+    </menu>
+  </form>
+</dialog>
 <dialog id="merken-dialog">
   <form method="dialog" id="form-merken">
     <h3>Als intelligentes Album merken</h3>

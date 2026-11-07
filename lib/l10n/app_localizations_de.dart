@@ -10376,4 +10376,15 @@ class AppTexteDe extends AppTexte {
   @override
   String get entwZuruecksetzenText =>
       'Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder.';
+
+  @override
+  String get videoVorschauAbspielen => 'Ausschnitt abspielen';
+
+  @override
+  String get videoVorschauAnhalten => 'Anhalten';
+
+  @override
+  String videoSchnittLaenge(String dauer) {
+    return 'Länge $dauer';
+  }
 }

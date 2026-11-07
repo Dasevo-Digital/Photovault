@@ -435,6 +435,31 @@ class ReverseGeocoder {
     return treffer.isEmpty ? null : treffer.first;
   }
 
+  /// Was die Vorschlagsliste beim Tippen zeigt: die Orte zum Namen, und sind
+  /// es keine, die Namen, die so beginnen. Wer „Gos“ tippt, meint vielleicht
+  /// Goslar.
+  List<OrtsTreffer> vorschlaege(
+    String eingabe, {
+    double? naheBreite,
+    double? naheLaenge,
+  }) {
+    final treffer = sucheOrte(
+      eingabe,
+      naheBreite: naheBreite,
+      naheLaenge: naheLaenge,
+    );
+    if (treffer.isNotEmpty) return treffer;
+    return [
+      for (final name in namensvorschlaege(eingabe, hoechstens: 6))
+        ...sucheOrte(
+          name,
+          naheBreite: naheBreite,
+          naheLaenge: naheLaenge,
+          hoechstens: 1,
+        ),
+    ];
+  }
+
   /// Die besten [hoechstens] Treffer zu einem Ortsnamen – die Grundlage
   /// der Vorschlagsliste.
   ///

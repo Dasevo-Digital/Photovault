@@ -12,6 +12,7 @@ import '../sitzung.dart';
 import 'alben.dart';
 import 'aufnahmedaten.dart';
 import 'gesichter.dart';
+import 'ort_waehlen.dart';
 import 'personen.dart';
 import 'raster.dart';
 import 'varianten.dart';
@@ -71,7 +72,11 @@ class _AngabenlisteState extends State<Angabenliste> {
   ({DateTime neu, bool geschaetzt, String quelle})? _vorschlag;
   ({DateTime neu, bool geschaetzt})? _uebernommen;
 
-  AssetData get _a => widget.angaben.aufnahme;
+  AssetData get _a => _nachOrt ?? widget.angaben.aufnahme;
+
+  /// Die Aufnahme, nachdem hier der Ort geändert wurde; die Angaben kamen
+  /// fertig an.
+  AssetData? _nachOrt;
   AppDatabase get _db => widget.sitzung.db;
 
   @override
@@ -150,6 +155,15 @@ class _AngabenlisteState extends State<Angabenliste> {
     if (mounted) setState(() => _gespeichert = true);
   }
 
+  Future<void> _ortAendern(bool hatOrt) async {
+    final geaendert = await ortWaehlen(context, widget.sitzung, [
+      _a.id,
+    ], hatOrt: hatOrt);
+    if (!geaendert) return;
+    final neu = await _db.assetById(_a.id);
+    if (mounted && neu != null) setState(() => _nachOrt = neu);
+  }
+
   Future<void> _bewerten(int i) async {
     // Dieselbe Sterne noch einmal nimmt die Bewertung weg – wie im Browser.
     final neu = _bewertung == i ? 0 : i;
@@ -192,6 +206,7 @@ class _AngabenlisteState extends State<Angabenliste> {
       if (a.exposureTimeSeconds case final s?) belichtungText(s),
       if (a.iso case final i?) 'ISO $i',
     ].join(' · ');
+    final hatOrt = a.latitude != null && a.longitude != null;
     final ortName = [
       a.locationCity,
       a.locationState,
@@ -247,15 +262,28 @@ class _AngabenlisteState extends State<Angabenliste> {
             haupt: Text(kamera),
             neben: [?a.lensModel, if (werte.isNotEmpty) werte].join('\n'),
           ),
-        if (a.latitude != null && a.longitude != null)
-          _Reihe(
-            symbol: Icons.place_outlined,
-            haupt: Text(ortName.isEmpty ? t.angabenStandortBekannt : ortName),
-            neben:
-                '${a.latitude!.toStringAsFixed(5)}, '
-                '${a.longitude!.toStringAsFixed(5)}'
-                '${a.ortGeerbt ? ' · ${t.angabenGeerbt}' : ''}',
+        _Reihe(
+          symbol: Icons.place_outlined,
+          haupt: Text(
+            !hatOrt
+                ? t.ortKeiner
+                : ortName.isEmpty
+                ? t.angabenStandortBekannt
+                : ortName,
           ),
+          neben: hatOrt
+              ? '${a.latitude!.toStringAsFixed(5)}, '
+                    '${a.longitude!.toStringAsFixed(5)}'
+                    '${a.ortGeerbt ? ' · ${t.angabenGeerbt}' : ''}'
+              : null,
+          unten: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => _ortAendern(hatOrt),
+              child: Text(hatOrt ? t.ortAendern : t.ortSetzen),
+            ),
+          ),
+        ),
         if (g.personen.isNotEmpty)
           _Reihe(
             symbol: Icons.person_outline,

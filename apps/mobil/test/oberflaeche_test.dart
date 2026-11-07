@@ -2980,6 +2980,64 @@ void main() {
     ]);
   });
 
+  testWidgets('Angaben: Ort entfernen und ohne Ort setzen anbieten', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['o1']);
+    await tester.runAsync(
+      () => db.fuehreAus(
+        const OrtSetzen(
+          ['o1'],
+          51.9,
+          10.4,
+          land: 'Germany',
+          region: 'Lower Saxony',
+          stadt: 'Goslar',
+        ),
+      ),
+    );
+    final angaben = await tester.runAsync(() => aufnahmeangaben(db, 'o1'));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Angabenliste(sitzung: sitzung, angaben: angaben!),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Goslar'), findsOneWidget);
+
+    await tester.tap(find.text('Ort ändern'));
+    await tester.pumpAndSettle();
+    // Der Testaufbau hat keinen Server: Die Suche sagt das, statt zu hängen.
+    await tester.enterText(find.byType(TextField).last, 'Gos');
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Für die Ortssuche braucht es den Server.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Ort entfernen'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Kein Ort'), findsOneWidget);
+    expect(find.text('Ort setzen'), findsOneWidget);
+    final a = await tester.runAsync(() => db.assetById('o1'));
+    expect(a!.latitude, isNull);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
   testWidgets('Angaben wie im Browser: Zeilen, Beschreibung, Bewertung', (
     tester,
   ) async {
@@ -3055,6 +3113,12 @@ void main() {
     expect(find.text('Erika'), findsNWidgets(2));
     expect(find.text('Berg'), findsOneWidget);
     expect(find.text('Alpen'), findsOneWidget);
+    // Die Zeile „Ort“ steht jetzt immer da, auch ohne Ort.
+    await tester.scrollUntilVisible(
+      find.text('Automatisch: Ein Kreuz auf einem Gipfel'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(
       find.text('Automatisch: Ein Kreuz auf einem Gipfel'),
       findsOneWidget,

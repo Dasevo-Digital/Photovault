@@ -6594,5 +6594,9 @@
   "viewerImPapierkorb": "In den Papierkorb gelegt.",
   "entwOriginalNichtDa": "Das Original liegt nicht hier, und der Server ist nicht erreichbar.",
   "entwZuruecksetzenTitel": "Entwicklung entfernen?",
-  "entwZuruecksetzenText": "Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder."
+  "entwZuruecksetzenText": "Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder.",
+  "videoVorschauAbspielen": "Ausschnitt abspielen",
+  "videoVorschauAnhalten": "Anhalten",
+  "videoSchnittLaenge": "Länge {dauer}",
+  "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}}
 }

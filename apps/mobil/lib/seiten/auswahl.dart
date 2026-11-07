@@ -16,6 +16,7 @@ import '../sitzung.dart';
 import 'als_jpeg.dart';
 import 'diashow.dart';
 import 'loeschen.dart';
+import 'ort_waehlen.dart';
 import 'varianten.dart';
 import 'vergleich.dart';
 import 'freigaben.dart';
@@ -64,6 +65,10 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     final alle = zeilen.every((z) => z.isFavorite);
     await _db.fuehreAus(FavoritSetzen(_ids, !alle));
     aufheben();
+  }
+
+  Future<void> _ort(BuildContext context) async {
+    if (await ortWaehlen(context, sitzung, _ids)) aufheben();
   }
 
   Future<void> _teile(BuildContext context) async {
@@ -365,6 +370,11 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                     icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
                     text: t.auswahlFavorit,
                     onPressed: _favorit,
+                  ),
+                  _Aktion(
+                    icon: Icons.place_outlined,
+                    text: t.auswahlOrt,
+                    onPressed: () => _ort(context),
                   ),
                   _Aktion(
                     icon: Icons.download_outlined,

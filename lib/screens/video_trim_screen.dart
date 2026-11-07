@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 
@@ -10,6 +12,7 @@ import 'package:kern/services/storage_paths.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/video_playback.dart';
 import '../services/meldungsdienst.dart';
+import 'schnittsteuerung.dart';
 
 /// Nicht-destruktiver Video-Zuschnitt: Start-/Endpunkt über eine
 /// Bereichsleiste wählen, "Speichern" schneidet nativ über AVFoundation
@@ -36,6 +39,8 @@ class VideoTrimScreen extends StatefulWidget {
 class _VideoTrimScreenState extends State<VideoTrimScreen> {
   VideoPlaybackController? _controller;
   RangeValues? _range;
+  Schnittsteuerung? _steuerung;
+  final _abos = <StreamSubscription<void>>[];
   String? _fehler;
   bool _saving = false;
   bool _hasExistingTrim = false;
@@ -70,19 +75,61 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     final existing = await widget.db.videoTrimForAsset(widget.asset.id);
     final durationSeconds = controller.duration.inMilliseconds / 1000;
     if (!mounted) return;
+    final bereich = RangeValues(
+      existing?.startSeconds ?? 0,
+      existing?.endSeconds ?? durationSeconds,
+    );
+    final steuerung = Schnittsteuerung(
+      bereich: bereich,
+      springe: controller.seek,
+      spiele: controller.play,
+      halte: controller.pause,
+    );
+    _abos.addAll([
+      controller.positionStream.listen((s) {
+        unawaited(steuerung.stelleGemeldet(s));
+      }),
+      controller.changes.listen((_) {
+        if (!controller.isPlaying) steuerung.angehalten();
+        if (mounted) setState(() {});
+      }),
+    ]);
     setState(() {
       _hasExistingTrim = existing != null;
-      _range = RangeValues(
-        existing?.startSeconds ?? 0,
-        existing?.endSeconds ?? durationSeconds,
-      );
+      _range = bereich;
+      _steuerung = steuerung;
     });
+    // Ein vorhandener Schnitt zeigt gleich sein erstes Bild.
+    if (bereich.start > 0) {
+      await controller.seek(
+        Duration(milliseconds: (bereich.start * 1000).round()),
+      );
+    }
   }
 
   @override
   void dispose() {
+    for (final a in _abos) {
+      unawaited(a.cancel());
+    }
     _controller?.dispose();
     super.dispose();
+  }
+
+  void _griffBewegt(RangeValues neu) {
+    setState(() => _range = neu);
+    unawaited(_steuerung?.griffBewegt(neu));
+  }
+
+  void _umschalten() {
+    final controller = _controller;
+    final steuerung = _steuerung;
+    if (controller == null || steuerung == null || _saving) return;
+    unawaited(
+      steuerung
+          .umschalten(controller.position)
+          .whenComplete(() => mounted ? setState(() {}) : null),
+    );
   }
 
   double get _durationSeconds =>
@@ -99,6 +146,10 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
     final range = _range;
     if (range == null) return;
     setState(() => _saving = true);
+    // Die Vorschau hält an, solange gerechnet wird.
+    if (_steuerung?.spielt ?? false) {
+      await _steuerung?.umschalten(Duration.zero);
+    }
 
     // Ein neuer Name je Schnitt, und das Original erst holen – verbunden
     // liegt es beim Server (#109).
@@ -175,96 +226,127 @@ class _VideoTrimScreenState extends State<VideoTrimScreen> {
   Widget build(BuildContext context) {
     final controller = _controller;
     final range = _range;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        title: Text(AppTexte.of(context).videoZuschneiden),
-        actions: [
-          if (_hasExistingTrim)
-            TextButton(
-              onPressed: _saving ? null : _reset,
-              child: Text(
-                AppTexte.of(context).einstZuruecksetzen,
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
-          if (_saving)
-            const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.check),
-              tooltip: AppTexte.of(context).allgSpeichern,
-              onPressed: _save,
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: _fehler != null
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
+    final spielt = _steuerung?.spielt ?? false;
+    final t = AppTexte.of(context);
+    return CallbackShortcuts(
+      bindings: {const SingleActivator(LogicalKeyboardKey.space): _umschalten},
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            title: Text(AppTexte.of(context).videoZuschneiden),
+            actions: [
+              if (_hasExistingTrim)
+                TextButton(
+                  onPressed: _saving ? null : _reset,
                   child: Text(
-                    _fehler!,
-                    textAlign: TextAlign.center,
+                    AppTexte.of(context).einstZuruecksetzen,
                     style: const TextStyle(color: Colors.white70),
                   ),
                 ),
-              )
-            : controller == null || !controller.isReady || range == null
-            ? const Center(child: CircularProgressIndicator())
-            : Column(
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: AspectRatio(
-                        aspectRatio: controller.aspectRatio,
-                        child: VideoSurface(controller: controller),
-                      ),
+              if (_saving)
+                const Padding(
+                  padding: EdgeInsets.all(AppSpacing.lg),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xl,
-                      vertical: AppSpacing.lg,
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.check),
+                  tooltip: AppTexte.of(context).allgSpeichern,
+                  onPressed: _save,
+                ),
+            ],
+          ),
+          body: SafeArea(
+            child: _fehler != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      child: Text(
+                        _fehler!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70),
+                      ),
                     ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  )
+                : controller == null || !controller.isReady || range == null
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: AspectRatio(
+                            aspectRatio: controller.aspectRatio,
+                            child: VideoSurface(controller: controller),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.xl,
+                          vertical: AppSpacing.lg,
+                        ),
+                        child: Column(
                           children: [
-                            Text(
-                              _formatSeconds(range.start),
-                              style: const TextStyle(color: Colors.white70),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatSeconds(range.start),
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      color: Colors.white,
+                                      tooltip: spielt
+                                          ? t.videoVorschauAnhalten
+                                          : t.videoVorschauAbspielen,
+                                      icon: Icon(
+                                        spielt ? Icons.pause : Icons.play_arrow,
+                                      ),
+                                      onPressed: _saving ? null : _umschalten,
+                                    ),
+                                    Text(
+                                      t.videoSchnittLaenge(
+                                        _formatSeconds(range.end - range.start),
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  _formatSeconds(range.end),
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              ],
                             ),
-                            Text(
-                              _formatSeconds(range.end),
-                              style: const TextStyle(color: Colors.white70),
+                            RangeSlider(
+                              values: range,
+                              min: 0,
+                              max: _durationSeconds > 0 ? _durationSeconds : 1,
+                              onChanged: _saving ? null : _griffBewegt,
                             ),
                           ],
                         ),
-                        RangeSlider(
-                          values: range,
-                          min: 0,
-                          max: _durationSeconds > 0 ? _durationSeconds : 1,
-                          onChanged: (v) => setState(() => _range = v),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+          ),
+        ),
       ),
     );
   }

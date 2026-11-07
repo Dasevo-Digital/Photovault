@@ -902,5 +902,15 @@
   "sucheFilterHerkunft": "Source",
   "sucheFilterHerkunftKamera": "From a camera",
   "sucheFilterHerkunftEmpfangen": "Received",
-  "sucheFilterOhneAlbum": "Not in an album"
+  "sucheFilterOhneAlbum": "Not in an album",
+  "ortSetzen": "Set place",
+  "ortAendern": "Change place",
+  "ortEntfernen": "Remove place",
+  "ortKeiner": "No place",
+  "ortSuchenBeispiel": "e.g. Goslar or Paris, France",
+  "ortKeinTreffer": "No place found.",
+  "ortKeinVerzeichnis": "The server has no place directory.",
+  "ortKeineVerbindung": "Searching for places needs the server.",
+  "auswahlOrt": "Place",
+  "ortFuerAufnahmen": "Set place for {n} items"
 }

@@ -15759,6 +15759,24 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Die gespeicherte Entwicklung wird entfernt, und das Original erscheint wieder.'**
   String get entwZuruecksetzenText;
+
+  /// No description provided for @videoVorschauAbspielen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausschnitt abspielen'**
+  String get videoVorschauAbspielen;
+
+  /// No description provided for @videoVorschauAnhalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Anhalten'**
+  String get videoVorschauAnhalten;
+
+  /// No description provided for @videoSchnittLaenge.
+  ///
+  /// In de, this message translates to:
+  /// **'Länge {dauer}'**
+  String videoSchnittLaenge(String dauer);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

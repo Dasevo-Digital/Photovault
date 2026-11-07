@@ -786,6 +786,7 @@ function zeigeListe(neu, titel) {
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
   $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
+  $('auswahl-ort').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
   $('auswahl-endgueltig').hidden = !liste.papierkorb;
   letzterTag = null;
@@ -5399,9 +5400,16 @@ async function zeigeAngaben() {
     const werte = [k.brennweite ? `${k.brennweite} mm` : '', k.blende ? `f/${k.blende}` : '', k.belichtung ? belichtung(k.belichtung) : '', k.iso ? `ISO ${k.iso}` : ''].filter(Boolean).join(' · ');
     teile.push(reihe('📷', modell, [k.objektiv, werte].filter(Boolean).join('\n')));
   }
+  const ortKnopf = el('button', 'marke', d.ort ? t('Ort ändern') : t('Ort setzen'));
+  ortKnopf.type = 'button';
+  ortKnopf.addEventListener('click', () => ortDialog([a], Boolean(d.ort), zeigeAngaben));
   if (d.ort) {
     const name = [d.ort.stadt, d.ort.region, land(d.ort.land)].filter(Boolean).join(', ');
-    teile.push(reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`));
+    const r = reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`);
+    r.querySelector('.inhalt').append(ortKnopf);
+    teile.push(r);
+  } else {
+    teile.push(reihe('📍', ortKnopf));
   }
   if (d.personen.length) teile.push(reihe('👤', verweise(d.personen, '#/personen')));
   if (d.gesichter && d.gesichter.length) teile.push(reihe('🙂', gesichterReihe(d.gesichter), t('Antippen, um zu benennen oder zu ändern')));
@@ -6121,6 +6129,68 @@ function erneuereMarkenVon(ziele) {
   const ids = new Set(ziele.map((a) => a.id));
   liste.aufnahmen.forEach((a, i) => { if (ids.has(a.id)) erneuereMarken(i); });
 }
+
+// Ort von Hand, wie im Infoblatt am Rechner. Das Ortsverzeichnis liegt auf
+// dem Server; die Namen gehen mit dem Befehl auf alle Geräte.
+let ortAuftrag = null;
+let ortUhr = null;
+let ortAnfrage = 0;
+function ortDialog(ziele, hatOrt, fertig) {
+  const f = $('form-ort');
+  f.reset();
+  ortAuftrag = { ziele, fertig };
+  $('ort-titel').textContent = ziele.length > 1 ? t('Ort für {n} Aufnahmen setzen', { n: ziele.length }) : t('Ort setzen');
+  $('ort-vorschlaege').replaceChildren();
+  $('ort-meldung').textContent = '';
+  $('ort-entfernen').hidden = !hatOrt;
+  $('ort-dialog').showModal();
+  f.ort.focus();
+}
+async function ortSende(werte, text) {
+  const { ziele, fertig } = ortAuftrag;
+  try {
+    await befehl('ortSetzen', { ids: ziele.map((a) => a.id), ...werte });
+    $('ort-dialog').close();
+    meldung(text);
+    if (fertig) await fertig();
+  } catch (x) { $('ort-meldung').textContent = x.message; }
+}
+async function ortSuche() {
+  const text = $('form-ort').ort.value.trim();
+  const nummer = ++ortAnfrage;
+  const feld = $('ort-vorschlaege');
+  if (text.length < 2) { feld.replaceChildren(); $('ort-meldung').textContent = ''; return; }
+  let d;
+  try { d = await api(`/api/v1/orte/suche?text=${encodeURIComponent(text)}`); } catch (x) {
+    if (nummer === ortAnfrage) $('ort-meldung').textContent = x.message;
+    return;
+  }
+  if (nummer !== ortAnfrage) return; // inzwischen weitergetippt
+  $('ort-meldung').textContent = !d.verzeichnis ? t('Auf dem Server liegt kein Ortsverzeichnis.') : d.treffer.length ? '' : t('Kein Ort gefunden.');
+  feld.replaceChildren(...d.treffer.map((o) => {
+    const b = el('button');
+    b.type = 'button';
+    b.append(el('span', 'haupt', o.name), el('span', 'neben', o.herkunft));
+    b.addEventListener('click', () => ortSende(
+      { breite: o.breite, laenge: o.laenge, land: o.land, region: o.region, stadt: o.stadt },
+      t('Ort gesetzt: {name}', { name: o.herkunft ? `${o.name}, ${o.herkunft}` : o.name }),
+    ));
+    return b;
+  }));
+}
+$('form-ort').ort.addEventListener('input', () => { clearTimeout(ortUhr); ortUhr = setTimeout(ortSuche, 150); });
+$('form-ort').addEventListener('submit', (e) => {
+  // Enter nimmt den ersten Vorschlag, wie der Knopf daneben am Rechner.
+  e.preventDefault();
+  const erster = $('ort-vorschlaege').querySelector('button');
+  if (erster) erster.click();
+});
+$('ort-abbrechen').addEventListener('click', () => $('ort-dialog').close());
+$('ort-entfernen').addEventListener('click', () => ortSende({ breite: null, laenge: null }, t('Ort entfernt')));
+$('auswahl-ort').addEventListener('click', () => {
+  const g = gewaehlte().filter((a) => !fremdeAufnahme(a));
+  if (g.length) ortDialog(g, false, auswahlAufheben);
+});
 
 async function setzeFavorit(ziele) {
   if (!ziele.length) return;

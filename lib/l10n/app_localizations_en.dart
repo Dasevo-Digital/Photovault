@@ -10318,4 +10318,15 @@ class AppTexteEn extends AppTexte {
   @override
   String get entwZuruecksetzenText =>
       'The saved edits are removed, and the original appears again.';
+
+  @override
+  String get videoVorschauAbspielen => 'Play selection';
+
+  @override
+  String get videoVorschauAnhalten => 'Pause';
+
+  @override
+  String videoSchnittLaenge(String dauer) {
+    return 'Length $dauer';
+  }
 }

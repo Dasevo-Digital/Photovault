@@ -128,18 +128,35 @@ final class MarkierungenSetzen extends Befehl<void> {
 }
 
 /// Ort von Hand: Koordinaten setzen oder (beide `null`) entfernen.
+///
+/// Mit [stadt] kommen die Namen gleich mit: Browser und Handy haben kein
+/// Ortsverzeichnis, und auf dem Server füllt sie niemand nach. Ohne sie
+/// stünde dort bis zum nächsten Nachtrag am Rechner nur eine Koordinate.
 final class OrtSetzen extends Befehl<void> {
-  const OrtSetzen(this.ids, this.breite, this.laenge);
+  const OrtSetzen(
+    this.ids,
+    this.breite,
+    this.laenge, {
+    this.land,
+    this.region,
+    this.stadt,
+  });
 
   static OrtSetzen aus(Map<String, Object?> w) => OrtSetzen(
     _kennungen(w['ids']),
     (w['breite'] as num?)?.toDouble(),
     (w['laenge'] as num?)?.toDouble(),
+    land: w['land'] as String?,
+    region: w['region'] as String?,
+    stadt: w['stadt'] as String?,
   );
 
   final List<String> ids;
   final double? breite;
   final double? laenge;
+  final String? land;
+  final String? region;
+  final String? stadt;
 
   @override
   String get art => 'ortSetzen';
@@ -149,12 +166,26 @@ final class OrtSetzen extends Befehl<void> {
     'ids': ids,
     'breite': breite,
     'laenge': laenge,
+    'land': ?land,
+    'region': ?region,
+    'stadt': ?stadt,
   };
 
   @override
-  Future<void> anwenden(AppDatabase db) => ids.length == 1
-      ? db.setLocation(ids.single, breite, laenge)
-      : db.setLocationBulk(ids, breite, laenge);
+  Future<void> anwenden(AppDatabase db) async {
+    await (ids.length == 1
+        ? db.setLocation(ids.single, breite, laenge)
+        : db.setLocationBulk(ids, breite, laenge));
+    final name = stadt;
+    if (name != null) {
+      await db.setLocationNamesBulk(
+        ids,
+        country: land,
+        state: region,
+        city: name,
+      );
+    }
+  }
 }
 
 /// Kamera, Objektiv und Belichtung einer Aufnahme.

@@ -214,6 +214,14 @@ void main() {
       const SucheUebersetzenSetzen(true),
       const AngabenSchuetzenSetzen(true),
       const OrtSetzen(['a1', 'a2'], 54.1, 10.9),
+      const OrtSetzen(
+        ['a1'],
+        54.1,
+        10.9,
+        land: 'Germany',
+        region: 'Schleswig-Holstein',
+        stadt: 'Kiel',
+      ),
       const KameraangabenSetzen(
         'a1',
         CameraInfo(make: 'Canon', model: 'EOS R10', iso: 400, fNumber: 2.8),

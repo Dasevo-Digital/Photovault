@@ -179,6 +179,8 @@ extension AuswahlAbfragen on AppDatabase {
       locationCountry: const Value(null),
       locationState: const Value(null),
       locationCity: const Value(null),
+      // Wie bei [setLocation]: Von Hand gesetzt ist keine Vermutung mehr.
+      ortGeerbt: const Value(false),
     ),
   );
 

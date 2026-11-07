@@ -387,24 +387,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
       }
       return;
     }
-    // Erst die Orte zum getippten Namen. Sind es keine, den Namen selbst
-    // vorschlagen – wer „Gos" tippt, meint vielleicht Goslar.
-    var treffer = geo.sucheOrte(
+    final treffer = geo.vorschlaege(
       text,
       naheBreite: _asset.latitude,
       naheLaenge: _asset.longitude,
     );
-    if (treffer.isEmpty) {
-      treffer = [
-        for (final name in geo.namensvorschlaege(text, hoechstens: 6))
-          ...geo.sucheOrte(
-            name,
-            naheBreite: _asset.latitude,
-            naheLaenge: _asset.longitude,
-            hoechstens: 1,
-          ),
-      ];
-    }
     setState(() => _ortVorschlaege = treffer);
   }
 

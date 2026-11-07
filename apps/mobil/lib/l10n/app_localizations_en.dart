@@ -2850,4 +2850,36 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sucheFilterOhneAlbum => 'Not in an album';
+
+  @override
+  String get ortSetzen => 'Set place';
+
+  @override
+  String get ortAendern => 'Change place';
+
+  @override
+  String get ortEntfernen => 'Remove place';
+
+  @override
+  String get ortKeiner => 'No place';
+
+  @override
+  String get ortSuchenBeispiel => 'e.g. Goslar or Paris, France';
+
+  @override
+  String get ortKeinTreffer => 'No place found.';
+
+  @override
+  String get ortKeinVerzeichnis => 'The server has no place directory.';
+
+  @override
+  String get ortKeineVerbindung => 'Searching for places needs the server.';
+
+  @override
+  String get auswahlOrt => 'Place';
+
+  @override
+  String ortFuerAufnahmen(int n) {
+    return 'Set place for $n items';
+  }
 }

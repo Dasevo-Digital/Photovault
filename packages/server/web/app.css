@@ -403,6 +403,9 @@ dialog menu button[type=submit] { background: var(--akzent); color: var(--auf-ak
 .erinnerung span { position: absolute; left: 8px; right: 8px; bottom: 8px; color: #fff; font-weight: 600; text-shadow: 0 0 6px #000; text-align: left; }
 #server-stand, #konten { list-style: none; padding: 0; margin: 0; }
 #server-stand li, #konten li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rand); }
+.ort-vorschlaege { display: grid; gap: 4px; margin-top: 8px; }
+.ort-vorschlaege button { display: grid; gap: 2px; padding: 8px 10px; text-align: left; border: 1px solid var(--rand); border-radius: 8px; background: var(--karte); color: var(--text); }
+.ort-vorschlaege .neben { font-size: 0.85em; opacity: 0.75; }
 .aussen-form { display: grid; gap: 8px; max-width: 34em; }
 .aussen-form label { display: grid; gap: 4px; font-size: 0.9em; }
 .aussen-form label[hidden] { display: none; }

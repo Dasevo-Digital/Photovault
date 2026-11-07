@@ -307,6 +307,7 @@ Handler baueApi({
     ..get('/api/v1/spuren', api.spurkennungen)
     ..get('/api/v1/wanderobjekte', api.wanderobjekte)
     ..get('/api/v1/orte', api.orte)
+    ..get('/api/v1/orte/suche', api.orteSuche)
     ..get('/api/v1/laender', api.laender)
     ..get('/api/v1/laender/aufnahmen', api.amOrt)
     ..get('/api/v1/statistik', api.statistik)
@@ -1814,6 +1815,41 @@ class _Api {
           stadt: stadt == null || stadt.isEmpty ? null : stadt,
         ))
           zeileAlsJson(r),
+      ],
+    });
+  }
+
+  /// Orte zum Tippen, für „Ort setzen“ in Browser und Handy: Dort gibt es
+  /// kein Ortsverzeichnis. Jeder Treffer bringt die Namen mit, die in die
+  /// Aufnahme gehören; sie stammen aus derselben Umkehrsuche wie am Rechner.
+  Future<Response> orteSuche(Request anfrage) async {
+    await _bereich(anfrage);
+    final q = anfrage.url.queryParameters;
+    final geo = bibliotheken.ortsverzeichnis;
+    if (geo == null) return _json({'verzeichnis': false, 'treffer': const []});
+    final text = (q['text'] ?? '').trim();
+    if (text.length < 2 || text.length > 100) {
+      return _json({'verzeichnis': true, 'treffer': const []});
+    }
+    return _json({
+      'verzeichnis': true,
+      'treffer': [
+        for (final t in geo.vorschlaege(
+          text,
+          naheBreite: double.tryParse(q['breite'] ?? ''),
+          naheLaenge: double.tryParse(q['laenge'] ?? ''),
+        ))
+          {
+            'name': t.name,
+            'herkunft': t.herkunft,
+            'breite': t.breite,
+            'laenge': t.laenge,
+            if (geo.lookup(t.breite, t.laenge) case final g?) ...{
+              'land': ?g.country,
+              'region': ?g.state,
+              'stadt': g.city,
+            },
+          },
       ],
     });
   }

@@ -1409,5 +1409,16 @@
   "sucheFilterHerkunft": "Herkunft",
   "sucheFilterHerkunftKamera": "Aus einer Kamera",
   "sucheFilterHerkunftEmpfangen": "Empfangen",
-  "sucheFilterOhneAlbum": "Nicht in einem Album"
+  "sucheFilterOhneAlbum": "Nicht in einem Album",
+  "ortSetzen": "Ort setzen",
+  "ortAendern": "Ort ändern",
+  "ortEntfernen": "Ort entfernen",
+  "ortKeiner": "Kein Ort",
+  "ortSuchenBeispiel": "z. B. Goslar oder Paris, Frankreich",
+  "ortKeinTreffer": "Kein Ort gefunden.",
+  "ortKeinVerzeichnis": "Auf dem Server liegt kein Ortsverzeichnis.",
+  "ortKeineVerbindung": "Für die Ortssuche braucht es den Server.",
+  "auswahlOrt": "Ort",
+  "ortFuerAufnahmen": "Ort für {n} Aufnahmen setzen",
+  "@ortFuerAufnahmen": {"placeholders": {"n": {"type": "int"}}}
 }

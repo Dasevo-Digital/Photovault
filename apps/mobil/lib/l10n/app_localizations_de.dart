@@ -2862,4 +2862,36 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sucheFilterOhneAlbum => 'Nicht in einem Album';
+
+  @override
+  String get ortSetzen => 'Ort setzen';
+
+  @override
+  String get ortAendern => 'Ort ändern';
+
+  @override
+  String get ortEntfernen => 'Ort entfernen';
+
+  @override
+  String get ortKeiner => 'Kein Ort';
+
+  @override
+  String get ortSuchenBeispiel => 'z. B. Goslar oder Paris, Frankreich';
+
+  @override
+  String get ortKeinTreffer => 'Kein Ort gefunden.';
+
+  @override
+  String get ortKeinVerzeichnis => 'Auf dem Server liegt kein Ortsverzeichnis.';
+
+  @override
+  String get ortKeineVerbindung => 'Für die Ortssuche braucht es den Server.';
+
+  @override
+  String get auswahlOrt => 'Ort';
+
+  @override
+  String ortFuerAufnahmen(int n) {
+    return 'Ort für $n Aufnahmen setzen';
+  }
 }

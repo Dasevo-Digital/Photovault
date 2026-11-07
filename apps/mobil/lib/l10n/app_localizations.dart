@@ -4416,6 +4416,66 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Nicht in einem Album'**
   String get sucheFilterOhneAlbum;
+
+  /// No description provided for @ortSetzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort setzen'**
+  String get ortSetzen;
+
+  /// No description provided for @ortAendern.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort ändern'**
+  String get ortAendern;
+
+  /// No description provided for @ortEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort entfernen'**
+  String get ortEntfernen;
+
+  /// No description provided for @ortKeiner.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Ort'**
+  String get ortKeiner;
+
+  /// No description provided for @ortSuchenBeispiel.
+  ///
+  /// In de, this message translates to:
+  /// **'z. B. Goslar oder Paris, Frankreich'**
+  String get ortSuchenBeispiel;
+
+  /// No description provided for @ortKeinTreffer.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Ort gefunden.'**
+  String get ortKeinTreffer;
+
+  /// No description provided for @ortKeinVerzeichnis.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf dem Server liegt kein Ortsverzeichnis.'**
+  String get ortKeinVerzeichnis;
+
+  /// No description provided for @ortKeineVerbindung.
+  ///
+  /// In de, this message translates to:
+  /// **'Für die Ortssuche braucht es den Server.'**
+  String get ortKeineVerbindung;
+
+  /// No description provided for @auswahlOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get auswahlOrt;
+
+  /// No description provided for @ortFuerAufnahmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort für {n} Aufnahmen setzen'**
+  String ortFuerAufnahmen(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -5061,5 +5061,8 @@
   "viewerImPapierkorb": "Moved to trash.",
   "entwOriginalNichtDa": "The original is not on this device, and the server cannot be reached.",
   "entwZuruecksetzenTitel": "Remove edits?",
-  "entwZuruecksetzenText": "The saved edits are removed, and the original appears again."
+  "entwZuruecksetzenText": "The saved edits are removed, and the original appears again.",
+  "videoVorschauAbspielen": "Play selection",
+  "videoVorschauAnhalten": "Pause",
+  "videoSchnittLaenge": "Length {dauer}"
 }
