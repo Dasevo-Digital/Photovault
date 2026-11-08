@@ -742,7 +742,8 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /kammer` | `{eintraege: [{id, name, groesse, datum, art, kamera?, modell?, breite?, hoehe?}], anzahl, bytes}` – die Fotokammer: hochgeladen, aber noch nicht in der Bibliothek |
 | `GET /kammer/<id>/miniatur`, `GET /kammer/<id>/vorschau` | JPEG; 404 ohne Wandler |
 | `POST /kammer/freigeben` | `{ids}` → `{ergebnisse: [{id, ausgang, aufnahme?, fehler?}]}` – in die Bibliothek, wie ein gewöhnlicher Upload; wenige auf einmal schicken |
-| `POST /kammer/verwerfen` | `{ids}` → `{verworfen}` – endgültig, ohne Papierkorb |
+| `POST /kammer/verwerfen` | `{ids}` → `{verworfen}` – endgültig, ohne Papierkorb; kam das Foto aus der Bibliothek, bleibt die Aufnahme im Papierkorb |
+| `POST /kammer/aufnehmen` | `{ids}` (Aufnahmen der Bibliothek) → `{ergebnisse: [{aufnahme, ausgang, kammer?, fehler?}]}` – zurück in die Kammer: Die Aufnahme geht in den Papierkorb, die Datei als harter Link in die Kammer; Freigeben holt die Aufnahme samt Alben und Bearbeitungen zurück (`funktionen.fotokammer` ≥ 2) |
 
 Beim Hochladen gehören zu `Upload-Metadata` `filename` und `geaendert`
 (Änderungszeit der Datei in Millisekunden – der letzte Anhalt fürs Datum,

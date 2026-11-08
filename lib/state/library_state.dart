@@ -1251,11 +1251,11 @@ class LibraryState extends ChangeNotifier {
     if (k != null && identical(k.verbindung, a.verbindung)) return k;
     return _fotokammer = Fotokammerdienst(
       a.verbindung,
-      nachFreigabe: () async {
+      abgleichen: () async {
         try {
           await a.empfange();
         } catch (e) {
-          debugPrint('Abgleich nach dem Freigeben: $e');
+          debugPrint('Abgleich nach der Fotokammer: $e');
         }
       },
     );

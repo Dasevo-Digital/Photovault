@@ -837,6 +837,7 @@ function zeigeListe(neu, titel) {
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
   if (!still) $('erinnerungen').hidden = true;
   $('auswahl-papierkorb').hidden = !!liste.papierkorb;
+  $('auswahl-kammer').hidden = !!liste.papierkorb;
   $('auswahl-ort').hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
   $('auswahl-endgueltig').hidden = !liste.papierkorb;
@@ -5152,6 +5153,36 @@ $('auswahl-papierkorb').addEventListener('click', async () => {
 });
 
 $('auswahl-endgueltig').addEventListener('click', () => endgueltigLoeschen(gewaehlte()));
+
+// Zurück in die Fotokammer (#337): Der Server legt die Datei dorthin und die
+// Aufnahme in den Papierkorb; Freigeben holt sie samt Alben und
+// Bearbeitungen zurück.
+$('auswahl-kammer').addEventListener('click', async () => {
+  const g = gewaehlte();
+  if (!g.length) return;
+  if (!confirm(g.length === 1
+    ? t('Ein Foto in die Fotokammer legen? Es verschwindet aus der Zeitleiste und liegt bis zur Entscheidung im Papierkorb. Freigeben holt es mit Alben, Bewertungen und Bearbeitungen zurück.')
+    : t('{n} Fotos in die Fotokammer legen? Sie verschwinden aus der Zeitleiste und liegen bis zur Entscheidung im Papierkorb. Freigeben holt sie mit Alben, Bewertungen und Bearbeitungen zurück.', { n: g.length }))) return;
+  try {
+    const drin = new Set();
+    const nicht = [];
+    for (let i = 0; i < g.length; i += 8) {
+      const r = await api('/api/v1/kammer/aufnehmen', { methode: 'POST', json: { ids: g.slice(i, i + 8).map((a) => a.id) } });
+      for (const e of r.ergebnisse) {
+        if (e.ausgang === 'kammer') drin.add(e.aufnahme);
+        else nicht.push(e.ausgang === 'unbekannt' ? t('nicht in deiner Bibliothek oder schon im Papierkorb') : e.ausgang === 'gesperrt' ? t('im gesperrten Ordner') : (e.fehler || e.ausgang));
+      }
+    }
+    liste.aufnahmen = liste.aufnahmen.filter((a) => !drin.has(a.id));
+    zeitleiste.geladen = zeitleiste.geladen.filter((a) => !drin.has(a.id));
+    auswahlAufheben();
+    neuZeichnen();
+    meldung([
+      t('{n} in der Fotokammer', { n: drin.size }),
+      ...(nicht.length ? [t('{n} nicht: {grund}', { n: nicht.length, grund: [...new Set(nicht)].join('; ') })] : []),
+    ].join(' · '), nicht.length > 0 && drin.size === 0);
+  } catch (x) { alert(x.message); }
+});
 
 $('auswahl-zurueck').addEventListener('click', async () => {
   const g = gewaehlte();

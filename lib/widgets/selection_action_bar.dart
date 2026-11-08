@@ -74,6 +74,9 @@ class SelectionActionBar extends StatelessWidget {
   /// Zwei bis neun Fotos als Collage (#301) – siehe [collageAktion].
   final VoidCallback? onCollage;
 
+  /// Zurück in die Fotokammer (#337); nur mit einem Server.
+  final VoidCallback? onFotokammer;
+
   const SelectionActionBar({
     super.key,
     required this.count,
@@ -89,6 +92,7 @@ class SelectionActionBar extends StatelessWidget {
     this.onCompare,
     this.onCreateVariants,
     this.onCollage,
+    this.onFotokammer,
     this.onPasteDevelop,
     this.onApplyPreset,
   });
@@ -181,6 +185,12 @@ class SelectionActionBar extends StatelessWidget {
                   tooltip: t.auswExportieren,
                   onPressed: onExport,
                 ),
+                if (onFotokammer != null)
+                  IconButton(
+                    icon: const Icon(Icons.move_to_inbox_outlined),
+                    tooltip: t.auswInDieKammer,
+                    onPressed: onFotokammer,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.delete_outline),
                   tooltip: t.allgLoeschen,

@@ -653,7 +653,7 @@ void main() {
     addTearDown(v.schliesse);
     expect(
       ((await v.hole('api/v1/zustand'))['funktionen'] as Map)['fotokammer'],
-      1,
+      greaterThanOrEqualTo(1),
     );
     File bild(String name, int rot) {
       final b = img.Image(width: 640, height: 480);
@@ -769,6 +769,86 @@ void main() {
     });
     expect(fremd['verworfen'], 0);
   });
+
+  test(
+    'Fotokammer: Fotos der Bibliothek hinein und unverändert zurück (#337)',
+    () async {
+      final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+      final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+      addTearDown(v.schliesse);
+      expect(
+        ((await v.hole('api/v1/zustand'))['funktionen'] as Map)['fotokammer'],
+        2,
+      );
+      File bild(String name, int rot) {
+        final b = img.Image(width: 640, height: 480);
+        img.fill(b, color: img.ColorRgb8(rot, 120, 40));
+        return File('${ordner.path}/$name')..writeAsBytesSync(img.encodeJpg(b));
+      }
+
+      final tus = TusHochladen(v);
+      final eins = (await tus.lade(
+        bild('zurueck1.jpg', 10),
+        'api/v1/hochladen',
+        {'filename': 'zurueck1.jpg'},
+      ))['pv-aufnahme']!;
+      final zwei = (await tus.lade(
+        bild('zurueck2.jpg', 220),
+        'api/v1/hochladen',
+        {'filename': 'zurueck2.jpg'},
+      ))['pv-aufnahme']!;
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      // Etwas, das beim Zurückholen erhalten bleiben muss.
+      await db.fuehreAus(BewertungSetzen([eins], 4));
+
+      final r = await v.schicke('api/v1/kammer/aufnehmen', {
+        'ids': [eins, zwei, 'gibt-es-nicht'],
+      });
+      final ergebnisse = (r['ergebnisse'] as List).cast<Map>();
+      expect(ergebnisse.map((e) => e['ausgang']), [
+        'kammer',
+        'kammer',
+        'unbekannt',
+      ]);
+      // In den Papierkorb, also aus der Zeitleiste – überall.
+      expect((await holeAufnahme(db, eins)).isTrashed, isTrue);
+      expect((await holeAufnahme(db, zwei)).isTrashed, isTrue);
+      final liste = await v.hole('api/v1/kammer');
+      expect(liste['anzahl'], 2);
+      final k1 = ergebnisse[0]['kammer'] as String;
+      final k2 = ergebnisse[1]['kammer'] as String;
+      final mini = await v.anfrage('GET', 'api/v1/kammer/$k1/miniatur');
+      expect(mini.statusCode, 200);
+      // Schon im Papierkorb: nicht ein zweites Mal.
+      final nochmal = await v.schicke('api/v1/kammer/aufnehmen', {
+        'ids': [eins],
+      });
+      expect(
+        ((nochmal['ergebnisse'] as List).single as Map)['ausgang'],
+        'unbekannt',
+      );
+
+      // Freigeben holt dieselbe Aufnahme zurück, mit ihrer Bewertung.
+      final f = await v.schicke('api/v1/kammer/freigeben', {
+        'ids': [k1],
+      });
+      final e = (f['ergebnisse'] as List).single as Map;
+      expect(e['ausgang'], 'imported');
+      expect(e['aufnahme'], eins);
+      final zurueck = await holeAufnahme(db, eins);
+      expect(zurueck.isTrashed, isFalse);
+      expect(zurueck.rating, 4);
+      expect(await db.select(db.assets).get(), hasLength(2));
+
+      // Verwerfen: aus der Kammer, die Aufnahme bleibt im Papierkorb.
+      final w = await v.schicke('api/v1/kammer/verwerfen', {
+        'ids': [k2],
+      });
+      expect(w['verworfen'], 1);
+      expect((await holeAufnahme(db, zwei)).isTrashed, isTrue);
+      expect((await v.hole('api/v1/kammer'))['anzahl'], 0);
+    },
+  );
 
   test(
     'Hochladen versucht es nach vorübergehenden Fehlern erneut (#335)',

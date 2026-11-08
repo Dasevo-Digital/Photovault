@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:kern/db/database.dart';
 import 'package:kern/berechne.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/import_service.dart';
@@ -122,6 +123,114 @@ class Fotokammer {
     }
   }
 
+  /// Legt die Aufnahme [kennung] der Bibliothek zurück in die Kammer
+  /// (#337) – etwa die 14 Fotos einer Karte, die schon hereinkamen, damit
+  /// sie mit den übrigen gesichtet werden.
+  ///
+  /// **Warum über den Papierkorb.** Die Aufnahme verschwindet so sofort
+  /// überall, auf jedem Gerät, ohne dass eine Abfrage etwas Neues lernen
+  /// muss – und sie behält alles: Alben, Bewertungen, Personen,
+  /// Bearbeitungen. „Freigeben“ holt sie aus dem Papierkorb zurück statt sie
+  /// neu zu importieren. Leert sich der Papierkorb vorher, bleibt die Datei
+  /// in der Kammer, und Freigeben importiert sie neu.
+  ///
+  /// Die Datei liegt als harter Link in der Kammer, wo das geht: kein
+  /// zusätzlicher Platz, und sie überlebt das endgültige Löschen der
+  /// Aufnahme.
+  Future<Map<String, Object?>> ausDerBibliothek(String kennung) async {
+    final b = bibliothek;
+    final a = await b.db.assetById(kennung);
+    if (a == null || a.isTrashed) {
+      return {'aufnahme': kennung, 'ausgang': 'unbekannt'};
+    }
+    if (a.isLocked) return {'aufnahme': kennung, 'ausgang': 'gesperrt'};
+    final quelle = b.pfade.absolute(a.relativePath);
+    if (!await quelle.exists()) {
+      return {
+        'aufnahme': kennung,
+        'ausgang': 'failed',
+        'fehler': 'Original fehlt',
+      };
+    }
+    // Schon einmal hierher gelegt (und der Papierkorb kam nicht mehr dazu)?
+    String? id;
+    for (final e in await liste()) {
+      if (e['aufnahme'] == kennung) id = e['id'] as String?;
+    }
+    if (id == null) {
+      id = const Uuid().v4();
+      final platz = _platz(id);
+      await platz.create(recursive: true);
+      try {
+        final name = p.basename(a.originalFileName);
+        final ziel = File(p.join(platz.path, name.isEmpty ? 'foto' : name));
+        await _verknuepfe(quelle, ziel);
+        final (breite, hoehe) = await _bilderAus(a, ziel, id);
+        await _angaben(id).writeAsString(
+          jsonEncode({
+            'id': id,
+            'name': p.basename(ziel.path),
+            'groesse': await ziel.length(),
+            'sha256': a.checksum,
+            'geaendert': (await ziel.lastModified()).millisecondsSinceEpoch,
+            'datum': a.fileCreatedAt.toUtc().toIso8601String(),
+            'kamera': ?a.cameraMake,
+            'modell': ?a.cameraModel,
+            'art': a.type == 'VIDEO' ? 'VIDEO' : 'IMAGE',
+            'breite': ?breite,
+            'hoehe': ?hoehe,
+            'angelegt': DateTime.now().toUtc().toIso8601String(),
+            // Woher es kam: Freigeben holt diese Aufnahme zurück.
+            'aufnahme': kennung,
+          }),
+          flush: true,
+        );
+      } on Object catch (e) {
+        await platz.delete(recursive: true);
+        return {'aufnahme': kennung, 'ausgang': 'failed', 'fehler': '$e'};
+      }
+    }
+    await b.db.fuehreAus(InDenPapierkorb([kennung]));
+    return {'aufnahme': kennung, 'ausgang': 'kammer', 'kammer': id};
+  }
+
+  /// Ein harter Link, sonst eine Kopie; die Änderungszeit bleibt.
+  static Future<void> _verknuepfe(File von, File nach) async {
+    if (!Platform.isWindows) {
+      try {
+        final r = await Process.run('ln', [von.path, nach.path]);
+        if (r.exitCode == 0) return;
+      } on ProcessException {
+        // Kein ln – dann kopieren.
+      }
+    }
+    final zeit = await von.lastModified();
+    await von.copy(nach.path);
+    await nach.setLastModified(zeit);
+  }
+
+  /// Vorschau und Miniatur einer Aufnahme: die vorhandenen, wo es sie
+  /// gibt, sonst neu aus der Datei.
+  Future<(int?, int?)> _bilderAus(AssetData a, File datei, String id) async {
+    final pf = bibliothek.pfade;
+    final vorhanden = a.previewRelativePath;
+    if (vorhanden == null || !await pf.absolute(vorhanden).exists()) {
+      return _bilder(datei, id, istBild: a.type != 'VIDEO');
+    }
+    await pf.absolute(vorhanden).copy(vorschau(id).path);
+    final klein = a.thumbnailRelativePath;
+    if (klein != null && await pf.absolute(klein).exists()) {
+      await pf.absolute(klein).copy(miniatur(id).path);
+    } else {
+      final m = await berechne(
+        decodeAndResizeThumbnail,
+        await vorschau(id).readAsBytes(),
+      );
+      if (m != null) await miniatur(id).writeAsBytes(m.jpegBytes, flush: true);
+    }
+    return (a.widthPx, a.heightPx);
+  }
+
   /// Umbenennen, über Dateisysteme hinweg kopieren.
   static Future<File> _verschiebe(File von, File nach) async {
     try {
@@ -202,6 +311,18 @@ class Fotokammer {
       return {'id': id, 'ausgang': 'unbekannt'};
     }
     try {
+      // Kam es aus der Bibliothek (#337) und liegt es noch im Papierkorb,
+      // kehrt es zurück – mit allem, was daran hing.
+      if (e['aufnahme'] case final String kennung) {
+        final a = await bibliothek.db.assetById(kennung);
+        if (a != null) {
+          if (a.isTrashed) {
+            await bibliothek.db.fuehreAus(AusDemPapierkorb([kennung]));
+          }
+          await _platz(id).delete(recursive: true);
+          return {'id': id, 'ausgang': 'imported', 'aufnahme': kennung};
+        }
+      }
       final datei = File(p.join(_platz(id).path, e['name']! as String));
       final ergebnis = await importiere(datei, {
         'name': e['name'],
@@ -220,7 +341,8 @@ class Fotokammer {
   }
 
   /// Löscht [id] samt Datei. Endgültig: Die Kammer hat keinen Papierkorb –
-  /// die Oberfläche fragt vorher.
+  /// die Oberfläche fragt vorher. Kam das Foto aus der Bibliothek, liegt die
+  /// Aufnahme danach weiter im Papierkorb, bis der sich leert.
   Future<bool> verwerfen(String id) async {
     if (!gueltig(id) || _inArbeit.contains(id)) return false;
     final platz = _platz(id);
@@ -297,6 +419,21 @@ class Fotokammerapi {
     final ergebnisse = <Map<String, Object?>>[];
     for (final id in ids) {
       ergebnisse.add(await k.freigeben(id));
+    }
+    return _json({'ergebnisse': ergebnisse});
+  }
+
+  /// `{ids}` mit Kennungen der Bibliothek → `{ergebnisse: [{aufnahme,
+  /// ausgang, kammer?, fehler?}]}`; `ausgang` ist `kammer`, `unbekannt`
+  /// (nicht in dieser Bibliothek oder schon im Papierkorb), `gesperrt`
+  /// oder `failed` (#337).
+  Future<Response> aufnehmen(Request r) async {
+    final ids = await _ids(r);
+    if (ids == null) return _json({'fehler': 'ids fehlt'}, status: 400);
+    final k = await _kammer(r);
+    final ergebnisse = <Map<String, Object?>>[];
+    for (final id in ids) {
+      ergebnisse.add(await k.ausDerBibliothek(id));
     }
     return _json({'ergebnisse': ergebnisse});
   }

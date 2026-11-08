@@ -19,6 +19,7 @@ import '../widgets/timeline_grid_layout.dart';
 import '../widgets/pin_dialogs.dart';
 import '../widgets/rasterbedienung.dart';
 import '../widgets/selection_action_bar.dart';
+import 'fotokammer_screen.dart' show inDieFotokammer;
 import '../widgets/sortierungswahl.dart';
 import 'asset_viewer_screen.dart';
 import 'timeline_year_overview.dart';
@@ -826,6 +827,16 @@ class _TimelineScreenState extends State<TimelineScreen>
                     if (mounted) setState(_selected.clear);
                   },
                   onDelete: _deleteSelected,
+                  onFotokammer: widget.library.fotokammer == null
+                      ? null
+                      : () async {
+                          final ok = await inDieFotokammer(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                          );
+                          if (mounted && ok) setState(_selected.clear);
+                        },
                 ),
             ],
           ),

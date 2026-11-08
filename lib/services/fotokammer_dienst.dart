@@ -51,13 +51,14 @@ class Kammerfreigabe {
 /// Bibliothek auf diesem Rechner, darum holt dieser Dienst Liste und Bilder
 /// jedes Mal von dort.
 class Fotokammerdienst {
-  Fotokammerdienst(this.verbindung, {this.nachFreigabe});
+  Fotokammerdienst(this.verbindung, {this.abgleichen});
 
   final Serververbindung verbindung;
 
-  /// Nach einem Freigeben, das etwas in die Bibliothek brachte – damit die
-  /// Kopie hier die neuen Aufnahmen holt.
-  final Future<void> Function()? nachFreigabe;
+  /// Nach allem, was die Bibliothek änderte – Freigeben bringt Aufnahmen
+  /// hinein, Hineinlegen legt sie in den Papierkorb –, damit die Kopie hier
+  /// es gleich erfährt.
+  final Future<void> Function()? abgleichen;
 
   /// Wie viele Fotos gerade darin liegen; `null`, solange es niemand
   /// gefragt hat. Für die Zahl in der Seitenleiste.
@@ -72,10 +73,11 @@ class Fotokammerdienst {
 
   /// Ob der Server die Kammer kennt. Ein älterer würde `kammer` beim
   /// Hochladen übergehen und das Foto gleich in die Bibliothek legen.
-  Future<bool> moeglich() async {
+  /// [stufe] 2: Fotos der Bibliothek lassen sich hineinlegen (#337).
+  Future<bool> moeglich({int stufe = 1}) async {
     try {
       final z = await verbindung.hole('api/v1/zustand');
-      return ((z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0) >= 1;
+      return ((z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0) >= stufe;
     } on Object {
       return false;
     }
@@ -150,8 +152,41 @@ class Fotokammerdienst {
       }
     } finally {
       _vergiss(ids);
-      if (r.neu > 0) await nachFreigabe?.call();
+      if (r.neu > 0) await abgleichen?.call();
     }
+    return r;
+  }
+
+  /// Legt Aufnahmen der Bibliothek zurück in die Kammer (#337): Sie gehen
+  /// in den Papierkorb, und Freigeben holt sie samt Alben und Bearbeitungen
+  /// zurück. In [Kammerfreigabe.neu] steht, wie viele jetzt dort liegen; in
+  /// `gescheitert` der Grund der übrigen (`unbekannt`, `gesperrt` oder ein
+  /// Fehlertext).
+  Future<Kammerfreigabe> aufnehmen(List<String> aufnahmen) async {
+    final r = Kammerfreigabe();
+    try {
+      for (var i = 0; i < aufnahmen.length; i += 2 * stapel) {
+        final teil = aufnahmen.sublist(
+          i,
+          (i + 2 * stapel).clamp(0, aufnahmen.length),
+        );
+        final j = await verbindung.schicke('api/v1/kammer/aufnehmen', {
+          'ids': teil,
+        }, zeitlimit: const Duration(minutes: 5));
+        for (final e in (j['ergebnisse'] as List? ?? const [])) {
+          if (e is! Map) continue;
+          if (e['ausgang'] == 'kammer') {
+            r.neu++;
+          } else {
+            r.gescheitert['${e['aufnahme']}'] =
+                (e['fehler'] ?? e['ausgang']) as String?;
+          }
+        }
+      }
+    } finally {
+      if (r.neu > 0) await abgleichen?.call();
+    }
+    if (anzahl.value case final n?) anzahl.value = n + r.neu;
     return r;
   }
 

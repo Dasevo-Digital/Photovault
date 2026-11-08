@@ -72,6 +72,16 @@ void main() {
           ],
         });
       }
+      if (pfad == '/api/v1/kammer/aufnehmen') {
+        return json({
+          'ergebnisse': [
+            for (final id in ids)
+              id.startsWith('fremd')
+                  ? {'aufnahme': id, 'ausgang': 'unbekannt'}
+                  : {'aufnahme': id, 'ausgang': 'kammer', 'kammer': 'k$id'},
+          ],
+        });
+      }
       if (pfad == '/api/v1/kammer/verwerfen') {
         verworfen.add(ids);
         eintraege.removeWhere((e) => ids.contains(e['id']));
@@ -81,7 +91,7 @@ void main() {
     });
     return Fotokammerdienst(
       Serververbindung(Uri.parse('http://server/'), 'x', client: client),
-      nachFreigabe: () async => nachFreigabe++,
+      abgleichen: () async => nachFreigabe++,
     );
   }
 
@@ -197,4 +207,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('1 ausgewählt'), findsOneWidget);
   });
+
+  test(
+    'Fotos der Bibliothek hineinlegen: zählt, nennt den Rest (#337)',
+    () async {
+      final d = dienst();
+      final r = await d.aufnehmen([
+        for (var i = 0; i < 9; i++) 'a$i',
+        'fremd1',
+      ]);
+      expect(r.neu, 9);
+      expect(r.gescheitert, {'fremd1': 'unbekannt'});
+      // In Stapeln zu acht, danach einmal abgleichen.
+      expect(anfragen.where((a) => a.endsWith('/aufnehmen')), hasLength(2));
+      expect(nachFreigabe, 1);
+    },
+  );
 }

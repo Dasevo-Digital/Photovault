@@ -6704,10 +6704,41 @@
       }
     }
   },
-  "kammerVerwerfenText": "Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.",
+  "kammerVerwerfenText": "Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.",
   "kammerOhneServer": "Die Fotokammer gibt es mit einem Photo Vault Server: Dort warten neue Fotos, bis du sie in die Bibliothek übernimmst.",
   "kammerServerAlt": "Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.",
   "kammerLeer": "Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.",
   "kammerKeineVorschau": "Keine Vorschau",
-  "kammerAuswaehlenTaste": "Auswählen (Leertaste)"
+  "kammerAuswaehlenTaste": "Auswählen (Leertaste)",
+  "auswInDieKammer": "In die Fotokammer",
+  "kammerAufnehmenTitel": "{anzahl, plural, =1{1 Foto in die Fotokammer legen?} other{{anzahl} Fotos in die Fotokammer legen?}}",
+  "@kammerAufnehmenTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerAufnehmenText": "Die Fotos verschwinden aus der Zeitleiste und warten in der Fotokammer, bis du sie freigibst oder verwirfst. Bis dahin liegen sie im Papierkorb. Freigeben holt sie mit Alben, Bewertungen und Bearbeitungen zurück; leert sich der Papierkorb vorher, bleibt nur die Datei in der Kammer.",
+  "kammerAufgenommen": "{anzahl, plural, =0{Nichts in die Fotokammer gelegt} =1{1 Foto liegt jetzt in der Fotokammer} other{{anzahl} Fotos liegen jetzt in der Fotokammer}}",
+  "@kammerAufgenommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerNichtAufgenommen": "{anzahl} nicht: {grund}",
+  "@kammerNichtAufgenommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerUnbekannt": "nicht in deiner Bibliothek oder schon im Papierkorb",
+  "kammerGesperrt": "im gesperrten Ordner"
 }

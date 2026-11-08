@@ -5170,10 +5170,41 @@
       }
     }
   },
-  "kammerVerwerfenText": "Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance.",
+  "kammerVerwerfenText": "Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance. Photos from the timeline stay in the trash until it expires.",
   "kammerOhneServer": "Staging needs a Photo Vault server: new photos wait there until you move them into the library.",
   "kammerServerAlt": "The server does not know staging yet. Update it to the new version.",
   "kammerLeer": "Staging is empty. When importing, choose “Into staging first” and new photos land here first.",
   "kammerKeineVorschau": "No preview",
-  "kammerAuswaehlenTaste": "Select (space)"
+  "kammerAuswaehlenTaste": "Select (space)",
+  "auswInDieKammer": "Move to staging",
+  "kammerAufnehmenTitel": "{anzahl, plural, =1{Move 1 photo to staging?} other{Move {anzahl} photos to staging?}}",
+  "@kammerAufnehmenTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerAufnehmenText": "The photos leave the timeline and wait in staging until you approve or discard them. Until then they sit in the trash. Approving brings them back with albums, ratings and edits; if the trash is emptied first, only the file stays in staging.",
+  "kammerAufgenommen": "{anzahl, plural, =0{Nothing moved to staging} =1{1 photo is now in staging} other{{anzahl} photos are now in staging}}",
+  "@kammerAufgenommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerNichtAufgenommen": "{anzahl} not: {grund}",
+  "@kammerNichtAufgenommen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerUnbekannt": "not in your library or already in the trash",
+  "kammerGesperrt": "in the locked folder"
 }

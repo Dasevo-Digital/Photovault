@@ -430,6 +430,7 @@ Handler baueApi({
     ..get('/api/v1/kammer/<id>/vorschau', kammer.vorschau)
     ..post('/api/v1/kammer/freigeben', kammer.freigeben)
     ..post('/api/v1/kammer/verwerfen', kammer.verwerfen)
+    ..post('/api/v1/kammer/aufnehmen', kammer.aufnehmen)
     ..post('/api/v1/umzug/beginnen', umzug.beginnen)
     ..get('/api/v1/umzug/stand', umzug.stand)
     ..post('/api/v1/umzug/abschliessen', umzug.abschliessen)
@@ -764,8 +765,9 @@ class _Api {
           'nachlass': 1,
           // Collagen (#301).
           'collage': 1,
-          // Hochladen in die Fotokammer, Freigeben und Verwerfen (#336).
-          'fotokammer': 1,
+          // Hochladen in die Fotokammer, Freigeben und Verwerfen (#336);
+          // 2: auch Fotos der Bibliothek hineinlegen (#337).
+          'fotokammer': 2,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

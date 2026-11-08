@@ -254,7 +254,9 @@ echter Hardware.
 - **Fotokammer** – mit einem Server wahlweise „Erst in die Fotokammer“
   importieren (am Rechner und beim Hochladen im Browser): Die Fotos liegen
   dann schon auf dem Server, erscheinen aber nirgends, bis man sie sichtet
-  und freigibt oder verwirft
+  und freigibt oder verwirft. Schon importierte Fotos lassen sich aus der
+  Zeitleiste zurück in die Kammer legen; Freigeben holt sie dann samt Alben,
+  Bewertungen und Bearbeitungen zurück
 - **Alben & gespeicherte Suchen** – klassische Alben sowie "Intelligente
   Alben", die live die aktuellen Suchfilter statt einer festen Fotoliste
   festhalten

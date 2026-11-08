@@ -6,7 +6,8 @@
 // Bibliothek kommen – bis dahin stehen sie nirgends sonst, nicht in der
 // Zeitleiste, nicht in der Suche, nicht auf dem Handy. Hochladen legt sie
 // hierher, wenn „Neue Uploads erst in die Fotokammer“ angehakt ist (siehe
-// hochladen.js; der Haken gilt nur in diesem Browser).
+// hochladen.js; der Haken gilt nur in diesem Browser), und aus der
+// Zeitleiste kommen sie über „Fotokammer“ in der Auswahlleiste (#337).
 //
 // Sichten: Eine Kachel anklicken wählt sie aus, doppelt klicken zeigt das
 // Foto gross. Dort blättern die Pfeiltasten, die Leertaste wählt aus, Esc
@@ -123,8 +124,8 @@ async function kammerVerwerfen() {
   const ids = [...kammer.auswahl];
   if (!ids.length || kammer.arbeit) return;
   if (!confirm(ids.length === 1
-    ? t('Ein Foto endgültig verwerfen? Die Fotokammer hat keinen Papierkorb – es liegt dann nur noch dort, woher es kam.')
-    : t('{n} Fotos endgültig verwerfen? Die Fotokammer hat keinen Papierkorb – sie liegen dann nur noch dort, woher sie kamen.', { n: ids.length }))) return;
+    ? t('Ein Foto endgültig verwerfen? Die Fotokammer hat keinen Papierkorb – es liegt dann nur noch dort, woher es kam. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.')
+    : t('{n} Fotos endgültig verwerfen? Die Fotokammer hat keinen Papierkorb – sie liegen dann nur noch dort, woher sie kamen. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.', { n: ids.length }))) return;
   kammer.arbeit = true;
   kammerKnoepfe();
   try {

@@ -10469,7 +10469,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kammerVerwerfenText =>
-      'Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance.';
+      'Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance. Photos from the timeline stay in the trash until it expires.';
 
   @override
   String get kammerOhneServer =>
@@ -10488,4 +10488,45 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kammerAuswaehlenTaste => 'Select (space)';
+
+  @override
+  String get auswInDieKammer => 'Move to staging';
+
+  @override
+  String kammerAufnehmenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Move $anzahl photos to staging?',
+      one: 'Move 1 photo to staging?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerAufnehmenText =>
+      'The photos leave the timeline and wait in staging until you approve or discard them. Until then they sit in the trash. Approving brings them back with albums, ratings and edits; if the trash is emptied first, only the file stays in staging.';
+
+  @override
+  String kammerAufgenommen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos are now in staging',
+      one: '1 photo is now in staging',
+      zero: 'Nothing moved to staging',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerNichtAufgenommen(int anzahl, String grund) {
+    return '$anzahl not: $grund';
+  }
+
+  @override
+  String get kammerUnbekannt => 'not in your library or already in the trash';
+
+  @override
+  String get kammerGesperrt => 'in the locked folder';
 }

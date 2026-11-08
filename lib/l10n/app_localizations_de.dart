@@ -10527,7 +10527,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kammerVerwerfenText =>
-      'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.';
+      'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.';
 
   @override
   String get kammerOhneServer =>
@@ -10546,4 +10546,46 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kammerAuswaehlenTaste => 'Auswählen (Leertaste)';
+
+  @override
+  String get auswInDieKammer => 'In die Fotokammer';
+
+  @override
+  String kammerAufnehmenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos in die Fotokammer legen?',
+      one: '1 Foto in die Fotokammer legen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerAufnehmenText =>
+      'Die Fotos verschwinden aus der Zeitleiste und warten in der Fotokammer, bis du sie freigibst oder verwirfst. Bis dahin liegen sie im Papierkorb. Freigeben holt sie mit Alben, Bewertungen und Bearbeitungen zurück; leert sich der Papierkorb vorher, bleibt nur die Datei in der Kammer.';
+
+  @override
+  String kammerAufgenommen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos liegen jetzt in der Fotokammer',
+      one: '1 Foto liegt jetzt in der Fotokammer',
+      zero: 'Nichts in die Fotokammer gelegt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerNichtAufgenommen(int anzahl, String grund) {
+    return '$anzahl nicht: $grund';
+  }
+
+  @override
+  String get kammerUnbekannt =>
+      'nicht in deiner Bibliothek oder schon im Papierkorb';
+
+  @override
+  String get kammerGesperrt => 'im gesperrten Ordner';
 }

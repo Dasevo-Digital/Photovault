@@ -15937,7 +15937,7 @@ abstract class AppTexte {
   /// No description provided for @kammerVerwerfenText.
   ///
   /// In de, this message translates to:
-  /// **'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.'**
+  /// **'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.'**
   String get kammerVerwerfenText;
 
   /// No description provided for @kammerOhneServer.
@@ -15969,6 +15969,48 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Auswählen (Leertaste)'**
   String get kammerAuswaehlenTaste;
+
+  /// No description provided for @auswInDieKammer.
+  ///
+  /// In de, this message translates to:
+  /// **'In die Fotokammer'**
+  String get auswInDieKammer;
+
+  /// No description provided for @kammerAufnehmenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto in die Fotokammer legen?} other{{anzahl} Fotos in die Fotokammer legen?}}'**
+  String kammerAufnehmenTitel(int anzahl);
+
+  /// No description provided for @kammerAufnehmenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotos verschwinden aus der Zeitleiste und warten in der Fotokammer, bis du sie freigibst oder verwirfst. Bis dahin liegen sie im Papierkorb. Freigeben holt sie mit Alben, Bewertungen und Bearbeitungen zurück; leert sich der Papierkorb vorher, bleibt nur die Datei in der Kammer.'**
+  String get kammerAufnehmenText;
+
+  /// No description provided for @kammerAufgenommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =0{Nichts in die Fotokammer gelegt} =1{1 Foto liegt jetzt in der Fotokammer} other{{anzahl} Fotos liegen jetzt in der Fotokammer}}'**
+  String kammerAufgenommen(int anzahl);
+
+  /// No description provided for @kammerNichtAufgenommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} nicht: {grund}'**
+  String kammerNichtAufgenommen(int anzahl, String grund);
+
+  /// No description provided for @kammerUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'nicht in deiner Bibliothek oder schon im Papierkorb'**
+  String get kammerUnbekannt;
+
+  /// No description provided for @kammerGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'im gesperrten Ordner'**
+  String get kammerGesperrt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

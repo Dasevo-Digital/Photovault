@@ -6,9 +6,73 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../services/fotokammer_dienst.dart';
 import '../services/groessentext.dart';
-import '../state/library_state.dart' show LibraryState;
+import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/selection_action_bar.dart' show confirmDialog;
+import 'home_shell.dart' show Hauptbereich;
+
+/// Legt [ids] aus der Zeitleiste zurück in die Fotokammer (#337) – nach
+/// einer Rückfrage, die sagt, was dabei geschieht. Gibt zurück, ob etwas
+/// hineinkam.
+Future<bool> inDieFotokammer(
+  BuildContext context,
+  LibraryState library,
+  List<String> ids,
+) async {
+  final d = library.fotokammer;
+  if (d == null || ids.isEmpty) return false;
+  final t = AppTexte.of(context);
+  final bote = ScaffoldMessenger.of(context);
+  if (!await d.moeglich(stufe: 2)) {
+    bote.showSnackBar(SnackBar(content: Text(t.kammerServerAlt)));
+    return false;
+  }
+  if (!context.mounted) return false;
+  final ja = await confirmDialog(
+    context,
+    t.kammerAufnehmenTitel(ids.length),
+    t.kammerAufnehmenText,
+    bestaetigen: t.auswInDieKammer,
+  );
+  if (!ja) return false;
+  try {
+    final r = await d.aufnehmen(ids);
+    final gruende = {
+      for (final g in r.gescheitert.values)
+        switch (g) {
+          'unbekannt' => t.kammerUnbekannt,
+          'gesperrt' => t.kammerGesperrt,
+          final String text => text,
+          null => t.importFehlerUnbekannt,
+        },
+    };
+    bote.showSnackBar(
+      SnackBar(
+        content: Text(
+          [
+            t.kammerAufgenommen(r.neu),
+            if (r.gescheitert.isNotEmpty)
+              t.kammerNichtAufgenommen(
+                r.gescheitert.length,
+                gruende.join('; '),
+              ),
+          ].join(' · '),
+        ),
+        action: r.neu > 0
+            ? SnackBarAction(
+                label: t.importZurKammer,
+                onPressed: () => library.zeigeBereich(Hauptbereich.fotokammer),
+              )
+            : null,
+      ),
+    );
+    return r.neu > 0;
+  } on Object catch (e) {
+    bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+    return false;
+  }
+}
 
 /// Die Fotokammer (#336): Fotos, die schon auf dem Server liegen, aber
 /// erst nach „Freigeben“ in die Bibliothek kommen.
