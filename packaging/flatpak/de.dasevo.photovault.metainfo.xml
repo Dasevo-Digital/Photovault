@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.63.1" date="2026-11-08">
+      <description>
+        <p>Deleting a photo right after it was backed up no longer fails as a sync conflict while the server is still analysing it.</p>
+      </description>
+    </release>
     <release version="3.63.0" date="2026-11-08">
       <description>
         <p>Importing from a camera or memory card finds the card again: the app may now read mounted volumes on macOS, and Linux and Windows look in the right places.</p>
