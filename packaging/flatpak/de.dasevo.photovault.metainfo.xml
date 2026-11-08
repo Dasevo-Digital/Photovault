@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.61.0" date="2026-11-08">
+      <description>
+        <p>Importing from a camera or memory card finds the card again: the app may now read mounted volumes on macOS, and Linux and Windows look in the right places.</p>
+        <p>Uploads from the computer retry after short network or proxy failures and name the reason for every file that did not make it, with a button to try just those again.</p>
+        <p>New staging area: photos can wait on the server until they are reviewed, then be approved into the library or discarded.</p>
+      </description>
+    </release>
     <release version="3.60.0" date="2026-11-07">
       <description>
         <p>Photos that are still on the phone open directly from the device, sharp and without a network connection; the neighbouring photos are loaded ahead.</p>
