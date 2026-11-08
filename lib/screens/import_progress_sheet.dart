@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/verbindung.dart';
+import 'package:path/path.dart' as p;
 
 import '../l10n/app_localizations.dart';
 
@@ -126,6 +130,46 @@ String? importBilanz(
   ].join(' · ');
 }
 
+/// Ein Satz dazu, woran eine Datei scheiterte (#335) – aus dem, was
+/// [ImportProgress.grund] mitbringt.
+String importFehlertext(AppTexte t, Object? grund) => switch (grund) {
+  null || '' => t.importFehlerUnbekannt,
+  KeineVerbindung() => t.importFehlerKeineVerbindung,
+  Serverfehler(:final status, :final text) => t.importFehlerServer(
+    status,
+    _kurzerServertext(text),
+  ),
+  FormatException(:final message)
+      when message == 'pv_import_quelle_geaendert' =>
+    t.importFehlerQuelleGeaendert,
+  FormatException(:final message)
+      when message == 'pv_import_regeln_geaendert' =>
+    t.importPlanGeaendert,
+  FormatException(:final message) => message,
+  FileSystemException(:final message, :final osError) =>
+    osError == null ? message : '$message (${osError.message})',
+  final String text => text,
+  _ => '$grund',
+};
+
+/// Aus der Antwort eines Servers oder Proxys das Wesentliche: der Titel
+/// einer HTML-Fehlerseite, der Text eines JSON-Fehlers, sonst der Anfang.
+String _kurzerServertext(String text) {
+  final titel = RegExp(
+    r'<title>(.*?)</title>',
+    caseSensitive: false,
+    dotAll: true,
+  ).firstMatch(text);
+  if (titel != null) return titel.group(1)!.trim();
+  final json = RegExp(r'"fehler"\s*:\s*"([^"]*)"').firstMatch(text);
+  if (json != null) return json.group(1)!;
+  final rein = text
+      .replaceAll(RegExp(r'<[^>]*>'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return rein.length > 80 ? '${rein.substring(0, 80)} …' : rein;
+}
+
 class _ImportProgressSheet extends StatefulWidget {
   final LibraryState library;
   final List<String> filePaths;
@@ -159,38 +203,112 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
   int _duplikate = 0;
   int _fehler = 0;
 
+  /// Die gescheiterten Dateien mit ihrem Grund – für „Warum?“ und für den
+  /// neuen Versuch.
+  final _gescheitert = <String, Object?>{};
+
   @override
   void initState() {
     super.initState();
-    _run();
+    _run(widget.filePaths, widget.plan);
   }
 
-  Future<void> _run() async {
+  Future<void> _run(List<String> pfade, ImportPlan plan) async {
+    final offen = pfade.toSet();
     try {
       await for (final progress in widget.library.importFiles(
-        widget.filePaths,
-        plan: widget.plan,
+        pfade,
+        plan: plan,
       )) {
         if (!mounted) return;
         setState(() {
           _done = progress.done;
           _total = progress.total;
           _currentFile = progress.currentFile;
+          if (progress.pfad case final pfad?) offen.remove(pfad);
           if (progress.assetId != null) {
             _importedAssetIds.add(progress.assetId!);
           }
           if (progress.duplikat) _duplikate++;
-          if (progress.gescheitert) _fehler++;
+          if (progress.gescheitert) {
+            _fehler++;
+            if (progress.pfad case final pfad?) {
+              _gescheitert[pfad] = progress.grund;
+            }
+          }
         });
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
-        setState(() => _fehler++);
+        setState(() {
+          // Was der Lauf nicht mehr erreichte, kam auch nicht herein – und
+          // lässt sich so noch einmal versuchen.
+          for (final pfad in offen) {
+            _gescheitert[pfad] = e;
+          }
+          _fehler += offen.isEmpty ? 1 : offen.length;
+        });
         melde.warnung(AppTexte.of(context).importPlanGeaendert);
       }
     } finally {
       if (mounted) setState(() => _finished = true);
     }
+  }
+
+  /// Nur die gescheiterten Dateien noch einmal, mit demselben Plan.
+  Future<void> _wiederhole() async {
+    final pfade = _gescheitert.keys.toList();
+    if (pfade.isEmpty) return;
+    setState(() {
+      _gescheitert.clear();
+      _fehler = 0;
+      _finished = false;
+      _done = 0;
+      _total = pfade.length;
+      _currentFile = null;
+    });
+    await _run(pfade, widget.plan.auswahl(pfade.toSet()));
+  }
+
+  /// Gleiche Gründe zusammen: „41 × Server nicht erreichbar“ statt 41
+  /// gleicher Zeilen.
+  Widget _fehlerliste(AppTexte t) {
+    final gruppen = <String, List<String>>{};
+    for (final MapEntry(key: pfad, value: grund) in _gescheitert.entries) {
+      gruppen
+          .putIfAbsent(importFehlertext(t, grund), () => [])
+          .add(p.basename(pfad));
+    }
+    final stil = Theme.of(context).textTheme;
+    return ExpansionTile(
+      tilePadding: EdgeInsets.zero,
+      childrenPadding: const EdgeInsets.only(bottom: AppSpacing.md),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      title: Text(t.importFehlerWarum),
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 220),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final MapEntry(key: grund, value: namen)
+                    in gruppen.entries) ...[
+                  Text('${namen.length} × $grund', style: stil.bodyMedium),
+                  Text(
+                    namen.length > 6
+                        ? '${namen.take(6).join(', ')} …'
+                        : namen.join(', '),
+                    style: stil.bodySmall,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _reviewImported() async {
@@ -253,9 +371,22 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
                 ].join(' · '),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
+              if (_gescheitert.isNotEmpty) _fehlerliste(AppTexte.of(context)),
               const SizedBox(height: 16),
             ],
             if (_finished) ...[
+              if (_gescheitert.isNotEmpty) ...[
+                OutlinedButton.icon(
+                  onPressed: _wiederhole,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: Text(
+                    AppTexte.of(
+                      context,
+                    ).importErneutVersuchen(_gescheitert.length),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
               if (_importedAssetIds.isNotEmpty) ...[
                 FilledButton.icon(
                   onPressed: _reviewImported,

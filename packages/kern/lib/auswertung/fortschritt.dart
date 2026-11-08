@@ -7,6 +7,10 @@ class ImportProgress {
   final int total;
   final String? currentFile;
 
+  /// Der volle Pfad zu [currentFile] – damit sich eine gescheiterte Datei
+  /// noch einmal versuchen lässt.
+  final String? pfad;
+
   /// Gesetzt, sobald diese Fortschritts-Meldung eine tatsächlich neu
   /// importierte Datei betrifft (nicht bei Duplikaten/Fehlern) – für Aufrufer
   /// wie das Fortschrittsblatt der App, die nach dem Import direkt in den
@@ -25,6 +29,15 @@ class ImportProgress {
   /// Ob diese Datei gar nicht hereinkam.
   final bool gescheitert;
 
+  /// Woran sie scheiterte – die Ausnahme oder der Text des Servers, so wie
+  /// sie kam. Die Oberfläche macht daraus einen Satz.
+  ///
+  /// **Warum es das braucht.** 41 von 55 Fotos einer SD-Karte „kamen nicht
+  /// herein“ (#335), und warum, stand nirgends: nicht in der App, nicht im
+  /// Protokoll des Servers, den sie nie erreichten, und im Systemprotokoll
+  /// des Macs nur geschwärzt.
+  final Object? grund;
+
   /// Wie viele Dinge wirklich getan wurden – nicht wie viele angesehen.
   ///
   /// **Warum es die Zahl gesondert braucht.** „N bearbeitet" ist die
@@ -41,9 +54,11 @@ class ImportProgress {
     this.done,
     this.total, {
     this.currentFile,
+    this.pfad,
     this.assetId,
     this.duplikat = false,
     this.gescheitert = false,
+    this.grund,
     this.getan,
   });
 }

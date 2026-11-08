@@ -135,6 +135,60 @@ class TusHochladen {
     }
   }
 
+  /// [lade], aber nach einem vorübergehenden Fehler ([voruebergehend])
+  /// noch einmal – nach den Wartezeiten in [abstaende], und an der Stelle,
+  /// die der Server schon hat.
+  ///
+  /// **Warum.** Ein Import von 55 Fotos einer SD-Karte endete mit „41 kamen
+  /// nicht herein“ (#335): Nach dem 14. Foto scheiterten alle übrigen
+  /// innerhalb einer Sekunde, ohne dass der Server eines davon sah. Ein
+  /// Proxy, der kurz abweist, oder eine Leitung, die kurz weg ist, darf so
+  /// nicht den Rest eines Imports kosten. Mit leeren [abstaende] gibt es
+  /// genau einen Versuch.
+  Future<Map<String, String>> ladeBeharrlich(
+    File datei,
+    String pfad,
+    Map<String, String> metadaten, {
+    List<Duration> abstaende = wiederholungsabstaende,
+    Future<void> Function(Duration)? warte,
+  }) async {
+    String? ort;
+    for (var versuch = 0; ; versuch++) {
+      try {
+        return await lade(
+          datei,
+          pfad,
+          metadaten,
+          fortsetzen: ort,
+          angelegt: (o) => ort = o,
+        );
+      } on Object catch (e) {
+        if (!voruebergehend(e) || versuch >= abstaende.length) rethrow;
+        await (warte ?? Future<void>.delayed)(abstaende[versuch]);
+      }
+    }
+  }
+
+  /// Wie lange [ladeBeharrlich] vor dem ersten, zweiten … neuen Versuch
+  /// wartet: zusammen gut eine Minute.
+  static const wiederholungsabstaende = [
+    Duration(seconds: 2),
+    Duration(seconds: 5),
+    Duration(seconds: 10),
+    Duration(seconds: 20),
+    Duration(seconds: 30),
+  ];
+
+  /// Ob ein neuer Versuch mit derselben Datei Aussicht hat: keine
+  /// Verbindung, Zeitüberschreitung, zu viele Anfragen, oder der Server
+  /// (bzw. ein Proxy davor) ist gerade nicht bereit. Alles andere – eine
+  /// abgelehnte Datei, ein fehlendes Recht – scheitert beim zweiten Mal
+  /// genauso.
+  static bool voruebergehend(Object fehler) =>
+      fehler is KeineVerbindung ||
+      (fehler is Serverfehler &&
+          const {408, 425, 429, 500, 502, 503, 504}.contains(fehler.status));
+
   /// Das Ergebnis eines vollständig angekommenen Uploads aus seinem Stand
   /// (`GET`), in der Form der Kopfzeilen der letzten Antwort. Wartet kurz,
   /// falls der Server noch importiert.
@@ -148,6 +202,8 @@ class TusHochladen {
         return {
           'pv-ausgang': e['ausgang']! as String,
           if (e['aufnahme'] is String) 'pv-aufnahme': e['aufnahme']! as String,
+          if (e['fehler'] is String)
+            'pv-fehler': Uri.encodeComponent(e['fehler']! as String),
         };
       }
       await Future<void>.delayed(const Duration(seconds: 1));

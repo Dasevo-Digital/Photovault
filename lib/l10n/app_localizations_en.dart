@@ -2789,6 +2789,10 @@ class AppTexteEn extends AppTexte {
       'No volume with photos or videos found. Plug in a camera or SD card over USB – the list updates by itself as soon as one is recognised.';
 
   @override
+  String get kameraWechselmedienRecht =>
+      'Card inserted but not listed? Photo Vault then needs access to removable volumes: System Settings → Privacy & Security → Files and Folders.';
+
+  @override
   String get mischerTitel => 'Colour mixer';
 
   @override
@@ -3233,6 +3237,35 @@ class AppTexteEn extends AppTexte {
       locale: localeName,
       other: '$anzahl did not come in',
       one: '1 did not come in',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importFehlerWarum => 'Why?';
+
+  @override
+  String get importFehlerUnbekannt => 'Reason unknown';
+
+  @override
+  String get importFehlerKeineVerbindung => 'Server not reachable';
+
+  @override
+  String importFehlerServer(int status, String text) {
+    return 'Server replied $status: $text';
+  }
+
+  @override
+  String get importFehlerQuelleGeaendert =>
+      'The file changed after it was checked';
+
+  @override
+  String importErneutVersuchen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Try $anzahl files again',
+      one: 'Try 1 file again',
     );
     return '$_temp0';
   }

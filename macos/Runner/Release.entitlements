@@ -15,6 +15,14 @@
 	     zur App zurück, siehe kern/abgleich/oidc_verknuepfung.dart. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Kamera und SD-Karte („Von Kamera importieren“): Die Sandbox
+	     lässt sonst nicht einmal in einen eingesteckten Datenträger
+	     hineinsehen, und die Erkennung fand nie etwas (#334). Nur
+	     lesend – der Import kopiert, er löscht nichts auf der Karte. -->
+	<key>com.apple.security.temporary-exception.files.absolute-path.read-only</key>
+	<array>
+		<string>/Volumes/</string>
+	</array>
 	<!-- Nur für den Umzug von der früheren Kennung (bis 3.19): Der
 	     erste Start unter der neuen Kennung holt die Daten aus dem alten
 	     Container. Vor einer Store-Fassung entfernen; siehe

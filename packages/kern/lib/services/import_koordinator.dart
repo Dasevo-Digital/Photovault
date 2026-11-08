@@ -51,11 +51,13 @@ class ImportKoordinator {
         ++done,
         pfade.length,
         currentFile: p.basename(pfad),
+        pfad: pfad,
         assetId: result.outcome == ImportOutcome.imported
             ? result.assetId
             : null,
         duplikat: result.outcome == ImportOutcome.duplicateSkipped,
         gescheitert: result.outcome == ImportOutcome.failed,
+        grund: result.outcome == ImportOutcome.failed ? result.error : null,
       );
     }
     if (await db.autoAnalyzeAfterImportEnabled()) unawaited(starteAnalyse());

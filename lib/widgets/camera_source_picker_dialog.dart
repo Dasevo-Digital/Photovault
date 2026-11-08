@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 
@@ -65,7 +66,23 @@ class _CameraSourcePickerDialogState extends State<_CameraSourcePickerDialog> {
             : sources.isEmpty
             ? Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                child: Text(AppTexte.of(context).kameraKeinDatentraeger),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(AppTexte.of(context).kameraKeinDatentraeger),
+                    // Unter macOS fragt das System beim ersten Blick auf
+                    // eine Karte nach dem Recht für Wechselmedien. Wer
+                    // dort ablehnte, sieht hier sonst nur „nichts gefunden“.
+                    if (Platform.isMacOS) ...[
+                      const SizedBox(height: AppSpacing.md),
+                      Text(
+                        AppTexte.of(context).kameraWechselmedienRecht,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ],
+                ),
               )
             : Column(
                 mainAxisSize: MainAxisSize.min,

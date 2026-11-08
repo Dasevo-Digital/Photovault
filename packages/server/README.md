@@ -743,7 +743,10 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 Beim Hochladen gehören zu `Upload-Metadata` `filename` und `geaendert`
 (Änderungszeit der Datei in Millisekunden – der letzte Anhalt fürs Datum,
 wenn die Datei keines trägt). Die Antwort auf das letzte Stück trägt
-`Pv-Ausgang` und `Pv-Aufnahme`.
+`Pv-Ausgang` und `Pv-Aufnahme`, bei `failed` ausserdem `Pv-Fehler` (der
+Grund, URL-kodiert). Die App versucht einen Upload nach 408, 425, 429,
+500, 502, 503, 504 oder ohne Verbindung bis zu fünfmal neu und macht dort
+weiter, wo der Server steht.
 
 ## Prüfen
 

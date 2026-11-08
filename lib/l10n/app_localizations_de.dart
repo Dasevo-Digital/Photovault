@@ -2811,6 +2811,10 @@ class AppTexteDe extends AppTexte {
       'Kein Datenträger mit Fotos/Videos gefunden. Kamera oder SD-Karte per USB einstecken – die Liste aktualisiert sich automatisch, sobald sie erkannt wird.';
 
   @override
+  String get kameraWechselmedienRecht =>
+      'Steckt die Karte, erscheint aber nicht? Dann braucht Photo Vault das Recht für Wechselmedien: Systemeinstellungen → Datenschutz & Sicherheit → Dateien und Ordner.';
+
+  @override
   String get mischerTitel => 'Farbmischer';
 
   @override
@@ -3257,6 +3261,35 @@ class AppTexteDe extends AppTexte {
       locale: localeName,
       other: '$anzahl kamen nicht herein',
       one: '1 kam nicht herein',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importFehlerWarum => 'Warum?';
+
+  @override
+  String get importFehlerUnbekannt => 'Grund unbekannt';
+
+  @override
+  String get importFehlerKeineVerbindung => 'Server nicht erreichbar';
+
+  @override
+  String importFehlerServer(int status, String text) {
+    return 'Server antwortete mit $status: $text';
+  }
+
+  @override
+  String get importFehlerQuelleGeaendert =>
+      'Die Datei hat sich seit der Prüfung verändert';
+
+  @override
+  String importErneutVersuchen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Dateien erneut versuchen',
+      one: '1 Datei erneut versuchen',
     );
     return '$_temp0';
   }

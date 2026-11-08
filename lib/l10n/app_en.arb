@@ -923,6 +923,7 @@
   "rasterFotoNichtGefunden": "That photo is not in the timeline.",
   "kameraImportTitel": "Import from a camera or SD card",
   "kameraKeinDatentraeger": "No volume with photos or videos found. Plug in a camera or SD card over USB – the list updates by itself as soon as one is recognised.",
+  "kameraWechselmedienRecht": "Card inserted but not listed? Photo Vault then needs access to removable volumes: System Settings → Privacy & Security → Files and Folders.",
   "mischerTitel": "Colour mixer",
   "mischerFarbton": "Hue",
   "mischerSaettigung": "Saturation",
@@ -1078,6 +1079,29 @@
   },
   "importBilanzFehler": "{anzahl, plural, =1{1 did not come in} other{{anzahl} did not come in}}",
   "@importBilanzFehler": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importFehlerWarum": "Why?",
+  "importFehlerUnbekannt": "Reason unknown",
+  "importFehlerKeineVerbindung": "Server not reachable",
+  "importFehlerServer": "Server replied {status}: {text}",
+  "@importFehlerServer": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "importFehlerQuelleGeaendert": "The file changed after it was checked",
+  "importErneutVersuchen": "{anzahl, plural, =1{Try 1 file again} other{Try {anzahl} files again}}",
+  "@importErneutVersuchen": {
     "placeholders": {
       "anzahl": {
         "type": "int"

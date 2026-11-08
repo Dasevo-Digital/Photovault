@@ -1259,10 +1259,16 @@ class LibraryState extends ChangeNotifier {
     final tus = TusHochladen(a.verbindung);
     final pruefsummen = plan?.pruefsummen;
     var done = 0;
+    // Gesetzt, wenn eine Datei auch nach allen neuen Versuchen am Server
+    // vorbeiging: Dann bekommt jede weitere nur noch einen, bis wieder eine
+    // ankommt. Sonst kostete ein Server, der ganz weg ist, je Datei eine
+    // Minute Warten.
+    var gestoert = false;
     yield ImportProgress(0, filePaths.length);
     for (final filePath in filePaths) {
       final datei = File(filePath);
       String? ausgang, aufnahme;
+      Object? grund;
       try {
         final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == filePath);
         if (eintrag != null &&
@@ -1270,16 +1276,26 @@ class LibraryState extends ChangeNotifier {
                 await datei.lastModified() != eintrag.angaben!.geaendert)) {
           throw const FormatException('pv_import_quelle_geaendert');
         }
-        final kopf = await tus.lade(datei, 'api/v1/hochladen', {
+        final kopf = await tus.ladeBeharrlich(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
           if (plan != null) 'sha256': pruefsummen![filePath]!,
           if (plan != null) 'regelstand': plan.regelstand,
           'geaendert':
               '${(eintrag?.angaben?.geaendert ?? await datei.lastModified()).millisecondsSinceEpoch}',
-        });
+        }, abstaende: gestoert ? const [] : TusHochladen.wiederholungsabstaende);
+        gestoert = false;
         ausgang = kopf['pv-ausgang'];
         aufnahme = kopf['pv-aufnahme'];
+        if (ausgang == 'failed') {
+          // Als Ausnahme, damit die Oberfläche bekannte Gründe übersetzt.
+          grund = switch (kopf['pv-fehler']) {
+            final String f => FormatException(Uri.decodeComponent(f)),
+            null => null,
+          };
+        }
       } catch (e) {
+        if (TusHochladen.voruebergehend(e)) gestoert = true;
+        grund = e;
         debugPrint('Hochladen von $filePath fehlgeschlagen: $e');
       }
       done++;
@@ -1287,9 +1303,11 @@ class LibraryState extends ChangeNotifier {
         done,
         filePaths.length,
         currentFile: p.basename(filePath),
+        pfad: filePath,
         assetId: ausgang == 'imported' ? aufnahme : null,
         duplikat: ausgang == 'duplicateSkipped',
         gescheitert: ausgang == null || ausgang == 'failed',
+        grund: grund,
       );
     }
     // Was dazukam, zählt auch beim Speicher des Servers.

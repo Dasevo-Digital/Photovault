@@ -1483,6 +1483,7 @@
   "rasterFotoNichtGefunden": "Foto nicht in der Timeline gefunden.",
   "kameraImportTitel": "Von Kamera/SD-Karte importieren",
   "kameraKeinDatentraeger": "Kein Datenträger mit Fotos/Videos gefunden. Kamera oder SD-Karte per USB einstecken – die Liste aktualisiert sich automatisch, sobald sie erkannt wird.",
+  "kameraWechselmedienRecht": "Steckt die Karte, erscheint aber nicht? Dann braucht Photo Vault das Recht für Wechselmedien: Systemeinstellungen → Datenschutz & Sicherheit → Dateien und Ordner.",
   "mischerTitel": "Farbmischer",
   "mischerFarbton": "Farbton",
   "mischerSaettigung": "Sättigung",
@@ -1717,6 +1718,29 @@
   },
   "importBilanzFehler": "{anzahl, plural, =1{1 kam nicht herein} other{{anzahl} kamen nicht herein}}",
   "@importBilanzFehler": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importFehlerWarum": "Warum?",
+  "importFehlerUnbekannt": "Grund unbekannt",
+  "importFehlerKeineVerbindung": "Server nicht erreichbar",
+  "importFehlerServer": "Server antwortete mit {status}: {text}",
+  "@importFehlerServer": {
+    "placeholders": {
+      "status": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "importFehlerQuelleGeaendert": "Die Datei hat sich seit der Prüfung verändert",
+  "importErneutVersuchen": "{anzahl, plural, =1{1 Datei erneut versuchen} other{{anzahl} Dateien erneut versuchen}}",
+  "@importErneutVersuchen": {
     "placeholders": {
       "anzahl": {
         "type": "int"

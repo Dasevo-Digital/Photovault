@@ -390,6 +390,10 @@ class Hochladen {
         'pv-ausgang': ergebnis['ausgang']! as String,
         if (ergebnis['aufnahme'] != null)
           'pv-aufnahme': ergebnis['aufnahme']! as String,
+        // Warum nicht – sonst sah der Rechner nur „failed“ (#335).
+        // Kodiert, weil eine Kopfzeile nur ASCII tragen darf.
+        if (ergebnis['fehler'] case final String fehler)
+          'pv-fehler': Uri.encodeComponent(fehler),
       },
     );
   }

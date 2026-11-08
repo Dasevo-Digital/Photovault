@@ -4817,6 +4817,12 @@ abstract class AppTexte {
   /// **'Kein Datenträger mit Fotos/Videos gefunden. Kamera oder SD-Karte per USB einstecken – die Liste aktualisiert sich automatisch, sobald sie erkannt wird.'**
   String get kameraKeinDatentraeger;
 
+  /// No description provided for @kameraWechselmedienRecht.
+  ///
+  /// In de, this message translates to:
+  /// **'Steckt die Karte, erscheint aber nicht? Dann braucht Photo Vault das Recht für Wechselmedien: Systemeinstellungen → Datenschutz & Sicherheit → Dateien und Ordner.'**
+  String get kameraWechselmedienRecht;
+
   /// No description provided for @mischerTitel.
   ///
   /// In de, this message translates to:
@@ -5572,6 +5578,42 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{anzahl, plural, =1{1 kam nicht herein} other{{anzahl} kamen nicht herein}}'**
   String importBilanzFehler(int anzahl);
+
+  /// No description provided for @importFehlerWarum.
+  ///
+  /// In de, this message translates to:
+  /// **'Warum?'**
+  String get importFehlerWarum;
+
+  /// No description provided for @importFehlerUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Grund unbekannt'**
+  String get importFehlerUnbekannt;
+
+  /// No description provided for @importFehlerKeineVerbindung.
+  ///
+  /// In de, this message translates to:
+  /// **'Server nicht erreichbar'**
+  String get importFehlerKeineVerbindung;
+
+  /// No description provided for @importFehlerServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Server antwortete mit {status}: {text}'**
+  String importFehlerServer(int status, String text);
+
+  /// No description provided for @importFehlerQuelleGeaendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datei hat sich seit der Prüfung verändert'**
+  String get importFehlerQuelleGeaendert;
+
+  /// No description provided for @importErneutVersuchen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Datei erneut versuchen} other{{anzahl} Dateien erneut versuchen}}'**
+  String importErneutVersuchen(int anzahl);
 
   /// No description provided for @importLaeuft.
   ///

@@ -90,4 +90,25 @@ void main() {
       expect(sources, isEmpty);
     },
   );
+
+  test('findet unter Linux Karten eine Ebene unter dem Nutzerordner', () async {
+    // /media/<Nutzer>/<Karte> und /run/media/<Nutzer>/<Karte> wie bei den
+    // Desktops, /media/<Karte> wie von Hand eingehängt.
+    final media = p.join(tempVolumes.path, 'media');
+    final runMedia = p.join(tempVolumes.path, 'run', 'media');
+    Directory(
+      p.join(media, 'nutzer', 'EOS_DIGITAL', 'DCIM'),
+    ).createSync(recursive: true);
+    Directory(
+      p.join(runMedia, 'nutzer', 'NIKON', 'DCIM'),
+    ).createSync(recursive: true);
+    Directory(p.join(media, 'SDKARTE', 'DCIM')).createSync(recursive: true);
+
+    final kandidaten = await RemovableMediaService.linuxKandidaten([
+      media,
+      runMedia,
+    ]);
+    final namen = kandidaten.map((k) => k.$1).toSet();
+    expect(namen, containsAll(['EOS_DIGITAL', 'NIKON', 'SDKARTE']));
+  });
 }

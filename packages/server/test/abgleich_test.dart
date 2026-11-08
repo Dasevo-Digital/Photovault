@@ -648,6 +648,63 @@ void main() {
   );
 
   test(
+    'Hochladen versucht es nach vorübergehenden Fehlern erneut (#335)',
+    () async {
+      final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+      // Der Proxy davor weist die erste Anlage mit einer Fehlerseite ab,
+      // und das erste Stück mit 503 – wie ein Proxy, der kurz nicht will.
+      final stoerung = _Stoerung({('POST', 1): 502, ('PATCH', 1): 503});
+      final v = Serververbindung(
+        Uri.parse('http://127.0.0.1:$port/'),
+        token,
+        client: stoerung,
+      );
+      addTearDown(v.schliesse);
+      final bild = img.Image(width: 300, height: 200);
+      img.fill(bild, color: img.ColorRgb8(200, 60, 30));
+      final datei = File('${ordner.path}/abend.jpg')
+        ..writeAsBytesSync(img.encodeJpg(bild));
+      final gewartet = <Duration>[];
+      final kopf = await TusHochladen(v, stueck: 200).ladeBeharrlich(
+        datei,
+        'api/v1/hochladen',
+        const {'filename': 'abend.jpg'},
+        warte: (d) async => gewartet.add(d),
+      );
+      expect(kopf['pv-ausgang'], 'imported');
+      expect(gewartet, TusHochladen.wiederholungsabstaende.take(2));
+      // Nach dem 503 ging es am selben Upload weiter, nicht an einem neuen.
+      expect(stoerung.anfragen.where((a) => a == 'POST'), hasLength(2));
+      expect(stoerung.anfragen, contains('HEAD'));
+
+      // Was beim zweiten Mal genauso scheitert, wird nicht wiederholt.
+      final psd = File('${ordner.path}/ebene.xyz')..writeAsBytesSync([1, 2]);
+      await expectLater(
+        TusHochladen(v).ladeBeharrlich(psd, 'api/v1/hochladen', const {
+          'filename': 'ebene.xyz',
+        }, warte: (_) async => fail('kein neuer Versuch')),
+        throwsA(isA<Serverfehler>().having((e) => e.status, 'status', 415)),
+      );
+
+      // Ohne Abstände genau ein Versuch.
+      final ohne = _Stoerung({('POST', 1): 503});
+      final v2 = Serververbindung(
+        Uri.parse('http://127.0.0.1:$port/'),
+        token,
+        client: ohne,
+      );
+      addTearDown(v2.schliesse);
+      await expectLater(
+        TusHochladen(v2).ladeBeharrlich(datei, 'api/v1/hochladen', const {
+          'filename': 'abend.jpg',
+        }, abstaende: const []),
+        throwsA(isA<Serverfehler>()),
+      );
+      expect(ohne.anfragen, ['POST']);
+    },
+  );
+
+  test(
     'erreichbar meldet sich gleich, nicht erst nach der langen Abfrage',
     () async {
       final (_, a) = await geraet('Rechner');
@@ -926,4 +983,37 @@ List<int> base32Zurueck(String s) {
     }
   }
   return aus;
+}
+
+/// Ein Client, der die n-te Anfrage einer Methode mit einem Status
+/// beantwortet, statt sie durchzulassen – wie ein Proxy mit Launen.
+class _Stoerung extends http.BaseClient {
+  _Stoerung(this.regeln);
+  final Map<(String, int), int> regeln;
+  final _innen = http.Client();
+  final anfragen = <String>[];
+  final _zaehler = <String, int>{};
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    anfragen.add(request.method);
+    final n = _zaehler.update(request.method, (n) => n + 1, ifAbsent: () => 1);
+    if (regeln[(request.method, n)] case final status?) {
+      await request.finalize().drain<void>();
+      return http.StreamedResponse(
+        Stream.value(
+          utf8.encode(
+            '<html>\r\n<head><title>$status Bad Gateway</title></head>\r\n'
+            '<body>\r\n<center><h1>$status</h1></center>\r\n'
+            '<hr><center>openresty</center>\r\n</body>\r\n</html>\r\n',
+          ),
+        ),
+        status,
+      );
+    }
+    return _innen.send(request);
+  }
+
+  @override
+  void close() => _innen.close();
 }
