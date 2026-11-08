@@ -462,6 +462,57 @@ function marken(k, a) {
   }
 }
 
+// Grosse Kacheln werden scharf: Die Miniatur hat 400 Punkte an der langen
+// Seite. In wenigen Spalten auf einem Bildschirm mit doppelter Dichte ist
+// eine Kachel deutlich grösser, und das Foto sah weich aus. Steht eine
+// Kachel eine Viertelsekunde im Bild, holt sie die Fassung des Betrachters
+// nach – beim schnellen Durchscrollen nicht. Die Miniatur bleibt, bis die
+// grosse da ist.
+const KACHEL_SPIELRAUM = 1.15;
+const schaerfer = 'IntersectionObserver' in window
+  ? new IntersectionObserver((eintraege) => {
+    for (const e of eintraege) {
+      const img = e.target;
+      clearTimeout(img.schaerferUhr);
+      if (!img.isConnected) { schaerfer.unobserve(img); continue; }
+      if (e.isIntersecting) img.schaerferUhr = setTimeout(() => werdeSchaerfer(img), 250);
+    }
+  })
+  : null;
+
+function werdeSchaerfer(img) {
+  if (!img.isConnected || !img.dataset.gross) return;
+  if (!img.complete || !img.naturalWidth) {
+    img.addEventListener('load', () => werdeSchaerfer(img), { once: true });
+    return;
+  }
+  const r = img.getBoundingClientRect();
+  const noetig = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight) * (window.devicePixelRatio || 1);
+  if (noetig <= KACHEL_SPIELRAUM) return;
+  const quelle = img.dataset.gross;
+  delete img.dataset.gross;
+  schaerfer.unobserve(img);
+  const gross = new Image();
+  gross.decoding = 'async';
+  gross.onload = () => { if (img.isConnected) img.src = quelle; };
+  gross.src = quelle;
+}
+
+// Werden Kacheln grösser, ohne dass sich etwas an ihrer Sichtbarkeit ändert
+// (mehr Platz, weniger Spalten), meldet der Beobachter nichts – dann hier.
+let scharfUhr = null;
+function pruefeScharf() {
+  if (!schaerfer) return;
+  clearTimeout(scharfUhr);
+  scharfUhr = setTimeout(() => {
+    for (const img of document.querySelectorAll('#raster img[data-gross]')) {
+      const r = img.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < innerHeight) werdeSchaerfer(img);
+    }
+  }, 250);
+}
+window.addEventListener('resize', pruefeScharf);
+
 function kachel(a, index) {
   const vorrat = kachelVorrat && kachelVorrat.get(a.id);
   if (vorrat && vorrat.zeile === JSON.stringify(a)) {
@@ -477,6 +528,10 @@ function kachel(a, index) {
   img.alt = '';
   img.draggable = false;
   img.src = aufnahmeUrl(a.id, 'miniatur', a.stand);
+  if (schaerfer && !(liste && liste.alsListe)) {
+    img.dataset.gross = aufnahmeUrl(a.id, 'ansicht', a.stand);
+    schaerfer.observe(img);
+  }
   k.append(img);
   if (a.von) k.title = a.konto ? t('Aus der Bibliothek von {name}', { name: a.von }) : t('Beigetragen von {name}', { name: a.von });
   if (liste && liste.alsListe) {
@@ -4570,6 +4625,7 @@ function setzeSpalten(n, merken) {
   }
   if (merken) { try { localStorage.setItem(SPALTEN_MERKER, String(spalten)); } catch (_) { /* privat */ } }
   legeForm();
+  pruefeScharf();
 }
 if (spalten) { $('raster').style.setProperty('--spalten', String(spalten)); $('raster').classList.add('feste-spalten'); }
 

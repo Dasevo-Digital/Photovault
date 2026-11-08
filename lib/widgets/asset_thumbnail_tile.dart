@@ -172,13 +172,51 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
                           context,
                         ).devicePixelRatio,
                       );
-                      return bibliotheksbild(
+                      final miniatur = bibliotheksbild(
                         widget.paths,
                         thumbPath,
                         fit: BoxFit.cover,
                         cacheWidth: masse.breite,
                         cacheHeight: masse.hoehe,
                         errorBuilder: (_, _, _) => _placeholder(),
+                      );
+                      // Grosse Kacheln brauchen mehr als die 400 Punkte der
+                      // Miniatur, sonst sehen die Fotos weich aus. Die
+                      // Miniatur bleibt darunter stehen, bis das scharfe Bild
+                      // da ist – und geholt wird es erst, wenn die Kachel
+                      // kurz stehen bleibt: Beim schnellen Durchscrollen holt
+                      // eine verbundene Bibliothek sonst für jede
+                      // vorbeiziehende Kachel die Vorschau vom Server.
+                      final scharf =
+                          brauchtMehrAlsMiniatur(
+                            masse,
+                            bildBreite: widget.asset.widthPx,
+                            bildHoehe: widget.asset.heightPx,
+                          )
+                          ? schaerfereKachelquelle(
+                              type: widget.asset.type,
+                              relativePath: widget.asset.relativePath,
+                              fassung: widget.asset.fassung,
+                            )
+                          : null;
+                      if (scharf == null) return miniatur;
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          miniatur,
+                          _NachKurzemHalt(
+                            key: ValueKey(scharf),
+                            child: bibliotheksbild(
+                              widget.paths,
+                              scharf,
+                              fit: BoxFit.cover,
+                              cacheWidth: masse.breite,
+                              cacheHeight: masse.hoehe,
+                              errorBuilder: (_, _, _) =>
+                                  const SizedBox.shrink(),
+                            ),
+                          ),
+                        ],
                       );
                     },
                   )
@@ -396,4 +434,39 @@ class LocalImageTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Zeigt [child] erst, wenn es eine Weile im Baum stand – siehe die grossen
+/// Kacheln oben.
+class _NachKurzemHalt extends StatefulWidget {
+  const _NachKurzemHalt({super.key, required this.child});
+  final Widget child;
+
+  static const warten = Duration(milliseconds: 250);
+
+  @override
+  State<_NachKurzemHalt> createState() => _NachKurzemHaltState();
+}
+
+class _NachKurzemHaltState extends State<_NachKurzemHalt> {
+  Timer? _uhr;
+  var _an = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _uhr = Timer(_NachKurzemHalt.warten, () {
+      if (mounted) setState(() => _an = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _uhr?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      _an ? widget.child : const SizedBox.shrink();
 }

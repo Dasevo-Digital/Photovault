@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
+import 'package:kern/services/asset_display_path.dart' show istDirektAnzeigbar;
 
 /// Die Obergrenze, in der ein Foto zur Anzeige dekodiert wird.
 ///
@@ -152,6 +153,54 @@ int dekodierbreite(double punkte, double pixelverhaeltnis) {
   return kachelBreite / bildBreite >= kachelHoehe / bildHoehe
       ? (breite: dekodierbreite(kachelBreite, pixelverhaeltnis), hoehe: null)
       : (breite: null, hoehe: dekodierbreite(kachelHoehe, pixelverhaeltnis));
+}
+
+/// Die lange Kante der Miniaturen (siehe `decodeAndResizeThumbnail`).
+const int miniaturKante = 400;
+
+/// Ob eine Kachel mit den Dekodiermassen [masse] (aus
+/// [deckendeDekodiermasse]) mehr Bildpunkte braucht, als die Miniatur hat.
+///
+/// **Warum es das braucht.** Jede Kachel zeigte die Miniatur mit 400
+/// Punkten an der langen Seite. Bei grossen Kacheln auf einem Bildschirm
+/// mit doppelter Pixeldichte – 270 Punkte breit sind 540 Bildpunkte – wurde
+/// sie hochgezogen, und die Fotos sahen weich aus. Mit etwas Spielraum,
+/// damit nicht jede Kachel knapp über der Grenze die grosse Fassung holt.
+bool brauchtMehrAlsMiniatur(
+  ({int? breite, int? hoehe}) masse, {
+  required int? bildBreite,
+  required int? bildHoehe,
+}) {
+  if (bildBreite == null ||
+      bildHoehe == null ||
+      bildBreite <= 0 ||
+      bildHoehe <= 0) {
+    return false;
+  }
+  final quer = bildBreite >= bildHoehe;
+  final miniBreite = quer
+      ? miniaturKante.toDouble()
+      : miniaturKante * bildBreite / bildHoehe;
+  final miniHoehe = quer
+      ? miniaturKante * bildHoehe / bildBreite
+      : miniaturKante.toDouble();
+  if (masse.breite case final b?) return b > miniBreite * 1.15;
+  if (masse.hoehe case final h?) return h > miniHoehe * 1.15;
+  return false;
+}
+
+/// Woraus eine grosse Kachel scharf wird: die angezeigte Fassung (Vorschau,
+/// Entwicklung, Restaurierung, Standbild eines Videos), sonst das Original,
+/// wenn Flutter es selbst liest. `null`, wenn nichts davon taugt – dann
+/// bleibt es bei der Miniatur.
+String? schaerfereKachelquelle({
+  required String type,
+  required String relativePath,
+  required String? fassung,
+}) {
+  if (fassung != null && istDirektAnzeigbar(fassung)) return fassung;
+  if (type == 'VIDEO') return null;
+  return istDirektAnzeigbar(relativePath) ? relativePath : null;
 }
 
 /// Die Formate, die Flutter selbst dekodiert.
