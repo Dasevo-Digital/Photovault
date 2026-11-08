@@ -15835,7 +15835,7 @@ abstract class AppTexte {
   /// No description provided for @importKammerHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.'**
+  /// **'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.'**
   String get importKammerHinweis;
 
   /// No description provided for @importPlanStartenKammer.

@@ -6625,7 +6625,7 @@
   "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}},
   "navFotokammer": "Fotokammer",
   "importKammerSchalter": "Erst in die Fotokammer",
-  "importKammerHinweis": "Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.",
+  "importKammerHinweis": "Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.",
   "importPlanStartenKammer": "{anzahl, plural, =1{1 Foto in die Fotokammer} other{{anzahl} Fotos in die Fotokammer}}",
   "@importPlanStartenKammer": {
     "placeholders": {

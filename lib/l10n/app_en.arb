@@ -5091,7 +5091,7 @@
   "videoSchnittLaenge": "Length {dauer}",
   "navFotokammer": "Staging",
   "importKammerSchalter": "Into staging first",
-  "importKammerHinweis": "The photos are then safely on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval.",
+  "importKammerHinweis": "The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval, and only then does the nightly backup include them.",
   "importPlanStartenKammer": "{anzahl, plural, =1{Put 1 photo into staging} other{Put {anzahl} photos into staging}}",
   "@importPlanStartenKammer": {
     "placeholders": {

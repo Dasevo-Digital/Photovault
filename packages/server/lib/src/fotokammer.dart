@@ -20,8 +20,10 @@ import 'anmeldung_api.dart';
 /// **Wozu.** Von einer Speicherkarte kommen 55 Fotos eines Fussballspiels,
 /// von denen zehn taugen. Gingen alle gleich in die Bibliothek, stünden die
 /// 45 anderen in der Zeitleiste, in der Suche, auf der Karte und auf dem
-/// Handy, bis man sie wieder loswird. In der Kammer sind sie schon gesichert
-/// (die Karte darf danach gelöscht werden), aber nirgends sonst zu sehen.
+/// Handy, bis man sie wieder loswird. In der Kammer liegen sie schon auf dem
+/// Server, aber nirgends sonst zu sehen. Die nächtliche Sicherung nimmt sie
+/// erst nach dem Freigeben mit: Sie sichert die Bibliothek, und dazu gehört
+/// die Kammer nicht.
 ///
 /// **Warum neben der Bibliothek statt darin.** Eine Aufnahme in der
 /// Bibliothek, die nur nicht erscheinen soll, bräuchte an jeder der über

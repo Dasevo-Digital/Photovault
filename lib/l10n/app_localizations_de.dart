@@ -10429,7 +10429,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get importKammerHinweis =>
-      'Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.';
+      'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.';
 
   @override
   String importPlanStartenKammer(int anzahl) {

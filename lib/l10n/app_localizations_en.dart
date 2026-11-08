@@ -10371,7 +10371,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get importKammerHinweis =>
-      'The photos are then safely on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval.';
+      'The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval, and only then does the nightly backup include them.';
 
   @override
   String importPlanStartenKammer(int anzahl) {
