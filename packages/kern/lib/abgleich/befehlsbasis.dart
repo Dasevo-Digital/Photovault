@@ -203,6 +203,12 @@ class Befehlsbasis {
             'ort_geerbt',
           ],
           'dateinameSetzen' => ['original_file_name', 'dateiformat'],
+          // Papierkorb hin und zurück hängt an keiner anderen Angabe. Mit
+          // der ganzen Zeile scheiterte das Löschen eines eben gesicherten
+          // Fotos, sobald die Auswertung am Server Beschreibung, Text, Ort
+          // oder Schärfe nachgetragen hatte (#339).
+          'inDenPapierkorb' ||
+          'ausDemPapierkorb' => ['is_trashed', 'trashed_at'],
           _ => alle.toList(),
         };
         spalten.addAll(absicht.where(alle.contains));

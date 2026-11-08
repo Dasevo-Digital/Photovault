@@ -151,6 +151,50 @@ void main() {
   );
 
   test(
+    'Papierkorb scheitert nicht an Auswertungen, die der Server inzwischen nachgetragen hat (#339)',
+    () async {
+      // Wie nach dem Sichern vom Handy: Der Server wertet das neue Foto
+      // aus, während das Handy es schon löscht.
+      Future<void> auswerten(String text) => quelle.customStatement(
+        'UPDATE assets SET ai_caption = ?, ai_caption_scanned = 1, '
+        'ocr_text = ?, ocr_scanned = 1, sharpness_score = 0.4, '
+        "location_city = 'Probeort' WHERE id = 'foto'",
+        [text, text],
+      );
+      await auswerten('Bildschirmfoto');
+      await db.fuehreAus(const InDenPapierkorb(['foto']));
+      await a.sende();
+      await a.empfange();
+      expect(a.zustandJetzt.faelle, 0);
+      expect((await quelle.assetById('foto'))!.isTrashed, isTrue);
+      expect((await db.assetById('foto'))!.isTrashed, isTrue);
+      expect((await db.assetById('foto'))!.aiCaption, 'Bildschirmfoto');
+
+      await auswerten('neu beschrieben');
+      await db.fuehreAus(const AusDemPapierkorb(['foto']));
+      await a.sende();
+      await a.empfange();
+      expect(a.zustandJetzt.faelle, 0);
+      expect((await quelle.assetById('foto'))!.isTrashed, isFalse);
+      expect((await db.assetById('foto'))!.aiCaption, 'neu beschrieben');
+    },
+  );
+
+  test(
+    'ein inzwischen am Server gesperrtes Foto geht nicht über eine alte Absicht in den Papierkorb',
+    () async {
+      await quelle.customStatement(
+        "UPDATE assets SET is_locked = 1 WHERE id = 'foto'",
+      );
+      await db.fuehreAus(const InDenPapierkorb(['foto']));
+      await a.sende();
+      await a.empfange();
+      expect(a.zustandJetzt.faelle, 1);
+      expect((await quelle.assetById('foto'))!.isTrashed, isFalse);
+    },
+  );
+
+  test(
     'ein bewusst erneut gesetzter gleicher lokaler Wert überschreibt keine neue Serverentscheidung',
     () async {
       await quelle.fuehreAus(const BewertungSetzen(['foto'], 5));
