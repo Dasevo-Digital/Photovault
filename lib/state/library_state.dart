@@ -24,6 +24,7 @@ export '../services/backup_koordinator.dart'
 import '../services/bibliothekssperre.dart';
 import '../services/bilddekodierung.dart';
 import '../services/entwicklung_ablegen.dart';
+import '../services/fotokammer_dienst.dart';
 import 'package:kern/services/florence_captioning_service.dart';
 import 'package:kern/services/whisper_service.dart';
 import 'package:kern/services/clip_service.dart';
@@ -1242,6 +1243,26 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Die Fotokammer des Servers (#336) – `null` ohne Server.
+  Fotokammerdienst? get fotokammer {
+    final a = abgleich;
+    if (a == null) return null;
+    final k = _fotokammer;
+    if (k != null && identical(k.verbindung, a.verbindung)) return k;
+    return _fotokammer = Fotokammerdienst(
+      a.verbindung,
+      nachFreigabe: () async {
+        try {
+          await a.empfange();
+        } catch (e) {
+          debugPrint('Abgleich nach dem Freigeben: $e');
+        }
+      },
+    );
+  }
+
+  Fotokammerdienst? _fotokammer;
+
   /// Lädt [filePaths] zum Server hoch – der importiert sie wie die App
   /// (siehe dort `Hochladen`), und die neuen Aufnahmen kommen über den
   /// Abgleich zurück.
@@ -1252,7 +1273,9 @@ class LibraryState extends ChangeNotifier {
     final a = abgleich!;
     if (plan != null) {
       final zustand = await a.verbindung.hole('api/v1/zustand');
-      if (((zustand['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2) {
+      final funktionen = zustand['funktionen'] as Map?;
+      if ((funktionen?['importplan'] as int? ?? 0) < 2 ||
+          (plan.kammer && (funktionen?['fotokammer'] as int? ?? 0) < 1)) {
         throw const FormatException('pv_import_server_zu_alt');
       }
     }
@@ -1279,7 +1302,9 @@ class LibraryState extends ChangeNotifier {
         final kopf = await tus.ladeBeharrlich(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
           if (plan != null) 'sha256': pruefsummen![filePath]!,
-          if (plan != null) 'regelstand': plan.regelstand,
+          // In der Fotokammer greifen die Regeln erst beim Freigeben.
+          if (plan != null && !plan.kammer) 'regelstand': plan.regelstand,
+          if (plan?.kammer ?? false) 'kammer': '1',
           'geaendert':
               '${(eintrag?.angaben?.geaendert ?? await datei.lastModified()).millisecondsSinceEpoch}',
         }, abstaende: gestoert ? const [] : TusHochladen.wiederholungsabstaende);
@@ -1307,9 +1332,11 @@ class LibraryState extends ChangeNotifier {
         assetId: ausgang == 'imported' ? aufnahme : null,
         duplikat: ausgang == 'duplicateSkipped',
         gescheitert: ausgang == null || ausgang == 'failed',
+        kammer: ausgang == 'kammer',
         grund: grund,
       );
     }
+    if (plan?.kammer ?? false) unawaited(fotokammer?.liste().then((_) {}));
     // Was dazukam, zählt auch beim Speicher des Servers.
     unawaited(pruefeServerspeicher());
     // Die neuen Aufnahmen gleich holen: Wer nach dem Import zu ihnen

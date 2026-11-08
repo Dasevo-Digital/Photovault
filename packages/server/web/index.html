@@ -34,6 +34,7 @@
   <symbol id="i-statistik" viewBox="0 0 24 24"><path d="M3.5 20.5h17"/><rect x="5" y="11" width="3.4" height="6.5" rx="1.2"/><rect x="10.3" y="5" width="3.4" height="12.5" rx="1.2"/><rect x="15.6" y="13.5" width="3.4" height="4" rx="1.2"/></symbol>
   <symbol id="i-duplikate" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="11.5" height="11.5" rx="2.5"/><rect x="9" y="9" width="11.5" height="11.5" rx="2.5"/></symbol>
   <symbol id="i-aufnahmedaten" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M8.5 15l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-fotokammer" viewBox="0 0 24 24"><path d="M4 13.5l2.2-7.4A1.5 1.5 0 0 1 7.6 5h8.8a1.5 1.5 0 0 1 1.4 1.1l2.2 7.4M4 13.5V18a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 18v-4.5M4 13.5h4.5l1 2h5l1-2H20M12 7.5v4.5M9.8 9.8L12 12l2.2-2.2"/></symbol>
   <symbol id="i-papierkorb" viewBox="0 0 24 24"><path d="M4 6.5h16M9.5 6.5V4.5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2M6 6.5l.9 12.2A2 2 0 0 0 8.9 20.5h6.2a2 2 0 0 0 2-1.8L18 6.5M10 10.5v6M14 10.5v6"/></symbol>
   <symbol id="i-einstellungen" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h3M12 17h8"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="9.5" cy="17" r="2.5"/></symbol>
   <symbol id="i-hochladen" viewBox="0 0 24 24"><path d="M12 15.5V4M7 8.5l5-5 5 5M4.5 20h15"/></symbol>
@@ -169,6 +170,18 @@
     </div>
     <p id="dupl-hinweis" class="leise"></p>
     <div id="dupl-gruppen"></div>
+  </section>
+  <section id="bereich-fotokammer" hidden>
+    <div class="zeile">
+      <h2>Fotokammer</h2>
+      <button id="kammer-alle" type="button" hidden>Alle auswählen</button>
+      <button id="kammer-umkehren" type="button" hidden>Auswahl umkehren</button>
+      <button id="kammer-verwerfen" type="button" disabled>Verwerfen</button>
+      <button id="kammer-freigeben" type="button" class="primaer" disabled>Freigeben</button>
+    </div>
+    <label class="kammer-schalter"><input id="kammer-erst" type="checkbox"> Neue Uploads erst in die Fotokammer</label>
+    <p id="kammer-hinweis" class="leise"></p>
+    <div id="kammer-raster"></div>
   </section>
   <section id="bereich-aufnahmedaten" hidden>
     <div class="zeile">
@@ -475,6 +488,16 @@
   <button id="hochladen-abbrechen" type="button">Abbrechen</button>
 </div>
 <div id="ablage" hidden><p>Dateien hier ablegen zum Hochladen</p></div>
+<div id="kammer-gross" hidden>
+  <div class="kammer-gross-kopf">
+    <span id="kammer-gross-titel"></span>
+    <button id="kammer-gross-waehlen" type="button">Auswählen (Leertaste)</button>
+    <button id="kammer-gross-zu" type="button" aria-label="Schliessen">×</button>
+  </div>
+  <button id="kammer-gross-zurueck" type="button" aria-label="Vorige">‹</button>
+  <img id="kammer-gross-bild" alt="">
+  <button id="kammer-gross-vor" type="button" aria-label="Nächste">›</button>
+</div>
 <div id="meldung" role="status" hidden></div>
 
 <dialog id="album-dialog">
@@ -829,7 +852,7 @@
 <script src="texte.js"></script>
 <script src="passkeys.js"></script>
 <script src="app.js"></script>
-<!-- entwickeln.js, lebensbaum.js und stammbaum.js lädt app.js erst, wenn sie gebraucht werden. -->
+<!-- entwickeln.js, lebensbaum.js, stammbaum.js und kammer.js lädt app.js erst, wenn sie gebraucht werden. -->
 <script src="hochladen.js"></script>
 </body>
 </html>

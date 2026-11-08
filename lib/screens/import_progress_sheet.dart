@@ -13,6 +13,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/camera_source_picker_dialog.dart';
 import 'asset_viewer_screen.dart';
+import 'home_shell.dart' show Hauptbereich;
 import 'import_plan_screen.dart';
 import 'package:kern/services/import_plan.dart';
 import '../services/meldungsdienst.dart';
@@ -203,6 +204,9 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
   int _duplikate = 0;
   int _fehler = 0;
 
+  /// Wie viele in der Fotokammer liegen (#336).
+  int _inKammer = 0;
+
   /// Die gescheiterten Dateien mit ihrem Grund – für „Warum?“ und für den
   /// neuen Versuch.
   final _gescheitert = <String, Object?>{};
@@ -230,6 +234,7 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
             _importedAssetIds.add(progress.assetId!);
           }
           if (progress.duplikat) _duplikate++;
+          if (progress.kammer) _inKammer++;
           if (progress.gescheitert) {
             _fehler++;
             if (progress.pfad case final pfad?) {
@@ -358,12 +363,16 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
             const SizedBox(height: 16),
             // Die Bilanz steht nur da, wenn es etwas zu sagen gibt -
             // "0 uebersprungen" ist keine Nachricht.
-            if (_finished && (_duplikate > 0 || _fehler > 0)) ...[
+            if (_finished &&
+                (_duplikate > 0 || _fehler > 0 || _inKammer > 0)) ...[
               Text(
                 [
-                  AppTexte.of(
-                    context,
-                  ).importBilanzNeu(_importedAssetIds.length),
+                  if (_inKammer == 0 || _importedAssetIds.isNotEmpty)
+                    AppTexte.of(
+                      context,
+                    ).importBilanzNeu(_importedAssetIds.length),
+                  if (_inKammer > 0)
+                    AppTexte.of(context).importBilanzKammer(_inKammer),
                   if (_duplikate > 0)
                     AppTexte.of(context).importBilanzDuplikate(_duplikate),
                   if (_fehler > 0)
@@ -384,6 +393,17 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
                       context,
                     ).importErneutVersuchen(_gescheitert.length),
                   ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              if (_inKammer > 0) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.library.zeigeBereich(Hauptbereich.fotokammer);
+                  },
+                  icon: const Icon(Icons.move_to_inbox_outlined, size: 18),
+                  label: Text(AppTexte.of(context).importZurKammer),
                 ),
                 const SizedBox(height: 8),
               ],

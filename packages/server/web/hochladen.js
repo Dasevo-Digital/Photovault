@@ -13,7 +13,17 @@
 const HL_STUECK = 8 * 1024 * 1024;
 const HL_TUS = { 'Tus-Resumable': '1.0.0', 'X-PV-Web': '1' };
 
-const hl = { laeuft: false, abbrechen: false, warteschlange: [], neu: 0, da: 0, fehler: [], gesamt: 0, fertig: 0 };
+const hl = { laeuft: false, abbrechen: false, warteschlange: [], neu: 0, da: 0, kammer: 0, fehler: [], gesamt: 0, fertig: 0 };
+
+// Erst in die Fotokammer statt gleich in die Bibliothek (#336, kammer.js).
+// Der Haken gilt nur in diesem Browser.
+const KAMMER_MERKER = 'pv-kammer-erst';
+function kammerAn() {
+  try { return localStorage.getItem(KAMMER_MERKER) === '1'; } catch (_) { return false; }
+}
+function kammerSetzen(an) {
+  try { if (an) localStorage.setItem(KAMMER_MERKER, '1'); else localStorage.removeItem(KAMMER_MERKER); } catch (_) { /* privat */ }
+}
 
 // Upload-Metadata: Schlüssel und Base64-Wert, durch Kommas getrennt.
 function hlMeta(werte) {
@@ -41,7 +51,7 @@ async function hlStand(ort) {
 async function hlDatei(datei, fortschritt) {
   const angelegt = await hlFrage('/api/v1/hochladen', 'POST', {
     'Upload-Length': String(datei.size),
-    'Upload-Metadata': hlMeta({ filename: datei.name, geaendert: datei.lastModified || Date.now() }),
+    'Upload-Metadata': hlMeta({ filename: datei.name, geaendert: datei.lastModified || Date.now(), ...(kammerAn() ? { kammer: 1 } : {}) }),
   });
   if (angelegt.status === 415) return { ausgang: 'abgelehnt', grund: (await angelegt.text()).trim() || t('Format nicht unterstützt') };
   if (angelegt.status === 507 || angelegt.status === 413) return { ausgang: 'abgelehnt', grund: t('Kein Platz auf dem Server') };
@@ -86,6 +96,7 @@ async function hlDatei(datei, fortschritt) {
     if (r.ok) { const j = await r.json(); ausgang = j.ergebnis && j.ergebnis.ausgang; }
   }
   if (ausgang === 'imported') return { ausgang: 'neu' };
+  if (ausgang === 'kammer') return { ausgang: 'kammer' };
   if (ausgang === 'duplicateSkipped') return { ausgang: 'da' };
   return { ausgang: 'abgelehnt', grund: t('Der Server konnte die Datei nicht aufnehmen') };
 }
@@ -97,6 +108,7 @@ function hlZeige(text, anteil) {
   const teile = [];
   if (hl.neu) teile.push(t('{n} neu', { n: hl.neu }));
   if (hl.da) teile.push(t('{n} schon da', { n: hl.da }));
+  if (hl.kammer) teile.push(t('{n} in der Fotokammer', { n: hl.kammer }));
   if (hl.fehler.length) teile.push(t('{n} abgelehnt', { n: hl.fehler.length }));
   $('hochladen-ergebnis').textContent = teile.join(' · ');
   $('hochladen-abbrechen').hidden = !hl.laeuft;
@@ -114,7 +126,7 @@ async function ladeHoch(dateien) {
   while (hl.warteschlange.length && !hl.abbrechen) {
     const d = hl.warteschlange.shift();
     const nummer = hl.fertig + 1;
-    const text = () => t('{i} von {n}', { i: nummer, n: hl.gesamt }) + ` · ${d.name}`;
+    const text = () => t('{i} von {n}', { i: nummer, n: hl.gesamt }) + ` · ${d.name}` + (kammerAn() ? ` · ${t('in die Fotokammer')}` : '');
     hlZeige(text(), hl.fertig / hl.gesamt);
     let e;
     try {
@@ -124,6 +136,7 @@ async function ladeHoch(dateien) {
       if (x.message === 'nicht angemeldet') hl.abbrechen = true;
     }
     if (e.ausgang === 'neu') hl.neu++;
+    else if (e.ausgang === 'kammer') hl.kammer++;
     else if (e.ausgang === 'da') hl.da++;
     else if (e.ausgang === 'abgelehnt') {
       hl.fehler.push(d.name);
@@ -135,6 +148,8 @@ async function ladeHoch(dateien) {
   hl.laeuft = false;
   hl.warteschlange = [];
   hlZeige(abgebrochen ? t('Abgebrochen') : t('Fertig'), 1);
+  // Die offene Fotokammer zeigt gleich, was dazukam.
+  if (hl.kammer && typeof ladeKammer === 'function' && (location.hash || '').startsWith('#/fotokammer')) ladeKammer().catch(() => {});
   // Neues erscheint in der Zeitleiste.
   if (hl.neu) {
     zeitleiste.leeren();
@@ -145,7 +160,7 @@ async function ladeHoch(dateien) {
 }
 
 function hlZuruecksetzen() {
-  Object.assign(hl, { neu: 0, da: 0, fehler: [], gesamt: 0, fertig: 0 });
+  Object.assign(hl, { neu: 0, da: 0, kammer: 0, fehler: [], gesamt: 0, fertig: 0 });
   $('hochladen-stand').hidden = true;
 }
 

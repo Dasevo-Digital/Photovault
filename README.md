@@ -251,6 +251,10 @@ echter Hardware.
   SHA-256-Prüfsumme automatisch übersprungen. **Kamera-Presets** legen pro
   Kamera-Modell automatisch Album/Tags/Favorit-Status beim Import fest
   (digiKam-Stil)
+- **Fotokammer** – mit einem Server wahlweise „Erst in die Fotokammer“
+  importieren (am Rechner und beim Hochladen im Browser): Die Fotos liegen
+  dann schon auf dem Server, erscheinen aber nirgends, bis man sie sichtet
+  und freigibt oder verwirft
 - **Alben & gespeicherte Suchen** – klassische Alben sowie "Intelligente
   Alben", die live die aktuellen Suchfilter statt einer festen Fotoliste
   festhalten

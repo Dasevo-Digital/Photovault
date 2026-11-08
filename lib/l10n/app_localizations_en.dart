@@ -10362,4 +10362,130 @@ class AppTexteEn extends AppTexte {
   String videoSchnittLaenge(String dauer) {
     return 'Length $dauer';
   }
+
+  @override
+  String get navFotokammer => 'Staging';
+
+  @override
+  String get importKammerSchalter => 'Into staging first';
+
+  @override
+  String get importKammerHinweis =>
+      'The photos are then safely on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval.';
+
+  @override
+  String importPlanStartenKammer(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Put $anzahl photos into staging',
+      one: 'Put 1 photo into staging',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importBilanzKammer(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl are waiting in staging',
+      one: '1 is waiting in staging',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importZurKammer => 'Go to staging';
+
+  @override
+  String get kammerTitel => 'Staging';
+
+  @override
+  String kammerAusgewaehlt(int anzahl) {
+    return '$anzahl selected';
+  }
+
+  @override
+  String kammerUmfang(int anzahl, String groesse) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: '1 photo',
+    );
+    return '$_temp0 · $groesse';
+  }
+
+  @override
+  String get kammerAlle => 'Select all';
+
+  @override
+  String get kammerKeine => 'Select none';
+
+  @override
+  String get kammerUmkehren => 'Invert selection';
+
+  @override
+  String get kammerFreigeben => 'Approve';
+
+  @override
+  String get kammerVerwerfen => 'Discard';
+
+  @override
+  String get kammerNeuLaden => 'Reload';
+
+  @override
+  String kammerFreigegeben(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos moved into the library',
+      one: '1 photo moved into the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerNichtFreigegeben(int anzahl, String grund) {
+    return '$anzahl not moved: $grund';
+  }
+
+  @override
+  String kammerFehler(String fehler) {
+    return 'Staging: $fehler';
+  }
+
+  @override
+  String kammerVerwerfenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Discard $anzahl photos for good?',
+      one: 'Discard 1 photo for good?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerVerwerfenText =>
+      'Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance.';
+
+  @override
+  String get kammerOhneServer =>
+      'Staging needs a Photo Vault server: new photos wait there until you move them into the library.';
+
+  @override
+  String get kammerServerAlt =>
+      'The server does not know staging yet. Update it to the new version.';
+
+  @override
+  String get kammerLeer =>
+      'Staging is empty. When importing, choose “Into staging first” and new photos land here first.';
+
+  @override
+  String get kammerKeineVorschau => 'No preview';
+
+  @override
+  String get kammerAuswaehlenTaste => 'Select (space)';
 }

@@ -739,6 +739,10 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /rechnen/ergebnis` | `{auftrag, ergebnis}` – trägt ein; 409, wenn der Auftrag abgelaufen oder fremd ist, 400 bei unbrauchbaren Werten |
 | `POST /rechnen/zurueck` | `{auftrag, auslassen?}` – ohne Ergebnis zurück; mit `auslassen` rechnet es der Server |
 | `POST /auswertung` | einen Durchgang sofort anstossen |
+| `GET /kammer` | `{eintraege: [{id, name, groesse, datum, art, kamera?, modell?, breite?, hoehe?}], anzahl, bytes}` – die Fotokammer: hochgeladen, aber noch nicht in der Bibliothek |
+| `GET /kammer/<id>/miniatur`, `GET /kammer/<id>/vorschau` | JPEG; 404 ohne Wandler |
+| `POST /kammer/freigeben` | `{ids}` → `{ergebnisse: [{id, ausgang, aufnahme?, fehler?}]}` – in die Bibliothek, wie ein gewöhnlicher Upload; wenige auf einmal schicken |
+| `POST /kammer/verwerfen` | `{ids}` → `{verworfen}` – endgültig, ohne Papierkorb |
 
 Beim Hochladen gehören zu `Upload-Metadata` `filename` und `geaendert`
 (Änderungszeit der Datei in Millisekunden – der letzte Anhalt fürs Datum,
@@ -747,6 +751,12 @@ wenn die Datei keines trägt). Die Antwort auf das letzte Stück trägt
 Grund, URL-kodiert). Die App versucht einen Upload nach 408, 425, 429,
 500, 502, 503, 504 oder ohne Verbindung bis zu fünfmal neu und macht dort
 weiter, wo der Server steht.
+
+Mit `kammer` = `1` in den Metadaten landet die Datei in der Fotokammer des
+Kontos (`<Bibliothek>/fotokammer/<Kennung>/`) statt in der Bibliothek; die
+Antwort trägt dann `Pv-Ausgang: kammer` und `Pv-Kammer`. Was Bibliothek
+oder Kammer schon haben, meldet sie als `duplicateSkipped`. Ob ein Server
+das kann, steht in `funktionen.fotokammer`.
 
 ## Prüfen
 

@@ -130,6 +130,8 @@ const BIBLIOTHEK = [
   {
     titel: 'Verwalten',
     eintraege: [
+      // Nur hier und am Rechner, nicht auf dem Telefon (#336).
+      { bereich: 'fotokammer', weg: '#/fotokammer', text: 'Fotokammer', symbol: 'fotokammer', farbe: '#ad7f58' },
       { bereich: 'duplikate', weg: '#/duplikate', text: 'Duplikate', symbol: 'duplikate', farbe: '#3e63dd' },
       { bereich: 'aufnahmedaten', weg: '#/aufnahmedaten', text: 'Aufnahmedaten', symbol: 'aufnahmedaten', farbe: '#ffa01c' },
       { bereich: 'papierkorb', weg: '#/papierkorb', text: 'Papierkorb', symbol: 'papierkorb', farbe: '#8b8d98' },
@@ -6668,6 +6670,7 @@ async function zeigeWeg(art) {
       case 'stammbaum': await ladeSkript('lebensbaum.js'); await ladeSkript('stammbaum.js'); await zeigeStammbaum(teile[1]); break;
       case 'lebensbaum': await ladeSkript('lebensbaum.js'); await zeigeLebensbaum(teile[1]); break;
       case 'duplikate': await zeigeDuplikate(); break;
+      case 'fotokammer': await ladeSkript('kammer.js'); await zeigeKammer(); break;
       case 'aufnahmedaten': await zeigeAufnahmedaten(); break;
       case 'serie': await zeigeSerie(teile[1]); break;
       case 'entwickeln': await ladeSkript('entwickeln.js'); await zeigeEntwickeln(teile[1]); break;

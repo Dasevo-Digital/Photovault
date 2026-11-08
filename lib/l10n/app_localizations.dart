@@ -15819,6 +15819,156 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Länge {dauer}'**
   String videoSchnittLaenge(String dauer);
+
+  /// No description provided for @navFotokammer.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotokammer'**
+  String get navFotokammer;
+
+  /// No description provided for @importKammerSchalter.
+  ///
+  /// In de, this message translates to:
+  /// **'Erst in die Fotokammer'**
+  String get importKammerSchalter;
+
+  /// No description provided for @importKammerHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.'**
+  String get importKammerHinweis;
+
+  /// No description provided for @importPlanStartenKammer.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto in die Fotokammer} other{{anzahl} Fotos in die Fotokammer}}'**
+  String importPlanStartenKammer(int anzahl);
+
+  /// No description provided for @importBilanzKammer.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 liegt in der Fotokammer} other{{anzahl} liegen in der Fotokammer}}'**
+  String importBilanzKammer(int anzahl);
+
+  /// No description provided for @importZurKammer.
+  ///
+  /// In de, this message translates to:
+  /// **'Zur Fotokammer'**
+  String get importZurKammer;
+
+  /// No description provided for @kammerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotokammer'**
+  String get kammerTitel;
+
+  /// No description provided for @kammerAusgewaehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} ausgewählt'**
+  String kammerAusgewaehlt(int anzahl);
+
+  /// No description provided for @kammerUmfang.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} · {groesse}'**
+  String kammerUmfang(int anzahl, String groesse);
+
+  /// No description provided for @kammerAlle.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle auswählen'**
+  String get kammerAlle;
+
+  /// No description provided for @kammerKeine.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine auswählen'**
+  String get kammerKeine;
+
+  /// No description provided for @kammerUmkehren.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl umkehren'**
+  String get kammerUmkehren;
+
+  /// No description provided for @kammerFreigeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Freigeben'**
+  String get kammerFreigeben;
+
+  /// No description provided for @kammerVerwerfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwerfen'**
+  String get kammerVerwerfen;
+
+  /// No description provided for @kammerNeuLaden.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu laden'**
+  String get kammerNeuLaden;
+
+  /// No description provided for @kammerFreigegeben.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto in die Bibliothek übernommen} other{{anzahl} Fotos in die Bibliothek übernommen}}'**
+  String kammerFreigegeben(int anzahl);
+
+  /// No description provided for @kammerNichtFreigegeben.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} nicht übernommen: {grund}'**
+  String kammerNichtFreigegeben(int anzahl, String grund);
+
+  /// No description provided for @kammerFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotokammer: {fehler}'**
+  String kammerFehler(String fehler);
+
+  /// No description provided for @kammerVerwerfenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto endgültig verwerfen?} other{{anzahl} Fotos endgültig verwerfen?}}'**
+  String kammerVerwerfenTitel(int anzahl);
+
+  /// No description provided for @kammerVerwerfenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.'**
+  String get kammerVerwerfenText;
+
+  /// No description provided for @kammerOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotokammer gibt es mit einem Photo Vault Server: Dort warten neue Fotos, bis du sie in die Bibliothek übernimmst.'**
+  String get kammerOhneServer;
+
+  /// No description provided for @kammerServerAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.'**
+  String get kammerServerAlt;
+
+  /// No description provided for @kammerLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.'**
+  String get kammerLeer;
+
+  /// No description provided for @kammerKeineVorschau.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Vorschau'**
+  String get kammerKeineVorschau;
+
+  /// No description provided for @kammerAuswaehlenTaste.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswählen (Leertaste)'**
+  String get kammerAuswaehlenTaste;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -38,12 +38,26 @@ class ImportPlan {
     required this.am,
     required this.spaetereRegeln,
     this.dateiregeln = false,
+    this.kammer = false,
   });
   final List<ImportPlanEintrag> eintraege;
   final String regelstand;
   final DateTime am;
   final int spaetereRegeln;
   final bool dateiregeln;
+
+  /// Erst in die Fotokammer des Servers statt gleich in die Bibliothek
+  /// (#336). Regeln, Vorgaben und Alben greifen dann beim Freigeben.
+  final bool kammer;
+
+  ImportPlan mitKammer(bool an) => ImportPlan(
+    eintraege: eintraege,
+    regelstand: regelstand,
+    am: am,
+    spaetereRegeln: spaetereRegeln,
+    dateiregeln: dateiregeln,
+    kammer: an,
+  );
 
   int get originalBytes => eintraege
       .where((e) => e.art == ImportPlanArt.neu)
@@ -61,6 +75,7 @@ class ImportPlan {
     am: am,
     spaetereRegeln: spaetereRegeln,
     dateiregeln: dateiregeln,
+    kammer: kammer,
   );
 }
 

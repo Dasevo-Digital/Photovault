@@ -13,6 +13,7 @@ import 'auswertungsdienst.dart';
 import 'bibliothek.dart';
 import 'fassungen_aufraeumen.dart';
 import 'rechnen.dart';
+import 'fotokammer.dart';
 import 'hochladen.dart';
 
 /// Was zu einem Konto gehört: seine Bibliothek, sein Eingang für Uploads
@@ -26,6 +27,9 @@ class Kontobereich {
 
   /// Wer an welcher Aufnahme rechnet – Rechner und Server (Issue #104).
   final Rechenvergabe vergabe;
+
+  /// Fotos, die noch auf ihre Freigabe warten (#336).
+  Fotokammer get kammer => hochladen.kammer!;
 }
 
 /// Die Bibliotheken des Servers, eine je Konto, unter
@@ -104,12 +108,20 @@ class Bibliotheken {
       vergabe: vergabe,
       selbst: selbst,
     );
+    final kammer = Fotokammer(b);
     final hochladen = Hochladen(
       Directory(p.join(eingang.path, kontoId)),
       b,
       nachImport: auswertung.anstossen,
+      kammer: kammer,
     );
+    kammer.importiere = hochladen.importiereDatei;
     await hochladen.raeumeAuf();
+    try {
+      await kammer.raeumeAuf();
+    } catch (e) {
+      protokoll('Reste der Fotokammer nicht aufgeräumt: $e');
+    }
     await _raeumeUmzugsresteAuf(kontoId);
     // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
     // einem gelöschten Live-Photo-Foto unsichtbar zurückblieb (#254).

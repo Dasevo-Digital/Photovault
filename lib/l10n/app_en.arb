@@ -5088,5 +5088,92 @@
   "entwZuruecksetzenText": "The saved edits are removed, and the original appears again.",
   "videoVorschauAbspielen": "Play selection",
   "videoVorschauAnhalten": "Pause",
-  "videoSchnittLaenge": "Length {dauer}"
+  "videoSchnittLaenge": "Length {dauer}",
+  "navFotokammer": "Staging",
+  "importKammerSchalter": "Into staging first",
+  "importKammerHinweis": "The photos are then safely on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval.",
+  "importPlanStartenKammer": "{anzahl, plural, =1{Put 1 photo into staging} other{Put {anzahl} photos into staging}}",
+  "@importPlanStartenKammer": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importBilanzKammer": "{anzahl, plural, =1{1 is waiting in staging} other{{anzahl} are waiting in staging}}",
+  "@importBilanzKammer": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importZurKammer": "Go to staging",
+  "kammerTitel": "Staging",
+  "kammerAusgewaehlt": "{anzahl} selected",
+  "@kammerAusgewaehlt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerUmfang": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}} · {groesse}",
+  "@kammerUmfang": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "groesse": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerAlle": "Select all",
+  "kammerKeine": "Select none",
+  "kammerUmkehren": "Invert selection",
+  "kammerFreigeben": "Approve",
+  "kammerVerwerfen": "Discard",
+  "kammerNeuLaden": "Reload",
+  "kammerFreigegeben": "{anzahl, plural, =1{1 photo moved into the library} other{{anzahl} photos moved into the library}}",
+  "@kammerFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerNichtFreigegeben": "{anzahl} not moved: {grund}",
+  "@kammerNichtFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerFehler": "Staging: {fehler}",
+  "@kammerFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerVerwerfenTitel": "{anzahl, plural, =1{Discard 1 photo for good?} other{Discard {anzahl} photos for good?}}",
+  "@kammerVerwerfenTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerVerwerfenText": "Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance.",
+  "kammerOhneServer": "Staging needs a Photo Vault server: new photos wait there until you move them into the library.",
+  "kammerServerAlt": "The server does not know staging yet. Update it to the new version.",
+  "kammerLeer": "Staging is empty. When importing, choose “Into staging first” and new photos land here first.",
+  "kammerKeineVorschau": "No preview",
+  "kammerAuswaehlenTaste": "Select (space)"
 }

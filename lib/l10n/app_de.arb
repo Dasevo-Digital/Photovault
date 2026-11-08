@@ -6622,5 +6622,92 @@
   "videoVorschauAbspielen": "Ausschnitt abspielen",
   "videoVorschauAnhalten": "Anhalten",
   "videoSchnittLaenge": "Länge {dauer}",
-  "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}}
+  "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}},
+  "navFotokammer": "Fotokammer",
+  "importKammerSchalter": "Erst in die Fotokammer",
+  "importKammerHinweis": "Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.",
+  "importPlanStartenKammer": "{anzahl, plural, =1{1 Foto in die Fotokammer} other{{anzahl} Fotos in die Fotokammer}}",
+  "@importPlanStartenKammer": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importBilanzKammer": "{anzahl, plural, =1{1 liegt in der Fotokammer} other{{anzahl} liegen in der Fotokammer}}",
+  "@importBilanzKammer": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "importZurKammer": "Zur Fotokammer",
+  "kammerTitel": "Fotokammer",
+  "kammerAusgewaehlt": "{anzahl} ausgewählt",
+  "@kammerAusgewaehlt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerUmfang": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} · {groesse}",
+  "@kammerUmfang": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "groesse": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerAlle": "Alle auswählen",
+  "kammerKeine": "Keine auswählen",
+  "kammerUmkehren": "Auswahl umkehren",
+  "kammerFreigeben": "Freigeben",
+  "kammerVerwerfen": "Verwerfen",
+  "kammerNeuLaden": "Neu laden",
+  "kammerFreigegeben": "{anzahl, plural, =1{1 Foto in die Bibliothek übernommen} other{{anzahl} Fotos in die Bibliothek übernommen}}",
+  "@kammerFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerNichtFreigegeben": "{anzahl} nicht übernommen: {grund}",
+  "@kammerNichtFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerFehler": "Fotokammer: {fehler}",
+  "@kammerFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "kammerVerwerfenTitel": "{anzahl, plural, =1{1 Foto endgültig verwerfen?} other{{anzahl} Fotos endgültig verwerfen?}}",
+  "@kammerVerwerfenTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "kammerVerwerfenText": "Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.",
+  "kammerOhneServer": "Die Fotokammer gibt es mit einem Photo Vault Server: Dort warten neue Fotos, bis du sie in die Bibliothek übernimmst.",
+  "kammerServerAlt": "Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.",
+  "kammerLeer": "Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.",
+  "kammerKeineVorschau": "Keine Vorschau",
+  "kammerAuswaehlenTaste": "Auswählen (Leertaste)"
 }

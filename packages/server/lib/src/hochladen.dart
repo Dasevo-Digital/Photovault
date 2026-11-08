@@ -12,6 +12,7 @@ import 'package:shelf/shelf.dart';
 import 'package:uuid/uuid.dart';
 
 import 'bibliothek.dart';
+import 'fotokammer.dart';
 import 'package:kern/services/import_plan.dart';
 
 /// Hochladen in Stücken, die sich nach einem Abbruch fortsetzen lassen –
@@ -47,7 +48,12 @@ class Hochladen {
     this.nachImport,
     this.pfad = '/api/v1/hochladen',
     this.abschluss,
+    this.kammer,
   });
+
+  /// Wohin ein Upload mit `kammer` in den Metadaten kommt, statt in die
+  /// Bibliothek (#336).
+  final Fotokammer? kammer;
 
   final Directory eingang;
 
@@ -169,6 +175,7 @@ class Hochladen {
       'bearbeitungVon': ?meta['bearbeitungVon'],
       'art': ?meta['art'],
       'regelstand': ?meta['regelstand'],
+      'kammer': ?(meta['kammer'] == '1' && kammer != null ? true : null),
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
@@ -394,6 +401,7 @@ class Hochladen {
         // Kodiert, weil eine Kopfzeile nur ASCII tragen darf.
         if (ergebnis['fehler'] case final String fehler)
           'pv-fehler': Uri.encodeComponent(fehler),
+        if (ergebnis['kammer'] case final String k) 'pv-kammer': k,
       },
     );
   }
@@ -416,66 +424,78 @@ class Hochladen {
           DateTime.fromMillisecondsSinceEpoch(geaendert),
         );
       }
-      final b = bibliothek!;
-      if (a['bearbeitungVon'] case final String von) {
-        final r = await _bearbeitung(b, datei, von);
-        if (r != null) {
-          nachImport?.call();
-          return r;
-        }
-        // Kein Original dazu: wie jede andere Datei aufnehmen.
+      // In die Fotokammer statt in die Bibliothek (#336): Dort bleibt die
+      // Datei, bis jemand sie freigibt – dann geht sie durch
+      // [importiereDatei] wie jeder Upload.
+      if (a['kammer'] == true) {
+        if (kammer case final k?) return await k.lege(datei);
       }
-      if (a['regelstand'] != null &&
-          a['regelstand'] !=
-              await ImportPlanDienst(b.db, b.importe).aktuellerRegelstand()) {
-        return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
-      }
-      final dienst = ImportPlanDienst(b.db, b.importe);
-      final plan = a['regelstand'] == null
-          ? null
-          : await dienst.erstelle([datei.path]);
-      if (plan != null && plan.regelstand != a['regelstand']) {
-        return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
-      }
-      final eintrag = plan?.eintraege.single;
-      final r = await b.importe.importFile(
-        datei.path,
-        erwartetePruefsumme: a['sha256'] as String?,
-        erwarteteAngaben: eintrag?.angaben,
-        beiEintrag: plan == null
-            ? null
-            : (id) => dienst.uebernehme(plan, eintrag!, id),
-      );
-      var aufnahme = r.assetId;
-      if (r.outcome == ImportOutcome.imported && aufnahme != null) {
-        // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei
-        // trotzdem aufgenommen – das darf dem Client nicht als Fehler
-        // erscheinen, sonst lädt er sie noch einmal hoch.
-        try {
-          await b.nachbearbeitung.neueAufnahme(
-            aufnahme,
-            regelnAnwenden: plan == null,
-          );
-        } catch (e) {
-          protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
-        }
-        nachImport?.call();
-      }
-      if (r.outcome == ImportOutcome.duplicateSkipped) {
-        final summe = await sha256.bind(datei.openRead()).first;
-        aufnahme = await b.kennungFuer(summe.toString());
-      }
-      if (r.outcome == ImportOutcome.failed) {
-        protokoll('Import von ${a['name']} gescheitert: ${r.error}');
-      }
-      return {
-        'ausgang': r.outcome.name,
-        'aufnahme': aufnahme,
-        'fehler': r.error,
-      };
+      return await importiereDatei(datei, a);
     } finally {
       await ordner.delete(recursive: true);
     }
+  }
+
+  /// [datei] – allein in einem Ordner, unter ihrem Namen – in die
+  /// Bibliothek, mit Bearbeitungen vom Telefon, Plan und Nachbearbeitung.
+  /// Auch der Weg aus der Fotokammer.
+  Future<Map<String, Object?>> importiereDatei(
+    File datei,
+    Map<String, Object?> a,
+  ) async {
+    final b = bibliothek!;
+    if (a['bearbeitungVon'] case final String von) {
+      final r = await _bearbeitung(b, datei, von);
+      if (r != null) {
+        nachImport?.call();
+        return r;
+      }
+      // Kein Original dazu: wie jede andere Datei aufnehmen.
+    }
+    if (a['regelstand'] != null &&
+        a['regelstand'] !=
+            await ImportPlanDienst(b.db, b.importe).aktuellerRegelstand()) {
+      return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
+    }
+    final dienst = ImportPlanDienst(b.db, b.importe);
+    final plan = a['regelstand'] == null
+        ? null
+        : await dienst.erstelle([datei.path]);
+    if (plan != null && plan.regelstand != a['regelstand']) {
+      return {'ausgang': 'failed', 'fehler': 'pv_import_regeln_geaendert'};
+    }
+    final eintrag = plan?.eintraege.single;
+    final r = await b.importe.importFile(
+      datei.path,
+      erwartetePruefsumme: a['sha256'] as String?,
+      erwarteteAngaben: eintrag?.angaben,
+      beiEintrag: plan == null
+          ? null
+          : (id) => dienst.uebernehme(plan, eintrag!, id),
+    );
+    var aufnahme = r.assetId;
+    if (r.outcome == ImportOutcome.imported && aufnahme != null) {
+      // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei
+      // trotzdem aufgenommen – das darf dem Client nicht als Fehler
+      // erscheinen, sonst lädt er sie noch einmal hoch.
+      try {
+        await b.nachbearbeitung.neueAufnahme(
+          aufnahme,
+          regelnAnwenden: plan == null,
+        );
+      } catch (e) {
+        protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
+      }
+      nachImport?.call();
+    }
+    if (r.outcome == ImportOutcome.duplicateSkipped) {
+      final summe = await sha256.bind(datei.openRead()).first;
+      aufnahme = await b.kennungFuer(summe.toString());
+    }
+    if (r.outcome == ImportOutcome.failed) {
+      protokoll('Import von ${a['name']} gescheitert: ${r.error}');
+    }
+    return {'ausgang': r.outcome.name, 'aufnahme': aufnahme, 'fehler': r.error};
   }
 
   /// Legt eine in der Fotos-App des Telefons bearbeitete Fassung über ihr

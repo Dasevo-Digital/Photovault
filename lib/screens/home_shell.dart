@@ -35,6 +35,7 @@ import 'settings_screen.dart';
 import 'stammbaum_screen.dart';
 import 'statistics_screen.dart';
 import 'timeline_screen.dart';
+import 'fotokammer_screen.dart';
 import 'tools_screen.dart';
 import 'trash_screen.dart';
 
@@ -306,10 +307,11 @@ abstract final class Hauptbereich {
   static const statistik = 9;
   static const rueckblick = 10;
   static const kalender = 11;
-  static const duplikate = 12;
-  static const papierkorb = 13;
-  static const werkzeuge = 14;
-  static const einstellungen = 15;
+  static const fotokammer = 12;
+  static const duplikate = 13;
+  static const papierkorb = 14;
+  static const werkzeuge = 15;
+  static const einstellungen = 16;
 
   /// Die ersten drei stehen am schmalen Fenster unten als Reiter; der
   /// Rest liegt dort im Blatt „Bibliothek“.
@@ -508,6 +510,11 @@ class _HomeShellState extends State<HomeShell> {
     Leistengruppe(
       titel: t.navGruppeVerwalten,
       eintraege: [
+        Leisteneintrag(
+          text: t.navFotokammer,
+          icon: Bibliothekssymbole.fotokammer,
+          farbe: Bibliotheksfarben.fotokammer,
+        ),
         Leisteneintrag(
           text: t.navDuplikate,
           icon: Bibliothekssymbole.duplikate,
@@ -754,6 +761,7 @@ class _HomeShellState extends State<HomeShell> {
       StatisticsScreen(library: l),
       ExploreScreen(library: l),
       CalendarScreen(library: l),
+      FotokammerScreen(dienst: l.fotokammer),
       DuplicatesScreen(library: l),
       TrashScreen(library: l),
       ToolsScreen(library: l),

@@ -10420,4 +10420,130 @@ class AppTexteDe extends AppTexte {
   String videoSchnittLaenge(String dauer) {
     return 'Länge $dauer';
   }
+
+  @override
+  String get navFotokammer => 'Fotokammer';
+
+  @override
+  String get importKammerSchalter => 'Erst in die Fotokammer';
+
+  @override
+  String get importKammerHinweis =>
+      'Die Fotos liegen dann schon sicher auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben.';
+
+  @override
+  String importPlanStartenKammer(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos in die Fotokammer',
+      one: '1 Foto in die Fotokammer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String importBilanzKammer(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl liegen in der Fotokammer',
+      one: '1 liegt in der Fotokammer',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get importZurKammer => 'Zur Fotokammer';
+
+  @override
+  String get kammerTitel => 'Fotokammer';
+
+  @override
+  String kammerAusgewaehlt(int anzahl) {
+    return '$anzahl ausgewählt';
+  }
+
+  @override
+  String kammerUmfang(int anzahl, String groesse) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0 · $groesse';
+  }
+
+  @override
+  String get kammerAlle => 'Alle auswählen';
+
+  @override
+  String get kammerKeine => 'Keine auswählen';
+
+  @override
+  String get kammerUmkehren => 'Auswahl umkehren';
+
+  @override
+  String get kammerFreigeben => 'Freigeben';
+
+  @override
+  String get kammerVerwerfen => 'Verwerfen';
+
+  @override
+  String get kammerNeuLaden => 'Neu laden';
+
+  @override
+  String kammerFreigegeben(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos in die Bibliothek übernommen',
+      one: '1 Foto in die Bibliothek übernommen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerNichtFreigegeben(int anzahl, String grund) {
+    return '$anzahl nicht übernommen: $grund';
+  }
+
+  @override
+  String kammerFehler(String fehler) {
+    return 'Fotokammer: $fehler';
+  }
+
+  @override
+  String kammerVerwerfenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos endgültig verwerfen?',
+      one: '1 Foto endgültig verwerfen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerVerwerfenText =>
+      'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte.';
+
+  @override
+  String get kammerOhneServer =>
+      'Die Fotokammer gibt es mit einem Photo Vault Server: Dort warten neue Fotos, bis du sie in die Bibliothek übernimmst.';
+
+  @override
+  String get kammerServerAlt =>
+      'Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.';
+
+  @override
+  String get kammerLeer =>
+      'Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.';
+
+  @override
+  String get kammerKeineVorschau => 'Keine Vorschau';
+
+  @override
+  String get kammerAuswaehlenTaste => 'Auswählen (Leertaste)';
 }

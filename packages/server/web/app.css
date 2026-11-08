@@ -933,3 +933,29 @@ body.landschaft-offen { overflow: hidden; }
 .collagekachel { flex: none; width: 52px; height: 52px; padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden; cursor: pointer; background: none; }
 .collagekachel.vorn { border-color: var(--akzent); }
 .collagekachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Fotokammer (#336) */
+#bereich-fotokammer { padding: 0 12px 24px; }
+#bereich-fotokammer .zeile { padding: 12px 0; gap: 8px; flex-wrap: wrap; }
+#bereich-fotokammer .zeile h2 { margin: 0; flex: 1; }
+#bereich-fotokammer .zeile button { padding: 6px 12px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
+#bereich-fotokammer .zeile button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#bereich-fotokammer .zeile button:disabled { opacity: 0.5; }
+.kammer-schalter { display: flex; align-items: center; gap: 8px; color: var(--leise); }
+#kammer-raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.kammerkachel { position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 6px; overflow: hidden; background: var(--rand); cursor: pointer; }
+.kammerkachel img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.kammerkachel .ohne { display: flex; align-items: center; justify-content: center; height: 100%; padding: 6px; font-size: 0.8em; color: var(--leise); word-break: break-all; }
+.kammerkachel .video { position: absolute; left: 6px; bottom: 4px; color: #fff; text-shadow: 0 0 3px #000; }
+.kammerkachel::after { content: ''; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); }
+.kammerkachel.gewaehlt { outline: 3px solid var(--akzent); outline-offset: -3px; }
+.kammerkachel.gewaehlt::after { background: var(--akzent); border-color: #fff; }
+#kammer-gross { position: fixed; inset: 0; z-index: 60; background: #000; display: grid; grid-template-columns: 48px 1fr 48px; grid-template-rows: auto 1fr; align-items: center; }
+#kammer-gross[hidden] { display: none; }
+.kammer-gross-kopf { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 8px 12px; color: #ddd; }
+.kammer-gross-kopf span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kammer-gross-kopf button { padding: 6px 12px; border: 1px solid #555; border-radius: 8px; background: #222; color: #eee; }
+.kammer-gross-kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#kammer-gross > button { height: 100%; border: 0; background: transparent; color: #aaa; font-size: 2.2em; cursor: pointer; }
+#kammer-gross-bild { max-width: 100%; max-height: calc(100vh - 56px); margin: auto; object-fit: contain; }
+

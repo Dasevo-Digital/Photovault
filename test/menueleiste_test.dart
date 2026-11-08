@@ -206,7 +206,9 @@ void main() {
     final t = AppTexte.of(tester.element(find.byType(HomeShell)));
     expect(find.text(t.navGruppeEntdecken), findsOneWidget);
     expect(find.text(t.navGruppeVerwalten), findsOneWidget);
-    expect(find.byType(Farbsymbol), findsNWidgets(13));
+    // Neun unter „Entdecken“, fünf unter „Verwalten“ (mit der Fotokammer).
+    expect(find.byType(Farbsymbol), findsNWidgets(14));
+    expect(find.byIcon(Icons.move_to_inbox_outlined), findsOneWidget);
     expect(find.byIcon(Icons.build_outlined), findsOneWidget);
     expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
     expect(find.byIcon(Icons.manage_search_outlined), findsOneWidget);

@@ -29,6 +29,10 @@ class ImportProgress {
   /// Ob diese Datei gar nicht hereinkam.
   final bool gescheitert;
 
+  /// Ob sie in der Fotokammer des Servers liegt statt in der Bibliothek
+  /// (#336).
+  final bool kammer;
+
   /// Woran sie scheiterte – die Ausnahme oder der Text des Servers, so wie
   /// sie kam. Die Oberfläche macht daraus einen Satz.
   ///
@@ -58,6 +62,7 @@ class ImportProgress {
     this.assetId,
     this.duplikat = false,
     this.gescheitert = false,
+    this.kammer = false,
     this.grund,
     this.getan,
   });

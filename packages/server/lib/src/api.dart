@@ -1,4 +1,5 @@
 import 'anfragegrenzen.dart';
+import 'fotokammer.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -140,6 +141,7 @@ Handler baueApi({
   final suche = Suchapi(bibliotheken);
   final rueckblick = Rueckblickapi(bibliotheken);
   final rechnen = Rechenapi(bibliotheken);
+  final kammer = Fotokammerapi(bibliotheken);
   final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
@@ -422,6 +424,12 @@ Handler baueApi({
     ..post('/api/v1/rechnen/auftraege', rechnen.auftraege)
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
     ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
+    // Fotos, die auf ihre Freigabe warten (#336).
+    ..get('/api/v1/kammer', kammer.liste)
+    ..get('/api/v1/kammer/<id>/miniatur', kammer.miniatur)
+    ..get('/api/v1/kammer/<id>/vorschau', kammer.vorschau)
+    ..post('/api/v1/kammer/freigeben', kammer.freigeben)
+    ..post('/api/v1/kammer/verwerfen', kammer.verwerfen)
     ..post('/api/v1/umzug/beginnen', umzug.beginnen)
     ..get('/api/v1/umzug/stand', umzug.stand)
     ..post('/api/v1/umzug/abschliessen', umzug.abschliessen)
@@ -756,6 +764,8 @@ class _Api {
           'nachlass': 1,
           // Collagen (#301).
           'collage': 1,
+          // Hochladen in die Fotokammer, Freigeben und Verwerfen (#336).
+          'fotokammer': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

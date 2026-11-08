@@ -647,6 +647,129 @@ void main() {
     },
   );
 
+  test('Fotokammer: hochladen, ansehen, freigeben, verwerfen (#336)', () async {
+    final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+    final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+    addTearDown(v.schliesse);
+    expect(
+      ((await v.hole('api/v1/zustand'))['funktionen'] as Map)['fotokammer'],
+      1,
+    );
+    File bild(String name, int rot) {
+      final b = img.Image(width: 640, height: 480);
+      img.fill(b, color: img.ColorRgb8(rot, 90, 200 - rot));
+      return File('${ordner.path}/$name')..writeAsBytesSync(img.encodeJpg(b));
+    }
+
+    final tus = TusHochladen(v);
+    final eins = bild('kammer1.jpg', 30);
+    final zwei = bild('kammer2.jpg', 160);
+    const kammer = {'kammer': '1'};
+    final k1 = await tus.lade(eins, 'api/v1/hochladen', {
+      'filename': 'kammer1.jpg',
+      ...kammer,
+    });
+    expect(k1['pv-ausgang'], 'kammer');
+    expect(k1['pv-kammer'], isNotNull);
+    expect(k1['pv-aufnahme'], isNull);
+    final k2 = await tus.lade(zwei, 'api/v1/hochladen', {
+      'filename': 'kammer2.jpg',
+      ...kammer,
+    });
+    expect(k2['pv-ausgang'], 'kammer');
+
+    // Noch nicht in der Bibliothek – nirgends.
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    expect(await db.select(db.assets).get(), isEmpty);
+
+    // Dieselbe Datei noch einmal: schon in der Kammer.
+    final nochmal = await tus.lade(eins, 'api/v1/hochladen', {
+      'filename': 'kammer1.jpg',
+      ...kammer,
+    });
+    expect(nochmal['pv-ausgang'], 'duplicateSkipped');
+
+    final liste = await v.hole('api/v1/kammer');
+    final eintraege = (liste['eintraege'] as List).cast<Map>();
+    expect(eintraege.map((e) => e['name']), ['kammer1.jpg', 'kammer2.jpg']);
+    expect(liste['anzahl'], 2);
+    expect(eintraege.first.containsKey('sha256'), isFalse);
+    final id1 = k1['pv-kammer']!;
+    final id2 = k2['pv-kammer']!;
+    for (final art in ['miniatur', 'vorschau']) {
+      final r = await v.anfrage('GET', 'api/v1/kammer/$id1/$art');
+      expect(r.statusCode, 200, reason: art);
+      expect(r.headers['content-type'], 'image/jpeg');
+      expect(img.decodeJpg(r.bodyBytes), isNotNull);
+    }
+    expect(
+      (await v.anfrage('GET', 'api/v1/kammer/nicht-da/miniatur')).statusCode,
+      404,
+    );
+
+    // Freigeben: in die Bibliothek, aus der Kammer heraus.
+    final f = await v.schicke('api/v1/kammer/freigeben', {
+      'ids': [id1],
+    });
+    final e = (f['ergebnisse'] as List).single as Map;
+    expect(e['ausgang'], 'imported');
+    final aufnahmen = await db.select(db.assets).get();
+    expect(aufnahmen.single.id, e['aufnahme']);
+    expect(aufnahmen.single.originalFileName, 'kammer1.jpg');
+
+    // Was in der Bibliothek liegt, kommt nicht wieder in die Kammer.
+    final dublette = await tus.lade(eins, 'api/v1/hochladen', {
+      'filename': 'kammer1.jpg',
+      ...kammer,
+    });
+    expect(dublette['pv-ausgang'], 'duplicateSkipped');
+    expect(dublette['pv-aufnahme'], e['aufnahme']);
+
+    // Verwerfen: fort, ohne Spur in der Bibliothek.
+    final w = await v.schicke('api/v1/kammer/verwerfen', {
+      'ids': [id2, 'nicht-da'],
+    });
+    expect(w['verworfen'], 1);
+    expect((await v.hole('api/v1/kammer'))['anzahl'], 0);
+    expect(await db.select(db.assets).get(), hasLength(1));
+    expect(
+      (await v.anfrage('GET', 'api/v1/kammer/$id2/miniatur')).statusCode,
+      404,
+    );
+
+    // Ohne `kammer` geht ein Upload wie bisher gleich in die Bibliothek.
+    final direkt = await tus.lade(zwei, 'api/v1/hochladen', {
+      'filename': 'kammer2.jpg',
+    });
+    expect(direkt['pv-ausgang'], 'imported');
+
+    // Ein anderes Konto sieht die Kammer nicht.
+    final otto = await konten.legeAn('otto', 'ein anderes passwort');
+    final v2 = Serververbindung(
+      Uri.parse('http://127.0.0.1:$port/'),
+      konten.meldeAn(otto.id, 'Rechner', 'x').token,
+    );
+    addTearDown(v2.schliesse);
+    final k3 = await TusHochladen(v2).lade(
+      bild('otto.jpg', 90),
+      'api/v1/hochladen',
+      {'filename': 'otto.jpg', ...kammer},
+    );
+    expect(k3['pv-ausgang'], 'kammer');
+    expect((await v.hole('api/v1/kammer'))['anzahl'], 0);
+    expect(
+      (await v.anfrage(
+        'GET',
+        'api/v1/kammer/${k3['pv-kammer']}/miniatur',
+      )).statusCode,
+      404,
+    );
+    final fremd = await v.schicke('api/v1/kammer/verwerfen', {
+      'ids': [k3['pv-kammer']],
+    });
+    expect(fremd['verworfen'], 0);
+  });
+
   test(
     'Hochladen versucht es nach vorübergehenden Fehlern erneut (#335)',
     () async {

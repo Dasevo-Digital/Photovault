@@ -34,6 +34,12 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   var _serverAlt = false;
   var _fehlgeschlagen = false;
 
+  /// Ob der Server eine Fotokammer hat (#336) – und ob sie gewählt ist.
+  /// Die Wahl gilt bis zum Beenden der App weiter.
+  var _kammerMoeglich = false;
+  static var _kammerZuletzt = false;
+  var _kammer = _kammerZuletzt;
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +64,8 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
         final z = await a.verbindung.hole('api/v1/zustand');
         _serverAlt =
             ((z['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2;
+        _kammerMoeglich =
+            ((z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0) >= 1;
       }
       final plan = await _dienst.erstelle(
         widget.dateien,
@@ -91,7 +99,11 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
         if (mounted) setState(() => _fehlgeschlagen = true);
         return;
       }
-      if (mounted) Navigator.pop(context, plan.auswahl(_auswahl));
+      final kammer = _kammerMoeglich && _kammer;
+      _kammerZuletzt = _kammer;
+      if (mounted) {
+        Navigator.pop(context, plan.auswahl(_auswahl).mitKammer(kammer));
+      }
     } on Object {
       if (mounted) setState(() => _fehlgeschlagen = true);
     } finally {
@@ -166,6 +178,16 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                     Text(t.importPlanSpaeter(plan.spaetereRegeln)),
                 ],
                 if (_serverAlt) Text(t.importPlanServerAlt),
+                if (_kammerMoeglich && plan != null)
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _kammer,
+                    onChanged: _bestaetigt
+                        ? null
+                        : (v) => setState(() => _kammer = v),
+                    title: Text(t.importKammerSchalter),
+                    subtitle: Text(t.importKammerHinweis),
+                  ),
                 if (_fehlgeschlagen) ...[
                   Text(t.importPlanGeaendert),
                   OutlinedButton(
@@ -253,7 +275,11 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                             _serverAlt
                         ? null
                         : _importiere,
-                    child: Text(t.importPlanStarten(_auswahl.length)),
+                    child: Text(
+                      _kammerMoeglich && _kammer
+                          ? t.importPlanStartenKammer(_auswahl.length)
+                          : t.importPlanStarten(_auswahl.length),
+                    ),
                   ),
                 ],
               ),
