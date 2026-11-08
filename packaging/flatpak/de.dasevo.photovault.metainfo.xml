@@ -75,6 +75,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.63.0" date="2026-11-08">
+      <description>
+        <p>Importing from a camera or memory card finds the card again: the app may now read mounted volumes on macOS, and Linux and Windows look in the right places.</p>
+        <p>Uploads from the computer retry after short network or proxy failures and name the reason for every file that did not make it, with a button to try just those again.</p>
+        <p>New staging area: photos can wait on the server until they are reviewed, then be approved into the library or discarded.</p>
+        <p>Photos already in the timeline can be moved back into staging; approving them restores them with their albums, ratings and edits.</p>
+        <p>Large thumbnails in the grid are sharp: when a tile needs more pixels than the small thumbnail has, the preview is loaded once the tile stops scrolling.</p>
+      </description>
+    </release>
     <release version="3.62.0" date="2026-11-08">
       <description>
         <p>Importing from a camera or memory card finds the card again: the app may now read mounted volumes on macOS, and Linux and Windows look in the right places.</p>
