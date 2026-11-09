@@ -649,6 +649,27 @@ void main() {
       expect((await aussen.stand())['geloescht'], 3);
     });
 
+    test('aus der Kammer entfernte Kopien gehen auch drüben', () async {
+      final b = '${Serversicherung.ordnerFuer(erika)}/PhotoVault-AutoBackup';
+      final kopie = File('${nas.path}/$b/fotokammer/k1/datei.enc')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('verschluesselt');
+      await aussen.jetzt();
+      bool liegtDrueben() =>
+          s3.dateien.keys.any((k) => k.endsWith('$b/fotokammer/k1/datei.enc'));
+      expect(liegtDrueben(), isTrue);
+      final fotosVorher = s3.dateien.keys
+          .where((k) => k.contains('/data/'))
+          .toSet();
+      kopie.parent.deleteSync(recursive: true);
+      await aussen.jetzt();
+      expect(liegtDrueben(), isFalse);
+      expect(
+        s3.dateien.keys.where((k) => k.contains('/data/')).toSet(),
+        fotosVorher,
+      );
+    });
+
     test('ohne jede Generation daheim bleiben sie drüben', () async {
       await aussen.jetzt();
       final b = '${Serversicherung.ordnerFuer(erika)}/PhotoVault-AutoBackup';

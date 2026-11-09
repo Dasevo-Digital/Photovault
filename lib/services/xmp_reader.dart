@@ -17,7 +17,11 @@ import 'package:kern/services/xmp_regionen.dart';
 /// solange die Gegenseite nichts schrieb, und genau deshalb nie von selbst
 /// aufhörte zu stimmen.
 class XmpFields {
+  /// 0 bis 5. Andere Werte werden nicht übernommen.
   final int? rating;
+
+  /// In darktable oder Lightroom abgelehnt (`xmp:Rating` = -1).
+  final bool abgelehnt;
   final String? colorLabel;
   final String? description;
   final List<String>? tags;
@@ -30,6 +34,7 @@ class XmpFields {
 
   const XmpFields({
     this.rating,
+    this.abgelehnt = false,
     this.colorLabel,
     this.description,
     this.tags,
@@ -40,6 +45,7 @@ class XmpFields {
 
   bool get isEmpty =>
       rating == null &&
+      !abgelehnt &&
       colorLabel == null &&
       description == null &&
       tags == null &&
@@ -53,6 +59,23 @@ class XmpFields {
 XmpFields? parseXmpFile(File file) {
   if (!file.existsSync()) return null;
   return parseXmpContent(file.readAsStringSync());
+}
+
+/// Von [kandidaten] die vorhandene Datei, bei mehreren die zuletzt
+/// geänderte: Beide Beilagen können liegen, wenn darktable neben einer von
+/// hier geschriebenen eine eigene anlegt (#343).
+File? neuesteXmpBeilage(Iterable<File> kandidaten) {
+  File? beste;
+  DateTime? zeit;
+  for (final f in kandidaten) {
+    if (!f.existsSync()) continue;
+    final t = f.lastModifiedSync();
+    if (zeit == null || t.isAfter(zeit)) {
+      beste = f;
+      zeit = t;
+    }
+  }
+  return beste;
 }
 
 /// Reine Parsing-Funktion ohne Dateizugriff (Muster: [buildXmpPacket]) –
@@ -89,7 +112,11 @@ XmpFields? parseXmpContent(String xmlContent) {
   }
 
   final ratingRaw = findAttribute('xmp:Rating');
-  final rating = ratingRaw != null ? int.tryParse(ratingRaw) : null;
+  final bewertung = ratingRaw != null ? int.tryParse(ratingRaw) : null;
+  // -1 heisst „abgelehnt“ und ist keine Bewertung (#344).
+  final rating = bewertung != null && bewertung >= 0 && bewertung <= 5
+      ? bewertung
+      : null;
 
   final labelRaw = findAttribute('xmp:Label');
   final colorLabel = labelRaw != null ? _internalColorLabel(labelRaw) : null;
@@ -124,6 +151,7 @@ XmpFields? parseXmpContent(String xmlContent) {
 
   final fields = XmpFields(
     rating: rating,
+    abgelehnt: bewertung == -1,
     colorLabel: colorLabel,
     description: description,
     tags: tags,

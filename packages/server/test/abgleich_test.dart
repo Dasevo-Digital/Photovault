@@ -706,6 +706,13 @@ void main() {
       (await v.anfrage('GET', 'api/v1/kammer/nicht-da/miniatur')).statusCode,
       404,
     );
+    final voll = await v.anfrage('GET', 'api/v1/kammer/$id1/vollbild');
+    expect(voll.statusCode, 200);
+    expect(voll.bodyBytes, eins.readAsBytesSync());
+    expect(
+      (await v.anfrage('GET', 'api/v1/kammer/nicht-da/vollbild')).statusCode,
+      404,
+    );
 
     // Freigeben: in die Bibliothek, aus der Kammer heraus.
     final f = await v.schicke('api/v1/kammer/freigeben', {

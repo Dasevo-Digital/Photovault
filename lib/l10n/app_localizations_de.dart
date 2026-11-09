@@ -1916,6 +1916,9 @@ class AppTexteDe extends AppTexte {
   String get aufgFehlende => 'Fehlende';
 
   @override
+  String get aufgModusDarktable => 'Namen wie darktable';
+
+  @override
   String get aufgGesichtsschaerfeTitel => 'Gesichtsschärfe';
 
   @override
@@ -4269,6 +4272,9 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get xmpFeldBewertung => 'Bewertung';
+
+  @override
+  String get xmpFeldAbgelehnt => 'Abgelehnt, kommt in den Papierkorb';
 
   @override
   String get xmpFeldFarbmarkierung => 'Farbmarkierung';
@@ -10429,7 +10435,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get importKammerHinweis =>
-      'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.';
+      'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben. Die nächtliche Sicherung nimmt sie schon vorher mit.';
 
   @override
   String importPlanStartenKammer(int anzahl) {

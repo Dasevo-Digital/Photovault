@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/backup_service.dart';
@@ -227,6 +228,135 @@ void main() {
       );
     },
   );
+
+  group('Fotokammer (#341)', () {
+    late Directory kammer;
+
+    /// Legt einen Eintrag an, wie `Fotokammer.lege` es tut.
+    String eintrag(String id, String name, int farbe) {
+      final platz = Directory('${kammer.path}/$id')
+        ..createSync(recursive: true);
+      final bytes = img.encodeJpg(
+        img.Image(width: 32, height: 24)
+          ..clear(img.ColorRgb8(farbe, 200 - farbe, 90)),
+      );
+      File('${platz.path}/$name').writeAsBytesSync(bytes);
+      File('${platz.path}/angaben.json').writeAsStringSync(
+        jsonEncode({
+          'id': id,
+          'name': name,
+          'sha256': sha256.convert(bytes).toString(),
+          'geaendert': DateTime(2026, 10, 1).millisecondsSinceEpoch,
+        }),
+      );
+      return id;
+    }
+
+    Directory kopie(String id) =>
+        Directory('${sicherungVon(erika).path}/fotokammer/$id');
+
+    setUp(() async {
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      kammer = Directory('${b.ordner.path}/fotokammer');
+      await sicherung.einrichten(passphrase);
+    });
+
+    String gleich(int i) => '00000000-0000-4000-8000-00000000000$i';
+
+    test('verschlüsselt, ohne Namen, und nur einmal', () async {
+      eintrag(gleich(1), 'IMG_GEHEIM.jpg', 40);
+      await sicherung.jetzt();
+      final dort = kopie(gleich(1));
+      final dateien = dort.listSync().map((e) => e.path.split('/').last);
+      expect(dateien, unorderedEquals(['datei.enc', 'angaben.enc']));
+      expect(
+        latin1.decode(File('${dort.path}/angaben.enc').readAsBytesSync()),
+        isNot(contains('IMG_GEHEIM')),
+      );
+      final zeit = File('${dort.path}/datei.enc').lastModifiedSync();
+      await sicherung.jetzt();
+      expect(File('${dort.path}/datei.enc').lastModifiedSync(), zeit);
+      final konto = ((await sicherung.stand())['konten'] as List).single as Map;
+      expect(konto['kammer'], 1);
+      expect(konto['kammerNeu'], 0);
+    });
+
+    test('ein abgebrochener Upload wird nicht gesichert', () async {
+      Directory('${kammer.path}/${gleich(2)}').createSync(recursive: true);
+      await sicherung.jetzt();
+      expect(kopie(gleich(2)).existsSync(), isFalse);
+      expect((await sicherung.stand())['ok'], isTrue);
+    });
+
+    test('ein Eintrag ohne Datei macht den Lauf zum Fehler', () async {
+      eintrag(gleich(3), 'weg.jpg', 60);
+      File('${kammer.path}/${gleich(3)}/weg.jpg').deleteSync();
+      await sicherung.jetzt();
+      expect((await sicherung.stand())['ok'], isFalse);
+      expect(
+        File('${kopie(gleich(3)).path}/angaben.enc').existsSync(),
+        isFalse,
+      );
+    });
+
+    test('die Kopie bleibt noch sieben Tage, dann geht sie', () async {
+      eintrag(gleich(4), 'bleibt.jpg', 80);
+      await sicherung.jetzt();
+      Directory('${kammer.path}/${gleich(4)}').deleteSync(recursive: true);
+      await sicherung.jetzt();
+      jetzt = jetzt.add(const Duration(days: 6));
+      await sicherung.jetzt();
+      expect(kopie(gleich(4)).existsSync(), isTrue);
+      jetzt = jetzt.add(const Duration(days: 2));
+      await sicherung.jetzt();
+      expect(kopie(gleich(4)).existsSync(), isFalse);
+      // Die Fotos der Bibliothek bleiben davon unberührt.
+      expect(verschluesselteDateien(), 2);
+    });
+
+    test('kommt der Eintrag zurück, beginnt die Frist neu', () async {
+      eintrag(gleich(5), 'zurueck.jpg', 100);
+      await sicherung.jetzt();
+      final platz = Directory('${kammer.path}/${gleich(5)}');
+      final versteck = Directory('${ordner.path}/versteck');
+      platz.renameSync(versteck.path);
+      await sicherung.jetzt();
+      expect(File('${kopie(gleich(5)).path}/.weg-seit').existsSync(), isTrue);
+      versteck.renameSync(platz.path);
+      await sicherung.jetzt();
+      expect(File('${kopie(gleich(5)).path}/.weg-seit').existsSync(), isFalse);
+    });
+
+    test('kommt beim Wiederherstellen in ein eigenes Album', () async {
+      eintrag(gleich(6), 'aus_der_kammer.jpg', 150);
+      await sicherung.jetzt();
+
+      final ziel = Directory('${ordner.path}/zurueck')..createSync();
+      final db = await AppDatabase.open(ziel);
+      addTearDown(db.close);
+      final pfade = await StoragePaths.oeffne(
+        Directory('${ziel.path}/library'),
+      );
+      await BackupService(db, pfade)
+          .restoreFromBackup(
+            sicherungVon(erika).path,
+            ImportService(db, pfade),
+            passphrase: passphrase,
+          )
+          .drain<void>();
+      final aufnahmen = await db.select(db.assets).get();
+      expect(aufnahmen, hasLength(3));
+      final album = (await db.select(db.albums).get()).single;
+      expect(album.name, 'Fotokammer (wiederhergestellt)');
+      final darin = await db.select(db.albumAssets).get();
+      expect(
+        aufnahmen
+            .firstWhere((a) => a.id == darin.single.assetId)
+            .originalFileName,
+        'aus_der_kammer.jpg',
+      );
+    });
+  });
 
   test('die Schnittstelle nur für Verwalter', () async {
     final max = await konten.legeAn('max', 'noch ein passwort');

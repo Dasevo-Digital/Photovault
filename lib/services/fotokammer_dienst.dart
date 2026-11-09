@@ -107,6 +107,21 @@ class Fotokammerdienst {
 
   final _unterwegs = <String, Future<Uint8List?>>{};
 
+  /// Das Foto in voller Auflösung (#342); `null`, wenn der Server es nicht
+  /// liefern kann. Nicht im Zwischenspeicher: So ein Bild hat 20 MB und
+  /// mehr, und gebraucht wird es nur für das Foto, das gerade offen ist.
+  Future<Uint8List?> vollbild(String id) async {
+    final r = await verbindung.anfrage(
+      'GET',
+      'api/v1/kammer/$id/vollbild',
+      // Ein RAW zu wandeln kann dauern, wenn andere davor warten.
+      zeitlimit: const Duration(minutes: 5),
+    );
+    if (r.statusCode == 404 || r.statusCode == 422) return null;
+    if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);
+    return r.bodyBytes;
+  }
+
   Future<Uint8List?> _hole(String schluessel, bool klein) async {
     final r = await verbindung.anfrage(
       'GET',

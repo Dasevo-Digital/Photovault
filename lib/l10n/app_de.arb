@@ -1022,6 +1022,7 @@
   "aufgGesichterText": "Erkennt und ordnet Gesichter zu, sofern das YuNet-Modell installiert ist.",
   "aufgVorschauText": "Erzeugt Miniaturen und Vorschauen für Fotos und Videos. Bei einem Video entsteht dabei ein Standbild aus der ersten Sekunde – erst damit kann es überhaupt ausgewertet werden (Beschreibung, Schlagwörter, Gesichter, Text). Nach diesem Lauf lohnen die übrigen Aufgaben einen Durchgang.",
   "aufgFehlende": "Fehlende",
+  "aufgModusDarktable": "Namen wie darktable",
   "aufgGesichtsschaerfeTitel": "Gesichtsschärfe",
   "aufgGesichtsschaerfeText": "Misst für jedes erkannte Gesicht, wie scharf es ist – auf dem bereits gespeicherten Ausschnitt, ohne die Fotos erneut zu dekodieren. Beim Sichten warnt die App danach, wenn auch das schärfste Gesicht einer Aufnahme unscharf ist.",
   "werkzBerechneGesichtsschaerfe": "Gesichtsschärfe berechnen",
@@ -2535,6 +2536,7 @@
     }
   },
   "xmpFeldBewertung": "Bewertung",
+  "xmpFeldAbgelehnt": "Abgelehnt, kommt in den Papierkorb",
   "xmpFeldFarbmarkierung": "Farbmarkierung",
   "xmpFeldBeschreibung": "Beschreibung",
   "xmpFeldNeueTags": "Neue Tags",
@@ -6625,7 +6627,7 @@
   "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}},
   "navFotokammer": "Fotokammer",
   "importKammerSchalter": "Erst in die Fotokammer",
-  "importKammerHinweis": "Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.",
+  "importKammerHinweis": "Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben. Die nächtliche Sicherung nimmt sie schon vorher mit.",
   "importPlanStartenKammer": "{anzahl, plural, =1{1 Foto in die Fotokammer} other{{anzahl} Fotos in die Fotokammer}}",
   "@importPlanStartenKammer": {
     "placeholders": {

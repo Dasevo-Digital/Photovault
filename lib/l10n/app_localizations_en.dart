@@ -1900,6 +1900,9 @@ class AppTexteEn extends AppTexte {
   String get aufgFehlende => 'Missing';
 
   @override
+  String get aufgModusDarktable => 'darktable file names';
+
+  @override
   String get aufgGesichtsschaerfeTitel => 'Face sharpness';
 
   @override
@@ -4240,6 +4243,9 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get xmpFeldBewertung => 'Rating';
+
+  @override
+  String get xmpFeldAbgelehnt => 'Rejected, moves to trash';
 
   @override
   String get xmpFeldFarbmarkierung => 'Colour label';
@@ -10371,7 +10377,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get importKammerHinweis =>
-      'The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval, and only then does the nightly backup include them.';
+      'The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval. The nightly backup already includes them before that.';
 
   @override
   String importPlanStartenKammer(int anzahl) {

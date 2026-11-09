@@ -35,16 +35,21 @@ enum Aufgabenmodus {
 
   /// Nur über das, was noch keines hat.
   fehlende,
+
+  /// Über den ganzen Bestand, mit den Dateinamen von darktable (#343).
+  wieDarktable,
 }
 
 String modusName(AppTexte t, Aufgabenmodus m) => switch (m) {
   Aufgabenmodus.alle => t.aufgModusAlle,
   Aufgabenmodus.fehlende => t.aufgFehlende,
+  Aufgabenmodus.wieDarktable => t.aufgModusDarktable,
 };
 
 IconData modusSymbol(Aufgabenmodus m) => switch (m) {
   Aufgabenmodus.alle => Icons.all_inclusive,
   Aufgabenmodus.fehlende => Icons.image_search,
+  Aufgabenmodus.wieDarktable => Icons.drive_file_rename_outline,
 };
 
 /// Eine der Möglichkeiten, eine Aufgabe zu starten.
@@ -1410,6 +1415,12 @@ List<Aufgabe> _aufgaben(
         laufTitel: t.werkzSchreibeXmp,
         emptyMessage: t.werkzKeineFotosGesperrt,
         stream: () => library.writeXmpSidecars(),
+      ),
+      Aufgabenaktion(
+        modus: Aufgabenmodus.wieDarktable,
+        laufTitel: t.werkzSchreibeXmp,
+        emptyMessage: t.werkzKeineFotosGesperrt,
+        stream: () => library.writeXmpSidecars(wieDarktable: true),
       ),
     ],
   ),

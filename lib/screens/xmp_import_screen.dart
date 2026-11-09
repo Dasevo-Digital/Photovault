@@ -11,6 +11,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 
 enum _XmpDiffField {
+  abgelehnt,
   rating,
   colorLabel,
   description,
@@ -95,11 +96,12 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
 
       for (final asset in assets) {
         if (asset.isTrashed || asset.isLocked) continue;
-        final sidecarPath = widget.library.paths.xmpSidecarPath(
-          asset.relativePath,
-        );
-        final sidecarFile = widget.library.paths.absolute(sidecarPath);
-        var fields = parseXmpFile(sidecarFile);
+        final pfade = widget.library.paths;
+        final sidecarFile = neuesteXmpBeilage([
+          for (final k in pfade.xmpSidecarPfade(asset.relativePath))
+            pfade.absolute(k),
+        ]);
+        var fields = sidecarFile == null ? null : parseXmpFile(sidecarFile);
         if (fields != null) {
           sidecarsFound++;
         } else {
@@ -110,6 +112,17 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
         }
         if (fields == null) continue;
 
+        if (fields.abgelehnt) {
+          diffs.add(
+            _XmpDiff(
+              asset: asset,
+              field: _XmpDiffField.abgelehnt,
+              currentValueDisplay: '',
+              xmpValueDisplay: '',
+              xmpFields: fields,
+            ),
+          );
+        }
         if (fields.rating != null && fields.rating != asset.rating) {
           diffs.add(
             _XmpDiff(
@@ -267,6 +280,9 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
 
   Future<void> _apply(_XmpDiff diff) async {
     switch (diff.field) {
+      case _XmpDiffField.abgelehnt:
+        // Der Papierkorb gibt es zurück, falls „alle übernehmen“ zu viel war.
+        await widget.library.db.fuehreAus(InDenPapierkorb([diff.asset.id]));
       case _XmpDiffField.rating:
         await widget.library.db.fuehreAus(
           BewertungSetzen([diff.asset.id], diff.xmpFields.rating!),
@@ -316,6 +332,7 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
   }
 
   String _fieldLabel(AppTexte t, _XmpDiffField field) => switch (field) {
+    _XmpDiffField.abgelehnt => t.xmpFeldAbgelehnt,
     _XmpDiffField.rating => t.xmpFeldBewertung,
     _XmpDiffField.colorLabel => t.xmpFeldFarbmarkierung,
     _XmpDiffField.description => t.xmpFeldBeschreibung,
@@ -328,6 +345,7 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
   /// „alt → neu": Dort steht links keine Angabe, sondern eine Zahl.
   String _diffZeile(AppTexte t, _XmpDiff diff) {
     final feld = _fieldLabel(t, diff.field);
+    if (diff.field == _XmpDiffField.abgelehnt) return feld;
     if (diff.field == _XmpDiffField.gesichter) {
       return '$feld: ${t.xmpGesichterOhneNamen(diff.zuordnung.length)} → '
           '"${diff.xmpValueDisplay}"';

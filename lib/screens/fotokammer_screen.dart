@@ -513,11 +513,43 @@ class _Kammerbetrachter extends StatefulWidget {
 class _KammerbetrachterState extends State<_Kammerbetrachter> {
   late var _i = widget.start;
   final _fokus = FocusNode();
+  final _zoom = TransformationController();
+
+  /// Für welches Foto die volle Auflösung geholt wurde, und das Ergebnis.
+  /// Immer nur für eines: Ein 24-MP-Bild belegt dekodiert rund 100 MB.
+  String? _vollFuer;
+  Uint8List? _voll;
+  var _vollLaedt = false;
 
   @override
   void initState() {
     super.initState();
+    _zoom.addListener(_zoomGeaendert);
     _vorladen(widget.start + 1);
+  }
+
+  /// Erst beim Hineinzoomen: Zum Durchblättern reicht die Vorschau (#342).
+  void _zoomGeaendert() {
+    if (_zoom.value.getMaxScaleOnAxis() <= 1.05) return;
+    final e = widget.eintraege[_i];
+    if (!e.hatBild || _vollFuer == e.id) return;
+    _vollFuer = e.id;
+    setState(() => _vollLaedt = true);
+    _holeVollbild(e.id);
+  }
+
+  Future<void> _holeVollbild(String id) async {
+    Uint8List? b;
+    try {
+      b = await widget.dienst.vollbild(id);
+    } on Object {
+      // Die Vorschau steht ja da.
+    }
+    if (!mounted || _vollFuer != id) return;
+    setState(() {
+      _voll = b;
+      _vollLaedt = false;
+    });
   }
 
   /// Je Foto eine Future, solange der Betrachter offen ist: Ein
@@ -536,13 +568,22 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
 
   @override
   void dispose() {
+    _zoom.dispose();
     _fokus.dispose();
     super.dispose();
   }
 
   void _gehe(int schritt) {
     final neu = (_i + schritt).clamp(0, widget.eintraege.length - 1);
-    if (neu != _i) setState(() => _i = neu);
+    if (neu != _i) {
+      setState(() {
+        _i = neu;
+        _voll = null;
+        _vollFuer = null;
+        _vollLaedt = false;
+      });
+      _zoom.value = Matrix4.identity();
+    }
     _vorladen(neu + schritt);
   }
 
@@ -596,11 +637,32 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
                   key: ValueKey(e.id),
                   future: _vorschau(e),
                   builder: (context, s) => switch (s.data) {
-                    final b? => InteractiveViewer(
-                      maxScale: 4,
-                      child: Center(
-                        child: Image.memory(b, gaplessPlayback: true),
-                      ),
+                    final b? => Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        InteractiveViewer(
+                          transformationController: _zoom,
+                          maxScale: 8,
+                          // Füllt die Fläche, damit das Bild beim Wechsel
+                          // auf die volle Auflösung nicht springt.
+                          child: SizedBox.expand(
+                            child: Image.memory(
+                              _voll ?? b,
+                              fit: BoxFit.contain,
+                              gaplessPlayback: true,
+                            ),
+                          ),
+                        ),
+                        if (_vollLaedt)
+                          const Positioned(
+                            top: AppSpacing.md,
+                            right: AppSpacing.md,
+                            child: SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                      ],
                     ),
                     null when s.connectionState == ConnectionState.done =>
                       Center(

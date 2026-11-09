@@ -8,11 +8,13 @@ import 'package:cryptography/cryptography.dart';
 import 'package:kern/abgleich/anmeldung.dart' show passwortMindestlaenge;
 import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
+import 'package:kern/services/backup_fotokammer.dart';
 import 'package:kern/services/backup_service.dart';
 import 'package:kern/services/vault_crypto.dart';
 import 'package:path/path.dart' as p;
 
 import 'bibliotheken.dart';
+import 'fotokammer.dart';
 import 'konten/kontodienst.dart';
 import 'konten/tresorschluessel.dart';
 
@@ -263,10 +265,27 @@ class Serversicherung {
           probe = f.wiederherstellungsprobe ?? probe;
         }
         await b.db.setLastAutoBackupAt(_uhr());
+        // Die Fotokammer gehört nicht zur Bibliothek, liegt aber oft nur
+        // hier: Die Karte ist womöglich schon formatiert (#341).
+        final kammer = await FotokammerSicherung.sichere(
+          kammer: Fotokammer(b).ordner,
+          sicherung: Directory(
+            p.join(
+              ziel!.path,
+              ordnerFuer(k),
+              BackupService.autoBackupFolderName,
+            ),
+          ),
+          schluessel: schluessel,
+          jetzt: _uhr(),
+        );
+        fehlgeschlagen += kammer.gescheitert;
         ergebnis.add({
           'konto': k.name,
           'dateien': gesamt,
           'neu': dienst.letzterLaufNeu,
+          'kammer': kammer.eintraege,
+          'kammerNeu': kammer.neu,
           'fehlgeschlagen': fehlgeschlagen,
           'wiederherstellungsprobe': probe?.alsJson(),
         });

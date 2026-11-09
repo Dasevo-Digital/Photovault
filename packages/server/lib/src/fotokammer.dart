@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:kern/db/database.dart';
 import 'package:kern/berechne.dart';
 import 'package:kern/protokoll.dart';
+import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -13,6 +14,8 @@ import 'package:uuid/uuid.dart';
 import 'bibliothek.dart';
 import 'bibliotheken.dart';
 import 'anmeldung_api.dart';
+import 'dateiantwort.dart';
+import 'vollbild.dart';
 
 /// Die Fotokammer eines Kontos (#336): Fotos, die schon auf dem Server
 /// liegen, aber noch nicht in der Bibliothek – bis man sie freigibt oder
@@ -23,8 +26,7 @@ import 'anmeldung_api.dart';
 /// 45 anderen in der Zeitleiste, in der Suche, auf der Karte und auf dem
 /// Handy, bis man sie wieder loswird. In der Kammer liegen sie schon auf dem
 /// Server, aber nirgends sonst zu sehen. Die nächtliche Sicherung nimmt sie
-/// erst nach dem Freigeben mit: Sie sichert die Bibliothek, und dazu gehört
-/// die Kammer nicht.
+/// trotzdem mit, in einem eigenen Ordner (`FotokammerSicherung`, #341).
 ///
 /// **Warum neben der Bibliothek statt darin.** Eine Aufnahme in der
 /// Bibliothek, die nur nicht erscheinen soll, bräuchte an jeder der über
@@ -271,6 +273,20 @@ class Fotokammer {
     return (klein.width, klein.height);
   }
 
+  /// Die Datei von [id], wenn es ein Foto ist.
+  Future<File?> original(String id) async {
+    final e = await eintrag(id);
+    if (e == null || e['art'] != 'IMAGE') return null;
+    final f = File(p.join(_platz(id).path, p.basename('${e['name']}')));
+    return await f.exists() ? f : null;
+  }
+
+  /// Wo die gewandelte Fassung von [id] liegt: im Ordner des Eintrags, also
+  /// fort, sobald der Eintrag fort ist. Ein Unterordner, denn [Vollbilder]
+  /// räumt in seinem Ordner auf und darf dabei nie das Original treffen.
+  Directory vollbildOrdner(String id) =>
+      Directory(p.join(_platz(id).path, 'vollbild'));
+
   /// Alle vollständigen Einträge, nach Aufnahmedatum.
   Future<List<Map<String, Object?>>> liste() async {
     if (!await ordner.exists()) return [];
@@ -370,8 +386,11 @@ class Fotokammer {
 /// Die Fotokammer über HTTP: `GET /api/v1/kammer`, die Bilder je Eintrag,
 /// `POST /api/v1/kammer/freigeben` und `…/verwerfen` mit `{ids}`.
 class Fotokammerapi {
-  Fotokammerapi(this.bibliotheken);
+  Fotokammerapi(this.bibliotheken, this.vollbilder);
   final Bibliotheken bibliotheken;
+
+  /// Dieselben wie für die Bibliothek: immer nur eine Wandlung auf einmal.
+  final Vollbilder vollbilder;
 
   Future<Fotokammer> _kammer(Request r) async =>
       (await bibliotheken.fuer(kontoVon(r).id)).kammer;
@@ -393,6 +412,29 @@ class Fotokammerapi {
 
   Future<Response> vorschau(Request r, String id) async =>
       _bild((await _kammer(r)), id, klein: false);
+
+  /// Das Foto in voller Auflösung (#342): In der Vorschau lässt sich die
+  /// Schärfe eines 24-MP-Fotos nicht beurteilen, und genau darum geht es
+  /// in der Kammer. `422`, wenn es sich nicht wandeln lässt.
+  Future<Response> vollbild(Request r, String id) async {
+    final k = await _kammer(r);
+    final quelle = await k.original(id);
+    if (quelle == null) return Response.notFound(null);
+    if (istDirektAnzeigbar(quelle.path)) return dateiAntwort(r, quelle);
+    final fertig = await vollbilder.bereit(
+      k.vollbildOrdner(id),
+      id,
+      quelle,
+      () => k.bibliothek.bildwerkzeuge.convertToJpegBytes(
+        quelle,
+        maxDimension: null,
+      ),
+    );
+    if (fertig == null) {
+      return _json({'fehler': 'nicht umwandelbar'}, status: 422);
+    }
+    return dateiAntwort(r, fertig);
+  }
 
   Future<Response> _bild(Fotokammer k, String id, {required bool klein}) async {
     if (!Fotokammer.gueltig(id)) return Response.notFound(null);

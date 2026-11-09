@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:kern/services/backup_fotokammer.dart';
 import 'package:kern/protokoll.dart';
 import 'package:path/path.dart' as p;
 
@@ -483,7 +484,9 @@ class Aussensicherung {
       if ((stichprobe['abweichend']! as int) > 0) {
         throw const Zielfehler('pv_stichprobe_abweichend');
       }
-      geloescht = await _alteGenerationen(ziel, dort, hier);
+      geloescht =
+          await _alteGenerationen(ziel, dort, hier) +
+          await _alteKammerkopien(ziel, dort, hier);
     } catch (e) {
       fehler = '$e';
     } finally {
@@ -572,6 +575,24 @@ class Aussensicherung {
   /// Nur Generationen, die daheim fehlen, und nur, wenn es daheim welche
   /// gibt: Ohne jede Generation stimmt daheim etwas nicht, und drüben ist
   /// dann das Letzte, was noch da ist.
+  /// Was die Sicherung aus der Kammer entfernt hat, soll auch drüben fort:
+  /// Sonst läge jedes verworfene Foto für immer ausser Haus (#341). Nur
+  /// dieser Ordner, die Fotos der Bibliothek löscht hier nichts.
+  Future<int> _alteKammerkopien(
+    Aussenziel ziel,
+    Map<String, Zieldatei> dort,
+    Map<String, Zieldatei> hier,
+  ) async {
+    var geloescht = 0;
+    for (final k in dort.keys) {
+      if (!k.contains('/${FotokammerSicherung.ordnerName}/')) continue;
+      if (hier.containsKey(k)) continue;
+      await ziel.loesche(k);
+      geloescht++;
+    }
+    return geloescht;
+  }
+
   Future<int> _alteGenerationen(
     Aussenziel ziel,
     Map<String, Zieldatei> dort,

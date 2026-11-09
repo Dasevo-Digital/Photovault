@@ -3176,7 +3176,7 @@ class LibraryState extends ChangeNotifier {
   /// nachträglichen Metadaten-Änderungen (Tag/Bewertung/Beschreibung) bei
   /// erneutem Lauf konsistent. Gesperrte Assets werden ausgeschlossen (siehe
   /// AppDatabase.assetsForXmpExport).
-  Stream<ImportProgress> writeXmpSidecars() async* {
+  Stream<ImportProgress> writeXmpSidecars({bool wieDarktable = false}) async* {
     _nurOhneServer();
     final assets = await db.assetsForXmpExport();
     final tagsByAssetId = await db.allTagNamesByAssetId();
@@ -3192,7 +3192,9 @@ class LibraryState extends ChangeNotifier {
         gesichter: gesichterByAssetId[asset.id] ?? const [],
       );
       final sidecarFile = paths.absolute(
-        paths.xmpSidecarPath(asset.relativePath),
+        wieDarktable
+            ? paths.xmpSidecarPathDarktable(asset.relativePath)
+            : paths.xmpSidecarPath(asset.relativePath),
       );
       await sidecarFile.writeAsString(xmp);
       done++;

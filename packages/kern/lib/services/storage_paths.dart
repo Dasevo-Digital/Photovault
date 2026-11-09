@@ -180,6 +180,17 @@ class StoragePaths {
   /// ExportService._uniqueDestinationPath), ohne eigene Fallunterscheidung.
   String xmpSidecarPath(String filePath) => p.setExtension(filePath, '.xmp');
 
+  /// Wie darktable die Beilage nennt und sucht: `IMG_1234.CR3.xmp`, mit der
+  /// Endung des Originals (#343). So gehören auch `IMG_1234.CR3` und
+  /// `IMG_1234.JPG` im selben Ordner nicht zur selben Beilage.
+  String xmpSidecarPathDarktable(String filePath) => '$filePath.xmp';
+
+  /// Beide Namen, unter denen eine Beilage zu [filePath] liegen kann.
+  List<String> xmpSidecarPfade(String filePath) => [
+    xmpSidecarPath(filePath),
+    xmpSidecarPathDarktable(filePath),
+  ];
+
   /// Löst einen in der Datenbank gespeicherten Bibliothekspfad auf.
   ///
   /// Datenbankwerte sind auch dann keine vertrauenswürdigen Dateipfade, wenn

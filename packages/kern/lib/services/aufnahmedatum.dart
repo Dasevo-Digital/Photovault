@@ -3,6 +3,7 @@ import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart' show Value;
 import '../db/database.dart';
 import 'storage_paths.dart';
+import '../protokoll.dart';
 
 /// Datum und Ablagepfad werden gemeinsam geändert, auch beim Restore.
 class AufnahmedatumDienst {
@@ -46,6 +47,18 @@ class AufnahmedatumDienst {
             beilage = true;
           } on FileSystemException {
             if (streng) rethrow;
+          }
+        }
+        // Die von darktable (#343): ohne Rückweg, sie gehört nicht zu dem,
+        // was die Datenbank über das Foto weiss.
+        final alteDt = paths.absolute(paths.xmpSidecarPathDarktable(alterPfad));
+        if (await alteDt.exists()) {
+          try {
+            await alteDt.rename(
+              paths.absolute(paths.xmpSidecarPathDarktable(neuerPfad)).path,
+            );
+          } on FileSystemException catch (e) {
+            protokoll('darktable-Beilage nicht verschoben: $e');
           }
         }
       }

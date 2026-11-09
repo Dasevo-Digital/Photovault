@@ -10,6 +10,7 @@ import '../berechne.dart';
 import '../db/database.dart';
 import '../protokoll.dart';
 import 'aufnahmedatum.dart';
+import 'backup_fotokammer.dart';
 import 'backup_manifest.dart';
 import 'backup_modelle.dart';
 import 'backup_restore_plan.dart';
@@ -152,6 +153,16 @@ class BackupWiederhersteller {
         if (streng) rethrow;
         _problem('pv_restore_live_photos', e);
       }
+      // Die Kammer nur beim ganzen Zurückholen: Die Probe schreibt in eine
+      // Wegwerf-Bibliothek, und wer einzelne Fotos auswählt, meint diese.
+      if (plan.schluessel case final key?
+          when !streng && auswahlPruefsummen == null) {
+        try {
+          await _holeFotokammer(wurzel, key, importe, temp);
+        } on Object catch (e) {
+          _problem('pv_restore_kammer', e);
+        }
+      }
       final ergebnis = bilanz(true);
       yield BackupProgress(
         done,
@@ -164,6 +175,63 @@ class BackupWiederhersteller {
       await temp.delete(recursive: true);
     }
   }
+
+  /// Holt gesicherte Fotos der Fotokammer in ein eigenes Album (#341).
+  ///
+  /// Eine Kammer gibt es nur am Server, die Wiederherstellung läuft aber in
+  /// der App. Ausgelassen wären die Fotos verloren; im Album sieht man sie
+  /// und kann sie sichten.
+  Future<void> _holeFotokammer(
+    String wurzel,
+    SecretKey schluessel,
+    ImportService importe,
+    Directory temp,
+  ) async {
+    final eintraege = await FotokammerSicherung.eintraege(
+      wurzel,
+      schluessel,
+      temp,
+    );
+    final neue = <String>[];
+    for (final e in eintraege) {
+      final ordner = await Directory(
+        p.join(temp.path, _uuid.v4()),
+      ).create(recursive: true);
+      final klar = File(
+        p.join(ordner.path, p.basename('${e.angaben['name']}')),
+      );
+      try {
+        await VaultCrypto.decryptFile(e.datei, klar, schluessel);
+        if (e.angaben['geaendert'] case final int ms) {
+          await klar.setLastModified(DateTime.fromMillisecondsSinceEpoch(ms));
+        }
+        final r = await importe.importFile(
+          klar.path,
+          erwartetePruefsumme: e.angaben['sha256'] as String?,
+        );
+        if (r.outcome == ImportOutcome.imported && r.assetId != null) {
+          neue.add(r.assetId!);
+        }
+      } on Object catch (x) {
+        _problem('pv_restore_kammer', x);
+      } finally {
+        await ordner.delete(recursive: true);
+      }
+    }
+    if (neue.isEmpty) return;
+    final album = _uuid.v4();
+    await _db.createAlbum(
+      AlbumsCompanion.insert(
+        id: album,
+        name: fotokammerAlbumName,
+        createdAt: DateTime.now(),
+      ),
+    );
+    await _db.addAssetsToAlbum(album, neue);
+  }
+
+  /// Das Album für Fotos, die beim Zurückholen aus der Kammer kamen.
+  static const fotokammerAlbumName = 'Fotokammer (wiederhergestellt)';
 
   /// Die Tabellen, die aus dem Datenbank-Schnappschuss übernommen werden –
   /// in dieser Reihenfolge, weil spätere auf frühere zeigen.

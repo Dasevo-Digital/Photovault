@@ -108,12 +108,13 @@ Handler baueApi({
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final passkeys = Passkeyapi(konten, von);
   final video = Videofassungen();
+  final vollbilder = Vollbilder();
   final api = _Api(
     bibliotheken,
     beschleunigerZustand,
     video,
     netz,
-    vollbilder: Vollbilder(),
+    vollbilder: vollbilder,
     teilungen: konten.albumteilungen,
     regeln: konten.albumregeln,
     kontoname: (id) => konten.konto(id)?.name,
@@ -141,7 +142,7 @@ Handler baueApi({
   final suche = Suchapi(bibliotheken);
   final rueckblick = Rueckblickapi(bibliotheken);
   final rechnen = Rechenapi(bibliotheken);
-  final kammer = Fotokammerapi(bibliotheken);
+  final kammer = Fotokammerapi(bibliotheken, vollbilder);
   final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
@@ -428,6 +429,7 @@ Handler baueApi({
     ..get('/api/v1/kammer', kammer.liste)
     ..get('/api/v1/kammer/<id>/miniatur', kammer.miniatur)
     ..get('/api/v1/kammer/<id>/vorschau', kammer.vorschau)
+    ..get('/api/v1/kammer/<id>/vollbild', kammer.vollbild)
     ..post('/api/v1/kammer/freigeben', kammer.freigeben)
     ..post('/api/v1/kammer/verwerfen', kammer.verwerfen)
     ..post('/api/v1/kammer/aufnehmen', kammer.aufnehmen)

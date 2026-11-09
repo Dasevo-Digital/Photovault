@@ -3239,6 +3239,12 @@ abstract class AppTexte {
   /// **'Fehlende'**
   String get aufgFehlende;
 
+  /// No description provided for @aufgModusDarktable.
+  ///
+  /// In de, this message translates to:
+  /// **'Namen wie darktable'**
+  String get aufgModusDarktable;
+
   /// No description provided for @aufgGesichtsschaerfeTitel.
   ///
   /// In de, this message translates to:
@@ -7068,6 +7074,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Bewertung'**
   String get xmpFeldBewertung;
+
+  /// No description provided for @xmpFeldAbgelehnt.
+  ///
+  /// In de, this message translates to:
+  /// **'Abgelehnt, kommt in den Papierkorb'**
+  String get xmpFeldAbgelehnt;
 
   /// No description provided for @xmpFeldFarbmarkierung.
   ///
@@ -15835,7 +15847,7 @@ abstract class AppTexte {
   /// No description provided for @importKammerHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben, und erst dann nimmt die nächtliche Sicherung sie mit.'**
+  /// **'Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben. Die nächtliche Sicherung nimmt sie schon vorher mit.'**
   String get importKammerHinweis;
 
   /// No description provided for @importPlanStartenKammer.

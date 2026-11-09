@@ -25,7 +25,7 @@ Future<List<String>> dateienDerAufnahme(
   // Schlagwörter, Bewertung und Ort im Klartext. Beim Sperren blieb
   // er liegen – genau das, wovor der gesperrte Ordner schützen soll
   // (dieselbe Überlegung wie bei metadata.json in backup_service).
-  paths.xmpSidecarPath(asset.relativePath),
+  ...paths.xmpSidecarPfade(asset.relativePath),
   if (asset.thumbnailRelativePath != null) asset.thumbnailRelativePath!,
   if (asset.previewRelativePath != null) asset.previewRelativePath!,
   if (asset.developedRelativePath != null) asset.developedRelativePath!,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/xmp_reader.dart';
@@ -45,7 +47,67 @@ AssetData _buildAsset({
   );
 }
 
+String _mitBewertung(String wert) =>
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF '
+    'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+    '<rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/" '
+    'xmp:Rating="$wert"/></rdf:RDF></x:xmpmeta>';
+
 void main() {
+  group('Bewertung aus fremden Programmen (#344)', () {
+    test('-1 heisst abgelehnt und ist keine Bewertung', () {
+      final f = parseXmpContent(_mitBewertung('-1'))!;
+      expect(f.abgelehnt, isTrue);
+      expect(f.rating, isNull);
+    });
+
+    test('0 bis 5 gelten', () {
+      for (final w in [0, 1, 5]) {
+        final f = parseXmpContent(_mitBewertung('$w'))!;
+        expect(f.rating, w);
+        expect(f.abgelehnt, isFalse);
+      }
+    });
+
+    test('alles andere fällt weg', () {
+      expect(parseXmpContent(_mitBewertung('6')), isNull);
+      expect(parseXmpContent(_mitBewertung('-2')), isNull);
+      expect(parseXmpContent(_mitBewertung('gut')), isNull);
+    });
+  });
+
+  group('Beilage unter zwei Namen (#343)', () {
+    late Directory ordner;
+    setUp(() => ordner = Directory.systemTemp.createTempSync('pv_xmp_'));
+    tearDown(() => ordner.deleteSync(recursive: true));
+
+    File datei(String name, DateTime zeit) {
+      final f = File('${ordner.path}/$name')..writeAsStringSync('x');
+      f.setLastModifiedSync(zeit);
+      return f;
+    }
+
+    test('nimmt die vorhandene', () {
+      final dt = datei('a.CR3.xmp', DateTime(2026));
+      expect(
+        neuesteXmpBeilage([File('${ordner.path}/a.xmp'), dt])?.path,
+        dt.path,
+      );
+    });
+
+    test('von zweien die zuletzt geänderte', () {
+      final eigene = datei('a.xmp', DateTime(2026, 3));
+      final dt = datei('a.CR3.xmp', DateTime(2026, 5));
+      expect(neuesteXmpBeilage([eigene, dt])?.path, dt.path);
+      dt.setLastModifiedSync(DateTime(2026, 1));
+      expect(neuesteXmpBeilage([eigene, dt])?.path, eigene.path);
+    });
+
+    test('ohne Datei nichts', () {
+      expect(neuesteXmpBeilage([File('${ordner.path}/nix.xmp')]), isNull);
+    });
+  });
+
   group('Roundtrip: buildXmpPacket -> parseXmpContent', () {
     test(
       'Bewertung, Farbmarkierung, Beschreibung, Tags, GPS bleiben erhalten',

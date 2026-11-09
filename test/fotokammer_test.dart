@@ -54,7 +54,9 @@ void main() {
           'bytes': 0,
         });
       }
-      if (pfad.endsWith('/miniatur') || pfad.endsWith('/vorschau')) {
+      if (pfad.endsWith('/miniatur') ||
+          pfad.endsWith('/vorschau') ||
+          pfad.endsWith('/vollbild')) {
         return http.Response.bytes(
           jpeg,
           200,
@@ -206,6 +208,38 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
     expect(find.text('1 ausgewählt'), findsOneWidget);
+  });
+
+  testWidgets('die volle Auflösung kommt erst beim Hineinzoomen (#342)', (
+    tester,
+  ) async {
+    await zeige(tester, dienst());
+    final kachel = find.byIcon(Icons.circle_outlined).at(2);
+    await tester.tap(kachel);
+    await tester.tap(kachel);
+    await tester.pumpAndSettle();
+    Iterable<String> vollbilder() =>
+        anfragen.where((a) => a.endsWith('/vollbild'));
+    expect(vollbilder(), isEmpty);
+
+    final zoom = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    zoom.value = Matrix4.identity()..scaleByDouble(3, 3, 1, 1);
+    await tester.pumpAndSettle();
+    expect(vollbilder(), hasLength(1));
+    expect(vollbilder().single, contains('000000000003'));
+
+    // Weiter hineinzoomen fragt nicht noch einmal.
+    zoom.value = Matrix4.identity()..scaleByDouble(5, 5, 1, 1);
+    await tester.pumpAndSettle();
+    expect(vollbilder(), hasLength(1));
+
+    // Das nächste Foto beginnt wieder unvergrössert.
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(zoom.value.getMaxScaleOnAxis(), 1);
+    expect(vollbilder(), hasLength(1));
   });
 
   test(

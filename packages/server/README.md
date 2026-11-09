@@ -549,8 +549,14 @@ Der Server sichert jede Nacht jede Bibliothek nach `PV_SICHERUNG` –
 verschlüsselt (AES-256-GCM) und im Format der automatischen Sicherung der
 App, also mit ihr wiederherstellbar. Geschrieben wird nur, was am Ziel
 noch fehlt; ein neues, leeres Ziel füllt sich beim nächsten Lauf von
-selbst. Gelöscht wird am Ziel nie etwas, und vom Datenbankstand bleiben
-sieben Generationen.
+selbst. Gelöscht wird am Ziel nichts aus der Bibliothek, und vom
+Datenbankstand bleiben sieben Generationen.
+
+Die Fotokammer wird mitgesichert, in `fotokammer/` neben den Daten: Sie
+liegt oft nur auf dem Server, wenn die Karte schon formatiert ist. Das ist
+die einzige Stelle, an der am Ziel gelöscht wird: Eine Kopie geht sieben
+Tage, nachdem ihr Eintrag die Kammer verlassen hat. Beim Wiederherstellen
+kommen diese Fotos in das Album „Fotokammer (wiederhergestellt)“.
 
 **Einrichten:** `PV_SICHERUNG` auf einen Ordner setzen, der auf dem NAS
 liegt, dann in der App als Verwalter unter Einstellungen → Server →
@@ -741,6 +747,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /auswertung` | einen Durchgang sofort anstossen |
 | `GET /kammer` | `{eintraege: [{id, name, groesse, datum, art, kamera?, modell?, breite?, hoehe?}], anzahl, bytes}` – die Fotokammer: hochgeladen, aber noch nicht in der Bibliothek |
 | `GET /kammer/<id>/miniatur`, `GET /kammer/<id>/vorschau` | JPEG; 404 ohne Wandler |
+| `GET /kammer/<id>/vollbild` | Foto in voller Auflösung; was sich direkt anzeigen lässt, unverändert, sonst als JPEG; 422, wenn es sich nicht wandeln lässt |
 | `POST /kammer/freigeben` | `{ids}` → `{ergebnisse: [{id, ausgang, aufnahme?, fehler?}]}` – in die Bibliothek, wie ein gewöhnlicher Upload; wenige auf einmal schicken |
 | `POST /kammer/verwerfen` | `{ids}` → `{verworfen}` – endgültig, ohne Papierkorb; kam das Foto aus der Bibliothek, bleibt die Aufnahme im Papierkorb |
 | `POST /kammer/aufnehmen` | `{ids}` (Aufnahmen der Bibliothek) → `{ergebnisse: [{aufnahme, ausgang, kammer?, fehler?}]}` – zurück in die Kammer: Die Aufnahme geht in den Papierkorb, die Datei als harter Link in die Kammer; Freigeben holt die Aufnahme samt Alben und Bearbeitungen zurück (`funktionen.fotokammer` ≥ 2) |

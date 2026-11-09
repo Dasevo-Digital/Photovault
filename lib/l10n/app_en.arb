@@ -660,6 +660,7 @@
   "aufgGesichterText": "Finds faces and assigns them, as long as the YuNet model is installed.",
   "aufgVorschauText": "Creates thumbnails and previews for photos and videos. For a video this produces a still frame from the first second – only then can it be analysed at all (description, tags, faces, text). A pass over the other tasks pays off afterwards.",
   "aufgFehlende": "Missing",
+  "aufgModusDarktable": "darktable file names",
   "aufgGesichtsschaerfeTitel": "Face sharpness",
   "aufgGesichtsschaerfeText": "Measures how sharp each recognised face is – on the crop that is already stored, without decoding the photos again. When culling, the app then warns if even the sharpest face in a shot is soft.",
   "werkzBerechneGesichtsschaerfe": "Measure face sharpness",
@@ -1527,6 +1528,7 @@
   "zweitVergleichFehlgeschlagen": "Comparison failed: {fehler}",
   "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
   "xmpFeldBewertung": "Rating",
+  "xmpFeldAbgelehnt": "Rejected, moves to trash",
   "xmpFeldFarbmarkierung": "Colour label",
   "xmpFeldBeschreibung": "Description",
   "xmpFeldNeueTags": "New tags",
@@ -5091,7 +5093,7 @@
   "videoSchnittLaenge": "Length {dauer}",
   "navFotokammer": "Staging",
   "importKammerSchalter": "Into staging first",
-  "importKammerHinweis": "The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval, and only then does the nightly backup include them.",
+  "importKammerHinweis": "The photos are then on the server but appear nowhere until you approve them under “Staging”. Rules and albums apply on approval. The nightly backup already includes them before that.",
   "importPlanStartenKammer": "{anzahl, plural, =1{Put 1 photo into staging} other{Put {anzahl} photos into staging}}",
   "@importPlanStartenKammer": {
     "placeholders": {
