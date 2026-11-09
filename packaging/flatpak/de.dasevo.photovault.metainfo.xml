@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.65.0" date="2026-11-09">
+      <description>
+        <p>Server: take over albums, favorites, people, descriptions and archive status from Immich.</p>
+        <p>iPhone app: back up every frame of a burst and stack them afterwards.</p>
+      </description>
+    </release>
     <release version="3.64.0" date="2026-11-09">
       <description>
         <p>Staging: rate and reject photos, spot bursts and the sharpest shot, compare side by side, choose an album on approval.</p>
