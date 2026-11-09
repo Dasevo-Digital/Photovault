@@ -888,6 +888,14 @@ class AppTexteDe extends AppTexte {
       'Wie bei digiKam laufen alle KI-Funktionen offline auf diesem Rechner. Die Modelldateien werden nicht mitgeliefert, sondern bei Bedarf aus offiziellen Open-Source-Quellen heruntergeladen (einmalig, danach komplett offline nutzbar).';
 
   @override
+  String get einstFormateStapelnTitel =>
+      'Gleiche Aufnahme in mehreren Formaten stapeln';
+
+  @override
+  String get einstFormateStapelnText =>
+      'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.';
+
+  @override
   String get einstAutoAnalyseTitel =>
       'KI-Auswertung nach dem Import automatisch nachholen';
 

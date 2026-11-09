@@ -1753,6 +1753,18 @@ abstract class AppTexte {
   /// **'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.'**
   String get einstVorschlaegeText;
 
+  /// No description provided for @einstFormateStapeln.
+  ///
+  /// In de, this message translates to:
+  /// **'Gleiche Aufnahme in mehreren Formaten stapeln'**
+  String get einstFormateStapeln;
+
+  /// No description provided for @einstFormateStapelnText.
+  ///
+  /// In de, this message translates to:
+  /// **'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.'**
+  String get einstFormateStapelnText;
+
   /// No description provided for @einstAuswerten.
   ///
   /// In de, this message translates to:

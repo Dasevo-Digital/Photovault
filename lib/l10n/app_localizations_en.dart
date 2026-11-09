@@ -878,6 +878,14 @@ class AppTexteEn extends AppTexte {
       'As in digiKam, every AI feature runs offline on this machine. The model files are not bundled with the app but downloaded on demand from official open-source sources – once, after which everything works offline.';
 
   @override
+  String get einstFormateStapelnTitel =>
+      'Stack the same photo in different file formats';
+
+  @override
+  String get einstFormateStapelnText =>
+      'If a photo exists as both HEIC and JPG or RAW and JPG, the timeline shows one version. The others stay behind it. Switching this off shows them separately again.';
+
+  @override
   String get einstAutoAnalyseTitel =>
       'Run AI analysis automatically after importing';
 

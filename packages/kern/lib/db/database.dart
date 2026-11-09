@@ -78,6 +78,7 @@ part 'abfragen/nachtraege.dart';
 part 'abfragen/auswertungen.dart';
 part 'abfragen/orte_und_erinnerungen.dart';
 part 'abfragen/serien.dart';
+part 'abfragen/formatstapel.dart';
 part 'abfragen/bearbeitung.dart';
 part 'abfragen/alben_und_tags.dart';
 part 'abfragen/vorgaben.dart';
@@ -383,7 +384,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 95;
+  int get schemaVersion => 96;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

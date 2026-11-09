@@ -3345,6 +3345,7 @@ void main() {
       t.einstPapierkorb,
       t.einstVorschlaege,
       t.einstAuswerten,
+      t.einstFormateStapeln,
       t.einstUebersetzen,
       t.einstSchuetzen,
       t.einstSchwelle,

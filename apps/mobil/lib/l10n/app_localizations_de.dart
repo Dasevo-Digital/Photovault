@@ -1117,6 +1117,14 @@ class AppTexteDe extends AppTexte {
       'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.';
 
   @override
+  String get einstFormateStapeln =>
+      'Gleiche Aufnahme in mehreren Formaten stapeln';
+
+  @override
+  String get einstFormateStapelnText =>
+      'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.';
+
+  @override
   String get einstAuswerten =>
       'KI-Auswertung nach dem Import automatisch nachholen';
 

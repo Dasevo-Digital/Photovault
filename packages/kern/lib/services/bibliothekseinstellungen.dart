@@ -13,6 +13,7 @@ typedef Bibliothekseinstellungen = ({
   bool auswertenNachImport,
   bool sucheUebersetzen,
   bool angabenSchuetzen,
+  bool formateStapeln,
 });
 
 Future<Bibliothekseinstellungen> bibliothekseinstellungen(
@@ -31,5 +32,6 @@ Future<Bibliothekseinstellungen> bibliothekseinstellungen(
     auswertenNachImport: app?.autoAnalyzeAfterImport ?? true,
     sucheUebersetzen: await db.uebersetzeSucheUndTags(),
     angabenSchuetzen: privat?.protectMetadata ?? true,
+    formateStapeln: app?.formateStapeln ?? false,
   );
 }

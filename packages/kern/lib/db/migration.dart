@@ -1435,5 +1435,14 @@ extension Migrationsschritte on AppDatabase {
         await _addColumnIfMissing(m, appSettings, spalte, 'app_settings', name);
       }
     }
+    if (from < 96) {
+      await _addColumnIfMissing(
+        m,
+        appSettings,
+        appSettings.formateStapeln,
+        'app_settings',
+        'formate_stapeln',
+      );
+    }
   }
 }

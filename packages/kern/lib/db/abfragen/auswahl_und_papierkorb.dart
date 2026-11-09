@@ -378,9 +378,25 @@ extension AuswahlAbfragen on AppDatabase {
     required List<String> duplikatIds,
     bool beschreibungenVerbinden = true,
   }) => transaction(() async {
-    final ids = duplikatIds.where((id) => id != behaltenId).toSet().toList();
+    final ids = await _uebertrageAngaben(
+      behaltenId,
+      duplikatIds,
+      beschreibungenVerbinden: beschreibungenVerbinden,
+    );
+    if (ids.isNotEmpty) await moveToTrash(ids);
+  });
+
+  /// Bringt Schlagwörter, Alben, Favorit, Sterne, Farbe und Beschreibung
+  /// der übrigen [von] auf [behaltenId]. Gibt die übrigen zurück; leer, wenn
+  /// es sie nicht gibt.
+  Future<List<String>> _uebertrageAngaben(
+    String behaltenId,
+    List<String> von, {
+    required bool beschreibungenVerbinden,
+  }) => transaction(() async {
+    final ids = von.where((id) => id != behaltenId).toSet().toList();
     if (ids.isEmpty) {
-      return;
+      return const <String>[];
     }
     final behalten = await assetById(behaltenId);
     if (behalten == null) {
@@ -388,7 +404,7 @@ extension AuswahlAbfragen on AppDatabase {
     }
     final kopien = await (select(assets)..where((t) => t.id.isIn(ids))).get();
     if (kopien.isEmpty) {
-      return;
+      return const <String>[];
     }
 
     var favorit = behalten.isFavorite;
@@ -459,7 +475,7 @@ extension AuswahlAbfragen on AppDatabase {
         description: Value(beschreibung),
       ),
     );
-    await moveToTrash(ids);
+    return ids;
   });
 
   /// Holt [assetIds] zurück, mit denselben Zugehörigen wie

@@ -190,6 +190,12 @@ class _EinstellungenState extends State<Einstellungen> {
           beiAenderung: (an) => _sende(AuswertenNachImportSetzen(an)),
         ),
         _Zeile(
+          titel: t.einstFormateStapeln,
+          text: t.einstFormateStapelnText,
+          an: e.formateStapeln,
+          beiAenderung: (an) => _sende(FormateStapelnSetzen(an)),
+        ),
+        _Zeile(
           titel: t.einstUebersetzen,
           text: t.einstUebersetzenText,
           an: e.sucheUebersetzen,

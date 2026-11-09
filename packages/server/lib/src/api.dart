@@ -1784,6 +1784,7 @@ class _Api {
       'auswertenNachImport': e.auswertenNachImport,
       'sucheUebersetzen': e.sucheUebersetzen,
       'angabenSchuetzen': e.angabenSchuetzen,
+      'formateStapeln': e.formateStapeln,
     });
   }
 

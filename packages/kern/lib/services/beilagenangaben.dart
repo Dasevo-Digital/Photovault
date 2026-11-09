@@ -104,6 +104,8 @@ class Beilagenangaben {
     String id, {
     bool mitSternen = true,
   }) async {
+    // Beim Import ist die Datei womöglich gerade hinter ihr JPEG gerückt.
+    id = await db.sichtbareFormatfassung(id);
     if (sterne case final s? when mitSternen) {
       await db.fuehreAus(BewertungSetzen([id], s));
     }

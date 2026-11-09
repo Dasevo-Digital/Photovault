@@ -752,6 +752,8 @@ const EN = {
   'ab {p}': 'from {p}',
   'Sichere Vorschläge automatisch übernehmen': 'Accept confident suggestions automatically',
   'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.': 'Recognised faces at or above this confidence are assigned without asking and marked as such, as are whole groups in which every face points to the same person; uncertain ones remain suggestions.',
+  'Gleiche Aufnahme in mehreren Formaten stapeln': 'Stack the same photo in different file formats',
+  'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.': 'If a photo exists as both HEIC and JPG or RAW and JPG, the timeline shows one version. The others stay behind it. Switching this off shows them separately again.',
   'KI-Auswertung nach dem Import automatisch nachholen': 'Run AI analysis automatically after import',
   'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.': 'New items are analysed right away: faces, image content, text, keywords.',
   'Suche und Schlagwörter übersetzen': 'Translate search and keywords',

@@ -141,6 +141,45 @@ void main() {
       );
 
   test(
+    'Formate stapeln: Der Server bildet und löst die Stapel (#361)',
+    () async {
+      final heic = await ladeHoch(erikaToken, 'IMG_0400.jpg', 30);
+      final jpg = await ladeHoch(erikaToken, 'IMG_0400.jpeg', 90);
+      final einzeln = await ladeHoch(erikaToken, 'IMG_0401.jpg', 150);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await db.customStatement(
+        'UPDATE assets SET datum_geschaetzt = 0, file_created_at = 1700000000 '
+        'WHERE id IN (?, ?)',
+        [heic, jpg],
+      );
+      await db.customStatement(
+        "UPDATE assets SET dateiformat = 'heic', "
+        "original_file_name = 'IMG_0400.HEIC' WHERE id = ?",
+        [heic],
+      );
+      Future<Set<Object?>> kacheln() async => {
+        for (final a
+            in ((await jsonAus(
+                      await frag('GET', '/api/v1/aufnahmen', token: erikaToken),
+                    ))['aufnahmen']!
+                    as List)
+                .cast<Map>())
+          a['id'],
+      };
+      expect(await kacheln(), {heic, jpg, einzeln});
+      expect(
+        (await befehl(erikaToken, 'formateStapelnSetzen', {
+          'an': true,
+        })).statusCode,
+        200,
+      );
+      expect(await kacheln(), {heic, einzeln});
+      await befehl(erikaToken, 'formateStapelnSetzen', {'an': false});
+      expect(await kacheln(), {heic, jpg, einzeln});
+    },
+  );
+
+  test(
     'Varianten wie am Rechner: bilden, ansehen, Hauptversion, einzeln (#219)',
     () async {
       final roh = await ladeHoch(erikaToken, 'IMG_0300.JPG', 30);
@@ -1408,6 +1447,7 @@ void main() {
       ('auswertenNachImportSetzen', {'an': false}),
       ('sucheUebersetzenSetzen', {'an': true}),
       ('angabenSchuetzenSetzen', {'an': false}),
+      ('formateStapelnSetzen', {'an': true}),
       ('gesichtsschwelleSetzen', {'schwelle': 0.5}),
     ]) {
       expect(
@@ -1423,6 +1463,7 @@ void main() {
     expect(nachher['auswertenNachImport'], false);
     expect(nachher['sucheUebersetzen'], true);
     expect(nachher['angabenSchuetzen'], false);
+    expect(nachher['formateStapeln'], true);
     expect(nachher['gesichtsschwelle'], closeTo(0.5, 1e-9));
     final fremd = await jsonAus(
       await frag('GET', '/api/v1/einstellungen', token: maxToken),

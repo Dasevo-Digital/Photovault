@@ -454,6 +454,11 @@ class AppSettings extends Table {
   BoolColumn get translateSearchAndTags =>
       boolean().withDefault(const Constant(false))();
 
+  /// Ob dieselbe Aufnahme in mehreren Dateiformaten als ein Stapel in der
+  /// Zeitleiste steht (#361). Standard aus: Es ändert, was man sieht.
+  BoolColumn get formateStapeln =>
+      boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -77,6 +77,14 @@ class Nachbearbeitung {
     }
     if (asset.type != 'IMAGE') return;
 
+    // Nach den Regeln: Ein Album, das sie der neuen Datei geben, rückt beim
+    // Stapeln auf die Fassung, die sichtbar bleibt.
+    if (await db.formateStapeln()) {
+      await db.stapleFormate(
+        stamm: p.basenameWithoutExtension(asset.originalFileName),
+      );
+    }
+
     // Ortsauflösung bleibt hier: reines Nachschlagen im bereits im
     // Speicher liegenden GeoNames-Verzeichnis, kein Bild wird angefasst.
     //

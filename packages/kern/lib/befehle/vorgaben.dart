@@ -300,6 +300,39 @@ final class SucheUebersetzenSetzen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.setzeUebersetzeSucheUndTags(an);
 }
 
+/// Ob dieselbe Aufnahme in mehreren Dateiformaten als ein Stapel erscheint
+/// (#361).
+///
+/// Mit einem Server schaltet das Gerät nur um: Die Stapel bildet der Server
+/// aus seinem Stand, und sie kommen im Abgleich zurück. Die Kopie des Geräts
+/// kann hinterherhinken, und ein Lauf über die ganze Bibliothek gehört nicht
+/// in die Warteschlange.
+final class FormateStapelnSetzen extends Befehl<void> {
+  const FormateStapelnSetzen(this.an);
+
+  static FormateStapelnSetzen aus(Map<String, Object?> w) =>
+      FormateStapelnSetzen(w['an']! as bool);
+
+  final bool an;
+
+  @override
+  String get art => 'formateStapelnSetzen';
+
+  @override
+  Map<String, Object?> get werte => {'an': an};
+
+  @override
+  Future<void> anwenden(AppDatabase db) async {
+    await db.setzeFormateStapeln(an);
+    if (db.umleitung != null) return;
+    if (an) {
+      await db.stapleFormate();
+    } else {
+      await db.loeseFormatstapelAuf();
+    }
+  }
+}
+
 /// Ob neu gesperrte Fotos auch ihre lesbaren Angaben verschlüsselt ablegen
 /// (Ort, Beschreibung …), statt sie in der Datenbank zu lassen.
 final class AngabenSchuetzenSetzen extends Befehl<void> {

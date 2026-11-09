@@ -186,7 +186,10 @@ final class VariantenAufloesen extends Befehl<void> {
   Map<String, Object?> get werte => {'stackId': stackId};
 
   @override
-  Future<void> anwenden(AppDatabase db) => db.unstackAssets(stackId);
+  Future<void> anwenden(AppDatabase db) async {
+    await db.merkeFormatausnahmen(stackId);
+    await db.unstackAssets(stackId);
+  }
 }
 
 /// Die im Raster sichtbare Hauptversion eines Variantenstapels wechseln.

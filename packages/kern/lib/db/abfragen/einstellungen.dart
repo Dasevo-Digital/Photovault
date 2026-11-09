@@ -41,6 +41,20 @@ extension EinstellungsAbfragen on AppDatabase {
   Stream<AppSettingsData?> watchAppSettings() =>
       (select(appSettings)..where((t) => t.id.equals(0))).watchSingleOrNull();
 
+  Future<bool> formateStapeln() async =>
+      (await (select(
+        appSettings,
+      )..where((t) => t.id.equals(0))).getSingleOrNull())?.formateStapeln ??
+      false;
+
+  Future<void> setzeFormateStapeln(bool an) =>
+      into(appSettings).insertOnConflictUpdate(
+        AppSettingsCompanion.insert(
+          id: const Value(0),
+          formateStapeln: Value(an),
+        ),
+      );
+
   Future<void> setAutoAnalyzeAfterImport(bool an) =>
       into(appSettings).insertOnConflictUpdate(
         AppSettingsCompanion.insert(

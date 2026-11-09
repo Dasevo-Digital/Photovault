@@ -302,6 +302,8 @@
   "einstUeberwachtAuswahl": "Choose a folder to keep an eye on for new photos. The files stay there; they are only added to the library as well.",
   "einstUeberwachtUebernommen": "{anzahl, plural, =1{Took 1 new photo from the folder.} other{Took {anzahl} new photos from the folder.}}",
   "einstKiHinweis": "As in digiKam, every AI feature runs offline on this machine. The model files are not bundled with the app but downloaded on demand from official open-source sources – once, after which everything works offline.",
+  "einstFormateStapelnTitel": "Stack the same photo in different file formats",
+  "einstFormateStapelnText": "If a photo exists as both HEIC and JPG or RAW and JPG, the timeline shows one version. The others stay behind it. Switching this off shows them separately again.",
   "einstAutoAnalyseTitel": "Run AI analysis automatically after importing",
   "einstAutoAnalyseText": "Importing only files the photos away, which keeps it fast. Faces, text recognition, image search and descriptions follow in the background. Switched off, you can start them by hand under Tools at any time.",
   "einstNurErkennung": "Detection only (recognition still needs the SFace model)",

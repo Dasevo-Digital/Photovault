@@ -14285,6 +14285,21 @@ class $AppSettingsTable extends AppSettings
         ),
         defaultValue: const Constant(false),
       );
+  static const VerificationMeta _formateStapelnMeta = const VerificationMeta(
+    'formateStapeln',
+  );
+  @override
+  late final GeneratedColumn<bool> formateStapeln = GeneratedColumn<bool>(
+    'formate_stapeln',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("formate_stapeln" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -14329,6 +14344,7 @@ class $AppSettingsTable extends AppSettings
     maxGleichzeitig,
     translateCaptions,
     translateSearchAndTags,
+    formateStapeln,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -14708,6 +14724,15 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('formate_stapeln')) {
+      context.handle(
+        _formateStapelnMeta,
+        formateStapeln.isAcceptableOrUnknown(
+          data['formate_stapeln']!,
+          _formateStapelnMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -14884,6 +14909,10 @@ class $AppSettingsTable extends AppSettings
       translateSearchAndTags: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}translate_search_and_tags'],
+      )!,
+      formateStapeln: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}formate_stapeln'],
       )!,
     );
   }
@@ -15208,6 +15237,10 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
   /// sinkt bei gleicher Schwelle von 402 auf 248. Eine solche Änderung
   /// gehört nicht stillschweigend eingeschaltet.
   final bool translateSearchAndTags;
+
+  /// Ob dieselbe Aufnahme in mehreren Dateiformaten als ein Stapel in der
+  /// Zeitleiste steht (#361). Standard aus: Es ändert, was man sieht.
+  final bool formateStapeln;
   const AppSettingsData({
     required this.id,
     required this.themeMode,
@@ -15251,6 +15284,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     required this.maxGleichzeitig,
     required this.translateCaptions,
     required this.translateSearchAndTags,
+    required this.formateStapeln,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -15343,6 +15377,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     map['max_gleichzeitig'] = Variable<int>(maxGleichzeitig);
     map['translate_captions'] = Variable<bool>(translateCaptions);
     map['translate_search_and_tags'] = Variable<bool>(translateSearchAndTags);
+    map['formate_stapeln'] = Variable<bool>(formateStapeln);
     return map;
   }
 
@@ -15430,6 +15465,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       maxGleichzeitig: Value(maxGleichzeitig),
       translateCaptions: Value(translateCaptions),
       translateSearchAndTags: Value(translateSearchAndTags),
+      formateStapeln: Value(formateStapeln),
     );
   }
 
@@ -15519,6 +15555,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       translateSearchAndTags: serializer.fromJson<bool>(
         json['translateSearchAndTags'],
       ),
+      formateStapeln: serializer.fromJson<bool>(json['formateStapeln']),
     );
   }
   @override
@@ -15573,6 +15610,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       'maxGleichzeitig': serializer.toJson<int>(maxGleichzeitig),
       'translateCaptions': serializer.toJson<bool>(translateCaptions),
       'translateSearchAndTags': serializer.toJson<bool>(translateSearchAndTags),
+      'formateStapeln': serializer.toJson<bool>(formateStapeln),
     };
   }
 
@@ -15619,6 +15657,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     int? maxGleichzeitig,
     bool? translateCaptions,
     bool? translateSearchAndTags,
+    bool? formateStapeln,
   }) => AppSettingsData(
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
@@ -15706,6 +15745,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     translateCaptions: translateCaptions ?? this.translateCaptions,
     translateSearchAndTags:
         translateSearchAndTags ?? this.translateSearchAndTags,
+    formateStapeln: formateStapeln ?? this.formateStapeln,
   );
   AppSettingsData copyWithCompanion(AppSettingsCompanion data) {
     return AppSettingsData(
@@ -15829,6 +15869,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       translateSearchAndTags: data.translateSearchAndTags.present
           ? data.translateSearchAndTags.value
           : this.translateSearchAndTags,
+      formateStapeln: data.formateStapeln.present
+          ? data.formateStapeln.value
+          : this.formateStapeln,
     );
   }
 
@@ -15876,7 +15919,8 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ..write('listenspalten: $listenspalten, ')
           ..write('maxGleichzeitig: $maxGleichzeitig, ')
           ..write('translateCaptions: $translateCaptions, ')
-          ..write('translateSearchAndTags: $translateSearchAndTags')
+          ..write('translateSearchAndTags: $translateSearchAndTags, ')
+          ..write('formateStapeln: $formateStapeln')
           ..write(')'))
         .toString();
   }
@@ -15925,6 +15969,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     maxGleichzeitig,
     translateCaptions,
     translateSearchAndTags,
+    formateStapeln,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -15971,7 +16016,8 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           other.listenspalten == this.listenspalten &&
           other.maxGleichzeitig == this.maxGleichzeitig &&
           other.translateCaptions == this.translateCaptions &&
-          other.translateSearchAndTags == this.translateSearchAndTags);
+          other.translateSearchAndTags == this.translateSearchAndTags &&
+          other.formateStapeln == this.formateStapeln);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
@@ -16017,6 +16063,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
   final Value<int> maxGleichzeitig;
   final Value<bool> translateCaptions;
   final Value<bool> translateSearchAndTags;
+  final Value<bool> formateStapeln;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
@@ -16060,6 +16107,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.maxGleichzeitig = const Value.absent(),
     this.translateCaptions = const Value.absent(),
     this.translateSearchAndTags = const Value.absent(),
+    this.formateStapeln = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -16104,6 +16152,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.maxGleichzeitig = const Value.absent(),
     this.translateCaptions = const Value.absent(),
     this.translateSearchAndTags = const Value.absent(),
+    this.formateStapeln = const Value.absent(),
   });
   static Insertable<AppSettingsData> custom({
     Expression<int>? id,
@@ -16148,6 +16197,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Expression<int>? maxGleichzeitig,
     Expression<bool>? translateCaptions,
     Expression<bool>? translateSearchAndTags,
+    Expression<bool>? formateStapeln,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -16211,6 +16261,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       if (translateCaptions != null) 'translate_captions': translateCaptions,
       if (translateSearchAndTags != null)
         'translate_search_and_tags': translateSearchAndTags,
+      if (formateStapeln != null) 'formate_stapeln': formateStapeln,
     });
   }
 
@@ -16257,6 +16308,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Value<int>? maxGleichzeitig,
     Value<bool>? translateCaptions,
     Value<bool>? translateSearchAndTags,
+    Value<bool>? formateStapeln,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -16313,6 +16365,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       translateCaptions: translateCaptions ?? this.translateCaptions,
       translateSearchAndTags:
           translateSearchAndTags ?? this.translateSearchAndTags,
+      formateStapeln: formateStapeln ?? this.formateStapeln,
     );
   }
 
@@ -16469,6 +16522,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
         translateSearchAndTags.value,
       );
     }
+    if (formateStapeln.present) {
+      map['formate_stapeln'] = Variable<bool>(formateStapeln.value);
+    }
     return map;
   }
 
@@ -16516,7 +16572,8 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
           ..write('listenspalten: $listenspalten, ')
           ..write('maxGleichzeitig: $maxGleichzeitig, ')
           ..write('translateCaptions: $translateCaptions, ')
-          ..write('translateSearchAndTags: $translateSearchAndTags')
+          ..write('translateSearchAndTags: $translateSearchAndTags, ')
+          ..write('formateStapeln: $formateStapeln')
           ..write(')'))
         .toString();
   }
@@ -33315,6 +33372,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<int> maxGleichzeitig,
       Value<bool> translateCaptions,
       Value<bool> translateSearchAndTags,
+      Value<bool> formateStapeln,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -33360,6 +33418,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<int> maxGleichzeitig,
       Value<bool> translateCaptions,
       Value<bool> translateSearchAndTags,
+      Value<bool> formateStapeln,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -33578,6 +33637,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<bool> get translateSearchAndTags => $composableBuilder(
     column: $table.translateSearchAndTags,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get formateStapeln => $composableBuilder(
+    column: $table.formateStapeln,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -33800,6 +33864,11 @@ class $$AppSettingsTableOrderingComposer
     column: $table.translateSearchAndTags,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get formateStapeln => $composableBuilder(
+    column: $table.formateStapeln,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -34014,6 +34083,11 @@ class $$AppSettingsTableAnnotationComposer
     column: $table.translateSearchAndTags,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get formateStapeln => $composableBuilder(
+    column: $table.formateStapeln,
+    builder: (column) => column,
+  );
 }
 
 class $$AppSettingsTableTableManager
@@ -34089,6 +34163,7 @@ class $$AppSettingsTableTableManager
                 Value<int> maxGleichzeitig = const Value.absent(),
                 Value<bool> translateCaptions = const Value.absent(),
                 Value<bool> translateSearchAndTags = const Value.absent(),
+                Value<bool> formateStapeln = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 themeMode: themeMode,
@@ -34132,6 +34207,7 @@ class $$AppSettingsTableTableManager
                 maxGleichzeitig: maxGleichzeitig,
                 translateCaptions: translateCaptions,
                 translateSearchAndTags: translateSearchAndTags,
+                formateStapeln: formateStapeln,
               ),
           createCompanionCallback:
               ({
@@ -34177,6 +34253,7 @@ class $$AppSettingsTableTableManager
                 Value<int> maxGleichzeitig = const Value.absent(),
                 Value<bool> translateCaptions = const Value.absent(),
                 Value<bool> translateSearchAndTags = const Value.absent(),
+                Value<bool> formateStapeln = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 themeMode: themeMode,
@@ -34220,6 +34297,7 @@ class $$AppSettingsTableTableManager
                 maxGleichzeitig: maxGleichzeitig,
                 translateCaptions: translateCaptions,
                 translateSearchAndTags: translateSearchAndTags,
+                formateStapeln: formateStapeln,
               ),
           withReferenceMapper: (p0) => p0
               .map(

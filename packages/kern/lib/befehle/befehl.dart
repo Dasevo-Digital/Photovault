@@ -154,6 +154,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'gesichtsschwelleSetzen': GesichtsschwelleSetzen.aus,
   'vorschlaegeAutomatischSetzen': VorschlaegeAutomatischSetzen.aus,
   'auswertenNachImportSetzen': AuswertenNachImportSetzen.aus,
+  'formateStapelnSetzen': FormateStapelnSetzen.aus,
   'sucheUebersetzenSetzen': SucheUebersetzenSetzen.aus,
   'angabenSchuetzenSetzen': AngabenSchuetzenSetzen.aus,
   'ortSetzen': OrtSetzen.aus,

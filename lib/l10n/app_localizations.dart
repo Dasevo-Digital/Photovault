@@ -1482,6 +1482,18 @@ abstract class AppTexte {
   /// **'Wie bei digiKam laufen alle KI-Funktionen offline auf diesem Rechner. Die Modelldateien werden nicht mitgeliefert, sondern bei Bedarf aus offiziellen Open-Source-Quellen heruntergeladen (einmalig, danach komplett offline nutzbar).'**
   String get einstKiHinweis;
 
+  /// No description provided for @einstFormateStapelnTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Gleiche Aufnahme in mehreren Formaten stapeln'**
+  String get einstFormateStapelnTitel;
+
+  /// No description provided for @einstFormateStapelnText.
+  ///
+  /// In de, this message translates to:
+  /// **'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.'**
+  String get einstFormateStapelnText;
+
   /// No description provided for @einstAutoAnalyseTitel.
   ///
   /// In de, this message translates to:

@@ -68,6 +68,24 @@ class ErscheinungsbildGruppe extends StatelessWidget {
           },
         ),
       ),
+      // Gilt für die ganze Bibliothek und damit für alle ihre Geräte.
+      Card(
+        child: StreamBuilder<AppSettingsData?>(
+          stream: stand.library.db.watchAppSettings(),
+          builder: (context, snapshot) {
+            final t = AppTexte.of(context);
+            return SwitchListTile(
+              secondary: const Icon(Icons.layers_outlined),
+              title: Text(t.einstFormateStapelnTitel),
+              subtitle: Text(t.einstFormateStapelnText),
+              isThreeLine: true,
+              value: snapshot.data?.formateStapeln ?? false,
+              onChanged: (an) =>
+                  stand.library.db.fuehreAus(FormateStapelnSetzen(an)),
+            );
+          },
+        ),
+      ),
     ],
   );
 }
