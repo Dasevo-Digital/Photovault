@@ -1083,6 +1083,10 @@ class LibraryState extends ChangeNotifier {
         letzteNeueFaelle = z.faelle - vorher.faelle;
         neueFaelle.value++;
       }
+      if (z.erreichbar && !z.schemaAnders && !_kammerGeprueft) {
+        _kammerGeprueft = true;
+        unawaited(_pruefeKammer());
+      }
       if (z.erreichbar && !z.schemaAnders) {
         unawaited(_vorrat?.fuelle().catchError((_) => 0));
         // Einmal je Start: Spuren, die bis 3.37 nur hier angelegt wurden,
@@ -4186,6 +4190,19 @@ class LibraryState extends ChangeNotifier {
   /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
   /// oder nicht fällig ist.
   final backupwarnung = ValueNotifier<Backupwarnung?>(null);
+
+  /// Einmal je Start: Wie viele Fotos warten, und ob es Zeit für eine
+  /// Erinnerung ist (#350).
+  var _kammerGeprueft = false;
+  final kammerErinnerung = ValueNotifier<({int anzahl, int tage})?>(null);
+
+  Future<void> _pruefeKammer() async {
+    final d = fotokammer;
+    if (d == null) return;
+    await d.aktualisiere();
+    kammerErinnerung.value = d.faelligeErinnerung();
+    notifyListeners();
+  }
 
   /// Zählt jedes Mal hoch, wenn der Server Änderungen abgelehnt hat (#340).
   /// Die Vorwegnahme ist dann schon zurückgedreht, und ohne Hinweis sähe

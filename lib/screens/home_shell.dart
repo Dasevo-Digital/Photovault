@@ -376,6 +376,7 @@ class _HomeShellState extends State<HomeShell> {
     });
     widget.library.backupwarnung.addListener(_backupGeaendert);
     widget.library.neueFaelle.addListener(_neueFaelle);
+    widget.library.kammerErinnerung.addListener(_kammerErinnern);
     // Der erste Lauf beim Start kann schon vor diesem Bildschirm fertig sein.
     WidgetsBinding.instance.addPostFrameCallback((_) => _backupGeaendert());
   }
@@ -383,6 +384,21 @@ class _HomeShellState extends State<HomeShell> {
   /// Was zuletzt zum automatischen Backup gemeldet wurde (#207) – je
   /// Sitzung einmal je Grund, nicht bei jedem Halbstundentakt.
   String? _backupGemeldet;
+
+  /// Fotos, die seit Tagen in der Kammer liegen, fallen sonst nicht auf
+  /// (#350): Sie sind ja nirgends zu sehen.
+  void _kammerErinnern() {
+    final e = widget.library.kammerErinnerung.value;
+    if (!mounted || e == null) return;
+    final t = AppTexte.of(context);
+    melde.hinweis(
+      t.kammerWartet(e.anzahl, e.tage),
+      aktion: (
+        beschriftung: t.importZurKammer,
+        beiDruck: () => widget.library.zeigeBereich(Hauptbereich.fotokammer),
+      ),
+    );
+  }
 
   /// Sagt, dass der Server eine Änderung nicht angenommen hat (#340).
   void _neueFaelle() {
@@ -461,7 +477,7 @@ class _HomeShellState extends State<HomeShell> {
   /// ⌘1…⌘9 (siehe [_kuerzelZiele]) = Reihenfolge in der Befehlspalette.
   /// Farben und Symbole teilen sich Rechner, Handy und Browser
   /// ([Bibliotheksfarben]).
-  static List<Leistengruppe> _gruppen(AppTexte t) => [
+  List<Leistengruppe> _gruppen(AppTexte t) => [
     Leistengruppe(
       eintraege: [
         Leisteneintrag(
@@ -534,6 +550,7 @@ class _HomeShellState extends State<HomeShell> {
           text: t.navFotokammer,
           icon: Bibliothekssymbole.fotokammer,
           farbe: Bibliotheksfarben.fotokammer,
+          zaehler: widget.library.fotokammer?.anzahl,
         ),
         Leisteneintrag(
           text: t.navDuplikate,
@@ -559,7 +576,7 @@ class _HomeShellState extends State<HomeShell> {
     ),
   ];
 
-  static List<Leisteneintrag> _ziele(AppTexte t) => [
+  List<Leisteneintrag> _ziele(AppTexte t) => [
     for (final g in _gruppen(t)) ...g.eintraege,
   ];
 
@@ -695,6 +712,7 @@ class _HomeShellState extends State<HomeShell> {
   void dispose() {
     widget.library.backupwarnung.removeListener(_backupGeaendert);
     widget.library.neueFaelle.removeListener(_neueFaelle);
+    widget.library.kammerErinnerung.removeListener(_kammerErinnern);
     _tresor.schweige();
     _lebenslauf.dispose();
     _seite.dispose();

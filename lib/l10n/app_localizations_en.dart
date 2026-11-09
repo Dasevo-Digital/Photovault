@@ -10292,6 +10292,23 @@ class AppTexteEn extends AppTexte {
   String get syncUebersicht => 'Changes and conflicts';
 
   @override
+  String kammerWartet(int anzahl, int tage) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos have',
+      one: '1 photo has',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tage,
+      locale: localeName,
+      other: '$tage days',
+      one: 'a day',
+    );
+    return '$_temp0 been waiting in staging for $_temp1.';
+  }
+
+  @override
   String get syncAnsehen => 'View';
 
   @override

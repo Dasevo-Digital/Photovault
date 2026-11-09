@@ -6,6 +6,7 @@ import 'package:zierbild/bibliothek_eintraege.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'fotokammer.dart';
 import 'aufnahmedaten.dart';
 import 'duplikate.dart';
 import 'einstellungen.dart';
@@ -44,8 +45,15 @@ class Bibliothek extends StatelessWidget {
         ),
       );
 
+  /// Neu aufbauen, wenn die Verbindung steht und wenn sich die Zahl der
+  /// wartenden Fotos ändert (#350).
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([sitzung, ?sitzung.fotokammer?.anzahl]),
+    builder: (context, _) => _aufbau(context),
+  );
+
+  Widget _aufbau(BuildContext context) {
     final t = AppTexte.of(context);
     final List<_Eintrag> entdecken = [
       (
@@ -110,7 +118,21 @@ class Bibliothek extends StatelessWidget {
             _oeffne(context, t.bibKalender, Kalender(sitzung: sitzung)),
       ),
     ];
+    final kammer = sitzung.fotokammer;
     final List<_Eintrag> verwalten = [
+      if (kammer != null)
+        (
+          icon: Bibliothekssymbole.fotokammer,
+          text: (kammer.anzahl.value ?? 0) > 0
+              ? '${t.kammerTitel} (${kammer.anzahl.value})'
+              : t.kammerTitel,
+          farbe: Bibliotheksfarben.fotokammer,
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => FotokammerSeite(dienst: kammer),
+            ),
+          ),
+        ),
       (
         icon: Bibliothekssymbole.duplikate,
         text: t.bibDuplikate,

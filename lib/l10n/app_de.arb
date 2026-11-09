@@ -6582,6 +6582,8 @@
   "regelDateiendungWert": "Endungen, z. B. jpg, heic",
   "regelDateiUngueltig": "Suchtext angeben oder gültige Dateiendungen durch Kommas trennen.",
   "syncUebersicht": "Änderungen und Konflikte",
+  "kammerWartet": "{anzahl, plural, =1{1 Foto wartet} other{{anzahl} Fotos warten}} seit {tage, plural, =1{einem Tag} other{{tage} Tagen}} in der Fotokammer.",
+  "@kammerWartet": {"placeholders": {"anzahl": {"type": "int"}, "tage": {"type": "int"}}},
   "syncAnsehen": "Ansehen",
   "syncNichtUebernommen": "{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}",
   "@syncNichtUebernommen": {

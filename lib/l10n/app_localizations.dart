@@ -15768,6 +15768,12 @@ abstract class AppTexte {
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
 
+  /// No description provided for @kammerWartet.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto wartet} other{{anzahl} Fotos warten}} seit {tage, plural, =1{einem Tag} other{{tage} Tagen}} in der Fotokammer.'**
+  String kammerWartet(int anzahl, int tage);
+
   /// No description provided for @syncAnsehen.
   ///
   /// In de, this message translates to:

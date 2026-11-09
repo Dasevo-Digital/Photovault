@@ -2763,6 +2763,101 @@ class AppTexteDe extends AppTexte {
   String get syncUebersicht => 'Änderungen und Konflikte';
 
   @override
+  String get kammerTitel => 'Fotokammer';
+
+  @override
+  String kammerAusgewaehlt(int anzahl) {
+    return '$anzahl ausgewählt';
+  }
+
+  @override
+  String get kammerFreigeben => 'Freigeben';
+
+  @override
+  String get kammerVerwerfen => 'Verwerfen';
+
+  @override
+  String kammerVerwerfenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos endgültig verwerfen?',
+      one: '1 Foto endgültig verwerfen?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerVerwerfenText =>
+      'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.';
+
+  @override
+  String kammerFreigegeben(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos in die Bibliothek übernommen',
+      one: '1 Foto in die Bibliothek übernommen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerFehler(String fehler) {
+    return 'Fotokammer: $fehler';
+  }
+
+  @override
+  String get kammerServerAlt =>
+      'Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.';
+
+  @override
+  String get kammerAbschliessen => 'Sichtung abschliessen';
+
+  @override
+  String kammerAbschliessenText(int weg, int rest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weg,
+      locale: localeName,
+      other: '$weg abgelehnte Fotos werden',
+      one: '1 abgelehntes Foto wird',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rest,
+      locale: localeName,
+      other: '$rest Fotos kommen',
+      one: '1 Foto kommt',
+    );
+    return '$_temp0 endgültig verworfen. $_temp1 in die Bibliothek.';
+  }
+
+  @override
+  String get kammerKeineVorschau => 'Keine Vorschau';
+
+  @override
+  String get kammerAblehnen => 'Ablehnen';
+
+  @override
+  String get kammerLeer => 'Die Fotokammer ist leer.';
+
+  @override
+  String kammerWartet(int anzahl, int tage) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos warten',
+      one: '1 Foto wartet',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tage,
+      locale: localeName,
+      other: '$tage Tagen',
+      one: 'einem Tag',
+    );
+    return '$_temp0 seit $_temp1 in der Fotokammer.';
+  }
+
+  @override
   String get syncAnsehen => 'Ansehen';
 
   @override

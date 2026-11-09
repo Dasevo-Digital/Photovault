@@ -5,6 +5,7 @@ import 'package:zierbild/bibliothek_eintraege.dart';
 
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'fotokammer.dart';
 import 'alben.dart';
 import 'bibliothek.dart';
 import 'konto.dart';
@@ -45,6 +46,27 @@ class _StartState extends State<Start> {
     super.initState();
     _lebenslauf;
     widget.sitzung.neueFaelle.addListener(_neueFaelle);
+    widget.sitzung.kammerErinnerung.addListener(_kammerErinnern);
+  }
+
+  /// Fotos, die seit Tagen in der Kammer liegen, fallen sonst nicht auf
+  /// (#350).
+  void _kammerErinnern() {
+    final e = widget.sitzung.kammerErinnerung.value;
+    final d = widget.sitzung.fotokammer;
+    if (!mounted || e == null || d == null) return;
+    final t = AppTexte.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.kammerWartet(e.anzahl, e.tage)),
+        action: SnackBarAction(
+          label: t.kammerTitel,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => FotokammerSeite(dienst: d)),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Sagt, dass der Server eine Änderung nicht angenommen hat (#340).
@@ -76,6 +98,7 @@ class _StartState extends State<Start> {
   @override
   void dispose() {
     widget.sitzung.neueFaelle.removeListener(_neueFaelle);
+    widget.sitzung.kammerErinnerung.removeListener(_kammerErinnern);
     _lebenslauf.dispose();
     _zeitleisteNachOben.dispose();
     super.dispose();

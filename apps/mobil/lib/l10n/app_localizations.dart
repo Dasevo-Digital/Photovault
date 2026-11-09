@@ -4261,6 +4261,96 @@ abstract class AppTexte {
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
 
+  /// No description provided for @kammerTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotokammer'**
+  String get kammerTitel;
+
+  /// No description provided for @kammerAusgewaehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} ausgewählt'**
+  String kammerAusgewaehlt(int anzahl);
+
+  /// No description provided for @kammerFreigeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Freigeben'**
+  String get kammerFreigeben;
+
+  /// No description provided for @kammerVerwerfen.
+  ///
+  /// In de, this message translates to:
+  /// **'Verwerfen'**
+  String get kammerVerwerfen;
+
+  /// No description provided for @kammerVerwerfenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto endgültig verwerfen?} other{{anzahl} Fotos endgültig verwerfen?}}'**
+  String kammerVerwerfenTitel(int anzahl);
+
+  /// No description provided for @kammerVerwerfenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.'**
+  String get kammerVerwerfenText;
+
+  /// No description provided for @kammerFreigegeben.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto in die Bibliothek übernommen} other{{anzahl} Fotos in die Bibliothek übernommen}}'**
+  String kammerFreigegeben(int anzahl);
+
+  /// No description provided for @kammerFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotokammer: {fehler}'**
+  String kammerFehler(String fehler);
+
+  /// No description provided for @kammerServerAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.'**
+  String get kammerServerAlt;
+
+  /// No description provided for @kammerAbschliessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichtung abschliessen'**
+  String get kammerAbschliessen;
+
+  /// No description provided for @kammerAbschliessenText.
+  ///
+  /// In de, this message translates to:
+  /// **'{weg, plural, =1{1 abgelehntes Foto wird} other{{weg} abgelehnte Fotos werden}} endgültig verworfen. {rest, plural, =1{1 Foto kommt} other{{rest} Fotos kommen}} in die Bibliothek.'**
+  String kammerAbschliessenText(int weg, int rest);
+
+  /// No description provided for @kammerKeineVorschau.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Vorschau'**
+  String get kammerKeineVorschau;
+
+  /// No description provided for @kammerAblehnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablehnen'**
+  String get kammerAblehnen;
+
+  /// No description provided for @kammerLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotokammer ist leer.'**
+  String get kammerLeer;
+
+  /// No description provided for @kammerWartet.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto wartet} other{{anzahl} Fotos warten}} seit {tage, plural, =1{einem Tag} other{{tage} Tagen}} in der Fotokammer.'**
+  String kammerWartet(int anzahl, int tage);
+
   /// No description provided for @syncAnsehen.
   ///
   /// In de, this message translates to:

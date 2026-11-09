@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -14,6 +15,7 @@ class Leisteneintrag {
     required this.icon,
     this.iconGewaehlt,
     this.farbe,
+    this.zaehler,
   });
 
   final String text;
@@ -24,6 +26,10 @@ class Leisteneintrag {
   /// Browser und Handy. Ohne steht das Symbol schlicht da – so die
   /// Hauptbereiche oben.
   final Color? farbe;
+
+  /// Eine Zahl am Eintrag, etwa die wartenden Fotos der Fotokammer (#350).
+  /// Nichts bei `null` oder 0.
+  final ValueListenable<int?>? zaehler;
 }
 
 /// Eine Gruppe von Zielen; die erste ohne [titel] sind die Hauptbereiche.
@@ -452,7 +458,7 @@ class _Zeile extends StatelessWidget {
     final thema = Theme.of(context);
     final farben = thema.colorScheme;
     final farbe = eintrag.farbe;
-    final Widget symbol = betont
+    final Widget grundsymbol = betont
         ? Container(
             width: 32,
             height: 32,
@@ -471,6 +477,19 @@ class _Zeile extends StatelessWidget {
               size: 22,
               color: gewaehlt ? farben.primary : farben.onSurfaceVariant,
             ),
+          );
+    final zaehler = eintrag.zaehler;
+    // Am Symbol, damit die Zahl auch bei eingeklappter Leiste zu sehen ist.
+    final symbol = zaehler == null
+        ? grundsymbol
+        : ValueListenableBuilder<int?>(
+            valueListenable: zaehler,
+            builder: (context, n, kind) => Badge(
+              isLabelVisible: (n ?? 0) > 0,
+              label: Text('${n ?? 0}'),
+              child: kind,
+            ),
+            child: grundsymbol,
           );
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),

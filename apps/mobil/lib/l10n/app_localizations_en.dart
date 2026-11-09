@@ -2753,6 +2753,101 @@ class AppTexteEn extends AppTexte {
   String get syncUebersicht => 'Changes and conflicts';
 
   @override
+  String get kammerTitel => 'Staging';
+
+  @override
+  String kammerAusgewaehlt(int anzahl) {
+    return '$anzahl selected';
+  }
+
+  @override
+  String get kammerFreigeben => 'Approve';
+
+  @override
+  String get kammerVerwerfen => 'Discard';
+
+  @override
+  String kammerVerwerfenTitel(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Discard $anzahl photos for good?',
+      one: 'Discard 1 photo for good?',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get kammerVerwerfenText =>
+      'Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance. Photos from the timeline stay in the trash until it expires.';
+
+  @override
+  String kammerFreigegeben(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos moved into the library',
+      one: '1 photo moved into the library',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String kammerFehler(String fehler) {
+    return 'Staging: $fehler';
+  }
+
+  @override
+  String get kammerServerAlt =>
+      'The server does not know staging yet. Update it to the new version.';
+
+  @override
+  String get kammerAbschliessen => 'Finish review';
+
+  @override
+  String kammerAbschliessenText(int weg, int rest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weg,
+      locale: localeName,
+      other: '$weg rejected photos are',
+      one: '1 rejected photo is',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rest,
+      locale: localeName,
+      other: '$rest photos go',
+      one: '1 photo goes',
+    );
+    return '$_temp0 permanently discarded. $_temp1 to the library.';
+  }
+
+  @override
+  String get kammerKeineVorschau => 'No preview';
+
+  @override
+  String get kammerAblehnen => 'Reject';
+
+  @override
+  String get kammerLeer => 'Staging is empty.';
+
+  @override
+  String kammerWartet(int anzahl, int tage) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos have',
+      one: '1 photo has',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      tage,
+      locale: localeName,
+      other: '$tage days',
+      one: 'a day',
+    );
+    return '$_temp0 been waiting in staging for $_temp1.';
+  }
+
+  @override
   String get syncAnsehen => 'View';
 
   @override

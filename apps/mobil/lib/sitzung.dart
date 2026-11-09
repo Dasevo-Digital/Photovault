@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/fotokammer_dienst.dart';
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
 import 'lokal/fallschluesselablage.dart';
@@ -58,6 +59,37 @@ class Sitzung extends ChangeNotifier {
   late StoragePaths paths;
   OfflineAlben? offlineAlben;
   Abgleich? abgleich;
+
+  /// Die Fotokammer des Servers (#350); `null` ohne Verbindung.
+  Fotokammerdienst? get fotokammer {
+    final a = abgleich;
+    if (a == null) return null;
+    final k = _fotokammer;
+    if (k != null && identical(k.verbindung, a.verbindung)) return k;
+    return _fotokammer = Fotokammerdienst(
+      a.verbindung,
+      abgleichen: () async {
+        try {
+          await a.empfange();
+        } on Object {
+          // Der nächste Abgleich holt es nach.
+        }
+      },
+    );
+  }
+
+  Fotokammerdienst? _fotokammer;
+
+  /// Einmal je Start: wie viele Fotos warten, und ob eine Erinnerung dran ist.
+  var _kammerGeprueft = false;
+  final kammerErinnerung = ValueNotifier<({int anzahl, int tage})?>(null);
+
+  Future<void> _pruefeKammer() async {
+    final d = fotokammer;
+    if (d == null) return;
+    await d.aktualisiere();
+    kammerErinnerung.value = d.faelligeErinnerung();
+  }
 
   /// Zählt hoch, wenn der Server Änderungen abgelehnt hat (#340): Sie sind
   /// dann hier schon zurückgedreht, und ohne Hinweis wären sie einfach weg.
@@ -186,6 +218,10 @@ class Sitzung extends ChangeNotifier {
       if (vorher != null && z.faelle > vorher.faelle) {
         letzteNeueFaelle = z.faelle - vorher.faelle;
         neueFaelle.value++;
+      }
+      if (z.erreichbar && !_kammerGeprueft) {
+        _kammerGeprueft = true;
+        unawaited(_pruefeKammer());
       }
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||

@@ -5054,6 +5054,8 @@
   "regelDateiendungWert": "Extensions, e.g. jpg, heic",
   "regelDateiUngueltig": "Enter search text or valid comma-separated file extensions.",
   "syncUebersicht": "Changes and conflicts",
+  "kammerWartet": "{anzahl, plural, =1{1 photo has} other{{anzahl} photos have}} been waiting in staging for {tage, plural, =1{a day} other{{tage} days}}.",
+  "@kammerWartet": {"placeholders": {"anzahl": {"type": "int"}, "tage": {"type": "int"}}},
   "syncAnsehen": "View",
   "syncNichtUebernommen": "{anzahl, plural, =1{One change was not applied because the photo has changed on the server in the meantime.} other{{anzahl} changes were not applied because the photos have changed on the server in the meantime.}}",
   "@syncNichtUebernommen": {
