@@ -71,7 +71,7 @@ class AussenzielAngabe {
         !const {'http', 'https'}.contains(adresse.scheme)) {
       throw ArgumentError('Die Adresse muss mit https:// beginnen.');
     }
-    if (adresse.scheme == 'http' && !_imEigenenNetz(adresse.host)) {
+    if (adresse.scheme == 'http' && !imEigenenNetz(adresse.host)) {
       // Zugangsdaten gingen sonst im Klartext durchs Netz.
       throw ArgumentError(
         'Unverschlüsseltes http geht nur im eigenen Netz. Bitte https nutzen.',
@@ -123,18 +123,6 @@ class AussenzielAngabe {
       praefix: praefix,
       drosselMb: mb != null && mb > 0 ? mb : null,
     );
-  }
-
-  static bool _imEigenenNetz(String host) {
-    if (host == 'localhost' || host.endsWith('.local')) return true;
-    final a = InternetAddress.tryParse(host);
-    if (a == null) return false;
-    if (a.isLoopback || a.isLinkLocal) return true;
-    final b = a.rawAddress;
-    if (a.type != InternetAddressType.IPv4) return false;
-    return b[0] == 10 ||
-        (b[0] == 172 && b[1] >= 16 && b[1] < 32) ||
-        (b[0] == 192 && b[1] == 168);
   }
 
   Aussenziel baue() => art == 's3'
@@ -622,4 +610,18 @@ class Aussensicherung {
     }
     return geloescht;
   }
+}
+
+/// Ob [host] nur im eigenen Netz erreichbar ist. Nur dorthin darf etwas
+/// Geheimes unverschlüsselt gehen.
+bool imEigenenNetz(String host) {
+  if (host == 'localhost' || host.endsWith('.local')) return true;
+  final a = InternetAddress.tryParse(host);
+  if (a == null) return false;
+  if (a.isLoopback || a.isLinkLocal) return true;
+  final b = a.rawAddress;
+  if (a.type != InternetAddressType.IPv4) return false;
+  return b[0] == 10 ||
+      (b[0] == 172 && b[1] >= 16 && b[1] < 32) ||
+      (b[0] == 192 && b[1] == 168);
 }

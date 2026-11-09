@@ -67,6 +67,7 @@ import 'package:kern/services/regel_anwenden.dart';
 
 import 'aussensicherung.dart';
 import 'aussenziel.dart' show Zielfehler;
+import 'immich.dart';
 import 'sicherung.dart';
 import 'speicher.dart';
 import 'teilung_api.dart';
@@ -108,6 +109,7 @@ Handler baueApi({
   final von = absender ?? Absender();
   final dt = darktable ?? DarktableEntwickler();
   unawaited(dt.suche());
+  final immich = Immichuebernahme(bibliotheken);
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final passkeys = Passkeyapi(konten, von);
@@ -533,6 +535,61 @@ Handler baueApi({
         }
         unawaited(a.jetzt());
         return _json(await a.stand(), status: 202);
+      }),
+    )
+    // Aus Immich übernehmen (#305). Nur Verwalter: Der Server fragt dabei
+    // eine frei eingetragene Adresse ab.
+    ..get(
+      '/api/v1/immich',
+      (Request r) =>
+          _nurVerwalter(r, () async => _json(immich.stand(kontoVon(r).id))),
+    )
+    ..post(
+      '/api/v1/immich/pruefen',
+      (Request r) => _nurVerwalter(r, () async {
+        final k = jsonDecode(await r.readAsString());
+        if (k is! Map) return _json({'fehler': 'Angaben fehlen'}, status: 400);
+        final konto = kontoVon(r).id;
+        try {
+          await immich.pruefe(
+            konto,
+            adresse: '${k['adresse'] ?? ''}',
+            schluessel: '${k['schluessel'] ?? ''}',
+          );
+        } on ArgumentError catch (f) {
+          return _json({'fehler': '${f.message}'}, status: 400);
+        } on StateError catch (f) {
+          return _json({'fehler': f.message}, status: 409);
+        }
+        return _json(immich.stand(konto), status: 202);
+      }),
+    )
+    ..post(
+      '/api/v1/immich/uebernehmen',
+      (Request r) => _nurVerwalter(r, () async {
+        final k = jsonDecode(await r.readAsString());
+        final konto = kontoVon(r).id;
+        try {
+          await immich.uebernimm(
+            konto,
+            k is Map ? k.cast<String, Object?>() : const {},
+          );
+        } on StateError catch (f) {
+          return _json({'fehler': f.message}, status: 409);
+        }
+        return _json(immich.stand(konto), status: 202);
+      }),
+    )
+    ..delete(
+      '/api/v1/immich',
+      (Request r) => _nurVerwalter(r, () async {
+        final konto = kontoVon(r).id;
+        try {
+          immich.verwirf(konto);
+        } on StateError catch (f) {
+          return _json({'fehler': f.message}, status: 409);
+        }
+        return _json(immich.stand(konto));
       }),
     )
     ..post(

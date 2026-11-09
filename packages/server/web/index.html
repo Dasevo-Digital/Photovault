@@ -331,6 +331,27 @@
              <button id="aussen-entfernen" type="button" hidden>Ziel entfernen</button></p>
         </form>
       </div>
+      <div id="immich">
+        <h3>Von Immich übernehmen</h3>
+        <p class="leise">Holt Alben, Favoriten, Personennamen, Beschreibungen und den Archivstatus aus Immich in deine Bibliothek und nennt, welche Fotos dort liegen und hier fehlen. Immich wird nur gelesen. Was hier schon steht, bleibt, wie es ist.</p>
+        <form id="form-immich" class="aussen-form">
+          <label>Adresse <input name="adresse" type="url" placeholder="https://immich.example.org" autocomplete="off" required></label>
+          <label>API-Schlüssel <input name="schluessel" type="password" autocomplete="off" required></label>
+          <p class="leise klein">Der Schlüssel braucht die Rechte asset.read, album.read und face.read. Er wird nicht gespeichert.</p>
+          <p><button type="submit">Prüfen</button></p>
+        </form>
+        <p id="immich-stand"></p>
+        <div id="immich-bericht" hidden>
+          <ul id="immich-zahlen"></ul>
+          <details id="immich-ohne" hidden><summary id="immich-ohne-titel"></summary><ul id="immich-ohne-liste"></ul></details>
+          <details id="immich-namen" hidden><summary>Abweichende und unklare Namen</summary><ul id="immich-namen-liste"></ul></details>
+          <form id="form-immich-teile" class="aussen-form">
+            <div id="immich-teile"></div>
+            <p><button type="submit">Übernehmen</button>
+               <button id="immich-verwerfen" type="button">Verwerfen</button></p>
+          </form>
+        </div>
+      </div>
       <h3>Konten</h3>
       <ul id="konten"></ul>
       <form id="form-konto-neu" class="zeile">

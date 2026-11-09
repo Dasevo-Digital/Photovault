@@ -30,6 +30,7 @@ export 'src/sicherung.dart' show Serversicherung, Sicherungsstufe;
 export 'src/speicher.dart'
     show Speicherstand, Speicherstufe, Speicherwaechter, speicherAusDf;
 export 'src/hochladen.dart' show Hochladen;
+export 'src/immich.dart' show Immichuebernahme, Immichverbindung;
 export 'src/konten/kontodienst.dart';
 export 'src/konten/passwort.dart' show Passwort;
 export 'src/konten/serverdatenbank.dart' show Serverdatenbank;

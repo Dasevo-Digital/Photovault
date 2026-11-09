@@ -3900,6 +3900,7 @@ async function zeigeKonto() {
   $('codes-fehler').textContent = '';
   zeigeFassung($('konto-fassung'));
   $('verwaltung').hidden = !k.verwalter;
+  if (k.verwalter) ladeImmich();
   if (k.verwalter) zeigeVerwaltung().catch((x) => { $('server-stand').replaceChildren(el('li', null, x.message)); });
   zeigeFreigaben().catch((x) => $('freigaben').replaceChildren(el('li', 'fehler', x.message)));
   zeigePartner().catch((x) => $('partner').replaceChildren(el('li', 'fehler', x.message)));
@@ -4269,6 +4270,80 @@ $('aussen-entfernen').addEventListener('click', async () => {
   if (!confirm(t('Das Ziel vergessen? Was dort liegt, bleibt liegen.'))) return;
   try { await api('/api/v1/sicherung/ausser-haus', { methode: 'DELETE' }); $('form-aussen').reset(); aussenGezeigt = ''; zeigeVerwaltung(); } catch (x) { alert(x.message); }
 });
+// Aus Immich übernehmen (#305): erst prüfen, dann die gewählten Teile.
+let immichUhr = null;
+const immichStufen = { laden: 'Liest aus Immich …', pruefsummen: 'Vergleicht die Originale …', gesichter: 'Liest die Gesichter …', uebernehmen: 'Übernimmt …' };
+function zeigeImmich(s) {
+  clearTimeout(immichUhr);
+  const laeuft = Object.hasOwn(immichStufen, s.stufe);
+  const knopf = $('form-immich').querySelector('button[type=submit]');
+  knopf.disabled = laeuft;
+  let text = '';
+  if (laeuft) text = t(immichStufen[s.stufe]) + (s.fertig ? ` ${s.fertig}${s.von ? ` / ${s.von}` : ''}` : '');
+  else if (s.stufe === 'fehler') text = s.fehler || t('Das ist gescheitert.');
+  else if (s.stufe === 'fertig') text = t('Übernommen: {a} Aufnahmen in Alben, {f} Favoriten, {b} Beschreibungen, {g} Gesichter, {p} neue Personen, {r} im Archiv-Album.', { a: s.ergebnis.albumAufnahmen, f: s.ergebnis.favoriten, b: s.ergebnis.beschreibungen, g: s.ergebnis.gesichter, p: s.ergebnis.personenNeu, r: s.ergebnis.archiv });
+  $('immich-stand').textContent = text;
+  $('immich-bericht').hidden = !s.bericht || laeuft;
+  if (s.bericht && !laeuft) zeigeImmichBericht(s.bericht);
+  if (laeuft) {
+    immichUhr = setTimeout(async () => {
+      if (!$('immich').offsetParent) return;
+      try { zeigeImmich(await api('/api/v1/immich')); } catch (_) { /* beim nächsten Öffnen */ }
+    }, 1500);
+  }
+}
+function zeigeImmichBericht(b) {
+  const z = b.zuordnung, v = b.vorhaben, zeilen = $('immich-zahlen');
+  zeilen.replaceChildren();
+  const zeile = (text) => zeilen.append(el('li', null, text));
+  zeile(t('Immich {f}: {n} Aufnahmen, {a} Alben, {p} benannte Personen', { f: b.fassung, n: b.immich.aufnahmen, a: b.immich.alben, p: b.immich.personen }));
+  zeile(t('Gefunden: {g} bitgleich, {s} mit anderen Metadaten', { g: z.bitgleich, s: z.aehnlich }));
+  zeile(t('Fehlen hier: {n}', { n: z.fehlen }));
+  if (z.andereZeit) zeile(t('Gleicher Name, andere Zeit (bitte ansehen): {n}', { n: z.andereZeit }));
+  if (z.papierkorb) zeile(t('Hier im Papierkorb: {n}', { n: z.papierkorb }));
+  if (v.beschreibungenAbweichend) zeile(t('Beschreibungen, die hier anders lauten und bleiben: {n}', { n: v.beschreibungenAbweichend }));
+  const ohne = z.beispiele || [];
+  $('immich-ohne').hidden = !ohne.length;
+  $('immich-ohne-titel').textContent = t('Nicht zugeordnet: {n}', { n: ohne.length });
+  $('immich-ohne-liste').replaceChildren(...ohne.map((o) => el('li', null, `${o.name} · ${datumZeit.format(new Date(o.zeit))} · ${t(({ fehlt: 'fehlt', andereZeit: 'andere Zeit', papierkorb: 'im Papierkorb', mehrdeutig: 'mehrdeutig' })[o.grund] || o.grund)}`)));
+  const namen = [
+    ...v.abweichendeNamen.map((n) => t('In Immich „{i}“, hier „{b}“: bleibt „{b}“', { i: n.immich, b: n.bibliothek })),
+    ...v.unklar.map((n) => t('„{n}“: keine klare Zuordnung, nichts geändert', { n })),
+  ];
+  $('immich-namen').hidden = !namen.length;
+  $('immich-namen-liste').replaceChildren(...namen.map((n) => el('li', null, n)));
+  const teile = [
+    ['alben', t('{n} Aufnahmen in {a} Alben', { n: v.albumAufnahmen, a: v.albenNeu + v.albenErgaenzt })],
+    ['favoriten', t('{n} Favoriten', { n: v.favoriten })],
+    ['beschreibungen', t('{n} Beschreibungen', { n: v.beschreibungen })],
+    ['personen', t('{g} Gesichter, {p} neue Personen, {b} Geburtstage', { g: v.gesichter, p: v.personenNeu, b: v.geburtstage })],
+    ['archiv', t('{n} archivierte Aufnahmen ins Album „Archiv (aus Immich)“', { n: v.archiv })],
+  ];
+  $('immich-teile').replaceChildren(...teile.map(([name, text]) => {
+    const l = el('label'), kasten = el('input');
+    kasten.type = 'checkbox'; kasten.name = name; kasten.checked = true;
+    l.append(kasten, ' ', text);
+    return l;
+  }));
+  $('form-immich-teile').querySelector('button[type=submit]').disabled = !v.aenderungen;
+}
+async function ladeImmich() { try { zeigeImmich(await api('/api/v1/immich')); } catch (_) { /* später */ } }
+$('form-immich').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  try {
+    zeigeImmich(await api('/api/v1/immich/pruefen', { methode: 'POST', json: { adresse: f.adresse.value.trim(), schluessel: f.schluessel.value } }));
+    f.schluessel.value = '';
+  } catch (x) { alert(x.message); }
+});
+$('form-immich-teile').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!confirm(t('Jetzt in die Bibliothek übernehmen?'))) return;
+  const teile = {};
+  for (const k of e.target.querySelectorAll('input[type=checkbox]')) teile[k.name] = k.checked;
+  try { zeigeImmich(await api('/api/v1/immich/uebernehmen', { methode: 'POST', json: teile })); } catch (x) { alert(x.message); }
+});
+$('immich-verwerfen').addEventListener('click', async () => { try { zeigeImmich(await api('/api/v1/immich', { methode: 'DELETE' })); } catch (x) { alert(x.message); } });
 $('auswertung-anstossen').addEventListener('click', async () => { try { await api('/api/v1/auswertung', { methode: 'POST', json: {} }); zeigeVerwaltung(); } catch (x) { alert(x.message); } });
 $('sicherung-jetzt').addEventListener('click', async () => { try { await api('/api/v1/sicherung/jetzt', { methode: 'POST', json: {} }); $('ende').textContent = ''; zeigeVerwaltung(); } catch (x) { alert(x.message); } });
 $('form-konto-neu').addEventListener('submit', async (e) => {
