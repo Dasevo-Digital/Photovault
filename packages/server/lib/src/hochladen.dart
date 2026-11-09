@@ -178,6 +178,8 @@ class Hochladen {
       'regelstand': ?meta['regelstand'],
       'kammer': ?(meta['kammer'] == '1' && kammer != null ? true : null),
       'xmp': ?meta['xmp'],
+      'videoVon': ?meta['videoVon'],
+      'videoZeit': ?int.tryParse(meta['videoZeit'] ?? ''),
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
@@ -482,6 +484,7 @@ class Hochladen {
     );
     var aufnahme = r.assetId;
     if (r.outcome == ImportOutcome.imported && aufnahme != null) {
+      await _uebernimmVideoangaben(b, aufnahme, a);
       // Wie in der App: Scheitert die Nachbearbeitung, ist die Datei
       // trotzdem aufgenommen – das darf dem Client nicht als Fehler
       // erscheinen, sonst lädt er sie noch einmal hoch.
@@ -509,6 +512,24 @@ class Hochladen {
       protokoll('Import von ${a['name']} gescheitert: ${r.error}');
     }
     return {'ausgang': r.outcome.name, 'aufnahme': aufnahme, 'fehler': r.error};
+  }
+
+  /// Ein Standbild aus einem Video trägt Zeit, Ort und Kamera des Videos
+  /// (#302): Es selbst hat keine Angaben und stünde sonst beim heutigen Tag.
+  Future<void> _uebernimmVideoangaben(
+    Bibliothek b,
+    String aufnahme,
+    Map<String, Object?> a,
+  ) async {
+    final von = a['videoVon'], zeit = a['videoZeit'];
+    if (von is! String || zeit is! int) return;
+    final video = await b.db.assetById(von);
+    if (video == null || video.isLocked) return;
+    await b.db.uebernimmVideoangaben(
+      aufnahme,
+      video,
+      DateTime.fromMillisecondsSinceEpoch(zeit),
+    );
   }
 
   /// Legt eine in der Fotos-App des Telefons bearbeitete Fassung über ihr

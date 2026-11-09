@@ -2025,8 +2025,8 @@ class LibraryState extends ChangeNotifier {
     AssetData video,
     Duration position,
   ) async {
-    _nurOhneServer();
-    final datei = paths.absolute(displayRelativePath(video));
+    // Mit Server liegt das Video erst nach dem Holen hier.
+    final datei = await paths.bereit(displayRelativePath(video));
     final schnitt = video.trimmedRelativePath == null
         ? null
         : await db.videoTrimForAsset(video.id);
@@ -2050,6 +2050,7 @@ class LibraryState extends ChangeNotifier {
           '.jpg';
       final ziel = File(p.join(ordner.path, name));
       await ziel.writeAsBytes(bild.jpegBytes);
+      if (verbunden) return await _videobildHochladen(ziel, video, stelle.wann);
       final ergebnis = await importService.importFile(ziel.path);
       // Prüfsumme gleich: genau dieses Bild liegt schon in der Bibliothek.
       if (ergebnis.outcome == ImportOutcome.duplicateSkipped) {
@@ -2067,6 +2068,33 @@ class LibraryState extends ChangeNotifier {
       return Videobildergebnis.gesichert;
     } finally {
       await ordner.delete(recursive: true);
+    }
+  }
+
+  /// Das Standbild geht zum Server, und der trägt Zeit, Ort und Kamera des
+  /// Videos ein (#302).
+  Future<Videobildergebnis> _videobildHochladen(
+    File bild,
+    AssetData video,
+    DateTime wann,
+  ) async {
+    final a = abgleich;
+    if (a == null) return Videobildergebnis.fehlgeschlagen;
+    final kopf = await TusHochladen(a.verbindung)
+        .lade(bild, 'api/v1/hochladen', {
+          'filename': p.basename(bild.path),
+          'videoVon': video.id,
+          'videoZeit': '${wann.millisecondsSinceEpoch}',
+          'geaendert': '${wann.millisecondsSinceEpoch}',
+        });
+    switch (kopf['pv-ausgang']) {
+      case 'imported':
+        await a.empfange();
+        return Videobildergebnis.gesichert;
+      case 'duplicateSkipped':
+        return Videobildergebnis.schonDa;
+      default:
+        return Videobildergebnis.fehlgeschlagen;
     }
   }
 
@@ -3191,40 +3219,56 @@ class LibraryState extends ChangeNotifier {
   /// nachträglichen Metadaten-Änderungen (Tag/Bewertung/Beschreibung) bei
   /// erneutem Lauf konsistent. Gesperrte Assets werden ausgeschlossen (siehe
   /// AppDatabase.assetsForXmpExport).
-  /// Legt [jpeg] aus darktable über [asset]; das Original bleibt als
-  /// Variante dahinter (#347). Sterne und Farbmarke aus der [beilage], wenn
-  /// sie dort geändert wurden.
+  /// Legt [jpeg] als neue Fassung über [asset]; das Original bleibt als
+  /// Variante dahinter (#248).
+  ///
+  /// Mit Server tauscht der Server die Datei (#302): Die Kopie hier darf das
+  /// nicht (#250), und das Original liegt ja dort. Es ist derselbe Weg wie
+  /// bei einer Bearbeitung vom Telefon.
+  Future<void> speichereNeueFassung(AssetData asset, Uint8List jpeg) async {
+    final a = abgleich;
+    if (!verbunden || a == null) {
+      await speichereBearbeitung(
+        db: db,
+        paths: paths,
+        asset: asset,
+        jpeg: jpeg,
+        importe: importService,
+      );
+      return;
+    }
+    final ordner = await Directory.systemTemp.createTemp('pv_fassung_');
+    try {
+      final datei = File(
+        p.join(
+          ordner.path,
+          p.setExtension(p.basename(asset.originalFileName), '.jpg'),
+        ),
+      );
+      await datei.writeAsBytes(jpeg, flush: true);
+      final kopf = await TusHochladen(a.verbindung)
+          .lade(datei, 'api/v1/hochladen', {
+            'filename': p.basename(datei.path),
+            'bearbeitungVon': asset.checksum,
+            'geaendert': '${DateTime.now().millisecondsSinceEpoch}',
+          });
+      if (kopf['pv-ausgang'] == 'failed') {
+        throw StateError(Uri.decodeComponent(kopf['pv-fehler'] ?? ''));
+      }
+      await a.empfange();
+    } finally {
+      await ordner.delete(recursive: true);
+    }
+  }
+
+  /// Legt [jpeg] aus darktable über [asset] (#347). Sterne und Farbmarke
+  /// aus der [beilage], wenn sie dort geändert wurden.
   Future<void> uebernimmAusDarktable(
     AssetData asset,
     File jpeg,
     File beilage,
   ) async {
-    final a = abgleich;
-    if (verbunden && a != null) {
-      // Die Kopie hier darf die Datei nicht tauschen (#250): Das macht der
-      // Server, wie bei einer Bearbeitung vom Telefon.
-      final kopf = await TusHochladen(a.verbindung).lade(
-        jpeg,
-        'api/v1/hochladen',
-        {
-          'filename': p.setExtension(asset.originalFileName, '.jpg'),
-          'bearbeitungVon': asset.checksum,
-          'geaendert': '${(await jpeg.lastModified()).millisecondsSinceEpoch}',
-        },
-      );
-      if (kopf['pv-ausgang'] == 'failed') {
-        throw StateError(Uri.decodeComponent(kopf['pv-fehler'] ?? ''));
-      }
-      await a.empfange();
-    } else {
-      await speichereBearbeitung(
-        db: db,
-        paths: paths,
-        asset: asset,
-        jpeg: await jpeg.readAsBytes(),
-        importe: importService,
-      );
-    }
+    await speichereNeueFassung(asset, await jpeg.readAsBytes());
     final f = parseXmpFile(beilage);
     if (f == null) return;
     if (f.rating case final r? when r != asset.rating) {

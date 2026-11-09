@@ -77,6 +77,7 @@ void main() {
     WidgetTester tester,
     AssetData asset, {
     Bildwerkzeuge? werkzeuge,
+    Future<void> Function(Uint8List)? speichern,
   }) async {
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -92,6 +93,7 @@ void main() {
           db: db,
           paths: pfade,
           bildwerkzeuge: werkzeuge,
+          speichern: speichern,
         ),
       ),
     );
@@ -195,6 +197,27 @@ void main() {
       expect((nachher.widthPx, nachher.heightPx), (2000, 3000));
       expect(nachher.previewRelativePath, isNull);
       expect(await pfade.absolute(vorschau).exists(), isFalse);
+      await abbauen(tester);
+    });
+  });
+
+  testWidgets('mit Server (#302): das Ergebnis geht an den, der speichert', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final bytes = bild(300, 200, png: true);
+      final a = await importiere('scan.png', bytes);
+      Uint8List? gespeichert;
+      await zeige(tester, a, speichern: (j) async => gespeichert = j);
+
+      await dreheUndSpeichere(tester);
+
+      expect(melde.sichtbare, isEmpty);
+      final b = img.decodeJpg(gespeichert!)!;
+      // Gedreht, und der Editor selbst fasst die Bibliothek nicht an.
+      expect((b.width, b.height), (200, 300));
+      expect(await pfade.absolute(a.relativePath).readAsBytes(), bytes);
+      expect(await db.select(db.assets).get(), [a]);
       await abbauen(tester);
     });
   });

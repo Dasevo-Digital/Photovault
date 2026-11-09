@@ -155,6 +155,10 @@ class ImageEditorScreen extends StatefulWidget {
   /// App ([Bildwerkzeuge.standard]).
   final Bildwerkzeuge? bildwerkzeuge;
 
+  /// Wie das Ergebnis gespeichert wird; ohne Angabe direkt in der
+  /// Bibliothek. Mit Server übernimmt das [LibraryState] (#302).
+  final Future<void> Function(Uint8List jpeg)? speichern;
+
   const ImageEditorScreen({
     super.key,
     required this.asset,
@@ -162,6 +166,7 @@ class ImageEditorScreen extends StatefulWidget {
     required this.paths,
     this.modelsDir,
     this.bildwerkzeuge,
+    this.speichern,
   });
 
   @override
@@ -229,7 +234,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   /// 48-MP-DNG ein 3-MP-JPEG (#248). HEIC und RAW wandelt jetzt das System
   /// in voller Grösse; was `package:image` selbst liest, kommt unverändert.
   Future<Uint8List?> _vollesBild() async {
-    final datei = widget.paths.absolute(widget.asset.relativePath);
+    // Mit Server liegt das Original erst nach dem Holen hier.
+    final datei = await widget.paths.bereit(widget.asset.relativePath);
     final endung = p.extension(datei.path).toLowerCase();
     final inhalt = await ImportService.inhaltskennung(datei, null);
     bool gewandelt(String? e) =>
@@ -623,17 +629,22 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     try {
       final jpegBytes = await compute(_finalizeImageIsolate, currentBytes);
       if (jpegBytes == null) throw Exception(nichtFinalisiert);
-      await speichereBearbeitung(
-        db: widget.db,
-        paths: widget.paths,
-        asset: widget.asset,
-        jpeg: jpegBytes,
-        importe: ImportService(
-          widget.db,
-          widget.paths,
-          bildwerkzeuge: widget.bildwerkzeuge,
-        ),
-      );
+      final speichern = widget.speichern;
+      if (speichern != null) {
+        await speichern(jpegBytes);
+      } else {
+        await speichereBearbeitung(
+          db: widget.db,
+          paths: widget.paths,
+          asset: widget.asset,
+          jpeg: jpegBytes,
+          importe: ImportService(
+            widget.db,
+            widget.paths,
+            bildwerkzeuge: widget.bildwerkzeuge,
+          ),
+        );
+      }
 
       // Die Datei ist neu, ihr Pfad ist derselbe – und Flutter merkt
       // sich dekodierte Bilder nach dem Pfad. Ohne dieses Vergessen zeigt

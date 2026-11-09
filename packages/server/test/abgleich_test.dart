@@ -648,6 +648,40 @@ void main() {
     },
   );
 
+  test(
+    'eine Bearbeitung vom Rechner legt sich über ihr Original (#302)',
+    () async {
+      final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+      final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+      addTearDown(v.schliesse);
+      File bild(String name, int rot) {
+        final b = img.Image(width: 64, height: 48);
+        img.fill(b, color: img.ColorRgb8(rot, 90, 200 - rot));
+        return File('${ordner.path}/$name')..writeAsBytesSync(img.encodeJpg(b));
+      }
+
+      final tus = TusHochladen(v);
+      final erst = await tus.lade(bild('foto.jpg', 30), 'api/v1/hochladen', {
+        'filename': 'foto.jpg',
+      });
+      final id = erst['pv-aufnahme']!;
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      final vorher = (await db.assetById(id))!;
+
+      final neu = await tus.lade(bild('foto2.jpg', 180), 'api/v1/hochladen', {
+        'filename': 'foto.jpg',
+        'bearbeitungVon': vorher.checksum,
+      });
+      expect(neu['pv-ausgang'], 'imported');
+      expect(neu['pv-aufnahme'], id);
+      final nachher = (await db.assetById(id))!;
+      expect(nachher.checksum, isNot(vorher.checksum));
+      // Das Original liegt als eigene Aufnahme dahinter.
+      expect(await db.select(db.assets).get(), hasLength(2));
+      expect(nachher.stackId, isNotNull);
+    },
+  );
+
   test('Fotokammer: hochladen, ansehen, freigeben, verwerfen (#336)', () async {
     final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
     final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
@@ -862,6 +896,23 @@ void main() {
     await v.schicke('api/v1/kammer/verwerfen', {
       'ids': [namens['pv-kammer']],
     });
+
+    // Ein Standbild aus einem Video trägt dessen Angaben (#302).
+    final dbV = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    final quelle = (await dbV.select(dbV.assets).get()).first;
+    await dbV.fuehreAus(OrtSetzen([quelle.id], 47.5, 8.5));
+    final standbild = await tus.lade(
+      bild('standbild.jpg', 13),
+      'api/v1/hochladen',
+      {
+        'filename': 'standbild.jpg',
+        'videoVon': quelle.id,
+        'videoZeit': '${DateTime.utc(2021, 3, 4, 5, 6).millisecondsSinceEpoch}',
+      },
+    );
+    final zeileV = (await dbV.assetById(standbild['pv-aufnahme']!))!;
+    expect(zeileV.fileCreatedAt.toUtc(), DateTime.utc(2021, 3, 4, 5, 6));
+    expect(zeileV.latitude, 47.5);
 
     // Ein anderes Konto sieht die Kammer nicht.
     final otto = await konten.legeAn('otto', 'ein anderes passwort');
