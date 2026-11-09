@@ -897,6 +897,36 @@ void main() {
       'ids': [namens['pv-kammer']],
     });
 
+    // Freigeben mit Ziel (#349): dasselbe Album über mehrere Stapel.
+    for (final (n, name) in [(120, 'ziel1.jpg'), (121, 'ziel2.jpg')]) {
+      final k = await tus.lade(bild(name, n), 'api/v1/hochladen', {
+        'filename': name,
+        ...kammer,
+      });
+      final f = await v.schicke('api/v1/kammer/freigeben', {
+        'ids': [k['pv-kammer']],
+        'ziel': {
+          'album': 'Spiel',
+          'schlagwoerter': ['Fussball'],
+          'breite': 47.1,
+          'laenge': 8.2,
+        },
+      });
+      expect(((f['ergebnisse'] as List).single as Map)['ausgang'], 'imported');
+    }
+    final dbZ = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    final alben = (await dbZ.alleAlben()).where((a) => a.name == 'Spiel');
+    expect(alben, hasLength(1));
+    expect(await dbZ.select(dbZ.albumAssets).get(), hasLength(2));
+    final imAlbum = await dbZ.assetById(
+      (await dbZ.select(dbZ.albumAssets).get()).first.assetId,
+    );
+    expect(imAlbum!.latitude, 47.1);
+    expect(
+      (await dbZ.tagsForAsset(imAlbum.id)).map((t) => t.name),
+      contains('Fussball'),
+    );
+
     // Ein Standbild aus einem Video trägt dessen Angaben (#302).
     final dbV = (await bibliotheken.fuer(erika.id)).bibliothek.db;
     final quelle = (await dbV.select(dbV.assets).get()).first;
@@ -949,7 +979,7 @@ void main() {
       addTearDown(v.schliesse);
       expect(
         ((await v.hole('api/v1/zustand'))['funktionen'] as Map)['fotokammer'],
-        3,
+        4,
       );
       File bild(String name, int rot) {
         final b = img.Image(width: 640, height: 480);

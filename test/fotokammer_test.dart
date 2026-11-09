@@ -21,6 +21,7 @@ void main() {
   late int nachFreigabe;
   late List<Map<String, Object?>> urteile;
   late int stufe;
+  late List<Object?> ziele;
 
   final jpeg = img.encodeJpg(img.Image(width: 8, height: 6));
 
@@ -73,6 +74,7 @@ void main() {
       final ids = (jsonDecode(r.body)['ids'] as List).cast<String>();
       if (pfad == '/api/v1/kammer/freigeben') {
         freigegeben.add(ids);
+        ziele.add((jsonDecode(r.body) as Map)['ziel']);
         eintraege.removeWhere((e) => ids.contains(e['id']));
         return json({
           'ergebnisse': [
@@ -114,7 +116,8 @@ void main() {
     verworfen = [];
     nachFreigabe = 0;
     urteile = [];
-    stufe = 3;
+    stufe = 4;
+    ziele = [];
   });
 
   Future<void> zeige(WidgetTester tester, Fotokammerdienst? d) async {
@@ -249,6 +252,64 @@ void main() {
     await tester.pumpAndSettle();
     expect(zoom.value.getMaxScaleOnAxis(), 1);
     expect(vollbilder(), hasLength(1));
+  });
+
+  group('Ziel beim Freigeben (#349)', () {
+    Future<void> setzeZiel(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Ziel beim Freigeben'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).at(0), ' Spiel ');
+      await tester.enterText(find.byType(TextField).at(1), 'Fussball, Halle,');
+      await tester.tap(find.widgetWithText(FilledButton, 'Speichern'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('geht mit jedem Stapel an den Server, danach ist es leer', (
+      tester,
+    ) async {
+      await zeige(tester, dienst());
+      await setzeZiel(tester);
+      expect(
+        find.textContaining('Ziel: Spiel, Fussball, Halle'),
+        findsOneWidget,
+      );
+      await tester.tap(find.byTooltip('Alle auswählen'));
+      await tester.pump();
+      await tester.tap(find.text('Freigeben'));
+      await tester.pumpAndSettle();
+      expect(ziele, hasLength(2));
+      expect(ziele.first, {
+        'album': 'Spiel',
+        'schlagwoerter': ['Fussball', 'Halle'],
+      });
+      expect(ziele.last, ziele.first);
+      expect(find.textContaining('Ziel:'), findsNothing);
+    });
+
+    testWidgets('ohne Ziel geht auch keines mit', (tester) async {
+      await zeige(tester, dienst());
+      await tester.tap(find.byTooltip('Alle auswählen'));
+      await tester.pump();
+      await tester.tap(find.text('Freigeben'));
+      await tester.pumpAndSettle();
+      expect(ziele, everyElement(isNull));
+    });
+
+    testWidgets('leeren nimmt es zurück', (tester) async {
+      await zeige(tester, dienst());
+      await setzeZiel(tester);
+      await tester.tap(find.byTooltip('Ziel beim Freigeben'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Leeren'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Ziel:'), findsNothing);
+    });
+
+    testWidgets('ein älterer Server: kein Knopf', (tester) async {
+      stufe = 3;
+      await zeige(tester, dienst());
+      expect(find.byTooltip('Ziel beim Freigeben'), findsNothing);
+    });
   });
 
   group('Sichten (#345)', () {

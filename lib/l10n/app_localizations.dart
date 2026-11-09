@@ -16120,6 +16120,48 @@ abstract class AppTexte {
   /// **'Auswählen (Leertaste)'**
   String get kammerAuswaehlenTaste;
 
+  /// No description provided for @kammerZiel.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel beim Freigeben'**
+  String get kammerZiel;
+
+  /// No description provided for @kammerZielAlbum.
+  ///
+  /// In de, this message translates to:
+  /// **'Album (vorhanden oder neu)'**
+  String get kammerZielAlbum;
+
+  /// No description provided for @kammerZielSchlagwoerter.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlagwörter, durch Komma getrennt'**
+  String get kammerZielSchlagwoerter;
+
+  /// No description provided for @kammerZielOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort für Fotos ohne eigenen'**
+  String get kammerZielOrt;
+
+  /// No description provided for @kammerZielOrtKurz.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get kammerZielOrtKurz;
+
+  /// No description provided for @kammerZielLeeren.
+  ///
+  /// In de, this message translates to:
+  /// **'Leeren'**
+  String get kammerZielLeeren;
+
+  /// No description provided for @kammerZielAnzeige.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel: {text}'**
+  String kammerZielAnzeige(String text);
+
   /// No description provided for @kammerAbschliessen.
   ///
   /// In de, this message translates to:

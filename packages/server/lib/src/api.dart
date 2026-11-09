@@ -770,8 +770,9 @@ class _Api {
           'collage': 1,
           // Hochladen in die Fotokammer, Freigeben und Verwerfen (#336);
           // 2: auch Fotos der Bibliothek hineinlegen (#337);
-          // 3: Sterne und Ablehnung beim Sichten (#345).
-          'fotokammer': 3,
+          // 3: Sterne und Ablehnung beim Sichten (#345);
+          // 4: Album, Schlagwörter und Ort beim Freigeben (#349).
+          'fotokammer': 4,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

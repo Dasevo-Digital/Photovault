@@ -60,6 +60,31 @@ class Kammereintrag {
   bool get istVideo => art == 'VIDEO';
 }
 
+/// Wohin Fotos beim Freigeben kommen (#349).
+class Kammerziel {
+  const Kammerziel({
+    this.album,
+    this.schlagwoerter = const [],
+    this.breite,
+    this.laenge,
+  });
+
+  final String? album;
+  final List<String> schlagwoerter;
+  final double? breite;
+  final double? laenge;
+
+  bool get hatOrt => breite != null && laenge != null;
+  bool get leer => album == null && schlagwoerter.isEmpty && !hatOrt;
+
+  Map<String, Object?> get alsJson => {
+    'album': ?album,
+    if (schlagwoerter.isNotEmpty) 'schlagwoerter': schlagwoerter,
+    'breite': ?breite,
+    'laenge': ?laenge,
+  };
+}
+
 /// Was ein Freigeben ergab.
 class Kammerfreigabe {
   int neu = 0;
@@ -96,7 +121,8 @@ class Fotokammerdienst {
   /// Ob der Server die Kammer kennt. Ein älterer würde `kammer` beim
   /// Hochladen übergehen und das Foto gleich in die Bibliothek legen.
   /// [stufe] 2: Fotos der Bibliothek lassen sich hineinlegen (#337).
-  /// [stufe] 3: Sterne und Ablehnung beim Sichten (#345).
+  /// [stufe] 3: Sterne und Ablehnung beim Sichten (#345). [stufe] 4: Album,
+  /// Schlagwörter und Ort beim Freigeben (#349).
   Future<bool> moeglich({int stufe = 1}) async => await this.stufe() >= stufe;
 
   /// Was der Server von der Kammer kennt; 0, wenn gar nichts.
@@ -178,6 +204,7 @@ class Fotokammerdienst {
   Future<Kammerfreigabe> freigeben(
     List<String> ids, {
     void Function(int erledigt, int gesamt)? fortschritt,
+    Kammerziel? ziel,
   }) async {
     final r = Kammerfreigabe();
     try {
@@ -185,6 +212,7 @@ class Fotokammerdienst {
         final teil = ids.sublist(i, (i + stapel).clamp(0, ids.length));
         final j = await verbindung.schicke('api/v1/kammer/freigeben', {
           'ids': teil,
+          if (ziel != null && !ziel.leer) 'ziel': ziel.alsJson,
         }, zeitlimit: const Duration(minutes: 5));
         for (final e in (j['ergebnisse'] as List? ?? const [])) {
           if (e is! Map) continue;

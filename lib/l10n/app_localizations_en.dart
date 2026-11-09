@@ -10584,6 +10584,29 @@ class AppTexteEn extends AppTexte {
   String get kammerAuswaehlenTaste => 'Select (space)';
 
   @override
+  String get kammerZiel => 'Destination on approval';
+
+  @override
+  String get kammerZielAlbum => 'Album (existing or new)';
+
+  @override
+  String get kammerZielSchlagwoerter => 'Tags, separated by commas';
+
+  @override
+  String get kammerZielOrt => 'Location for photos without one';
+
+  @override
+  String get kammerZielOrtKurz => 'Location';
+
+  @override
+  String get kammerZielLeeren => 'Clear';
+
+  @override
+  String kammerZielAnzeige(String text) {
+    return 'Destination: $text';
+  }
+
+  @override
   String get kammerAbschliessen => 'Finish review';
 
   @override

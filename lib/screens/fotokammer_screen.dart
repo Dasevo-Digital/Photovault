@@ -9,6 +9,7 @@ import '../services/groessentext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/mini_location_map.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import '../widgets/star_rating.dart';
 import 'home_shell.dart' show Hauptbereich;
@@ -82,10 +83,13 @@ Future<bool> inDieFotokammer(
 /// gross, dort blättern die Pfeiltasten, und die Leertaste wählt aus. Danach die Auswahl freigeben –
 /// und mit „Auswahl umkehren“ den Rest verwerfen.
 class FotokammerScreen extends StatefulWidget {
-  const FotokammerScreen({super.key, required this.dienst});
+  const FotokammerScreen({super.key, required this.dienst, this.alben});
 
   /// `null` ohne Server (siehe [LibraryState.fotokammer]).
   final Fotokammerdienst? dienst;
+
+  /// Die vorhandenen Alben, als Vorschläge beim Ziel (#349).
+  final Future<List<String>> Function()? alben;
 
   @override
   State<FotokammerScreen> createState() => _FotokammerScreenState();
@@ -104,6 +108,13 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
 
   /// Ob der Server sich Sterne und Ablehnung merkt (#345).
   var _sichten = false;
+
+  /// Ob er beim Freigeben ein Ziel annimmt (#349).
+  var _mitZiel = false;
+
+  /// Gilt für das nächste Freigeben. Danach ist es wieder leer, sonst
+  /// landete die nächste Serie unbemerkt im selben Album.
+  Kammerziel? _ziel;
 
   Fotokammerdienst? get _dienst => widget.dienst;
 
@@ -137,6 +148,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       if (!mounted) return;
       setState(() {
         _sichten = stufe >= 3;
+        _mitZiel = stufe >= 4;
         _eintraege = l;
         _auswahl.retainAll(l.map((e) => e.id));
         _lage = _Lage.bereit;
@@ -168,10 +180,12 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     try {
       final r = await d.freigeben(
         ids,
+        ziel: _ziel,
         fortschritt: (n, gesamt) {
           if (mounted) setState(() => _arbeit = (n, gesamt));
         },
       );
+      _ziel = null;
       bote.showSnackBar(
         SnackBar(
           content: Text(
@@ -280,10 +294,12 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     try {
       final r = await d.freigeben(
         rest,
+        ziel: _ziel,
         fortschritt: (n, gesamt) {
           if (mounted) setState(() => _arbeit = (n, gesamt));
         },
       );
+      _ziel = null;
       if (r.gescheitert.isNotEmpty) {
         bote.showSnackBar(
           SnackBar(
@@ -309,6 +325,24 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       await _lade();
     }
   }
+
+  Future<void> _zielWaehlen() async {
+    final alben = await widget.alben?.call() ?? const <String>[];
+    if (!mounted) return;
+    final neu = await showDialog<Kammerziel>(
+      context: context,
+      builder: (_) => _ZielDialog(start: _ziel, alben: alben),
+    );
+    if (neu != null && mounted) {
+      setState(() => _ziel = neu.leer ? null : neu);
+    }
+  }
+
+  String _zieltext(AppTexte t, Kammerziel z) => [
+    ?z.album,
+    ...z.schlagwoerter,
+    if (z.hatOrt) t.kammerZielOrtKurz,
+  ].join(', ');
 
   Future<void> _oeffne(int index) async {
     final d = _dienst;
@@ -353,7 +387,11 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
                       bottom: AppSpacing.sm,
                     ),
                     child: Text(
-                      t.kammerUmfang(_eintraege.length, groessentext(bytes)),
+                      [
+                        t.kammerUmfang(_eintraege.length, groessentext(bytes)),
+                        if (_ziel case final z?)
+                          t.kammerZielAnzeige(_zieltext(t, z)),
+                      ].join(' · '),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
@@ -397,6 +435,14 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
               icon: const Icon(Icons.flip),
             ),
             const SizedBox(width: AppSpacing.sm),
+            if (_mitZiel)
+              IconButton(
+                tooltip: t.kammerZiel,
+                isSelected: _ziel != null,
+                onPressed: frei ? _zielWaehlen : null,
+                icon: const Icon(Icons.bookmark_add_outlined),
+                selectedIcon: const Icon(Icons.bookmark_added),
+              ),
             if (_eintraege.any((e) => e.abgelehnt)) ...[
               FilledButton.tonalIcon(
                 onPressed: frei ? _abschliessen : null,
@@ -478,6 +524,139 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       },
     ),
   };
+}
+
+/// Fragt, wohin das Freigegebene soll (#349).
+class _ZielDialog extends StatefulWidget {
+  const _ZielDialog({required this.start, required this.alben});
+  final Kammerziel? start;
+  final List<String> alben;
+
+  @override
+  State<_ZielDialog> createState() => _ZielDialogState();
+}
+
+class _ZielDialogState extends State<_ZielDialog> {
+  late final _album = TextEditingController(text: widget.start?.album ?? '');
+  late final _schlagwoerter = TextEditingController(
+    text: widget.start?.schlagwoerter.join(', ') ?? '',
+  );
+  late double? _breite = widget.start?.breite;
+  late double? _laenge = widget.start?.laenge;
+
+  @override
+  void dispose() {
+    _album.dispose();
+    _schlagwoerter.dispose();
+    super.dispose();
+  }
+
+  void _fertig() {
+    final album = _album.text.trim();
+    Navigator.pop(
+      context,
+      Kammerziel(
+        album: album.isEmpty ? null : album,
+        schlagwoerter: [
+          for (final t in _schlagwoerter.text.split(','))
+            if (t.trim().isNotEmpty) t.trim(),
+        ],
+        breite: _breite,
+        laenge: _laenge,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return AlertDialog(
+      title: Text(t.kammerZiel),
+      content: SizedBox(
+        width: 420,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RawAutocomplete<String>(
+                textEditingController: _album,
+                focusNode: _albumFokus,
+                optionsBuilder: (w) => widget.alben.where(
+                  (a) => a.toLowerCase().contains(w.text.toLowerCase()),
+                ),
+                fieldViewBuilder: (context, c, f, _) => TextField(
+                  controller: c,
+                  focusNode: f,
+                  decoration: InputDecoration(labelText: t.kammerZielAlbum),
+                ),
+                optionsViewBuilder: (context, waehle, optionen) => Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: 200,
+                        maxWidth: 420,
+                      ),
+                      child: ListView(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        children: [
+                          for (final o in optionen)
+                            ListTile(
+                              dense: true,
+                              title: Text(o),
+                              onTap: () => waehle(o),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: _schlagwoerter,
+                decoration: InputDecoration(
+                  labelText: t.kammerZielSchlagwoerter,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              // Erst beim Aufklappen: Die Karte lädt Kacheln aus dem Netz.
+              ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                title: Text(t.kammerZielOrt),
+                children: [
+                  MiniLocationMap(
+                    latitude: _breite,
+                    longitude: _laenge,
+                    onLocationChanged: (b, l) => setState(() {
+                      _breite = b;
+                      _laenge = l;
+                    }),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, const Kammerziel()),
+          child: Text(t.kammerZielLeeren),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(t.allgAbbrechen),
+        ),
+        FilledButton(onPressed: _fertig, child: Text(t.allgSpeichern)),
+      ],
+    );
+  }
+
+  final _albumFokus = FocusNode();
 }
 
 class _Kachel extends StatefulWidget {

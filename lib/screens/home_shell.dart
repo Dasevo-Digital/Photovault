@@ -782,7 +782,10 @@ class _HomeShellState extends State<HomeShell> {
       StatisticsScreen(library: l),
       ExploreScreen(library: l),
       CalendarScreen(library: l),
-      FotokammerScreen(dienst: l.fotokammer),
+      FotokammerScreen(
+        dienst: l.fotokammer,
+        alben: () async => [for (final a in await l.db.alleAlben()) a.name],
+      ),
       DuplicatesScreen(library: l),
       TrashScreen(library: l),
       ToolsScreen(library: l),

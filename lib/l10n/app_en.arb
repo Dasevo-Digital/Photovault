@@ -5211,6 +5211,18 @@
   "kammerLeer": "Staging is empty. When importing, choose “Into staging first” and new photos land here first.",
   "kammerKeineVorschau": "No preview",
   "kammerAuswaehlenTaste": "Select (space)",
+  "kammerZiel": "Destination on approval",
+  "kammerZielAlbum": "Album (existing or new)",
+  "kammerZielSchlagwoerter": "Tags, separated by commas",
+  "kammerZielOrt": "Location for photos without one",
+  "kammerZielOrtKurz": "Location",
+  "kammerZielLeeren": "Clear",
+  "kammerZielAnzeige": "Destination: {text}",
+  "@kammerZielAnzeige": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
   "kammerAbschliessen": "Finish review",
   "kammerAblehnen": "Reject (X)",
   "kammerSichtenTasten": "1 to 5: stars · 0: no stars · X: reject and continue · U: undo reject",

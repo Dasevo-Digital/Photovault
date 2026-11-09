@@ -10642,6 +10642,29 @@ class AppTexteDe extends AppTexte {
   String get kammerAuswaehlenTaste => 'Auswählen (Leertaste)';
 
   @override
+  String get kammerZiel => 'Ziel beim Freigeben';
+
+  @override
+  String get kammerZielAlbum => 'Album (vorhanden oder neu)';
+
+  @override
+  String get kammerZielSchlagwoerter => 'Schlagwörter, durch Komma getrennt';
+
+  @override
+  String get kammerZielOrt => 'Ort für Fotos ohne eigenen';
+
+  @override
+  String get kammerZielOrtKurz => 'Ort';
+
+  @override
+  String get kammerZielLeeren => 'Leeren';
+
+  @override
+  String kammerZielAnzeige(String text) {
+    return 'Ziel: $text';
+  }
+
+  @override
   String get kammerAbschliessen => 'Sichtung abschliessen';
 
   @override

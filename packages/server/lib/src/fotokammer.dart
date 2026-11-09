@@ -18,6 +18,47 @@ import 'anmeldung_api.dart';
 import 'dateiantwort.dart';
 import 'vollbild.dart';
 
+/// Wohin Fotos beim Freigeben kommen (#349): wer 55 Bilder eines Spiels
+/// sichtet, will die zehn guten nicht danach noch einsammeln.
+class Freigabeziel {
+  const Freigabeziel({
+    this.album,
+    this.schlagwoerter = const [],
+    this.breite,
+    this.laenge,
+  });
+
+  /// Nach dem Namen, damit mehrere Stapel im selben Album landen. Gibt es
+  /// keines, entsteht es beim ersten Foto.
+  final String? album;
+  final List<String> schlagwoerter;
+  final double? breite;
+  final double? laenge;
+
+  /// `null`, wenn nichts Brauchbares drinsteht.
+  static Freigabeziel? aus(Object? j) {
+    if (j is! Map) return null;
+    final album = j['album'], tags = j['schlagwoerter'];
+    final b = j['breite'], l = j['laenge'];
+    final z = Freigabeziel(
+      album: album is String && album.trim().isNotEmpty ? album.trim() : null,
+      schlagwoerter: tags is List
+          ? [
+              for (final t in tags)
+                if (t is String && t.trim().isNotEmpty) t.trim(),
+            ]
+          : const [],
+      breite: b is num && b.abs() <= 90 ? b.toDouble() : null,
+      laenge: l is num && l.abs() <= 180 ? l.toDouble() : null,
+    );
+    return z.album == null &&
+            z.schlagwoerter.isEmpty &&
+            (z.breite == null || z.laenge == null)
+        ? null
+        : z;
+  }
+}
+
 /// Die Fotokammer eines Kontos (#336): Fotos, die schon auf dem Server
 /// liegen, aber noch nicht in der Bibliothek – bis man sie freigibt oder
 /// verwirft.
@@ -358,6 +399,38 @@ class Fotokammer {
     }
   }
 
+  /// Legt die freigegebene Aufnahme ab, wo sie hin soll. Scheitert das, ist
+  /// das Foto trotzdem in der Bibliothek, und das zählt.
+  Future<void> _bringeAnsZiel(Freigabeziel? z, String? aufnahme) async {
+    if (z == null || aufnahme == null) return;
+    final db = bibliothek.db;
+    try {
+      if (z.album case final name?) {
+        var album = (await db.alleAlben())
+            .where((a) => a.name == name)
+            .firstOrNull
+            ?.id;
+        if (album == null) {
+          album = const Uuid().v4();
+          await db.fuehreAus(AlbumAnlegen(album, name, DateTime.now()));
+        }
+        await db.fuehreAus(AlbumFuellen(album, [aufnahme]));
+      }
+      for (final t in z.schlagwoerter) {
+        await db.fuehreAus(SchlagwortAnheften([aufnahme], t));
+      }
+      // Der Ort aus der Kamera bleibt: Er ist die genauere Angabe.
+      if ((z.breite, z.laenge) case (final b?, final l?)) {
+        final a = await db.assetById(aufnahme);
+        if (a != null && a.latitude == null) {
+          await db.fuehreAus(OrtSetzen([aufnahme], b, l));
+        }
+      }
+    } on Object catch (e) {
+      protokoll('Fotokammer: Ziel für $aufnahme nicht gesetzt: $e');
+    }
+  }
+
   /// Die Sterne aus der Sichtung gehen mit in die Bibliothek.
   Future<void> _uebertrageSterne(int? sterne, String? aufnahme) async {
     if (sterne == null || sterne <= 0 || aufnahme == null) return;
@@ -417,7 +490,10 @@ class Fotokammer {
   /// Nimmt [id] in die Bibliothek auf. Danach ist der Eintrag fort – auch
   /// wenn die Bibliothek das Foto schon hatte. Scheitert der Import, bleibt
   /// er liegen.
-  Future<Map<String, Object?>> freigeben(String id) async {
+  Future<Map<String, Object?>> freigeben(
+    String id, {
+    Freigabeziel? ziel,
+  }) async {
     final e = await eintrag(id);
     if (e == null || !_inArbeit.add(id)) {
       return {'id': id, 'ausgang': 'unbekannt'};
@@ -433,6 +509,7 @@ class Fotokammer {
             await bibliothek.db.fuehreAus(AusDemPapierkorb([kennung]));
           }
           await _uebertrageSterne(sterne, kennung);
+          await _bringeAnsZiel(ziel, kennung);
           await _platz(id).delete(recursive: true);
           return {'id': id, 'ausgang': 'imported', 'aufnahme': kennung};
         }
@@ -453,6 +530,7 @@ class Fotokammer {
           }
           await _uebertrageSterne(sterne, neu);
         }
+        await _bringeAnsZiel(ziel, ergebnis['aufnahme'] as String?);
         await _platz(id).delete(recursive: true);
       }
       return {'id': id, ...ergebnis};
@@ -565,12 +643,19 @@ class Fotokammerapi {
   /// Import dauert je Foto einige Sekunden – Clients schicken wenige auf
   /// einmal.
   Future<Response> freigeben(Request r) async {
-    final ids = await _ids(r);
+    final Object? anfrage;
+    try {
+      anfrage = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'ids fehlt'}, status: 400);
+    }
+    final ids = _idsAus(anfrage);
     if (ids == null) return _json({'fehler': 'ids fehlt'}, status: 400);
+    final ziel = Freigabeziel.aus(anfrage is Map ? anfrage['ziel'] : null);
     final k = await _kammer(r);
     final ergebnisse = <Map<String, Object?>>[];
     for (final id in ids) {
-      ergebnisse.add(await k.freigeben(id));
+      ergebnisse.add(await k.freigeben(id, ziel: ziel));
     }
     return _json({'ergebnisse': ergebnisse});
   }
@@ -637,13 +722,16 @@ class Fotokammerapi {
 
   static Future<List<String>?> _ids(Request r) async {
     try {
-      final k = jsonDecode(await r.readAsString());
-      if (k is! Map || k['ids'] is! List) return null;
-      final ids = (k['ids'] as List).whereType<String>().toList();
-      return ids.length > 500 ? null : ids;
+      return _idsAus(jsonDecode(await r.readAsString()));
     } on FormatException {
       return null;
     }
+  }
+
+  static List<String>? _idsAus(Object? k) {
+    if (k is! Map || k['ids'] is! List) return null;
+    final ids = (k['ids'] as List).whereType<String>().toList();
+    return ids.length > 500 ? null : ids;
   }
 }
 

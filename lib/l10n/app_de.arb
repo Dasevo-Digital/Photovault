@@ -6745,6 +6745,18 @@
   "kammerLeer": "Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.",
   "kammerKeineVorschau": "Keine Vorschau",
   "kammerAuswaehlenTaste": "Auswählen (Leertaste)",
+  "kammerZiel": "Ziel beim Freigeben",
+  "kammerZielAlbum": "Album (vorhanden oder neu)",
+  "kammerZielSchlagwoerter": "Schlagwörter, durch Komma getrennt",
+  "kammerZielOrt": "Ort für Fotos ohne eigenen",
+  "kammerZielOrtKurz": "Ort",
+  "kammerZielLeeren": "Leeren",
+  "kammerZielAnzeige": "Ziel: {text}",
+  "@kammerZielAnzeige": {
+    "placeholders": {
+      "text": {"type": "String"}
+    }
+  },
   "kammerAbschliessen": "Sichtung abschliessen",
   "kammerAblehnen": "Ablehnen (X)",
   "kammerSichtenTasten": "1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen",
