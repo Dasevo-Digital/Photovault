@@ -42,10 +42,15 @@ import 'image_editor_screen.dart';
 import 'similar_photos_screen.dart';
 import 'video_trim_screen.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
+import '../services/darktable_bruecke.dart';
+import '../services/platform/reveal_in_file_manager.dart';
+import '../services/xmp_writer.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/bibliotheksbild.dart';
 
 enum _ContextMenuAction {
+  inDarktable,
+  ausDarktable,
   showInTimeline,
   showSimilar,
   editMetadata,
@@ -540,6 +545,65 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     );
   }
 
+  final _darktable = DarktableBruecke.standard();
+
+  /// Nur Fotos, und nichts aus dem gesperrten Ordner: Dessen Klartext hat
+  /// in einem fremden Programm nichts zu suchen.
+  bool get _kannDarktable =>
+      widget.library != null &&
+      _currentAsset.type == 'IMAGE' &&
+      !_currentAsset.isLocked;
+
+  Future<void> _inDarktable() async {
+    final asset = _currentAsset;
+    final t = AppTexte.of(context);
+    try {
+      final tags = await widget.db.tagsForAsset(asset.id);
+      final gestartet = await _darktable.oeffne(
+        id: asset.id,
+        name: asset.originalFileName,
+        original: await widget.paths.bereit(asset.relativePath),
+        xmp: buildXmpPacket(asset, [for (final x in tags) x.name]),
+      );
+      if (!mounted) return;
+      if (gestartet) {
+        melde.hinweis(t.darktableGeoeffnet);
+      } else {
+        await revealInFileManager(_darktable.ordner(asset.id).path);
+        melde.hinweis(t.darktableNichtGestartet);
+      }
+    } on Object catch (e) {
+      melde.fehler(t.darktableFehler('$e'));
+    }
+  }
+
+  Future<void> _ausDarktable() async {
+    final asset = _currentAsset;
+    final library = widget.library;
+    if (library == null) return;
+    final t = AppTexte.of(context);
+    try {
+      final name = asset.originalFileName;
+      final jpeg = await _darktable.ergebnis(asset.id, name);
+      if (jpeg == null) {
+        await revealInFileManager(_darktable.ordner(asset.id).path);
+        melde.hinweis(t.darktableKeinErgebnis);
+        return;
+      }
+      await library.uebernimmAusDarktable(
+        asset,
+        jpeg,
+        _darktable.beilage(asset.id, name),
+      );
+      await _darktable.schliesse(asset.id);
+      vergissAlleBilder();
+      await _refreshCurrentAsset();
+      melde.erfolg(t.darktableUebernommen);
+    } on Object catch (e) {
+      melde.fehler(t.darktableFehler('$e'));
+    }
+  }
+
   List<Widget> _menuepunkte(BuildContext context) {
     final t = AppTexte.of(context);
     Widget punkt(_ContextMenuAction aktion, IconData symbol, String text) =>
@@ -558,6 +622,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           Icons.auto_fix_high_outlined,
           t.viewerEntwicklungAnwenden,
         ),
+      if (_kannDarktable) ...[
+        punkt(_ContextMenuAction.inDarktable, Icons.tune, t.viewerInDarktable),
+        if (_darktable.offen(_currentAsset.id))
+          punkt(
+            _ContextMenuAction.ausDarktable,
+            Icons.file_download_done_outlined,
+            t.viewerAusDarktable,
+          ),
+      ],
       punkt(
         _ContextMenuAction.showInTimeline,
         Icons.photo_library_outlined,
@@ -603,6 +676,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _fuehreAus(_ContextMenuAction aktion) async {
     if (!mounted) return;
     switch (aktion) {
+      case _ContextMenuAction.inDarktable:
+        await _inDarktable();
+      case _ContextMenuAction.ausDarktable:
+        await _ausDarktable();
       case _ContextMenuAction.showInTimeline:
         _showInTimeline();
       case _ContextMenuAction.showSimilar:

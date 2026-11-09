@@ -1,3 +1,4 @@
+import 'package:kern/services/bearbeitung_speichern.dart';
 import 'package:kern/services/aufnahmedatum.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
 import 'package:kern/services/import_plan.dart';
@@ -3190,6 +3191,50 @@ class LibraryState extends ChangeNotifier {
   /// nachträglichen Metadaten-Änderungen (Tag/Bewertung/Beschreibung) bei
   /// erneutem Lauf konsistent. Gesperrte Assets werden ausgeschlossen (siehe
   /// AppDatabase.assetsForXmpExport).
+  /// Legt [jpeg] aus darktable über [asset]; das Original bleibt als
+  /// Variante dahinter (#347). Sterne und Farbmarke aus der [beilage], wenn
+  /// sie dort geändert wurden.
+  Future<void> uebernimmAusDarktable(
+    AssetData asset,
+    File jpeg,
+    File beilage,
+  ) async {
+    final a = abgleich;
+    if (verbunden && a != null) {
+      // Die Kopie hier darf die Datei nicht tauschen (#250): Das macht der
+      // Server, wie bei einer Bearbeitung vom Telefon.
+      final kopf = await TusHochladen(a.verbindung).lade(
+        jpeg,
+        'api/v1/hochladen',
+        {
+          'filename': p.setExtension(asset.originalFileName, '.jpg'),
+          'bearbeitungVon': asset.checksum,
+          'geaendert': '${(await jpeg.lastModified()).millisecondsSinceEpoch}',
+        },
+      );
+      if (kopf['pv-ausgang'] == 'failed') {
+        throw StateError(Uri.decodeComponent(kopf['pv-fehler'] ?? ''));
+      }
+      await a.empfange();
+    } else {
+      await speichereBearbeitung(
+        db: db,
+        paths: paths,
+        asset: asset,
+        jpeg: await jpeg.readAsBytes(),
+        importe: importService,
+      );
+    }
+    final f = parseXmpFile(beilage);
+    if (f == null) return;
+    if (f.rating case final r? when r != asset.rating) {
+      await db.fuehreAus(BewertungSetzen([asset.id], r));
+    }
+    if (f.colorLabel case final c? when c != asset.colorLabel) {
+      await db.fuehreAus(FarbmarkeSetzen([asset.id], c));
+    }
+  }
+
   /// Schreibt die Beilagen aller Fotos neben die Originale. [ordnerWaehlen]
   /// fragt stattdessen nach einem Ordner: Mit Server liegen die Originale
   /// nicht hier (#346). Dort heissen sie wie das Foto; tragen zwei denselben

@@ -4245,6 +4245,33 @@ class AppTexteEn extends AppTexte {
   String get xmpFeldBewertung => 'Rating';
 
   @override
+  String get viewerInDarktable => 'Edit in darktable';
+
+  @override
+  String get viewerAusDarktable => 'Take result from darktable';
+
+  @override
+  String get darktableGeoeffnet =>
+      'Opened in darktable. Export the result as JPEG, then take it over from the context menu.';
+
+  @override
+  String get darktableNichtGestartet =>
+      'darktable could not be started. The folder with the working copy is open.';
+
+  @override
+  String get darktableKeinErgebnis =>
+      'No JPEG found yet. Export the photo as JPEG from darktable into the suggested folder.';
+
+  @override
+  String get darktableUebernommen =>
+      'Taken over. The original stays behind it as a variant.';
+
+  @override
+  String darktableFehler(String fehler) {
+    return 'darktable: $fehler';
+  }
+
+  @override
   String get xmpOrdnerWaehlen => 'Read from folder';
 
   @override

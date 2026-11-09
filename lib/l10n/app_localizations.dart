@@ -7075,6 +7075,48 @@ abstract class AppTexte {
   /// **'Bewertung'**
   String get xmpFeldBewertung;
 
+  /// No description provided for @viewerInDarktable.
+  ///
+  /// In de, this message translates to:
+  /// **'In darktable bearbeiten'**
+  String get viewerInDarktable;
+
+  /// No description provided for @viewerAusDarktable.
+  ///
+  /// In de, this message translates to:
+  /// **'Ergebnis aus darktable übernehmen'**
+  String get viewerAusDarktable;
+
+  /// No description provided for @darktableGeoeffnet.
+  ///
+  /// In de, this message translates to:
+  /// **'In darktable geöffnet. Exportiere das Ergebnis als JPEG und übernimm es dann über das Kontextmenü.'**
+  String get darktableGeoeffnet;
+
+  /// No description provided for @darktableNichtGestartet.
+  ///
+  /// In de, this message translates to:
+  /// **'darktable liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.'**
+  String get darktableNichtGestartet;
+
+  /// No description provided for @darktableKeinErgebnis.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch kein JPEG gefunden. Exportiere das Foto in darktable als JPEG in den vorgeschlagenen Ordner.'**
+  String get darktableKeinErgebnis;
+
+  /// No description provided for @darktableUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernommen. Das Original liegt als Variante dahinter.'**
+  String get darktableUebernommen;
+
+  /// No description provided for @darktableFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'darktable: {fehler}'**
+  String darktableFehler(String fehler);
+
   /// No description provided for @xmpOrdnerWaehlen.
   ///
   /// In de, this message translates to:

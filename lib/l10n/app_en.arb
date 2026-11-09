@@ -1528,6 +1528,18 @@
   "zweitVergleichFehlgeschlagen": "Comparison failed: {fehler}",
   "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
   "xmpFeldBewertung": "Rating",
+  "viewerInDarktable": "Edit in darktable",
+  "viewerAusDarktable": "Take result from darktable",
+  "darktableGeoeffnet": "Opened in darktable. Export the result as JPEG, then take it over from the context menu.",
+  "darktableNichtGestartet": "darktable could not be started. The folder with the working copy is open.",
+  "darktableKeinErgebnis": "No JPEG found yet. Export the photo as JPEG from darktable into the suggested folder.",
+  "darktableUebernommen": "Taken over. The original stays behind it as a variant.",
+  "darktableFehler": "darktable: {fehler}",
+  "@darktableFehler": {
+    "placeholders": {
+      "fehler": {"type": "String"}
+    }
+  },
   "xmpOrdnerWaehlen": "Read from folder",
   "xmpFeldAbgelehnt": "Rejected, moves to trash",
   "xmpFeldFarbmarkierung": "Colour label",

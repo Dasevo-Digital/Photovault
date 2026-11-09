@@ -199,7 +199,7 @@ XmpFields? parseXmpContent(String xmlContent) {
     final items = subjectElement
         .findAllElements('rdf:li')
         .map((e) => e.innerText.trim())
-        .where((t) => t.isNotEmpty)
+        .where((t) => t.isNotEmpty && !_darktableEigene(doc).contains(t))
         .toList();
     if (items.isNotEmpty) tags = items;
   }
@@ -215,6 +215,20 @@ XmpFields? parseXmpContent(String xmlContent) {
     gesichter: _regionen(doc),
   );
   return fields.isEmpty ? null : fields;
+}
+
+/// Was darktable sich selbst anheftet (`darktable|format|cr3`,
+/// `darktable|exported`) und flach auch in `dc:subject` wiederholt. Das sind
+/// keine Schlagwörter des Menschen, der sortiert hat (#346).
+Set<String> _darktableEigene(XmlDocument doc) {
+  final eigene = <String>{};
+  for (final e in doc.findAllElements('lr:hierarchicalSubject')) {
+    for (final li in e.findAllElements('rdf:li')) {
+      final teile = li.innerText.trim().split('|');
+      if (teile.first == 'darktable') eigene.addAll(teile);
+    }
+  }
+  return eigene;
 }
 
 /// Die benannten Gesichter aus dem `mwg-rs:Regions`-Block.

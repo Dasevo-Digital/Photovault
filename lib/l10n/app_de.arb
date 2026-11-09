@@ -2536,6 +2536,18 @@
     }
   },
   "xmpFeldBewertung": "Bewertung",
+  "viewerInDarktable": "In darktable bearbeiten",
+  "viewerAusDarktable": "Ergebnis aus darktable übernehmen",
+  "darktableGeoeffnet": "In darktable geöffnet. Exportiere das Ergebnis als JPEG und übernimm es dann über das Kontextmenü.",
+  "darktableNichtGestartet": "darktable liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.",
+  "darktableKeinErgebnis": "Noch kein JPEG gefunden. Exportiere das Foto in darktable als JPEG in den vorgeschlagenen Ordner.",
+  "darktableUebernommen": "Übernommen. Das Original liegt als Variante dahinter.",
+  "darktableFehler": "darktable: {fehler}",
+  "@darktableFehler": {
+    "placeholders": {
+      "fehler": {"type": "String"}
+    }
+  },
   "xmpOrdnerWaehlen": "Aus Ordner einlesen",
   "xmpFeldAbgelehnt": "Abgelehnt, kommt in den Papierkorb",
   "xmpFeldFarbmarkierung": "Farbmarkierung",

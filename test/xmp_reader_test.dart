@@ -117,6 +117,20 @@ void main() {
     });
   });
 
+  test('Schlagwörter, die darktable sich selbst gibt, fallen weg (#346)', () {
+    const xmp = '''
+<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:lr="http://ns.adobe.com/lightroom/1.0/">
+<dc:subject><rdf:Bag><rdf:li>Fluss</rdf:li><rdf:li>darktable</rdf:li>
+<rdf:li>format</rdf:li><rdf:li>cr3</rdf:li></rdf:Bag></dc:subject>
+<lr:hierarchicalSubject><rdf:Bag><rdf:li>Orte|Fluss</rdf:li>
+<rdf:li>darktable|format|cr3</rdf:li></rdf:Bag></lr:hierarchicalSubject>
+</rdf:Description></rdf:RDF></x:xmpmeta>''';
+    expect(parseXmpContent(xmp)!.tags, ['Fluss']);
+  });
+
   group('Beilage unter zwei Namen (#343)', () {
     late Directory ordner;
     setUp(() => ordner = Directory.systemTemp.createTempSync('pv_xmp_'));
