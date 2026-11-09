@@ -220,14 +220,10 @@ class BackupWiederhersteller {
     }
     if (neue.isEmpty) return;
     final album = _uuid.v4();
-    await _db.createAlbum(
-      AlbumsCompanion.insert(
-        id: album,
-        name: fotokammerAlbumName,
-        createdAt: DateTime.now(),
-      ),
+    await _db.fuehreAus(
+      AlbumAnlegen(album, fotokammerAlbumName, DateTime.now()),
     );
-    await _db.addAssetsToAlbum(album, neue);
+    await _db.fuehreAus(AlbumFuellen(album, neue));
   }
 
   /// Das Album für Fotos, die beim Zurückholen aus der Kammer kamen.
