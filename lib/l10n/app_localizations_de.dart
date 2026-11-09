@@ -10554,6 +10554,33 @@ class AppTexteDe extends AppTexte {
   String get kammerAuswaehlenTaste => 'Auswählen (Leertaste)';
 
   @override
+  String get kammerAbschliessen => 'Sichtung abschliessen';
+
+  @override
+  String get kammerAblehnen => 'Ablehnen (X)';
+
+  @override
+  String get kammerSichtenTasten =>
+      '1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen';
+
+  @override
+  String kammerAbschliessenText(int weg, int rest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weg,
+      locale: localeName,
+      other: '$weg abgelehnte Fotos werden',
+      one: '1 abgelehntes Foto wird',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rest,
+      locale: localeName,
+      other: '$rest Fotos kommen',
+      one: '1 Foto kommt',
+    );
+    return '$_temp0 endgültig verworfen. $_temp1 in die Bibliothek.';
+  }
+
+  @override
   String get auswInDieKammer => 'In die Fotokammer';
 
   @override

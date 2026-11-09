@@ -714,6 +714,33 @@ void main() {
       404,
     );
 
+    // Sichten: das Urteil steht danach in der Liste.
+    expect(
+      (await v.schicke('api/v1/kammer/sichten', {
+        'ids': [id1, 'nicht-da'],
+        'sterne': 4,
+      }))['geaendert'],
+      1,
+    );
+    await v.schicke('api/v1/kammer/sichten', {
+      'ids': [id2],
+      'abgelehnt': true,
+    });
+    final gesichtet = {
+      for (final e in ((await v.hole('api/v1/kammer'))['eintraege'] as List))
+        (e as Map)['id']: e,
+    };
+    expect(gesichtet[id1]!['sterne'], 4);
+    expect(gesichtet[id1]!['abgelehnt'], isFalse);
+    expect(gesichtet[id2]!['abgelehnt'], isTrue);
+    await expectLater(
+      v.schicke('api/v1/kammer/sichten', {
+        'ids': [id1],
+        'sterne': 9,
+      }),
+      throwsA(isA<Serverfehler>()),
+    );
+
     // Freigeben: in die Bibliothek, aus der Kammer heraus.
     final f = await v.schicke('api/v1/kammer/freigeben', {
       'ids': [id1],
@@ -723,6 +750,8 @@ void main() {
     final aufnahmen = await db.select(db.assets).get();
     expect(aufnahmen.single.id, e['aufnahme']);
     expect(aufnahmen.single.originalFileName, 'kammer1.jpg');
+    // Die Sterne aus der Sichtung gehen mit.
+    expect(aufnahmen.single.rating, 4);
 
     // Was in der Bibliothek liegt, kommt nicht wieder in die Kammer.
     final dublette = await tus.lade(eins, 'api/v1/hochladen', {
@@ -785,7 +814,7 @@ void main() {
       addTearDown(v.schliesse);
       expect(
         ((await v.hole('api/v1/zustand'))['funktionen'] as Map)['fotokammer'],
-        2,
+        3,
       );
       File bild(String name, int rot) {
         final b = img.Image(width: 640, height: 480);

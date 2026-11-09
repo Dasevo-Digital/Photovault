@@ -10,6 +10,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
+import '../widgets/star_rating.dart';
 import 'home_shell.dart' show Hauptbereich;
 
 /// Legt [ids] aus der Zeitleiste zurück in die Fotokammer (#337) – nach
@@ -101,6 +102,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
   /// Während Freigeben oder Verwerfen: wie weit.
   (int, int)? _arbeit;
 
+  /// Ob der Server sich Sterne und Ablehnung merkt (#345).
+  var _sichten = false;
+
   Fotokammerdienst? get _dienst => widget.dienst;
 
   @override
@@ -124,13 +128,15 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     }
     setState(() => _lage = _Lage.laedt);
     try {
-      if (!await d.moeglich()) {
+      final stufe = await d.stufe();
+      if (stufe < 1) {
         if (mounted) setState(() => _lage = _Lage.serverAlt);
         return;
       }
       final l = await d.liste();
       if (!mounted) return;
       setState(() {
+        _sichten = stufe >= 3;
         _eintraege = l;
         _auswahl.retainAll(l.map((e) => e.id));
         _lage = _Lage.bereit;
@@ -225,6 +231,73 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     }
   }
 
+  /// Verwirft alles Abgelehnte und gibt den Rest frei (#345). Erst
+  /// freigeben: Scheitert das, ist noch nichts gelöscht.
+  Future<void> _abschliessen() async {
+    final d = _dienst;
+    if (d == null) return;
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final weg = [
+      for (final e in _eintraege)
+        if (e.abgelehnt) e.id,
+    ];
+    final rest = [
+      for (final e in _eintraege)
+        if (!e.abgelehnt) e.id,
+    ];
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.kammerAbschliessen),
+        content: Text(t.kammerAbschliessenText(weg.length, rest.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.kammerAbschliessen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    setState(() => _arbeit = (0, rest.length));
+    try {
+      final r = await d.freigeben(
+        rest,
+        fortschritt: (n, gesamt) {
+          if (mounted) setState(() => _arbeit = (n, gesamt));
+        },
+      );
+      if (r.gescheitert.isNotEmpty) {
+        bote.showSnackBar(
+          SnackBar(
+            content: Text(
+              t.kammerNichtFreigegeben(
+                r.gescheitert.length,
+                r.gescheitert.values.whereType<String>().toSet().join('; '),
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+      await d.verwerfen(weg);
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFreigegeben(r.neu + r.schonDa))),
+      );
+    } on Object catch (e) {
+      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+    } finally {
+      if (mounted) setState(() => _arbeit = null);
+      _auswahl.clear();
+      await _lade();
+    }
+  }
+
   Future<void> _oeffne(int index) async {
     final d = _dienst;
     if (d == null) return;
@@ -237,6 +310,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
           start: index,
           auswahl: _auswahl,
           umschalten: _umschalten,
+          sichten: _sichten,
         ),
       ),
     );
@@ -311,6 +385,14 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
               icon: const Icon(Icons.flip),
             ),
             const SizedBox(width: AppSpacing.sm),
+            if (_eintraege.any((e) => e.abgelehnt)) ...[
+              FilledButton.tonalIcon(
+                onPressed: frei ? _abschliessen : null,
+                icon: const Icon(Icons.done_all, size: 18),
+                label: Text(t.kammerAbschliessen),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+            ],
             OutlinedButton.icon(
               onPressed: frei && _auswahl.isNotEmpty ? _verwerfen : null,
               icon: const Icon(Icons.delete_outline, size: 18),
@@ -446,10 +528,13 @@ class _KachelState extends State<_Kachel> {
                 child: FutureBuilder<Uint8List?>(
                   future: _bild,
                   builder: (context, s) => switch (s.data) {
-                    final b? => Image.memory(
-                      b,
-                      fit: BoxFit.cover,
-                      gaplessPlayback: true,
+                    final b? => Opacity(
+                      opacity: widget.eintrag.abgelehnt ? 0.35 : 1,
+                      child: Image.memory(
+                        b,
+                        fit: BoxFit.cover,
+                        gaplessPlayback: true,
+                      ),
                     ),
                     null when s.connectionState == ConnectionState.done => Icon(
                       widget.eintrag.istVideo
@@ -467,6 +552,18 @@ class _KachelState extends State<_Kachel> {
                 left: 6,
                 bottom: 6,
                 child: Icon(Icons.play_circle_outline, color: Colors.white),
+              ),
+            if (widget.eintrag.abgelehnt)
+              const Positioned(
+                left: 6,
+                top: 6,
+                child: Icon(Icons.block, color: Colors.redAccent),
+              ),
+            if (widget.eintrag.sterne > 0)
+              Positioned(
+                right: 4,
+                bottom: 4,
+                child: StarRating(value: widget.eintrag.sterne, size: 12),
               ),
             if (widget.gewaehlt)
               DecoratedBox(
@@ -491,7 +588,8 @@ class _KachelState extends State<_Kachel> {
 }
 
 /// Ein Foto gross: Pfeiltasten blättern, die Leertaste wählt aus, Esc
-/// schliesst.
+/// schliesst. Dazu das Sichten: 1 bis 5 Sterne, X lehnt ab und geht weiter,
+/// U nimmt die Ablehnung zurück.
 class _Kammerbetrachter extends StatefulWidget {
   const _Kammerbetrachter({
     required this.dienst,
@@ -499,12 +597,14 @@ class _Kammerbetrachter extends StatefulWidget {
     required this.start,
     required this.auswahl,
     required this.umschalten,
+    this.sichten = false,
   });
   final Fotokammerdienst dienst;
   final List<Kammereintrag> eintraege;
   final int start;
   final Set<String> auswahl;
   final void Function(String id) umschalten;
+  final bool sichten;
 
   @override
   State<_Kammerbetrachter> createState() => _KammerbetrachterState();
@@ -573,6 +673,34 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
     super.dispose();
   }
 
+  /// Zeigt das Urteil sofort und merkt es am Server; scheitert das, gilt
+  /// wieder das alte.
+  Future<void> _urteile(Kammereintrag e, {int? sterne, bool? abgelehnt}) async {
+    final i = widget.eintraege.indexWhere((x) => x.id == e.id);
+    if (i < 0) return;
+    final bote = ScaffoldMessenger.of(context);
+    final t = AppTexte.of(context);
+    setState(() {
+      widget.eintraege[i] = e.mit(sterne: sterne, abgelehnt: abgelehnt);
+    });
+    try {
+      await widget.dienst.sichten([e.id], sterne: sterne, abgelehnt: abgelehnt);
+    } on Object catch (x) {
+      if (mounted) setState(() => widget.eintraege[i] = e);
+      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$x'))));
+    }
+  }
+
+  /// Sterne heben eine Ablehnung auf; dieselbe Zahl noch einmal löscht sie.
+  void _sterne(Kammereintrag e, int n) =>
+      _urteile(e, sterne: e.sterne == n ? 0 : n, abgelehnt: false);
+
+  void _ablehnen(Kammereintrag e) {
+    final jetzt = !e.abgelehnt;
+    _urteile(e, abgelehnt: jetzt, sterne: jetzt ? 0 : null);
+    if (jetzt) _gehe(1);
+  }
+
   void _gehe(int schritt) {
     final neu = (_i + schritt).clamp(0, widget.eintraege.length - 1);
     if (neu != _i) {
@@ -601,6 +729,21 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
             setState(() => widget.umschalten(e.id)),
         const SingleActivator(LogicalKeyboardKey.escape): () =>
             Navigator.of(context).pop(),
+        if (widget.sichten) ...{
+          for (final (n, taste) in const [
+            (0, LogicalKeyboardKey.digit0),
+            (1, LogicalKeyboardKey.digit1),
+            (2, LogicalKeyboardKey.digit2),
+            (3, LogicalKeyboardKey.digit3),
+            (4, LogicalKeyboardKey.digit4),
+            (5, LogicalKeyboardKey.digit5),
+          ])
+            SingleActivator(taste): () => _sterne(e, n),
+          const SingleActivator(LogicalKeyboardKey.keyX): () => _ablehnen(e),
+          const SingleActivator(LogicalKeyboardKey.keyU): () {
+            if (e.abgelehnt) _urteile(e, abgelehnt: false);
+          },
+        },
       },
       child: Focus(
         focusNode: _fokus,
@@ -615,6 +758,30 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
               '${e.modell != null ? ' · ${e.modell}' : ''}',
             ),
             actions: [
+              if (widget.sichten) ...[
+                Tooltip(
+                  message: t.kammerSichtenTasten,
+                  child: const Icon(Icons.keyboard_outlined, size: 20),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                StarRating(
+                  value: e.sterne,
+                  size: 18,
+                  onChanged: (n) => _urteile(e, sterne: n, abgelehnt: false),
+                ),
+                IconButton(
+                  tooltip: t.kammerAblehnen,
+                  isSelected: e.abgelehnt,
+                  color: Colors.white70,
+                  selectedIcon: const Icon(
+                    Icons.block,
+                    color: Colors.redAccent,
+                  ),
+                  onPressed: () => _ablehnen(e),
+                  icon: const Icon(Icons.block),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               Text('${_i + 1} / ${widget.eintraege.length}'),
               const SizedBox(width: AppSpacing.md),
               FilterChip(
@@ -646,10 +813,13 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
                           // Füllt die Fläche, damit das Bild beim Wechsel
                           // auf die volle Auflösung nicht springt.
                           child: SizedBox.expand(
-                            child: Image.memory(
-                              _voll ?? b,
-                              fit: BoxFit.contain,
-                              gaplessPlayback: true,
+                            child: Opacity(
+                              opacity: e.abgelehnt ? 0.45 : 1,
+                              child: Image.memory(
+                                _voll ?? b,
+                                fit: BoxFit.contain,
+                                gaplessPlayback: true,
+                              ),
                             ),
                           ),
                         ),

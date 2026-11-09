@@ -5178,6 +5178,16 @@
   "kammerLeer": "Staging is empty. When importing, choose “Into staging first” and new photos land here first.",
   "kammerKeineVorschau": "No preview",
   "kammerAuswaehlenTaste": "Select (space)",
+  "kammerAbschliessen": "Finish review",
+  "kammerAblehnen": "Reject (X)",
+  "kammerSichtenTasten": "1 to 5: stars · 0: no stars · X: reject and continue · U: undo reject",
+  "kammerAbschliessenText": "{weg, plural, =1{1 rejected photo is} other{{weg} rejected photos are}} permanently discarded. {rest, plural, =1{1 photo goes} other{{rest} photos go}} to the library.",
+  "@kammerAbschliessenText": {
+    "placeholders": {
+      "weg": {"type": "int"},
+      "rest": {"type": "int"}
+    }
+  },
   "auswInDieKammer": "Move to staging",
   "kammerAufnehmenTitel": "{anzahl, plural, =1{Move 1 photo to staging?} other{Move {anzahl} photos to staging?}}",
   "@kammerAufnehmenTitel": {

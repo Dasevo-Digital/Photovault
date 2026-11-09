@@ -68,6 +68,7 @@ class Fotokammer {
   File _angaben(String id) => File(p.join(_platz(id).path, 'angaben.json'));
   File miniatur(String id) => File(p.join(_platz(id).path, 'miniatur.jpg'));
   File vorschau(String id) => File(p.join(_platz(id).path, 'vorschau.jpg'));
+  File _sichtung(String id) => File(p.join(_platz(id).path, 'sichtung.json'));
 
   static bool gueltig(String id) => _kennungMuster.hasMatch(id);
 
@@ -273,6 +274,41 @@ class Fotokammer {
     return (klein.width, klein.height);
   }
 
+  /// Sterne und Ablehnung von [id]; leer, solange niemand gesichtet hat.
+  /// In einer eigenen Datei: Die Angaben ändern sich nie, darauf verlässt
+  /// sich die Sicherung (#345).
+  Future<Map<String, Object?>> _sichtungVon(String id) async {
+    try {
+      final j = jsonDecode(await _sichtung(id).readAsString());
+      if (j is Map) return j.cast<String, Object?>();
+    } on Object {
+      // Noch nicht gesichtet.
+    }
+    return const {};
+  }
+
+  /// Merkt sich das Urteil über [id]. Was nicht angegeben ist, bleibt.
+  Future<bool> sichte(String id, {int? sterne, bool? abgelehnt}) async {
+    if (await eintrag(id) == null || _inArbeit.contains(id)) return false;
+    final alt = await _sichtungVon(id);
+    final teil = File('${_sichtung(id).path}.neu');
+    await teil.writeAsString(
+      jsonEncode({
+        'sterne': sterne ?? alt['sterne'] ?? 0,
+        'abgelehnt': abgelehnt ?? alt['abgelehnt'] ?? false,
+      }),
+      flush: true,
+    );
+    await teil.rename(_sichtung(id).path);
+    return true;
+  }
+
+  /// Die Sterne aus der Sichtung gehen mit in die Bibliothek.
+  Future<void> _uebertrageSterne(int? sterne, String? aufnahme) async {
+    if (sterne == null || sterne <= 0 || aufnahme == null) return;
+    await bibliothek.db.fuehreAus(BewertungSetzen([aufnahme], sterne));
+  }
+
   /// Die Datei von [id], wenn es ein Foto ist.
   Future<File?> original(String id) async {
     final e = await eintrag(id);
@@ -296,7 +332,12 @@ class Fotokammer {
       final f = File(p.join(e.path, 'angaben.json'));
       try {
         final j = jsonDecode(await f.readAsString());
-        if (j is Map) r.add(j.cast<String, Object?>());
+        if (j is Map) {
+          r.add({
+            ...j.cast<String, Object?>(),
+            ...await _sichtungVon(p.basename(e.path)),
+          });
+        }
       } on Object {
         // Noch nicht fertig oder kaputt: kein Eintrag.
       }
@@ -326,6 +367,7 @@ class Fotokammer {
     if (e == null || !_inArbeit.add(id)) {
       return {'id': id, 'ausgang': 'unbekannt'};
     }
+    final sterne = (await _sichtungVon(id))['sterne'] as int?;
     try {
       // Kam es aus der Bibliothek (#337) und liegt es noch im Papierkorb,
       // kehrt es zurück – mit allem, was daran hing.
@@ -335,6 +377,7 @@ class Fotokammer {
           if (a.isTrashed) {
             await bibliothek.db.fuehreAus(AusDemPapierkorb([kennung]));
           }
+          await _uebertrageSterne(sterne, kennung);
           await _platz(id).delete(recursive: true);
           return {'id': id, 'ausgang': 'imported', 'aufnahme': kennung};
         }
@@ -346,6 +389,9 @@ class Fotokammer {
       });
       final ausgang = ergebnis['ausgang'];
       if (ausgang == 'imported' || ausgang == 'duplicateSkipped') {
+        if (ausgang == 'imported') {
+          await _uebertrageSterne(sterne, ergebnis['aufnahme'] as String?);
+        }
         await _platz(id).delete(recursive: true);
       }
       return {'id': id, ...ergebnis};
@@ -478,6 +524,39 @@ class Fotokammerapi {
       ergebnisse.add(await k.ausDerBibliothek(id));
     }
     return _json({'ergebnisse': ergebnisse});
+  }
+
+  /// `{ids, sterne?, abgelehnt?}` → `{geaendert}`: das Urteil beim Sichten
+  /// (#345).
+  Future<Response> sichten(Request r) async {
+    final Object? k;
+    try {
+      k = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    if (k is! Map || k['ids'] is! List) {
+      return _json({'fehler': 'ids fehlt'}, status: 400);
+    }
+    final ids = (k['ids'] as List).whereType<String>().toList();
+    final sterne = k['sterne'], abgelehnt = k['abgelehnt'];
+    if (ids.length > 500 ||
+        (sterne != null && (sterne is! int || sterne < 0 || sterne > 5)) ||
+        (abgelehnt != null && abgelehnt is! bool)) {
+      return _json({'fehler': 'ungültig'}, status: 400);
+    }
+    final kammer = await _kammer(r);
+    var n = 0;
+    for (final id in ids) {
+      if (await kammer.sichte(
+        id,
+        sterne: sterne as int?,
+        abgelehnt: abgelehnt as bool?,
+      )) {
+        n++;
+      }
+    }
+    return _json({'geaendert': n});
   }
 
   /// `{ids}` → `{verworfen}`.

@@ -19,6 +19,8 @@ void main() {
   late List<List<String>> freigegeben;
   late List<List<String>> verworfen;
   late int nachFreigabe;
+  late List<Map<String, Object?>> urteile;
+  late int stufe;
 
   final jpeg = img.encodeJpg(img.Image(width: 8, height: 6));
 
@@ -44,7 +46,7 @@ void main() {
       );
       if (pfad == '/api/v1/zustand') {
         return json({
-          'funktionen': {'fotokammer': 1},
+          'funktionen': {'fotokammer': stufe},
         });
       }
       if (pfad == '/api/v1/kammer') {
@@ -62,6 +64,11 @@ void main() {
           200,
           headers: {'content-type': 'image/jpeg'},
         );
+      }
+      if (pfad == '/api/v1/kammer/sichten') {
+        final k = (jsonDecode(r.body) as Map).cast<String, Object?>();
+        urteile.add(k);
+        return json({'geaendert': 1});
       }
       final ids = (jsonDecode(r.body)['ids'] as List).cast<String>();
       if (pfad == '/api/v1/kammer/freigeben') {
@@ -106,6 +113,8 @@ void main() {
     freigegeben = [];
     verworfen = [];
     nachFreigabe = 0;
+    urteile = [];
+    stufe = 3;
   });
 
   Future<void> zeige(WidgetTester tester, Fotokammerdienst? d) async {
@@ -240,6 +249,90 @@ void main() {
     await tester.pumpAndSettle();
     expect(zoom.value.getMaxScaleOnAxis(), 1);
     expect(vollbilder(), hasLength(1));
+  });
+
+  group('Sichten (#345)', () {
+    Future<void> oeffne(WidgetTester tester) async {
+      await zeige(tester, dienst());
+      final kachel = find.byIcon(Icons.circle_outlined).first;
+      await tester.tap(kachel);
+      await tester.tap(kachel);
+      await tester.pumpAndSettle();
+    }
+
+    const erste = '00000000-0000-4000-8000-000000000001';
+
+    testWidgets('Zahl setzt Sterne, dieselbe noch einmal löscht sie', (
+      tester,
+    ) async {
+      await oeffne(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.pumpAndSettle();
+      expect(urteile.last, {
+        'ids': [erste],
+        'sterne': 3,
+        'abgelehnt': false,
+      });
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.pumpAndSettle();
+      expect(urteile.last['sterne'], 0);
+    });
+
+    testWidgets('X lehnt ab und geht zum nächsten Foto', (tester) async {
+      await oeffne(tester);
+      expect(find.text('1 / 6'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyX);
+      await tester.pumpAndSettle();
+      expect(urteile.single['abgelehnt'], isTrue);
+      expect(urteile.single['sterne'], 0);
+      expect(find.text('2 / 6'), findsOneWidget);
+      // U nimmt es am abgelehnten Foto zurück.
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyU);
+      await tester.pumpAndSettle();
+      expect(urteile.last['abgelehnt'], isFalse);
+    });
+
+    testWidgets('ein älterer Server: die Tasten tun nichts', (tester) async {
+      stufe = 2;
+      await oeffne(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.pumpAndSettle();
+      expect(urteile, isEmpty);
+      expect(find.byTooltip('Ablehnen (X)'), findsNothing);
+    });
+
+    testWidgets('abschliessen verwirft Abgelehntes und gibt den Rest frei', (
+      tester,
+    ) async {
+      eintraege[0] = {...eintraege[0], 'abgelehnt': true};
+      eintraege[1] = {...eintraege[1], 'abgelehnt': true};
+      final abgelehnte = [eintraege[0]['id'], eintraege[1]['id']];
+      await zeige(tester, dienst());
+      expect(find.byIcon(Icons.block), findsNWidgets(2));
+      await tester.tap(find.text('Sichtung abschliessen'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('2 abgelehnte Fotos werden endgültig verworfen'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('4 Fotos kommen'), findsOneWidget);
+      expect(freigegeben, isEmpty);
+      // Der zweite liegt im Dialog, der erste in der Leiste dahinter.
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Sichtung abschliessen').last,
+      );
+      await tester.pumpAndSettle();
+      expect(freigegeben.expand((s) => s), hasLength(4));
+      expect(freigegeben.expand((s) => s), isNot(contains(abgelehnte.first)));
+      expect(verworfen, [abgelehnte]);
+    });
+
+    testWidgets('ohne Abgelehnte gibt es den Knopf nicht', (tester) async {
+      await zeige(tester, dienst());
+      expect(find.text('Sichtung abschliessen'), findsNothing);
+    });
   });
 
   test(

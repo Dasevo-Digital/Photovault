@@ -6712,6 +6712,16 @@
   "kammerLeer": "Die Fotokammer ist leer. Beim Import kannst du „Erst in die Fotokammer“ wählen – dann landen neue Fotos zuerst hier.",
   "kammerKeineVorschau": "Keine Vorschau",
   "kammerAuswaehlenTaste": "Auswählen (Leertaste)",
+  "kammerAbschliessen": "Sichtung abschliessen",
+  "kammerAblehnen": "Ablehnen (X)",
+  "kammerSichtenTasten": "1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen",
+  "kammerAbschliessenText": "{weg, plural, =1{1 abgelehntes Foto wird} other{{weg} abgelehnte Fotos werden}} endgültig verworfen. {rest, plural, =1{1 Foto kommt} other{{rest} Fotos kommen}} in die Bibliothek.",
+  "@kammerAbschliessenText": {
+    "placeholders": {
+      "weg": {"type": "int"},
+      "rest": {"type": "int"}
+    }
+  },
   "auswInDieKammer": "In die Fotokammer",
   "kammerAufnehmenTitel": "{anzahl, plural, =1{1 Foto in die Fotokammer legen?} other{{anzahl} Fotos in die Fotokammer legen?}}",
   "@kammerAufnehmenTitel": {

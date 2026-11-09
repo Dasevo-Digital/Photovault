@@ -12,6 +12,8 @@ class Kammereintrag {
     this.kamera,
     this.modell,
     this.hatBild = true,
+    this.sterne = 0,
+    this.abgelehnt = false,
   });
 
   factory Kammereintrag.aus(Map<String, Object?> j) => Kammereintrag(
@@ -24,6 +26,22 @@ class Kammereintrag {
     modell: j['modell'] as String?,
     // Ohne Masse hat der Server keine Vorschau machen können.
     hatBild: j['breite'] != null,
+    sterne: (j['sterne'] as num?)?.toInt() ?? 0,
+    abgelehnt: j['abgelehnt'] == true,
+  );
+
+  /// Dasselbe Foto mit einem neuen Urteil.
+  Kammereintrag mit({int? sterne, bool? abgelehnt}) => Kammereintrag(
+    id: id,
+    name: name,
+    groesse: groesse,
+    datum: datum,
+    art: art,
+    kamera: kamera,
+    modell: modell,
+    hatBild: hatBild,
+    sterne: sterne ?? this.sterne,
+    abgelehnt: abgelehnt ?? this.abgelehnt,
   );
 
   final String id;
@@ -34,6 +52,10 @@ class Kammereintrag {
   final String? kamera;
   final String? modell;
   final bool hatBild;
+
+  /// Was beim Sichten vergeben wurde (#345).
+  final int sterne;
+  final bool abgelehnt;
 
   bool get istVideo => art == 'VIDEO';
 }
@@ -74,14 +96,26 @@ class Fotokammerdienst {
   /// Ob der Server die Kammer kennt. Ein älterer würde `kammer` beim
   /// Hochladen übergehen und das Foto gleich in die Bibliothek legen.
   /// [stufe] 2: Fotos der Bibliothek lassen sich hineinlegen (#337).
-  Future<bool> moeglich({int stufe = 1}) async {
+  /// [stufe] 3: Sterne und Ablehnung beim Sichten (#345).
+  Future<bool> moeglich({int stufe = 1}) async => await this.stufe() >= stufe;
+
+  /// Was der Server von der Kammer kennt; 0, wenn gar nichts.
+  Future<int> stufe() async {
     try {
       final z = await verbindung.hole('api/v1/zustand');
-      return ((z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0) >= stufe;
+      return (z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0;
     } on Object {
-      return false;
+      return 0;
     }
   }
+
+  /// Merkt das Urteil über [ids] am Server.
+  Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) =>
+      verbindung.schicke('api/v1/kammer/sichten', {
+        'ids': ids,
+        'sterne': ?sterne,
+        'abgelehnt': ?abgelehnt,
+      });
 
   Future<List<Kammereintrag>> liste() async {
     final j = await verbindung.hole('api/v1/kammer');

@@ -15982,6 +15982,30 @@ abstract class AppTexte {
   /// **'Auswählen (Leertaste)'**
   String get kammerAuswaehlenTaste;
 
+  /// No description provided for @kammerAbschliessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Sichtung abschliessen'**
+  String get kammerAbschliessen;
+
+  /// No description provided for @kammerAblehnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablehnen (X)'**
+  String get kammerAblehnen;
+
+  /// No description provided for @kammerSichtenTasten.
+  ///
+  /// In de, this message translates to:
+  /// **'1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen'**
+  String get kammerSichtenTasten;
+
+  /// No description provided for @kammerAbschliessenText.
+  ///
+  /// In de, this message translates to:
+  /// **'{weg, plural, =1{1 abgelehntes Foto wird} other{{weg} abgelehnte Fotos werden}} endgültig verworfen. {rest, plural, =1{1 Foto kommt} other{{rest} Fotos kommen}} in die Bibliothek.'**
+  String kammerAbschliessenText(int weg, int rest);
+
   /// No description provided for @auswInDieKammer.
   ///
   /// In de, this message translates to:

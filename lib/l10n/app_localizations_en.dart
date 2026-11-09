@@ -10496,6 +10496,33 @@ class AppTexteEn extends AppTexte {
   String get kammerAuswaehlenTaste => 'Select (space)';
 
   @override
+  String get kammerAbschliessen => 'Finish review';
+
+  @override
+  String get kammerAblehnen => 'Reject (X)';
+
+  @override
+  String get kammerSichtenTasten =>
+      '1 to 5: stars · 0: no stars · X: reject and continue · U: undo reject';
+
+  @override
+  String kammerAbschliessenText(int weg, int rest) {
+    String _temp0 = intl.Intl.pluralLogic(
+      weg,
+      locale: localeName,
+      other: '$weg rejected photos are',
+      one: '1 rejected photo is',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      rest,
+      locale: localeName,
+      other: '$rest photos go',
+      one: '1 photo goes',
+    );
+    return '$_temp0 permanently discarded. $_temp1 to the library.';
+  }
+
+  @override
   String get auswInDieKammer => 'Move to staging';
 
   @override
