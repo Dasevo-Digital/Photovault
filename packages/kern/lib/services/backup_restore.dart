@@ -11,6 +11,7 @@ import '../db/database.dart';
 import '../protokoll.dart';
 import 'aufnahmedatum.dart';
 import 'backup_fotokammer.dart';
+import 'beilagenangaben.dart';
 import 'backup_manifest.dart';
 import 'backup_modelle.dart';
 import 'backup_restore_plan.dart';
@@ -180,7 +181,9 @@ class BackupWiederhersteller {
   ///
   /// Eine Kammer gibt es nur am Server, die Wiederherstellung läuft aber in
   /// der App. Ausgelassen wären die Fotos verloren; im Album sieht man sie
-  /// und kann sie sichten.
+  /// und kann sie sichten. Dazu gehören auch Kopien, deren Eintrag vor
+  /// wenigen Tagen aus der Kammer verschwand: Gerade für den Fall, dass das
+  /// nicht gewollt war, bleiben sie liegen.
   Future<void> _holeFotokammer(
     String wurzel,
     SecretKey schluessel,
@@ -211,6 +214,9 @@ class BackupWiederhersteller {
         );
         if (r.outcome == ImportOutcome.imported && r.assetId != null) {
           neue.add(r.assetId!);
+          await Beilagenangaben.aus(
+            e.angaben['beilage'],
+          )?.wendeAn(_db, r.assetId!);
         }
       } on Object catch (x) {
         _problem('pv_restore_kammer', x);

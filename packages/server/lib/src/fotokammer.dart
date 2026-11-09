@@ -73,6 +73,20 @@ class Fotokammer {
 
   static bool gueltig(String id) => _kennungMuster.hasMatch(id);
 
+  static const _belegteNamen = {
+    'miniatur.jpg',
+    'vorschau.jpg',
+    'angaben.json',
+    'sichtung.json',
+    'vollbild',
+  };
+
+  /// Der Dateiname im Ordner eines Eintrags. Ein Foto namens `vorschau.jpg`
+  /// würde sonst von seiner eigenen Vorschau überschrieben, und liegt es als
+  /// harter Link hier (#337), träfe das auch das Original der Bibliothek.
+  static String _platzName(String name) =>
+      _belegteNamen.contains(name.toLowerCase()) ? 'foto_$name' : name;
+
   /// Legt [datei] in die Kammer – vollständig angekommen, mit Namen und
   /// Änderungszeit. Was die Bibliothek oder die Kammer schon hat, kommt
   /// nicht noch einmal hinein; die Antwort gleicht dann der eines Imports
@@ -105,7 +119,7 @@ class Fotokammer {
     try {
       final ziel = await _verschiebe(
         datei,
-        File(p.join(platz.path, p.basename(datei.path))),
+        File(p.join(platz.path, _platzName(p.basename(datei.path)))),
       );
       final (breite, hoehe) = await _bilder(ziel, id, istBild: a.istBild);
       if (beilage != null && (beilage.sterne != null || beilage.abgelehnt)) {
@@ -183,7 +197,9 @@ class Fotokammer {
       await platz.create(recursive: true);
       try {
         final name = p.basename(a.originalFileName);
-        final ziel = File(p.join(platz.path, name.isEmpty ? 'foto' : name));
+        final ziel = File(
+          p.join(platz.path, name.isEmpty ? 'foto' : _platzName(name)),
+        );
         await _verknuepfe(quelle, ziel);
         final (breite, hoehe) = await _bilderAus(a, ziel, id);
         await _angaben(id).writeAsString(
@@ -305,19 +321,37 @@ class Fotokammer {
   }
 
   /// Merkt sich das Urteil über [id]. Was nicht angegeben ist, bleibt.
-  Future<bool> sichte(String id, {int? sterne, bool? abgelehnt}) async {
+  ///
+  /// Der Reihe nach: Schnelle Tastendrücke kommen als Anfragen, die sich
+  /// überholen können, und das spätere Urteil soll gelten.
+  Future<bool> sichte(String id, {int? sterne, bool? abgelehnt}) {
+    final fertig = _sichtReihe.then(
+      (_) => _sichte(id, sterne: sterne, abgelehnt: abgelehnt),
+    );
+    _sichtReihe = fertig.then((_) {}, onError: (_) {});
+    return fertig;
+  }
+
+  Future<void> _sichtReihe = Future.value();
+
+  Future<bool> _sichte(String id, {int? sterne, bool? abgelehnt}) async {
     if (await eintrag(id) == null || _inArbeit.contains(id)) return false;
     final alt = await _sichtungVon(id);
     final teil = File('${_sichtung(id).path}.neu');
-    await teil.writeAsString(
-      jsonEncode({
-        'sterne': sterne ?? alt['sterne'] ?? 0,
-        'abgelehnt': abgelehnt ?? alt['abgelehnt'] ?? false,
-      }),
-      flush: true,
-    );
-    await teil.rename(_sichtung(id).path);
-    return true;
+    try {
+      await teil.writeAsString(
+        jsonEncode({
+          'sterne': sterne ?? alt['sterne'] ?? 0,
+          'abgelehnt': abgelehnt ?? alt['abgelehnt'] ?? false,
+        }),
+        flush: true,
+      );
+      await teil.rename(_sichtung(id).path);
+      return true;
+    } on FileSystemException {
+      // Inzwischen freigegeben oder verworfen.
+      return false;
+    }
   }
 
   /// Die Sterne aus der Sichtung gehen mit in die Bibliothek.

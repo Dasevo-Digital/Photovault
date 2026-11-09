@@ -329,6 +329,31 @@ void main() {
       expect(verworfen, [abgelehnte]);
     });
 
+    testWidgets('abschliessen fragt vorher den Server, was jetzt gilt', (
+      tester,
+    ) async {
+      eintraege[0] = {...eintraege[0], 'abgelehnt': true};
+      eintraege[1] = {...eintraege[1], 'abgelehnt': true};
+      await zeige(tester, dienst());
+      // Ein anderes Gerät nimmt eine Ablehnung zurück.
+      eintraege[1] = {...eintraege[1], 'abgelehnt': false};
+      await tester.tap(find.text('Sichtung abschliessen'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('1 abgelehntes Foto wird'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Sichtung abschliessen').last,
+      );
+      await tester.pumpAndSettle();
+      expect(verworfen.expand((s) => s), hasLength(1));
+      expect(freigegeben.expand((s) => s), hasLength(5));
+    });
+
+    test('viele Abgelehnte gehen in Stapeln', () async {
+      final d = dienst();
+      await d.verwerfen([for (var i = 0; i < 450; i++) 'x$i']);
+      expect(verworfen.map((s) => s.length), [200, 200, 50]);
+    });
+
     testWidgets('ohne Abgelehnte gibt es den Knopf nicht', (tester) async {
       await zeige(tester, dienst());
       expect(find.text('Sichtung abschliessen'), findsNothing);

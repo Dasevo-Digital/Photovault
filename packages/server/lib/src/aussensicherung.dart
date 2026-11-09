@@ -583,10 +583,18 @@ class Aussensicherung {
     Map<String, Zieldatei> dort,
     Map<String, Zieldatei> hier,
   ) async {
+    const kammer = '/${FotokammerSicherung.ordnerName}/';
+    // Nur wo daheim schon gesichert wurde: Bei einem neu eingerichteten Ziel
+    // fehlt hier noch alles, und drüben läge dann die letzte Kopie.
+    final mitDaten = {
+      for (final k in hier.keys)
+        if (k.contains('/data/')) k.substring(0, k.indexOf('/data/')),
+    };
     var geloescht = 0;
     for (final k in dort.keys) {
-      if (!k.contains('/${FotokammerSicherung.ordnerName}/')) continue;
-      if (hier.containsKey(k)) continue;
+      final stelle = k.indexOf(kammer);
+      if (stelle < 0 || hier.containsKey(k)) continue;
+      if (!mitDaten.contains(k.substring(0, stelle))) continue;
       await ziel.loesche(k);
       geloescht++;
     }

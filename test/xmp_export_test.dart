@@ -4,6 +4,7 @@ import 'package:cryptography/cryptography.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/export_service.dart';
@@ -55,6 +56,46 @@ void main() {
       library = LibraryState()
         ..db = db
         ..paths = paths;
+    });
+
+    group('mit Server (#346)', () {
+      setUp(() {
+        library.verbindung = Verbindungsdatei(
+          server: Uri.parse('http://127.0.0.1:9'),
+          konto: 'erika',
+          geraet: 'Rechner',
+          token: 'probe',
+        );
+      });
+
+      test(
+        'schreibt in den gewählten Ordner, unter dem Namen des Fotos',
+        () async {
+          await importPhoto('IMG_7.jpg');
+          final ziel = Directory(p.join(tempRoot.path, 'ziel'))..createSync();
+          await library
+              .writeXmpSidecars(
+                wieDarktable: true,
+                ordnerWaehlen: () async => ziel.path,
+              )
+              .drain<void>();
+          expect(File(p.join(ziel.path, 'IMG_7.jpg.xmp')).existsSync(), isTrue);
+        },
+      );
+
+      test('ohne Ordner gibt es keinen Platz dafür', () async {
+        await expectLater(
+          library.writeXmpSidecars().drain<void>(),
+          throwsStateError,
+        );
+      });
+
+      test('abgebrochene Ordnerwahl schreibt nichts', () async {
+        await importPhoto('IMG_8.jpg');
+        await library
+            .writeXmpSidecars(ordnerWaehlen: () async => null)
+            .drain<void>();
+      });
     });
 
     test(

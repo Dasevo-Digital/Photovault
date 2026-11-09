@@ -36,6 +36,15 @@ void main() {
     return (await db.assetById(id))!;
   }
 
+  test('die 0 steht nur auf Wunsch in der Beilage', () async {
+    final a = await insertAsset('ohne');
+    expect(buildXmpPacket(a, const []), isNot(contains('xmp:Rating')));
+    expect(
+      buildXmpPacket(a, const [], bewertungImmer: true),
+      contains('xmp:Rating="0"'),
+    );
+  });
+
   test('erzeugt valides, parsbares XML', () async {
     final asset = await insertAsset('a');
     final xmp = buildXmpPacket(asset, const []);

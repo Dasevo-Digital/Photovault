@@ -25,6 +25,7 @@ String buildXmpPacket(
   AssetData asset,
   List<String> tagNames, {
   List<Gesichtsregion> gesichter = const [],
+  bool bewertungImmer = false,
 }) {
   final builder = XmlBuilder();
   builder.processing('xpacket', 'begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"');
@@ -53,7 +54,8 @@ String buildXmpPacket(
                 'xmlns:stArea': 'http://ns.adobe.com/xmp/sType/Area#',
                 'xmlns:stDim': 'http://ns.adobe.com/xap/1.0/sType/Dimensions#',
               },
-              if (asset.rating > 0) 'xmp:Rating': '${asset.rating}',
+              if (asset.rating > 0 || bewertungImmer)
+                'xmp:Rating': '${asset.rating}',
               if (asset.colorLabel != null)
                 'xmp:Label': _xmpLabelName(asset.colorLabel!),
               if (asset.cameraMake != null) 'tiff:Make': asset.cameraMake!,

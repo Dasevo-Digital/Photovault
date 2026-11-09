@@ -241,9 +241,17 @@ class Fotokammerdienst {
 
   /// Löscht [ids] endgültig vom Server; gibt zurück, wie viele es waren.
   Future<int> verwerfen(List<String> ids) async {
-    final j = await verbindung.schicke('api/v1/kammer/verwerfen', {'ids': ids});
-    _vergiss(ids);
-    return (j['verworfen'] as num?)?.toInt() ?? 0;
+    var n = 0;
+    // Der Server nimmt höchstens 500 auf einmal.
+    for (var i = 0; i < ids.length; i += 200) {
+      final teil = ids.sublist(i, (i + 200).clamp(0, ids.length));
+      final j = await verbindung.schicke('api/v1/kammer/verwerfen', {
+        'ids': teil,
+      });
+      _vergiss(teil);
+      n += (j['verworfen'] as num?)?.toInt() ?? 0;
+    }
+    return n;
   }
 
   void _vergiss(Iterable<String> ids) {

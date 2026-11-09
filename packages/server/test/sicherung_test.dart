@@ -247,6 +247,9 @@ void main() {
           'name': name,
           'sha256': sha256.convert(bytes).toString(),
           'geaendert': DateTime(2026, 10, 1).millisecondsSinceEpoch,
+          'beilage': {
+            'schlagwoerter': ['Kammerwort'],
+          },
         }),
       );
       return id;
@@ -348,6 +351,10 @@ void main() {
       expect(aufnahmen, hasLength(3));
       final album = (await db.select(db.albums).get()).single;
       expect(album.name, 'Fotokammer (wiederhergestellt)');
+      expect(
+        (await db.select(db.tags).get()).map((t) => t.name),
+        contains('Kammerwort'),
+      );
       final darin = await db.select(db.albumAssets).get();
       expect(
         aufnahmen

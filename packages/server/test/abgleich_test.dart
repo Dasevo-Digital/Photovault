@@ -826,6 +826,43 @@ void main() {
     expect(zeile.description, 'am Fluss');
     expect((await dbB.tagsForAsset(neuB)).map((t) => t.name), ['Fluss']);
 
+    // Ein Foto, das heisst wie die eigene Vorschau, bleibt das Foto.
+    final vorschauName = bild('vorschau.jpg', 44);
+    final inhalt = vorschauName.readAsBytesSync();
+    final namens = await tus.lade(vorschauName, 'api/v1/hochladen', {
+      'filename': 'vorschau.jpg',
+      ...kammer,
+    });
+    final volle = await v.anfrage(
+      'GET',
+      'api/v1/kammer/${namens['pv-kammer']}/vollbild',
+    );
+    expect(volle.bodyBytes, inhalt);
+
+    // Schnelle Urteile überholen sich nicht.
+    final reihe = <Future<Object?>>[
+      for (var s = 1; s <= 5; s++)
+        v.schicke('api/v1/kammer/sichten', {
+          'ids': [namens['pv-kammer']],
+          'sterne': s,
+        }),
+    ];
+    await Future.wait(reihe);
+    final amEnde = ((await v.hole('api/v1/kammer'))['eintraege'] as List)
+        .cast<Map>()
+        .firstWhere((e) => e['id'] == namens['pv-kammer']);
+    expect(amEnde['sterne'], inInclusiveRange(1, 5));
+    expect(
+      Directory(
+        '${(await bibliotheken.fuer(erika.id)).bibliothek.ordner.path}'
+        '/fotokammer/${namens['pv-kammer']}',
+      ).listSync().whereType<File>().where((f) => f.path.endsWith('.neu')),
+      isEmpty,
+    );
+    await v.schicke('api/v1/kammer/verwerfen', {
+      'ids': [namens['pv-kammer']],
+    });
+
     // Ein anderes Konto sieht die Kammer nicht.
     final otto = await konten.legeAn('otto', 'ein anderes passwort');
     final v2 = Serververbindung(

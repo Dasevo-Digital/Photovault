@@ -3243,10 +3243,11 @@ class LibraryState extends ChangeNotifier {
     bool wieDarktable = false,
     Future<String?> Function()? ordnerWaehlen,
   }) async* {
+    // Neben die Originale geht nur ohne Server; in einen Ordner immer.
+    if (ordnerWaehlen == null) _nurOhneServer();
     final ordner = await ordnerWaehlen?.call();
     if (ordnerWaehlen != null && ordner == null) return;
     final vergeben = <String>{};
-    _nurOhneServer();
     final assets = await db.assetsForXmpExport();
     final tagsByAssetId = await db.allTagNamesByAssetId();
     // Eine Abfrage für alle, nicht eine je Foto – siehe
@@ -3261,7 +3262,7 @@ class LibraryState extends ChangeNotifier {
         gesichter: gesichterByAssetId[asset.id] ?? const [],
       );
       final quelle = ordner != null
-          ? p.join(ordner, asset.originalFileName)
+          ? p.join(ordner, p.basename(asset.originalFileName))
           : asset.relativePath;
       final name = wieDarktable
           ? paths.xmpSidecarPathDarktable(quelle)

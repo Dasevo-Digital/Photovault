@@ -88,7 +88,9 @@ Beilagenangaben? beilageNeben(String pfad) {
 /// Für verbundene Bibliotheken: Die Originale liegen dort am Server, neben
 /// ihnen lässt sich also nichts finden (#346). Tragen zwei Fotos denselben
 /// Namen (Kameras zählen nach 9999 von vorn), bleibt ihre Beilage unbenutzt:
-/// Lieber nichts übernehmen als die Sterne des falschen Fotos.
+/// Lieber nichts übernehmen als die Sterne des falschen Fotos. Aus demselben
+/// Grund bleibt ein Foto ohne Beilage, wenn zwei Unterordner je eine für
+/// seinen Namen haben. Im selben Ordner gilt wie sonst die neueste.
 Map<String, File> ordneBeilagenZu(
   Iterable<File> beilagen,
   Iterable<({String id, String name})> fotos,
@@ -100,13 +102,21 @@ Map<String, File> ordneBeilagenZu(
     final ohne = p.withoutExtension(name);
     if (ohne != name) jeName.putIfAbsent(ohne, () => []).add(f.id);
   }
-  final aus = <String, File>{};
+  final kandidaten = <String, List<File>>{};
   for (final b in beilagen) {
     final name = p.withoutExtension(p.basename(b.path)).toLowerCase();
     final treffer = jeName[name];
-    if (treffer != null && treffer.length == 1) aus[treffer.single] = b;
+    if (treffer != null && treffer.length == 1) {
+      kandidaten.putIfAbsent(treffer.single, () => []).add(b);
+    }
   }
-  return aus;
+  return {
+    for (final e in kandidaten.entries)
+      if (e.value.map((f) => f.parent.path).toSet().length == 1)
+        e.key: e.value.length == 1
+            ? e.value.single
+            : neuesteXmpBeilage(e.value) ?? e.value.first,
+  };
 }
 
 /// Liest [file] als XMP-Sidecar ein. Gibt `null` zurück, wenn die Datei

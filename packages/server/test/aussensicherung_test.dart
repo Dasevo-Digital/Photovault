@@ -670,6 +670,23 @@ void main() {
       );
     });
 
+    test('ein neu eingerichtetes Ziel löscht drüben keine Kammer', () async {
+      final b = '${Serversicherung.ordnerFuer(erika)}/PhotoVault-AutoBackup';
+      File('${nas.path}/$b/fotokammer/k1/datei.enc')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('verschluesselt');
+      await aussen.jetzt();
+      bool liegtDrueben() =>
+          s3.dateien.keys.any((k) => k.endsWith('$b/fotokammer/k1/datei.enc'));
+      expect(liegtDrueben(), isTrue);
+      // Das NAS wurde getauscht: Kennmarke da, Sicherung noch nicht.
+      Directory(
+        '${nas.path}/${Serversicherung.ordnerFuer(erika)}',
+      ).deleteSync(recursive: true);
+      await aussen.jetzt();
+      expect(liegtDrueben(), isTrue);
+    });
+
     test('ohne jede Generation daheim bleiben sie drüben', () async {
       await aussen.jetzt();
       final b = '${Serversicherung.ordnerFuer(erika)}/PhotoVault-AutoBackup';

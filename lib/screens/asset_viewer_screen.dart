@@ -563,7 +563,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         id: asset.id,
         name: asset.originalFileName,
         original: await widget.paths.bereit(asset.relativePath),
-        xmp: buildXmpPacket(asset, [for (final x in tags) x.name]),
+        // Ohne ausdrückliche 0 vergibt darktable beim Einlesen seine
+        // Vorgabe von einem Stern, und die käme als Änderung zurück.
+        xmp: buildXmpPacket(asset, [
+          for (final x in tags) x.name,
+        ], bewertungImmer: true),
       );
       if (!mounted) return;
       if (gestartet) {

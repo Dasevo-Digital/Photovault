@@ -17,18 +17,23 @@ class DarktableBruecke {
   DarktableBruecke(this.ablage, {Future<bool> Function(String)? starte})
     : _starte = starte ?? starteDarktable;
 
-  /// Unter „Bilder“: Dort darf darktable auch im Flatpak hin.
-  factory DarktableBruecke.standard() => DarktableBruecke(
-    Directory(
-      p.join(
+  /// Unter „Bilder“, dort kommt darktable auch aus dem Flatpak hin. Auf dem
+  /// Mac direkt im Container: HOME zeigt in der Sandbox dorthin, und
+  /// `Pictures` wäre ein Verweis auf einen Ordner, den die App nicht
+  /// beschreiben darf.
+  factory DarktableBruecke.standard() {
+    final heim =
         Platform.environment['HOME'] ??
-            Platform.environment['USERPROFILE'] ??
-            Directory.systemTemp.path,
-        'Pictures',
-        'PhotoVault-darktable',
+        Platform.environment['USERPROFILE'] ??
+        Directory.systemTemp.path;
+    return DarktableBruecke(
+      Directory(
+        Platform.isMacOS
+            ? p.join(heim, 'PhotoVault-darktable')
+            : p.join(heim, 'Pictures', 'PhotoVault-darktable'),
       ),
-    ),
-  );
+    );
+  }
 
   final Directory ablage;
   final Future<bool> Function(String) _starte;

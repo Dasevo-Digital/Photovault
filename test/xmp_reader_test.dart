@@ -108,6 +108,25 @@ void main() {
       expect(z['b']?.path, '/x/img_2.xmp');
     });
 
+    test('zwei Beilagen aus verschiedenen Ordnern gelten nicht', () {
+      final a = File('${ordner.path}/a/IMG_1.xmp')..createSync(recursive: true);
+      final b = File('${ordner.path}/b/IMG_1.xmp')..createSync(recursive: true);
+      expect(ordneBeilagenZu([a, b], [(id: 'f', name: 'IMG_1.CR3')]), isEmpty);
+    });
+
+    test('im selben Ordner gilt die neuere', () {
+      final alt = File('${ordner.path}/IMG_1.xmp')
+        ..writeAsStringSync('x')
+        ..setLastModifiedSync(DateTime(2026, 1));
+      final neu = File('${ordner.path}/IMG_1.CR3.xmp')
+        ..writeAsStringSync('x')
+        ..setLastModifiedSync(DateTime(2026, 5));
+      expect(
+        ordneBeilagenZu([neu, alt], [(id: 'f', name: 'IMG_1.CR3')])['f']?.path,
+        neu.path,
+      );
+    });
+
     test('zwei Fotos mit gleichem Namen bleiben ohne Beilage', () {
       final z = ordneBeilagenZu(
         [File('/x/IMG_1.CR3.xmp')],

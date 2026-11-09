@@ -238,14 +238,26 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     if (d == null) return;
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
+    // Frisch vom Server: Verworfen wird endgültig, und ein anderes Gerät
+    // kann das Urteil inzwischen geändert haben.
+    final List<Kammereintrag> stand;
+    try {
+      stand = await d.liste();
+    } on Object catch (e) {
+      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _eintraege = stand);
     final weg = [
-      for (final e in _eintraege)
+      for (final e in stand)
         if (e.abgelehnt) e.id,
     ];
     final rest = [
-      for (final e in _eintraege)
+      for (final e in stand)
         if (!e.abgelehnt) e.id,
     ];
+    if (weg.isEmpty) return;
     final ja = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(

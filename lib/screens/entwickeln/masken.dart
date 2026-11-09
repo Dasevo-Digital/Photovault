@@ -884,9 +884,18 @@ mixin _Masken on _EntwickelnBasis {
     setState(() => _computingMask = true);
     // Der Quellpfad wird nur von den Formen gebraucht, die Bildpunkte
     // auswerten; die anderen fassen die Datei gar nicht an.
-    final quellPfad = shape is ColorRangeShape || shape is LuminanceRangeShape
-        ? (await _maskenQuelle()).path
-        : null;
+    String? quellPfad;
+    if (shape is ColorRangeShape || shape is LuminanceRangeShape) {
+      try {
+        quellPfad = (await _maskenQuelle()).path;
+      } on Object {
+        // Offline und nicht vorgehalten: lieber sagen als ewig drehen.
+        if (!mounted) return;
+        setState(() => _computingMask = false);
+        melde.warnung(AppTexte.of(context).entwVorschauNichtDekodiert);
+        return;
+      }
+    }
     final pngBytes = await compute(rasterizeMaskShapeToPngBytes, (
       shape,
       width,
