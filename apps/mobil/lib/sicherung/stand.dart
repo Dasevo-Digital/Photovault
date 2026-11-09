@@ -68,7 +68,8 @@ class Sicherungsstand {
         CREATE TABLE IF NOT EXISTS lauf (
           id INTEGER PRIMARY KEY CHECK (id = 0),
           wert TEXT NOT NULL
-        )''');
+        )''')
+      ..execute('CREATE TABLE IF NOT EXISTS serie (kennung TEXT PRIMARY KEY)');
     // Seit 3.33: warum der Server etwas abgelehnt hat. Ein Stand von davor
     // hat die Spalte noch nicht.
     if (!db
@@ -207,6 +208,17 @@ class Sicherungsstand {
         aufnahme: z['aufnahme'] as String,
       ),
   };
+
+  /// Die Serien, die schon einmal gestapelt wurden (#314).
+  Set<String> gestapelteSerien() => {
+    for (final z in _db.select('SELECT kennung FROM serie'))
+      z['kennung'] as String,
+  };
+
+  void merkeSerie(String kennung) => _db.execute(
+    'INSERT OR IGNORE INTO serie (kennung) VALUES (?)',
+    [kennung],
+  );
 
   /// Das Foto auf dem Telefon, das als [aufnahme] gesichert ist, und wann
   /// es zuletzt geändert war; `null`, wenn es keins gibt.

@@ -484,6 +484,10 @@ class AppTexteEn extends AppTexte {
   String get sicherungNurBeimLaden => 'In the background only while charging';
 
   @override
+  String get sicherungAusgeblendeteHinweis =>
+      'iOS does not hand hidden photos to this app. To back them up, unhide them in the Photos app first.';
+
+  @override
   String get sicherungAlben => 'Albums';
 
   @override

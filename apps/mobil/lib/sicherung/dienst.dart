@@ -14,6 +14,7 @@ import 'hintergrund.dart';
 import 'kamerarolle.dart';
 import 'lauf.dart';
 import 'photo_manager_rolle.dart';
+import 'serien.dart';
 import 'sofort.dart';
 import 'stand.dart';
 import 'telefonloeschung.dart';
@@ -32,6 +33,7 @@ class Sicherungsdienst extends ChangeNotifier {
     required Directory ordner,
     required Uri server,
     required String token,
+    this._kopie,
     @visibleForTesting Kamerarolle Function(List<String> alben)? rolle,
     @visibleForTesting Future<bool> Function(Sicherungseinstellungen e)? netz,
   }) : _stand = Sicherungsstand.oeffne(ordner),
@@ -41,6 +43,9 @@ class Sicherungsdienst extends ChangeNotifier {
 
   final Sicherungsstand _stand;
   final Serververbindung _verbindung;
+
+  /// Die Kopie der Bibliothek, um gesicherte Serien zu stapeln.
+  final AppDatabase? _kopie;
   final Kamerarolle Function(List<String> alben) _rolle;
   final Future<bool> Function(Sicherungseinstellungen e) _netzPasst;
 
@@ -73,11 +78,24 @@ class Sicherungsdienst extends ChangeNotifier {
       try {
         final alle = await _rolle(const []).eintraege(videos: true);
         ungesichert = nochNichtGesichert(alle, _stand.bekannt().erledigt);
+        await _stapleSerien(alle);
       } on MissingPluginException {
         return; // in Tests ohne Telefon
       }
     }
     if (!_beendet) notifyListeners();
+  }
+
+  /// Der Stapel ist Beiwerk: Scheitert er, zählt der Rest trotzdem, und
+  /// beim nächsten Mal geht es von selbst weiter.
+  Future<void> _stapleSerien(List<Rolleneintrag> alle) async {
+    final kopie = _kopie;
+    if (kopie == null || _beendet) return;
+    try {
+      await Serienstapel(stand: _stand, db: kopie).bilde(alle);
+    } on Exception catch (f) {
+      debugPrint('Serien stapeln: $f');
+    }
   }
 
   /// Warum gerade nicht gesichert wird, obwohl etwas offen ist.

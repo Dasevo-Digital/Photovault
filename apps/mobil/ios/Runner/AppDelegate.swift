@@ -15,6 +15,9 @@ import workmanager_apple
     // mit Szenen meldet Flutter die Plugins sonst zu spät an.
     WorkmanagerPlugin.setPluginRegistrantCallback { registry in
       GeneratedPluginRegistrant.register(with: registry)
+      if let registrar = registry.registrar(forPlugin: "Zusatzfotos") {
+        Zusatzfotokanal.richteEin(registrar)
+      }
     }
     WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "de.dasevo.photovault.sicherung")
     // Kurze Auffrischungen über den Tag (BGAppRefreshTask, rund 30 s je
@@ -31,6 +34,9 @@ import workmanager_apple
     // Das Video des Überfluges (lib/seiten/landschaft.dart).
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Flugvideo") {
       Flugvideokanal.richteEin(registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Zusatzfotos") {
+      Zusatzfotokanal.richteEin(registrar)
     }
     // Die Verbindung für Widget und Teilen-Erweiterung (lib/gemeinsam.dart).
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "Gemeinsam") {
@@ -77,6 +83,41 @@ import workmanager_apple
           }
         default:
           antwort(FlutterMethodNotImplemented)
+        }
+      }
+    }
+  }
+}
+
+/// Serienbilder für die Sicherung (#314), in der App und in der Engine der
+/// Hintergrundaufgabe.
+enum Zusatzfotokanal {
+  private static let reihe = DispatchQueue(
+    label: "de.dasevo.photovault.zusatzfotos", qos: .userInitiated)
+
+  static func richteEin(_ registrar: FlutterPluginRegistrar) {
+    let kanal = FlutterMethodChannel(
+      name: "de.dasevo.photovault/zusatzfotos", binaryMessenger: registrar.messenger())
+    kanal.setMethodCallHandler { aufruf, antwort in
+      let w = aufruf.arguments as? [String: Any] ?? [:]
+      let melde: (Any?) -> Void = { wert in DispatchQueue.main.async { antwort(wert) } }
+      reihe.async {
+        switch aufruf.method {
+        case "liste":
+          melde(Zusatzfotos.liste(alben: w["alben"] as? [String] ?? []))
+        case "serienglieder":
+          melde(Zusatzfotos.serienglieder(w["kennungen"] as? [String] ?? []))
+        case "dateien":
+          guard let kennung = w["kennung"] as? String else {
+            melde(nil)
+            return
+          }
+          Zusatzfotos.dateien(kennung: kennung, fertig: melde)
+        case "aufraeumen":
+          Zusatzfotos.aufraeumen()
+          melde(nil)
+        default:
+          melde(FlutterMethodNotImplemented)
         }
       }
     }

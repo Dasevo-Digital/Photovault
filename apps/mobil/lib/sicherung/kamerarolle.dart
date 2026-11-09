@@ -18,7 +18,9 @@ abstract class Kamerarolle {
   /// fragt den Nutzer dabei selbst. Gibt zurück, wie viele gingen.
   Future<int> loesche(List<String> ids);
 
-  /// Welche von [ids] noch auf dem Telefon liegen (und die App sehen darf).
+  /// Welche von [ids] noch auf dem Telefon liegen und die App löschen darf.
+  /// Bilder einer Serie gehören nicht dazu: Was iOS mit den übrigen macht,
+  /// wenn das Titelbild geht, sagt es nicht zu (#314).
   Future<List<String>> vorhanden(List<String> ids);
 }
 
@@ -32,6 +34,8 @@ class Rolleneintrag {
     required this.dateien,
     this.quelle,
     this.bearbeitetesVideo,
+    this.serie,
+    this.serientitel = false,
   });
 
   /// Die Kennung auf dem Telefon (MediaStore bzw. Fotomediathek).
@@ -55,6 +59,16 @@ class Rolleneintrag {
   /// Der Eintrag der Plattform dahinter (`AssetEntity`) – für Miniaturen
   /// in der Zeitleiste; `null` in einer Rolle aus Dateien.
   final Object? quelle;
+
+  /// Die Kennung der Serie, zu der dieser Eintrag gehört (#314).
+  final String? serie;
+
+  /// Ob er das Titelbild seiner Serie ist – das, was die Fotos-App zeigt.
+  final bool serientitel;
+
+  /// Ob er auch in der Fotos-App als eigenes Bild zu sehen ist. Nur solche
+  /// gehören zwischen die Fotos der Zeitleiste.
+  bool get eigenesBild => serie == null || serientitel;
 }
 
 /// Eine Datei eines Eintrags.

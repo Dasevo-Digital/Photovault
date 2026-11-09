@@ -11,6 +11,10 @@ import 'stand.dart';
 /// Änderungsstand ist seither derselbe (eine Bearbeitung nach der
 /// Sicherung wäre sonst weg); und die Aufnahme auf dem Server steht in der
 /// Kopie der Bibliothek noch da, nicht im Papierkorb.
+///
+/// Eine Serie bleibt ganz auf dem Telefon (#314). In der Fotos-App ist sie
+/// ein einziges Bild, und was iOS mit den übrigen Bildern macht, wenn das
+/// Titelbild geht, sagt es nicht zu.
 class Speicherfreigabe {
   const Speicherfreigabe({
     required this.stand,
@@ -30,6 +34,7 @@ class Speicherfreigabe {
     for (final e in await rolle.eintraege(videos: true)) {
       final g = gesichert[e.id];
       if (g != null &&
+          e.serie == null &&
           g.geaendert == e.geaendert.millisecondsSinceEpoch &&
           !(await e.bearbeitetesVideo?.call() ?? false)) {
         aufDemTelefon[e.id] = g.aufnahme;

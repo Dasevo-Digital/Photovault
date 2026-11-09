@@ -487,6 +487,10 @@ class AppTexteDe extends AppTexte {
   String get sicherungNurBeimLaden => 'Im Hintergrund nur beim Laden';
 
   @override
+  String get sicherungAusgeblendeteHinweis =>
+      'Ausgeblendete Fotos gibt iOS dieser App nicht heraus. Wer sie sichern will, blendet sie in der Fotos-App vorher ein.';
+
+  @override
   String get sicherungAlben => 'Alben';
 
   @override

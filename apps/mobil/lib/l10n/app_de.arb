@@ -240,6 +240,7 @@
   "sicherungVideos": "Videos sichern",
   "sicherungNurWlan": "Nur im WLAN",
   "sicherungNurBeimLaden": "Im Hintergrund nur beim Laden",
+  "sicherungAusgeblendeteHinweis": "Ausgeblendete Fotos gibt iOS dieser App nicht heraus. Wer sie sichern will, blendet sie in der Fotos-App vorher ein.",
   "sicherungAlben": "Alben",
   "sicherungAlleFotos": "Alle Fotos",
   "sicherungAlbenAnzahl": "{n, plural, =1{1 Album} other{{n} Alben}}",

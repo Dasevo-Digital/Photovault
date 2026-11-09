@@ -161,6 +161,11 @@ class Sicherungsseite extends StatelessWidget {
                 value: e.nurBeimLaden,
                 onChanged: (v) => dienst.setze(e.mit(nurBeimLaden: v)),
               ),
+              if (Platform.isIOS)
+                ListTile(
+                  leading: const Icon(Icons.visibility_off_outlined),
+                  subtitle: Text(t.sicherungAusgeblendeteHinweis),
+                ),
               ListTile(
                 leading: const Icon(Icons.photo_album_outlined),
                 title: Text(t.sicherungAlben),

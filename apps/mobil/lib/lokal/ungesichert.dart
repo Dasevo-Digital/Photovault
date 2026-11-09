@@ -79,7 +79,7 @@ List<LokaleAufnahme> nochNichtGesichert(
   Map<String, int> erledigt,
 ) => [
   for (final e in alle)
-    if (erledigt[e.id] != e.geaendert.millisecondsSinceEpoch)
+    if (e.eigenesBild && erledigt[e.id] != e.geaendert.millisecondsSinceEpoch)
       LokaleAufnahme.aus(e),
 ];
 

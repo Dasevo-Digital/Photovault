@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_manager/photo_manager.dart';
 
@@ -20,6 +21,10 @@ import 'kamerarolle.dart';
 /// Bearbeitung deshalb nie auf den Server. Hat ein Foto Anpassungen, geht
 /// die bearbeitete Fassung als dritter Teil mit (`bearbeitet`, ein JPEG –
 /// so rendert photo_manager sie); der Server legt sie über das Original.
+///
+/// **Serien (#314).** Von einer Serie liefert das Plugin nur das Titelbild.
+/// Die übrigen Bilder kommen über einen eigenen Kanal dazu
+/// (`ios/Gemeinsam/Zusatzfotos.swift`), auch ihre Dateien.
 class PhotoManagerRolle implements Kamerarolle {
   PhotoManagerRolle({this.alben = const []});
 
@@ -28,12 +33,15 @@ class PhotoManagerRolle implements Kamerarolle {
 
   static const _seite = 500;
 
+  static const _zusatzkanal = MethodChannel('de.dasevo.photovault/zusatzfotos');
+
   /// Die Alben zur Auswahl, „Alle Fotos“ zuerst.
   static Future<List<AssetPathEntity>> albenZurAuswahl() =>
       PhotoManager.getAssetPathList(type: RequestType.common);
 
   @override
   Future<List<Rolleneintrag>> eintraege({required bool videos}) async {
+    final zusatz = await _zusatzfotos();
     final pfade = await PhotoManager.getAssetPathList(
       type: videos ? RequestType.common : RequestType.image,
       onlyAll: alben.isEmpty,
@@ -48,9 +56,12 @@ class PhotoManagerRolle implements Kamerarolle {
       for (var start = 0; start < n; start += _seite) {
         final ende = start + _seite < n ? start + _seite : n;
         for (final a in await pfad.getAssetListRange(start: start, end: ende)) {
-          if (gesehen.add(a.id)) aus.add(_eintrag(a));
+          if (gesehen.add(a.id)) aus.add(_eintrag(a, zusatz[a.id]));
         }
       }
+    }
+    for (final z in zusatz.values) {
+      if ((videos || !z.video) && gesehen.add(z.id)) aus.add(_zusatzeintrag(z));
     }
     aus.sort((a, b) => b.aufgenommen.compareTo(a.aufgenommen));
     return aus;
@@ -61,12 +72,54 @@ class PhotoManagerRolle implements Kamerarolle {
       (await PhotoManager.editor.deleteWithIds(ids)).length;
 
   @override
-  Future<List<String>> vorhanden(List<String> ids) async => [
-    for (final id in ids)
-      if (await AssetEntity.fromId(id) != null) id,
-  ];
+  Future<List<String>> vorhanden(List<String> ids) async {
+    final da = [
+      for (final id in ids)
+        if (await AssetEntity.fromId(id) != null) id,
+    ];
+    if (!Platform.isIOS || da.isEmpty) return da;
+    final serie = await _zusatzkanal.invokeListMethod<String>('serienglieder', {
+      'kennungen': da,
+    });
+    return da.where((id) => !serie!.contains(id)).toList();
+  }
 
-  static Rolleneintrag _eintrag(AssetEntity a) => Rolleneintrag(
+  Future<Map<String, _Zusatzfoto>> _zusatzfotos() async {
+    if (!Platform.isIOS) return const {};
+    final liste = await _zusatzkanal.invokeListMethod<Map<Object?, Object?>>(
+      'liste',
+      {'alben': alben},
+    );
+    return {for (final w in liste!) w['id']! as String: _Zusatzfoto(w)};
+  }
+
+  static Rolleneintrag _zusatzeintrag(_Zusatzfoto z) => Rolleneintrag(
+    id: z.id,
+    geaendert: z.geaendert,
+    aufgenommen: z.aufgenommen,
+    video: z.video,
+    dateien: () => _zusatzdateien(z.id),
+    serie: z.serie,
+    serientitel: z.titel,
+  );
+
+  static Future<List<Rollendatei>?> _zusatzdateien(String id) async {
+    final liste = await _zusatzkanal.invokeListMethod<Map<Object?, Object?>>(
+      'dateien',
+      {'kennung': id},
+    );
+    return liste
+        ?.map(
+          (w) => Rollendatei(
+            teil: w['teil']! as String,
+            name: w['name']! as String,
+            datei: File(w['pfad']! as String),
+          ),
+        )
+        .toList();
+  }
+
+  static Rolleneintrag _eintrag(AssetEntity a, _Zusatzfoto? z) => Rolleneintrag(
     id: a.id,
     geaendert: a.modifiedDateTime,
     aufgenommen: a.createDateTime,
@@ -76,6 +129,8 @@ class PhotoManagerRolle implements Kamerarolle {
     bearbeitetesVideo: a.type == AssetType.video && Platform.isIOS
         ? () => a.darwin.hasAdjustments
         : null,
+    serie: z?.serie,
+    serientitel: z?.titel ?? false,
   );
 
   static Future<List<Rollendatei>?> _dateien(AssetEntity a) async {
@@ -135,5 +190,29 @@ class PhotoManagerRolle implements Kamerarolle {
   }
 
   @override
-  Future<void> aufraeumen() => PhotoManager.clearFileCache();
+  Future<void> aufraeumen() async {
+    await PhotoManager.clearFileCache();
+    if (Platform.isIOS) await _zusatzkanal.invokeMethod<void>('aufraeumen');
+  }
+}
+
+/// Ein Eintrag von `Zusatzfotos.liste`.
+class _Zusatzfoto {
+  _Zusatzfoto(Map<Object?, Object?> w)
+    : id = w['id']! as String,
+      geaendert = _zeit(w['geaendert']),
+      aufgenommen = _zeit(w['aufgenommen']),
+      video = w['video'] == true,
+      serie = w['serie'] as String?,
+      titel = w['titel'] == true;
+
+  static DateTime _zeit(Object? ms) =>
+      DateTime.fromMillisecondsSinceEpoch(ms! as int);
+
+  final String id;
+  final DateTime geaendert;
+  final DateTime aufgenommen;
+  final bool video;
+  final String? serie;
+  final bool titel;
 }

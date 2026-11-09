@@ -13,6 +13,7 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_mobil/sicherung/kamerarolle.dart';
 import 'package:photo_vault_mobil/sicherung/lauf.dart';
+import 'package:photo_vault_mobil/sicherung/serien.dart';
 import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sicherung/telefonloeschung.dart';
 
@@ -63,6 +64,27 @@ class _Rolle implements Kamerarolle {
       dateien: () async => null,
     ),
   );
+
+  /// Ein Bild einer Serie (#314).
+  void zusatz(String id, File datei, {String? serie, bool titel = false}) =>
+      eintraege_.insert(
+        0,
+        Rolleneintrag(
+          id: id,
+          geaendert: DateTime(2025, 6, 1),
+          aufgenommen: DateTime(2025, 6, 1, 12),
+          video: false,
+          dateien: () async => [
+            Rollendatei(
+              teil: 'bild',
+              name: p.basename(datei.path),
+              datei: datei,
+            ),
+          ],
+          serie: serie,
+          serientitel: titel,
+        ),
+      );
 
   void bearbeite(String id) {
     final i = eintraege_.indexWhere((x) => x.id == id);
@@ -171,6 +193,12 @@ void main() {
   Future<List<Map>> aufServer() async =>
       ((await telefon.hole('api/v1/aufnahmen'))['aufnahmen']! as List)
           .cast<Map>();
+
+  /// Der Testserver ist für alle Tests derselbe.
+  Future<List<Map>> eigene(String vorsatz) async => [
+    for (final a in await aufServer())
+      if ('${a['name']}'.startsWith(vorsatz)) a,
+  ];
 
   test('kennt das Foto des Telefons zu einer Aufnahme (#330)', () {
     final zeit = DateTime(2026, 3, 4, 5);
@@ -316,6 +344,89 @@ void main() {
       expect(await f.kandidaten(), isEmpty);
     },
   );
+
+  Future<AppDatabase> kopieMit(Iterable<Map> aufnahmen) async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    for (final a in aufnahmen) {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: a['id']! as String,
+          originalFileName: a['name']! as String,
+          relativePath: 'originals/${a['name']}',
+          checksum: 'pruef-${a['name']}',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025),
+          importedAt: DateTime(2026),
+        ),
+      );
+    }
+    return db;
+  }
+
+  test(
+    'Serie: alle Bilder gesichert, gestapelt, nichts davon zum Löschen (#314)',
+    () async {
+      rolle
+        ..zusatz('s1', server.jpeg('BURST_01.JPG', 71), serie: 'B', titel: true)
+        ..zusatz('s2', server.jpeg('BURST_02.JPG', 72), serie: 'B')
+        ..zusatz('s3', server.jpeg('BURST_03.JPG', 73), serie: 'B')
+        ..foto('f1', server.jpeg('BURST_04.JPG', 74));
+      final bericht = await lauf().laufe();
+      expect(bericht.hochgeladen, 4);
+
+      final amServer = await eigene('BURST_0');
+      final zuName = {for (final a in amServer) a['name']: a['id'] as String};
+      final alle = await rolle.eintraege(videos: true);
+
+      // In der Zeitleiste steht von der Serie nur das Titelbild.
+      expect(alle.where((e) => e.eigenesBild).map((e) => e.id).toSet(), {
+        's1',
+        'f1',
+      });
+
+      // Kennt die Kopie noch nicht alle Bilder, wartet der Stapel.
+      final teilweise = await kopieMit(
+        amServer.where((a) => a['name'] != 'BURST_03.JPG'),
+      );
+      expect(await Serienstapel(stand: stand, db: teilweise).bilde(alle), 0);
+
+      final db = await kopieMit(amServer);
+      final stapel = Serienstapel(stand: stand, db: db);
+      expect(await stapel.bilde(alle), 1);
+      Future<AssetData> zeile(String name) => (db.select(
+        db.assets,
+      )..where((t) => t.id.equals(zuName[name]!))).getSingle();
+      final titel = await zeile('BURST_01.JPG');
+      expect(titel.isStackCover, isTrue);
+      expect(titel.stackSize, 3);
+      expect((await zeile('BURST_02.JPG')).stackId, titel.stackId);
+      expect((await zeile('BURST_04.JPG')).stackId, isNull);
+
+      // Einmal je Serie: Wer sie auflöst, behält das.
+      await db.unstackAssets(titel.stackId!);
+      expect(await stapel.bilde(alle), 0);
+
+      // Speicher freigeben: nur das Foto ausserhalb der Serie.
+      final f = Speicherfreigabe(stand: stand, rolle: rolle, db: db);
+      expect(await f.kandidaten(), ['f1']);
+    },
+  );
+
+  test('Serie: ein Stapel von Hand bleibt, wie er ist (#314)', () async {
+    rolle
+      ..zusatz('h1', server.jpeg('BURST_11.JPG', 75), serie: 'C', titel: true)
+      ..zusatz('h2', server.jpeg('BURST_12.JPG', 76), serie: 'C');
+    await lauf().laufe();
+    final amServer = await eigene('BURST_1');
+    final db = await kopieMit(amServer);
+    await db.createStack('von-hand', [
+      for (final a in amServer) a['id']! as String,
+    ], amServer.first['id']! as String);
+    final stapel = Serienstapel(stand: stand, db: db);
+    expect(await stapel.bilde(await rolle.eintraege(videos: true)), 0);
+    expect(stand.gestapelteSerien(), {'C'});
+  });
 
   test(
     'auch vom Telefon löschen: was dazu gehört, und was im Papierkorb liegt (#205)',

@@ -194,6 +194,7 @@
   "sicherungVideos": "Back up videos",
   "sicherungNurWlan": "Wi-Fi only",
   "sicherungNurBeimLaden": "In the background only while charging",
+  "sicherungAusgeblendeteHinweis": "iOS does not hand hidden photos to this app. To back them up, unhide them in the Photos app first.",
   "sicherungAlben": "Albums",
   "sicherungAlleFotos": "All photos",
   "sicherungAlbenAnzahl": "{n, plural, =1{1 album} other{{n} albums}}",

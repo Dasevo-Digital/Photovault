@@ -243,6 +243,7 @@ class Sitzung extends ChangeNotifier {
       ordner: ordner,
       server: v.server,
       token: v.token,
+      kopie: db,
     );
     _setze(Sitzungszustand.bereit);
     unawaited(d.starte());

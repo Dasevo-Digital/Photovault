@@ -865,6 +865,12 @@ abstract class AppTexte {
   /// **'Im Hintergrund nur beim Laden'**
   String get sicherungNurBeimLaden;
 
+  /// No description provided for @sicherungAusgeblendeteHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgeblendete Fotos gibt iOS dieser App nicht heraus. Wer sie sichern will, blendet sie in der Fotos-App vorher ein.'**
+  String get sicherungAusgeblendeteHinweis;
+
   /// No description provided for @sicherungAlben.
   ///
   /// In de, this message translates to:

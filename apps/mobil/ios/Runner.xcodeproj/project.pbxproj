@@ -37,6 +37,9 @@
 		CF9C7EDED99248D134BAAC49 /* Sofortsicherung.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 8CF534D17C0F0413EECA9375 /* Sofortsicherung.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DE240A8D5D71F373ADD24D3E /* GemeinsameSicherung.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E1EFEEC348EE93BE8CB238 /* GemeinsameSicherung.swift */; };
 		E07CF7CFABDB561352D505A8 /* Sofortauswahl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79E56C9757308D78E80853C5 /* Sofortauswahl.swift */; };
+		A1F3C2D47B9E4A6081C5E702 /* Zusatzfotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F3C2D47B9E4A6081C5E701 /* Zusatzfotos.swift */; };
+		A1F3C2D47B9E4A6081C5E703 /* Zusatzfotos.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F3C2D47B9E4A6081C5E701 /* Zusatzfotos.swift */; };
+		A1F3C2D47B9E4A6081C5E705 /* ZusatzfotosTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F3C2D47B9E4A6081C5E704 /* ZusatzfotosTests.swift */; };
 		F989269C2721612E31F537DC /* Sofortsteuerung.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45915A38F53B1395502563F1 /* Sofortsteuerung.swift */; };
 		FF1583C5D4224469D7869A93 /* GemeinsameSicherung.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E1EFEEC348EE93BE8CB238 /* GemeinsameSicherung.swift */; };
 /* End PBXBuildFile section */
@@ -130,6 +133,8 @@
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
 		79E56C9757308D78E80853C5 /* Sofortauswahl.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Sofortauswahl.swift; sourceTree = "<group>"; };
+		A1F3C2D47B9E4A6081C5E701 /* Zusatzfotos.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Zusatzfotos.swift; sourceTree = "<group>"; };
+		A1F3C2D47B9E4A6081C5E704 /* ZusatzfotosTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ZusatzfotosTests.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
 		8CF534D17C0F0413EECA9375 /* Sofortsicherung.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = Sofortsicherung.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E782905827760BFC9E2E750 /* AnPhotoVault.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = AnPhotoVault.entitlements; sourceTree = "<group>"; };
@@ -202,6 +207,7 @@
 			children = (
 				331C807B294A618700263BE5 /* RunnerTests.swift */,
 				EF20C2CF4439673CD476C3CB /* SofortauswahlTests.swift */,
+				A1F3C2D47B9E4A6081C5E704 /* ZusatzfotosTests.swift */,
 			);
 			path = RunnerTests;
 			sourceTree = "<group>";
@@ -223,6 +229,7 @@
 				97A79D20EA72E3CBCC40687A /* GemeinsameVerbindung.swift */,
 				D7E1EFEEC348EE93BE8CB238 /* GemeinsameSicherung.swift */,
 				79E56C9757308D78E80853C5 /* Sofortauswahl.swift */,
+				A1F3C2D47B9E4A6081C5E701 /* Zusatzfotos.swift */,
 			);
 			name = Gemeinsam;
 			path = Gemeinsam;
@@ -557,6 +564,8 @@
 				60E918B0C59B9616A03E7F9F /* GemeinsameSicherung.swift in Sources */,
 				E07CF7CFABDB561352D505A8 /* Sofortauswahl.swift in Sources */,
 				C5BFEB631192185DC88EBB91 /* SofortauswahlTests.swift in Sources */,
+				A1F3C2D47B9E4A6081C5E703 /* Zusatzfotos.swift in Sources */,
+				A1F3C2D47B9E4A6081C5E705 /* ZusatzfotosTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -569,6 +578,7 @@
 				7884E8682EC3CC0700C636F2 /* SceneDelegate.swift in Sources */,
 				955B46D6CA91F20304F8C1CD /* GemeinsameVerbindung.swift in Sources */,
 				6D31F7E6683F2843536C28FB /* Flugvideo.swift in Sources */,
+				A1F3C2D47B9E4A6081C5E702 /* Zusatzfotos.swift in Sources */,
 				DE240A8D5D71F373ADD24D3E /* GemeinsameSicherung.swift in Sources */,
 				F989269C2721612E31F537DC /* Sofortsteuerung.swift in Sources */,
 			);
