@@ -1382,6 +1382,13 @@
   "albumOfflineBelegt": "Offline auf diesem Telefon · {groesse} · Neues kommt nur im WLAN nach",
   "@albumOfflineBelegt": {"placeholders": {"groesse": {"type": "String"}}},
   "syncUebersicht": "Änderungen und Konflikte",
+  "syncAnsehen": "Ansehen",
+  "syncNichtUebernommen": "{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}",
+  "@syncNichtUebernommen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "startfehlerTitel": "Die Bibliothek konnte nicht geöffnet werden",
   "startfehlerText": "Die App ist beim Start auf einen Fehler gestoßen. Die technischen Einzelheiten helfen bei der Fehlersuche.",
   "startfehlerNeuerTitel": "Diese Bibliothek ist neuer als diese Fassung",

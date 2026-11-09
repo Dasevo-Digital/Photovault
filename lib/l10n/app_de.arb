@@ -6582,6 +6582,13 @@
   "regelDateiendungWert": "Endungen, z. B. jpg, heic",
   "regelDateiUngueltig": "Suchtext angeben oder gültige Dateiendungen durch Kommas trennen.",
   "syncUebersicht": "Änderungen und Konflikte",
+  "syncAnsehen": "Ansehen",
+  "syncNichtUebernommen": "{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}",
+  "@syncNichtUebernommen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "backupProbeLetzterErfolg": "Letzte erfolgreiche Probe: {wann} (damaliger Stand).",
   "@backupProbeLetzterErfolg": {
     "placeholders": {

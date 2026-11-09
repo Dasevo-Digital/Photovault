@@ -14,6 +14,7 @@ import 'package:kern/abgleich/fallschluessel.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/exif_camera.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
@@ -179,6 +180,72 @@ void main() {
       expect((await db.assetById('foto'))!.aiCaption, 'neu beschrieben');
     },
   );
+
+  group('Auswertungen frischer Fotos stören andere Befehle nicht (#340)', () {
+    Future<void> auswerten() => quelle.customStatement(
+      "UPDATE assets SET ai_tags_scanned = 1, ocr_text = 'Text', "
+      "ocr_scanned = 1, sharpness_score = 0.7, location_city = 'Ort' "
+      "WHERE id = 'foto'",
+    );
+    final befehle = <String, Befehl<void> Function()>{
+      'Kamera': () => const KameraangabenSetzen(
+        'foto',
+        CameraInfo(make: 'Canon', model: 'EOS R10'),
+      ),
+      'Jahr': () => const JahrSchaetzen('foto', 1999),
+      'Datum': () => AufnahmedatenSetzen([
+        (id: 'foto', zeitpunkt: DateTime(2020), geschaetzt: false),
+      ]),
+      'Serie': () => const SerieBilden('s1', ['foto'], 'foto'),
+    };
+    for (final e in befehle.entries) {
+      test(e.key, () async {
+        await auswerten();
+        await db.fuehreAus(e.value());
+        await a.sende();
+        await a.empfange();
+        expect(a.zustandJetzt.faelle, 0);
+      });
+    }
+
+    test('dasselbe Feld am Server bleibt ein Konflikt', () async {
+      await quelle.customStatement(
+        'UPDATE assets SET datum_geprueft = 1, file_created_at = 12345 '
+        "WHERE id = 'foto'",
+      );
+      await db.fuehreAus(
+        AufnahmedatenSetzen([
+          (id: 'foto', zeitpunkt: DateTime(2020), geschaetzt: false),
+        ]),
+      );
+      await a.sende();
+      await a.empfange();
+      expect(a.zustandJetzt.faelle, 1);
+    });
+
+    test('die Spaltennamen gibt es wirklich', () async {
+      final felder = {
+        for (final r
+            in await db.customSelect('PRAGMA table_info(assets)').get())
+          r.read<String>('name'),
+      };
+      final quelltext = File(
+        '../kern/lib/abgleich/befehlsbasis.dart',
+      ).readAsStringSync();
+      final abschnitt = quelltext.substring(
+        quelltext.indexOf('final absicht = switch'),
+        quelltext.indexOf('_ => alle.toList()'),
+      );
+      final genannt = RegExp(
+        r"^\s*(?:'[a-zA-Z]+' => \[)?\s*'([a-z_0-9]+)',?\s*\]?,?$",
+        multiLine: true,
+      ).allMatches(abschnitt).map((m) => m.group(1)!);
+      expect(genannt, isNotEmpty);
+      for (final n in genannt) {
+        expect(felder, contains(n));
+      }
+    });
+  });
 
   test(
     'ein inzwischen am Server gesperrtes Foto geht nicht über eine alte Absicht in den Papierkorb',

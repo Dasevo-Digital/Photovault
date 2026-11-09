@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/services/groessentext.dart';
 import 'package:zierbild/bibliothek_eintraege.dart';
@@ -43,6 +44,27 @@ class _StartState extends State<Start> {
   void initState() {
     super.initState();
     _lebenslauf;
+    widget.sitzung.neueFaelle.addListener(_neueFaelle);
+  }
+
+  /// Sagt, dass der Server eine Änderung nicht angenommen hat (#340).
+  void _neueFaelle() {
+    final a = widget.sitzung.abgleich;
+    if (!mounted || a == null) return;
+    final t = AppTexte.of(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(t.syncNichtUebernommen(widget.sitzung.letzteNeueFaelle)),
+        action: SnackBarAction(
+          label: t.syncAnsehen,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => Abgleichsuebersicht(abgleich: a),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Ein Tipp auf „Fotos“ fährt die Zeitleiste zu den neuesten Aufnahmen
@@ -53,6 +75,7 @@ class _StartState extends State<Start> {
 
   @override
   void dispose() {
+    widget.sitzung.neueFaelle.removeListener(_neueFaelle);
     _lebenslauf.dispose();
     _zeitleisteNachOben.dispose();
     super.dispose();
@@ -164,7 +187,16 @@ class _StartState extends State<Start> {
             label: t.navAlben,
           ),
           NavigationDestination(
-            icon: const Icon(Bibliothekssymbole.bibliothek),
+            // Der Punkt bleibt, bis die Fälle unter „Änderungen und
+            // Konflikte“ entschieden sind (#340).
+            icon: ListenableBuilder(
+              listenable: widget.sitzung,
+              builder: (context, _) => Badge(
+                isLabelVisible:
+                    (widget.sitzung.abgleichszustand?.faelle ?? 0) > 0,
+                child: const Icon(Bibliothekssymbole.bibliothek),
+              ),
+            ),
             selectedIcon: const Icon(Bibliothekssymbole.bibliothekGewaehlt),
             label: t.navBibliothek,
           ),

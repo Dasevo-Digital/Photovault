@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -374,6 +375,7 @@ class _HomeShellState extends State<HomeShell> {
       if (mounted && f != _fixiert) setState(() => _fixiert = f);
     });
     widget.library.backupwarnung.addListener(_backupGeaendert);
+    widget.library.neueFaelle.addListener(_neueFaelle);
     // Der erste Lauf beim Start kann schon vor diesem Bildschirm fertig sein.
     WidgetsBinding.instance.addPostFrameCallback((_) => _backupGeaendert());
   }
@@ -381,6 +383,24 @@ class _HomeShellState extends State<HomeShell> {
   /// Was zuletzt zum automatischen Backup gemeldet wurde (#207) – je
   /// Sitzung einmal je Grund, nicht bei jedem Halbstundentakt.
   String? _backupGemeldet;
+
+  /// Sagt, dass der Server eine Änderung nicht angenommen hat (#340).
+  void _neueFaelle() {
+    final a = widget.library.abgleich;
+    if (!mounted || a == null) return;
+    final t = AppTexte.of(context);
+    melde.warnung(
+      t.syncNichtUebernommen(widget.library.letzteNeueFaelle),
+      aktion: (
+        beschriftung: t.syncAnsehen,
+        beiDruck: () => Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute<void>(
+            builder: (_) => Abgleichsuebersicht(abgleich: a),
+          ),
+        ),
+      ),
+    );
+  }
 
   /// Meldet, wenn das automatische Backup fällig ist und nicht läuft. Bis
   /// #207 blieb es wortlos aus, solange niemand die Passphrase eingab – in
@@ -674,6 +694,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void dispose() {
     widget.library.backupwarnung.removeListener(_backupGeaendert);
+    widget.library.neueFaelle.removeListener(_neueFaelle);
     _tresor.schweige();
     _lebenslauf.dispose();
     _seite.dispose();

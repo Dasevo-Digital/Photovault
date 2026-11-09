@@ -2753,6 +2753,22 @@ class AppTexteEn extends AppTexte {
   String get syncUebersicht => 'Changes and conflicts';
 
   @override
+  String get syncAnsehen => 'View';
+
+  @override
+  String syncNichtUebernommen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl changes were not applied because the photos have changed on the server in the meantime.',
+      one:
+          'One change was not applied because the photo has changed on the server in the meantime.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get startfehlerTitel => 'The library could not be opened';
 
   @override

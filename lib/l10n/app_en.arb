@@ -5054,6 +5054,13 @@
   "regelDateiendungWert": "Extensions, e.g. jpg, heic",
   "regelDateiUngueltig": "Enter search text or valid comma-separated file extensions.",
   "syncUebersicht": "Changes and conflicts",
+  "syncAnsehen": "View",
+  "syncNichtUebernommen": "{anzahl, plural, =1{One change was not applied because the photo has changed on the server in the meantime.} other{{anzahl} changes were not applied because the photos have changed on the server in the meantime.}}",
+  "@syncNichtUebernommen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "backupProbeLetzterErfolg": "Last successful drill: {wann} (at that time).",
   "@backupProbeLetzterErfolg": {
     "placeholders": {

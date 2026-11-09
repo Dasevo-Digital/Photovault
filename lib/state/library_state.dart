@@ -1079,6 +1079,10 @@ class LibraryState extends ChangeNotifier {
     _abgleichsAbo = a.zustand.listen((z) {
       final vorher = _abgleichszustand;
       _abgleichszustand = z;
+      if (vorher != null && z.faelle > vorher.faelle) {
+        letzteNeueFaelle = z.faelle - vorher.faelle;
+        neueFaelle.value++;
+      }
       if (z.erreichbar && !z.schemaAnders) {
         unawaited(_vorrat?.fuelle().catchError((_) => 0));
         // Einmal je Start: Spuren, die bis 3.37 nur hier angelegt wurden,
@@ -4182,6 +4186,14 @@ class LibraryState extends ChangeNotifier {
   /// (#207) – für die Meldung in der Oberfläche; `null`, solange es läuft
   /// oder nicht fällig ist.
   final backupwarnung = ValueNotifier<Backupwarnung?>(null);
+
+  /// Zählt jedes Mal hoch, wenn der Server Änderungen abgelehnt hat (#340).
+  /// Die Vorwegnahme ist dann schon zurückgedreht, und ohne Hinweis sähe
+  /// man nur, dass eine Bearbeitung wieder weg ist.
+  final neueFaelle = ValueNotifier<int>(0);
+
+  /// Wie viele es beim letzten Mal waren.
+  int letzteNeueFaelle = 0;
 
   final wiederherstellungsprobe = ValueNotifier<BackupProbeErgebnis?>(null);
 

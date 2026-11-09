@@ -4261,6 +4261,18 @@ abstract class AppTexte {
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
 
+  /// No description provided for @syncAnsehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ansehen'**
+  String get syncAnsehen;
+
+  /// No description provided for @syncNichtUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}'**
+  String syncNichtUebernommen(int anzahl);
+
   /// No description provided for @startfehlerTitel.
   ///
   /// In de, this message translates to:

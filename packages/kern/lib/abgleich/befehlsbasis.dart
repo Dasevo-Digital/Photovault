@@ -209,6 +209,55 @@ class Befehlsbasis {
           // oder Schärfe nachgetragen hatte (#339).
           'inDenPapierkorb' ||
           'ausDemPapierkorb' => ['is_trashed', 'trashed_at'],
+          // Dasselbe für alles, was die Auswertung eines frischen Fotos
+          // nebenher nachträgt (#340): Wer in der Minute danach das Datum
+          // korrigiert oder eine Serie bildet, meint nur diese Angaben.
+          'kameraangabenSetzen' => [
+            'camera_make',
+            'camera_model',
+            'lens_model',
+            'focal_length_mm',
+            'f_number',
+            'iso',
+            'exposure_time_seconds',
+            'exposure_bias_ev',
+            'focal_length35mm',
+          ],
+          'bildbeschreibungSetzen' => [
+            'ai_caption',
+            'ai_caption_de',
+            'ai_caption_edited',
+            'ai_caption_scanned',
+          ],
+          'jahrSchaetzen' || 'aufnahmedatenSetzen' => [
+            'file_created_at',
+            'datum_geschaetzt',
+            'datum_geprueft',
+          ],
+          'serieBilden' ||
+          'serieAufloesen' ||
+          'variantenBilden' ||
+          'variantenAufloesen' ||
+          'variantenHauptbildSetzen' => [
+            'stack_id',
+            'is_stack_cover',
+            'stack_size',
+          ],
+          'ortsvorschlagUebernehmen' => [
+            'latitude',
+            'longitude',
+            'location_country',
+            'location_state',
+            'location_city',
+            'ort_geerbt',
+          ],
+          'orteAusSpurSetzen' => ['latitude', 'longitude'],
+          'entwicklungSpeichern' ||
+          'entwicklungZuruecksetzen' => ['developed_relative_path'],
+          'restaurierungSpeichern' ||
+          'restaurierungZuruecksetzen' => ['restored_relative_path'],
+          'schnittSpeichern' ||
+          'schnittZuruecksetzen' => ['trimmed_relative_path'],
           _ => alle.toList(),
         };
         spalten.addAll(absicht.where(alle.contains));

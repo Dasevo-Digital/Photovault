@@ -58,6 +58,13 @@ class Sitzung extends ChangeNotifier {
   late StoragePaths paths;
   OfflineAlben? offlineAlben;
   Abgleich? abgleich;
+
+  /// Zählt hoch, wenn der Server Änderungen abgelehnt hat (#340): Sie sind
+  /// dann hier schon zurückgedreht, und ohne Hinweis wären sie einfach weg.
+  final neueFaelle = ValueNotifier<int>(0);
+
+  /// Wie viele es beim letzten Mal waren.
+  int letzteNeueFaelle = 0;
   Abgleichszustand? abgleichszustand;
 
   /// Die Sicherung der Kamerarolle (siehe `sicherung/`).
@@ -176,6 +183,10 @@ class Sitzung extends ChangeNotifier {
     _abo = a.zustand.listen((z) {
       final vorher = abgleichszustand;
       abgleichszustand = z;
+      if (vorher != null && z.faelle > vorher.faelle) {
+        letzteNeueFaelle = z.faelle - vorher.faelle;
+        neueFaelle.value++;
+      }
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||
           vorher.ungeklaert != z.ungeklaert ||

@@ -877,6 +877,13 @@
   "variantenEinzelnFrage": "Show the {anzahl} versions separately again? No file is deleted.",
   "albumOfflineBelegt": "Offline on this phone · {groesse} · new photos follow only over Wi-Fi",
   "syncUebersicht": "Changes and conflicts",
+  "syncAnsehen": "View",
+  "syncNichtUebernommen": "{anzahl, plural, =1{One change was not applied because the photo has changed on the server in the meantime.} other{{anzahl} changes were not applied because the photos have changed on the server in the meantime.}}",
+  "@syncNichtUebernommen": {
+    "placeholders": {
+      "anzahl": {"type": "int"}
+    }
+  },
   "startfehlerTitel": "The library could not be opened",
   "startfehlerText": "The app encountered an error during startup. The technical details can help diagnose it.",
   "startfehlerNeuerTitel": "This library is newer than this version",
