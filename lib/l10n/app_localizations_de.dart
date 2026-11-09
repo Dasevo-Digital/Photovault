@@ -2834,6 +2834,24 @@ class AppTexteDe extends AppTexte {
       'Wirkt nur auf farbige Bildbereiche – Graustufen bleiben unberührt.';
 
   @override
+  String get farbeDynamik => 'Dynamik';
+
+  @override
+  String get toenungTitel => 'Tönung';
+
+  @override
+  String get toenungSchatten => 'Schatten';
+
+  @override
+  String get toenungMitten => 'Mitten';
+
+  @override
+  String get toenungLichter => 'Lichter';
+
+  @override
+  String get toenungStaerke => 'Stärke';
+
+  @override
   String get bandRot => 'Rot';
 
   @override

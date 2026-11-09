@@ -8,6 +8,171 @@ import 'package:photo_vault/services/native_image_converter.dart';
 /// und der Core-Image-Kette. Keiner von beiden lässt sich in einem Test
 /// ausführen; was hier nicht geprüft wird, fällt erst am fertigen Bild auf.
 void main() {
+  group('Sättigung und Dynamik (#352)', () {
+    double chroma(List<double> c) =>
+        [c[0], c[1], c[2]].reduce((a, b) => a > b ? a : b) -
+        [c[0], c[1], c[2]].reduce((a, b) => a < b ? a : b);
+    double luma(List<double> c) =>
+        0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
+    test('neutral ändert keinen Wert, auch nicht in der letzten Stelle', () {
+      expect(applyColorMixer(ColorMixer.neutral, 0.31, 0.62, 0.17), [
+        0.31,
+        0.62,
+        0.17,
+      ]);
+    });
+
+    test('-1 entfärbt ganz und hält die Helligkeit', () {
+      const m = ColorMixer({}, saettigung: -1);
+      final c = applyColorMixer(m, 0.7, 0.3, 0.2);
+      expect(chroma(c), closeTo(0, 1e-9));
+      expect(luma(c), closeTo(luma([0.7, 0.3, 0.2]), 1e-9));
+    });
+
+    test('Grau bleibt grau', () {
+      const m = ColorMixer({}, saettigung: 1, dynamik: 1);
+      final c = applyColorMixer(m, 0.5, 0.5, 0.5);
+      expect(c[0], closeTo(0.5, 1e-9));
+      expect(c[1], closeTo(0.5, 1e-9));
+      expect(c[2], closeTo(0.5, 1e-9));
+    });
+
+    test('+1 verdoppelt die Farbigkeit und hält die Helligkeit', () {
+      const m = ColorMixer({}, saettigung: 1);
+      final c = applyColorMixer(m, 0.55, 0.45, 0.4);
+      expect(chroma(c), closeTo(2 * chroma([0.55, 0.45, 0.4]), 1e-9));
+      expect(luma(c), closeTo(luma([0.55, 0.45, 0.4]), 1e-9));
+    });
+
+    test('am Rand des Farbraums kippt der Farbton nicht', () {
+      const m = ColorMixer({}, saettigung: 1);
+      final c = applyColorMixer(m, 0.9, 0.5, 0.2);
+      for (final k in c) {
+        expect(k, inInclusiveRange(0, 1));
+      }
+      // Das Verhältnis der Abstände zur Helligkeit bleibt.
+      final y = luma([0.9, 0.5, 0.2]);
+      expect(
+        (c[0] - luma(c)) / (c[2] - luma(c)),
+        closeTo((0.9 - y) / (0.2 - y), 1e-9),
+      );
+    });
+
+    test('Dynamik hebt Blasses stärker als Kräftiges', () {
+      const m = ColorMixer({}, dynamik: 1);
+      double gewinn(double r, double g, double b) =>
+          chroma(applyColorMixer(m, r, g, b)) / chroma([r, g, b]);
+      // Beide blaugrün, also ohne den Schutz für Hauttöne.
+      expect(gewinn(0.4, 0.5, 0.55), greaterThan(gewinn(0.05, 0.5, 0.7) + 0.3));
+    });
+
+    test('Hauttöne bekommen weniger Dynamik als gleich blasse andere', () {
+      const m = ColorMixer({}, dynamik: 1);
+      double gewinn(double r, double g, double b) =>
+          chroma(applyColorMixer(m, r, g, b)) / chroma([r, g, b]);
+      expect(gewinn(0.7, 0.55, 0.45), lessThan(gewinn(0.45, 0.55, 0.7)));
+    });
+  });
+
+  group('Tönung (#355)', () {
+    const blau = Toenung(farbton: 240, staerke: 1);
+
+    double blaustich(List<double> c) => c[2] - c[0];
+
+    test('Schatten tönen die Tiefen, nicht die Lichter', () {
+      const m = ColorMixer({}, schatten: blau);
+      expect(blaustich(applyColorMixer(m, 0.1, 0.1, 0.1)), greaterThan(0.05));
+      expect(blaustich(applyColorMixer(m, 0.9, 0.9, 0.9)), closeTo(0, 1e-9));
+    });
+
+    test('Lichter tönen die Höhen, nicht die Tiefen', () {
+      const m = ColorMixer({}, lichter: blau);
+      expect(blaustich(applyColorMixer(m, 0.8, 0.8, 0.8)), greaterThan(0.05));
+      expect(blaustich(applyColorMixer(m, 0.1, 0.1, 0.1)), closeTo(0, 1e-9));
+    });
+
+    test('Mitten wirken im mittleren Grau am stärksten', () {
+      const m = ColorMixer({}, mitten: blau);
+      final mitte = blaustich(applyColorMixer(m, 0.5, 0.5, 0.5));
+      expect(mitte, greaterThan(blaustich(applyColorMixer(m, 0.2, 0.2, 0.2))));
+      expect(mitte, greaterThan(blaustich(applyColorMixer(m, 0.8, 0.8, 0.8))));
+    });
+
+    test('die Helligkeit bleibt', () {
+      const m = ColorMixer({}, mitten: Toenung(farbton: 30, staerke: 0.8));
+      final c = applyColorMixer(m, 0.5, 0.5, 0.5);
+      expect(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], closeTo(0.5, 1e-9));
+    });
+
+    test('der Würfel bleibt im Farbraum', () {
+      const m = ColorMixer(
+        {},
+        saettigung: 1,
+        dynamik: 1,
+        schatten: blau,
+        mitten: Toenung(farbton: 60, staerke: 1),
+        lichter: Toenung(farbton: 0, staerke: 1),
+      );
+      for (final k in buildColorCube(m, size: colorCubePreviewSize)) {
+        expect(k, inInclusiveRange(0, 1));
+      }
+    });
+  });
+
+  group('Speichern der neuen Regler', () {
+    const voll = ColorMixer(
+      {ColorBand.rot: BandAnpassung(saettigung: 0.2)},
+      saettigung: 0.3,
+      dynamik: -0.4,
+      schatten: Toenung(farbton: 200, staerke: 0.5),
+      lichter: Toenung(farbton: 40, staerke: 0.1),
+    );
+
+    test('kommen aus dem JSON zurück', () {
+      expect(ColorMixer.decode(voll.encode()), voll);
+    });
+
+    test('ein Band zu ändern lässt sie stehen', () {
+      final m = voll.mitBand(ColorBand.blau, const BandAnpassung(farbton: 0.1));
+      expect(m.saettigung, 0.3);
+      expect(m.schatten, voll.schatten);
+      expect(m.band(ColorBand.rot).saettigung, 0.2);
+    });
+
+    test('jeder allein macht den Mischer nicht-neutral', () {
+      expect(const ColorMixer({}, saettigung: 0.1).istNeutral, isFalse);
+      expect(const ColorMixer({}, dynamik: 0.1).istNeutral, isFalse);
+      expect(
+        const ColorMixer(
+          {},
+          mitten: Toenung(farbton: 10, staerke: 0.1),
+        ).istNeutral,
+        isFalse,
+      );
+    });
+
+    test('ein älterer Stand ohne die Felder bleibt, wie er war', () {
+      final m = ColorMixer.decode('{"rot":{"s":0.5}}');
+      expect(m.saettigung, 0);
+      expect(m.schatten.istNeutral, isTrue);
+      expect(m.band(ColorBand.rot).saettigung, 0.5);
+    });
+
+    test('Werte ausserhalb der Grenzen werden eingefangen', () {
+      final m = ColorMixer.decode(
+        '{"saettigung":9,"schatten":{"h":999,"a":3}}',
+      );
+      expect(m.saettigung, 1);
+      expect(m.schatten.farbton, 360);
+      expect(m.schatten.staerke, 1);
+    });
+
+    test('Farbton bei Stärke 0 löst keinen Neubau aus', () {
+      expect(const Toenung(farbton: 100), const Toenung(farbton: 300));
+    });
+  });
+
   group('Tonwertkurve', () {
     test('die Gerade lässt jeden Wert unverändert', () {
       for (final x in [0.0, 0.25, 0.5, 0.75, 1.0]) {

@@ -1073,6 +1073,15 @@ mixin _Bedienfelder on _EntwickelnBasis {
     ),
     const SizedBox(height: AppSpacing.md),
     const Divider(color: Colors.white24),
+    FarbePanel(
+      mixer: _colorMixer,
+      onChanged: (mischer) => setState(() {
+        _colorMixer = mischer;
+        _dragging = true;
+      }),
+      onChangeEnd: _scheduleRerender,
+    ),
+    const Divider(color: Colors.white24),
     ColorMixerPanel(
       mixer: _colorMixer,
       onChanged: (mischer) => setState(() {

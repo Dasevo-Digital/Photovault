@@ -253,31 +253,130 @@ const colorCubePreviewSize = 16;
 /// Regler grauen Flächen und Rauschen eine Farbe geben.
 const _saettigungsSperre = 0.15;
 
-/// Farbmischer: acht Farbbänder mit je Farbton, Sättigung und Helligkeit.
+/// Eine Farbe für einen Helligkeitsbereich (#355).
+class Toenung {
+  /// Farbton in Grad, 0..360.
+  final double farbton;
+
+  /// Wie stark, 0..1. Bei 0 ist der Farbton ohne Bedeutung.
+  final double staerke;
+
+  const Toenung({this.farbton = 0, this.staerke = 0});
+
+  static const neutral = Toenung();
+
+  bool get istNeutral => staerke == 0;
+
+  Map<String, dynamic> toJson() => {'h': farbton, 'a': staerke};
+
+  static Toenung fromJson(Object? json) {
+    if (json is! Map) return neutral;
+    return Toenung(
+      farbton: ((json['h'] as num?)?.toDouble() ?? 0).clamp(0.0, 360.0),
+      staerke: ((json['a'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0),
+    );
+  }
+
+  /// Ohne Stärke ist jeder Farbton gleich viel wert: Sonst löste das
+  /// Verschieben des Farbtons bei Stärke 0 einen Neubau des Würfels aus.
+  @override
+  bool operator ==(Object other) =>
+      other is Toenung &&
+      other.staerke == staerke &&
+      (staerke == 0 || other.farbton == farbton);
+
+  @override
+  int get hashCode => staerke == 0 ? 0 : Object.hash(farbton, staerke);
+}
+
+/// Farbmischer: acht Farbbänder mit je Farbton, Sättigung und Helligkeit,
+/// dazu Sättigung und Dynamik fürs ganze Bild (#352) und eine Tönung je
+/// Helligkeitsbereich (#355).
+///
+/// **Alles in einem Würfel.** Was nur vom Farbwert eines Bildpunkts abhängt,
+/// lässt sich vorab in den Farbwürfel rechnen. Der läuft schon durch alle
+/// Renderwege (Core Image, Shader, Browser), die neuen Regler müssen dort
+/// also nichts dazulernen und wirken überall gleich. Und sie stecken im
+/// selben JSON wie die Bänder, ohne neue Spalte.
 class ColorMixer {
   final Map<ColorBand, BandAnpassung> baender;
 
-  const ColorMixer(this.baender);
+  /// -1 entfärbt ganz, +1 verdoppelt die Farbigkeit.
+  final double saettigung;
+
+  /// Wie [saettigung], aber schonend: Blasse Farben ändern sich am meisten,
+  /// kräftige kaum, Hauttöne halb so stark. -1..1.
+  final double dynamik;
+
+  final Toenung schatten;
+  final Toenung mitten;
+  final Toenung lichter;
+
+  const ColorMixer(
+    this.baender, {
+    this.saettigung = 0,
+    this.dynamik = 0,
+    this.schatten = Toenung.neutral,
+    this.mitten = Toenung.neutral,
+    this.lichter = Toenung.neutral,
+  });
 
   static const neutral = ColorMixer({});
 
   BandAnpassung band(ColorBand b) => baender[b] ?? BandAnpassung.neutral;
 
   ColorMixer mitBand(ColorBand b, BandAnpassung a) =>
-      ColorMixer({...baender, b: a});
+      kopie(baender: {...baender, b: a});
 
-  bool get istNeutral => baender.values.every((a) => a.istNeutral);
+  ColorMixer kopie({
+    Map<ColorBand, BandAnpassung>? baender,
+    double? saettigung,
+    double? dynamik,
+    Toenung? schatten,
+    Toenung? mitten,
+    Toenung? lichter,
+  }) => ColorMixer(
+    baender ?? this.baender,
+    saettigung: saettigung ?? this.saettigung,
+    dynamik: dynamik ?? this.dynamik,
+    schatten: schatten ?? this.schatten,
+    mitten: mitten ?? this.mitten,
+    lichter: lichter ?? this.lichter,
+  );
+
+  bool get _baenderNeutral => baender.values.every((a) => a.istNeutral);
+
+  bool get _toenungNeutral =>
+      schatten.istNeutral && mitten.istNeutral && lichter.istNeutral;
+
+  bool get istNeutral =>
+      _baenderNeutral && saettigung == 0 && dynamik == 0 && _toenungNeutral;
 
   Map<String, dynamic> toJson() => {
     for (final e in baender.entries)
       if (!e.value.istNeutral) e.key.name: e.value.toJson(),
+    if (saettigung != 0) 'saettigung': saettigung,
+    if (dynamik != 0) 'dynamik': dynamik,
+    if (!schatten.istNeutral) 'schatten': schatten.toJson(),
+    if (!mitten.istNeutral) 'mitten': mitten.toJson(),
+    if (!lichter.istNeutral) 'lichter': lichter.toJson(),
   };
 
-  static ColorMixer fromJson(Map<String, dynamic> json) => ColorMixer({
-    for (final b in ColorBand.values)
-      if (json[b.name] is Map)
-        b: BandAnpassung.fromJson(json[b.name] as Map<String, dynamic>),
-  });
+  static ColorMixer fromJson(Map<String, dynamic> json) => ColorMixer(
+    {
+      for (final b in ColorBand.values)
+        if (json[b.name] is Map)
+          b: BandAnpassung.fromJson(json[b.name] as Map<String, dynamic>),
+    },
+    saettigung: ((json['saettigung'] as num?)?.toDouble() ?? 0).clamp(
+      -1.0,
+      1.0,
+    ),
+    dynamik: ((json['dynamik'] as num?)?.toDouble() ?? 0).clamp(-1.0, 1.0),
+    schatten: Toenung.fromJson(json['schatten']),
+    mitten: Toenung.fromJson(json['mitten']),
+    lichter: Toenung.fromJson(json['lichter']),
+  );
 
   String encode() => jsonEncode(toJson());
 
@@ -290,11 +389,22 @@ class ColorMixer {
   @override
   bool operator ==(Object other) =>
       other is ColorMixer &&
-      ColorBand.values.every((b) => band(b) == other.band(b));
+      ColorBand.values.every((b) => band(b) == other.band(b)) &&
+      other.saettigung == saettigung &&
+      other.dynamik == dynamik &&
+      other.schatten == schatten &&
+      other.mitten == mitten &&
+      other.lichter == lichter;
 
   @override
-  int get hashCode =>
-      Object.hashAll([for (final b in ColorBand.values) band(b)]);
+  int get hashCode => Object.hash(
+    Object.hashAll([for (final b in ColorBand.values) band(b)]),
+    saettigung,
+    dynamik,
+    schatten,
+    mitten,
+    lichter,
+  );
 }
 
 // --- Lesen aus der Datenbank ---------------------------------------------
@@ -466,7 +576,101 @@ List<double> bandWeights(double grad) {
 ///
 /// Öffentlich, damit sich die Wirkung punktweise prüfen lässt, ohne den
 /// ganzen Würfel zu bauen.
-List<double> applyColorMixer(ColorMixer mixer, double r, double g, double b) {
+List<double> applyColorMixer(ColorMixer mixer, double r, double g, double b) =>
+    _FarbRechnung(mixer).anwenden(r, g, b);
+
+/// Wie viel Farbe eine Tönung bei voller Stärke höchstens dazugibt. Mehr
+/// färbt das Bild um, statt es zu tönen.
+const _toenungAnteil = 0.3;
+
+/// Hauttöne liegen zwischen Rot und Gelb. Die Dynamik wirkt dort nur halb
+/// so stark, sonst wirken Gesichter schnell sonnenverbrannt.
+const _hautSchutz = 0.5;
+
+double _luma(double r, double g, double b) =>
+    0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+double _glatt(double von, double bis, double x) {
+  final t = ((x - von) / (bis - von)).clamp(0.0, 1.0);
+  return t * t * (3 - 2 * t);
+}
+
+/// Was sich je Bild nur einmal rechnen lässt: Die Farben der Tönung werden
+/// sonst für jede der 32768 Stützstellen neu aus HSL gewonnen.
+class _FarbRechnung {
+  _FarbRechnung(this.mixer)
+    : _baender = !mixer._baenderNeutral,
+      _farbigkeit = mixer.saettigung != 0 || mixer.dynamik != 0,
+      _toenen = !mixer._toenungNeutral,
+      _schatten = _richtung(mixer.schatten),
+      _mitten = _richtung(mixer.mitten),
+      _lichter = _richtung(mixer.lichter);
+
+  final ColorMixer mixer;
+  final bool _baender, _farbigkeit, _toenen;
+  final List<double> _schatten, _mitten, _lichter;
+
+  /// Die Farbe ohne ihre Helligkeit: In diese Richtung zu schieben färbt
+  /// um, ohne das Bild heller oder dunkler zu machen.
+  static List<double> _richtung(Toenung t) {
+    if (t.istNeutral) return const [0, 0, 0];
+    final f = _hslZuRgb(t.farbton % 360, 1, 0.5);
+    final y = _luma(f[0], f[1], f[2]);
+    return [for (final k in f) (k - y) * t.staerke * _toenungAnteil];
+  }
+
+  List<double> anwenden(double r, double g, double b) {
+    var aus = _baender ? _mischeBaender(mixer, r, g, b) : [r, g, b];
+    if (_farbigkeit) aus = _farbiger(aus);
+    if (_toenen) aus = _getoent(aus);
+    return aus;
+  }
+
+  List<double> _farbiger(List<double> c) {
+    final y = _luma(c[0], c[1], c[2]);
+    final hoch = math.max(c[0], math.max(c[1], c[2]));
+    final tief = math.min(c[0], math.min(c[1], c[2]));
+    var dynamik = mixer.dynamik;
+    if (dynamik != 0 && hoch > 0) {
+      dynamik *= 1 - (hoch - tief) / hoch;
+      if (mixer.dynamik > 0) {
+        final h = _rgbZuHsl(c[0], c[1], c[2])[0];
+        final haut = _glatt(5, 20, h) * (1 - _glatt(45, 65, h));
+        dynamik *= 1 - _hautSchutz * haut;
+      }
+    }
+    final faktor = (1 + mixer.saettigung) * (1 + dynamik);
+    return _geschoben([y, y, y], [for (final k in c) (k - y) * faktor]);
+  }
+
+  List<double> _getoent(List<double> c) {
+    final y = _luma(c[0], c[1], c[2]);
+    final s = 1 - _glatt(0, 0.5, y);
+    final l = _glatt(0.5, 1, y);
+    final m = 1 - s - l;
+    return _geschoben(c, [
+      for (var i = 0; i < 3; i++)
+        s * _schatten[i] + m * _mitten[i] + l * _lichter[i],
+    ]);
+  }
+
+  /// [basis] plus [schub], beschränkt auf das, was in den Farbraum passt,
+  /// und zwar für alle Kanäle gleich: Schnitte man jeden für sich ab, kippte
+  /// der Farbton genau dort, wo das Bild am kräftigsten ist.
+  static List<double> _geschoben(List<double> basis, List<double> schub) {
+    var k = 1.0;
+    for (var i = 0; i < 3; i++) {
+      if (schub[i] > 0) k = math.min(k, (1 - basis[i]) / schub[i]);
+      if (schub[i] < 0) k = math.min(k, basis[i] / -schub[i]);
+    }
+    k = k.clamp(0.0, 1.0);
+    return [
+      for (var i = 0; i < 3; i++) (basis[i] + schub[i] * k).clamp(0.0, 1.0),
+    ];
+  }
+}
+
+List<double> _mischeBaender(ColorMixer mixer, double r, double g, double b) {
   final hsl = _rgbZuHsl(r, g, b);
   var h = hsl[0], s = hsl[1], l = hsl[2];
 
@@ -541,6 +745,7 @@ Float32List buildColorCube(
   final letzter = size - 1;
   final staerke = lutStaerke.clamp(0.0, 1.0);
   final lookAktiv = lut != null && staerke > 0;
+  final rechnung = _FarbRechnung(mixer);
   var i = 0;
 
   for (var bi = 0; bi < size; bi++) {
@@ -549,7 +754,7 @@ Float32List buildColorCube(
       final g = gi / letzter;
       for (var ri = 0; ri < size; ri++) {
         final r = ri / letzter;
-        var aus = applyColorMixer(mixer, r, g, b);
+        var aus = rechnung.anwenden(r, g, b);
         if (lookAktiv) {
           final look = lut.abtasten(aus[0], aus[1], aus[2]);
           aus = staerke >= 1 ? look : _blende(aus, look, staerke);

@@ -4859,6 +4859,42 @@ abstract class AppTexte {
   /// **'Wirkt nur auf farbige Bildbereiche – Graustufen bleiben unberührt.'**
   String get mischerHinweis;
 
+  /// No description provided for @farbeDynamik.
+  ///
+  /// In de, this message translates to:
+  /// **'Dynamik'**
+  String get farbeDynamik;
+
+  /// No description provided for @toenungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Tönung'**
+  String get toenungTitel;
+
+  /// No description provided for @toenungSchatten.
+  ///
+  /// In de, this message translates to:
+  /// **'Schatten'**
+  String get toenungSchatten;
+
+  /// No description provided for @toenungMitten.
+  ///
+  /// In de, this message translates to:
+  /// **'Mitten'**
+  String get toenungMitten;
+
+  /// No description provided for @toenungLichter.
+  ///
+  /// In de, this message translates to:
+  /// **'Lichter'**
+  String get toenungLichter;
+
+  /// No description provided for @toenungStaerke.
+  ///
+  /// In de, this message translates to:
+  /// **'Stärke'**
+  String get toenungStaerke;
+
   /// No description provided for @bandRot.
   ///
   /// In de, this message translates to:

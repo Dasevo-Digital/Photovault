@@ -2812,6 +2812,24 @@ class AppTexteEn extends AppTexte {
       'Only affects coloured areas – greys are left untouched.';
 
   @override
+  String get farbeDynamik => 'Vibrance';
+
+  @override
+  String get toenungTitel => 'Toning';
+
+  @override
+  String get toenungSchatten => 'Shadows';
+
+  @override
+  String get toenungMitten => 'Midtones';
+
+  @override
+  String get toenungLichter => 'Highlights';
+
+  @override
+  String get toenungStaerke => 'Strength';
+
+  @override
   String get bandRot => 'Red';
 
   @override
