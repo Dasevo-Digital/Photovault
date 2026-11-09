@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.64.0" date="2026-11-09">
+      <description>
+        <p>Staging: rate and reject photos, spot bursts and the sharpest shot, compare side by side, choose an album on approval.</p>
+        <p>Round trip to darktable, including rendering edits on the server.</p>
+        <p>Develop: saturation, vibrance, toning, gray point and a brightness mask. White balance now works the same on every device.</p>
+        <p>With a server: the image editor saves, and rejected changes are reported.</p>
+      </description>
+    </release>
     <release version="3.63.1" date="2026-11-08">
       <description>
         <p>Deleting a photo right after it was backed up no longer fails as a sync conflict while the server is still analysing it.</p>
