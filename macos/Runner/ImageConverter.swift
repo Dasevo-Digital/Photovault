@@ -132,20 +132,6 @@ class ImageConverterChannel: NSObject {
                     let status = lensCorrectionStatus(path: path)
                     DispatchQueue.main.async { result(status) }
                 }
-            case "neutralAmPunkt":
-                guard
-                    let args = call.arguments as? [String: Any],
-                    let path = args["path"] as? String,
-                    let x = (args["x"] as? NSNumber)?.doubleValue,
-                    let y = (args["y"] as? NSNumber)?.doubleValue
-                else {
-                    result(FlutterError(code: "bad_args", message: "path, x, y fehlen", details: nil))
-                    return
-                }
-                DispatchQueue.global(qos: .userInitiated).async {
-                    let antwort = neutralAmPunkt(path: path, x: x, y: y)
-                    DispatchQueue.main.async { result(antwort) }
-                }
             case "developImage":
                 guard
                     let args = call.arguments as? [String: Any],
@@ -720,28 +706,6 @@ class ImageConverterChannel: NSObject {
         return filter.isLensCorrectionSupported ? "verfuegbar" : "nichtInDatenbank"
     }
 
-    /// Temperatur und Farbstich, bei denen ein Punkt einer RAW-Datei neutral
-    /// wird. `neutralLocation` zählt in Bildpunkten der fertig gedrehten
-    /// Ausgabe, von unten links – an Beispiel-RAWs nachgemessen, auch mit
-    /// gedrehtem Bild.
-    private static func neutralAmPunkt(path: String, x: Double, y: Double) -> [String: Double]? {
-        let url = URL(fileURLWithPath: path)
-        guard
-            #available(macOS 12.0, *),
-            rawExtensions.contains(url.pathExtension.lowercased()),
-            let filter = CIRAWFilter(imageURL: url),
-            let bild = filter.outputImage
-        else { return nil }
-        filter.neutralLocation = CGPoint(
-            x: x * bild.extent.width,
-            y: (1 - y) * bild.extent.height
-        )
-        return [
-            "temperature": Double(filter.neutralTemperature),
-            "tint": Double(filter.neutralTint),
-        ]
-    }
-
     /// Dekodiert eine RAW-Datei über Apples `CIRAWFilter` statt der
     /// einfachen ImageIO-Vorschau weiter unten – dieselbe API, mit der z.B.
     /// auch Fotos.app RAW-Dateien verarbeitet. `CIRAWFilter` erkennt Kamera
@@ -864,12 +828,6 @@ class ImageConverterChannel: NSObject {
         // Weißabgleich/Kontrast/etc.).
         if #available(macOS 12.0, *), rawExtensions.contains(ext), let filter = CIRAWFilter(imageURL: url) {
             filter.exposure = adjustments.exposure
-            if let temperature = adjustments.temperature {
-                filter.neutralTemperature = temperature
-            }
-            if let tint = adjustments.tint {
-                filter.neutralTint = tint
-            }
             if filter.isContrastSupported {
                 filter.contrastAmount = 1.0 + adjustments.contrast
             }
@@ -901,7 +859,10 @@ class ImageConverterChannel: NSObject {
                 // fehlten sie bei RAW deshalb ganz, die Regler bewegten
                 // sich ohne Wirkung.
                 klarheitUndVignette(
-                    applyCurveAndMixer(lichterAnwenden($0, adjustments.highlights), adjustments),
+                    applyCurveAndMixer(
+                        lichterAnwenden(weissabgleich($0, adjustments), adjustments.highlights),
+                        adjustments
+                    ),
                     adjustments
                 )
             }
@@ -1061,6 +1022,27 @@ class ImageConverterChannel: NSObject {
     /// Kontrast, Schärfen/Rauschunterdrückung zuletzt (arbeiten auf dem
     /// fertig tonkorrigierten Bild, wie bei RAW-Entwicklern üblich).
     /// Objektivkorrektur entfällt hier – die betrifft nur RAW-Rohdaten.
+    /// Der Weißabgleich, auf allen Wegen dieselbe Rechnung (#356): wie
+    /// `whiteBalanceGain` in develop_adjustments.frag und in entwickeln.js,
+    /// in linearem Licht. 6500 K und Farbstich 0 ändern nichts, höher ist
+    /// kühler, ein höherer Farbstich magenta.
+    ///
+    /// Bis 3.63 lief das hier über `CITemperatureAndTint` und bei RAW über
+    /// `neutralTemperature`. Dieselbe gespeicherte Zahl ergab dadurch je nach
+    /// Gerät und Dateiart ein anderes Bild, teils in die Gegenrichtung.
+    private static func weissabgleich(_ input: CIImage, _ a: DevelopAdjustments) -> CIImage {
+        guard let temperature = a.temperature, let f = CIFilter(name: "CIColorMatrix") else {
+            return input
+        }
+        let t = Double(min(max(temperature, 2000), 12000)) / 6500
+        let tint = Double(min(max(a.tint ?? 0, -100), 100))
+        f.setValue(input, forKey: kCIInputImageKey)
+        f.setValue(CIVector(x: CGFloat(pow(1 / t, 0.55)), y: 0, z: 0, w: 0), forKey: "inputRVector")
+        f.setValue(CIVector(x: 0, y: CGFloat(1 - tint / 400), z: 0, w: 0), forKey: "inputGVector")
+        f.setValue(CIVector(x: 0, y: 0, z: CGFloat(pow(t, 0.55)), w: 0), forKey: "inputBVector")
+        return f.outputImage ?? input
+    }
+
     private static func applyNonRawAdjustments(_ input: CIImage, _ a: DevelopAdjustments) -> CIImage {
         var image = input
         if a.exposure != 0, let f = CIFilter(name: "CIExposureAdjust") {
@@ -1068,12 +1050,7 @@ class ImageConverterChannel: NSObject {
             f.setValue(a.exposure, forKey: kCIInputEVKey)
             image = f.outputImage ?? image
         }
-        if let temperature = a.temperature, let f = CIFilter(name: "CITemperatureAndTint") {
-            f.setValue(image, forKey: kCIInputImageKey)
-            f.setValue(CIVector(x: 6500, y: 0), forKey: "inputNeutral")
-            f.setValue(CIVector(x: CGFloat(temperature), y: CGFloat(a.tint ?? 0)), forKey: "inputTargetNeutral")
-            image = f.outputImage ?? image
-        }
+        image = weissabgleich(image, a)
         if a.contrast != 0, let f = CIFilter(name: "CIColorControls") {
             f.setValue(image, forKey: kCIInputImageKey)
             f.setValue(1.0 + a.contrast, forKey: kCIInputContrastKey)

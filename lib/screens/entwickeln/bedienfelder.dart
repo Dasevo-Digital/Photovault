@@ -16,15 +16,12 @@ mixin _Bedienfelder on _EntwickelnBasis {
     /// und kostet nichts. Wo nein, wird waehrend des Ziehens nativ
     /// gerechnet (siehe [_liveNativ]).
     ///
-    /// **Nein gilt fuer sechs Regler, und zwar nur unter macOS**, wo Core
+    /// **Nein gilt fuer vier Regler, und zwar nur unter macOS**, wo Core
     /// Image massgeblich ist: Schaerfe und Rauschunterdrueckung brauchen
     /// Nachbarpixel, die ein Fragment-Shader nicht sieht; Klarheit und
-    /// Vignettierung sind reine Core-Image-Filter; Weissabgleich und
-    /// Farbstich bildet der Shader nur genaehert nach (gemessen bis
-    /// 6,1 % Abweichung bei 3200 K, gegenueber 0,1 % bei der Belichtung),
-    /// und ausgerechnet an diesem Regler beurteilt man die Farbe. Wo der
-    /// Shader selbst der Renderweg ist (Linux, Windows), ist er per
-    /// Definition genau, und es gibt nichts zu unterscheiden.
+    /// Vignettierung sind reine Core-Image-Filter. Wo der Shader selbst
+    /// der Renderweg ist (Linux, Windows), ist er per Definition genau,
+    /// und es gibt nichts zu unterscheiden.
     ///
     /// Vorher stand hier `liveVorschau: false`, und das hiess: waehrend
     /// des Ziehens passiert **gar nichts**. Der Regler bewegte sich, das
@@ -1067,7 +1064,6 @@ mixin _Bedienfelder on _EntwickelnBasis {
       12000,
       (v) => setState(() => _temperature = v),
       enabled: !_autoWhiteBalance,
-      imShader: _EntwickelnBasis._shaderIstGenau,
     ),
     _slider(
       AppTexte.of(context).entwTint,
@@ -1076,7 +1072,6 @@ mixin _Bedienfelder on _EntwickelnBasis {
       100,
       (v) => setState(() => _tint = v),
       enabled: !_autoWhiteBalance,
-      imShader: _EntwickelnBasis._shaderIstGenau,
     ),
     const Divider(color: Colors.white24),
     _slider(

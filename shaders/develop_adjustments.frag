@@ -59,9 +59,10 @@ vec3 linearToSrgb(vec3 c) {
              step(vec3(0.0031308), c));
 }
 
-// Grobe Kelvin -> RGB-Faktoren, bezogen auf 6500 K als neutral.
-// Näherung: Wärmer (< 6500) hebt Rot und senkt Blau, kühler umgekehrt.
-// Entspricht nicht exakt CITemperatureAndTint – siehe Dateikopf.
+// Kelvin -> RGB-Faktoren, bezogen auf 6500 K als neutral: Wärmer (< 6500)
+// hebt Rot und senkt Blau, kühler umgekehrt. Dieselbe Rechnung steht in
+// ImageConverter.swift und entwickeln.js, damit eine gespeicherte Zahl auf
+// jedem Gerät dasselbe Bild ergibt (#356).
 vec3 whiteBalanceGain(float kelvin, float tint) {
   float t = clamp(kelvin, 2000.0, 12000.0) / 6500.0;
   // Exponent gedämpft, damit die Enden des Reglers nicht überzeichnen.

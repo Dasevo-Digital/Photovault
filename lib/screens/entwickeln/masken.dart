@@ -270,49 +270,31 @@ mixin _Masken on _EntwickelnBasis {
     );
   }
 
-  /// Macht die angeklickte Stelle neutral.
-  ///
-  /// Bei RAW auf dem Mac rechnet Apples Entwickler selbst: Dort ist der
-  /// Regler ein absoluter Wert für das Licht der Aufnahme, kein Abstand zu
-  /// 6500 K. Alles andere geht vom angezeigten Bild aus.
+  /// Macht die angeklickte Stelle neutral. Gerechnet wird vom angezeigten
+  /// Bild aus, auf jedem Weg gleich (#356).
   Future<void> _graupunkt(Offset local, Size flaeche) async {
     final punkt = _widgetPointToNormalizedImagePoint(local, flaeche);
     final bytes = _previewBytes;
     if (punkt == null || bytes == null) return;
     final t = AppTexte.of(context);
-    final original = await _originalOderMeldung();
-    if (original == null || !mounted) return;
-    final nativ = await NativeImageConverter.neutralAmPunkt(
-      original,
-      punkt.dx,
-      punkt.dy,
+    final bild = await compute(decodeImageBytes, bytes);
+    if (bild == null || !mounted) return;
+    final (r, g, b) = _mittelwert(bild, punkt);
+    final neu = weissabgleichFuer(
+      r,
+      g,
+      b,
+      temperatur: _autoWhiteBalance ? 6500 : _temperature,
+      toenung: _autoWhiteBalance ? 0 : _tint,
     );
-    if (!mounted) return;
-    ({double temperatur, double toenung})? neu = nativ;
-    if (neu == null) {
-      final bild = await compute(decodeImageBytes, bytes);
-      if (bild == null || !mounted) return;
-      final (r, g, b) = _mittelwert(bild, punkt);
-      neu = weissabgleichFuer(
-        r,
-        g,
-        b,
-        temperatur: _autoWhiteBalance ? 6500 : _temperature,
-        toenung: _autoWhiteBalance ? 0 : _tint,
-        weg: _EntwickelnBasis._shaderIstGenau
-            ? Weissweg.shader
-            : Weissweg.coreImage,
-      );
-    }
     if (neu == null) {
       melde.hinweis(t.entwGraupunktUngeeignet);
       return;
     }
-    final ziel = neu;
     setState(() {
       _autoWhiteBalance = false;
-      _temperature = ziel.temperatur.clamp(2000, 12000);
-      _tint = ziel.toenung.clamp(-100, 100);
+      _temperature = neu.temperatur;
+      _tint = neu.toenung;
       _weissPipette = false;
     });
     _scheduleRerender();

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -60,24 +61,33 @@ void main() {
     expect(weissabgleichFuer(0.3, 0.5, 0.7)!.temperatur, lessThan(6500));
   });
 
-  test('Core Image: grünstichig heisst dort einen tieferen Wert', () {
-    final shader = weissabgleichFuer(0.45, 0.6, 0.45)!;
-    final mac = weissabgleichFuer(0.45, 0.6, 0.45, weg: Weissweg.coreImage)!;
-    expect(mac.toenung, lessThan(0));
-    expect(shader.toenung, greaterThan(0));
+  test('grünstichig heisst ein höherer Farbstich', () {
+    expect(weissabgleichFuer(0.45, 0.6, 0.45)!.toenung, greaterThan(0));
   });
 
-  test('Core Image: zu blau geht auf die gemessene Kurve', () {
-    // ln(Rot/Blau) = -0,6 braucht +0,6 auf der Kurve: bei knapp 5200 K.
-    final rl = 0.2, bl = 0.2 * 1.8221;
-    double srgb(double c) => 1.055 * math.pow(c, 1 / 2.4).toDouble() - 0.055;
-    final n = weissabgleichFuer(
-      srgb(rl),
-      srgb(0.27),
-      srgb(bl),
-      weg: Weissweg.coreImage,
-    )!;
-    expect(n.temperatur, closeTo(4680, 40));
+  group('alle Renderwege rechnen gleich (#356)', () {
+    String lies(String pfad) => File(pfad).readAsStringSync();
+
+    test('Shader, Browser und Mac haben dieselben Faktoren', () {
+      final shader = lies('shaders/develop_adjustments.frag');
+      final browser = lies('packages/server/web/entwickeln.js');
+      final mac = lies('macos/Runner/ImageConverter.swift');
+      for (final q in [shader, browser]) {
+        expect(q, contains('pow(1.0 / t, 0.55)'));
+        expect(q, contains('pow(t, 0.55)'));
+        expect(q, contains('/ 400.0'));
+      }
+      expect(mac, contains('pow(1 / t, 0.55)'));
+      expect(mac, contains('pow(t, 0.55)'));
+      expect(mac, contains('1 - tint / 400'));
+    });
+
+    test('auf dem Mac gilt kein eigener Weissabgleich mehr', () {
+      final mac = lies('macos/Runner/ImageConverter.swift');
+      expect(mac, isNot(contains('filter.neutralTemperature =')));
+      expect(mac, isNot(contains('filter.neutralTint =')));
+      expect(mac, isNot(contains('"CITemperatureAndTint"')));
+    });
   });
 
   test('fast schwarz oder ausgebrannt taugt nicht', () {

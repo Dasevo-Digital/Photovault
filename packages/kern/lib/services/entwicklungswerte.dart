@@ -12,8 +12,14 @@ import 'storage_paths.dart';
 /// Reglern gibt es hier keinen sinnvollen neutralen Zahlenwert.
 class DevelopAdjustments {
   final double exposure; // -3..3 EV
-  final double? temperature; // 2000..12000 K, null = Kamera-Weißabgleich
-  final double? tint; // -100..100, null = Kamera-Weißabgleich
+  /// 2000..12000, null = Weißabgleich der Kamera. Eine Verschiebung, kein
+  /// Messwert: 6500 ändert nichts, höher ist kühler, tiefer wärmer – bei RAW
+  /// wie bei allem anderen, auf jedem Gerät (#356).
+  final double? temperature;
+
+  /// -100..100, null = Weißabgleich der Kamera. Höher ist magenta, tiefer
+  /// grün.
+  final double? tint;
   final double contrast; // -1..1
   final double shadows; // -1..1
 
