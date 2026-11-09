@@ -7075,6 +7075,12 @@ abstract class AppTexte {
   /// **'Bewertung'**
   String get xmpFeldBewertung;
 
+  /// No description provided for @xmpOrdnerWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus Ordner einlesen'**
+  String get xmpOrdnerWaehlen;
+
   /// No description provided for @xmpFeldAbgelehnt.
   ///
   /// In de, this message translates to:

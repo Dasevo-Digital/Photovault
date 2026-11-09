@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:kern/services/beilagenangaben.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/bearbeitung_speichern.dart';
@@ -176,6 +177,7 @@ class Hochladen {
       'art': ?meta['art'],
       'regelstand': ?meta['regelstand'],
       'kammer': ?(meta['kammer'] == '1' && kammer != null ? true : null),
+      'xmp': ?meta['xmp'],
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
@@ -428,7 +430,12 @@ class Hochladen {
       // Datei, bis jemand sie freigibt – dann geht sie durch
       // [importiereDatei] wie jeder Upload.
       if (a['kammer'] == true) {
-        if (kammer case final k?) return await k.lege(datei);
+        if (kammer case final k?) {
+          return await k.lege(
+            datei,
+            beilage: Beilagenangaben.ausText(a['xmp']),
+          );
+        }
       }
       return await importiereDatei(datei, a);
     } finally {
@@ -485,6 +492,12 @@ class Hochladen {
         );
       } catch (e) {
         protokoll('Nachbearbeitung von ${a['name']} gescheitert: $e');
+      }
+      // Was am Rechner neben dem Foto lag (#346).
+      try {
+        await Beilagenangaben.ausText(a['xmp'])?.wendeAn(b.db, aufnahme);
+      } catch (e) {
+        protokoll('Beilage von ${a['name']} nicht übernommen: $e');
       }
       nachImport?.call();
     }

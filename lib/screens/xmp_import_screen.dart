@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/material.dart';
@@ -80,10 +84,41 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
   /// nach „Beipackzettel gefunden" aus, wo gar keiner liegt.
   int _eingebettetFound = 0;
 
+  /// Woher die Beilagen kommen; `null`: neben den Originalen.
+  String? _ordner;
+
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  /// Beilagen aus einem Ordner nehmen (#346): Mit Server liegen die
+  /// Originale nicht hier, und daneben gäbe es nichts zu finden.
+  Future<void> _ordnerWaehlen() async {
+    final t = AppTexte.of(context);
+    final ordner = await FilePicker.getDirectoryPath(
+      dialogTitle: t.xmpOrdnerWaehlen,
+    );
+    if (ordner == null || !mounted) return;
+    _ordner = ordner;
+    await _load();
+  }
+
+  Future<Map<String, File>> _beilagenImOrdner(
+    String ordner,
+    List<AssetData> assets,
+  ) async {
+    final dateien = <File>[];
+    await for (final e in Directory(ordner).list(recursive: true)) {
+      if (e is File && p.extension(e.path).toLowerCase() == '.xmp') {
+        dateien.add(e);
+      }
+    }
+    return ordneBeilagenZu(dateien, [
+      for (final a in assets)
+        if (!a.isTrashed && !a.isLocked) (id: a.id, name: a.originalFileName),
+    ]);
   }
 
   Future<void> _load() async {
@@ -94,17 +129,22 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       var sidecarsFound = 0;
       var eingebettetFound = 0;
 
+      final ausOrdner = _ordner == null
+          ? null
+          : await _beilagenImOrdner(_ordner!, assets);
       for (final asset in assets) {
         if (asset.isTrashed || asset.isLocked) continue;
         final pfade = widget.library.paths;
-        final sidecarFile = neuesteXmpBeilage([
-          for (final k in pfade.xmpSidecarPfade(asset.relativePath))
-            pfade.absolute(k),
-        ]);
+        final sidecarFile = ausOrdner != null
+            ? ausOrdner[asset.id]
+            : neuesteXmpBeilage([
+                for (final k in pfade.xmpSidecarPfade(asset.relativePath))
+                  pfade.absolute(k),
+              ]);
         var fields = sidecarFile == null ? null : parseXmpFile(sidecarFile);
         if (fields != null) {
           sidecarsFound++;
-        } else {
+        } else if (ausOrdner == null) {
           fields = parseEingebettetesXmp(
             widget.library.paths.absolute(asset.relativePath),
           );
@@ -367,6 +407,11 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
                 style: const TextStyle(color: Colors.white),
               ),
             ),
+          IconButton(
+            icon: const Icon(Icons.folder_open_outlined),
+            tooltip: AppTexte.of(context).xmpOrdnerWaehlen,
+            onPressed: _loading ? null : _ordnerWaehlen,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: AppTexte.of(context).xmpErneutEinlesen,

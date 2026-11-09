@@ -7,6 +7,7 @@ import 'package:drift/native.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:image/image.dart' as img;
+import 'package:kern/services/beilagenangaben.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/anmeldung.dart';
 import 'package:kern/abgleich/konten.dart';
@@ -773,11 +774,57 @@ void main() {
       404,
     );
 
+    // Auch auf dem geraden Weg in die Bibliothek (#346).
+    final gerade = await tus.lade(bild('gerade.jpg', 111), 'api/v1/hochladen', {
+      'filename': 'gerade.jpg',
+      'xmp': const Beilagenangaben(sterne: 3, abgelehnt: true).alsText(),
+    });
+    expect(gerade['pv-ausgang'], 'imported');
+    final dbG = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    final zeileG = (await dbG.assetById(gerade['pv-aufnahme']!))!;
+    expect(zeileG.rating, 3);
+    expect(zeileG.isTrashed, isFalse);
+
     // Ohne `kammer` geht ein Upload wie bisher gleich in die Bibliothek.
     final direkt = await tus.lade(zwei, 'api/v1/hochladen', {
       'filename': 'kammer2.jpg',
     });
     expect(direkt['pv-ausgang'], 'imported');
+
+    // Was neben dem Foto auf dem Rechner lag, kommt mit (#346).
+    final mitBeilage = await tus.lade(
+      bild('beilage.jpg', 70),
+      'api/v1/hochladen',
+      {
+        'filename': 'beilage.jpg',
+        ...kammer,
+        'xmp': const Beilagenangaben(
+          sterne: 2,
+          beschreibung: 'am Fluss',
+          schlagwoerter: ['Fluss'],
+        ).alsText(),
+      },
+    );
+    final idBeilage = mitBeilage['pv-kammer']!;
+    final inListe =
+        (((await v.hole('api/v1/kammer'))['eintraege'] as List).cast<Map>())
+            .firstWhere((e) => e['id'] == idBeilage);
+    expect(inListe['sterne'], 2);
+    expect(inListe.containsKey('beilage'), isFalse);
+    await v.schicke('api/v1/kammer/sichten', {
+      'ids': [idBeilage],
+      'sterne': 5,
+    });
+    final mitB = await v.schicke('api/v1/kammer/freigeben', {
+      'ids': [idBeilage],
+    });
+    final neuB = ((mitB['ergebnisse'] as List).single as Map)['aufnahme'];
+    final dbB = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    final zeile = (await dbB.assetById(neuB as String))!;
+    // Die Sichtung hat das letzte Wort, der Rest kommt aus der Beilage.
+    expect(zeile.rating, 5);
+    expect(zeile.description, 'am Fluss');
+    expect((await dbB.tagsForAsset(neuB)).map((t) => t.name), ['Fluss']);
 
     // Ein anderes Konto sieht die Kammer nicht.
     final otto = await konten.legeAn('otto', 'ein anderes passwort');

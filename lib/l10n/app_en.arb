@@ -1528,6 +1528,7 @@
   "zweitVergleichFehlgeschlagen": "Comparison failed: {fehler}",
   "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
   "xmpFeldBewertung": "Rating",
+  "xmpOrdnerWaehlen": "Read from folder",
   "xmpFeldAbgelehnt": "Rejected, moves to trash",
   "xmpFeldFarbmarkierung": "Colour label",
   "xmpFeldBeschreibung": "Description",

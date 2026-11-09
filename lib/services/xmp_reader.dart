@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:kern/services/beilagenangaben.dart';
+import 'package:path/path.dart' as p;
 import 'package:xml/xml.dart';
 
 import 'package:kern/services/xmp_regionen.dart';
@@ -52,6 +54,59 @@ class XmpFields {
       latitude == null &&
       longitude == null &&
       gesichter.isEmpty;
+
+  /// Was davon beim Import mitkommt. 0 Sterne heisst „nicht bewertet“.
+  Beilagenangaben get alsBeilage => Beilagenangaben(
+    sterne: rating != null && rating! > 0 ? rating : null,
+    abgelehnt: abgelehnt,
+    farbe: colorLabel,
+    beschreibung: description,
+    schlagwoerter: tags ?? const [],
+    breite: latitude,
+    laenge: longitude,
+  );
+}
+
+/// Die Beilage neben der Datei [pfad], unter dem Namen von Photo Vault und
+/// Lightroom oder dem von darktable; `null`, wenn keine lesbare da ist.
+Beilagenangaben? beilageNeben(String pfad) {
+  try {
+    final datei = neuesteXmpBeilage([
+      File(p.setExtension(pfad, '.xmp')),
+      File('$pfad.xmp'),
+    ]);
+    final angaben = datei == null ? null : parseXmpFile(datei)?.alsBeilage;
+    return angaben == null || angaben.alsMap().isEmpty ? null : angaben;
+  } on FileSystemException {
+    return null;
+  }
+}
+
+/// Ordnet [beilagen] aus einem frei gewählten Ordner den [fotos] nach Namen
+/// zu (Kennung → Datei), ohne Rücksicht auf Gross- und Kleinschreibung.
+///
+/// Für verbundene Bibliotheken: Die Originale liegen dort am Server, neben
+/// ihnen lässt sich also nichts finden (#346). Tragen zwei Fotos denselben
+/// Namen (Kameras zählen nach 9999 von vorn), bleibt ihre Beilage unbenutzt:
+/// Lieber nichts übernehmen als die Sterne des falschen Fotos.
+Map<String, File> ordneBeilagenZu(
+  Iterable<File> beilagen,
+  Iterable<({String id, String name})> fotos,
+) {
+  final jeName = <String, List<String>>{};
+  for (final f in fotos) {
+    final name = f.name.toLowerCase();
+    jeName.putIfAbsent(name, () => []).add(f.id);
+    final ohne = p.withoutExtension(name);
+    if (ohne != name) jeName.putIfAbsent(ohne, () => []).add(f.id);
+  }
+  final aus = <String, File>{};
+  for (final b in beilagen) {
+    final name = p.withoutExtension(p.basename(b.path)).toLowerCase();
+    final treffer = jeName[name];
+    if (treffer != null && treffer.length == 1) aus[treffer.single] = b;
+  }
+  return aus;
 }
 
 /// Liest [file] als XMP-Sidecar ein. Gibt `null` zurück, wenn die Datei

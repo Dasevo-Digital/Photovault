@@ -76,6 +76,47 @@ void main() {
     });
   });
 
+  group('Beilagen beim Import und aus einem Ordner (#346)', () {
+    late Directory ordner;
+    setUp(() => ordner = Directory.systemTemp.createTempSync('pv_beilage_'));
+    tearDown(() => ordner.deleteSync(recursive: true));
+
+    test('findet beide Namen und liest das Urteil', () {
+      File('${ordner.path}/a.CR3.xmp').writeAsStringSync(_mitBewertung('4'));
+      expect(beilageNeben('${ordner.path}/a.CR3')?.sterne, 4);
+      File('${ordner.path}/b.xmp').writeAsStringSync(_mitBewertung('-1'));
+      expect(beilageNeben('${ordner.path}/b.CR3')?.abgelehnt, isTrue);
+    });
+
+    test('ohne Beilage oder mit 0 Sternen nichts', () {
+      expect(beilageNeben('${ordner.path}/nix.CR3'), isNull);
+      File('${ordner.path}/n.xmp').writeAsStringSync(_mitBewertung('0'));
+      expect(beilageNeben('${ordner.path}/n.CR3'), isNull);
+    });
+
+    test('kaputte Beilage stört den Import nicht', () {
+      File('${ordner.path}/k.xmp').writeAsStringSync('<kein xml');
+      expect(beilageNeben('${ordner.path}/k.CR3'), isNull);
+    });
+
+    test('ordnet nach dem Namen zu, in beiden Schreibweisen', () {
+      final z = ordneBeilagenZu(
+        [File('/x/IMG_1.CR3.xmp'), File('/x/img_2.xmp')],
+        [(id: 'a', name: 'IMG_1.CR3'), (id: 'b', name: 'IMG_2.JPG')],
+      );
+      expect(z['a']?.path, '/x/IMG_1.CR3.xmp');
+      expect(z['b']?.path, '/x/img_2.xmp');
+    });
+
+    test('zwei Fotos mit gleichem Namen bleiben ohne Beilage', () {
+      final z = ordneBeilagenZu(
+        [File('/x/IMG_1.CR3.xmp')],
+        [(id: 'a', name: 'IMG_1.CR3'), (id: 'b', name: 'IMG_1.CR3')],
+      );
+      expect(z, isEmpty);
+    });
+  });
+
   group('Beilage unter zwei Namen (#343)', () {
     late Directory ordner;
     setUp(() => ordner = Directory.systemTemp.createTempSync('pv_xmp_'));

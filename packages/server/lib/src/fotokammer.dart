@@ -6,6 +6,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/berechne.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/asset_display_path.dart';
+import 'package:kern/services/beilagenangaben.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -76,7 +77,13 @@ class Fotokammer {
   /// Änderungszeit. Was die Bibliothek oder die Kammer schon hat, kommt
   /// nicht noch einmal hinein; die Antwort gleicht dann der eines Imports
   /// (`duplicateSkipped`).
-  Future<Map<String, Object?>> lege(File datei) async {
+  ///
+  /// [beilage]: was neben dem Foto auf dem Rechner lag (#346). Sterne und
+  /// Ablehnung gelten gleich als Sichtung, der Rest kommt beim Freigeben.
+  Future<Map<String, Object?>> lege(
+    File datei, {
+    Beilagenangaben? beilage,
+  }) async {
     final b = bibliothek;
     final ImportDateiangaben a;
     try {
@@ -101,6 +108,15 @@ class Fotokammer {
         File(p.join(platz.path, p.basename(datei.path))),
       );
       final (breite, hoehe) = await _bilder(ziel, id, istBild: a.istBild);
+      if (beilage != null && (beilage.sterne != null || beilage.abgelehnt)) {
+        await _sichtung(id).writeAsString(
+          jsonEncode({
+            'sterne': beilage.sterne ?? 0,
+            'abgelehnt': beilage.abgelehnt,
+          }),
+          flush: true,
+        );
+      }
       await _angaben(id).writeAsString(
         jsonEncode({
           'id': id,
@@ -116,6 +132,7 @@ class Fotokammer {
           'breite': ?breite,
           'hoehe': ?hoehe,
           'angelegt': DateTime.now().toUtc().toIso8601String(),
+          'beilage': ?beilage?.alsMap(),
         }),
         flush: true,
       );
@@ -390,7 +407,13 @@ class Fotokammer {
       final ausgang = ergebnis['ausgang'];
       if (ausgang == 'imported' || ausgang == 'duplicateSkipped') {
         if (ausgang == 'imported') {
-          await _uebertrageSterne(sterne, ergebnis['aufnahme'] as String?);
+          final neu = ergebnis['aufnahme'] as String?;
+          if (neu != null) {
+            await Beilagenangaben.aus(
+              e['beilage'],
+            )?.wendeAn(bibliothek.db, neu, mitSternen: false);
+          }
+          await _uebertrageSterne(sterne, neu);
         }
         await _platz(id).delete(recursive: true);
       }
@@ -446,7 +469,10 @@ class Fotokammerapi {
     final l = await (await _kammer(r)).liste();
     return _json({
       'eintraege': [
-        for (final e in l) {...e}..remove('sha256'),
+        for (final e in l)
+          {...e}
+            ..remove('sha256')
+            ..remove('beilage'),
       ],
       'anzahl': l.length,
       'bytes': l.fold<int>(0, (n, e) => n + ((e['groesse'] as int?) ?? 0)),

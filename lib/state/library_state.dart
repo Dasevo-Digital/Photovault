@@ -17,6 +17,7 @@ import '../l10n/app_localizations.dart';
 import 'package:kern/services/ai_tagging_service.dart';
 import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/services/bildsuche.dart';
+import '../services/xmp_reader.dart';
 import '../services/backup_service.dart';
 import '../services/backup_koordinator.dart';
 export '../services/backup_koordinator.dart'
@@ -1299,8 +1300,10 @@ class LibraryState extends ChangeNotifier {
                 await datei.lastModified() != eintrag.angaben!.geaendert)) {
           throw const FormatException('pv_import_quelle_geaendert');
         }
+        final beilage = beilageNeben(filePath);
         final kopf = await tus.ladeBeharrlich(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
+          if (beilage != null) 'xmp': beilage.alsText(),
           if (plan != null) 'sha256': pruefsummen![filePath]!,
           // In der Fotokammer greifen die Regeln erst beim Freigeben.
           if (plan != null && !plan.kammer) 'regelstand': plan.regelstand,
@@ -1541,12 +1544,23 @@ class LibraryState extends ChangeNotifier {
       yield* _ladeHoch(filePaths, plan: plan);
       return;
     }
-    yield* ImportKoordinator(
+    final laeufe = ImportKoordinator(
       db: db,
       importe: importService,
       nachbearbeiten: nachbearbeitung.neueAufnahme,
       starteAnalyse: starteHintergrundanalyse,
     ).importiere(filePaths, plan: plan);
+    await for (final f in laeufe) {
+      if ((f.assetId, f.pfad) case (final id?, final pfad?)) {
+        // Scheitert das, ist das Foto trotzdem da.
+        try {
+          await beilageNeben(pfad)?.wendeAn(db, id);
+        } on Object catch (e) {
+          debugPrint('Beilage von $pfad nicht übernommen: $e');
+        }
+      }
+      yield f;
+    }
   }
 
   Future<void> _tryLinkLivePhoto(AssetData asset) =>
@@ -3176,7 +3190,17 @@ class LibraryState extends ChangeNotifier {
   /// nachträglichen Metadaten-Änderungen (Tag/Bewertung/Beschreibung) bei
   /// erneutem Lauf konsistent. Gesperrte Assets werden ausgeschlossen (siehe
   /// AppDatabase.assetsForXmpExport).
-  Stream<ImportProgress> writeXmpSidecars({bool wieDarktable = false}) async* {
+  /// Schreibt die Beilagen aller Fotos neben die Originale. [ordnerWaehlen]
+  /// fragt stattdessen nach einem Ordner: Mit Server liegen die Originale
+  /// nicht hier (#346). Dort heissen sie wie das Foto; tragen zwei denselben
+  /// Namen, gibt es nur eine.
+  Stream<ImportProgress> writeXmpSidecars({
+    bool wieDarktable = false,
+    Future<String?> Function()? ordnerWaehlen,
+  }) async* {
+    final ordner = await ordnerWaehlen?.call();
+    if (ordnerWaehlen != null && ordner == null) return;
+    final vergeben = <String>{};
     _nurOhneServer();
     final assets = await db.assetsForXmpExport();
     final tagsByAssetId = await db.allTagNamesByAssetId();
@@ -3191,12 +3215,17 @@ class LibraryState extends ChangeNotifier {
         tagsByAssetId[asset.id] ?? const [],
         gesichter: gesichterByAssetId[asset.id] ?? const [],
       );
-      final sidecarFile = paths.absolute(
-        wieDarktable
-            ? paths.xmpSidecarPathDarktable(asset.relativePath)
-            : paths.xmpSidecarPath(asset.relativePath),
-      );
-      await sidecarFile.writeAsString(xmp);
+      final quelle = ordner != null
+          ? p.join(ordner, asset.originalFileName)
+          : asset.relativePath;
+      final name = wieDarktable
+          ? paths.xmpSidecarPathDarktable(quelle)
+          : paths.xmpSidecarPath(quelle);
+      if (ordner == null) {
+        await paths.absolute(name).writeAsString(xmp);
+      } else if (vergeben.add(name.toLowerCase())) {
+        await File(name).writeAsString(xmp);
+      }
       done++;
       yield ImportProgress(
         done,

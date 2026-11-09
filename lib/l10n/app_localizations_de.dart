@@ -4274,6 +4274,9 @@ class AppTexteDe extends AppTexte {
   String get xmpFeldBewertung => 'Bewertung';
 
   @override
+  String get xmpOrdnerWaehlen => 'Aus Ordner einlesen';
+
+  @override
   String get xmpFeldAbgelehnt => 'Abgelehnt, kommt in den Papierkorb';
 
   @override

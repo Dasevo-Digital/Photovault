@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -860,6 +861,11 @@ List<Aufgabe> aufgabenliste(AppTexte t, LibraryState library) {
   return _aufgaben(t, library, seitLetztemLauf);
 }
 
+/// Mit Server liegen die Originale nicht hier: Die Beilagen brauchen dann
+/// einen anderen Platz (#346).
+Future<String?> Function()? _beilagenOrdner(LibraryState library) =>
+    library.verbunden ? () => FilePicker.getDirectoryPath() : null;
+
 List<Aufgabe> _aufgaben(
   AppTexte t,
   LibraryState library,
@@ -1414,13 +1420,17 @@ List<Aufgabe> _aufgaben(
         modus: Aufgabenmodus.alle,
         laufTitel: t.werkzSchreibeXmp,
         emptyMessage: t.werkzKeineFotosGesperrt,
-        stream: () => library.writeXmpSidecars(),
+        stream: () =>
+            library.writeXmpSidecars(ordnerWaehlen: _beilagenOrdner(library)),
       ),
       Aufgabenaktion(
         modus: Aufgabenmodus.wieDarktable,
         laufTitel: t.werkzSchreibeXmp,
         emptyMessage: t.werkzKeineFotosGesperrt,
-        stream: () => library.writeXmpSidecars(wieDarktable: true),
+        stream: () => library.writeXmpSidecars(
+          wieDarktable: true,
+          ordnerWaehlen: _beilagenOrdner(library),
+        ),
       ),
     ],
   ),
