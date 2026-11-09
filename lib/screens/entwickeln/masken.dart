@@ -164,6 +164,7 @@ mixin _Masken on _EntwickelnBasis {
       RectangleShape() => _MaskFormType.rectangle,
       GradientShape() => _MaskFormType.gradient,
       ColorRangeShape() => _MaskFormType.colorRange,
+      LuminanceRangeShape() => _MaskFormType.luminanceRange,
       null =>
         (widget.segmentation?.installiert ?? false)
             ? _MaskFormType.aiSelect
@@ -181,6 +182,7 @@ mixin _Masken on _EntwickelnBasis {
       _pendingMaskOverlayPng = null;
     });
     if (formType == _MaskFormType.aiSelect) await _ensureEmbedding();
+    if (formType == _MaskFormType.luminanceRange) unawaited(_zeigeHelligkeit());
   }
 
   /// Wechselt den Formtyp innerhalb des offenen Masken-Editors – verwirft
@@ -202,6 +204,138 @@ mixin _Masken on _EntwickelnBasis {
     // Vorgriff: Dann steht das Bild meist schon bereit, wenn der erste
     // Tipp kommt.
     if (type == _MaskFormType.colorRange) unawaited(_ensureDekodiert());
+    if (type == _MaskFormType.luminanceRange) {
+      setState(() => _draftShape = const LuminanceRangeShape());
+      unawaited(_zeigeHelligkeit());
+    }
+  }
+
+  /// Das Foto, aus dem eine Maske ihre Bildpunkte liest: die Vorschau der
+  /// Bibliothek, also ohne die Regler (siehe [LuminanceRangeShape]).
+  Future<File> _maskenQuelle() => widget.paths.bereit(
+    widget.asset.previewRelativePath ?? widget.asset.relativePath,
+  );
+
+  img.Image? _kleineMaskenquelle;
+
+  /// Zeichnet die Helligkeitsauswahl über das Bild. Auf einer kleinen
+  /// Fassung, das läuft bei jeder Reglerbewegung.
+  @override
+  Future<void> _zeigeHelligkeit() async {
+    final shape = _draftShape;
+    if (shape is! LuminanceRangeShape) return;
+    var klein = _kleineMaskenquelle;
+    if (klein == null) {
+      try {
+        final bytes = await (await _maskenQuelle()).readAsBytes();
+        final ganz = await compute(decodeImageBytes, bytes);
+        if (ganz == null) return;
+        klein = _kleineMaskenquelle = img.copyResize(ganz, width: 320);
+      } on Object {
+        return;
+      }
+    }
+    if (!mounted) return;
+    // Der Regler kann weitergezogen sein, während das Foto geladen wurde.
+    final jetzt = _draftShape;
+    if (jetzt is! LuminanceRangeShape) return;
+    final png = helligkeitsUeberlagerung(jetzt, klein);
+    setState(() => _pendingMaskOverlayPng = png);
+  }
+
+  // --- Graupunkt (#353) ----------------------------------------------
+
+  Widget _buildWeissPipette() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final flaeche = Size(constraints.maxWidth, constraints.maxHeight);
+        return SizedBox.expand(
+          child: MouseRegion(
+            cursor: SystemMouseCursors.precise,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (d) => _graupunkt(d.localPosition, flaeche),
+              child: Padding(
+                padding: const EdgeInsets.all(_EntwickelnBasis._maskenrand),
+                child: Image.memory(
+                  _previewBytes!,
+                  gaplessPlayback: true,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Macht die angeklickte Stelle neutral.
+  ///
+  /// Bei RAW auf dem Mac rechnet Apples Entwickler selbst: Dort ist der
+  /// Regler ein absoluter Wert für das Licht der Aufnahme, kein Abstand zu
+  /// 6500 K. Alles andere geht vom angezeigten Bild aus.
+  Future<void> _graupunkt(Offset local, Size flaeche) async {
+    final punkt = _widgetPointToNormalizedImagePoint(local, flaeche);
+    final bytes = _previewBytes;
+    if (punkt == null || bytes == null) return;
+    final t = AppTexte.of(context);
+    final original = await _originalOderMeldung();
+    if (original == null || !mounted) return;
+    final nativ = await NativeImageConverter.neutralAmPunkt(
+      original,
+      punkt.dx,
+      punkt.dy,
+    );
+    if (!mounted) return;
+    ({double temperatur, double toenung})? neu = nativ;
+    if (neu == null) {
+      final bild = await compute(decodeImageBytes, bytes);
+      if (bild == null || !mounted) return;
+      final (r, g, b) = _mittelwert(bild, punkt);
+      neu = weissabgleichFuer(
+        r,
+        g,
+        b,
+        temperatur: _autoWhiteBalance ? 6500 : _temperature,
+        toenung: _autoWhiteBalance ? 0 : _tint,
+        weg: _EntwickelnBasis._shaderIstGenau
+            ? Weissweg.shader
+            : Weissweg.coreImage,
+      );
+    }
+    if (neu == null) {
+      melde.hinweis(t.entwGraupunktUngeeignet);
+      return;
+    }
+    final ziel = neu;
+    setState(() {
+      _autoWhiteBalance = false;
+      _temperature = ziel.temperatur.clamp(2000, 12000);
+      _tint = ziel.toenung.clamp(-100, 100);
+      _weissPipette = false;
+    });
+    _scheduleRerender();
+  }
+
+  /// Der Mittelwert um [punkt]: Ein einzelner Bildpunkt ist Rauschen.
+  (double, double, double) _mittelwert(img.Image bild, Offset punkt) {
+    final radius = math.max(2, bild.width ~/ 200);
+    final mx = (punkt.dx * bild.width).floor();
+    final my = (punkt.dy * bild.height).floor();
+    var r = 0.0, g = 0.0, b = 0.0, n = 0;
+    for (var y = my - radius; y <= my + radius; y++) {
+      for (var x = mx - radius; x <= mx + radius; x++) {
+        if (x < 0 || y < 0 || x >= bild.width || y >= bild.height) continue;
+        final p = bild.getPixel(x, y);
+        final m = p.maxChannelValue;
+        r += p.r / m;
+        g += p.g / m;
+        b += p.b / m;
+        n++;
+      }
+    }
+    return n == 0 ? (0.0, 0.0, 0.0) : (r / n, g / n, b / n);
   }
 
   @override
@@ -640,6 +774,7 @@ mixin _Masken on _EntwickelnBasis {
         );
       case _MaskFormType.aiSelect:
       case _MaskFormType.colorRange:
+      case _MaskFormType.luminanceRange:
         // Beide entstehen aus einem Tipp, nicht aus einer Zieh-Geste.
         break;
     }
@@ -708,6 +843,7 @@ mixin _Masken on _EntwickelnBasis {
         );
       case _MaskFormType.aiSelect:
       case _MaskFormType.colorRange:
+      case _MaskFormType.luminanceRange:
         break;
     }
   }
@@ -720,6 +856,7 @@ mixin _Masken on _EntwickelnBasis {
     _MaskFormType.rectangle => _draftShape is RectangleShape,
     _MaskFormType.gradient => _draftShape is GradientShape,
     _MaskFormType.colorRange => _draftShape is ColorRangeShape,
+    _MaskFormType.luminanceRange => _draftShape is LuminanceRangeShape,
   };
 
   @override
@@ -745,14 +882,10 @@ mixin _Masken on _EntwickelnBasis {
     }
     final name = AppTexte.of(context).entwMaskeNummer(_masks.length + 1);
     setState(() => _computingMask = true);
-    // Der Quellpfad wird nur von der Farbauswahl gebraucht; die anderen
-    // Formen fassen die Datei gar nicht an.
-    final quellPfad = shape is ColorRangeShape
-        ? widget.paths
-              .absolute(
-                widget.asset.previewRelativePath ?? widget.asset.relativePath,
-              )
-              .path
+    // Der Quellpfad wird nur von den Formen gebraucht, die Bildpunkte
+    // auswerten; die anderen fassen die Datei gar nicht an.
+    final quellPfad = shape is ColorRangeShape || shape is LuminanceRangeShape
+        ? (await _maskenQuelle()).path
         : null;
     final pngBytes = await compute(rasterizeMaskShapeToPngBytes, (
       shape,

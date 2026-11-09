@@ -24,6 +24,7 @@ sealed class MaskShapeDefinition {
         'gradient' => GradientShape.fromJson(json),
         'rectangle' => RectangleShape.fromJson(json),
         'colorRange' => ColorRangeShape.fromJson(json),
+        'luminanceRange' => LuminanceRangeShape.fromJson(json),
         _ => throw ArgumentError('Unbekannter Maskenform-Typ: ${json['type']}'),
       };
 
@@ -233,6 +234,50 @@ class ColorRangeShape extends MaskShapeDefinition {
       );
 }
 
+/// Auswahl nach Helligkeit (#354): etwa nur die Lichter, um einen Himmel
+/// zurückzuholen. Wie [ColorRangeShape] aus den Bildpunkten gerechnet, ohne
+/// etwas zu zeichnen. Massgeblich ist das unbearbeitete Foto, damit die
+/// Auswahl nicht wandert, wenn später die Belichtung geändert wird.
+class LuminanceRangeShape extends MaskShapeDefinition {
+  /// Der ausgewählte Bereich, 0 (schwarz) bis 1 (weiss).
+  final double von;
+  final double bis;
+
+  /// Wie weich der Übergang an beiden Enden verläuft, 0..1.
+  final double feather;
+
+  const LuminanceRangeShape({this.von = 0.6, this.bis = 1, this.feather = 0.3});
+
+  /// Wie weit der Übergang bei voller Weichzeichnung über den Bereich
+  /// hinausreicht: ein Viertel der Skala.
+  static const _hoechsterUebergang = 0.25;
+
+  /// Wie stark ein Bildpunkt der Helligkeit [y] ausgewählt ist, 0..1.
+  double gewicht(double y) {
+    if (y >= von && y <= bis) return 1;
+    final rand = feather * _hoechsterUebergang;
+    if (rand <= 0) return 0;
+    final abstand = y < von ? von - y : y - bis;
+    if (abstand >= rand) return 0;
+    return 1 - _smoothstep(abstand / rand);
+  }
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'type': 'luminanceRange',
+    'von': von,
+    'bis': bis,
+    'feather': feather,
+  };
+
+  factory LuminanceRangeShape.fromJson(Map<String, dynamic> json) =>
+      LuminanceRangeShape(
+        von: ((json['von'] as num?)?.toDouble() ?? 0.6).clamp(0.0, 1.0),
+        bis: ((json['bis'] as num?)?.toDouble() ?? 1).clamp(0.0, 1.0),
+        feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
+      );
+}
+
 /// Linearer Verlauf zwischen zwei Punkten – für Himmel-/Horizont-Korrekturen
 /// (Muster: Verlaufsfilter eines klassischen RAW-Entwicklers).
 class GradientShape extends MaskShapeDefinition {
@@ -295,7 +340,8 @@ Uint8List rasterizeMaskShapeToPngBytes(
 ) {
   final (shape, width, height, quellPfad) = args;
   img.Image? quelle;
-  if (shape is ColorRangeShape && quellPfad != null) {
+  if ((shape is ColorRangeShape || shape is LuminanceRangeShape) &&
+      quellPfad != null) {
     try {
       quelle = img.decodeImage(File(quellPfad).readAsBytesSync());
     } catch (_) {
@@ -336,8 +382,59 @@ img.Image rasterizeMaskShape(
       if (quelle != null) {
         _rasterizeColorRange(mask, shape, width, height, quelle);
       }
+    case LuminanceRangeShape():
+      if (quelle != null) {
+        _rasterizeLuminanceRange(mask, shape, width, height, quelle);
+      }
   }
   return mask;
+}
+
+/// Rec.-601-Helligkeit, 0..1 – dieselbe Gewichtung wie im Histogramm.
+double _helligkeit(img.Pixel p) {
+  final m = p.maxChannelValue;
+  return m > 0 ? (0.299 * p.r + 0.587 * p.g + 0.114 * p.b) / m : 0;
+}
+
+void _rasterizeLuminanceRange(
+  img.Image mask,
+  LuminanceRangeShape shape,
+  int width,
+  int height,
+  img.Image quelle,
+) {
+  final qb = quelle.width;
+  final qh = quelle.height;
+  for (var y = 0; y < height; y++) {
+    final sy = (y * qh ~/ height).clamp(0, qh - 1);
+    for (var x = 0; x < width; x++) {
+      final sx = (x * qb ~/ width).clamp(0, qb - 1);
+      final w = shape.gewicht(_helligkeit(quelle.getPixel(sx, sy)));
+      final value = (255 * w).round();
+      if (value > 0) mask.setPixelRgb(x, y, value, value, value);
+    }
+  }
+}
+
+/// Die Auswahl als rote Fläche über dem Bild, zum Ansehen beim Einstellen.
+/// [quelle] ist eine kleine Fassung des Fotos: Das läuft bei jeder
+/// Reglerbewegung.
+Uint8List helligkeitsUeberlagerung(
+  LuminanceRangeShape shape,
+  img.Image quelle,
+) {
+  final bild = img.Image(
+    width: quelle.width,
+    height: quelle.height,
+    numChannels: 4,
+  );
+  for (var y = 0; y < quelle.height; y++) {
+    for (var x = 0; x < quelle.width; x++) {
+      final w = shape.gewicht(_helligkeit(quelle.getPixel(x, y)));
+      if (w > 0) bild.setPixelRgba(x, y, 255, 60, 60, (150 * w).round());
+    }
+  }
+  return Uint8List.fromList(img.encodePng(bild, level: 1));
 }
 
 /// Malt jedes Liniensegment nur innerhalb seiner (um die Strichbreite

@@ -2852,6 +2852,30 @@ class AppTexteDe extends AppTexte {
   String get toenungStaerke => 'Stärke';
 
   @override
+  String get entwFormHelligkeit => 'Helligkeit';
+
+  @override
+  String get entwHelligkeitHinweis =>
+      'Ausgewählt wird alles im eingestellten Helligkeitsbereich. Rot zeigt die Auswahl.';
+
+  @override
+  String get entwHelligkeitVon => 'Von';
+
+  @override
+  String get entwHelligkeitBis => 'Bis';
+
+  @override
+  String get entwGraupunkt => 'Graupunkt wählen';
+
+  @override
+  String get entwGraupunktAktiv =>
+      'Klicke auf etwas, das grau oder weiss sein soll';
+
+  @override
+  String get entwGraupunktUngeeignet =>
+      'Diese Stelle ist zu dunkel oder ausgebrannt. Wähle eine andere.';
+
+  @override
   String get bandRot => 'Rot';
 
   @override

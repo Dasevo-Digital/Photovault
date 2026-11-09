@@ -2830,6 +2830,30 @@ class AppTexteEn extends AppTexte {
   String get toenungStaerke => 'Strength';
 
   @override
+  String get entwFormHelligkeit => 'Brightness';
+
+  @override
+  String get entwHelligkeitHinweis =>
+      'Selects everything in the chosen brightness range. Red shows the selection.';
+
+  @override
+  String get entwHelligkeitVon => 'From';
+
+  @override
+  String get entwHelligkeitBis => 'To';
+
+  @override
+  String get entwGraupunkt => 'Pick gray point';
+
+  @override
+  String get entwGraupunktAktiv =>
+      'Click something that should be gray or white';
+
+  @override
+  String get entwGraupunktUngeeignet =>
+      'This spot is too dark or blown out. Pick another one.';
+
+  @override
   String get bandRot => 'Red';
 
   @override

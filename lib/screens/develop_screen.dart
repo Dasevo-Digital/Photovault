@@ -20,6 +20,7 @@ import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
+import 'package:kern/services/weissabgleich.dart';
 import '../services/develop_render.dart';
 import '../services/entwicklung_ablegen.dart';
 import '../services/entwicklungsverlauf.dart';
@@ -60,6 +61,7 @@ enum _MaskFormType {
   rectangle,
   gradient,
   colorRange,
+  luminanceRange,
 }
 
 /// Nicht-destruktive Bildentwicklung (Belichtung, Weißabgleich, Kontrast,
@@ -364,6 +366,10 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
     double imageWidth,
     double imageHeight,
   );
+
+  /// Ob ein Klick ins Bild gerade den Graupunkt setzt (#353).
+  bool _weissPipette = false;
+  Future<void> _zeigeHelligkeit();
   void _handleMaskTap(Offset local, Size widgetSize);
   Future<void> _handleFarbeAufnehmen(Offset local, Size widgetSize);
   void _undoLastMaskPoint();
@@ -569,6 +575,8 @@ class _DevelopScreenState extends _EntwickelnBasis
                                 : const CircularProgressIndicator())
                           : _maskEditMode
                           ? _buildMaskEditor()
+                          : _weissPipette
+                          ? _buildWeissPipette()
                           : Lupenbereich(
                               aktiv: _lupe,
                               child: GestureDetector(
@@ -821,6 +829,9 @@ class _ShapeDraftPainter extends CustomPainter {
         canvas.drawRect(rect, Paint()..color = fillColor);
         canvas.drawRect(rect, strokePaint);
         canvas.restore();
+      case LuminanceRangeShape():
+        // Zu sehen ist die rote Fläche, die der Editor darüberlegt.
+        break;
       case ColorRangeShape():
         // Nur die Marke, wo aufgenommen wurde: Welche Bildpunkte die
         // Auswahl trifft, hängt vom Foto ab und lässt sich hier nicht

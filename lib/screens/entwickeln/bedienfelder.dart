@@ -305,6 +305,16 @@ mixin _Bedienfelder on _EntwickelnBasis {
                     fit: BoxFit.contain,
                   ),
                 ),
+                if (_draftShape is LuminanceRangeShape &&
+                    _pendingMaskOverlayPng != null)
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
+                    child: Image.memory(
+                      _pendingMaskOverlayPng!,
+                      gaplessPlayback: true,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                 Positioned.fill(
                   child: IgnorePointer(
                     child: CustomPaint(
@@ -391,6 +401,12 @@ mixin _Bedienfelder on _EntwickelnBasis {
                   Icons.colorize_outlined,
                   true,
                 ),
+                (
+                  _MaskFormType.luminanceRange,
+                  AppTexte.of(context).entwFormHelligkeit,
+                  Icons.brightness_6_outlined,
+                  true,
+                ),
               ])
                 // Ein grauer Knopf ohne Grund ist eine Sackgasse: Die
                 // KI-Auswahl bleibt ohne Segmentierungsmodell stumm, und
@@ -445,7 +461,64 @@ mixin _Bedienfelder on _EntwickelnBasis {
     _MaskFormType.rectangle => _buildRectanglePanel(),
     _MaskFormType.gradient => _buildGradientPanel(),
     _MaskFormType.colorRange => _buildColorRangePanel(),
+    _MaskFormType.luminanceRange => _buildLuminancePanel(),
   };
+
+  Widget _buildLuminancePanel() {
+    final shape = _draftShape;
+    final s = shape is LuminanceRangeShape
+        ? shape
+        : const LuminanceRangeShape();
+    void setze(LuminanceRangeShape neu) {
+      setState(() => _draftShape = neu);
+      unawaited(_zeigeHelligkeit());
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          AppTexte.of(context).entwHelligkeitHinweis,
+          style: const TextStyle(color: Colors.white70, fontSize: 12),
+        ),
+        const SizedBox(height: 12),
+        _shapeSlider(
+          AppTexte.of(context).entwHelligkeitVon,
+          s.von,
+          0,
+          1,
+          (v) => setze(
+            LuminanceRangeShape(
+              von: v > s.bis ? s.bis : v,
+              bis: s.bis,
+              feather: s.feather,
+            ),
+          ),
+        ),
+        _shapeSlider(
+          AppTexte.of(context).entwHelligkeitBis,
+          s.bis,
+          0,
+          1,
+          (v) => setze(
+            LuminanceRangeShape(
+              von: s.von,
+              bis: v < s.von ? s.von : v,
+              feather: s.feather,
+            ),
+          ),
+        ),
+        _shapeSlider(
+          AppTexte.of(context).entwWeichzeichnung,
+          s.feather,
+          0,
+          1,
+          (v) => setze(LuminanceRangeShape(von: s.von, bis: s.bis, feather: v)),
+        ),
+      ],
+    );
+  }
 
   Widget _buildAiSelectPanel() {
     return Column(
@@ -973,6 +1046,19 @@ mixin _Bedienfelder on _EntwickelnBasis {
         setState(() => _autoWhiteBalance = v);
         _scheduleRerender();
       },
+    ),
+    Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: TextButton.icon(
+        onPressed: () => setState(() => _weissPipette = !_weissPipette),
+        icon: const Icon(Icons.colorize, size: 16),
+        label: Text(
+          _weissPipette
+              ? AppTexte.of(context).entwGraupunktAktiv
+              : AppTexte.of(context).entwGraupunkt,
+          style: const TextStyle(fontSize: 12),
+        ),
+      ),
     ),
     _slider(
       AppTexte.of(context).entwTemperatur,

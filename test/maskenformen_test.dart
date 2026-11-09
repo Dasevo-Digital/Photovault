@@ -16,6 +16,64 @@ void main() {
     return m.getPixel(x, y).r.toInt();
   }
 
+  group('Helligkeit (#354)', () {
+    /// Links schwarz, rechts weiss, je Spalte eine Stufe.
+    img.Image verlauf() {
+      final b = img.Image(width: 256, height: 8);
+      for (var x = 0; x < 256; x++) {
+        for (var y = 0; y < 8; y++) {
+          b.setPixelRgb(x, y, x, x, x);
+        }
+      }
+      return b;
+    }
+
+    test('wählt nur den eingestellten Bereich', () {
+      const s = LuminanceRangeShape(von: 0.25, bis: 0.75, feather: 0);
+      final m = rasterizeMaskShape(s, 256, 8, quelle: verlauf());
+      expect(an(m, 0.1, 0.5), 0);
+      expect(an(m, 0.5, 0.5), 255);
+      expect(an(m, 0.9, 0.5), 0);
+    });
+
+    test('weich läuft die Auswahl an den Enden aus', () {
+      const s = LuminanceRangeShape(von: 0.5, bis: 1, feather: 1);
+      final m = rasterizeMaskShape(s, 256, 8, quelle: verlauf());
+      final mitteDesRands = an(m, 0.375, 0.5);
+      expect(mitteDesRands, inExclusiveRange(40, 215));
+      expect(an(m, 0.2, 0.5), 0);
+      expect(an(m, 0.6, 0.5), 255);
+    });
+
+    test('ohne Bild bleibt die Maske schwarz', () {
+      final m = rasterizeMaskShape(const LuminanceRangeShape(), 16, 16);
+      expect(an(m, 0.5, 0.5), 0);
+    });
+
+    test('Quelle und Maske dürfen verschieden gross sein', () {
+      const s = LuminanceRangeShape(von: 0.5, bis: 1, feather: 0);
+      final m = rasterizeMaskShape(s, 64, 64, quelle: verlauf());
+      expect(an(m, 0.9, 0.9), 255);
+      expect(an(m, 0.1, 0.9), 0);
+    });
+
+    test('überlebt das Speichern', () {
+      const s = LuminanceRangeShape(von: 0.1, bis: 0.4, feather: 0.2);
+      final zurueck = MaskShapeDefinition.decode(s.encode());
+      expect(zurueck, isA<LuminanceRangeShape>());
+      final l = zurueck as LuminanceRangeShape;
+      expect((l.von, l.bis, l.feather), (0.1, 0.4, 0.2));
+    });
+
+    test('die Überlagerung ist nur über der Auswahl sichtbar', () {
+      const s = LuminanceRangeShape(von: 0.5, bis: 1, feather: 0);
+      final png = helligkeitsUeberlagerung(s, verlauf());
+      final b = img.decodePng(png)!;
+      expect(b.getPixel(10, 4).a, 0);
+      expect(b.getPixel(250, 4).a, greaterThan(100));
+    });
+  });
+
   group('Rechteck', () {
     const mitte = RectangleShape(
       centerX: 0.5,

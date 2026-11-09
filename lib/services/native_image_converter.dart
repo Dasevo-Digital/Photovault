@@ -415,6 +415,31 @@ class NativeImageConverter {
     }
   }
 
+  /// Temperatur und Farbstich, bei denen der Punkt ([x], [y] anteilig, von
+  /// oben links) einer RAW-Datei neutral wird (#353). `null` ausserhalb von
+  /// macOS und für alles, was kein RAW ist.
+  static Future<({double temperatur, double toenung})?> neutralAmPunkt(
+    File file,
+    double x,
+    double y,
+  ) async {
+    if (DevelopRender.istMassgeblich || !await isSupported()) return null;
+    try {
+      final r = await _channel.invokeMethod<Map<Object?, Object?>>(
+        'neutralAmPunkt',
+        {'path': file.path, 'x': x, 'y': y},
+      );
+      final t = r?['temperature'] as num?, c = r?['tint'] as num?;
+      return t == null || c == null
+          ? null
+          : (temperatur: t.toDouble(), toenung: c.toDouble());
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Rendert eine Bilddatei mit nicht-destruktiven Entwicklungs-Anpassungen
   /// (siehe DevelopScreen) zu JPEG-Bytes. Für RAW-Dateien über
   /// CIRAWFilter-Eigenschaften, für alle anderen Formate über eine

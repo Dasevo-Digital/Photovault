@@ -4895,6 +4895,48 @@ abstract class AppTexte {
   /// **'Stärke'**
   String get toenungStaerke;
 
+  /// No description provided for @entwFormHelligkeit.
+  ///
+  /// In de, this message translates to:
+  /// **'Helligkeit'**
+  String get entwFormHelligkeit;
+
+  /// No description provided for @entwHelligkeitHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgewählt wird alles im eingestellten Helligkeitsbereich. Rot zeigt die Auswahl.'**
+  String get entwHelligkeitHinweis;
+
+  /// No description provided for @entwHelligkeitVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Von'**
+  String get entwHelligkeitVon;
+
+  /// No description provided for @entwHelligkeitBis.
+  ///
+  /// In de, this message translates to:
+  /// **'Bis'**
+  String get entwHelligkeitBis;
+
+  /// No description provided for @entwGraupunkt.
+  ///
+  /// In de, this message translates to:
+  /// **'Graupunkt wählen'**
+  String get entwGraupunkt;
+
+  /// No description provided for @entwGraupunktAktiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Klicke auf etwas, das grau oder weiss sein soll'**
+  String get entwGraupunktAktiv;
+
+  /// No description provided for @entwGraupunktUngeeignet.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Stelle ist zu dunkel oder ausgebrannt. Wähle eine andere.'**
+  String get entwGraupunktUngeeignet;
+
   /// No description provided for @bandRot.
   ///
   /// In de, this message translates to:

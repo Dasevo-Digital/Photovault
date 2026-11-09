@@ -233,5 +233,68 @@ void main() {
       );
       await abbauen(tester);
     });
+
+    testWidgets('Helligkeit ist gleich bereit, ohne Geste', (tester) async {
+      await zeige(tester);
+      await werkzeug(tester, 'Helligkeit');
+      expect(fertigBedienbar(tester), isTrue);
+      expect(find.text('Von'), findsOneWidget);
+      expect(find.text('Bis'), findsOneWidget);
+      await abbauen(tester);
+    });
+  });
+
+  group('Graupunkt (#353)', () {
+    Finder pipette() => find.byWidgetPredicate(
+      (w) => w is MouseRegion && w.cursor == SystemMouseCursors.precise,
+    );
+
+    bool automatik(WidgetTester tester) => tester
+        .widget<SwitchListTile>(
+          find.widgetWithText(SwitchListTile, 'Automatischer Weißabgleich'),
+        )
+        .value;
+
+    testWidgets('ein Klick ins Bild stellt den Weissabgleich ein', (
+      tester,
+    ) async {
+      await zeige(tester);
+      expect(automatik(tester), isTrue);
+      await tester.ensureVisible(find.text('Graupunkt wählen'));
+      await tester.pump();
+      await tester.tap(find.text('Graupunkt wählen'));
+      await tester.pump();
+      expect(pipette(), findsOneWidget);
+      final ziel = tester.getCenter(pipette());
+      await tester.runAsync(() async {
+        await tester.tapAt(ziel);
+        for (var i = 0; i < 20; i++) {
+          await tester.pump(const Duration(milliseconds: 25));
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      await takte(tester, 15);
+      expect(automatik(tester), isFalse);
+      // Das Foto ist bläulich, also muss der Regler unter 6500 K stehen.
+      expect(find.text('6500'), findsNothing);
+      // Die Pipette gibt die Fläche wieder frei.
+      expect(pipette(), findsNothing);
+      await abbauen(tester);
+    });
+
+    testWidgets('noch einmal drücken bricht ab', (tester) async {
+      await zeige(tester);
+      await tester.ensureVisible(find.text('Graupunkt wählen'));
+      await tester.pump();
+      await tester.tap(find.text('Graupunkt wählen'));
+      await tester.pump();
+      await tester.tap(
+        find.text('Klicke auf etwas, das grau oder weiss sein soll'),
+      );
+      await tester.pump();
+      expect(pipette(), findsNothing);
+      expect(automatik(tester), isTrue);
+      await abbauen(tester);
+    });
   });
 }

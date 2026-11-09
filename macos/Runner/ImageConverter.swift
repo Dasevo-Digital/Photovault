@@ -132,6 +132,20 @@ class ImageConverterChannel: NSObject {
                     let status = lensCorrectionStatus(path: path)
                     DispatchQueue.main.async { result(status) }
                 }
+            case "neutralAmPunkt":
+                guard
+                    let args = call.arguments as? [String: Any],
+                    let path = args["path"] as? String,
+                    let x = (args["x"] as? NSNumber)?.doubleValue,
+                    let y = (args["y"] as? NSNumber)?.doubleValue
+                else {
+                    result(FlutterError(code: "bad_args", message: "path, x, y fehlen", details: nil))
+                    return
+                }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let antwort = neutralAmPunkt(path: path, x: x, y: y)
+                    DispatchQueue.main.async { result(antwort) }
+                }
             case "developImage":
                 guard
                     let args = call.arguments as? [String: Any],
@@ -704,6 +718,28 @@ class ImageConverterChannel: NSObject {
             return "nichtLesbar"
         }
         return filter.isLensCorrectionSupported ? "verfuegbar" : "nichtInDatenbank"
+    }
+
+    /// Temperatur und Farbstich, bei denen ein Punkt einer RAW-Datei neutral
+    /// wird. `neutralLocation` zählt in Bildpunkten der fertig gedrehten
+    /// Ausgabe, von unten links – an Beispiel-RAWs nachgemessen, auch mit
+    /// gedrehtem Bild.
+    private static func neutralAmPunkt(path: String, x: Double, y: Double) -> [String: Double]? {
+        let url = URL(fileURLWithPath: path)
+        guard
+            #available(macOS 12.0, *),
+            rawExtensions.contains(url.pathExtension.lowercased()),
+            let filter = CIRAWFilter(imageURL: url),
+            let bild = filter.outputImage
+        else { return nil }
+        filter.neutralLocation = CGPoint(
+            x: x * bild.extent.width,
+            y: (1 - y) * bild.extent.height
+        )
+        return [
+            "temperature": Double(filter.neutralTemperature),
+            "tint": Double(filter.neutralTint),
+        ]
     }
 
     /// Dekodiert eine RAW-Datei über Apples `CIRAWFilter` statt der
