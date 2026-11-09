@@ -8,6 +8,7 @@ import '../services/fotokammer_dienst.dart';
 import '../services/groessentext.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/einfuegbares_menue.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/mini_location_map.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
@@ -588,6 +589,7 @@ class _ZielDialogState extends State<_ZielDialog> {
                 fieldViewBuilder: (context, c, f, _) => TextField(
                   controller: c,
                   focusNode: f,
+                  contextMenuBuilder: einfuegbaresMenue,
                   decoration: InputDecoration(labelText: t.kammerZielAlbum),
                 ),
                 optionsViewBuilder: (context, waehle, optionen) => Align(
@@ -618,6 +620,7 @@ class _ZielDialogState extends State<_ZielDialog> {
               const SizedBox(height: AppSpacing.md),
               TextField(
                 controller: _schlagwoerter,
+                contextMenuBuilder: einfuegbaresMenue,
                 decoration: InputDecoration(
                   labelText: t.kammerZielSchlagwoerter,
                 ),
