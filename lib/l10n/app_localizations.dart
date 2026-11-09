@@ -15768,6 +15768,48 @@ abstract class AppTexte {
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
 
+  /// No description provided for @kammerVergleichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vergleichen (2 bis 4 auswählen)'**
+  String get kammerVergleichen;
+
+  /// No description provided for @kammerAusduennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Serien ausdünnen'**
+  String get kammerAusduennen;
+
+  /// No description provided for @kammerAusduennenNichts.
+  ///
+  /// In de, this message translates to:
+  /// **'In den Serien gibt es nichts mehr abzulehnen.'**
+  String get kammerAusduennenNichts;
+
+  /// No description provided for @kammerSchaerfstes.
+  ///
+  /// In de, this message translates to:
+  /// **'Schärfstes der Serie'**
+  String get kammerSchaerfstes;
+
+  /// No description provided for @kammerAusduennenText.
+  ///
+  /// In de, this message translates to:
+  /// **'{fotos, plural, =1{1 Foto wird} other{{fotos} Fotos werden}} in {serien, plural, =1{1 Serie} other{{serien} Serien}} als abgelehnt markiert. Das schärfste jeder Serie bleibt, Fotos mit Sternen auch. Weg ist noch nichts.'**
+  String kammerAusduennenText(int fotos, int serien);
+
+  /// No description provided for @kammerSerie.
+  ///
+  /// In de, this message translates to:
+  /// **'Serie mit {anzahl} Fotos'**
+  String kammerSerie(int anzahl);
+
+  /// No description provided for @kammerVergleichTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Fotos im Vergleich'**
+  String kammerVergleichTitel(int anzahl);
+
   /// No description provided for @kammerWartet.
   ///
   /// In de, this message translates to:
@@ -16183,7 +16225,7 @@ abstract class AppTexte {
   /// No description provided for @kammerSichtenTasten.
   ///
   /// In de, this message translates to:
-  /// **'1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen'**
+  /// **'1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen · V: Serie vergleichen'**
   String get kammerSichtenTasten;
 
   /// No description provided for @kammerAbschliessenText.

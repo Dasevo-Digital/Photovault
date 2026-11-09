@@ -729,6 +729,8 @@ void main() {
     expect(eintraege.map((e) => e['name']), ['kammer1.jpg', 'kammer2.jpg']);
     expect(liste['anzahl'], 2);
     expect(eintraege.first.containsKey('sha256'), isFalse);
+    // Die Schärfe ist beim Ankommen gemessen (#348).
+    expect(eintraege.first['schaerfe'], isA<num>());
     final id1 = k1['pv-kammer']!;
     final id2 = k2['pv-kammer']!;
     for (final art in ['miniatur', 'vorschau']) {

@@ -15,6 +15,7 @@ class Kammereintrag {
     this.sterne = 0,
     this.abgelehnt = false,
     this.angelegt,
+    this.schaerfe,
   });
 
   factory Kammereintrag.aus(Map<String, Object?> j) => Kammereintrag(
@@ -30,6 +31,7 @@ class Kammereintrag {
     sterne: (j['sterne'] as num?)?.toInt() ?? 0,
     abgelehnt: j['abgelehnt'] == true,
     angelegt: DateTime.tryParse('${j['angelegt']}')?.toLocal(),
+    schaerfe: (j['schaerfe'] as num?)?.toDouble(),
   );
 
   /// Dasselbe Foto mit einem neuen Urteil.
@@ -45,6 +47,7 @@ class Kammereintrag {
     sterne: sterne ?? this.sterne,
     abgelehnt: abgelehnt ?? this.abgelehnt,
     angelegt: angelegt,
+    schaerfe: schaerfe,
   );
 
   final String id;
@@ -63,7 +66,73 @@ class Kammereintrag {
   /// Seit wann es in der Kammer liegt.
   final DateTime? angelegt;
 
+  /// Wie scharf die Bildmitte ist; nur innerhalb einer Serie vergleichbar.
+  /// `null`, solange es nicht gemessen ist (#348).
+  final double? schaerfe;
+
   bool get istVideo => art == 'VIDEO';
+}
+
+/// Fotos, die kurz nacheinander entstanden sind (#348).
+class Kammerserie {
+  const Kammerserie(this.fotos);
+
+  final List<Kammereintrag> fotos;
+
+  /// Das schärfste Foto; `null`, solange keines gemessen ist.
+  Kammereintrag? get schaerfstes {
+    Kammereintrag? beste;
+    for (final f in fotos) {
+      final s = f.schaerfe;
+      if (s == null) continue;
+      if (beste == null || s > beste.schaerfe!) beste = f;
+    }
+    return beste;
+  }
+
+  /// Die bis zu [n] schärfsten, in der Reihenfolge der Aufnahme.
+  List<Kammereintrag> schaerfste(int n) {
+    final sortiert = [...fotos]
+      ..sort((a, b) => (b.schaerfe ?? -1).compareTo(a.schaerfe ?? -1));
+    final gewaehlt = sortiert.take(n).toSet();
+    return [
+      for (final f in fotos)
+        if (gewaehlt.contains(f)) f,
+    ];
+  }
+}
+
+/// Gruppiert Fotos, die höchstens [abstand] nacheinander mit derselben
+/// Kamera entstanden sind. Nur Gruppen ab zwei Fotos.
+///
+/// Allein über die Zeit: In der Kammer gibt es keine Bildvergleiche wie in
+/// der Bibliothek, sie entstehen erst nach dem Freigeben. Drei Sekunden
+/// fassen, was man als Serie auslöst, und trennen die nächste Szene.
+List<Kammerserie> kammerserien(
+  List<Kammereintrag> eintraege, {
+  Duration abstand = const Duration(seconds: 3),
+}) {
+  final fotos = [
+    for (final e in eintraege)
+      if (!e.istVideo) e,
+  ]..sort((a, b) => a.datum.compareTo(b.datum));
+  final serien = <Kammerserie>[];
+  var laufend = <Kammereintrag>[];
+  void schliesse() {
+    if (laufend.length >= 2) serien.add(Kammerserie(laufend));
+    laufend = [];
+  }
+
+  for (final f in fotos) {
+    if (laufend.isNotEmpty &&
+        (f.modell != laufend.last.modell ||
+            f.datum.difference(laufend.last.datum) > abstand)) {
+      schliesse();
+    }
+    laufend.add(f);
+  }
+  schliesse();
+  return serien;
 }
 
 /// Wohin Fotos beim Freigeben kommen (#349).
@@ -142,12 +211,16 @@ class Fotokammerdienst {
   }
 
   /// Merkt das Urteil über [ids] am Server.
-  Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) =>
-      verbindung.schicke('api/v1/kammer/sichten', {
-        'ids': ids,
+  Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) async {
+    // Der Server nimmt höchstens 500 auf einmal.
+    for (var i = 0; i < ids.length; i += 200) {
+      await verbindung.schicke('api/v1/kammer/sichten', {
+        'ids': ids.sublist(i, (i + 200).clamp(0, ids.length)),
         'sterne': ?sterne,
         'abgelehnt': ?abgelehnt,
       });
+    }
+  }
 
   Future<List<Kammereintrag>> liste() async {
     final j = await verbindung.hole('api/v1/kammer');

@@ -254,6 +254,113 @@ void main() {
     expect(vollbilder(), hasLength(1));
   });
 
+  group('Serien (#348)', () {
+    Map<String, Object?> serienfoto(int i, int sek, double schaerfe) => {
+      ...eintrag(i),
+      'datum': '2026-11-07T08:00:${sek.toString().padLeft(2, '0')}.000Z',
+      'schaerfe': schaerfe,
+    };
+
+    setUp(() {
+      eintraege = [
+        serienfoto(1, 0, 10),
+        serienfoto(2, 1, 80),
+        serienfoto(3, 2, 30),
+        serienfoto(4, 40, 50),
+      ];
+    });
+
+    Kammereintrag ke(Map<String, Object?> j) => Kammereintrag.aus(j);
+
+    test('kurz nacheinander ist eine Serie, die Lücke trennt', () {
+      final s = kammerserien(eintraege.map(ke).toList());
+      expect(s, hasLength(1));
+      expect(s.single.fotos, hasLength(3));
+      expect(s.single.schaerfstes!.name, 'IMG_142.CR3');
+    });
+
+    test('eine andere Kamera bricht die Serie', () {
+      eintraege[1] = {...eintraege[1], 'modell': 'Andere'};
+      expect(kammerserien(eintraege.map(ke).toList()), isEmpty);
+    });
+
+    test('ohne Messung gibt es kein Schärfstes', () {
+      final s = kammerserien([
+        for (final e in eintraege) ke({...e}..remove('schaerfe')),
+      ]);
+      expect(s.single.schaerfstes, isNull);
+    });
+
+    test('die schärfsten in Aufnahmefolge', () {
+      final s = kammerserien(eintraege.map(ke).toList()).single;
+      expect(s.schaerfste(2).map((f) => f.name), [
+        'IMG_142.CR3',
+        'IMG_143.CR3',
+      ]);
+    });
+
+    testWidgets('die Kachel zeigt die Serie und das Schärfste', (tester) async {
+      await zeige(tester, dienst());
+      expect(find.byIcon(Icons.burst_mode), findsNWidgets(3));
+      expect(find.byIcon(Icons.center_focus_strong), findsOneWidget);
+    });
+
+    testWidgets('Vergleichen geht mit zwei bis vier, der Zoom ist einer', (
+      tester,
+    ) async {
+      await zeige(tester, dienst());
+      final knopf = find.byTooltip('Vergleichen (2 bis 4 auswählen)');
+      IconButton b() => tester.widget<IconButton>(
+        find.ancestor(of: knopf, matching: find.byType(IconButton)).first,
+      );
+      expect(b().onPressed, isNull);
+      await tester.tap(find.byTooltip('Alle auswählen'));
+      await tester.pump();
+      expect(b().onPressed, isNotNull);
+      await tester.tap(knopf);
+      await tester.pumpAndSettle();
+      expect(find.text('4 Fotos im Vergleich'), findsOneWidget);
+      final viewer = tester
+          .widgetList<InteractiveViewer>(find.byType(InteractiveViewer))
+          .toList();
+      expect(viewer, hasLength(4));
+      expect(
+        viewer.map((v) => v.transformationController).toSet(),
+        hasLength(1),
+      );
+      // Beim Zoomen kommt die volle Auflösung für alle.
+      viewer.first.transformationController!.value = Matrix4.identity()
+        ..scaleByDouble(3, 3, 1, 1);
+      await tester.pumpAndSettle();
+      expect(anfragen.where((a) => a.endsWith('/vollbild')), hasLength(4));
+    });
+
+    testWidgets('ausdünnen lehnt alles ausser dem Schärfsten ab', (
+      tester,
+    ) async {
+      eintraege[0] = {...eintraege[0], 'sterne': 3};
+      await zeige(tester, dienst());
+      await tester.tap(find.byTooltip('Serien ausdünnen'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('1 Foto wird'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Serien ausdünnen'));
+      await tester.pumpAndSettle();
+      expect(urteile.single['abgelehnt'], isTrue);
+      expect(urteile.single['ids'], [eintrag(3)['id']]);
+    });
+
+    testWidgets('V vergleicht die Serie des offenen Fotos', (tester) async {
+      await zeige(tester, dienst());
+      final kachel = find.byIcon(Icons.circle_outlined).first;
+      await tester.tap(kachel);
+      await tester.tap(kachel);
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyV);
+      await tester.pumpAndSettle();
+      expect(find.text('3 Fotos im Vergleich'), findsOneWidget);
+    });
+  });
+
   group('Ziel beim Freigeben (#349)', () {
     Future<void> setzeZiel(WidgetTester tester) async {
       await tester.tap(find.byTooltip('Ziel beim Freigeben'));

@@ -10292,6 +10292,45 @@ class AppTexteEn extends AppTexte {
   String get syncUebersicht => 'Changes and conflicts';
 
   @override
+  String get kammerVergleichen => 'Compare (select 2 to 4)';
+
+  @override
+  String get kammerAusduennen => 'Thin out series';
+
+  @override
+  String get kammerAusduennenNichts => 'Nothing left to reject in the series.';
+
+  @override
+  String get kammerSchaerfstes => 'Sharpest of the series';
+
+  @override
+  String kammerAusduennenText(int fotos, int serien) {
+    String _temp0 = intl.Intl.pluralLogic(
+      fotos,
+      locale: localeName,
+      other: '$fotos photos are',
+      one: '1 photo is',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      serien,
+      locale: localeName,
+      other: '$serien series',
+      one: '1 series',
+    );
+    return '$_temp0 marked as rejected in $_temp1. The sharpest of each series stays, and so do photos with stars. Nothing is deleted yet.';
+  }
+
+  @override
+  String kammerSerie(int anzahl) {
+    return 'Series of $anzahl photos';
+  }
+
+  @override
+  String kammerVergleichTitel(int anzahl) {
+    return 'Comparing $anzahl photos';
+  }
+
+  @override
   String kammerWartet(int anzahl, int tage) {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,
@@ -10631,7 +10670,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kammerSichtenTasten =>
-      '1 to 5: stars · 0: no stars · X: reject and continue · U: undo reject';
+      '1 to 5: stars · 0: no stars · X: reject and continue · U: undo reject · V: compare series';
 
   @override
   String kammerAbschliessenText(int weg, int rest) {

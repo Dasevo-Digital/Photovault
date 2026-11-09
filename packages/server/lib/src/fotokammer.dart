@@ -1,7 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:image/image.dart' as img;
+import 'package:kern/services/blur_detection.dart';
+import 'package:kern/services/bild_lesen.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/berechne.dart';
 import 'package:kern/protokoll.dart';
@@ -17,6 +21,25 @@ import 'bibliotheken.dart';
 import 'anmeldung_api.dart';
 import 'dateiantwort.dart';
 import 'vollbild.dart';
+
+/// Die Schärfe einer Vorschau (#348), isolate-tauglich. Nur die Bildmitte:
+/// Dort steht meist das Motiv, und eine Serie unterscheidet sich darin, ob es
+/// sitzt, nicht ob der Hintergrund Struktur hat. Durch den Ausschnitt rechnet
+/// [computeBlurScore] zudem mit doppelt so vielen Bildpunkten vom Motiv.
+double? schaerfeDerVorschau(Uint8List bytes) {
+  final bild = decodeImageBytes(bytes);
+  if (bild == null) return null;
+  final b = (bild.width * 0.6).round(), h = (bild.height * 0.6).round();
+  return computeBlurScore(
+    img.copyCrop(
+      bild,
+      x: (bild.width - b) ~/ 2,
+      y: (bild.height - h) ~/ 2,
+      width: b,
+      height: h,
+    ),
+  );
+}
 
 /// Wohin Fotos beim Freigeben kommen (#349): wer 55 Bilder eines Spiels
 /// sichtet, will die zehn guten nicht danach noch einsammeln.
@@ -111,6 +134,7 @@ class Fotokammer {
   File miniatur(String id) => File(p.join(_platz(id).path, 'miniatur.jpg'));
   File vorschau(String id) => File(p.join(_platz(id).path, 'vorschau.jpg'));
   File _sichtung(String id) => File(p.join(_platz(id).path, 'sichtung.json'));
+  File _schaerfe(String id) => File(p.join(_platz(id).path, 'schaerfe.txt'));
 
   static bool gueltig(String id) => _kennungMuster.hasMatch(id);
 
@@ -119,6 +143,7 @@ class Fotokammer {
     'vorschau.jpg',
     'angaben.json',
     'sichtung.json',
+    'schaerfe.txt',
     'vollbild',
   };
 
@@ -149,7 +174,7 @@ class Fotokammer {
     if (await b.kennungFuer(a.pruefsumme) case final schon?) {
       return {'ausgang': 'duplicateSkipped', 'aufnahme': schon};
     }
-    for (final e in await liste()) {
+    for (final e in await _alleAngaben()) {
       if (e['sha256'] == a.pruefsumme) {
         return {'ausgang': 'duplicateSkipped', 'kammer': e['id']};
       }
@@ -163,6 +188,7 @@ class Fotokammer {
         File(p.join(platz.path, _platzName(p.basename(datei.path)))),
       );
       final (breite, hoehe) = await _bilder(ziel, id, istBild: a.istBild);
+      if (breite != null) await _misseSchaerfe(id);
       if (beilage != null && (beilage.sterne != null || beilage.abgelehnt)) {
         await _sichtung(id).writeAsString(
           jsonEncode({
@@ -451,8 +477,9 @@ class Fotokammer {
   Directory vollbildOrdner(String id) =>
       Directory(p.join(_platz(id).path, 'vollbild'));
 
-  /// Alle vollständigen Einträge, nach Aufnahmedatum.
-  Future<List<Map<String, Object?>>> liste() async {
+  /// Die Angaben aller vollständigen Einträge, ungeordnet. Liest je Eintrag
+  /// nur eine Datei: Das läuft bei jedem Upload.
+  Future<List<Map<String, Object?>>> _alleAngaben() async {
     if (!await ordner.exists()) return [];
     final r = <Map<String, Object?>>[];
     await for (final e in ordner.list(followLinks: false)) {
@@ -460,21 +487,67 @@ class Fotokammer {
       final f = File(p.join(e.path, 'angaben.json'));
       try {
         final j = jsonDecode(await f.readAsString());
-        if (j is Map) {
-          r.add({
-            ...j.cast<String, Object?>(),
-            ...await _sichtungVon(p.basename(e.path)),
-          });
-        }
+        if (j is Map) r.add(j.cast<String, Object?>());
       } on Object {
         // Noch nicht fertig oder kaputt: kein Eintrag.
       }
+    }
+    return r;
+  }
+
+  /// Alle vollständigen Einträge mit dem Urteil und der Schärfe, nach
+  /// Aufnahmedatum.
+  Future<List<Map<String, Object?>>> liste() async {
+    final r = <Map<String, Object?>>[];
+    final ohneSchaerfe = <String>[];
+    for (final j in await _alleAngaben()) {
+      final id = j['id']! as String;
+      final schaerfe = await _schaerfeVon(id);
+      if (schaerfe == null && j['breite'] != null) ohneSchaerfe.add(id);
+      r.add({...j, ...await _sichtungVon(id), 'schaerfe': ?schaerfe});
     }
     r.sort(
       (x, y) =>
           '${x['datum']}${x['name']}'.compareTo('${y['datum']}${y['name']}'),
     );
+    if (ohneSchaerfe.isNotEmpty) unawaited(_messeNach(ohneSchaerfe));
     return r;
+  }
+
+  Future<double?> _schaerfeVon(String id) async {
+    try {
+      return double.tryParse(await _schaerfe(id).readAsString());
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<void> _misseSchaerfe(String id) async {
+    try {
+      final s = await berechne(
+        schaerfeDerVorschau,
+        await vorschau(id).readAsBytes(),
+      );
+      if (s != null) await _schaerfe(id).writeAsString('$s', flush: true);
+    } on Object catch (e) {
+      protokoll('Fotokammer: Schärfe von $id nicht gemessen: $e');
+    }
+  }
+
+  var _misstNach = false;
+
+  /// Einträge von vor der Messung (#348), einer nach dem anderen und ohne
+  /// dass jemand darauf wartet.
+  Future<void> _messeNach(List<String> ids) async {
+    if (_misstNach) return;
+    _misstNach = true;
+    try {
+      for (final id in ids) {
+        if (await vorschau(id).exists()) await _misseSchaerfe(id);
+      }
+    } finally {
+      _misstNach = false;
+    }
   }
 
   Future<Map<String, Object?>?> eintrag(String id) async {

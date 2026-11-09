@@ -10348,6 +10348,46 @@ class AppTexteDe extends AppTexte {
   String get syncUebersicht => 'Änderungen und Konflikte';
 
   @override
+  String get kammerVergleichen => 'Vergleichen (2 bis 4 auswählen)';
+
+  @override
+  String get kammerAusduennen => 'Serien ausdünnen';
+
+  @override
+  String get kammerAusduennenNichts =>
+      'In den Serien gibt es nichts mehr abzulehnen.';
+
+  @override
+  String get kammerSchaerfstes => 'Schärfstes der Serie';
+
+  @override
+  String kammerAusduennenText(int fotos, int serien) {
+    String _temp0 = intl.Intl.pluralLogic(
+      fotos,
+      locale: localeName,
+      other: '$fotos Fotos werden',
+      one: '1 Foto wird',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      serien,
+      locale: localeName,
+      other: '$serien Serien',
+      one: '1 Serie',
+    );
+    return '$_temp0 in $_temp1 als abgelehnt markiert. Das schärfste jeder Serie bleibt, Fotos mit Sternen auch. Weg ist noch nichts.';
+  }
+
+  @override
+  String kammerSerie(int anzahl) {
+    return 'Serie mit $anzahl Fotos';
+  }
+
+  @override
+  String kammerVergleichTitel(int anzahl) {
+    return '$anzahl Fotos im Vergleich';
+  }
+
+  @override
   String kammerWartet(int anzahl, int tage) {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,
@@ -10689,7 +10729,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kammerSichtenTasten =>
-      '1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen';
+      '1 bis 5: Sterne · 0: keine Sterne · X: ablehnen und weiter · U: Ablehnung zurücknehmen · V: Serie vergleichen';
 
   @override
   String kammerAbschliessenText(int weg, int rest) {

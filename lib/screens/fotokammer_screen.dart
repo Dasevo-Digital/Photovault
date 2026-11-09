@@ -113,6 +113,14 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
   /// Ob er beim Freigeben ein Ziel annimmt (#349).
   var _mitZiel = false;
 
+  /// Die Serie jedes Fotos, das in einer liegt (#348).
+  Map<String, Kammerserie> get _serieVon => {
+    for (final s in _serien)
+      for (final f in s.fotos) f.id: s,
+  };
+
+  List<Kammerserie> get _serien => kammerserien(_eintraege);
+
   /// Gilt für das nächste Freigeben. Danach ist es wieder leer, sonst
   /// landete die nächste Serie unbemerkt im selben Album.
   Kammerziel? _ziel;
@@ -327,6 +335,69 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     }
   }
 
+  Future<void> _vergleiche(List<Kammereintrag> fotos) async {
+    final d = _dienst;
+    if (d == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _Kammervergleich(
+          dienst: d,
+          fotos: fotos,
+          eintraege: _eintraege,
+          sichten: _sichten,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  /// Lehnt in jeder Serie alles ab ausser dem Schärfsten (#348). Nur ein
+  /// Vormerken: Weg ist noch nichts, und Fotos mit Sternen bleiben.
+  Future<void> _duenneAus() async {
+    final d = _dienst;
+    if (d == null) return;
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final mitGemessenen = [
+      for (final s in _serien)
+        if (s.schaerfstes != null) s,
+    ];
+    final ids = [
+      for (final s in mitGemessenen)
+        for (final f in s.fotos)
+          if (f.id != s.schaerfstes!.id && f.sterne == 0 && !f.abgelehnt) f.id,
+    ];
+    if (ids.isEmpty) {
+      bote.showSnackBar(SnackBar(content: Text(t.kammerAusduennenNichts)));
+      return;
+    }
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.kammerAusduennen),
+        content: Text(t.kammerAusduennenText(ids.length, mitGemessenen.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(t.kammerAusduennen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    try {
+      await d.sichten(ids, abgelehnt: true);
+    } on Object catch (e) {
+      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+    }
+    await _lade();
+  }
+
   Future<void> _zielWaehlen() async {
     final alben = await widget.alben?.call() ?? const <String>[];
     if (!mounted) return;
@@ -358,6 +429,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
           auswahl: _auswahl,
           umschalten: _umschalten,
           sichten: _sichten,
+          serieVon: _serieVon,
         ),
       ),
     );
@@ -436,6 +508,22 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
               icon: const Icon(Icons.flip),
             ),
             const SizedBox(width: AppSpacing.sm),
+            IconButton(
+              tooltip: t.kammerVergleichen,
+              onPressed: frei && _auswahl.length >= 2 && _auswahl.length <= 4
+                  ? () => _vergleiche([
+                      for (final e in _eintraege)
+                        if (_auswahl.contains(e.id)) e,
+                    ])
+                  : null,
+              icon: const Icon(Icons.compare),
+            ),
+            if (_sichten && _serien.any((s) => s.schaerfstes != null))
+              IconButton(
+                tooltip: t.kammerAusduennen,
+                onPressed: frei ? _duenneAus : null,
+                icon: const Icon(Icons.burst_mode_outlined),
+              ),
             if (_mitZiel)
               IconButton(
                 tooltip: t.kammerZiel,
@@ -514,10 +602,13 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       itemCount: _eintraege.length,
       itemBuilder: (context, i) {
         final e = _eintraege[i];
+        final serie = _serieVon[e.id];
         return _Kachel(
           key: ValueKey(e.id),
           eintrag: e,
           dienst: _dienst!,
+          serie: serie?.fotos.length,
+          schaerfstes: serie?.schaerfstes?.id == e.id,
           gewaehlt: _auswahl.contains(e.id),
           antippen: () => _umschalten(e.id),
           oeffnen: () => _oeffne(i),
@@ -670,9 +761,15 @@ class _Kachel extends StatefulWidget {
     required this.gewaehlt,
     required this.antippen,
     required this.oeffnen,
+    this.serie,
+    this.schaerfstes = false,
   });
   final Kammereintrag eintrag;
   final Fotokammerdienst dienst;
+
+  /// Wie viele Fotos die Serie hat, in der dieses liegt.
+  final int? serie;
+  final bool schaerfstes;
   final bool gewaehlt;
   final VoidCallback antippen;
   final VoidCallback oeffnen;
@@ -741,6 +838,12 @@ class _KachelState extends State<_Kachel> {
                 ),
               ),
             ),
+            if (widget.serie case final n?)
+              Positioned(
+                left: 4,
+                bottom: 4,
+                child: _Serienmarke(anzahl: n, schaerfstes: widget.schaerfstes),
+              ),
             if (widget.eintrag.istVideo)
               const Positioned(
                 left: 6,
@@ -781,6 +884,321 @@ class _KachelState extends State<_Kachel> {
   }
 }
 
+/// Die Serie in der Ecke der Kachel: wie viele Fotos, und ob dieses das
+/// schärfste ist.
+class _Serienmarke extends StatelessWidget {
+  const _Serienmarke({required this.anzahl, required this.schaerfstes});
+  final int anzahl;
+  final bool schaerfstes;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    return Tooltip(
+      message: schaerfstes ? t.kammerSchaerfstes : t.kammerSerie(anzahl),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.black54,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.burst_mode, size: 13, color: Colors.white),
+              const SizedBox(width: 2),
+              Text(
+                '$anzahl',
+                style: const TextStyle(color: Colors.white, fontSize: 11),
+              ),
+              if (schaerfstes) ...[
+                const SizedBox(width: 3),
+                const Icon(
+                  Icons.center_focus_strong,
+                  size: 13,
+                  color: Colors.amber,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Merkt ein Urteil: zeigt es sofort und speichert es am Server. Scheitert
+/// das, gilt wieder das alte.
+mixin _Urteil<T extends StatefulWidget> on State<T> {
+  Fotokammerdienst get _urteilsdienst;
+  List<Kammereintrag> get _urteilsliste;
+
+  Future<void> _urteile(Kammereintrag e, {int? sterne, bool? abgelehnt}) async {
+    final i = _urteilsliste.indexWhere((x) => x.id == e.id);
+    if (i < 0) return;
+    final bote = ScaffoldMessenger.of(context);
+    final t = AppTexte.of(context);
+    setState(() {
+      _urteilsliste[i] = e.mit(sterne: sterne, abgelehnt: abgelehnt);
+    });
+    try {
+      await _urteilsdienst.sichten(
+        [e.id],
+        sterne: sterne,
+        abgelehnt: abgelehnt,
+      );
+    } on Object catch (x) {
+      if (mounted) setState(() => _urteilsliste[i] = e);
+      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$x'))));
+    }
+  }
+}
+
+/// Zwei bis vier Fotos nebeneinander (#348), alle mit demselben Zoom: Wer
+/// bei einem auf das Auge geht, sieht es bei allen. Die Pfeile wechseln das
+/// Foto, auf das die Tasten wirken.
+class _Kammervergleich extends StatefulWidget {
+  const _Kammervergleich({
+    required this.dienst,
+    required this.fotos,
+    required this.eintraege,
+    required this.sichten,
+  });
+
+  final Fotokammerdienst dienst;
+  final List<Kammereintrag> fotos;
+  final List<Kammereintrag> eintraege;
+  final bool sichten;
+
+  @override
+  State<_Kammervergleich> createState() => _KammervergleichState();
+}
+
+class _KammervergleichState extends State<_Kammervergleich>
+    with _Urteil<_Kammervergleich> {
+  @override
+  Fotokammerdienst get _urteilsdienst => widget.dienst;
+
+  @override
+  List<Kammereintrag> get _urteilsliste => widget.eintraege;
+
+  final _zoom = TransformationController();
+  final _fokus = FocusNode();
+  final _voll = <String, Uint8List>{};
+  late final _vorschauen = {
+    for (final f in widget.fotos)
+      f.id: f.hatBild
+          ? widget.dienst.bild(f.id, klein: false)
+          : Future<Uint8List?>.value(),
+  };
+  var _gewaehlt = 0;
+  var _vollGeholt = false;
+
+  /// Der aktuelle Stand eines Fotos: Das Urteil ändert sich hier.
+  Kammereintrag _stand(Kammereintrag f) =>
+      widget.eintraege.firstWhere((e) => e.id == f.id, orElse: () => f);
+
+  @override
+  void initState() {
+    super.initState();
+    _zoom.addListener(_zoomGeaendert);
+  }
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    _fokus.dispose();
+    super.dispose();
+  }
+
+  void _zoomGeaendert() {
+    if (_vollGeholt || _zoom.value.getMaxScaleOnAxis() <= 1.05) return;
+    _vollGeholt = true;
+    for (final f in widget.fotos) {
+      if (f.hatBild) _holeVollbild(f.id);
+    }
+  }
+
+  Future<void> _holeVollbild(String id) async {
+    try {
+      final b = await widget.dienst.vollbild(id);
+      if (b != null && mounted) setState(() => _voll[id] = b);
+    } on Object {
+      // Die Vorschau steht ja da.
+    }
+  }
+
+  void _gehe(int schritt) => setState(() {
+    final n = widget.fotos.length;
+    _gewaehlt = (_gewaehlt + schritt + n) % n;
+  });
+
+  void _sterne(int n) {
+    final e = _stand(widget.fotos[_gewaehlt]);
+    _urteile(e, sterne: e.sterne == n ? 0 : n, abgelehnt: false);
+  }
+
+  void _ablehnen() {
+    final e = _stand(widget.fotos[_gewaehlt]);
+    final jetzt = !e.abgelehnt;
+    _urteile(e, abgelehnt: jetzt, sterne: jetzt ? 0 : null);
+  }
+
+  Widget _spalte(AppTexte t, int i) {
+    final f = _stand(widget.fotos[i]);
+    final gewaehlt = i == _gewaehlt;
+    final beste = widget.fotos
+        .map(_stand)
+        .where((x) => x.schaerfe != null)
+        .fold<Kammereintrag?>(
+          null,
+          (a, b) => a == null || b.schaerfe! > a.schaerfe! ? b : a,
+        );
+    return GestureDetector(
+      onTap: () => setState(() => _gewaehlt = i),
+      child: Container(
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: gewaehlt ? Colors.white : Colors.white12,
+            width: gewaehlt ? 2 : 1,
+          ),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            FutureBuilder<Uint8List?>(
+              future: _vorschauen[f.id],
+              builder: (context, s) => switch (_voll[f.id] ?? s.data) {
+                final b? => ClipRect(
+                  child: InteractiveViewer(
+                    transformationController: _zoom,
+                    maxScale: 8,
+                    child: SizedBox.expand(
+                      child: Opacity(
+                        opacity: f.abgelehnt ? 0.45 : 1,
+                        child: Image.memory(
+                          b,
+                          fit: BoxFit.contain,
+                          gaplessPlayback: true,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                _ => const Center(child: CircularProgressIndicator()),
+              },
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ColoredBox(
+                color: Colors.black54,
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xs),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          f.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      if (beste?.id == f.id)
+                        Tooltip(
+                          message: t.kammerSchaerfstes,
+                          child: const Icon(
+                            Icons.center_focus_strong,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
+                        ),
+                      if (f.abgelehnt)
+                        const Icon(
+                          Icons.block,
+                          size: 16,
+                          color: Colors.redAccent,
+                        ),
+                      if (f.sterne > 0) StarRating(value: f.sterne, size: 12),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final n = widget.fotos.length;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () => _gehe(1),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () => _gehe(-1),
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            Navigator.of(context).pop(),
+        if (widget.sichten) ...{
+          for (final (w, taste) in const [
+            (0, LogicalKeyboardKey.digit0),
+            (1, LogicalKeyboardKey.digit1),
+            (2, LogicalKeyboardKey.digit2),
+            (3, LogicalKeyboardKey.digit3),
+            (4, LogicalKeyboardKey.digit4),
+            (5, LogicalKeyboardKey.digit5),
+          ])
+            SingleActivator(taste): () => _sterne(w),
+          const SingleActivator(LogicalKeyboardKey.keyX): _ablehnen,
+        },
+      },
+      child: Focus(
+        focusNode: _fokus,
+        autofocus: true,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            title: Text(t.kammerVergleichTitel(n)),
+          ),
+          body: n == 4
+              ? Column(
+                  children: [
+                    for (final zeile in const [
+                      [0, 1],
+                      [2, 3],
+                    ])
+                      Expanded(
+                        child: Row(
+                          children: [
+                            for (final i in zeile)
+                              Expanded(child: _spalte(t, i)),
+                          ],
+                        ),
+                      ),
+                  ],
+                )
+              : Row(
+                  children: [
+                    for (var i = 0; i < n; i++) Expanded(child: _spalte(t, i)),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Ein Foto gross: Pfeiltasten blättern, die Leertaste wählt aus, Esc
 /// schliesst. Dazu das Sichten: 1 bis 5 Sterne, X lehnt ab und geht weiter,
 /// U nimmt die Ablehnung zurück.
@@ -792,6 +1210,7 @@ class _Kammerbetrachter extends StatefulWidget {
     required this.auswahl,
     required this.umschalten,
     this.sichten = false,
+    this.serieVon = const {},
   });
   final Fotokammerdienst dienst;
   final List<Kammereintrag> eintraege;
@@ -799,12 +1218,20 @@ class _Kammerbetrachter extends StatefulWidget {
   final Set<String> auswahl;
   final void Function(String id) umschalten;
   final bool sichten;
+  final Map<String, Kammerserie> serieVon;
 
   @override
   State<_Kammerbetrachter> createState() => _KammerbetrachterState();
 }
 
-class _KammerbetrachterState extends State<_Kammerbetrachter> {
+class _KammerbetrachterState extends State<_Kammerbetrachter>
+    with _Urteil<_Kammerbetrachter> {
+  @override
+  Fotokammerdienst get _urteilsdienst => widget.dienst;
+
+  @override
+  List<Kammereintrag> get _urteilsliste => widget.eintraege;
+
   late var _i = widget.start;
   final _fokus = FocusNode();
   final _zoom = TransformationController();
@@ -867,22 +1294,22 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
     super.dispose();
   }
 
-  /// Zeigt das Urteil sofort und merkt es am Server; scheitert das, gilt
-  /// wieder das alte.
-  Future<void> _urteile(Kammereintrag e, {int? sterne, bool? abgelehnt}) async {
-    final i = widget.eintraege.indexWhere((x) => x.id == e.id);
-    if (i < 0) return;
-    final bote = ScaffoldMessenger.of(context);
-    final t = AppTexte.of(context);
-    setState(() {
-      widget.eintraege[i] = e.mit(sterne: sterne, abgelehnt: abgelehnt);
-    });
-    try {
-      await widget.dienst.sichten([e.id], sterne: sterne, abgelehnt: abgelehnt);
-    } on Object catch (x) {
-      if (mounted) setState(() => widget.eintraege[i] = e);
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$x'))));
-    }
+  /// Die Serie des Fotos nebeneinander, höchstens ihre vier schärfsten.
+  Future<void> _serieVergleichen(Kammereintrag e) async {
+    final serie = widget.serieVon[e.id];
+    if (serie == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (_) => _Kammervergleich(
+          dienst: widget.dienst,
+          fotos: serie.schaerfste(4),
+          eintraege: widget.eintraege,
+          sichten: widget.sichten,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   /// Sterne heben eine Ablehnung auf; dieselbe Zahl noch einmal löscht sie.
@@ -938,6 +1365,8 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
             if (e.abgelehnt) _urteile(e, abgelehnt: false);
           },
         },
+        const SingleActivator(LogicalKeyboardKey.keyV): () =>
+            _serieVergleichen(e),
       },
       child: Focus(
         focusNode: _fokus,
