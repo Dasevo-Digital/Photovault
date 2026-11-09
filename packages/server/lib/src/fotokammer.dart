@@ -153,7 +153,11 @@ class Fotokammer {
       return {'ausgang': 'kammer', 'kammer': id};
     } on Object catch (e) {
       await platz.delete(recursive: true);
-      return {'ausgang': 'failed', 'fehler': '$e'};
+      return {
+        'ausgang': 'failed',
+        'fehler': '$e',
+        if (importFehlerVoruebergehend(e)) 'voruebergehend': true,
+      };
     }
   }
 

@@ -629,7 +629,7 @@ Handler baueApi({
   return const Pipeline()
       .addMiddleware(packen)
       .addMiddleware(_sicherheitskoepfe)
-      .addMiddleware(anfragegrenzen())
+      .addMiddleware(anfragegrenzen(absender: von.von))
       .addMiddleware(
         anmeldungNoetig(
           konten,

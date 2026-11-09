@@ -61,6 +61,87 @@ void main() {
       expect(r.headers['connection'], 'close');
     },
   );
+  group('je Absender (#316)', () {
+    Handler mitAbsender(Completer<void> halten, {int insgesamt = 128}) =>
+        anfragegrenzen(
+          gleichzeitig: 2,
+          insgesamt: insgesamt,
+          absender: (r) => r.headers['x-von'] ?? '',
+        )((r) async {
+          await halten.future;
+          return Response.ok('');
+        });
+    Request von(String wer) => Request(
+      'POST',
+      Uri.parse('http://localhost/api/v1/x'),
+      body: 'a',
+      headers: {'x-von': wer},
+    );
+
+    test('einer an der Grenze hält den anderen nicht auf', () async {
+      final halten = Completer<void>();
+      final h = mitAbsender(halten);
+      final laufend = [Future.value(h(von('a'))), Future.value(h(von('a')))];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect((await h(von('a'))).statusCode, 503);
+      final andere = h(von('b'));
+      halten.complete();
+      expect((await andere).statusCode, 200);
+      await Future.wait(laufend);
+    });
+
+    test('der Deckel gilt für alle zusammen', () async {
+      final halten = Completer<void>();
+      final h = mitAbsender(halten, insgesamt: 2);
+      final laufend = [Future.value(h(von('a'))), Future.value(h(von('b')))];
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect((await h(von('c'))).statusCode, 503);
+      halten.complete();
+      await Future.wait(laufend);
+    });
+
+    test('nach dem Ende ist der Platz wieder frei', () async {
+      final halten = Completer<void>()..complete();
+      final h = mitAbsender(halten);
+      for (var i = 0; i < 5; i++) {
+        expect((await h(von('a'))).statusCode, 200);
+      }
+    });
+  });
+
+  group('Frist je Fortschritt (#316)', () {
+    Handler api2(Duration frist, Duration ganz) => anfragegrenzen(
+      frist: frist,
+      gesamtfrist: ganz,
+      jsonBytes: 1024,
+    )((r) async => Response.ok(await r.readAsString()));
+    Stream<List<int>> troepfelt(int n, Duration abstand) async* {
+      for (var i = 0; i < n; i++) {
+        await Future<void>.delayed(abstand);
+        yield [97];
+      }
+    }
+
+    Request an(Stream<List<int>> s) =>
+        Request('POST', Uri.parse('http://localhost/api/v1/x'), body: s);
+
+    test('wer stetig liefert, darf länger brauchen als die Frist', () async {
+      final r = await api2(
+        const Duration(milliseconds: 60),
+        const Duration(seconds: 5),
+      )(an(troepfelt(6, const Duration(milliseconds: 25))));
+      expect(r.statusCode, 200);
+    });
+
+    test('wer ewig tröpfelt, scheitert an der Gesamtfrist', () async {
+      final r = await api2(
+        const Duration(milliseconds: 80),
+        const Duration(milliseconds: 150),
+      )(an(troepfelt(40, const Duration(milliseconds: 25))));
+      expect(r.statusCode, 408);
+    });
+  });
+
   test('Gesamtfrist beendet auch einen nie abgeschlossenen Körper', () async {
     final controller = StreamController<List<int>>();
     final r = await api(frist: const Duration(milliseconds: 30))(

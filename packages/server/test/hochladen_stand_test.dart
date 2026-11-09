@@ -85,4 +85,49 @@ void main() {
       expect((await patch).headers['pv-ausgang'], 'imported');
     },
   );
+
+  test('ein vorübergehender Importfehler heisst 503, und der Stand ist fort '
+      '(#316)', () async {
+    final h = Hochladen(
+      Directory(p.join(ordner.path, 'eingang')),
+      null,
+      abschluss: (_, _) async => {
+        'ausgang': 'failed',
+        'fehler': 'Platte voll',
+        'voruebergehend': true,
+      },
+    );
+    const tus = {'tus-resumable': '1.0.0'};
+    final angelegt = await h.anlegen(
+      Request(
+        'POST',
+        Uri.parse('http://s/api/v1/hochladen'),
+        headers: {
+          ...tus,
+          'upload-length': '3',
+          'upload-metadata': 'pfad ${base64.encode(utf8.encode('a/b.jpg'))}',
+        },
+      ),
+    );
+    final id = p.basename(angelegt.headers['location']!);
+    final r = await h.anhaengen(
+      Request(
+        'PATCH',
+        Uri.parse('http://s/api/v1/hochladen/$id'),
+        headers: {
+          ...tus,
+          'content-type': 'application/offset+octet-stream',
+          'upload-offset': '0',
+        },
+        body: [1, 2, 3],
+      ),
+      id,
+    );
+    expect(r.statusCode, 503);
+    final kopf = await h.stand(
+      Request('HEAD', Uri.parse('http://s/api/v1/hochladen/$id'), headers: tus),
+      id,
+    );
+    expect(kopf.statusCode, 404);
+  });
 }

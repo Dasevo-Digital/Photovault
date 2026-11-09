@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -150,7 +152,31 @@ class ImportResult {
   final ImportOutcome outcome;
   final String? error;
   final String? assetId;
-  ImportResult(this.filePath, this.outcome, {this.error, this.assetId});
+
+  /// Ob derselbe Import später gelingen kann (#316), siehe
+  /// [importFehlerVoruebergehend].
+  final bool voruebergehend;
+  ImportResult(
+    this.filePath,
+    this.outcome, {
+    this.error,
+    this.assetId,
+    this.voruebergehend = false,
+  });
+}
+
+/// Ob ein neuer Versuch mit derselben Datei Aussicht hat: eine Platte, die
+/// gerade voll oder nicht erreichbar ist, eine beschäftigte Datenbank, ein
+/// Werkzeug, das nicht rechtzeitig fertig wurde. Eine Datei, die sich nicht
+/// lesen lässt (`FormatException`), scheitert beim zweiten Mal genauso.
+bool importFehlerVoruebergehend(Object e) {
+  if (e is FileSystemException || e is TimeoutException) return true;
+  if (e is SqliteException) {
+    // SQLITE_BUSY, LOCKED, IOERR und FULL; die Grundcodes stehen im
+    // unteren Byte.
+    return const {5, 6, 10, 13}.contains(e.resultCode & 0xff);
+  }
+  return false;
 }
 
 /// Ergebnis der Thumbnail-/Vorschau-Erzeugung für ein einzelnes Bild bzw.
@@ -404,7 +430,12 @@ class ImportService {
           await _db.checksumExists(pruefsumme)) {
         return ImportResult(filePath, ImportOutcome.duplicateSkipped);
       }
-      return ImportResult(filePath, ImportOutcome.failed, error: e.toString());
+      return ImportResult(
+        filePath,
+        ImportOutcome.failed,
+        error: e.toString(),
+        voruebergehend: importFehlerVoruebergehend(e),
+      );
     }
   }
 

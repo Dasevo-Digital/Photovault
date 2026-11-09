@@ -253,6 +253,9 @@ class Hochladen {
       // Wann das Telefon liefert, bestimmt das System; ohne diese Spur liesse
       // sich auf dem Server nicht sehen, ob überhaupt etwas ankommt.
       protokoll('Sofortsicherung: ${ergebnis['ausgang']}');
+      if (ergebnis['voruebergehend'] == true) {
+        return _antwort(503, {'fehler': ergebnis['fehler']});
+      }
       if (ergebnis['ausgang'] == 'failed') {
         return _antwort(422, {'fehler': ergebnis['fehler']});
       }
@@ -390,6 +393,17 @@ class Hochladen {
       ergebnis = fertig == null
           ? await _importiere(id, a)
           : await fertig(_teil(id), a);
+      // Beim nächsten Versuch kann es klappen (#316). Als „failed“ gälte das
+      // Foto auf dem Rechner als endgültig gescheitert. Die Datei ist fort,
+      // darum zählt auch der Stand nicht mehr: Der Client fängt neu an.
+      if (ergebnis['voruebergehend'] == true) {
+        await _loesche(id);
+        return Response(
+          503,
+          body: 'pv_import_voruebergehend',
+          headers: {..._tus, 'retry-after': '5'},
+        );
+      }
       await _schreib(id, {...a, 'ergebnis': ergebnis});
     } finally {
       _importierend.remove(id);
@@ -511,7 +525,12 @@ class Hochladen {
     if (r.outcome == ImportOutcome.failed) {
       protokoll('Import von ${a['name']} gescheitert: ${r.error}');
     }
-    return {'ausgang': r.outcome.name, 'aufnahme': aufnahme, 'fehler': r.error};
+    return {
+      'ausgang': r.outcome.name,
+      'aufnahme': aufnahme,
+      'fehler': r.error,
+      if (r.voruebergehend) 'voruebergehend': true,
+    };
   }
 
   /// Ein Standbild aus einem Video trägt Zeit, Ort und Kamera des Videos
