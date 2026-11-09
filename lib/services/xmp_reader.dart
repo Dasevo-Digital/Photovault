@@ -184,7 +184,11 @@ XmpFields? parseXmpContent(String xmlContent) {
       : null;
 
   final labelRaw = findAttribute('xmp:Label');
-  final colorLabel = labelRaw != null ? _internalColorLabel(labelRaw) : null;
+  // darktable schreibt seine Farbmarken in ein eigenes Feld (#357) und lässt
+  // ein älteres xmp:Label dabei stehen. Darum zählt seines zuerst.
+  final colorLabel =
+      _darktableFarbe(doc) ??
+      (labelRaw != null ? _internalColorLabel(labelRaw) : null);
 
   final latRaw = findAttribute('exif:GPSLatitude');
   final lngRaw = findAttribute('exif:GPSLongitude');
@@ -225,6 +229,19 @@ XmpFields? parseXmpContent(String xmlContent) {
     gesichter: _regionen(doc),
   );
   return fields.isEmpty ? null : fields;
+}
+
+/// Die erste Farbmarke aus `darktable:colorlabels`. darktable erlaubt mehrere
+/// je Foto, hier gibt es eine. Die Zahlen sind seine Reihenfolge.
+String? _darktableFarbe(XmlDocument doc) {
+  const farben = ['red', 'yellow', 'green', 'blue', 'purple'];
+  for (final e in doc.findAllElements('darktable:colorlabels')) {
+    for (final li in e.findAllElements('rdf:li')) {
+      final i = int.tryParse(li.innerText.trim());
+      if (i != null && i >= 0 && i < farben.length) return farben[i];
+    }
+  }
+  return null;
 }
 
 /// Was darktable sich selbst anheftet (`darktable|format|cr3`,

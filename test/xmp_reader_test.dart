@@ -150,6 +150,41 @@ void main() {
     expect(parseXmpContent(xmp)!.tags, ['Fluss']);
   });
 
+  group('Farbmarken von darktable (#357)', () {
+    String paket(String innen, {String attribute = ''}) =>
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF '
+        'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+        '<rdf:Description xmlns:xmp="http://ns.adobe.com/xap/1.0/" '
+        'xmlns:darktable="http://darktable.sf.net/" $attribute>'
+        '$innen</rdf:Description></rdf:RDF></x:xmpmeta>';
+    String seq(List<int> w) =>
+        '<darktable:colorlabels><rdf:Seq>'
+        '${w.map((i) => '<rdf:li>$i</rdf:li>').join()}'
+        '</rdf:Seq></darktable:colorlabels>';
+
+    test('jede Zahl ist ihre Farbe', () {
+      const farben = ['red', 'yellow', 'green', 'blue', 'purple'];
+      for (var i = 0; i < 5; i++) {
+        expect(parseXmpContent(paket(seq([i])))!.colorLabel, farben[i]);
+      }
+    });
+
+    test('von mehreren die erste, unbekannte Zahlen zählen nicht', () {
+      expect(parseXmpContent(paket(seq([3, 0])))!.colorLabel, 'blue');
+      expect(parseXmpContent(paket(seq([9, 2])))!.colorLabel, 'green');
+    });
+
+    test('sie geht einem stehengebliebenen xmp:Label vor', () {
+      final f = parseXmpContent(paket(seq([2]), attribute: 'xmp:Label="Red"'))!;
+      expect(f.colorLabel, 'green');
+    });
+
+    test('ohne sie gilt xmp:Label', () {
+      final f = parseXmpContent(paket(seq([]), attribute: 'xmp:Label="Red"'))!;
+      expect(f.colorLabel, 'red');
+    });
+  });
+
   group('Beilage unter zwei Namen (#343)', () {
     late Directory ordner;
     setUp(() => ordner = Directory.systemTemp.createTempSync('pv_xmp_'));
