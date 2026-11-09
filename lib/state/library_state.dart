@@ -1336,6 +1336,9 @@ class LibraryState extends ChangeNotifier {
         debugPrint('Hochladen von $filePath fehlgeschlagen: $e');
       }
       done++;
+      if (ausgang == 'imported' && aufnahme != null) {
+        unawaited(_darktableBeilageHochladen(filePath, aufnahme));
+      }
       yield ImportProgress(
         done,
         filePaths.length,
@@ -3267,6 +3270,78 @@ class LibraryState extends ChangeNotifier {
     } finally {
       await ordner.delete(recursive: true);
     }
+  }
+
+  /// Lag neben dem Foto eine darktable-Bearbeitung, soll der Server sie
+  /// rendern (#351). Ein Zusatz: Scheitert es, ist das Foto trotzdem da.
+  Future<void> _darktableBeilageHochladen(String pfad, String aufnahme) async {
+    try {
+      final beilage = neuesteXmpBeilage([
+        File(p.setExtension(pfad, '.xmp')),
+        File('$pfad.xmp'),
+      ]);
+      if (beilage == null || !await darktableAmServer()) return;
+      await entwickleAmServer(aufnahme, beilage);
+    } on Object catch (e) {
+      debugPrint('darktable-Bearbeitung von $pfad nicht übergeben: $e');
+    }
+  }
+
+  /// Ob der verbundene Server darktable-Bearbeitungen rendern kann (#351).
+  Future<bool> darktableAmServer() async {
+    final a = abgleich;
+    if (!verbunden || a == null) return false;
+    try {
+      final z = await a.verbindung.hole('api/v1/zustand');
+      return (z['funktionen'] as Map?)?['darktable'] == 1;
+    } on Object {
+      return false;
+    }
+  }
+
+  /// Übergibt die Bearbeitung in [beilage] an den Server (#351). `false`,
+  /// wenn sie keine darktable-Bearbeitung enthält.
+  Future<bool> entwickleAmServer(String assetId, File beilage) async {
+    final a = abgleich;
+    if (a == null) return false;
+    final bytes = await beilage.readAsBytes();
+    if (!utf8
+        .decode(bytes, allowMalformed: true)
+        .contains('darktable:history')) {
+      return false;
+    }
+    final r = await a.verbindung.anfrage(
+      'PUT',
+      'api/v1/darktable/$assetId',
+      kopf: {'content-type': 'application/rdf+xml'},
+      inhalt: bytes,
+    );
+    if (r.statusCode != 202) throw Serverfehler(r.statusCode, r.body);
+    return true;
+  }
+
+  /// Wartet, bis der Server mit [assetId] fertig ist; `true` bei Erfolg.
+  Future<bool> warteAufServerEntwicklung(
+    String assetId, {
+    Duration abstand = const Duration(seconds: 5),
+    int versuche = 120,
+  }) async {
+    final a = abgleich;
+    if (a == null) return false;
+    for (var i = 0; i < versuche; i++) {
+      await Future<void>.delayed(abstand);
+      final String stand;
+      try {
+        stand =
+            '${(await a.verbindung.hole('api/v1/darktable/$assetId'))['stand']}';
+      } on Object {
+        continue;
+      }
+      if (stand == 'laeuft') continue;
+      await a.empfange();
+      return stand == 'fertig';
+    }
+    return false;
   }
 
   /// Legt [jpeg] aus darktable über [asset] (#347). Sterne und Farbmarke

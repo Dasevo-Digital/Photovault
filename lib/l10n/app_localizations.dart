@@ -15768,6 +15768,24 @@ abstract class AppTexte {
   /// **'Änderungen und Konflikte'**
   String get syncUebersicht;
 
+  /// No description provided for @darktableAmServerLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server rendert die darktable-Bearbeitung.'**
+  String get darktableAmServerLaeuft;
+
+  /// No description provided for @darktableAmServerFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'Die darktable-Bearbeitung ist gerendert.'**
+  String get darktableAmServerFertig;
+
+  /// No description provided for @darktableAmServerFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server konnte die Bearbeitung nicht rendern. Exportiere sie in darktable als JPEG.'**
+  String get darktableAmServerFehler;
+
   /// No description provided for @kammerVergleichen.
   ///
   /// In de, this message translates to:

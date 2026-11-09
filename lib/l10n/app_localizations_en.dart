@@ -10292,6 +10292,17 @@ class AppTexteEn extends AppTexte {
   String get syncUebersicht => 'Changes and conflicts';
 
   @override
+  String get darktableAmServerLaeuft =>
+      'The server is rendering the darktable edit.';
+
+  @override
+  String get darktableAmServerFertig => 'The darktable edit has been rendered.';
+
+  @override
+  String get darktableAmServerFehler =>
+      'The server could not render the edit. Export it from darktable as JPEG.';
+
+  @override
   String get kammerVergleichen => 'Compare (select 2 to 4)';
 
   @override

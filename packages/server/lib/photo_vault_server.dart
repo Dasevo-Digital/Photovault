@@ -9,6 +9,7 @@ export 'src/albumregeln.dart'
 export 'src/api.dart' show baueApi, protokollFassung;
 export 'src/auswertungsdienst.dart' show Auswertungsdienst, Auswertungsstand;
 export 'src/beschleuniger.dart' show Beschleuniger;
+export 'src/darktable.dart' show DarktableEntwickler;
 export 'src/bibliothek.dart' show Bibliothek;
 export 'src/bibliotheken.dart' show Bibliotheken, Kontobereich;
 export 'src/einstellungen.dart' show Einstellungen;

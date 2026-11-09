@@ -589,6 +589,25 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     try {
       final name = asset.originalFileName;
       final jpeg = await _darktable.ergebnis(asset.id, name);
+      // Kein Export, aber bearbeitet: Das Rendern kann der Server (#351).
+      if (jpeg == null &&
+          await library.darktableAmServer() &&
+          await library.entwickleAmServer(
+            asset.id,
+            _darktable.beilage(asset.id, name),
+          )) {
+        melde.hinweis(t.darktableAmServerLaeuft);
+        final ok = await library.warteAufServerEntwicklung(asset.id);
+        if (ok) {
+          await _darktable.schliesse(asset.id);
+          vergissAlleBilder();
+          if (mounted) await _refreshCurrentAsset();
+          melde.erfolg(t.darktableAmServerFertig);
+        } else {
+          melde.fehler(t.darktableAmServerFehler);
+        }
+        return;
+      }
       if (jpeg == null) {
         await revealInFileManager(_darktable.ordner(asset.id).path);
         melde.hinweis(t.darktableKeinErgebnis);

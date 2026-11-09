@@ -67,6 +67,7 @@ class DesktopImageTools {
   static const freiwilligeWerkzeuge = <String, String>{
     'vipsthumbnail': 'Schnelles Verkleinern (Linux: Paket libvips-tools)',
     'djxl': 'JPEG-XL-Fotos ohne libvips (Linux: Paket libjxl-tools)',
+    'darktable-cli': 'darktable-Bearbeitungen rendern (Linux: Paket darktable)',
   };
 
   /// Unter welchen Namen ein Werkzeug auftreten kann, in Suchreihenfolge.

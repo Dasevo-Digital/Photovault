@@ -750,6 +750,8 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `GET /kammer/<id>/vollbild` | Foto in voller Auflösung; was sich direkt anzeigen lässt, unverändert, sonst als JPEG; 422, wenn es sich nicht wandeln lässt |
 | `POST /kammer/freigeben` | `{ids, ziel?: {album?, schlagwoerter?, breite?, laenge?}}` → `{ergebnisse: [{id, ausgang, aufnahme?, fehler?}]}` – in die Bibliothek, wie ein gewöhnlicher Upload; wenige auf einmal schicken. Das Album wird nach dem Namen gesucht und angelegt, wenn es fehlt; den Ort bekommen nur Fotos ohne eigenen (`funktionen.fotokammer` ≥ 4) |
 | `POST /kammer/sichten` | `{ids, sterne?, abgelehnt?}` → `{geaendert}` – das Urteil beim Sichten; `GET /kammer` trägt es als `sterne` und `abgelehnt`, die Sterne gehen beim Freigeben mit (`funktionen.fotokammer` ≥ 3) |
+| `PUT /darktable/<id>` | Körper: die XMP-Datei einer darktable-Bearbeitung → 202. Der Server rendert sie mit `darktable-cli` und trägt das Ergebnis als Entwicklung ein. 501 ohne das Programm (`funktionen.darktable`), 422 ohne `darktable:history` |
+| `GET /darktable/<id>` | `{stand}`: `laeuft`, `fertig`, `fehler` oder `keiner` |
 | `POST /kammer/verwerfen` | `{ids}` → `{verworfen}` – endgültig, ohne Papierkorb; kam das Foto aus der Bibliothek, bleibt die Aufnahme im Papierkorb |
 | `POST /kammer/aufnehmen` | `{ids}` (Aufnahmen der Bibliothek) → `{ergebnisse: [{aufnahme, ausgang, kammer?, fehler?}]}` – zurück in die Kammer: Die Aufnahme geht in den Papierkorb, die Datei als harter Link in die Kammer; Freigeben holt die Aufnahme samt Alben und Bearbeitungen zurück (`funktionen.fotokammer` ≥ 2) |
 

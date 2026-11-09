@@ -73,6 +73,7 @@ import 'teilung_api.dart';
 import 'suche_api.dart';
 import 'umzug.dart';
 import 'videofassung.dart';
+import 'darktable.dart';
 import 'vollbild.dart';
 import 'web.dart';
 import 'rueckblick_api.dart';
@@ -102,8 +103,11 @@ Handler baueApi({
   Uri? oeffentlich,
   Gastpruefung? gastpruefung,
   http.Client? netz,
+  DarktableEntwickler? darktable,
 }) {
   final von = absender ?? Absender();
+  final dt = darktable ?? DarktableEntwickler();
+  unawaited(dt.suche());
   final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final passkeys = Passkeyapi(konten, von);
@@ -115,6 +119,7 @@ Handler baueApi({
     video,
     netz,
     vollbilder: vollbilder,
+    darktable: dt,
     teilungen: konten.albumteilungen,
     regeln: konten.albumregeln,
     kontoname: (id) => konten.konto(id)?.name,
@@ -143,6 +148,7 @@ Handler baueApi({
   final rueckblick = Rueckblickapi(bibliotheken);
   final rechnen = Rechenapi(bibliotheken);
   final kammer = Fotokammerapi(bibliotheken, vollbilder);
+  final darktableApi = Darktableapi(bibliotheken, dt);
   final kontenapi = Kontenapi(konten, bibliotheken);
   Future<Kontobereich> bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
 
@@ -426,6 +432,8 @@ Handler baueApi({
     ..post('/api/v1/rechnen/ergebnis', rechnen.ergebnis)
     ..post('/api/v1/rechnen/zurueck', rechnen.zurueck)
     // Fotos, die auf ihre Freigabe warten (#336).
+    ..put('/api/v1/darktable/<id>', darktableApi.bearbeitung)
+    ..get('/api/v1/darktable/<id>', darktableApi.stand)
     ..get('/api/v1/kammer', kammer.liste)
     ..get('/api/v1/kammer/<id>/miniatur', kammer.miniatur)
     ..get('/api/v1/kammer/<id>/vorschau', kammer.vorschau)
@@ -712,6 +720,7 @@ class _Api {
     this.videofassungen,
     this._netz, {
     required this.vollbilder,
+    required this.darktable,
     this.teilungen,
     this.regeln,
     this.kontoname,
@@ -738,6 +747,7 @@ class _Api {
 
   /// Fotos in voller Auflösung für den Betrachter (#256).
   final Vollbilder vollbilder;
+  final DarktableEntwickler darktable;
   final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
@@ -773,6 +783,8 @@ class _Api {
           // 3: Sterne und Ablehnung beim Sichten (#345);
           // 4: Album, Schlagwörter und Ort beim Freigeben (#349).
           'fotokammer': 4,
+          // Ob darktable-cli da ist (#351).
+          'darktable': darktable.da ? 1 : 0,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,
