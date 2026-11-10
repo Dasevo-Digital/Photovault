@@ -724,7 +724,9 @@ class Freigabeapi {
       x.konto,
     )).where((f) => f.freigabe.id == x.freigabe).firstOrNull?.freigabe.album;
     if (album != null) {
-      await b.db.fuehreAus(AlbumFuellen(album, [aufnahme]));
+      await b.db.fuehreAus(
+        AlbumFuellen(album, [await b.db.sichtbareFassung(aufnahme)]),
+      );
     }
     await _raeumeWeg(b, id);
     return _json({'aufnahme': aufnahme, 'ausgang': ergebnis.outcome.name});

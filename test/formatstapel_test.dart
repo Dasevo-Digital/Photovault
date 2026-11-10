@@ -217,8 +217,8 @@ void main() {
     expect((await zeile('h')).stackId, vorher);
   });
 
-  test('was nur die verdeckte Fassung trägt, rückt nach oben', () async {
-    await lege('h', 'IMG_13.HEIC', beschreibung: 'Oben');
+  test('wer Angaben trägt, bleibt oben', () async {
+    await lege('h', 'IMG_13.HEIC');
     await lege(
       'j',
       'IMG_13.JPG',
@@ -231,15 +231,80 @@ void main() {
         .insert(AlbumsCompanion.insert(id: 'alb', name: 'A', createdAt: zeit));
     await db.addAssetsToAlbum('alb', ['j']);
     await db.stapleFormate();
+    expect(await sichtbar(), {'j'});
+  });
+
+  Future<Set<String>> imAlbum(String album) async => {
+    for (final z in await (db.select(
+      db.albumAssets,
+    )..where((t) => t.albumId.equals(album))).get())
+      z.assetId,
+  };
+
+  Future<void> album(String id, List<String> mit) async {
+    await db
+        .into(db.albums)
+        .insert(AlbumsCompanion.insert(id: id, name: id, createdAt: zeit));
+    await db.addAssetsToAlbum(id, mit);
+  }
+
+  test('Angaben ziehen um, statt kopiert zu werden', () async {
+    await lege('h', 'IMG_31.HEIC', beschreibung: 'Oben');
+    await lege('j', 'IMG_31.JPG', sterne: 4, beschreibung: 'Unten');
+    await lege('d', 'IMG_31.DNG', favorit: true);
+    await album('alb', ['j']);
+    // Alle drei tragen etwas; die Regeln entscheiden: HEIC vor JPG vor RAW.
+    await db.stapleFormate();
     expect(await sichtbar(), {'h'});
     final oben = await zeile('h');
     expect(oben.isFavorite, isTrue);
     expect(oben.rating, 4);
     expect(oben.description, 'Oben');
-    final imAlbum = await (db.select(
-      db.albumAssets,
-    )..where((t) => t.albumId.equals('alb'))).get();
-    expect({for (final z in imAlbum) z.assetId}, {'h', 'j'});
+    expect(await imAlbum('alb'), {'h'});
+    final j = await zeile('j');
+    expect(j.rating, 0);
+    expect(j.description, 'Unten', reason: 'nicht übernommen, also nicht weg');
+    expect((await zeile('d')).isFavorite, isFalse);
+  });
+
+  test(
+    'aus und wieder an: dieselbe Hauptversion, nichts kommt zurück',
+    () async {
+      await lege('h', 'IMG_32.HEIC');
+      await lege('j', 'IMG_32.JPG');
+      await album('a1', ['j']);
+      await album('a2', ['h']);
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      final stapel = (await zeile('h')).stackId!;
+      await db.fuehreAus(VariantenHauptbildSetzen(stapel, 'j'));
+      expect(await sichtbar(), {'j'});
+      expect(await imAlbum('a2'), {'j'}, reason: 'zieht mit der Hauptversion');
+      await db.nimmAusAlbum('a1', ['j']);
+      await db.fuehreAus(const FormateStapelnSetzen(false));
+      expect(await sichtbar(), {'h', 'j'});
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      expect(await sichtbar(), {'j'});
+      expect(await imAlbum('a1'), isEmpty);
+      expect(await imAlbum('a2'), {'j'});
+    },
+  );
+
+  test('sichtbareFassung führt zum Titelbild jedes Stapels', () async {
+    await lege('a', 'A.JPG');
+    await lege('b', 'B.JPG');
+    await lege('c', 'C.JPG');
+    await db.fuehreAus(const SerieBilden('s', ['a', 'b'], 'a'));
+    expect(await db.sichtbareFassung('b'), 'a');
+    expect(await db.sichtbareFassung('a'), 'a');
+    expect(await db.sichtbareFassung('c'), 'c');
+  });
+
+  test('verdeckte Fassungen werden nicht ausgewertet', () async {
+    await lege('h', 'IMG_33.HEIC');
+    await lege('j', 'IMG_33.JPG');
+    final vorher = await db.countOcrBackfill();
+    await db.stapleFormate();
+    expect(await db.countOcrBackfill(), vorher - 1);
   });
 
   test('eine neue Fassung kommt dazu, die Hauptversion bleibt', () async {
@@ -249,11 +314,13 @@ void main() {
     await db.fuehreAus(
       VariantenHauptbildSetzen((await zeile('h')).stackId!, 'j'),
     );
+    final kennung = (await zeile('h')).stackId;
     await lege('d', 'IMG_14.DNG');
     expect(await db.stapleFormate(), 1);
     expect(await sichtbar(), {'j'});
     expect((await zeile('j')).stackSize, 3);
-    expect((await zeile('d')).stackId, (await zeile('h')).stackId);
+    expect((await zeile('d')).stackId, kennung);
+    expect((await zeile('h')).stackId, kennung);
   });
 
   group('der Schalter', () {
@@ -327,6 +394,20 @@ void main() {
       expect(await sichtbar(), {'j'});
       await const Beilagenangaben(sterne: 3).wendeAn(db, 'r');
       expect((await zeile('j')).rating, 3);
+    });
+
+    test('die Beilage ergänzt die Hauptversion, ersetzt sie nicht', () async {
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await lege('j', 'DSC_21.JPG', sterne: 4, beschreibung: 'Am See');
+      await lege('r', 'DSC_21.NEF');
+      await nb.neueAufnahme('r');
+      await const Beilagenangaben(
+        sterne: 2,
+        beschreibung: 'aus darktable',
+      ).wendeAn(db, 'r');
+      final oben = await zeile('j');
+      expect(oben.rating, 4);
+      expect(oben.description, 'Am See');
     });
   });
 }

@@ -129,6 +129,29 @@ void main() {
     expect(stapel.where((x) => x.isStackCover).single.id, b.id);
   });
 
+  test('aus einem Formatstapel wird ein gewöhnlicher (#363)', () async {
+    final a = await aufnahme('IMG_1.jpg', bild(300, 200, 1));
+    final b = await aufnahme('IMG_1.png', bild(300, 200, 2, png: true));
+    await db.fuehreAus(VariantenBilden('format-x', [a.id, b.id], a.id));
+
+    final e = await speichereBearbeitung(
+      db: db,
+      paths: pfade,
+      asset: (await db.assetById(a.id))!,
+      jpeg: bild(200, 300, 3),
+    );
+
+    final stapel = (await db.assetById(a.id))!.stackId!;
+    expect(istVariantenstapel(stapel), isTrue);
+    expect(istFormatstapel(stapel), isFalse);
+    expect(
+      (await db.assetsInStack(stapel)).map((x) => x.id),
+      unorderedEquals([a.id, b.id, e.original]),
+    );
+    await db.fuehreAus(const FormateStapelnSetzen(false));
+    expect((await db.assetById(e.original!))!.stackId, stapel);
+  });
+
   test('verbunden (#250): abgelehnt, und alles steht wie vorher', () async {
     final altBytes = bild(300, 200, 50, png: true);
     final a = await aufnahme('IMG_0002.PNG', altBytes);

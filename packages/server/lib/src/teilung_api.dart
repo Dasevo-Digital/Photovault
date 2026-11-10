@@ -539,7 +539,11 @@ class Teilungsapi {
       }
       // Als Befehl wie jede Änderung am Album: So erfahren die Geräte des
       // Besitzers davon.
-      await b.db.fuehreAus(AlbumFuellen(g.album.id, [aufnahme]));
+      // Auf die sichtbare Fassung: Liegt die Datei schon verdeckt in einem
+      // Stapel (dasselbe Foto als HEIC), zeigte das Album sie sonst nicht.
+      await b.db.fuehreAus(
+        AlbumFuellen(g.album.id, [await b.db.sichtbareFassung(aufnahme)]),
+      );
       return _json({
         'aufnahme': aufnahme,
         'ausgang': ergebnis.outcome.name,

@@ -828,9 +828,17 @@ extension NachtragsAbfragen on AppDatabase {
   /// das, was `LibraryState._decodableFile` liefert. Ein Video ohne
   /// Standbild (die Extraktion scheitert an beschädigten Dateien) bleibt
   /// deshalb aussen vor, statt jede Stufe einzeln scheitern zu lassen.
+  ///
+  /// Verdeckte Fassungen eines Formatstapels (#361) bleiben aussen vor: Sie
+  /// zeigen dasselbe Bild wie die Hauptversion, ein RAW zu dekodieren ist
+  /// teuer, und ihre Gesichter stünden ein zweites Mal zum Benennen da.
+  /// Rückt eine von ihnen nach oben, kommt sie von selbst an die Reihe.
   Expression<bool> _auswertbar($AssetsTable t) =>
-      t.type.equals('IMAGE') |
-      (t.type.equals('VIDEO') & t.previewRelativePath.isNotNull());
+      (t.type.equals('IMAGE') |
+          (t.type.equals('VIDEO') & t.previewRelativePath.isNotNull())) &
+      (t.stackId.isNull() |
+          t.isStackCover.equals(true) |
+          t.stackId.like('$formatstapelPraefix%').not());
 
   Expression<bool> _ocrOffen($AssetsTable t, [String? stand]) {
     final offen =

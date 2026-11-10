@@ -105,12 +105,20 @@ class Beilagenangaben {
     bool mitSternen = true,
   }) async {
     // Beim Import ist die Datei womöglich gerade hinter ihr JPEG gerückt.
-    id = await db.sichtbareFormatfassung(id);
-    if (sterne case final s? when mitSternen) {
+    // Dann ergänzt die Beilage die Hauptversion, statt ihre Angaben zu
+    // ersetzen – wie beim Stapeln selbst, sonst hinge das Ergebnis davon ab,
+    // welche Datei zuerst ankam.
+    final ziel = await db.sichtbareFassung(id);
+    final oben = ziel == id ? null : await db.assetById(ziel);
+    id = ziel;
+    if (sterne case final s? when mitSternen && s > (oben?.rating ?? -1)) {
       await db.fuehreAus(BewertungSetzen([id], s));
     }
-    if (farbe != null) await db.fuehreAus(FarbmarkeSetzen([id], farbe));
-    if (beschreibung case final b?) {
+    if (farbe != null && oben?.colorLabel == null) {
+      await db.fuehreAus(FarbmarkeSetzen([id], farbe));
+    }
+    if (beschreibung case final b?
+        when oben?.description?.trim().isNotEmpty != true) {
       await db.fuehreAus(BeschreibungSetzen([id], b));
     }
     for (final t in schlagwoerter) {

@@ -159,7 +159,13 @@ Future<Bearbeitungsergebnis> speichereBearbeitung({
           .id;
       final ids = [for (final m in mitglieder) m.id, original];
       await db.fuehreAus(
-        istVariantenstapel(stapel)
+        // Aus einem Formatstapel wird ein gewöhnlicher (#363): Das Original
+        // vor der Bearbeitung ist kein weiteres Format derselben Aufnahme,
+        // und Ausschalten der Formatstapel stellte es sonst neben seine
+        // Bearbeitung in die Zeitleiste.
+        istFormatstapel(stapel)
+            ? VariantenBilden(const Uuid().v4(), ids, titel)
+            : istVariantenstapel(stapel)
             ? VariantenBilden(
                 stapel.substring(variantenstapelPraefix.length),
                 ids,

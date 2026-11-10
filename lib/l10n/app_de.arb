@@ -484,6 +484,14 @@
   },
   "einstKiHinweis": "Wie bei digiKam laufen alle KI-Funktionen offline auf diesem Rechner. Die Modelldateien werden nicht mitgeliefert, sondern bei Bedarf aus offiziellen Open-Source-Quellen heruntergeladen (einmalig, danach komplett offline nutzbar).",
   "einstFormateStapelnTitel": "Gleiche Aufnahme in mehreren Formaten stapeln",
+  "einstFormateStapelnFehler": "Stapeln fehlgeschlagen: {fehler}",
+  "@einstFormateStapelnFehler": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
   "einstFormateStapelnText": "Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.",
   "einstAutoAnalyseTitel": "KI-Auswertung nach dem Import automatisch nachholen",
   "einstAutoAnalyseText": "Der Import legt die Fotos nur ab und bleibt dadurch schnell. Gesichter, Texterkennung, Bildsuche und Bildbeschreibung laufen danach im Hintergrund nach. Ausgeschaltet lässt sich das jederzeit unter Werkzeuge von Hand anstoßen.",

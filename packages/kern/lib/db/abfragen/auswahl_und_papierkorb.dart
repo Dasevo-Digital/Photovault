@@ -389,10 +389,18 @@ extension AuswahlAbfragen on AppDatabase {
   /// Bringt Schlagwörter, Alben, Favorit, Sterne, Farbe und Beschreibung
   /// der übrigen [von] auf [behaltenId]. Gibt die übrigen zurück; leer, wenn
   /// es sie nicht gibt.
+  ///
+  /// Mit [verschieben] verlieren die übrigen, was sie abgegeben haben: ihre
+  /// Alben, eigenen Schlagwörter, Favorit, Sterne, Farbe und die übernommene
+  /// Beschreibung. Für Stapel, deren verdeckte Mitglieder bleiben – die
+  /// Angaben gehören dort der sichtbaren Fassung, und nichts soll beim
+  /// nächsten Stapeln wiederkommen, was jemand oben entfernt hat. Schlagwörter
+  /// der Auswertung bleiben; sie beschreiben das Bild, nicht eine Wahl.
   Future<List<String>> _uebertrageAngaben(
     String behaltenId,
     List<String> von, {
     required bool beschreibungenVerbinden,
+    bool verschieben = false,
   }) => transaction(() async {
     final ids = von.where((id) => id != behaltenId).toSet().toList();
     if (ids.isEmpty) {
@@ -467,6 +475,32 @@ extension AuswahlAbfragen on AppDatabase {
         : beschreibungenVerbinden
         ? beschreibungen.join('\n\n')
         : beschreibungen.first;
+    if (verschieben) {
+      await (delete(albumAssets)..where((t) => t.assetId.isIn(ids))).go();
+      await (delete(assetTags)..where(
+            (t) => t.assetId.isIn(ids) & t.quelle.equals(Tagquelle.hand),
+          ))
+          .go();
+      for (final kopie in kopien) {
+        final text = kopie.description?.trim();
+        final abgegeben =
+            text != null && text.isNotEmpty && text == beschreibung;
+        if (!kopie.isFavorite &&
+            kopie.rating == 0 &&
+            kopie.colorLabel == null &&
+            !abgegeben) {
+          continue;
+        }
+        await (update(assets)..where((t) => t.id.equals(kopie.id))).write(
+          AssetsCompanion(
+            isFavorite: const Value(false),
+            rating: const Value(0),
+            colorLabel: const Value(null),
+            description: abgegeben ? const Value(null) : const Value.absent(),
+          ),
+        );
+      }
+    }
     await (update(assets)..where((t) => t.id.equals(behaltenId))).write(
       AssetsCompanion(
         isFavorite: Value(favorit),

@@ -322,7 +322,7 @@ final class FormateStapelnSetzen extends Befehl<void> {
   Map<String, Object?> get werte => {'an': an};
 
   @override
-  Future<void> anwenden(AppDatabase db) async {
+  Future<void> anwenden(AppDatabase db) => db.transaction(() async {
     await db.setzeFormateStapeln(an);
     if (db.umleitung != null) return;
     if (an) {
@@ -330,7 +330,7 @@ final class FormateStapelnSetzen extends Befehl<void> {
     } else {
       await db.loeseFormatstapelAuf();
     }
-  }
+  });
 }
 
 /// Ob neu gesperrte Fotos auch ihre lesbaren Angaben verschlüsselt ablegen

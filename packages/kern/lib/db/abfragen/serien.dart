@@ -257,25 +257,44 @@ extension SerienAbfragen on AppDatabase {
   /// Macht ein anderes Mitglied zum sichtbaren Titelbild eines Stapels.
   /// Der Vorgang ist atomar: Es gibt zu keinem Zeitpunkt zwei Titelbilder
   /// oder einen Stapel ohne sichtbares Mitglied.
-  Future<void> setStackCover(String stackId, String coverAssetId) async {
-    final mitglieder = await assetsInStack(stackId);
-    if (!mitglieder.any((a) => a.id == coverAssetId)) {
-      throw ArgumentError.value(coverAssetId, 'coverAssetId');
-    }
-    await batch((b) {
-      for (final asset in mitglieder) {
-        final istTitel = asset.id == coverAssetId;
-        b.update(
-          assets,
-          AssetsCompanion(
-            isStackCover: Value(istTitel),
-            stackSize: istTitel ? Value(mitglieder.length) : const Value(null),
-          ),
-          where: (t) => t.stackId.equals(stackId) & t.id.equals(asset.id),
-        );
-      }
-    });
-  }
+  ///
+  /// Alben, Favorit, Sterne und eigene Schlagwörter ziehen mit um (#363):
+  /// Gezeigt wird nur das Titelbild, und ein Foto verschwände sonst aus
+  /// seinem Album, sobald man eine andere Fassung nach oben holt.
+  Future<void> setStackCover(String stackId, String coverAssetId) =>
+      transaction(() async {
+        final mitglieder = await assetsInStack(stackId);
+        if (!mitglieder.any((a) => a.id == coverAssetId)) {
+          throw ArgumentError.value(coverAssetId, 'coverAssetId');
+        }
+        final bisher = [
+          for (final a in mitglieder)
+            if (a.isStackCover && a.id != coverAssetId) a.id,
+        ];
+        if (bisher.isNotEmpty) {
+          await _uebertrageAngaben(
+            coverAssetId,
+            bisher,
+            beschreibungenVerbinden: false,
+            verschieben: true,
+          );
+        }
+        await batch((b) {
+          for (final asset in mitglieder) {
+            final istTitel = asset.id == coverAssetId;
+            b.update(
+              assets,
+              AssetsCompanion(
+                isStackCover: Value(istTitel),
+                stackSize: istTitel
+                    ? Value(mitglieder.length)
+                    : const Value(null),
+              ),
+              where: (t) => t.stackId.equals(stackId) & t.id.equals(asset.id),
+            );
+          }
+        });
+      });
 
   /// Alle Assets (Fotos und Videos), die für eine (erneute) Thumbnail-/
   /// Vorschau-Erzeugung infrage kommen. Bei [onlyMissing] nur Assets ohne

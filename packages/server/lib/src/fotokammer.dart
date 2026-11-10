@@ -427,10 +427,13 @@ class Fotokammer {
 
   /// Legt die freigegebene Aufnahme ab, wo sie hin soll. Scheitert das, ist
   /// das Foto trotzdem in der Bibliothek, und das zählt.
-  Future<void> _bringeAnsZiel(Freigabeziel? z, String? aufnahme) async {
-    if (z == null || aufnahme == null) return;
+  Future<void> _bringeAnsZiel(Freigabeziel? z, String? kennung) async {
+    if (z == null || kennung == null) return;
     final db = bibliothek.db;
     try {
+      // Auf die Fassung, die man sieht – die freigegebene Datei kann gerade
+      // hinter dasselbe Foto in einem anderen Format gerückt sein.
+      final aufnahme = await db.sichtbareFassung(kennung);
       if (z.album case final name?) {
         var album = (await db.alleAlben())
             .where((a) => a.name == name)
@@ -453,14 +456,21 @@ class Fotokammer {
         }
       }
     } on Object catch (e) {
-      protokoll('Fotokammer: Ziel für $aufnahme nicht gesetzt: $e');
+      protokoll('Fotokammer: Ziel für $kennung nicht gesetzt: $e');
     }
   }
 
   /// Die Sterne aus der Sichtung gehen mit in die Bibliothek.
   Future<void> _uebertrageSterne(int? sterne, String? aufnahme) async {
     if (sterne == null || sterne <= 0 || aufnahme == null) return;
-    await bibliothek.db.fuehreAus(BewertungSetzen([aufnahme], sterne));
+    final db = bibliothek.db;
+    final ziel = await db.sichtbareFassung(aufnahme);
+    // Die Hauptversion behält höhere Sterne, die sie schon hat.
+    if (ziel != aufnahme &&
+        ((await db.assetById(ziel))?.rating ?? 0) >= sterne) {
+      return;
+    }
+    await db.fuehreAus(BewertungSetzen([ziel], sterne));
   }
 
   /// Die Datei von [id], wenn es ein Foto ist.

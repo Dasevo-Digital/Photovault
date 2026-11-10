@@ -1488,6 +1488,12 @@ abstract class AppTexte {
   /// **'Gleiche Aufnahme in mehreren Formaten stapeln'**
   String get einstFormateStapelnTitel;
 
+  /// No description provided for @einstFormateStapelnFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Stapeln fehlgeschlagen: {fehler}'**
+  String einstFormateStapelnFehler(String fehler);
+
   /// No description provided for @einstFormateStapelnText.
   ///
   /// In de, this message translates to:

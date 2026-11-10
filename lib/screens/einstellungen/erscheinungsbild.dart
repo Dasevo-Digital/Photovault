@@ -80,8 +80,16 @@ class ErscheinungsbildGruppe extends StatelessWidget {
               subtitle: Text(t.einstFormateStapelnText),
               isThreeLine: true,
               value: snapshot.data?.formateStapeln ?? false,
-              onChanged: (an) =>
-                  stand.library.db.fuehreAus(FormateStapelnSetzen(an)),
+              onChanged: (an) async {
+                final bote = ScaffoldMessenger.of(context);
+                try {
+                  await stand.library.db.fuehreAus(FormateStapelnSetzen(an));
+                } on Object catch (e) {
+                  bote.showSnackBar(
+                    SnackBar(content: Text(t.einstFormateStapelnFehler('$e'))),
+                  );
+                }
+              },
             );
           },
         ),

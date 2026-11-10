@@ -892,6 +892,11 @@ class AppTexteDe extends AppTexte {
       'Gleiche Aufnahme in mehreren Formaten stapeln';
 
   @override
+  String einstFormateStapelnFehler(String fehler) {
+    return 'Stapeln fehlgeschlagen: $fehler';
+  }
+
+  @override
   String get einstFormateStapelnText =>
       'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.';
 

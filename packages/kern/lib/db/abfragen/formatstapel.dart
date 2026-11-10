@@ -97,13 +97,18 @@ List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
 /// Welche Fassung einer [gruppe] in der Zeitleiste steht.
 ///
 /// Zuerst, was sonst aus einer Ansicht verschwände: Benannte Gesichter
-/// ([benannt] je Aufnahme) und das Video eines Live Photos hängen an genau
-/// einer Datei. Dann die Bearbeitung, die jemand gemacht hat. Unter dem Rest
-/// ein fertiges Bild vor dem RAW, die grösste Datei und HEIC vor JPEG – das
-/// HEIC ist beim Telefon das Original, das JPEG die Umwandlung.
+/// ([benannt] je Aufnahme) hängen an genau einer Datei. Dann die Fassung,
+/// die Angaben trägt ([mitAngaben]: Album, Favorit, Sterne, Farbe,
+/// Beschreibung, eigenes Schlagwort) – nach dem Ausschalten ist das die
+/// frühere Hauptversion, und so kommt nach dem Wiedereinschalten dieselbe
+/// nach oben. Dann das Video eines Live Photos und die Bearbeitung, die
+/// jemand gemacht hat. Unter dem Rest ein fertiges Bild vor dem RAW, das
+/// Bild mit den meisten Pixeln und HEIC vor JPEG – das HEIC ist beim
+/// Telefon das Original, das JPEG die Umwandlung.
 AssetData hauptfassung(
   List<AssetData> gruppe, {
   Map<String, int> benannt = const {},
+  Set<String> mitAngaben = const {},
 }) {
   int wenn(bool b) => b ? 0 : 1;
   int pixel(AssetData a) => (a.widthPx ?? 0) * (a.heightPx ?? 0);
@@ -112,6 +117,9 @@ AssetData hauptfassung(
     ..sort((a, b) {
       for (final v in [
         (benannt[b.id] ?? 0).compareTo(benannt[a.id] ?? 0),
+        wenn(
+          mitAngaben.contains(a.id),
+        ).compareTo(wenn(mitAngaben.contains(b.id))),
         wenn(a.linkedAssetId != null).compareTo(wenn(b.linkedAssetId != null)),
         wenn(
           a.developedRelativePath != null,
@@ -128,8 +136,12 @@ AssetData hauptfassung(
 }
 
 extension Formatstapel on AppDatabase {
-  /// Alle Bilder, deren Name ohne Endung mehr als einmal vorkommt. Gelesen
-  /// wird nur, was in Frage kommt: Eine grosse Bibliothek hat davon wenige.
+  /// Alle Bilder, deren Name ohne Endung in mehr als einem Format vorkommt.
+  /// Gelesen wird nur, was in Frage kommt. Nach der Zahl allein zu gehen
+  /// hiesse, fast alles zu lesen: Ein iPhone fängt nach `IMG_9999` von vorn
+  /// an, in einer grossen Bibliothek kommt fast jeder Name mehrmals vor.
+  /// `jpg` und `jpeg` zählen hier noch als zwei – das gleicht
+  /// [formatgruppen] aus; hier soll nichts verloren gehen.
   Future<List<AssetData>> _gleichnamigeBilder() async {
     const stamm = _stammSql;
     const bild =
@@ -137,7 +149,8 @@ extension Formatstapel on AppDatabase {
         'AND datum_geschaetzt = 0';
     final zeilen = await customSelect(
       'SELECT id FROM assets WHERE $bild AND $stamm IN ('
-      'SELECT $stamm FROM assets WHERE $bild GROUP BY 1 HAVING count(*) > 1)',
+      'SELECT $stamm FROM assets WHERE $bild GROUP BY 1 '
+      'HAVING count(DISTINCT lower(coalesce(dateiformat, original_file_name))) > 1)',
       readsFrom: {assets},
     ).get();
     return assetsByIds([for (final z in zeilen) z.read<String>('id')]);
@@ -172,29 +185,61 @@ extension Formatstapel on AppDatabase {
     return anzahl;
   }
 
+  /// Welche von [ids] Angaben tragen, die jemand gesetzt hat.
+  Future<Set<String>> _mitAngaben(List<AssetData> bilder) async {
+    final mit = {
+      for (final a in bilder)
+        if (a.isFavorite ||
+            a.rating > 0 ||
+            a.colorLabel != null ||
+            (a.description?.trim().isNotEmpty ?? false))
+          a.id,
+    };
+    final ids = [for (final a in bilder) a.id];
+    for (final stueck in inStuecken(ids)) {
+      final alben = selectOnly(albumAssets, distinct: true)
+        ..addColumns([albumAssets.assetId])
+        ..where(albumAssets.assetId.isIn(stueck));
+      mit.addAll([
+        for (final z in await alben.get()) z.read(albumAssets.assetId)!,
+      ]);
+      final eigene = selectOnly(assetTags, distinct: true)
+        ..addColumns([assetTags.assetId])
+        ..where(
+          assetTags.assetId.isIn(stueck) &
+              assetTags.quelle.equals(Tagquelle.hand),
+        );
+      mit.addAll([
+        for (final z in await eigene.get()) z.read(assetTags.assetId)!,
+      ]);
+    }
+    return mit;
+  }
+
   /// Stapelt gleiche Aufnahmen in verschiedenen Formaten – alle oder nur
   /// die mit dem Namensstamm [stamm]. Gibt zurück, wie viele Stapel neu
   /// entstanden oder gewachsen sind.
   ///
-  /// Angaben, die nur eine verdeckte Fassung trägt, rücken auf die sichtbare:
-  /// Alben, Favoriten und Suche zeigen nur die oberste, ein Foto verschwände
-  /// sonst aus seinem Album. Wer eine Fassung von Hand herausgeholt hat,
-  /// bekommt sie nicht wieder gestapelt ([formatausnahme]). Kommt zu einem
-  /// Stapel ein weiteres Format dazu, bleibt die gewählte Hauptversion.
+  /// Angaben der verdeckten Fassungen ziehen auf die sichtbare um (nicht
+  /// nur kopiert): Alben, Favoriten und Suche zeigen nur die oberste, ein
+  /// Foto verschwände sonst aus seinem Album. Und weil sie umziehen, bringt
+  /// ein späteres Stapeln nichts zurück, was jemand an der Hauptversion
+  /// entfernt hat. Wer eine Fassung von Hand herausgeholt hat, bekommt sie
+  /// nicht wieder gestapelt ([formatausnahme]). Kommt zu einem Stapel ein
+  /// weiteres Format dazu, bleiben Kennung und Hauptversion.
   Future<int> stapleFormate({String? stamm}) => transaction(() async {
     final bilder = stamm == null
         ? await _gleichnamigeBilder()
         : await _bilderMitStamm(stamm);
     if (bilder.length < 2) return 0;
-    final verworfen = await verworfeneSerienvorschlaege();
+    final verworfen = await _formatausnahmen([for (final a in bilder) a.id]);
     final gruppen = formatgruppen(
       bilder.where((a) => !verworfen.contains(formatausnahme(a.id))),
     );
     if (gruppen.isEmpty) return 0;
-    final benannt = await _benannteGesichter([
-      for (final g in gruppen)
-        for (final a in g) a.id,
-    ]);
+    final alle = [for (final g in gruppen) ...g];
+    final benannt = await _benannteGesichter([for (final a in alle) a.id]);
+    final mitAngaben = await _mitAngaben(alle);
     var gebildet = 0;
     for (final gruppe in gruppen) {
       final stapel = {for (final a in gruppe) ?a.stackId};
@@ -206,14 +251,23 @@ extension Formatstapel on AppDatabase {
           bisher
               .where((a) => a.isStackCover && !a.isTrashed && !a.isLocked)
               .firstOrNull ??
-          hauptfassung(gruppe, benannt: benannt);
+          hauptfassung(gruppe, benannt: benannt, mitAngaben: mitAngaben);
       final ids = {
         for (final a in gruppe) a.id,
         for (final a in bisher) a.id,
       }.toList();
-      await _uebertrageAngaben(titel.id, ids, beschreibungenVerbinden: false);
+      await _uebertrageAngaben(
+        titel.id,
+        ids,
+        beschreibungenVerbinden: false,
+        verschieben: true,
+      );
+      // Wächst ein Stapel, behält er seine Kennung: Ein Befehl, der noch auf
+      // sie wartet (Hauptversion, Auflösen), träfe sonst ins Leere.
       await createStack(
-        variantenstapelId('format-${const Uuid().v4()}'),
+        stapel.length == 1
+            ? stapel.single
+            : variantenstapelId('format-${const Uuid().v4()}'),
         ids,
         titel.id,
       );
@@ -236,6 +290,18 @@ extension Formatstapel on AppDatabase {
         ),
       );
 
+  Future<Set<String>> _formatausnahmen(List<String> ids) async {
+    final aus = <String>{};
+    for (final stueck in inStuecken([
+      for (final id in ids) formatausnahme(id),
+    ])) {
+      final q = select(verworfeneSerien)
+        ..where((t) => t.schluessel.isIn(stueck));
+      aus.addAll([for (final z in await q.get()) z.schluessel]);
+    }
+    return aus;
+  }
+
   /// Merkt sich vor dem Auflösen von Hand, dass die Mitglieder von
   /// [stackId] nicht wieder gestapelt werden sollen.
   Future<void> merkeFormatausnahmen(String stackId) async {
@@ -245,14 +311,17 @@ extension Formatstapel on AppDatabase {
     }
   }
 
-  /// Wohin Angaben gehören, die zu [id] gehören, aber erst nach dem
-  /// Stapeln ankommen – etwa die XMP-Beilage eines RAWs hinter seinem JPEG.
-  Future<String> sichtbareFormatfassung(String id) async {
+  /// Wohin Angaben gehören, die für [id] gedacht sind: auf die Fassung, die
+  /// in Zeitleiste, Alben und Suche steht. Liegt [id] verdeckt in einem
+  /// Stapel, ist das dessen Titelbild – etwa nach dem Import, wenn ein RAW
+  /// gerade hinter sein JPEG gerückt ist und dann seine XMP-Beilage, ein
+  /// Album aus der Fotokammer oder ein geteiltes Album dazukommt.
+  Future<String> sichtbareFassung(String id) async {
     final a = await assetById(id);
     final stapel = a?.stackId;
-    if (a == null || a.isStackCover || !istFormatstapel(stapel)) return id;
-    for (final m in await assetsInStack(stapel!)) {
-      if (m.isStackCover) return m.id;
+    if (a == null || a.isStackCover || stapel == null) return id;
+    for (final m in await assetsInStack(stapel)) {
+      if (m.isStackCover && !m.isTrashed && !m.isLocked) return m.id;
     }
     return id;
   }
