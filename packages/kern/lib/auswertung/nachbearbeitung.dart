@@ -80,9 +80,7 @@ class Nachbearbeitung {
     // Nach den Regeln: Ein Album, das sie der neuen Datei geben, rückt beim
     // Stapeln auf die Fassung, die sichtbar bleibt.
     if (await db.formateStapeln()) {
-      await db.stapleFormate(
-        stamm: p.basenameWithoutExtension(asset.originalFileName),
-      );
+      await db.stapleFormate(name: asset.originalFileName);
     }
 
     // Ortsauflösung bleibt hier: reines Nachschlagen im bereits im

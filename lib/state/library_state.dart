@@ -1029,6 +1029,19 @@ class LibraryState extends ChangeNotifier {
     if (!verbunden && await db.autoAnalyzeAfterImportEnabled()) {
       unawaited(starteHintergrundanalyse());
     }
+
+    // Ohne Server stapelt dieser Rechner selbst. Was eine neue Fassung
+    // zusätzlich als dieselbe Aufnahme erkennt, käme sonst erst beim
+    // nächsten Import dieser Datei zusammen (#365). Verbunden tut es der
+    // Server, und die Kopie erfährt es über den Abgleich.
+    if (!verbunden && await db.formateStapeln()) {
+      unawaited(
+        db.stapleFormate().then<void>(
+          (_) {},
+          onError: (Object e) => debugPrint('Formatstapel beim Start: $e'),
+        ),
+      );
+    }
   }
 
   // --- Verbundener Betrieb (Issue #86, Stufe 2) -------------------------

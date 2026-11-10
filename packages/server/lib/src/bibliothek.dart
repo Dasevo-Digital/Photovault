@@ -132,6 +132,17 @@ class Bibliothek {
         'ALTER TABLE pv_erledigt ADD COLUMN antwort TEXT',
       );
     }
+    // Was eine neue Fassung zusätzlich als dieselbe Aufnahme erkennt, käme
+    // sonst erst zusammen, wenn eine der Dateien neu hereinkommt (#365).
+    // Ein zweiter Lauf ändert nichts. Nach dem Protokoll, damit die Geräte
+    // es erfahren; ein Fehler darf das Öffnen nicht verhindern.
+    if (await db.formateStapeln()) {
+      try {
+        await db.stapleFormate();
+      } on Object catch (e) {
+        stderr.writeln('Formatstapel beim Öffnen: $e');
+      }
+    }
     return Bibliothek._(
       ordner,
       db,

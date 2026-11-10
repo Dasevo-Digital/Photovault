@@ -197,14 +197,148 @@ void main() {
       expect(await db.stapleFormate(), 0);
     });
 
-    test('eine Serie bleibt, wie sie ist', () async {
+    test('neben einer Serie entsteht kein Formatstapel', () async {
       await lege('a', 'IMG_10.HEIC');
-      await lege('b', 'IMG_10.JPG');
+      await lege('b', 'IMG_10.JPG', favorit: true);
       await lege('c', 'IMG_11.HEIC');
       await db.fuehreAus(const SerieBilden('s', ['a', 'c'], 'a'));
       expect(await db.stapleFormate(), 0);
       expect((await zeile('a')).stackId, 's');
       expect((await zeile('b')).stackId, isNull);
+    });
+
+    test('Serienbilder mit verschiedenen Nummern', () async {
+      // Dieselbe Sekunde, dieselbe Kamera, zwei Formate – aber IMG_1390
+      // und IMG_1392 sind zwei Bilder einer Serie, kein Formatpaar.
+      await lege('j', 'IMG_1390.jpg', kamera: 'Canon EOS R10');
+      await lege('r', 'IMG_1392-510ad155.CR3', kamera: 'Canon EOS R10');
+      expect(await db.stapleFormate(), 0);
+    });
+  });
+
+  group('Zusätze am Namen (#365)', () {
+    test('der Stamm', () {
+      expect(formatstamm('IMG_0531-1bd0b0c6.jpg'), 'img_0531');
+      expect(formatstamm('IMG_0531-04446957.CR3'), 'img_0531');
+      expect(formatstamm('IMG_1144 (2).CR3'), 'img_1144');
+      expect(formatstamm('IMG_1144 2.CR3'), 'img_1144');
+      expect(formatstamm('IMG_1027+1.JPG'), 'img_1027');
+      expect(formatstamm('IMG_0361+1-88c523ca.jpg'), 'img_0361');
+      expect(formatstamm('IMG_0124-hdr-7a983870.jpg'), 'img_0124-hdr');
+      // Was kein Zusatz ist, bleibt.
+      expect(formatstamm('IMG_1026-Verbessert.dng'), 'img_1026-verbessert');
+      expect(
+        formatstamm('23-05-09 18-31-31 1702.MOV'),
+        '23-05-09 18-31-31 1702',
+      );
+      expect(formatstamm('DSC_1.NEF'), 'dsc_1');
+      expect(formatstamm('-1bd0b0c6.jpg'), '-1bd0b0c6');
+    });
+
+    test('RAW und JPEG mit Hexzusatz sind ein Stapel', () async {
+      await lege('r', 'IMG_0531.CR3', kamera: 'Canon EOS R10');
+      await lege('j', 'IMG_0531-1bd0b0c6.jpg', kamera: 'Canon EOS R10');
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'j'});
+    });
+
+    test('eine Nummer in Klammern trennt nicht', () async {
+      await lege('j', 'IMG_1144.jpg');
+      await lege('r', 'IMG_1144 (2).CR3');
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'j'});
+    });
+
+    test('beim Import findet die neue Datei ihr Gegenstück', () async {
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await lege('r', 'IMG_0532.CR3');
+      await nb.neueAufnahme('r');
+      await lege('j', 'IMG_0532-d8566b0d.jpg');
+      await nb.neueAufnahme('j');
+      expect(await sichtbar(), {'j'});
+      // Und umgekehrt: erst die Datei mit Zusatz.
+      await lege('j2', 'IMG_0533-922be27a.jpg');
+      await nb.neueAufnahme('j2');
+      await lege('r2', 'IMG_0533.CR3');
+      await nb.neueAufnahme('r2');
+      expect(await sichtbar(), {'j', 'j2'});
+    });
+
+    test('der Import greift nicht auf einen längeren Namen über', () async {
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await lege('a', 'IMG_05310.CR3');
+      await lege('b', 'IMG_0531.jpg');
+      await nb.neueAufnahme('b');
+      expect(await sichtbar(), {'a', 'b'});
+    });
+  });
+
+  group('ein Format liegt schon in einem Stapel (#365)', () {
+    Future<void> serie() async {
+      await lege('a', 'IMG_1096.CR3', kamera: 'Canon EOS R10');
+      await lege(
+        'c',
+        'IMG_1097.CR3',
+        kamera: 'Canon EOS R10',
+        am: zeit.add(const Duration(seconds: 1)),
+      );
+      await db.fuehreAus(const SerieBilden('s', ['a', 'c'], 'a'));
+    }
+
+    test('das freie Format kommt verdeckt in die Serie', () async {
+      await serie();
+      await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10');
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'a'});
+      expect((await zeile('b')).stackId, 's');
+      expect((await zeile('a')).isStackCover, isTrue);
+      expect((await zeile('a')).stackSize, 3);
+      // Ein zweiter Lauf ändert nichts.
+      expect(await db.stapleFormate(), 0);
+    });
+
+    test('auch in Varianten', () async {
+      await lege('d', 'IMG_7325.DNG', kamera: 'iPhone 17 Pro');
+      await lege('j', 'IMG_7325.jpeg', kamera: 'iPhone 17 Pro');
+      await lege('e', 'IMG_7325_bearbeitet.jpg', kamera: 'iPhone 17 Pro');
+      await db.fuehreAus(const VariantenBilden('v', ['j', 'e'], 'e'));
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'e'});
+      expect((await zeile('d')).stackId, 'variante:v');
+    });
+
+    test('wer Angaben trägt, bleibt daneben sichtbar', () async {
+      await serie();
+      await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10', sterne: 3);
+      expect(await db.stapleFormate(), 0);
+      expect((await zeile('b')).stackId, isNull);
+      expect((await zeile('b')).rating, 3);
+    });
+
+    test('Ausschalten holt es wieder heraus, die Serie bleibt', () async {
+      await serie();
+      await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10');
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      expect(await sichtbar(), {'a'});
+      await db.fuehreAus(const FormateStapelnSetzen(false));
+      expect(await sichtbar(), {'a', 'b'});
+      final a = await zeile('a');
+      expect(a.stackId, 's');
+      expect(a.stackSize, 2);
+      expect((await zeile('c')).stackId, 's');
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      expect(await sichtbar(), {'a'});
+    });
+
+    test('nach dem Auflösen der Serie bleibt die Marke folgenlos', () async {
+      await serie();
+      await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10');
+      await db.stapleFormate();
+      await db.fuehreAus(const SerieAufloesen('s'));
+      await db.fuehreAus(const VariantenBilden('w', ['b', 'c'], 'c'));
+      await db.fuehreAus(const FormateStapelnSetzen(false));
+      // b liegt jetzt von Hand in den Varianten w – das bleibt so.
+      expect((await zeile('b')).stackId, 'variante:w');
     });
   });
 
