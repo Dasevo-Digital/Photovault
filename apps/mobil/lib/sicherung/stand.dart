@@ -77,6 +77,19 @@ class Sicherungsstand {
         .any((z) => z['name'] == 'grund')) {
       db.execute('ALTER TABLE erledigt ADD COLUMN grund TEXT');
     }
+    // Seit 0.18: zu welcher Serie ein gesichertes Bild gehört (#364). Wird
+    // eine Serie am Telefon gelichtet, bevor sie gestapelt ist, kennt nur
+    // noch dieser Stand ihre Bilder.
+    final spalten = {
+      for (final z in db.select('PRAGMA table_info(erledigt)')) z['name'],
+    };
+    if (!spalten.contains('serie')) {
+      db
+        ..execute('ALTER TABLE erledigt ADD COLUMN serie TEXT')
+        ..execute(
+          'ALTER TABLE erledigt ADD COLUMN serientitel INTEGER NOT NULL DEFAULT 0',
+        );
+    }
     // Der Betrachter fragt je Foto, das er zeigt (siehe [gesichertAls]).
     db.execute(
       'CREATE INDEX IF NOT EXISTS erledigt_aufnahme ON erledigt (aufnahme)',
@@ -150,16 +163,25 @@ class Sicherungsstand {
     required String ausgang,
     String? aufnahme,
     String? grund,
+    String? serie,
+    bool serientitel = false,
   }) {
     _db
-      ..execute('INSERT OR REPLACE INTO erledigt VALUES (?, ?, ?, ?, ?, ?)', [
-        lokal,
-        _ms(geaendert),
-        ausgang,
-        aufnahme,
-        _jetzt,
-        grund,
-      ])
+      ..execute(
+        'INSERT OR REPLACE INTO erledigt '
+        '(lokal, geaendert, ausgang, aufnahme, zeit, grund, serie, serientitel) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          lokal,
+          _ms(geaendert),
+          ausgang,
+          aufnahme,
+          _jetzt,
+          grund,
+          serie,
+          if (serientitel) 1 else 0,
+        ],
+      )
       ..execute('DELETE FROM laufend WHERE lokal = ?', [lokal])
       ..execute('DELETE FROM fehler WHERE lokal = ?', [lokal]);
   }
@@ -208,6 +230,23 @@ class Sicherungsstand {
         aufnahme: z['aufnahme'] as String,
       ),
   };
+
+  /// Die gesicherten Bilder der Serien, die noch nicht gestapelt sind –
+  /// je Serie mit der Kennung auf dem Telefon und auf dem Server.
+  Map<String, List<({String lokal, String aufnahme, bool titel})>>
+  offeneSerien() {
+    final aus = <String, List<({String lokal, String aufnahme, bool titel})>>{};
+    for (final z in _db.select(
+      "SELECT lokal, aufnahme, serie, serientitel FROM erledigt WHERE serie IS NOT NULL AND aufnahme IS NOT NULL AND ausgang IN ('hochgeladen', 'vorhanden') AND serie NOT IN (SELECT kennung FROM serie)",
+    )) {
+      (aus[z['serie'] as String] ??= []).add((
+        lokal: z['lokal'] as String,
+        aufnahme: z['aufnahme'] as String,
+        titel: z['serientitel'] == 1,
+      ));
+    }
+    return aus;
+  }
 
   /// Die Serien, die schon einmal gestapelt wurden (#314).
   Set<String> gestapelteSerien() => {

@@ -78,11 +78,12 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: t.lokalVomTelefonLoeschen,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () => _vomTelefonLoeschen(a),
-          ),
+          if (!a.serie)
+            IconButton(
+              tooltip: t.lokalVomTelefonLoeschen,
+              icon: const Icon(Icons.delete_outline),
+              onPressed: () => _vomTelefonLoeschen(a),
+            ),
           if (widget.sitzung.sicherung case final d?)
             TextButton.icon(
               style: TextButton.styleFrom(foregroundColor: Colors.white),

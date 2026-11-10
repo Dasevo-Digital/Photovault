@@ -88,15 +88,24 @@ class Sicherungsdienst extends ChangeNotifier {
 
   /// Der Stapel ist Beiwerk: Scheitert er, zählt der Rest trotzdem, und
   /// beim nächsten Mal geht es von selbst weiter.
+  ///
+  /// Nie zwei auf einmal: Ein Lauf endet mit einer Zählung, und ein Ziehen
+  /// am Bildschirm kann gleichzeitig eine anstossen – beide schickten
+  /// sonst denselben Stapel.
   Future<void> _stapleSerien(List<Rolleneintrag> alle) async {
     final kopie = _kopie;
-    if (kopie == null || _beendet) return;
+    if (kopie == null || _beendet || _stapelt) return;
+    _stapelt = true;
     try {
       await Serienstapel(stand: _stand, db: kopie).bilde(alle);
     } on Exception catch (f) {
       debugPrint('Serien stapeln: $f');
+    } finally {
+      _stapelt = false;
     }
   }
+
+  var _stapelt = false;
 
   /// Warum gerade nicht gesichert wird, obwohl etwas offen ist.
   Wartegrund? wartet;

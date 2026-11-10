@@ -31,7 +31,13 @@ enum Zusatzfotos {
       if foto.burstIdentifier != nil { gefunden[foto.localIdentifier] = foto }
     }
     if alben.isEmpty {
-      PHAsset.fetchAssets(with: ohneFilter).enumerateObjects { foto, _, _ in nimm(foto) }
+      // Nur Serienbilder: Ohne Bedingung ginge jeder Lauf durch die ganze
+      // Mediathek, auch im Hintergrund mit seinen knappen Sekunden.
+      let o = ohneFilter
+      o.predicate = NSPredicate(format: "burstIdentifier != nil")
+      autoreleasepool {
+        PHAsset.fetchAssets(with: o).enumerateObjects { foto, _, _ in nimm(foto) }
+      }
     } else {
       var serien = Set<String>()
       PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: alben, options: nil)
@@ -102,6 +108,12 @@ enum Zusatzfotos {
       let datei = ziel.appendingPathComponent("\(i)-\(quelle.originalFilename)")
       PHAssetResourceManager.default().writeData(for: quelle, toFile: datei, options: optionen) {
         fehler in
+        // Die Bearbeitung ist Beiwerk: Lässt sie sich nicht laden, geht das
+        // Original trotzdem, wie bei photo_manager.
+        if fehler != nil, teil == "bearbeitet" {
+          naechste(i + 1)
+          return
+        }
         guard fehler == nil else {
           fertig(nil)
           return
@@ -128,6 +140,7 @@ enum Zusatzfotos {
       "geaendert": ms(foto.modificationDate ?? foto.creationDate),
       "video": foto.mediaType == .video,
       "titel": foto.representsBurst,
+      "auswahl": foto.burstSelectionTypes.contains(.userPick),
     ]
     if let serie = foto.burstIdentifier { w["serie"] = serie }
     return w

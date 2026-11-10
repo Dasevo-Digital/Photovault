@@ -81,7 +81,8 @@ class PhotoManagerRolle implements Kamerarolle {
     final serie = await _zusatzkanal.invokeListMethod<String>('serienglieder', {
       'kennungen': da,
     });
-    return da.where((id) => !serie!.contains(id)).toList();
+    final glieder = serie!.toSet();
+    return da.where((id) => !glieder.contains(id)).toList();
   }
 
   Future<Map<String, _Zusatzfoto>> _zusatzfotos() async {
@@ -101,13 +102,15 @@ class PhotoManagerRolle implements Kamerarolle {
     dateien: () => _zusatzdateien(z.id),
     serie: z.serie,
     serientitel: z.titel,
+    serienauswahl: z.auswahl,
   );
 
   static Future<List<Rollendatei>?> _zusatzdateien(String id) async {
-    final liste = await _zusatzkanal.invokeListMethod<Map<Object?, Object?>>(
-      'dateien',
-      {'kennung': id},
-    );
+    // Ein Download aus iCloud lässt sich drüben nicht abbrechen; der Lauf
+    // soll trotzdem nicht ewig daran hängen. Beim nächsten Mal wieder.
+    final liste = await _zusatzkanal
+        .invokeListMethod<Map<Object?, Object?>>('dateien', {'kennung': id})
+        .timeout(const Duration(minutes: 10), onTimeout: () => null);
     return liste
         ?.map(
           (w) => Rollendatei(
@@ -131,6 +134,7 @@ class PhotoManagerRolle implements Kamerarolle {
         : null,
     serie: z?.serie,
     serientitel: z?.titel ?? false,
+    serienauswahl: z?.auswahl ?? false,
   );
 
   static Future<List<Rollendatei>?> _dateien(AssetEntity a) async {
@@ -204,7 +208,8 @@ class _Zusatzfoto {
       aufgenommen = _zeit(w['aufgenommen']),
       video = w['video'] == true,
       serie = w['serie'] as String?,
-      titel = w['titel'] == true;
+      titel = w['titel'] == true,
+      auswahl = w['auswahl'] == true;
 
   static DateTime _zeit(Object? ms) =>
       DateTime.fromMillisecondsSinceEpoch(ms! as int);
@@ -215,4 +220,5 @@ class _Zusatzfoto {
   final bool video;
   final String? serie;
   final bool titel;
+  final bool auswahl;
 }

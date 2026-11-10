@@ -138,7 +138,10 @@ final class SerieAufloesen extends Befehl<void> {
   Map<String, Object?> get werte => {'serieId': serieId};
 
   @override
-  Future<void> anwenden(AppDatabase db) => db.unstackAssets(serieId);
+  Future<void> anwenden(AppDatabase db) async {
+    await db.merkeSerienausnahmen(serieId);
+    await db.unstackAssets(serieId);
+  }
 }
 
 /// Mehrere Fassungen derselben Aufnahme unter einer Hauptversion stapeln.

@@ -36,6 +36,7 @@ class Rolleneintrag {
     this.bearbeitetesVideo,
     this.serie,
     this.serientitel = false,
+    this.serienauswahl = false,
   });
 
   /// Die Kennung auf dem Telefon (MediaStore bzw. Fotomediathek).
@@ -66,9 +67,16 @@ class Rolleneintrag {
   /// Ob er das Titelbild seiner Serie ist – das, was die Fotos-App zeigt.
   final bool serientitel;
 
+  /// Ob jemand dieses Bild in der Fotos-App aus der Serie ausgewählt hat.
+  /// Es steht dort dann als eigenes Foto und kommt nicht in den Stapel.
+  final bool serienauswahl;
+
   /// Ob er auch in der Fotos-App als eigenes Bild zu sehen ist. Nur solche
   /// gehören zwischen die Fotos der Zeitleiste.
-  bool get eigenesBild => serie == null || serientitel;
+  bool get eigenesBild => serie == null || serientitel || serienauswahl;
+
+  /// Die Serie, in deren Stapel er gehört; `null` für Ausgewählte.
+  String? get stapelserie => serienauswahl ? null : serie;
 }
 
 /// Eine Datei eines Eintrags.

@@ -66,25 +66,27 @@ class _Rolle implements Kamerarolle {
   );
 
   /// Ein Bild einer Serie (#314).
-  void zusatz(String id, File datei, {String? serie, bool titel = false}) =>
-      eintraege_.insert(
-        0,
-        Rolleneintrag(
-          id: id,
-          geaendert: DateTime(2025, 6, 1),
-          aufgenommen: DateTime(2025, 6, 1, 12),
-          video: false,
-          dateien: () async => [
-            Rollendatei(
-              teil: 'bild',
-              name: p.basename(datei.path),
-              datei: datei,
-            ),
-          ],
-          serie: serie,
-          serientitel: titel,
-        ),
-      );
+  void zusatz(
+    String id,
+    File datei, {
+    String? serie,
+    bool titel = false,
+    bool auswahl = false,
+  }) => eintraege_.insert(
+    0,
+    Rolleneintrag(
+      id: id,
+      geaendert: DateTime(2025, 6, 1),
+      aufgenommen: DateTime(2025, 6, 1, 12),
+      video: false,
+      dateien: () async => [
+        Rollendatei(teil: 'bild', name: p.basename(datei.path), datei: datei),
+      ],
+      serie: serie,
+      serientitel: titel,
+      serienauswahl: auswahl,
+    ),
+  );
 
   void bearbeite(String id) {
     final i = eintraege_.indexWhere((x) => x.id == id);
@@ -427,6 +429,119 @@ void main() {
     expect(await stapel.bilde(await rolle.eintraege(videos: true)), 0);
     expect(stand.gestapelteSerien(), {'C'});
   });
+
+  Future<AssetData> zeileIn(AppDatabase db, List<Map> amServer, String name) =>
+      (db.select(db.assets)..where(
+            (t) => t.id.equals(
+              amServer.firstWhere((a) => a['name'] == name)['id']! as String,
+            ),
+          ))
+          .getSingle();
+
+  test('Serie: von Hand aufgelöst, auch nach neuer Anmeldung nicht wieder '
+      '(#364)', () async {
+    rolle
+      ..zusatz('a1', server.jpeg('BURST_21.JPG', 91), serie: 'D', titel: true)
+      ..zusatz('a2', server.jpeg('BURST_22.JPG', 97), serie: 'D');
+    await lauf().laufe();
+    final amServer = await eigene('BURST_2');
+    final db = await kopieMit(amServer);
+    final alle = await rolle.eintraege(videos: true);
+    expect(await Serienstapel(stand: stand, db: db).bilde(alle), 1);
+    final s = (await zeileIn(db, amServer, 'BURST_21.JPG')).stackId!;
+    await db.fuehreAus(SerieAufloesen(s));
+
+    // Neu angemeldet: Der Stand der Sicherung beginnt leer, der Server sagt,
+    // was er schon hat.
+    final neu = Sicherungsstand.oeffne(Directory('${ordner.path}-neu'));
+    addTearDown(neu.schliesse);
+    for (final (lokal, name, titel) in [
+      ('a1', 'BURST_21.JPG', true),
+      ('a2', 'BURST_22.JPG', false),
+    ]) {
+      neu.erledige(
+        lokal,
+        DateTime(2025, 6, 1),
+        ausgang: 'vorhanden',
+        aufnahme: amServer.firstWhere((a) => a['name'] == name)['id'] as String,
+        serie: 'D',
+        serientitel: titel,
+      );
+    }
+    expect(await Serienstapel(stand: neu, db: db).bilde(alle), 0);
+    expect((await zeileIn(db, amServer, 'BURST_22.JPG')).stackId, isNull);
+  });
+
+  test('Serie: am Telefon gelichtet, die gesicherten kommen trotzdem in den '
+      'Stapel (#364)', () async {
+    rolle
+      ..zusatz('b1', server.jpeg('BURST_31.JPG', 103), serie: 'E', titel: true)
+      ..zusatz('b2', server.jpeg('BURST_32.JPG', 109), serie: 'E')
+      ..zusatz('b3', server.jpeg('BURST_33.JPG', 115), serie: 'E');
+    await lauf().laufe();
+    rolle.eintraege_.removeWhere((e) => e.id == 'b2' || e.id == 'b3');
+    final amServer = await eigene('BURST_3');
+    final db = await kopieMit(amServer);
+    final stapel = Serienstapel(stand: stand, db: db);
+    expect(await stapel.bilde(await rolle.eintraege(videos: true)), 1);
+    final titel = await zeileIn(db, amServer, 'BURST_31.JPG');
+    expect(titel.isStackCover, isTrue);
+    expect(titel.stackSize, 3);
+  });
+
+  test('Serie: ausgewählte Bilder bleiben eigene Fotos (#364)', () async {
+    rolle
+      ..zusatz('c1', server.jpeg('BURST_41.JPG', 121), serie: 'F', titel: true)
+      ..zusatz('c2', server.jpeg('BURST_42.JPG', 127), serie: 'F')
+      ..zusatz(
+        'c3',
+        server.jpeg('BURST_43.JPG', 133),
+        serie: 'F',
+        auswahl: true,
+      );
+    await lauf().laufe();
+    final alle = await rolle.eintraege(videos: true);
+    expect(alle.where((e) => e.eigenesBild).map((e) => e.id).toSet(), {
+      'c1',
+      'c3',
+    });
+    final amServer = await eigene('BURST_4');
+    final db = await kopieMit(amServer);
+    expect(await Serienstapel(stand: stand, db: db).bilde(alle), 1);
+    expect((await zeileIn(db, amServer, 'BURST_42.JPG')).stackId, isNotNull);
+    expect((await zeileIn(db, amServer, 'BURST_43.JPG')).stackId, isNull);
+  });
+
+  test(
+    'Serie: was am Server im Papierkorb liegt, kommt nicht dazu (#364)',
+    () async {
+      rolle
+        ..zusatz(
+          'd1',
+          server.jpeg('BURST_51.JPG', 139),
+          serie: 'G',
+          titel: true,
+        )
+        ..zusatz('d2', server.jpeg('BURST_52.JPG', 145), serie: 'G')
+        ..zusatz('d3', server.jpeg('BURST_53.JPG', 151), serie: 'G');
+      await lauf().laufe();
+      final amServer = await eigene('BURST_5');
+      final db = await kopieMit(amServer);
+      await db.moveToTrash([
+        amServer.firstWhere((a) => a['name'] == 'BURST_51.JPG')['id']!
+            as String,
+      ]);
+      final stapel = Serienstapel(stand: stand, db: db);
+      expect(await stapel.bilde(await rolle.eintraege(videos: true)), 1);
+      expect((await zeileIn(db, amServer, 'BURST_51.JPG')).stackId, isNull);
+      final zwei = await zeileIn(db, amServer, 'BURST_52.JPG');
+      expect(zwei.stackId, isNotNull);
+      expect(
+        (await zeileIn(db, amServer, 'BURST_53.JPG')).stackId,
+        zwei.stackId,
+      );
+    },
+  );
 
   test(
     'auch vom Telefon löschen: was dazu gehört, und was im Papierkorb liegt (#205)',

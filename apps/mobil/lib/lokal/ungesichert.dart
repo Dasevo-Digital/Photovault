@@ -14,6 +14,7 @@ class LokaleAufnahme {
     required this.aufgenommen,
     required this.video,
     this.entity,
+    this.serie = false,
   });
 
   factory LokaleAufnahme.aus(Rolleneintrag e) => LokaleAufnahme(
@@ -21,7 +22,11 @@ class LokaleAufnahme {
     aufgenommen: e.aufgenommen,
     video: e.video,
     entity: e.quelle is AssetEntity ? e.quelle! as AssetEntity : null,
+    serie: e.serie != null,
   );
+
+  /// Ob sie zu einer Serie gehört. Dann bietet die App sie nicht zum
+  /// Löschen an: Was iOS mit den übrigen Bildern macht, sagt es nicht.
 
   /// Die Kennung auf dem Telefon.
   final String id;
@@ -30,6 +35,8 @@ class LokaleAufnahme {
 
   /// Der Eintrag der Fotomediathek dahinter; `null` ohne Telefon (Tests).
   final AssetEntity? entity;
+
+  final bool serie;
 
   /// Womit Zeilen aus dem Telefon in einer Liste von Server-Zeilen
   /// beginnen – so stossen die Kennungen nie zusammen.

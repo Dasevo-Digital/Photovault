@@ -326,6 +326,8 @@ class Sicherungslauf {
         x.geaendert,
         ausgang: hoch ? 'hochgeladen' : 'vorhanden',
         aufnahme: aufnahme,
+        serie: x.stapelserie,
+        serientitel: x.serientitel,
       );
       aus[x.id] = hoch ? _Erfolg.hochgeladen : _Erfolg.vorhanden;
     }

@@ -11,6 +11,10 @@ bool istVariantenstapel(String? stackId) =>
 
 String variantenstapelId(String kennung) => '$variantenstapelPraefix$kennung';
 
+/// Unter diesem Schlüssel merkt sich `verworfene_serien`, dass eine Aufnahme
+/// aus einer von Hand aufgelösten Serie stammt (#364).
+String serienausnahme(String assetId) => 'serie:$assetId';
+
 /// Ob [asset] die Videohälfte eines Live Photos ist.
 ///
 /// Sie zeigt drei Sekunden um denselben Augenblick wie ihr Standbild und
@@ -186,6 +190,29 @@ extension SerienAbfragen on AppDatabase {
   Future<Set<String>> verworfeneSerienvorschlaege() async => {
     for (final z in await select(verworfeneSerien).get()) z.schluessel,
   };
+
+  /// Merkt sich vor dem Auflösen einer Serie von Hand, dass ihre Bilder
+  /// nicht wieder gestapelt werden sollen (#364). In `verworfene_serien`,
+  /// also in der Bibliothek: Ein Telefon, das sich neu anmeldet, oder ein
+  /// zweites mit derselben Mediathek weiss es dann auch.
+  Future<void> merkeSerienausnahmen(String stackId) async {
+    if (istVariantenstapel(stackId)) return;
+    for (final a in await assetsInStack(stackId)) {
+      await verwirfSerienvorschlag(serienausnahme(a.id));
+    }
+  }
+
+  /// Welche von [assetIds] aus einer von Hand aufgelösten Serie stammen.
+  Future<Set<String>> vonHandAufgeloest(Iterable<String> assetIds) async {
+    final zu = {for (final id in assetIds) serienausnahme(id): id};
+    final aus = <String>{};
+    for (final stueck in inStuecken(zu.keys)) {
+      final q = select(verworfeneSerien)
+        ..where((t) => t.schluessel.isIn(stueck));
+      aus.addAll([for (final z in await q.get()) zu[z.schluessel]!]);
+    }
+    return aus;
+  }
 
   Future<void> verwirfSerienvorschlag(String schluessel) =>
       into(verworfeneSerien).insertOnConflictUpdate(
