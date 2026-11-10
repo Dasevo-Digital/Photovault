@@ -896,12 +896,19 @@ class _Api {
   /// Abfrage bleibt in jeder Tiefe der Bibliothek gleich schnell.
   ///
   /// Mit `favoriten=1` nur die Favoriten – für die Bibliothek der
-  /// Weboberfläche, wie auf dem Telefon.
+  /// Weboberfläche, wie auf dem Telefon. Mit `archiv=1` nur das Archiv
+  /// (#304); ohne beides die Zeitleiste, und in der fehlt das Archiv.
   Future<Response> aufnahmen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final q = anfrage.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
     final nurFavoriten = q['favoriten'] == '1';
+    final nurArchiv = q['archiv'] == '1';
+    final wo = nurArchiv
+        ? '$rasterSichtbar AND is_archived = 1'
+        : nurFavoriten
+        ? '$rasterSichtbar AND is_favorite = 1'
+        : zeitleisteSichtbar;
     // Für die Liste (#195) die Angaben, die die Kachel nicht braucht.
     final voll = q['voll'] == '1';
     Future<List<Map<String, Object?>>> alsJson(List<Rasterzeile> zeilen) async {
@@ -927,8 +934,7 @@ class _Api {
       final ab = int.tryParse((q['nach'] ?? '').replaceFirst('o:', '')) ?? 0;
       final zeilen = await db
           .customSelect(
-            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
-            '${nurFavoriten ? ' AND is_favorite = 1' : ''}'
+            'SELECT $rasterSpalten FROM assets WHERE $wo'
             ' ORDER BY ${sortierungSql(sortierung)}, id DESC LIMIT ? OFFSET ?',
             variables: [Variable<int>(anzahl), Variable<int>(ab)],
             readsFrom: {db.assets},
@@ -944,8 +950,7 @@ class _Api {
     final nach = _Lesezeichen.lies(q['nach']);
     final zeilen = await db
         .customSelect(
-          'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar'
-          '${nurFavoriten ? ' AND is_favorite = 1' : ''}'
+          'SELECT $rasterSpalten FROM assets WHERE $wo'
           // Die erste Bedingung gibt dem Index eine Grenze: Am OR allein
           // ging er sonst bis zur Seite alles durch.
           '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
@@ -965,7 +970,7 @@ class _Api {
     // Die Fotos von Partnern, die dieses Konto in seiner Zeitleiste sehen
     // will (#299) – nach demselben Lesezeichen aus jeder Bibliothek
     // geholt und eingereiht. Favoriten sind persönlich und bleiben eigen.
-    final partner = nurFavoriten
+    final partner = nurFavoriten || nurArchiv
         ? const <_Partnerquelle>[]
         : await _partnerInZeitleiste(anfrage);
     if (partner.isEmpty) {
@@ -1112,7 +1117,7 @@ class _Api {
           in await db
               .customSelect(
                 "SELECT strftime('%Y-%m', file_created_at, 'unixepoch', 'localtime') "
-                'AS m, COUNT(*) AS n FROM assets WHERE $rasterSichtbar$bedingung '
+                'AS m, COUNT(*) AS n FROM assets WHERE $zeitleisteSichtbar$bedingung '
                 'GROUP BY m',
                 variables: werte,
                 readsFrom: {db.assets},

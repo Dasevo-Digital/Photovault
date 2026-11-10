@@ -57,6 +57,7 @@ AssetData _aufnahme(String rel, int groesse, List<int> inhalt) => AssetData(
   fileCreatedAt: DateTime(2026, 5, 4),
   importedAt: DateTime(2026),
   isFavorite: false,
+  isArchived: false,
   isTrashed: false,
   isLocked: false,
   faceScanExcluded: false,

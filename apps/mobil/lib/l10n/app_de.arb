@@ -13,6 +13,8 @@
   "bibFavoriten": "Favoriten",
   "bibPapierkorb": "Papierkorb",
   "bibAlle": "Alle",
+  "bibArchiv": "Archiv",
+  "bibArchivLeer": "Im Archiv liegt nichts.",
   "bibFavoritenLeer": "Noch keine Favoriten.",
   "bibPapierkorbLeer": "Der Papierkorb ist leer.",
   "bibPapierkorbLeeren": "Papierkorb leeren",
@@ -318,6 +320,23 @@
   "auswahlZurueckholen": "Zurückholen",
   "auswahlTagWaehlen": "Alle Aufnahmen dieses Tages auswählen",
   "auswahlTagAbwaehlen": "Auswahl dieses Tages aufheben",
+  "auswahlArchiv": "Archiv",
+  "auswahlArchiviert": "{anzahl, plural, =1{1 Aufnahme archiviert} other{{anzahl} Aufnahmen archiviert}}",
+  "@auswahlArchiviert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "auswahlAusArchiv": "{anzahl, plural, =1{1 Aufnahme aus dem Archiv geholt} other{{anzahl} Aufnahmen aus dem Archiv geholt}}",
+  "@auswahlAusArchiv": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "auswahlFavorit": "Favorit",
   "auswahlTeilen": "Teilen",
   "auswahlHerunterladen": "Aufs Telefon",

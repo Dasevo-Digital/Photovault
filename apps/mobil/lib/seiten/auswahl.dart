@@ -67,6 +67,29 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     aufheben();
   }
 
+  /// Ins Archiv – oder heraus, wenn schon alles darin liegt (#304).
+  Future<void> _archiv(BuildContext context) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    final ids = _ids;
+    final alle = (await _db.assetsByIds(ids)).every((a) => a.isArchived);
+    await _db.fuehreAus(ArchivSetzen(ids, !alle));
+    aufheben();
+    bote.showSnackBar(
+      SnackBar(
+        content: Text(
+          alle
+              ? t.auswahlAusArchiv(ids.length)
+              : t.auswahlArchiviert(ids.length),
+        ),
+        action: SnackBarAction(
+          label: t.variantenRueckgaengig,
+          onPressed: () => _db.fuehreAus(ArchivSetzen(ids, alle)),
+        ),
+      ),
+    );
+  }
+
   Future<void> _ort(BuildContext context) async {
     if (await ortWaehlen(context, sitzung, _ids)) aufheben();
   }
@@ -370,6 +393,11 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
                     icon: alleFavorit ? Icons.favorite : Icons.favorite_border,
                     text: t.auswahlFavorit,
                     onPressed: _favorit,
+                  ),
+                  _Aktion(
+                    icon: Icons.archive_outlined,
+                    text: t.auswahlArchiv,
+                    onPressed: () => _archiv(context),
                   ),
                   _Aktion(
                     icon: Icons.place_outlined,

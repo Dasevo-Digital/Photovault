@@ -84,6 +84,7 @@ sealed class Befehl<T> {
 
 const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'favoritSetzen': FavoritSetzen.aus,
+  'archivSetzen': ArchivSetzen.aus,
   'bewertungSetzen': BewertungSetzen.aus,
   'farbmarkeSetzen': FarbmarkeSetzen.aus,
   'beschreibungSetzen': BeschreibungSetzen.aus,

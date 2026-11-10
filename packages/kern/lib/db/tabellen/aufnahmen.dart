@@ -52,6 +52,11 @@ class Assets extends Table {
   DateTimeColumn get fileCreatedAt => dateTime()();
   DateTimeColumn get importedAt => dateTime()();
   BoolColumn get isFavorite => boolean().withDefault(const Constant(false))();
+
+  /// Im Archiv (#304): nicht in der Zeitleiste und in Erinnerungen, aber
+  /// weiter in Alben, Suche, bei Personen und unter den Favoriten. Anders
+  /// als das Sperren verschlüsselt es nichts.
+  BoolColumn get isArchived => boolean().withDefault(const Constant(false))();
   BoolColumn get isTrashed => boolean().withDefault(const Constant(false))();
   DateTimeColumn get trashedAt => dateTime().nullable()();
 

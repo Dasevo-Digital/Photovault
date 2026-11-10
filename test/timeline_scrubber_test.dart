@@ -22,6 +22,7 @@ Rasterzeile _foto(String id, DateTime wann) => Rasterzeile.aus(
     fileCreatedAt: wann,
     importedAt: wann,
     isFavorite: false,
+    isArchived: false,
     isTrashed: false,
     isLocked: false,
     faceScanExcluded: false,

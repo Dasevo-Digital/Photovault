@@ -25,6 +25,7 @@ AssetData foto(
     fileCreatedAt: DateTime(2026, 1, tagImJahr),
     importedAt: DateTime(2026, 1, 1),
     isFavorite: favorit,
+    isArchived: false,
     isTrashed: false,
     facesScanned: false,
     aiCaptionScanned: false,

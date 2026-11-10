@@ -170,6 +170,7 @@ void main() {
           fileCreatedAt: DateTime(2024),
           importedAt: DateTime(2024),
           isFavorite: false,
+          isArchived: false,
           isTrashed: false,
           isLocked: false,
           backedUp: false,

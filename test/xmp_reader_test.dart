@@ -21,6 +21,7 @@ AssetData _buildAsset({
     fileCreatedAt: DateTime(2025, 3, 12),
     importedAt: DateTime(2025, 3, 12),
     isFavorite: false,
+    isArchived: false,
     isTrashed: false,
     isLocked: false,
     faceScanExcluded: false,

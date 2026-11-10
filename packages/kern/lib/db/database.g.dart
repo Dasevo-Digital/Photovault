@@ -164,6 +164,21 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isArchivedMeta = const VerificationMeta(
+    'isArchived',
+  );
+  @override
+  late final GeneratedColumn<bool> isArchived = GeneratedColumn<bool>(
+    'is_archived',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_archived" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _isTrashedMeta = const VerificationMeta(
     'isTrashed',
   );
@@ -794,6 +809,7 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     fileCreatedAt,
     importedAt,
     isFavorite,
+    isArchived,
     isTrashed,
     trashedAt,
     isLocked,
@@ -977,6 +993,12 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
       context.handle(
         _isFavoriteMeta,
         isFavorite.isAcceptableOrUnknown(data['is_favorite']!, _isFavoriteMeta),
+      );
+    }
+    if (data.containsKey('is_archived')) {
+      context.handle(
+        _isArchivedMeta,
+        isArchived.isAcceptableOrUnknown(data['is_archived']!, _isArchivedMeta),
       );
     }
     if (data.containsKey('is_trashed')) {
@@ -1428,6 +1450,10 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_favorite'],
       )!,
+      isArchived: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_archived'],
+      )!,
       isTrashed: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_trashed'],
@@ -1683,6 +1709,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
   final DateTime fileCreatedAt;
   final DateTime importedAt;
   final bool isFavorite;
+
+  /// Im Archiv (#304): nicht in der Zeitleiste und in Erinnerungen, aber
+  /// weiter in Alben, Suche, bei Personen und unter den Favoriten. Anders
+  /// als das Sperren verschlüsselt es nichts.
+  final bool isArchived;
   final bool isTrashed;
   final DateTime? trashedAt;
 
@@ -1971,6 +2002,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     required this.fileCreatedAt,
     required this.importedAt,
     required this.isFavorite,
+    required this.isArchived,
     required this.isTrashed,
     this.trashedAt,
     required this.isLocked,
@@ -2051,6 +2083,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     map['file_created_at'] = Variable<DateTime>(fileCreatedAt);
     map['imported_at'] = Variable<DateTime>(importedAt);
     map['is_favorite'] = Variable<bool>(isFavorite);
+    map['is_archived'] = Variable<bool>(isArchived);
     map['is_trashed'] = Variable<bool>(isTrashed);
     if (!nullToAbsent || trashedAt != null) {
       map['trashed_at'] = Variable<DateTime>(trashedAt);
@@ -2194,6 +2227,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       fileCreatedAt: Value(fileCreatedAt),
       importedAt: Value(importedAt),
       isFavorite: Value(isFavorite),
+      isArchived: Value(isArchived),
       isTrashed: Value(isTrashed),
       trashedAt: trashedAt == null && nullToAbsent
           ? const Value.absent()
@@ -2337,6 +2371,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       fileCreatedAt: serializer.fromJson<DateTime>(json['fileCreatedAt']),
       importedAt: serializer.fromJson<DateTime>(json['importedAt']),
       isFavorite: serializer.fromJson<bool>(json['isFavorite']),
+      isArchived: serializer.fromJson<bool>(json['isArchived']),
       isTrashed: serializer.fromJson<bool>(json['isTrashed']),
       trashedAt: serializer.fromJson<DateTime?>(json['trashedAt']),
       isLocked: serializer.fromJson<bool>(json['isLocked']),
@@ -2417,6 +2452,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       'fileCreatedAt': serializer.toJson<DateTime>(fileCreatedAt),
       'importedAt': serializer.toJson<DateTime>(importedAt),
       'isFavorite': serializer.toJson<bool>(isFavorite),
+      'isArchived': serializer.toJson<bool>(isArchived),
       'isTrashed': serializer.toJson<bool>(isTrashed),
       'trashedAt': serializer.toJson<DateTime?>(trashedAt),
       'isLocked': serializer.toJson<bool>(isLocked),
@@ -2485,6 +2521,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     DateTime? fileCreatedAt,
     DateTime? importedAt,
     bool? isFavorite,
+    bool? isArchived,
     bool? isTrashed,
     Value<DateTime?> trashedAt = const Value.absent(),
     bool? isLocked,
@@ -2560,6 +2597,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     fileCreatedAt: fileCreatedAt ?? this.fileCreatedAt,
     importedAt: importedAt ?? this.importedAt,
     isFavorite: isFavorite ?? this.isFavorite,
+    isArchived: isArchived ?? this.isArchived,
     isTrashed: isTrashed ?? this.isTrashed,
     trashedAt: trashedAt.present ? trashedAt.value : this.trashedAt,
     isLocked: isLocked ?? this.isLocked,
@@ -2671,6 +2709,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       isFavorite: data.isFavorite.present
           ? data.isFavorite.value
           : this.isFavorite,
+      isArchived: data.isArchived.present
+          ? data.isArchived.value
+          : this.isArchived,
       isTrashed: data.isTrashed.present ? data.isTrashed.value : this.isTrashed,
       trashedAt: data.trashedAt.present ? data.trashedAt.value : this.trashedAt,
       isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
@@ -2805,6 +2846,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           ..write('fileCreatedAt: $fileCreatedAt, ')
           ..write('importedAt: $importedAt, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('isArchived: $isArchived, ')
           ..write('isTrashed: $isTrashed, ')
           ..write('trashedAt: $trashedAt, ')
           ..write('isLocked: $isLocked, ')
@@ -2875,6 +2917,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     fileCreatedAt,
     importedAt,
     isFavorite,
+    isArchived,
     isTrashed,
     trashedAt,
     isLocked,
@@ -2944,6 +2987,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           other.fileCreatedAt == this.fileCreatedAt &&
           other.importedAt == this.importedAt &&
           other.isFavorite == this.isFavorite &&
+          other.isArchived == this.isArchived &&
           other.isTrashed == this.isTrashed &&
           other.trashedAt == this.trashedAt &&
           other.isLocked == this.isLocked &&
@@ -3011,6 +3055,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
   final Value<DateTime> fileCreatedAt;
   final Value<DateTime> importedAt;
   final Value<bool> isFavorite;
+  final Value<bool> isArchived;
   final Value<bool> isTrashed;
   final Value<DateTime?> trashedAt;
   final Value<bool> isLocked;
@@ -3077,6 +3122,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.fileCreatedAt = const Value.absent(),
     this.importedAt = const Value.absent(),
     this.isFavorite = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.isTrashed = const Value.absent(),
     this.trashedAt = const Value.absent(),
     this.isLocked = const Value.absent(),
@@ -3144,6 +3190,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     required DateTime fileCreatedAt,
     required DateTime importedAt,
     this.isFavorite = const Value.absent(),
+    this.isArchived = const Value.absent(),
     this.isTrashed = const Value.absent(),
     this.trashedAt = const Value.absent(),
     this.isLocked = const Value.absent(),
@@ -3217,6 +3264,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Expression<DateTime>? fileCreatedAt,
     Expression<DateTime>? importedAt,
     Expression<bool>? isFavorite,
+    Expression<bool>? isArchived,
     Expression<bool>? isTrashed,
     Expression<DateTime>? trashedAt,
     Expression<bool>? isLocked,
@@ -3289,6 +3337,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       if (fileCreatedAt != null) 'file_created_at': fileCreatedAt,
       if (importedAt != null) 'imported_at': importedAt,
       if (isFavorite != null) 'is_favorite': isFavorite,
+      if (isArchived != null) 'is_archived': isArchived,
       if (isTrashed != null) 'is_trashed': isTrashed,
       if (trashedAt != null) 'trashed_at': trashedAt,
       if (isLocked != null) 'is_locked': isLocked,
@@ -3360,6 +3409,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Value<DateTime>? fileCreatedAt,
     Value<DateTime>? importedAt,
     Value<bool>? isFavorite,
+    Value<bool>? isArchived,
     Value<bool>? isTrashed,
     Value<DateTime?>? trashedAt,
     Value<bool>? isLocked,
@@ -3429,6 +3479,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       fileCreatedAt: fileCreatedAt ?? this.fileCreatedAt,
       importedAt: importedAt ?? this.importedAt,
       isFavorite: isFavorite ?? this.isFavorite,
+      isArchived: isArchived ?? this.isArchived,
       isTrashed: isTrashed ?? this.isTrashed,
       trashedAt: trashedAt ?? this.trashedAt,
       isLocked: isLocked ?? this.isLocked,
@@ -3537,6 +3588,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     }
     if (isFavorite.present) {
       map['is_favorite'] = Variable<bool>(isFavorite.value);
+    }
+    if (isArchived.present) {
+      map['is_archived'] = Variable<bool>(isArchived.value);
     }
     if (isTrashed.present) {
       map['is_trashed'] = Variable<bool>(isTrashed.value);
@@ -3713,6 +3767,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
           ..write('fileCreatedAt: $fileCreatedAt, ')
           ..write('importedAt: $importedAt, ')
           ..write('isFavorite: $isFavorite, ')
+          ..write('isArchived: $isArchived, ')
           ..write('isTrashed: $isTrashed, ')
           ..write('trashedAt: $trashedAt, ')
           ..write('isLocked: $isLocked, ')
@@ -26671,6 +26726,7 @@ typedef $$AssetsTableCreateCompanionBuilder =
       required DateTime fileCreatedAt,
       required DateTime importedAt,
       Value<bool> isFavorite,
+      Value<bool> isArchived,
       Value<bool> isTrashed,
       Value<DateTime?> trashedAt,
       Value<bool> isLocked,
@@ -26739,6 +26795,7 @@ typedef $$AssetsTableUpdateCompanionBuilder =
       Value<DateTime> fileCreatedAt,
       Value<DateTime> importedAt,
       Value<bool> isFavorite,
+      Value<bool> isArchived,
       Value<bool> isTrashed,
       Value<DateTime?> trashedAt,
       Value<bool> isLocked,
@@ -26868,6 +26925,11 @@ class $$AssetsTableFilterComposer
 
   ColumnFilters<bool> get isFavorite => $composableBuilder(
     column: $table.isFavorite,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -27201,6 +27263,11 @@ class $$AssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isTrashed => $composableBuilder(
     column: $table.isTrashed,
     builder: (column) => ColumnOrderings(column),
@@ -27525,6 +27592,11 @@ class $$AssetsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get isArchived => $composableBuilder(
+    column: $table.isArchived,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isTrashed =>
       $composableBuilder(column: $table.isTrashed, builder: (column) => column);
 
@@ -27782,6 +27854,7 @@ class $$AssetsTableTableManager
                 Value<DateTime> fileCreatedAt = const Value.absent(),
                 Value<DateTime> importedAt = const Value.absent(),
                 Value<bool> isFavorite = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<bool> isTrashed = const Value.absent(),
                 Value<DateTime?> trashedAt = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
@@ -27848,6 +27921,7 @@ class $$AssetsTableTableManager
                 fileCreatedAt: fileCreatedAt,
                 importedAt: importedAt,
                 isFavorite: isFavorite,
+                isArchived: isArchived,
                 isTrashed: isTrashed,
                 trashedAt: trashedAt,
                 isLocked: isLocked,
@@ -27916,6 +27990,7 @@ class $$AssetsTableTableManager
                 required DateTime fileCreatedAt,
                 required DateTime importedAt,
                 Value<bool> isFavorite = const Value.absent(),
+                Value<bool> isArchived = const Value.absent(),
                 Value<bool> isTrashed = const Value.absent(),
                 Value<DateTime?> trashedAt = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
@@ -27982,6 +28057,7 @@ class $$AssetsTableTableManager
                 fileCreatedAt: fileCreatedAt,
                 importedAt: importedAt,
                 isFavorite: isFavorite,
+                isArchived: isArchived,
                 isTrashed: isTrashed,
                 trashedAt: trashedAt,
                 isLocked: isLocked,

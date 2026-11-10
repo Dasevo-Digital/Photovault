@@ -22,6 +22,26 @@ final class FavoritSetzen extends Befehl<void> {
       : db.setFavoriteBulk(ids, favorit);
 }
 
+/// Ins Archiv legen oder herausholen (#304).
+final class ArchivSetzen extends Befehl<void> {
+  const ArchivSetzen(this.ids, this.an);
+
+  static ArchivSetzen aus(Map<String, Object?> w) =>
+      ArchivSetzen(_kennungen(w['ids']), w['an']! as bool);
+
+  final List<String> ids;
+  final bool an;
+
+  @override
+  String get art => 'archivSetzen';
+
+  @override
+  Map<String, Object?> get werte => {'ids': ids, 'an': an};
+
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setzeArchiviert(ids, an);
+}
+
 /// Sterne von 0 bis 5.
 final class BewertungSetzen extends Befehl<void> {
   const BewertungSetzen(this.ids, this.bewertung);

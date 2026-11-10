@@ -223,6 +223,7 @@ class BackupSchnappschussSpeicher {
         };
         const felder = {
           'is_favorite': 'isFavorite',
+          'is_archived': 'isArchived',
           'description': 'description',
           'rating': 'rating',
           'color_label': 'colorLabel',
@@ -236,7 +237,11 @@ class BackupSchnappschussSpeicher {
         for (final f in felder.entries) {
           if (!spalten.contains(f.key)) continue;
           werte[f.value] =
-              const {'is_favorite', 'datum_geschaetzt'}.contains(f.key)
+              const {
+                'is_favorite',
+                'is_archived',
+                'datum_geschaetzt',
+              }.contains(f.key)
               ? r[f.key] == 1
               : r[f.key];
         }

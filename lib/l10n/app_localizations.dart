@@ -151,6 +151,30 @@ abstract class AppTexte {
   /// **'Fotos'**
   String get navFotos;
 
+  /// No description provided for @navArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Archiv'**
+  String get navArchiv;
+
+  /// No description provided for @auswArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Archivieren oder aus dem Archiv holen'**
+  String get auswArchiv;
+
+  /// No description provided for @auswRueckArchiviert.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} archiviert'**
+  String auswRueckArchiviert(int anzahl);
+
+  /// No description provided for @auswRueckAusArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} aus dem Archiv geholt'**
+  String auswRueckAusArchiv(int anzahl);
+
   /// No description provided for @navFavoriten.
   ///
   /// In de, this message translates to:

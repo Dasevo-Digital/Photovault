@@ -52,6 +52,7 @@ AssetData _voll(String id, DateTime wann, {int b = 3000, int h = 2000}) =>
       widthPx: b,
       heightPx: h,
       isFavorite: false,
+      isArchived: false,
       isTrashed: false,
       isLocked: false,
       faceScanExcluded: false,

@@ -151,6 +151,12 @@ class Bibliothek extends StatelessWidget {
         ),
       ),
       (
+        icon: Bibliothekssymbole.archiv,
+        text: t.bibArchiv,
+        farbe: Bibliotheksfarben.archiv,
+        onTap: () => _oeffne(context, t.bibArchiv, Archiv(sitzung: sitzung)),
+      ),
+      (
         icon: Bibliothekssymbole.papierkorb,
         text: t.bibPapierkorb,
         farbe: Bibliotheksfarben.papierkorb,
@@ -414,6 +420,29 @@ class Favoriten extends StatelessWidget {
       }
       if (zeilen.isEmpty) {
         return Center(child: Text(AppTexte.of(context).bibFavoritenLeer));
+      }
+      return AufnahmenRaster(sitzung: sitzung, zeilen: zeilen, nachTagen: true);
+    },
+  );
+}
+
+/// Was im Archiv liegt (#304) – aus der Zeitleiste genommen, ohne es zu
+/// sperren. Die Auswahl holt es wieder heraus.
+class Archiv extends StatelessWidget {
+  const Archiv({super.key, required this.sitzung});
+
+  final Sitzung sitzung;
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<List<Rasterzeile>>(
+    stream: sitzung.db.watchRasterzeilen(archiv: true),
+    builder: (context, snap) {
+      final zeilen = snap.data;
+      if (zeilen == null) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (zeilen.isEmpty) {
+        return Center(child: Text(AppTexte.of(context).bibArchivLeer));
       }
       return AufnahmenRaster(sitzung: sitzung, zeilen: zeilen, nachTagen: true);
     },

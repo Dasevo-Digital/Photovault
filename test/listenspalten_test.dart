@@ -29,6 +29,7 @@ AssetData _foto(String id) => AssetData(
   fileCreatedAt: DateTime(2026, 3, 5, 14, 30),
   importedAt: DateTime(2026, 3, 6),
   isFavorite: false,
+  isArchived: false,
   isTrashed: false,
   isLocked: false,
   faceScanExcluded: false,

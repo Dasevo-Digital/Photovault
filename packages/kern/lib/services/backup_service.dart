@@ -663,6 +663,7 @@ class BackupService {
         // in der verschlüsselten metadata.json.
         'backupRelativePath': a.relativePath.replaceAll(r'\', '/'),
         'isFavorite': a.isFavorite,
+        'isArchived': a.isArchived,
         'description': a.description,
         'fileCreatedAt': a.fileCreatedAt.toUtc().toIso8601String(),
         'datumGeschaetzt': a.datumGeschaetzt,

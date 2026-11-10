@@ -48,6 +48,12 @@ class AppTexteDe extends AppTexte {
   String get bibAlle => 'Alle';
 
   @override
+  String get bibArchiv => 'Archiv';
+
+  @override
+  String get bibArchivLeer => 'Im Archiv liegt nichts.';
+
+  @override
   String get bibFavoritenLeer => 'Noch keine Favoriten.';
 
   @override
@@ -624,6 +630,31 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get auswahlTagAbwaehlen => 'Auswahl dieses Tages aufheben';
+
+  @override
+  String get auswahlArchiv => 'Archiv';
+
+  @override
+  String auswahlArchiviert(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Aufnahmen archiviert',
+      one: '1 Aufnahme archiviert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String auswahlAusArchiv(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Aufnahmen aus dem Archiv geholt',
+      one: '1 Aufnahme aus dem Archiv geholt',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get auswahlFavorit => 'Favorit';

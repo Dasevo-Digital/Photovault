@@ -134,6 +134,8 @@ const BIBLIOTHEK = [
       { bereich: 'fotokammer', weg: '#/fotokammer', text: 'Fotokammer', symbol: 'fotokammer', farbe: '#ad7f58' },
       { bereich: 'duplikate', weg: '#/duplikate', text: 'Duplikate', symbol: 'duplikate', farbe: '#3e63dd' },
       { bereich: 'aufnahmedaten', weg: '#/aufnahmedaten', text: 'Aufnahmedaten', symbol: 'aufnahmedaten', farbe: '#ffa01c' },
+      // Aus der Zeitleiste genommen, ohne gesperrt zu sein (#304).
+      { bereich: 'archiv', weg: '#/archiv', text: 'Archiv', symbol: 'archiv', farbe: '#6f6e77' },
       { bereich: 'papierkorb', weg: '#/papierkorb', text: 'Papierkorb', symbol: 'papierkorb', farbe: '#8b8d98' },
       { bereich: 'einstellungen', weg: '#/einstellungen', text: 'Einstellungen', symbol: 'einstellungen', farbe: '#12a594' },
     ],
@@ -1120,6 +1122,38 @@ async function zeigeFavoriten() {
   zeigeListe({ aufnahmen: [], nachTagen: true, favoriten: true, mehr: () => favoriten.mehr() }, t('Favoriten'));
   await ladeMehr();
   if (liste.favoriten && liste.aufnahmen.length === 0 && !liste.mehr) $('ende').textContent = t('Noch keine Favoriten.');
+}
+
+// Das Archiv (#304): Was nicht in die Zeitleiste soll, aber auch nicht
+// gesperrt werden muss. In Alben, in der Suche und bei Personen bleibt es.
+const archiv = {
+  weiter: undefined,
+  holeSeite(nach, anzahl) {
+    const q = new URLSearchParams({ anzahl: String(anzahl), archiv: '1' });
+    if (nach) q.set('nach', nach);
+    return api(`/api/v1/aufnahmen?${q}`);
+  },
+  async mehr() {
+    const d = await this.holeSeite(this.weiter, 200);
+    this.weiter = d.weiter;
+    return d;
+  },
+};
+
+async function zeigeArchiv() {
+  markiereNav('archiv');
+  zeigeBereich(['raster']);
+  if (stillerLauf && liste && liste.archiv) {
+    const d = await seitenBis((nach, n) => archiv.holeSeite(nach, n), liste.aufnahmen.length);
+    if (ansichtGesperrt()) { live.nochmal = true; return; }
+    archiv.weiter = d.weiter;
+    zeigeListe({ aufnahmen: d.aufnahmen, nachTagen: true, archiv: true, mehr: d.weiter ? () => archiv.mehr() : null }, t('Archiv'));
+    return;
+  }
+  archiv.weiter = undefined;
+  zeigeListe({ aufnahmen: [], nachTagen: true, archiv: true, mehr: () => archiv.mehr() }, t('Archiv'));
+  await ladeMehr();
+  if (liste.archiv && liste.aufnahmen.length === 0 && !liste.mehr) $('ende').textContent = t('Im Archiv liegt nichts.');
 }
 
 // „Vor x Jahren“ über der Zeitleiste – ein Kärtchen je Jahrgang.
@@ -4282,7 +4316,7 @@ function zeigeImmich(s) {
   let text = '';
   if (laeuft) text = t(immichStufen[s.stufe]) + (s.fertig ? ` ${s.fertig}${s.von ? ` / ${s.von}` : ''}` : '');
   else if (s.stufe === 'fehler') text = s.fehler || t('Das ist gescheitert.');
-  else if (s.stufe === 'fertig') text = t('Übernommen: {a} Aufnahmen in Alben, {f} Favoriten, {b} Beschreibungen, {g} Gesichter, {p} neue Personen, {r} im Archiv-Album.', { a: s.ergebnis.albumAufnahmen, f: s.ergebnis.favoriten, b: s.ergebnis.beschreibungen, g: s.ergebnis.gesichter, p: s.ergebnis.personenNeu, r: s.ergebnis.archiv });
+  else if (s.stufe === 'fertig') text = t('Übernommen: {a} Aufnahmen in Alben, {f} Favoriten, {b} Beschreibungen, {g} Gesichter, {p} neue Personen, {r} ins Archiv.', { a: s.ergebnis.albumAufnahmen, f: s.ergebnis.favoriten, b: s.ergebnis.beschreibungen, g: s.ergebnis.gesichter, p: s.ergebnis.personenNeu, r: s.ergebnis.archiv });
   $('immich-stand').textContent = text;
   $('immich-bericht').hidden = !s.bericht || laeuft;
   if (s.bericht && !laeuft) zeigeImmichBericht(s.bericht);
@@ -4330,7 +4364,7 @@ function zeigeImmichBericht(b) {
     ['favoriten', t('{n} Favoriten', { n: v.favoriten })],
     ['beschreibungen', t('{n} Beschreibungen', { n: v.beschreibungen })],
     ['personen', t('{g} Gesichter, {p} neue Personen, {b} Geburtstage', { g: v.gesichter, p: v.personenNeu, b: v.geburtstage })],
-    ['archiv', t('{n} archivierte Aufnahmen ins Album „Archiv (aus Immich)“', { n: v.archiv })],
+    ['archiv', t('{n} Aufnahmen ins Archiv', { n: v.archiv })],
   ];
   $('immich-teile').replaceChildren(...teile.map(([name, text]) => {
     const l = el('label'), kasten = el('input');
@@ -4431,6 +4465,9 @@ function zeigeAuswahl() {
   // Collagen aus 2 bis 9 eigenen Fotos (#301).
   $('auswahl-collage').hidden = n < 2 || n > 9 || !!liste.papierkorb || fremdeListe();
   $('auswahl-varianten').hidden = n < 2 || !!liste.papierkorb;
+  // Vor der ersten Liste (Anmeldung) gibt es noch keine.
+  $('auswahl-archiv').hidden = !liste || !!liste.papierkorb || fremdeListe();
+  $('auswahl-archiv').querySelector('span').textContent = liste && liste.archiv ? t('Aus dem Archiv') : t('Archivieren');
   const war = !$('auswahlleiste').hidden;
   $('auswahlleiste').hidden = n === 0;
   if (n > 0 && !war) ladeAlbenstreifen();
@@ -5213,6 +5250,25 @@ $('auswahl-favorit').addEventListener('click', async () => {
     await befehl('favoritSetzen', { ids: g.map((a) => a.id), favorit: !alle });
     for (const a of g) a.favorit = !alle;
     if (liste.favoriten && alle) { const weg = new Set(g.map((a) => a.id)); liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id)); auswahlAufheben(); }
+    neuZeichnen();
+  } catch (x) { alert(x.message); }
+});
+
+$('auswahl-archiv').addEventListener('click', async () => {
+  const g = gewaehlte();
+  if (!g.length) return;
+  const an = !liste.archiv;
+  try {
+    await befehl('archivSetzen', { ids: g.map((a) => a.id), an });
+    // Aus der Zeitleiste und aus dem Archiv gehen sie damit weg; in Alben,
+    // Favoriten und Suche bleiben sie stehen.
+    if (liste.zeitleiste || liste.archiv) {
+      const weg = new Set(g.map((a) => a.id));
+      liste.aufnahmen = liste.aufnahmen.filter((a) => !weg.has(a.id));
+      if (liste.zeitleiste) zeitleiste.geladen = zeitleiste.geladen.filter((a) => !weg.has(a.id));
+    }
+    meldung(an ? t('{n} archiviert', { n: g.length }) : t('{n} aus dem Archiv geholt', { n: g.length }));
+    auswahlAufheben();
     neuZeichnen();
   } catch (x) { alert(x.message); }
 });
@@ -6860,6 +6916,7 @@ async function zeigeWeg(art) {
         break;
       case 'papierkorb': await zeigePapierkorb(); break;
       case 'favoriten': await zeigeFavoriten(); break;
+      case 'archiv': await zeigeArchiv(); break;
       case 'orte': await (teile[1] ? zeigeOrt(teile[1], teile[2]) : zeigeOrte()); break;
       case 'bibliothek': await zeigeBibliothek(); break;
       default: await zeigeFotos();
@@ -6916,7 +6973,7 @@ function ansichtLebt() {
   const [wurzel, teil] = wegTeile();
   if (wurzel === 'alben') return teil !== 'klug';
   if (wurzel === 'karte') return !teil;
-  return ['', 'favoriten', 'papierkorb', 'personen', 'orte', 'reisen', 'statistik'].includes(wurzel);
+  return ['', 'favoriten', 'archiv', 'papierkorb', 'personen', 'orte', 'reisen', 'statistik'].includes(wurzel);
 }
 
 function plane(warte) {

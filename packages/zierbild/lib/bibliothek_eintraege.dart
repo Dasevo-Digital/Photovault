@@ -19,6 +19,7 @@ abstract final class Bibliotheksfarben {
   static const fotokammer = Color(0xFFAD7F58);
   static const duplikate = Color(0xFF3E63DD);
   static const aufnahmedaten = Color(0xFFFFA01C);
+  static const archiv = Color(0xFF6F6E77);
   static const papierkorb = Color(0xFF8B8D98);
   static const einstellungen = Color(0xFF12A594);
 
@@ -48,6 +49,7 @@ abstract final class Bibliothekssymbole {
   static const fotokammer = Icons.move_to_inbox_outlined;
   static const duplikate = Icons.filter_none_rounded;
   static const aufnahmedaten = Icons.event_available_outlined;
+  static const archiv = Icons.archive_outlined;
   static const papierkorb = Icons.delete_outline_rounded;
   static const einstellungen = Icons.tune_rounded;
 

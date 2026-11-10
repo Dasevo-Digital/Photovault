@@ -42,6 +42,7 @@ Rasterzeile _foto(String id, DateTime wann, {int? breite, int? hoehe}) =>
         widthPx: breite,
         heightPx: hoehe,
         isFavorite: false,
+        isArchived: false,
         isTrashed: false,
         isLocked: false,
         faceScanExcluded: false,

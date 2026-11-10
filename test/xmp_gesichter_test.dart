@@ -30,6 +30,7 @@ AssetData _foto({int? breite, int? hoehe}) => AssetData(
   fileCreatedAt: DateTime(2026, 8, 1),
   importedAt: DateTime(2026, 8, 1),
   isFavorite: false,
+  isArchived: false,
   isTrashed: false,
   isLocked: false,
   faceScanExcluded: false,

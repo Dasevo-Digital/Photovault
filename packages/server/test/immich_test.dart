@@ -257,10 +257,7 @@ void main() {
       expect((s['ergebnis'] as Map)['favoriten'], 1);
 
       final alben = {for (final a in await db.alleAlben()) a.name: a.id};
-      expect(
-        alben.keys,
-        unorderedEquals(['Urlaub', 'Urlaub (2)', 'Archiv (aus Immich)']),
-      );
+      expect(alben.keys, unorderedEquals(['Urlaub', 'Urlaub (2)']));
       Future<Set<String>> inhalt(String name) async => {
         for (final a in await db.assetsInAlbumOnce(alben[name]!)) a.id,
       };
@@ -272,7 +269,9 @@ void main() {
           {ids['b.jpg']},
         ]),
       );
-      expect(await inhalt('Archiv (aus Immich)'), {ids['c.jpg']});
+      // Archiviert in Immich: im Archiv der Bibliothek, nicht in einem Album.
+      expect((await zeile('c.jpg')).isArchived, isTrue);
+      expect((await zeile('a.jpg')).isArchived, isFalse);
 
       final a = await zeile('a.jpg');
       expect(a.isFavorite, isTrue);
@@ -287,7 +286,7 @@ void main() {
       await pruefe();
       final zweite = await uebernimm();
       expect((zweite['ergebnis'] as Map)['favoriten'], 0);
-      expect(await db.alleAlben(), hasLength(3));
+      expect(await db.alleAlben(), hasLength(2));
       expect(await db.allePersonen(), hasLength(2));
     });
 

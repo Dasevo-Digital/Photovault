@@ -82,6 +82,7 @@ AssetData _aufnahme(String rel, List<int> inhalt) => AssetData(
   fileCreatedAt: DateTime(2026),
   importedAt: DateTime(2026),
   isFavorite: false,
+  isArchived: false,
   isTrashed: false,
   isLocked: false,
   faceScanExcluded: false,

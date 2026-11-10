@@ -616,6 +616,9 @@ class BackupWiederhersteller {
           if (entry['isFavorite'] == true) {
             await _db.fuehreAus(FavoritSetzen([assetId], true));
           }
+          if (entry['isArchived'] == true) {
+            await _db.fuehreAus(ArchivSetzen([assetId], true));
+          }
           if (entry['description'] is String &&
               (entry['description'] as String).isNotEmpty) {
             await _db.fuehreAus(

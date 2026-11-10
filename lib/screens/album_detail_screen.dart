@@ -383,6 +383,14 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                             widget.library,
                             _selected.toList(),
                           ),
+                          onArchive: () async {
+                            await runBatchArchiv(
+                              widget.library,
+                              _selected.toList(),
+                              texte: AppTexte.of(context),
+                            );
+                            if (mounted) setState(_selected.clear);
+                          },
                           onFavorite: () async {
                             await runBatchFavorite(
                               widget.library,

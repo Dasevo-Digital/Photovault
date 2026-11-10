@@ -271,6 +271,17 @@ extension Formatstapel on AppDatabase {
         ids,
         titel.id,
       );
+      // Im Archiv (#304) liegt der Stapel nur, wenn alles darin dort lag:
+      // Sonst verschwände ein Foto aus der Zeitleiste, das dort zu sehen war.
+      final archiv = [
+        for (final a in gruppe) a.isArchived,
+        for (final a in bisher) a.isArchived,
+      ].every((x) => x);
+      if (titel.isArchived != archiv) {
+        await (update(assets)..where((t) => t.id.equals(titel.id))).write(
+          AssetsCompanion(isArchived: Value(archiv)),
+        );
+      }
       gebildet++;
     }
     return gebildet;

@@ -35,6 +35,7 @@ AssetData _foto({
   fileCreatedAt: DateTime(2026, 11, 7),
   importedAt: DateTime(2026, 11, 7),
   isFavorite: false,
+  isArchived: false,
   isTrashed: false,
   isLocked: false,
   faceScanExcluded: false,

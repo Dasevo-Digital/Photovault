@@ -24,6 +24,11 @@ extension AufnahmenAbfragen on AppDatabase {
       (t.type.equals('IMAGE') | t.linkedAssetId.isNull()) &
       (t.stackId.isNull() | t.isStackCover.equals(true));
 
+  /// [_isPrimaryGridEntry] ohne das Archiv – für Zeitleiste, Monate, Jahre
+  /// und Erinnerungen (#304), wie [zeitleisteSichtbar].
+  Expression<bool> _inZeitleiste($AssetsTable t) =>
+      _isPrimaryGridEntry(t) & t.isArchived.equals(false);
+
   /// Ein Datenstrom auf [bauen], der bei einem **Schwall** von Änderungen
   /// nicht jede einzelne nachrechnet.
   ///
@@ -126,8 +131,12 @@ extension AufnahmenAbfragen on AppDatabase {
   /// Ladefenster (siehe dort), damit weder bei jeder Mutation noch beim
   /// ersten Öffnen zwingend die GESAMTE Bibliothek aus der DB geladen und in
   /// Dart neu gruppiert werden muss.
+  ///
+  /// Die Favoriten zeigen auch, was im Archiv liegt; mit [archiv] nur das
+  /// Archiv. Sonst ist es die Zeitleiste, und in der fehlt das Archiv.
   Stream<List<AssetData>> watchTimeline({
     bool favoritesOnly = false,
+    bool archiv = false,
     int? limit,
     Rastersortierung sortierung = rastersortierungVorgabe,
   }) {
@@ -138,8 +147,12 @@ extension AufnahmenAbfragen on AppDatabase {
             t.isLocked.equals(false) &
             _isPrimaryGridEntry(t),
       );
-    if (favoritesOnly) {
+    if (archiv) {
+      query.where((t) => t.isArchived.equals(true));
+    } else if (favoritesOnly) {
       query.where((t) => t.isFavorite.equals(true));
+    } else {
+      query.where((t) => t.isArchived.equals(false));
     }
     query.orderBy(_sortierterme(sortierung));
     if (limit != null) {
@@ -187,11 +200,18 @@ extension AufnahmenAbfragen on AppDatabase {
   /// der Strom trotzdem meldet, wenn sich an `assets` etwas ändert.
   Stream<List<Rasterzeile>> watchRasterzeilen({
     bool favoritesOnly = false,
+    bool archiv = false,
     int? limit,
     Rastersortierung sortierung = rastersortierungVorgabe,
   }) {
-    final wo = StringBuffer(rasterSichtbar);
-    if (favoritesOnly) wo.write(' AND is_favorite = 1');
+    final wo = StringBuffer(
+      archiv || favoritesOnly ? rasterSichtbar : zeitleisteSichtbar,
+    );
+    if (archiv) {
+      wo.write(' AND is_archived = 1');
+    } else if (favoritesOnly) {
+      wo.write(' AND is_favorite = 1');
+    }
     final grenze = limit == null ? '' : ' LIMIT $limit';
     return _gedrosselt(
       () => customSelect(
@@ -244,7 +264,7 @@ extension AufnahmenAbfragen on AppDatabase {
         (t) =>
             t.isTrashed.equals(false) &
             t.isLocked.equals(false) &
-            _isPrimaryGridEntry(t) &
+            _inZeitleiste(t) &
             t.fileCreatedAt.isBiggerOrEqualValue(start) &
             t.fileCreatedAt.isSmallerThanValue(end),
       )
@@ -341,7 +361,7 @@ extension AufnahmenAbfragen on AppDatabase {
         ..where(
           assets.isTrashed.equals(false) &
               assets.isLocked.equals(false) &
-              _isPrimaryGridEntry(assets),
+              _inZeitleiste(assets),
         )
         ..groupBy([_jahrAusdruck, _vor1970]);
 
@@ -471,7 +491,7 @@ extension AufnahmenAbfragen on AppDatabase {
       ..where(
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
-            _isPrimaryGridEntry(assets) &
+            _inZeitleiste(assets) &
             assets.fileCreatedAt.isBiggerThanValue(asset.fileCreatedAt),
       );
     final row = await query.getSingle();
@@ -498,7 +518,7 @@ extension AufnahmenAbfragen on AppDatabase {
       ..where(
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
-            _isPrimaryGridEntry(assets) &
+            _inZeitleiste(assets) &
             assets.fileCreatedAt.isBiggerOrEqualValue(start) &
             assets.fileCreatedAt.isSmallerThanValue(ende),
       )
@@ -527,7 +547,7 @@ extension AufnahmenAbfragen on AppDatabase {
         (t) =>
             t.isTrashed.equals(false) &
             t.isLocked.equals(false) &
-            _isPrimaryGridEntry(t) &
+            _inZeitleiste(t) &
             t.fileCreatedAt.isBiggerOrEqualValue(start) &
             t.fileCreatedAt.isSmallerThanValue(ende),
       )
@@ -544,7 +564,7 @@ extension AufnahmenAbfragen on AppDatabase {
             (t) =>
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
-                _isPrimaryGridEntry(t) &
+                _inZeitleiste(t) &
                 t.fileCreatedAt.isBiggerOrEqualValue(start) &
                 t.fileCreatedAt.isSmallerThanValue(ende),
           )
@@ -565,7 +585,7 @@ extension AufnahmenAbfragen on AppDatabase {
             (t) =>
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
-                _isPrimaryGridEntry(t) &
+                _inZeitleiste(t) &
                 t.fileCreatedAt.isBiggerOrEqualValue(start) &
                 t.fileCreatedAt.isSmallerThanValue(end),
           )
@@ -643,6 +663,16 @@ extension AufnahmenAbfragen on AppDatabase {
       ..orderBy([(t) => OrderingTerm.desc(t.trashedAt)]);
     return _gedrosselt(() => abfrage, TableUpdateQuery.onTable(assets));
   }
+
+  /// Legt [assetIds] ins Archiv oder holt sie heraus (#304).
+  Future<void> setzeArchiviert(List<String> assetIds, bool an) =>
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            AssetsCompanion(isArchived: Value(an)),
+          );
+        }
+      });
 
   Future<void> setFavorite(String assetId, bool value) =>
       (update(assets)..where((t) => t.id.equals(assetId))).write(

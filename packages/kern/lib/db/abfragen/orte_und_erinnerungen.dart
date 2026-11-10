@@ -161,7 +161,7 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _isPrimaryGridEntry(assets),
+            _inZeitleiste(assets),
       );
     final treffer = <String>[];
     for (final zeile in await schlank.get()) {
@@ -206,7 +206,7 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _isPrimaryGridEntry(assets),
+            _inZeitleiste(assets),
       );
     final jeTag = <DateTime, List<String>>{};
     for (final zeile in await schlank.get()) {
@@ -322,7 +322,7 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _isPrimaryGridEntry(assets),
+            _inZeitleiste(assets),
       );
     final jeJahr = <int, List<String>>{};
     for (final zeile in await schlank.get()) {

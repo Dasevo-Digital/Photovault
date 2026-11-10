@@ -175,6 +175,18 @@ abstract class AppTexte {
   /// **'Alle'**
   String get bibAlle;
 
+  /// No description provided for @bibArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Archiv'**
+  String get bibArchiv;
+
+  /// No description provided for @bibArchivLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Archiv liegt nichts.'**
+  String get bibArchivLeer;
+
   /// No description provided for @bibFavoritenLeer.
   ///
   /// In de, this message translates to:
@@ -1062,6 +1074,24 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Auswahl dieses Tages aufheben'**
   String get auswahlTagAbwaehlen;
+
+  /// No description provided for @auswahlArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Archiv'**
+  String get auswahlArchiv;
+
+  /// No description provided for @auswahlArchiviert.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Aufnahme archiviert} other{{anzahl} Aufnahmen archiviert}}'**
+  String auswahlArchiviert(int anzahl);
+
+  /// No description provided for @auswahlAusArchiv.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Aufnahme aus dem Archiv geholt} other{{anzahl} Aufnahmen aus dem Archiv geholt}}'**
+  String auswahlAusArchiv(int anzahl);
 
   /// No description provided for @auswahlFavorit.
   ///

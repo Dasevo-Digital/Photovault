@@ -44,6 +44,9 @@ class SearchFilters {
   final DateTime? endDate;
   final MediaTypeFilter mediaType;
   final bool favoritesOnly;
+
+  /// Nur, was im Archiv liegt (#304) – für die Ansicht „Archiv“.
+  final bool nurArchiv;
   final bool notInAnyAlbum;
   final int? minRating;
   final Set<String> colorLabels;
@@ -99,6 +102,7 @@ class SearchFilters {
     this.endDate,
     this.mediaType = MediaTypeFilter.all,
     this.favoritesOnly = false,
+    this.nurArchiv = false,
     this.notInAnyAlbum = false,
     this.minRating,
     this.colorLabels = const {},
@@ -131,6 +135,7 @@ class SearchFilters {
       endDate == null &&
       mediaType == MediaTypeFilter.all &&
       !favoritesOnly &&
+      !nurArchiv &&
       !notInAnyAlbum &&
       minRating == null &&
       colorLabels.isEmpty &&
@@ -175,6 +180,7 @@ class SearchFilters {
     bool clearEndDate = false,
     MediaTypeFilter? mediaType,
     bool? favoritesOnly,
+    bool? nurArchiv,
     bool? nurGeschaetztesDatum,
     Aufnahmeherkunft? herkunft,
     bool? notInAnyAlbum,
@@ -221,6 +227,7 @@ class SearchFilters {
       endDate: clearEndDate ? null : (endDate ?? this.endDate),
       mediaType: mediaType ?? this.mediaType,
       favoritesOnly: favoritesOnly ?? this.favoritesOnly,
+      nurArchiv: nurArchiv ?? this.nurArchiv,
       nurGeschaetztesDatum: nurGeschaetztesDatum ?? this.nurGeschaetztesDatum,
       herkunft: herkunft ?? this.herkunft,
       notInAnyAlbum: notInAnyAlbum ?? this.notInAnyAlbum,
@@ -265,6 +272,7 @@ class SearchFilters {
     'endDate': endDate?.toIso8601String(),
     'mediaType': mediaType.name,
     'favoritesOnly': favoritesOnly,
+    'nurArchiv': nurArchiv,
     'nurGeschaetztesDatum': nurGeschaetztesDatum,
     'herkunft': herkunft.name,
     'notInAnyAlbum': notInAnyAlbum,
@@ -308,6 +316,7 @@ class SearchFilters {
       json['mediaType'] as String? ?? 'all',
     ),
     favoritesOnly: json['favoritesOnly'] as bool? ?? false,
+    nurArchiv: json['nurArchiv'] as bool? ?? false,
     nurGeschaetztesDatum: json['nurGeschaetztesDatum'] as bool? ?? false,
     // Unbekannt (ältere Fassung oder Tippfehler) heisst: kein Filter.
     herkunft:

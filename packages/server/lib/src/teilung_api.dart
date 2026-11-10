@@ -939,7 +939,9 @@ Future<List<Rasterzeile>> partnerzeilen(
   final b = freigabeBedingung(ab: f.ab, personen: f.personen);
   final zeilen = await db
       .customSelect(
-        'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql}'
+        // Was der Partner archiviert hat, steht auch bei ihm nicht in der
+        // Zeitleiste (#304).
+        'SELECT $rasterSpalten FROM assets WHERE $zeitleisteSichtbar${b.sql}'
         '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
         ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
         variables: [

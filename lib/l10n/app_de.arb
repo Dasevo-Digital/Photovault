@@ -12,6 +12,24 @@
   "allgMehr": "Mehr",
   "allgAlleAnzeigen": "Alle anzeigen",
   "navFotos": "Fotos",
+  "navArchiv": "Archiv",
+  "auswArchiv": "Archivieren oder aus dem Archiv holen",
+  "auswRueckArchiviert": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} archiviert",
+  "@auswRueckArchiviert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "auswRueckAusArchiv": "{anzahl, plural, =1{1 Foto} other{{anzahl} Fotos}} aus dem Archiv geholt",
+  "@auswRueckAusArchiv": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "navFavoriten": "Favoriten",
   "navOrte": "Orte",
   "navStatistik": "Statistik",

@@ -176,6 +176,9 @@ extension VokabularAbfragen on AppDatabase {
     if (filters.favoritesOnly) {
       wo.add(assets.isFavorite.equals(true));
     }
+    if (filters.nurArchiv) {
+      wo.add(assets.isArchived.equals(true));
+    }
 
     if (filters.notInAnyAlbum) {
       wo.add(

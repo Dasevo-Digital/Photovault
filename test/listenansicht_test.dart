@@ -26,6 +26,7 @@ AssetData _foto(String id, DateTime wann, {String? marke, String? modell}) =>
       fileCreatedAt: wann,
       importedAt: wann,
       isFavorite: false,
+      isArchived: false,
       isTrashed: false,
       isLocked: false,
       faceScanExcluded: false,

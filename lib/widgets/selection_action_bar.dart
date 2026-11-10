@@ -77,6 +77,9 @@ class SelectionActionBar extends StatelessWidget {
   /// Zurück in die Fotokammer (#337); nur mit einem Server.
   final VoidCallback? onFotokammer;
 
+  /// Ins Archiv oder heraus (#304) – siehe [runBatchArchiv].
+  final VoidCallback? onArchive;
+
   const SelectionActionBar({
     super.key,
     required this.count,
@@ -93,6 +96,7 @@ class SelectionActionBar extends StatelessWidget {
     this.onCreateVariants,
     this.onCollage,
     this.onFotokammer,
+    this.onArchive,
     this.onPasteDevelop,
     this.onApplyPreset,
   });
@@ -130,6 +134,12 @@ class SelectionActionBar extends StatelessWidget {
                   tooltip: t.auswZuAlbum,
                   onPressed: onAddToAlbum,
                 ),
+                if (onArchive != null)
+                  IconButton(
+                    icon: const Icon(Icons.archive_outlined),
+                    tooltip: t.auswArchiv,
+                    onPressed: onArchive,
+                  ),
                 IconButton(
                   icon: const Icon(Icons.label_outline),
                   tooltip: t.auswTagHinzufuegen,
@@ -492,6 +502,27 @@ void _rueckgaengigAnbieten(
   melde.erfolg(
     text,
     aktion: (beschriftung: t.allgRueckgaengig, beiDruck: () => zurueck()),
+  );
+}
+
+/// Legt die Auswahl ins Archiv – oder holt sie heraus, wenn schon alles
+/// darin liegt (#304). Wie beim Favoriten entscheidet die Auswahl selbst.
+Future<void> runBatchArchiv(
+  LibraryState library,
+  List<String> assetIds, {
+  AppTexte? texte,
+}) async {
+  if (assetIds.isEmpty) return;
+  final alle = (await library.db.assetsByIds(
+    assetIds,
+  )).every((a) => a.isArchived);
+  await library.db.fuehreAus(ArchivSetzen(assetIds, !alle));
+  _rueckgaengigAnbieten(
+    texte,
+    alle
+        ? texte?.auswRueckAusArchiv(assetIds.length) ?? ''
+        : texte?.auswRueckArchiviert(assetIds.length) ?? '',
+    () => library.db.fuehreAus(ArchivSetzen(assetIds, alle)),
   );
 }
 

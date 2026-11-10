@@ -36,6 +36,34 @@ class AppTexteEn extends AppTexte {
   String get navFotos => 'Photos';
 
   @override
+  String get navArchiv => 'Archive';
+
+  @override
+  String get auswArchiv => 'Archive or unarchive';
+
+  @override
+  String auswRueckArchiviert(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: '1 photo',
+    );
+    return '$_temp0 archived';
+  }
+
+  @override
+  String auswRueckAusArchiv(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos',
+      one: '1 photo',
+    );
+    return '$_temp0 unarchived';
+  }
+
+  @override
   String get navFavoriten => 'Favorites';
 
   @override

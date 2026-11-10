@@ -140,6 +140,50 @@ void main() {
         inhalt: jsonEncode({'art': art, 'werte': w}),
       );
 
+  test('Archiv: aus der Zeitleiste, eigens abrufbar (#304)', () async {
+    final weg = await ladeHoch(erikaToken, 'IMG_0500.jpg', 40);
+    final bleibt = await ladeHoch(erikaToken, 'IMG_0501.jpg', 140);
+    Future<Set<Object?>> liste([String abfrage = '']) async => {
+      for (final a
+          in ((await jsonAus(
+                    await frag(
+                      'GET',
+                      '/api/v1/aufnahmen$abfrage',
+                      token: erikaToken,
+                    ),
+                  ))['aufnahmen']!
+                  as List)
+              .cast<Map>())
+        a['id'],
+    };
+    Future<int> inMonaten() async {
+      final m = await jsonAus(
+        await frag('GET', '/api/v1/zeitleiste/monate', token: erikaToken),
+      );
+      return [
+        for (final e in (m['monate'] as List).cast<Map>()) e['anzahl'] as int,
+      ].fold<int>(0, (a, b) => a + b);
+    }
+
+    final vorher = await inMonaten();
+    expect(
+      (await befehl(erikaToken, 'archivSetzen', {
+        'ids': [weg],
+        'an': true,
+      })).statusCode,
+      200,
+    );
+    expect(await liste(), allOf(contains(bleibt), isNot(contains(weg))));
+    expect(await liste('?archiv=1'), {weg});
+    expect(await inMonaten(), vorher - 1);
+    await befehl(erikaToken, 'archivSetzen', {
+      'ids': [weg],
+      'an': false,
+    });
+    expect(await liste(), contains(weg));
+    expect(await liste('?archiv=1'), isEmpty);
+  });
+
   test(
     'Formate stapeln: Der Server bildet und löst die Stapel (#361)',
     () async {

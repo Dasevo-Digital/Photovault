@@ -296,14 +296,18 @@ extension SerienAbfragen on AppDatabase {
         }
         final bisher = [
           for (final a in mitglieder)
-            if (a.isStackCover && a.id != coverAssetId) a.id,
+            if (a.isStackCover && a.id != coverAssetId) a,
         ];
         if (bisher.isNotEmpty) {
           await _uebertrageAngaben(
             coverAssetId,
-            bisher,
+            [for (final a in bisher) a.id],
             beschreibungenVerbinden: false,
             verschieben: true,
+          );
+          // Ob der Stapel im Archiv liegt (#304), bestimmt das, was man sah.
+          await (update(assets)..where((t) => t.id.equals(coverAssetId))).write(
+            AssetsCompanion(isArchived: Value(bisher.first.isArchived)),
           );
         }
         await batch((b) {

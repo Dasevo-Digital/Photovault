@@ -310,9 +310,10 @@ abstract final class Hauptbereich {
   static const kalender = 11;
   static const fotokammer = 12;
   static const duplikate = 13;
-  static const papierkorb = 14;
-  static const werkzeuge = 15;
-  static const einstellungen = 16;
+  static const archiv = 14;
+  static const papierkorb = 15;
+  static const werkzeuge = 16;
+  static const einstellungen = 17;
 
   /// Die ersten drei stehen am schmalen Fenster unten als Reiter; der
   /// Rest liegt dort im Blatt „Bibliothek“.
@@ -556,6 +557,11 @@ class _HomeShellState extends State<HomeShell> {
           text: t.navDuplikate,
           icon: Bibliothekssymbole.duplikate,
           farbe: Bibliotheksfarben.duplikate,
+        ),
+        Leisteneintrag(
+          text: t.navArchiv,
+          icon: Bibliothekssymbole.archiv,
+          farbe: Bibliotheksfarben.archiv,
         ),
         Leisteneintrag(
           text: t.navPapierkorb,
@@ -805,6 +811,12 @@ class _HomeShellState extends State<HomeShell> {
         alben: () async => [for (final a in await l.db.alleAlben()) a.name],
       ),
       DuplicatesScreen(library: l),
+      // Wie die Favoriten: eine Suche mit gesetztem Filter (#304).
+      SearchScreen(
+        library: l,
+        startFilter: const SearchFilters(nurArchiv: true),
+        titel: t.navArchiv,
+      ),
       TrashScreen(library: l),
       ToolsScreen(library: l),
       SettingsScreen(library: l),

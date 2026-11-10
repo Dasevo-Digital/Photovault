@@ -764,6 +764,14 @@ class _TimelineScreenState extends State<TimelineScreen>
                     widget.library,
                     _selected.toList(),
                   ),
+                  onArchive: () async {
+                    await runBatchArchiv(
+                      widget.library,
+                      _selected.toList(),
+                      texte: AppTexte.of(context),
+                    );
+                    if (mounted) setState(_selected.clear);
+                  },
                   onFavorite: () async {
                     await runBatchFavorite(
                       widget.library,

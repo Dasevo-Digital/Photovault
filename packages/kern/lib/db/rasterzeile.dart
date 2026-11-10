@@ -62,6 +62,11 @@ const String rasterSichtbar =
     "AND (type = 'IMAGE' OR linked_asset_id IS NULL) "
     'AND (stack_id IS NULL OR is_stack_cover = 1)';
 
+/// Was in der Zeitleiste steht: alles Sichtbare ausser dem Archiv (#304).
+/// Alben, Suche, Personen und Favoriten zeigen das Archiv weiter und nehmen
+/// [rasterSichtbar].
+const String zeitleisteSichtbar = '$rasterSichtbar AND is_archived = 0';
+
 /// Eine Zeile für die Kachelwand.
 class Rasterzeile {
   const Rasterzeile({

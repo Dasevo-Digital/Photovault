@@ -23,6 +23,7 @@ AssetData _asset({
     fileCreatedAt: aufgenommen ?? DateTime(2026, 3, 7, 14, 5),
     importedAt: DateTime(2026, 3, 8),
     isFavorite: false,
+    isArchived: false,
     isTrashed: false,
     isLocked: false,
     faceScanExcluded: false,

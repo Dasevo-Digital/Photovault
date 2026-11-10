@@ -27,8 +27,8 @@
 /// Rahmen gehört zu dem Gesicht der Bibliothek, das ihn am stärksten
 /// überlappt.
 ///
-/// **Archiv.** Photo Vault hat noch keins (#304); solche Aufnahmen kommen in
-/// ein Album und bleiben in der Zeitleiste.
+/// **Archiv.** Was in Immich archiviert ist, kommt ins Archiv der Bibliothek
+/// (#304): aus der Zeitleiste, in Alben und Suche weiter da.
 ///
 /// **Nur eigene Aufnahmen** (#362). Die Suche von Immich liefert auch die
 /// Fotos von Partnern, die in der eigenen Zeitleiste stehen. Sie gehören
@@ -482,6 +482,7 @@ class _Zeile {
   String? get stapel => z.read(db.assets.stackId);
   bool get titel => z.read(db.assets.isStackCover)!;
   int? get groesse => z.read(db.assets.fileSizeBytes);
+  bool get archiviert => z.read(db.assets.isArchived)!;
 }
 
 Future<List<_Zeile>> _zeilen(AppDatabase db) async {
@@ -501,6 +502,7 @@ Future<List<_Zeile>> _zeilen(AppDatabase db) async {
       a.stackId,
       a.isStackCover,
       a.fileSizeBytes,
+      a.isArchived,
     ]);
   return [for (final z in await q.get()) _Zeile(z, db)];
 }
@@ -557,8 +559,6 @@ double _ueberlappung(ImmichGesicht a, _Gesicht b) {
 /// ihre Rahmen verschieden eng; ein anderes Gesicht überlappt fast nie so
 /// stark.
 const _mindestUeberlappung = 0.3;
-
-const _archivName = 'Archiv (aus Immich)';
 
 /// Was Immich hergibt, auf die Kennungen der Bibliothek abgebildet.
 class _Bestand {
@@ -629,7 +629,9 @@ class _Personenplan {
 
 class _Vorhaben {
   final alben = <_Albumplan>[];
-  _Albumplan? archiv;
+
+  /// Was ins Archiv gehört und noch nicht dort liegt.
+  final archiv = <String>{};
   final favoriten = <String>{};
   final beschreibungen = <String, String>{};
   var beschreibungenAbweichend = 0;
@@ -757,10 +759,11 @@ Future<_Vorhaben> _berechne(Bibliothek bib, _Bestand b) async {
     }
     if (plan != null) v.alben.add(plan);
   }
-  v.archiv = await album(_archivName, DateTime.now(), [
-    for (final a in b.aufnahmen)
-      if (a.archiviert) b.zuordnung[a.id],
-  ]);
+  for (final a in b.aufnahmen) {
+    if (!a.archiviert) continue;
+    final z = zeilen[sichtbar(b.zuordnung[a.id])];
+    if (z != null && !z.archiviert) v.archiv.add(z.id);
+  }
 
   await _berechnePersonen(db, b, v);
   return v;
@@ -859,7 +862,7 @@ Map<String, Object?> _bericht(_Bestand b, _Vorhaben v) {
       for (final p in a.personen)
         if (p.zaehlt) p.id,
   };
-  final alben = [...v.alben, ?v.archiv];
+  final alben = v.alben;
   return {
     'fassung': b.fassung,
     'immich': {
@@ -898,11 +901,12 @@ Map<String, Object?> _bericht(_Bestand b, _Vorhaben v) {
       'personenVorhanden': v.personen.where((p) => p.vorhanden != null).length,
       'gesichter': v.personen.fold<int>(0, (n, p) => n + p.gesichter.length),
       'geburtstage': v.personen.where((p) => p.geburt != null).length,
-      'archiv': v.archiv?.neu.length ?? 0,
+      'archiv': v.archiv.length,
       'abweichendeNamen': v.abweichendeNamen,
       'unklar': v.unklar,
       'aenderungen':
           alben.fold<int>(0, (n, a) => n + a.neu.length) +
+          v.archiv.length +
           v.favoriten.length +
           v.beschreibungen.length +
           v.personen.fold<int>(
@@ -1311,7 +1315,7 @@ class Immichuebernahme {
           (gewaehlt('favoriten') ? v.favoriten.length : 0) +
           (gewaehlt('beschreibungen') ? v.beschreibungen.length : 0) +
           (gewaehlt('personen') ? v.personen.length : 0) +
-          (gewaehlt('archiv') && v.archiv != null ? 1 : 0);
+          (gewaehlt('archiv') ? v.archiv.length : 0);
       if (gewaehlt('alben')) {
         for (final a in v.alben) {
           alben += await fuelle(a);
@@ -1355,10 +1359,12 @@ class Immichuebernahme {
           l.fertig++;
         }
       }
-      final a = v.archiv;
-      if (gewaehlt('archiv') && a != null) {
-        archiv = await fuelle(a);
-        l.fertig++;
+      if (gewaehlt('archiv')) {
+        for (final teil in _stuecke(v.archiv.toList())) {
+          await db.fuehreAus(ArchivSetzen(teil, true));
+          archiv += teil.length;
+          l.fertig += teil.length;
+        }
       }
       l
         ..ergebnis = {

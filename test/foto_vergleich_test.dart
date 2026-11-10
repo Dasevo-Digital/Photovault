@@ -33,6 +33,7 @@ void main() {
     fileCreatedAt: DateTime(2026, 1, 1),
     importedAt: DateTime(2026, 1, 1),
     isFavorite: false,
+    isArchived: false,
     isTrashed: false,
     isLocked: false,
     faceScanExcluded: false,

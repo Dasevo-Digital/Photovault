@@ -190,6 +190,7 @@ class Befehlsbasis {
       if (n.tabelle == 'assets') {
         final absicht = switch (befehl.art) {
           'favoritSetzen' => ['is_favorite'],
+          'archivSetzen' => ['is_archived'],
           'bewertungSetzen' => ['rating'],
           'farbmarkeSetzen' => ['color_label'],
           'beschreibungSetzen' => ['description'],
