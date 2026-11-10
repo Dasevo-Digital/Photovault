@@ -154,11 +154,13 @@ void main() {
   Future<FaceData> faceZeile(String id) async =>
       (db.select(db.faces)..where((f) => f.id.equals(id))).getSingle();
 
+  final zeit0 = DateTime.utc(2024, 5, 1, 10);
+
   group('Bericht und Übernahme', () {
     late String freiesGesicht;
 
     setUp(() async {
-      final zeit = DateTime.utc(2024, 5, 1, 10);
+      final zeit = zeit0;
       await lade('a.jpg', 20, zeit: zeit);
       await lade('b.jpg', 90, zeit: zeit.add(const Duration(hours: 1)));
       await lade('c.jpg', 160, zeit: zeit.add(const Duration(hours: 2)));
@@ -334,6 +336,129 @@ void main() {
       expect(await db.allePersonen(), hasLength(1), reason: 'kein leerer Tom');
     });
 
+    test('Fotos von Partnern zählen nicht (#362)', () async {
+      fake.aufnahmen.add(
+        _aufnahme(
+          'ip',
+          sha1s['c.jpg']!,
+          'c.jpg',
+          zeit0,
+          favorit: true,
+          beschreibung: 'vom Partner',
+          besitzer: 'partner',
+        ),
+      );
+      fake.aufnahmen.add(
+        _aufnahme('iq', 'cGFydG5lcjI=', 'q.jpg', zeit0, besitzer: 'partner'),
+      );
+      final s = await pruefe();
+      final b = s['bericht'] as Map;
+      expect((b['immich'] as Map)['partner'], 2);
+      expect((b['zuordnung'] as Map)['fehlen'], 2, reason: 'q.jpg zählt nicht');
+      expect((b['vorhaben'] as Map)['favoriten'], 1, reason: 'nur a.jpg');
+    });
+
+    test('ohne user.read eine klare Meldung', () async {
+      fake.ohneNutzerrecht = true;
+      final s = await pruefe();
+      expect(s['stufe'], 'fehler');
+      expect('${s['fehler']}', contains('user.read'));
+    });
+
+    test('Kameratexte werden keine Beschreibung (#362)', () async {
+      fake.aufnahmen.firstWhere((a) => a['id'] == 'ia')['exifInfo'] = {
+        'description': 'OLYMPUS DIGITAL CAMERA',
+      };
+      final s = await pruefe();
+      final p = (s['bericht'] as Map)['vorhaben'] as Map;
+      expect(p['beschreibungen'], 0);
+      expect(p['kameratexte'], 1);
+    });
+
+    test('zwei Immich-Personen gleichen Namens werden eine (#362)', () async {
+      await lade('d.jpg', 220, zeit: zeit0.add(const Duration(hours: 3)));
+      final zweites = await gesicht(ids['d.jpg']!, x: 0.1);
+      const tom2 = {'id': 'i-tom2', 'name': 'Tom', 'isHidden': false};
+      fake.aufnahmen.add(
+        _aufnahme(
+          'id',
+          sha1s['d.jpg']!,
+          'd.jpg',
+          zeit0.add(const Duration(hours: 3)),
+          leute: [tom2],
+        ),
+      );
+      fake.gesichter['id'] = [_rahmen('i-tom2', 0.1)];
+      final s = await pruefe();
+      final p = (s['bericht'] as Map)['vorhaben'] as Map;
+      expect(p['personenNeu'], 1);
+      expect(p['gesichter'], 2);
+      await uebernimm();
+      final toms = (await db.allePersonen()).where((p) => p.name == 'Tom');
+      expect(toms, hasLength(1));
+      expect((await faceZeile(zweites)).personId, toms.single.id);
+      expect((await faceZeile(freiesGesicht)).personId, toms.single.id);
+    });
+
+    test('verdeckte Stapelmitglieder: Album an die oberste, einmal', () async {
+      await db.fuehreAus(
+        SerieBilden('s', [ids['a.jpg']!, ids['c.jpg']!], ids['c.jpg']!),
+      );
+      await pruefe();
+      await uebernimm({'personen': false});
+      final alben = {for (final a in await db.alleAlben()) a.name: a.id};
+      expect(
+        await db.imAlbum(alben['Urlaub']!, [ids['a.jpg']!, ids['c.jpg']!]),
+        {ids['c.jpg']},
+      );
+      expect((await zeile('c.jpg')).isFavorite, isTrue, reason: 'von a.jpg');
+      final zweite = await pruefe();
+      final v = (zweite['bericht'] as Map)['vorhaben'] as Map;
+      expect(v['albumAufnahmen'], 0);
+      expect(v['favoriten'], 0);
+    });
+
+    test('ein kaputter Zwischenspeicher wird neu gerechnet', () async {
+      final bibliothek = (await bibliotheken.fuer(erikaId)).bibliothek;
+      File(
+        '${bibliothek.ordner.path}/immich-sha1.json',
+      ).writeAsStringSync('{kaputt');
+      final s = await pruefe();
+      expect(s['stufe'], 'bereit', reason: '${s['fehler']}');
+      expect(((s['bericht'] as Map)['zuordnung'] as Map)['bitgleich'], 2);
+    });
+
+    test('ein in Immich gelöschtes Foto bricht die Prüfung nicht ab', () async {
+      fake.gesichterWeg.add('ia');
+      final s = await pruefe();
+      expect(s['stufe'], 'bereit', reason: '${s['fehler']}');
+    });
+
+    test(
+      'ein neues gleichnamiges Album benennt kein altes um (#362)',
+      () async {
+        await pruefe();
+        await uebernimm();
+        final vorher = {for (final a in await db.alleAlben()) a.id: a.name};
+        fake.alben['a0'] = ('Urlaub', ['ib']);
+        fake.albumAngelegt['a0'] = '2020-01-01T00:00:00.000Z';
+        await pruefe();
+        await uebernimm();
+        final nachher = {for (final a in await db.alleAlben()) a.id: a.name};
+        for (final MapEntry(key: id, value: name) in vorher.entries) {
+          expect(nachher[id], name);
+        }
+        expect(nachher.values, contains('Urlaub (3)'));
+      },
+    );
+
+    test('der Bericht zählt alle nicht Zugeordneten', () async {
+      final s = await pruefe();
+      final z = (s['bericht'] as Map)['zuordnung'] as Map;
+      expect(z['ohneAnzahl'], 2);
+      expect(z['mehrdeutig'], 0);
+    });
+
     test('Stimmen ohne klare Mehrheit: unklar, keine Änderung', () async {
       await db.fuehreAus(const PersonAnlegen('p-berta', 'Berta'));
       await gesicht(ids['c.jpg']!, x: 0.6, person: 'p-berta');
@@ -464,6 +589,7 @@ Map<String, Object?> _aufnahme(
   String sichtbarkeit = 'timeline',
   String? beschreibung,
   List<Map<String, Object?>> leute = const [],
+  String besitzer = 'ich',
 }) => {
   'id': id,
   'checksum': sha1,
@@ -476,6 +602,7 @@ Map<String, Object?> _aufnahme(
   'visibility': sichtbarkeit,
   'exifInfo': {'description': beschreibung ?? ''},
   'people': leute,
+  'ownerId': besitzer,
 };
 
 /// Ein Rahmen an der Stelle [x] auf einem Bild von 1000 mal 800 Punkten; passt
@@ -504,6 +631,9 @@ class _Immich {
   var keinImmich = false;
   var umleiten = false;
   var umgeleitetGefragt = false;
+  var ohneNutzerrecht = false;
+  final gesichterWeg = <String>{};
+  final albumAngelegt = <String, String>{};
 
   Response _json(Object? j, {int status = 200}) => Response(
     status,
@@ -535,13 +665,24 @@ class _Immich {
             {
               'id': id,
               'albumName': name,
-              'createdAt': '2024-01-01T00:00:00.000Z',
+              'createdAt': albumAngelegt[id] ?? '2024-01-01T00:00:00.000Z',
               'assetCount': 1,
             },
       ]);
     }
+    if (r.method == 'GET' && pfad == 'api/users/me') {
+      return ohneNutzerrecht
+          ? _json({'message': 'Missing permission'}, status: 403)
+          : _json({'id': 'ich', 'name': 'Erika'});
+    }
     if (r.method == 'GET' && pfad == 'api/faces') {
-      return _json(gesichter[r.url.queryParameters['id']] ?? const []);
+      final id = r.url.queryParameters['id'];
+      if (gesichterWeg.contains(id)) {
+        return _json({
+          'message': 'Not found or no face.read access',
+        }, status: 400);
+      }
+      return _json(gesichter[id] ?? const []);
     }
     if (r.method == 'POST' && pfad == 'api/search/metadata') {
       final k = jsonDecode(await r.readAsString()) as Map;

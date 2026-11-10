@@ -29,6 +29,15 @@
 ///
 /// **Archiv.** Photo Vault hat noch keins (#304); solche Aufnahmen kommen in
 /// ein Album und bleiben in der Zeitleiste.
+///
+/// **Nur eigene Aufnahmen** (#362). Die Suche von Immich liefert auch die
+/// Fotos von Partnern, die in der eigenen Zeitleiste stehen. Sie gehören
+/// nicht zum Abgleich; dafür braucht der Schlüssel `user.read`.
+///
+/// **Kameratexte.** Immich füllt die Beschreibung auch aus der Datei, und
+/// viele Kameras schreiben dort „OLYMPUS DIGITAL CAMERA“ oder „SONY DSC“
+/// hinein. Was so in der Datei steht oder so aussieht, wird nicht
+/// übernommen – die Bibliothek liest diese Texte beim Import auch nicht.
 library;
 
 import 'dart:async';
@@ -38,6 +47,7 @@ import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart' show TypedResult;
+import 'package:exif/exif.dart' show readExifFromFile;
 import 'package:http/http.dart' as http;
 import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
@@ -87,6 +97,8 @@ class ImmichAufnahme {
     required this.archiviert,
     required this.beschreibung,
     required this.personen,
+    this.besitzer,
+    this.groesse,
   });
 
   /// `null` für alles, was nicht übernommen wird: Papierkorb, Gesperrtes
@@ -117,6 +129,8 @@ class ImmichAufnahme {
         for (final x in (j['people'] as List?) ?? const [])
           ImmichPerson.aus((x as Map).cast<String, Object?>()),
       ],
+      besitzer: j['ownerId'] as String?,
+      groesse: exif is Map ? (exif['fileSizeInByte'] as num?)?.toInt() : null,
     );
   }
 
@@ -131,6 +145,12 @@ class ImmichAufnahme {
   final bool archiviert;
   final String beschreibung;
   final List<ImmichPerson> personen;
+
+  /// Das Konto, dem die Aufnahme in Immich gehört.
+  final String? besitzer;
+
+  /// Die Grösse des Originals in Bytes, wenn Immich sie kennt.
+  final int? groesse;
 }
 
 class ImmichAlbum {
@@ -239,7 +259,7 @@ class Immichverbindung {
       case 403:
         throw const Immichfehler(
           'Dem API-Schlüssel fehlt eine Berechtigung. Er braucht asset.read, '
-          'album.read und face.read.',
+          'album.read, face.read und user.read.',
         );
       case >= 300 && < 400:
         throw const Immichfehler(
@@ -268,12 +288,22 @@ class Immichverbindung {
     throw const Immichfehler('Unter dieser Adresse antwortet kein Immich.');
   }
 
-  /// Alle Treffer einer Suche, Seite für Seite.
-  Future<List<Map<String, Object?>>> _treffer(
-    Map<String, Object?> suche, {
+  /// Das Konto, dem der Schlüssel gehört.
+  Future<String> ich() async {
+    final j = await _frage('GET', 'users/me');
+    if (j is Map && j['id'] is String) return j['id'] as String;
+    throw const Immichfehler('Immich antwortet in unbekannter Form.');
+  }
+
+  /// Geht alle Treffer einer Suche durch, Seite für Seite, und gibt jeden
+  /// gleich an [jeTreffer] weiter – die Rohantworten von hunderttausend
+  /// Aufnahmen auf einmal im Speicher wären mehrere hundert Megabyte.
+  Future<int> _durchlaufe(
+    Map<String, Object?> suche,
+    void Function(Map<String, Object?>) jeTreffer, {
     void Function(int)? fortschritt,
   }) async {
-    final aus = <Map<String, Object?>>[];
+    var anzahl = 0;
     var weiter = const <String, Object?>{};
     final gesehen = <String>{};
     while (true) {
@@ -287,9 +317,10 @@ class Immichverbindung {
         throw const Immichfehler('Immich antwortet in unbekannter Form.');
       }
       for (final x in (seite['items'] as List?) ?? const []) {
-        aus.add((x as Map).cast<String, Object?>());
+        jeTreffer((x as Map).cast<String, Object?>());
+        anzahl++;
       }
-      fortschritt?.call(aus.length);
+      fortschritt?.call(anzahl);
       // Die flachen Felder dieser Suche gehören zu den Seitennummern; den
       // Zeiger gibt es erst seit 3.2.
       final nummer = seite['nextPage'];
@@ -299,7 +330,7 @@ class Immichverbindung {
       } else if (zeiger is String && zeiger.isNotEmpty) {
         weiter = {'cursor': zeiger};
       } else {
-        return aus;
+        return anzahl;
       }
       if (!gesehen.add('$weiter')) {
         throw const Immichfehler('Immich liefert dieselbe Seite immer wieder.');
@@ -307,28 +338,36 @@ class Immichverbindung {
     }
   }
 
-  /// Was übernommen werden kann.
-  Future<List<ImmichAufnahme>> aufnahmen({
+  /// Was übernommen werden kann – nur Aufnahmen von [besitzer]; die von
+  /// Partnern zählt `partner`.
+  Future<({List<ImmichAufnahme> liste, int partner})> aufnahmen({
+    String? besitzer,
     void Function(int)? fortschritt,
   }) async {
     const felder = {'withExif': true, 'withPeople': true};
     final aus = <String, ImmichAufnahme>{};
-    void nimm(List<Map<String, Object?>> liste) {
-      for (final j in liste) {
-        final a = ImmichAufnahme.aus(j);
-        if (a != null) aus[a.id] = a;
+    final fremd = <String>{};
+    void nimm(Map<String, Object?> j) {
+      final a = ImmichAufnahme.aus(j);
+      if (a == null) return;
+      if (besitzer != null && a.besitzer != null && a.besitzer != besitzer) {
+        fremd.add(a.id);
+      } else {
+        aus[a.id] = a;
       }
     }
 
-    nimm(await _treffer(felder, fortschritt: fortschritt));
-    // Ob eine Suche ohne Angabe auch Archiviertes liefert, hängt von der
-    // Fassung ab; ausdrücklich gefragt kommt es in jedem Fall.
-    try {
-      nimm(await _treffer({...felder, 'visibility': 'archive'}));
-    } on _Abgelehnt {
-      // Eine Fassung ohne dieses Feld hat es oben schon geliefert.
+    await _durchlaufe(felder, nimm, fortschritt: fortschritt);
+    // Seit 3.x liefert die Suche ohne Angabe auch Archiviertes. Nur wenn
+    // nichts davon kam, eigens danach fragen – für ältere Fassungen.
+    if (!aus.values.any((a) => a.archiviert)) {
+      try {
+        await _durchlaufe({...felder, 'visibility': 'archive'}, nimm);
+      } on _Abgelehnt {
+        // Eine Fassung ohne dieses Feld hat es oben schon geliefert.
+      }
     }
-    return aus.values.toList();
+    return (liste: aus.values.toList(), partner: fremd.length);
   }
 
   /// Eigene und mit dem Konto geteilte Alben, samt Inhalt.
@@ -356,19 +395,29 @@ class Immichverbindung {
           '${m['id']}',
           '${m['albumName'] ?? ''}'.trim(),
           DateTime.tryParse('${m['createdAt']}') ?? DateTime.now(),
-          [
-            for (final a in await _treffer({
-              'albumIds': [m['id']],
-            }))
-              '${a['id']}',
-          ],
+          await _inhalt('${m['id']}'),
         ),
     ];
   }
 
+  Future<List<String>> _inhalt(String album) async {
+    final ids = <String>[];
+    await _durchlaufe({
+      'albumIds': [album],
+    }, (a) => ids.add('${a['id']}'));
+    return ids;
+  }
+
   /// Die Gesichter von Personen auf einem Foto.
   Future<List<ImmichGesicht>> gesichter(String aufnahme) async {
-    final j = await _frage('GET', 'faces', abfrage: {'id': aufnahme});
+    final Object? j;
+    try {
+      j = await _frage('GET', 'faces', abfrage: {'id': aufnahme});
+    } on _Abgelehnt {
+      // Inzwischen in Immich gelöscht: Dann gibt es dort keine Gesichter mehr,
+      // und der Rest der Prüfung soll deshalb nicht scheitern.
+      return const [];
+    }
     return [
       for (final x in j is List ? j : const [])
         ?_gesicht((x as Map).cast<String, Object?>()),
@@ -430,6 +479,9 @@ class _Zeile {
   bool get imPapierkorb => z.read(db.assets.isTrashed)!;
   bool get gesperrt => z.read(db.assets.isLocked)!;
   String get beschreibung => (z.read(db.assets.description) ?? '').trim();
+  String? get stapel => z.read(db.assets.stackId);
+  bool get titel => z.read(db.assets.isStackCover)!;
+  int? get groesse => z.read(db.assets.fileSizeBytes);
 }
 
 Future<List<_Zeile>> _zeilen(AppDatabase db) async {
@@ -446,6 +498,9 @@ Future<List<_Zeile>> _zeilen(AppDatabase db) async {
       a.isTrashed,
       a.isLocked,
       a.description,
+      a.stackId,
+      a.isStackCover,
+      a.fileSizeBytes,
     ]);
   return [for (final z in await q.get()) _Zeile(z, db)];
 }
@@ -516,6 +571,9 @@ class _Bestand {
     required this.aehnlich,
     required this.ohne,
     required this.bibliotheksgroesse,
+    this.partner = 0,
+    this.unlesbar = 0,
+    this.kameratexte = const {},
   });
 
   final String fassung;
@@ -530,12 +588,24 @@ class _Bestand {
   final int aehnlich;
   final List<Map<String, Object?>> ohne;
   final int bibliotheksgroesse;
+
+  /// Aufnahmen von Partnern, die nicht zählen.
+  final int partner;
+
+  /// Originale, die sich nicht lesen liessen.
+  final int unlesbar;
+
+  /// Kennungen in Immich, deren Beschreibung ein Kameratext ist.
+  final Set<String> kameratexte;
 }
 
 class _Albumplan {
-  _Albumplan(this.name, this.angelegt, this.vorhanden, this.neu);
+  _Albumplan(this.name, this.angelegt, this.vorhanden, this.neu, [this.immich]);
   final String name;
   final DateTime angelegt;
+
+  /// Die Kennung des Albums in Immich; `null` beim Archiv-Album.
+  final String? immich;
 
   /// Die Kennung, wenn es das Album schon gibt.
   final String? vorhanden;
@@ -560,9 +630,10 @@ class _Personenplan {
 class _Vorhaben {
   final alben = <_Albumplan>[];
   _Albumplan? archiv;
-  final favoriten = <String>[];
+  final favoriten = <String>{};
   final beschreibungen = <String, String>{};
   var beschreibungenAbweichend = 0;
+  var kameratexte = 0;
   final personen = <_Personenplan>[];
   final abweichendeNamen = <Map<String, Object?>>[];
   final unklar = <String>[];
@@ -579,52 +650,116 @@ Iterable<List<T>> _stuecke<T>(List<T> liste, [int groesse = 500]) sync* {
 
 String _gleichgemacht(String name) => name.trim().toLowerCase();
 
-Future<_Vorhaben> _berechne(AppDatabase db, _Bestand b) async {
+/// Welche Immich-Alben welchen Alben der Bibliothek entsprechen – damit ein
+/// zweiter Lauf nicht nach dem Namen gehen muss (gleichnamige Alben).
+File _albenAblage(Bibliothek bib) =>
+    File(p.join(bib.ordner.path, 'immich-alben.json'));
+
+Map<String, String> _albenZuordnung(Bibliothek bib) {
+  final f = _albenAblage(bib);
+  try {
+    if (f.existsSync()) {
+      return (jsonDecode(f.readAsStringSync()) as Map).cast<String, String>();
+    }
+  } on Object catch (e) {
+    protokoll('Immich: ${f.path} nicht lesbar, beginne neu: $e');
+  }
+  return {};
+}
+
+Future<_Vorhaben> _berechne(Bibliothek bib, _Bestand b) async {
+  final db = bib.db;
   final v = _Vorhaben();
   final zeilen = {for (final z in await _zeilen(db)) z.id: z};
+  // Angaben gehören der Fassung, die man sieht (#363): Ist die Aufnahme ein
+  // verdecktes Mitglied eines Stapels, geht alles an dessen Titelbild.
+  final titelJeStapel = {
+    for (final z in zeilen.values)
+      if (z.titel && z.stapel != null) z.stapel!: z.id,
+  };
+  String? sichtbar(String? id) {
+    final z = zeilen[id];
+    if (z == null) return null;
+    final stapel = z.stapel;
+    return stapel == null || z.titel ? z.id : (titelJeStapel[stapel] ?? z.id);
+  }
+
   for (final a in b.aufnahmen) {
-    final z = zeilen[b.zuordnung[a.id]];
+    final z = zeilen[sichtbar(b.zuordnung[a.id])];
     if (z == null) continue;
     if (a.favorit && !z.favorit) v.favoriten.add(z.id);
-    if (a.beschreibung.isNotEmpty) {
-      if (z.beschreibung.isEmpty) {
-        v.beschreibungen[z.id] = a.beschreibung;
-      } else if (z.beschreibung != a.beschreibung) {
-        v.beschreibungenAbweichend++;
-      }
+    if (a.beschreibung.isEmpty) continue;
+    if (b.kameratexte.contains(a.id)) {
+      v.kameratexte++;
+    } else if (z.beschreibung.isEmpty) {
+      v.beschreibungen.putIfAbsent(z.id, () => a.beschreibung);
+    } else if (z.beschreibung != a.beschreibung) {
+      v.beschreibungenAbweichend++;
     }
   }
 
-  final vorhandeneAlben = {for (final a in await db.alleAlben()) a.name: a.id};
+  final alleAlben = await db.alleAlben();
+  final albumNamen = {for (final a in alleAlben) a.name: a.id};
+  final albumIds = {for (final a in alleAlben) a.id};
+  final frueher = _albenZuordnung(bib);
   Future<_Albumplan?> album(
     String name,
     DateTime angelegt,
-    Iterable<String> aufnahmen,
-  ) async {
-    final ids = aufnahmen.toSet();
-    final vorhanden = vorhandeneAlben[name];
+    Iterable<String?> aufnahmen, {
+    String? immich,
+    String? vorhanden,
+  }) async {
+    final ids = {for (final id in aufnahmen) ?sichtbar(id)};
+    vorhanden ??= albumNamen[name];
     if (vorhanden != null) {
-      ids.removeAll((await db.assetsInAlbumOnce(vorhanden)).map((a) => a.id));
+      // Direkt aus album_assets: Die Abfrage fürs Raster liesse verdeckte
+      // Stapelmitglieder weg, und jeder Lauf füllte sie erneut.
+      ids.removeAll(await db.imAlbum(vorhanden, ids.toList()));
     }
     return ids.isEmpty
         ? null
-        : _Albumplan(name, angelegt, vorhanden, ids.toList());
+        : _Albumplan(name, angelegt, vorhanden, ids.toList(), immich);
   }
 
-  // Zwei Immich-Alben mit demselben Namen blieben sonst nicht getrennt.
-  final sortiert = [...b.alben]..sort((x, y) => x.id.compareTo(y.id));
-  final namen = <String, int>{};
+  // Zwei Immich-Alben mit demselben Namen blieben sonst nicht getrennt. Was
+  // schon einmal übernommen wurde, behält sein Album, auch wenn ein neues
+  // gleichnamiges dazukommt; für die übrigen zählt das Alter.
+  final sortiert = [...b.alben]
+    ..sort((x, y) {
+      final z = x.angelegt.compareTo(y.angelegt);
+      return z != 0 ? z : x.id.compareTo(y.id);
+    });
+  final belegt = <String>{
+    for (final a in sortiert)
+      if (albumIds.contains(frueher[a.id]))
+        alleAlben.firstWhere((x) => x.id == frueher[a.id]).name,
+  };
   for (final a in sortiert) {
     if (a.name.isEmpty) continue;
-    final n = namen[a.name] = (namen[a.name] ?? 0) + 1;
-    final plan = await album(n == 1 ? a.name : '${a.name} ($n)', a.angelegt, [
-      for (final x in a.aufnahmen) ?b.zuordnung[x],
-    ]);
+    final mitglieder = [for (final x in a.aufnahmen) b.zuordnung[x]];
+    final schon = frueher[a.id];
+    _Albumplan? plan;
+    if (schon != null && albumIds.contains(schon)) {
+      plan = await album(
+        alleAlben.firstWhere((x) => x.id == schon).name,
+        a.angelegt,
+        mitglieder,
+        immich: a.id,
+        vorhanden: schon,
+      );
+    } else {
+      var name = a.name;
+      for (var n = 2; belegt.contains(name); n++) {
+        name = '${a.name} ($n)';
+      }
+      belegt.add(name);
+      plan = await album(name, a.angelegt, mitglieder, immich: a.id);
+    }
     if (plan != null) v.alben.add(plan);
   }
   v.archiv = await album(_archivName, DateTime.now(), [
     for (final a in b.aufnahmen)
-      if (a.archiviert) ?b.zuordnung[a.id],
+      if (a.archiviert) b.zuordnung[a.id],
   ]);
 
   await _berechnePersonen(db, b, v);
@@ -667,9 +802,13 @@ Future<void> _berechnePersonen(AppDatabase db, _Bestand b, _Vorhaben v) async {
     }
   }
 
+  // Zwei Immich-Personen gleichen Namens (nicht zusammengeführt) werden
+  // eine neue Person, nicht zwei.
+  final neuJeName = <String, _Personenplan>{};
   for (final p in namen.values) {
     final s = stimmen[p.id] ?? const <String, int>{};
     final freie = frei[p.id] ?? const <String>{};
+    final namensgleich = jeName[_gleichgemacht(p.name)];
     String? ziel;
     if (s.isNotEmpty) {
       final summe = s.values.reduce((x, y) => x + y);
@@ -677,15 +816,26 @@ Future<void> _berechnePersonen(AppDatabase db, _Bestand b, _Vorhaben v) async {
       final gleicherName =
           _gleichgemacht(personen[beste.key]?.name ?? '') ==
           _gleichgemacht(p.name);
-      // Ein einzelnes Gesicht unter anderem Namen kann ein Irrtum sein.
-      if (beste.value >= summe * 0.7 && (beste.value >= 2 || gleicherName)) {
+      // Ein einzelnes Gesicht unter anderem Namen kann ein Irrtum sein. Und
+      // zeigen die Gesichter auf jemand anderen, während es eine Person
+      // dieses Namens gibt, widersprechen sich die Hinweise: lieber nichts.
+      if (beste.value >= summe * 0.7 &&
+          (beste.value >= 2 || gleicherName) &&
+          (gleicherName || namensgleich == null)) {
         ziel = beste.key;
       } else {
         v.unklar.add(p.name);
         continue;
       }
     } else {
-      ziel = jeName[_gleichgemacht(p.name)]?.id;
+      ziel = namensgleich?.id;
+    }
+    if (ziel == null) {
+      final schon = neuJeName[_gleichgemacht(p.name)];
+      if (schon != null) {
+        schon.gesichter.addAll(freie);
+        continue;
+      }
     }
     final vorhanden = ziel == null ? null : personen[ziel];
     if (vorhanden != null &&
@@ -694,10 +844,10 @@ Future<void> _berechnePersonen(AppDatabase db, _Bestand b, _Vorhaben v) async {
     }
     final geburt = vorhanden?.geburtsdatum == null ? p.geburt : null;
     if (freie.isEmpty && (vorhanden == null || geburt == null)) continue;
-    v.personen.add(
-      _Personenplan(p.name, ziel, freie.toList(), geburt)
-        ..tod = vorhanden?.sterbedatum,
-    );
+    final plan = _Personenplan(p.name, ziel, freie.toList(), geburt)
+      ..tod = vorhanden?.sterbedatum;
+    v.personen.add(plan);
+    if (ziel == null) neuJeName[_gleichgemacht(p.name)] = plan;
   }
 }
 
@@ -714,6 +864,7 @@ Map<String, Object?> _bericht(_Bestand b, _Vorhaben v) {
     'fassung': b.fassung,
     'immich': {
       'aufnahmen': b.aufnahmen.length,
+      'partner': b.partner,
       'archiviert': b.aufnahmen.where((a) => a.archiviert).length,
       'favoriten': b.aufnahmen.where((a) => a.favorit).length,
       'beschreibungen': b.aufnahmen
@@ -728,7 +879,11 @@ Map<String, Object?> _bericht(_Bestand b, _Vorhaben v) {
       'fehlen': anzahl((o) => o['grund'] == 'fehlt'),
       'andereZeit': anzahl((o) => o['grund'] == 'andereZeit'),
       'papierkorb': anzahl((o) => o['grund'] == 'papierkorb'),
+      'gesperrt': anzahl((o) => o['grund'] == 'gesperrt'),
+      'mehrdeutig': anzahl((o) => o['grund'] == 'mehrdeutig'),
       'nurPhotoVault': b.bibliotheksgroesse - b.zuordnung.values.toSet().length,
+      'unlesbar': b.unlesbar,
+      'ohneAnzahl': b.ohne.length,
       'beispiele': b.ohne.take(500).toList(),
     },
     'vorhaben': {
@@ -738,6 +893,7 @@ Map<String, Object?> _bericht(_Bestand b, _Vorhaben v) {
       'favoriten': v.favoriten.length,
       'beschreibungen': v.beschreibungen.length,
       'beschreibungenAbweichend': v.beschreibungenAbweichend,
+      'kameratexte': v.kameratexte,
       'personenNeu': v.personen.where((p) => p.vorhanden == null).length,
       'personenVorhanden': v.personen.where((p) => p.vorhanden != null).length,
       'gesichter': v.personen.fold<int>(0, (n, p) => n + p.gesichter.length),
@@ -812,13 +968,62 @@ class _Lauf {
   };
 }
 
+/// Ein Kameratext statt einer Beschreibung? Gross- und Kleinschreibung
+/// zählen nicht. Die Liste deckt ab, was Kameras ab Werk hineinschreiben.
+const _kameratexte = {
+  'olympus digital camera',
+  'sony dsc',
+  'digital camera',
+  'minolta digital camera',
+  'konica minolta digital camera',
+  'leica digital camera',
+  'samsung digital camera',
+  'kodak digital still camera',
+  'exif_jpeg_picture',
+  'default',
+  'dcim',
+  'image',
+  'picture',
+};
+
+/// Ob [text] aus der Datei stammt oder wie ein Kameratext aussieht.
+Future<bool> _istKameratext(String text, String? pfad) async {
+  final t = text.trim().toLowerCase();
+  if (_kameratexte.contains(t) || RegExp(r'^[\s?._-]*$').hasMatch(t)) {
+    return true;
+  }
+  if (pfad == null) return false;
+  try {
+    final tags = await readExifFromFile(File(pfad));
+    final inDatei = tags['Image ImageDescription']?.printable.trim();
+    return inDatei != null && inDatei.toLowerCase() == t;
+  } on Object {
+    return false;
+  }
+}
+
 /// Die Übernahme je Konto. Es läuft immer nur eine.
 class Immichuebernahme {
-  Immichuebernahme(this.bibliotheken, {this._netz});
+  Immichuebernahme(this.bibliotheken, {this._netz, this.vergessenNach});
 
   final Bibliotheken bibliotheken;
   final http.Client Function()? _netz;
   final _laeufe = <String, _Lauf>{};
+
+  /// Nach so langer Ruhe wird eine fertige Prüfung vergessen: Sie hält die
+  /// Angaben aller Immich-Aufnahmen im Speicher. Vorgabe zwei Stunden.
+  final Duration? vergessenNach;
+  final _uhren = <String, Timer>{};
+
+  void _vergissSpaeter(String konto, _Lauf l) {
+    _uhren.remove(konto)?.cancel();
+    _uhren[konto] = Timer(vergessenNach ?? const Duration(hours: 2), () {
+      _uhren.remove(konto);
+      if (identical(_laeufe[konto], l) && !l.beschaeftigt) {
+        _laeufe.remove(konto);
+      }
+    });
+  }
 
   Map<String, Object?> stand(String konto) =>
       (_laeufe[konto] ?? _Lauf()).alsJson();
@@ -852,12 +1057,31 @@ class Immichuebernahme {
     try {
       final b = (await bibliotheken.fuer(konto)).bibliothek;
       final fassung = await v.fassung();
-      final aufnahmen = await v.aufnahmen(fortschritt: (n) => l.fertig = n);
+      final ich = await v.ich();
+      final (liste: aufnahmen, :partner) = await v.aufnahmen(
+        besitzer: ich,
+        fortschritt: (n) => l.fertig = n,
+      );
       final alben = await v.alben();
-      final (:zuordnung, :aehnlich, :ohne, :groesse) = await _ordneZu(
-        b,
-        aufnahmen,
-        l,
+      final (:zuordnung, :aehnlich, :ohne, :groesse, :unlesbar) =
+          await _ordneZu(b, aufnahmen, l);
+      final pfade = {for (final z in await _zeilen(b.db)) z.id: z.pfad};
+      final kameratexte = <String>{};
+      await _parallel(
+        [
+          for (final a in aufnahmen)
+            if (a.beschreibung.isNotEmpty && zuordnung.containsKey(a.id)) a,
+        ],
+        4,
+        (a) async {
+          final pfad = pfade[zuordnung[a.id]];
+          if (await _istKameratext(
+            a.beschreibung,
+            pfad == null ? null : b.pfade.absolute(pfad).path,
+          )) {
+            kameratexte.add(a.id);
+          }
+        },
       );
       final mitPersonen = [
         for (final a in aufnahmen)
@@ -885,11 +1109,15 @@ class Immichuebernahme {
         aehnlich: aehnlich,
         ohne: ohne,
         bibliotheksgroesse: groesse,
+        partner: partner,
+        unlesbar: unlesbar,
+        kameratexte: kameratexte,
       );
       l
         ..bestand = bestand
-        ..bericht = _bericht(bestand, await _berechne(b.db, bestand))
+        ..bericht = _bericht(bestand, await _berechne(b, bestand))
         ..weiter('bereit');
+      _vergissSpaeter(konto, l);
     } on Immichfehler catch (f) {
       l
         ..fehler = f.text
@@ -910,6 +1138,7 @@ class Immichuebernahme {
       int aehnlich,
       List<Map<String, Object?>> ohne,
       int groesse,
+      int unlesbar,
     })
   >
   _ordneZu(Bibliothek b, List<ImmichAufnahme> aufnahmen, _Lauf l) async {
@@ -919,31 +1148,65 @@ class Immichuebernahme {
         if (!z.imPapierkorb && !z.gesperrt) z,
     ];
     final ablage = File(p.join(b.ordner.path, 'immich-sha1.json'));
-    final bekannt = <String, String>{
-      if (ablage.existsSync())
-        ...(jsonDecode(await ablage.readAsString()) as Map)
-            .cast<String, String>(),
-    };
+    final bekannt = <String, String>{};
+    try {
+      if (ablage.existsSync()) {
+        bekannt.addAll(
+          (jsonDecode(await ablage.readAsString()) as Map)
+              .cast<String, String>(),
+        );
+      }
+    } on Object catch (e) {
+      // Nur ein Zwischenspeicher: Kaputt heisst neu rechnen, nicht aufgeben.
+      protokoll('Immich: ${ablage.path} nicht lesbar, rechne neu: $e');
+    }
+    // Was es in der Bibliothek nicht mehr gibt, braucht keinen Eintrag.
+    final vorhanden = {for (final z in zeilen) z.sha256};
+    bekannt.removeWhere((k, _) => !vorhanden.contains(k));
+    var geaendert = false;
     Future<void> sichere() async {
+      if (!geaendert) return;
+      geaendert = false;
       final neu = File('${ablage.path}.neu');
       await neu.writeAsString(jsonEncode(bekannt));
       await neu.rename(ablage.path);
     }
 
+    // Eine bitgleiche Datei hat dieselbe Grösse. Kennt Immich die Grössen
+    // aller Aufnahmen, braucht nur gehasht zu werden, was dazu passt.
+    final groessen = {for (final a in aufnahmen) a.groesse};
+    final nachGroesse = groessen.isNotEmpty && !groessen.contains(null);
+    bool kommtInFrage(_Zeile z) =>
+        !nachGroesse || z.groesse == null || groessen.contains(z.groesse);
+
     l.weiter('pruefsummen', von: lesbar.length);
     final zuSha1 = <String, _Zeile>{};
+    var unlesbar = 0;
+    var zuletzt = DateTime.now();
     await _parallel(lesbar, 3, (z) async {
       var s = bekannt[z.sha256];
-      if (s == null) {
+      if (s == null && kommtInFrage(z)) {
         final pfad = b.pfade.absolute(z.pfad).path;
-        if (File(pfad).existsSync()) {
-          s = bekannt[z.sha256] = await _sha1VonDatei(pfad);
-          if (bekannt.length % 500 == 0) await sichere();
+        try {
+          if (File(pfad).existsSync()) {
+            s = bekannt[z.sha256] = await _sha1VonDatei(pfad);
+            geaendert = true;
+          }
+        } on Object catch (e) {
+          unlesbar++;
+          protokoll('Immich: $pfad nicht lesbar: $e');
+        }
+        // Zwischendurch sichern, aber nach der Uhr: Nach der Zahl hiesse es
+        // bei hunderttausend Fotos zweihundert Mal die ganze Datei.
+        if (DateTime.now().difference(zuletzt) > const Duration(minutes: 1)) {
+          zuletzt = DateTime.now();
+          await sichere();
         }
       }
       if (s != null) zuSha1[s] = z;
       l.fertig++;
     });
+    geaendert = true;
     await sichere();
 
     final zuordnung = <String, String>{};
@@ -986,6 +1249,8 @@ class Immichuebernahme {
         'zeit': a.zeit.toUtc().toIso8601String(),
         'grund': passend.any((z) => z.imPapierkorb)
             ? 'papierkorb'
+            : passend.any((z) => z.gesperrt)
+            ? 'gesperrt'
             : frei.length > 1
             ? 'mehrdeutig'
             : gleichnamig.isNotEmpty
@@ -998,6 +1263,7 @@ class Immichuebernahme {
       aehnlich: aehnlich,
       ohne: ohne,
       groesse: lesbar.length,
+      unlesbar: unlesbar,
     );
   }
 
@@ -1022,14 +1288,17 @@ class Immichuebernahme {
   ) async {
     bool gewaehlt(String teil) => teile[teil] != false;
     try {
-      final db = (await bibliotheken.fuer(konto)).bibliothek.db;
+      final bib = (await bibliotheken.fuer(konto)).bibliothek;
+      final db = bib.db;
       // Neu gerechnet: Seit der Prüfung kann sich etwas geändert haben.
-      final v = await _berechne(db, l.bestand!);
+      final v = await _berechne(bib, l.bestand!);
+      final albenZuordnung = _albenZuordnung(bib);
       Future<int> fuelle(_Albumplan a) async {
         final id = a.vorhanden ?? const Uuid().v4();
         if (a.vorhanden == null) {
           await db.fuehreAus(AlbumAnlegen(id, a.name, a.angelegt));
         }
+        if (a.immich case final immich?) albenZuordnung[immich] = id;
         for (final teil in _stuecke(a.neu)) {
           await db.fuehreAus(AlbumFuellen(id, teil));
         }
@@ -1049,8 +1318,13 @@ class Immichuebernahme {
           l.fertig++;
         }
       }
+      if (gewaehlt('alben')) {
+        final f = _albenAblage(bib);
+        await File('${f.path}.neu').writeAsString(jsonEncode(albenZuordnung));
+        await File('${f.path}.neu').rename(f.path);
+      }
       if (gewaehlt('favoriten')) {
-        for (final teil in _stuecke(v.favoriten)) {
+        for (final teil in _stuecke(v.favoriten.toList())) {
           await db.fuehreAus(FavoritSetzen(teil, true));
           l.fertig += teil.length;
         }
@@ -1099,8 +1373,9 @@ class Immichuebernahme {
           'archiv': archiv,
         }
         // Der Bericht zeigt, was jetzt noch offen wäre.
-        ..bericht = _bericht(l.bestand!, await _berechne(db, l.bestand!))
+        ..bericht = _bericht(l.bestand!, await _berechne(bib, l.bestand!))
         ..weiter('fertig');
+      _vergissSpaeter(konto, l);
     } on Object catch (f, spur) {
       protokoll('Immich: Übernahme gescheitert: $f\n$spur');
       l
@@ -1114,6 +1389,7 @@ class Immichuebernahme {
     if (_laeufe[konto]?.beschaeftigt ?? false) {
       throw StateError('Es läuft gerade etwas.');
     }
+    _uhren.remove(konto)?.cancel();
     _laeufe.remove(konto);
   }
 }

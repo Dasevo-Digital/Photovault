@@ -4286,27 +4286,39 @@ function zeigeImmich(s) {
   $('immich-stand').textContent = text;
   $('immich-bericht').hidden = !s.bericht || laeuft;
   if (s.bericht && !laeuft) zeigeImmichBericht(s.bericht);
-  if (laeuft) {
-    immichUhr = setTimeout(async () => {
-      if (!$('immich').offsetParent) return;
-      try { zeigeImmich(await api('/api/v1/immich')); } catch (_) { /* beim nächsten Öffnen */ }
-    }, 1500);
-  }
+  if (laeuft) fragImmichNach(1500);
+}
+// Ein einzelner gescheiterter Abruf beendet das Nachfragen nicht; sonst
+// bliebe „Prüfen“ gesperrt, bis die Seite neu geöffnet wird.
+function fragImmichNach(ms) {
+  clearTimeout(immichUhr);
+  immichUhr = setTimeout(async () => {
+    if (!$('immich').offsetParent) return;
+    try { zeigeImmich(await api('/api/v1/immich')); } catch (_) { fragImmichNach(5000); }
+  }, ms);
 }
 function zeigeImmichBericht(b) {
   const z = b.zuordnung, v = b.vorhaben, zeilen = $('immich-zahlen');
   zeilen.replaceChildren();
   const zeile = (text) => zeilen.append(el('li', null, text));
   zeile(t('Immich {f}: {n} Aufnahmen, {a} Alben, {p} benannte Personen', { f: b.fassung, n: b.immich.aufnahmen, a: b.immich.alben, p: b.immich.personen }));
+  if (b.immich.partner) zeile(t('Von Partnern, nicht berücksichtigt: {n}', { n: b.immich.partner }));
   zeile(t('Gefunden: {g} bitgleich, {s} mit anderen Metadaten', { g: z.bitgleich, s: z.aehnlich }));
   zeile(t('Fehlen hier: {n}', { n: z.fehlen }));
   if (z.andereZeit) zeile(t('Gleicher Name, andere Zeit (bitte ansehen): {n}', { n: z.andereZeit }));
+  if (z.mehrdeutig) zeile(t('Mehrere mögliche Gegenstücke (bitte ansehen): {n}', { n: z.mehrdeutig }));
   if (z.papierkorb) zeile(t('Hier im Papierkorb: {n}', { n: z.papierkorb }));
+  if (z.gesperrt) zeile(t('Hier gesperrt: {n}', { n: z.gesperrt }));
+  if (z.unlesbar) zeile(t('Originale, die sich nicht lesen liessen: {n}', { n: z.unlesbar }));
   if (v.beschreibungenAbweichend) zeile(t('Beschreibungen, die hier anders lauten und bleiben: {n}', { n: v.beschreibungenAbweichend }));
+  if (v.kameratexte) zeile(t('Kameratexte statt Beschreibung, nicht übernommen: {n}', { n: v.kameratexte }));
   const ohne = z.beispiele || [];
+  const ohneAnzahl = z.ohneAnzahl ?? ohne.length;
   $('immich-ohne').hidden = !ohne.length;
-  $('immich-ohne-titel').textContent = t('Nicht zugeordnet: {n}', { n: ohne.length });
-  $('immich-ohne-liste').replaceChildren(...ohne.map((o) => el('li', null, `${o.name} · ${datumZeit.format(new Date(o.zeit))} · ${t(({ fehlt: 'fehlt', andereZeit: 'andere Zeit', papierkorb: 'im Papierkorb', mehrdeutig: 'mehrdeutig' })[o.grund] || o.grund)}`)));
+  $('immich-ohne-titel').textContent = ohneAnzahl > ohne.length
+    ? t('Nicht zugeordnet: {n} (die ersten {k})', { n: ohneAnzahl, k: ohne.length })
+    : t('Nicht zugeordnet: {n}', { n: ohneAnzahl });
+  $('immich-ohne-liste').replaceChildren(...ohne.map((o) => el('li', null, `${o.name} · ${datumZeit.format(new Date(o.zeit))} · ${t(({ fehlt: 'fehlt', andereZeit: 'andere Zeit', papierkorb: 'im Papierkorb', mehrdeutig: 'mehrdeutig', gesperrt: 'gesperrt' })[o.grund] || o.grund)}`)));
   const namen = [
     ...v.abweichendeNamen.map((n) => t('In Immich „{i}“, hier „{b}“: bleibt „{b}“', { i: n.immich, b: n.bibliothek })),
     ...v.unklar.map((n) => t('„{n}“: keine klare Zuordnung, nichts geändert', { n })),
