@@ -55,14 +55,18 @@ final _namenszusatz = RegExp(
 /// zwei verschiedene Formate.
 String formatstamm(String name) => _zerlege(name).$1;
 
-/// Die Nummern unter den Zusätzen (` 2`, ` (2)`, `+2`), leer ohne. Die
-/// Hexziffern zählen nicht: Sie sind je Datei zufällig.
+/// Die Nummern unter den Zusätzen (` 2`, ` (2)`, `+2`), als Zahl
+/// (` (02)` ist ` 2`), leer ohne. Die Hexziffern zählen nicht: Sie sind je
+/// Datei zufällig.
 ///
 /// `Hochzeit 1.CR3` und `Hochzeit 2.JPG` haben denselben Stamm, sind aber
 /// zwei Aufnahmen, auch wenn eine Serie sie in derselben Sekunde
-/// aufnahm (#367). Zusammen gehören darum nur zwei Dateien mit derselben
-/// Nummer oder eine ohne.
+/// aufnahm (#367). Zusammen gehören darum zwei Dateien mit derselben
+/// Nummer, und eine ohne Nummer nur, wenn sie eindeutig zu einer passt
+/// ([_ordneNachNummer]).
 String _formatnummer(String name) => _zerlege(name).$2;
+
+final _keineZiffer = RegExp(r'\D');
 
 (String, String) _zerlege(String name) {
   var stamm = p.basenameWithoutExtension(name).toLowerCase();
@@ -71,17 +75,11 @@ String _formatnummer(String name) => _zerlege(name).$2;
     final zusatz = _namenszusatz.firstMatch(stamm);
     if (zusatz == null || zusatz.start == 0) break;
     if (!zusatz[0]!.startsWith('-')) {
-      nummern.add(zusatz[0]!.replaceAll(RegExp(r'\D'), ''));
+      nummern.add('${int.parse(zusatz[0]!.replaceAll(_keineZiffer, ''))}');
     }
     stamm = stamm.substring(0, zusatz.start);
   }
   return (stamm, nummern.join(','));
-}
-
-bool _selbeNummer(AssetData a, AssetData b) {
-  final x = _formatnummer(a.originalFileName);
-  final y = _formatnummer(b.originalFileName);
-  return x.isEmpty || y.isEmpty || x == y;
 }
 
 /// Das Format ohne die Unterschiede, die nur die Schreibweise betreffen.
@@ -108,7 +106,8 @@ bool _selbeKamera(AssetData a, AssetData b) {
 ///
 /// Gleicher [formatstamm], Aufnahmezeit innerhalb von [formatgleichAbstand],
 /// keine zwei verschiedenen Kameras, keine zwei verschiedenen Nummern
-/// ([_formatnummer]) und mindestens zwei Formate in der Gruppe. Ein geschätztes Datum zählt nicht: Es sagt nichts darüber, ob
+/// ([_ordneNachNummer]) und mindestens zwei Formate in der Gruppe. Ein
+/// geschätztes Datum zählt nicht: Es sagt nichts darüber, ob
 /// zwei Dateien zur selben Aufnahme gehören. Auch was schon in einer Serie
 /// oder in Varianten liegt, gehört dazu; was damit geschieht, entscheidet
 /// [Formatstapel.stapleFormate].
@@ -124,31 +123,83 @@ List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
     }
     (jeStamm[formatstamm(a.originalFileName)] ??= []).add(a);
   }
-  final gruppen = <List<AssetData>>[];
-  for (final gleichnamig in jeStamm.values) {
-    if (gleichnamig.length < 2) continue;
-    gleichnamig.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
-    final offen = <List<AssetData>>[];
-    for (final a in gleichnamig) {
-      final passend = offen
-          .where(
-            (g) =>
-                a.fileCreatedAt.difference(g.first.fileCreatedAt) <=
-                    formatgleichAbstand &&
-                g.every((b) => _selbeKamera(a, b) && _selbeNummer(a, b)),
-          )
-          .firstOrNull;
-      if (passend == null) {
-        offen.add([a]);
-      } else {
-        passend.add(a);
-      }
+  return [
+    for (final gleichnamig in jeStamm.values)
+      if (gleichnamig.length > 1)
+        for (final g in _ordneNachNummer(gleichnamig))
+          if ({for (final a in g) _formatVon(a)}.length > 1) g,
+  ];
+}
+
+/// Teilt Bilder mit demselben [formatstamm] in Aufnahmen.
+///
+/// Zuerst nach Nummer ([_formatnummer]): Nur gleiche Nummern, und Bilder
+/// ohne Nummer unter sich, je innerhalb von [formatgleichAbstand] und ohne
+/// zwei Kameras. Dann kommt eine Gruppe ohne Nummer zu einer mit Nummer,
+/// etwa `IMG_1144.jpg` zu `IMG_1144 (2).CR3` – aber nur, wenn beide
+/// füreinander die einzige sind, die passt. Bei `Hochzeit.jpg` neben
+/// `Hochzeit 1.CR3` und `Hochzeit 2.CR3` aus derselben Sekunde hinge es
+/// sonst nur an der Reihenfolge, zu welchem RAW das JPEG käme (#369); im
+/// Zweifel bleibt es sichtbar.
+List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
+  final nummer = {
+    for (final a in gleichnamig) a.id: _formatnummer(a.originalFileName),
+  };
+  gleichnamig.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
+  final offen = <List<AssetData>>[];
+  for (final a in gleichnamig) {
+    final passend = offen
+        .where(
+          (g) =>
+              nummer[g.first.id] == nummer[a.id] &&
+              a.fileCreatedAt.difference(g.first.fileCreatedAt) <=
+                  formatgleichAbstand &&
+              g.every((b) => _selbeKamera(a, b)),
+        )
+        .firstOrNull;
+    if (passend == null) {
+      offen.add([a]);
+    } else {
+      passend.add(a);
     }
-    gruppen.addAll(
-      offen.where((g) => {for (final a in g) _formatVon(a)}.length > 1),
-    );
   }
-  return gruppen;
+  final ohne = [
+    for (final g in offen)
+      if (nummer[g.first.id]!.isEmpty) g,
+  ];
+  final mit = [
+    for (final g in offen)
+      if (nummer[g.first.id]!.isNotEmpty) g,
+  ];
+  final passt = {
+    for (final u in ohne)
+      u: [
+        for (final n in mit)
+          if (_passenZusammen(u, n)) n,
+      ],
+  };
+  final dazu = <List<AssetData>>{};
+  for (final u in ohne) {
+    if (passt[u]!.length != 1) continue;
+    final n = passt[u]!.single;
+    if (ohne.where((v) => passt[v]!.contains(n)).length != 1) continue;
+    n.addAll(u);
+    dazu.add(u);
+  }
+  return [
+    for (final g in offen)
+      if (!dazu.contains(g)) g,
+  ];
+}
+
+/// Ob [u] und [n] zusammen noch eine Aufnahme sein können: alles innerhalb
+/// von [formatgleichAbstand] und keine zwei Kameras.
+bool _passenZusammen(List<AssetData> u, List<AssetData> n) {
+  final zeiten = [
+    for (final a in [...u, ...n]) a.fileCreatedAt,
+  ]..sort();
+  return zeiten.last.difference(zeiten.first) <= formatgleichAbstand &&
+      u.every((a) => n.every((b) => _selbeKamera(a, b)));
 }
 
 /// Welche Fassung einer [gruppe] in der Zeitleiste steht.

@@ -289,6 +289,48 @@ void main() {
       expect(await sichtbar(), {'j', 'h'});
     });
 
+    for (final reihe in [
+      ['o', 'r1', 'r2'],
+      ['r2', 'r1', 'o'],
+    ]) {
+      test('ohne Nummer nur, wenn es eindeutig ist (#369): $reihe', () async {
+        for (final id in reihe) {
+          await lege(id, switch (id) {
+            'o' => 'Hochzeit.jpg',
+            'r1' => 'Hochzeit 1.CR3',
+            _ => 'Hochzeit 2.CR3',
+          }, kamera: 'Canon EOS R10');
+        }
+        expect(await db.stapleFormate(), 0);
+        expect(await sichtbar(), {'o', 'r1', 'r2'});
+      });
+    }
+
+    test('eindeutig: die Kopie eines RAWs kommt zu RAW und JPEG', () async {
+      await lege('r', 'IMG_1144.CR3');
+      await lege('k', 'IMG_1144 2.CR3');
+      await lege('j', 'IMG_1144.JPG');
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'j'});
+      expect((await zeile('k')).stackId, (await zeile('j')).stackId);
+    });
+
+    test('zwei ohne Nummer an einer mit Nummer: keine kommt dazu', () async {
+      // JPEG und HEIC von zwei Kameras, das RAW ohne Angabe passte zu beiden.
+      await lege('j', 'IMG_7.jpg', kamera: 'A');
+      await lege('h', 'IMG_7.heic', kamera: 'B');
+      await lege('r', 'IMG_7 2.CR3');
+      expect(await db.stapleFormate(), 0);
+      expect(await sichtbar(), {'j', 'h', 'r'});
+    });
+
+    test('Nummern zählen als Zahl', () async {
+      await lege('r', 'IMG_1144 (02).CR3');
+      await lege('j', 'IMG_1144 2.jpg');
+      expect(await db.stapleFormate(), 1);
+      expect(await sichtbar(), {'j'});
+    });
+
     test('der Import greift nicht auf einen längeren Namen über', () async {
       await db.fuehreAus(const FormateStapelnSetzen(true));
       await lege('a', 'IMG_05310.CR3');
