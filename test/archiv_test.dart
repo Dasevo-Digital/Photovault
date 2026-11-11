@@ -118,6 +118,33 @@ void main() {
     },
   );
 
+  test('aufgelöst bleibt im Archiv, was im Stapel dort lag (#372)', () async {
+    await lege('a');
+    await lege('b');
+    await lege('c');
+    await lege('d');
+    await db.fuehreAus(const VariantenBilden('v', ['a', 'b'], 'a'));
+    await db.fuehreAus(const SerieBilden('s', ['c', 'd'], 'c'));
+    await db.fuehreAus(const ArchivSetzen(['a', 'c'], true));
+    await db.fuehreAus(const VariantenAufloesen('variante:v'));
+    await db.fuehreAus(const SerieAufloesen('s'));
+    expect(await zeitleiste(), isEmpty);
+    expect(await imArchiv(), {'a', 'b', 'c', 'd'});
+  });
+
+  test(
+    'was vor dem Stapeln im Archiv lag, bleibt beim Auflösen dort',
+    () async {
+      await lege('a', archiv: true);
+      await lege('b');
+      await db.fuehreAus(const VariantenBilden('v', ['a', 'b'], 'b'));
+      expect(await zeitleiste(), {'b'});
+      await db.fuehreAus(const VariantenAufloesen('variante:v'));
+      expect(await zeitleiste(), {'b'});
+      expect(await imArchiv(), {'a'});
+    },
+  );
+
   test('Formatstapel liegen nur im Archiv, wenn alles dort lag', () async {
     await lege('h', name: 'IMG_1.HEIC', archiv: true);
     await lege('j', name: 'IMG_1.JPG');

@@ -268,14 +268,36 @@ extension SerienAbfragen on AppDatabase {
   }
 
   /// Löst einen Stapel wieder auf ("Serie auflösen") – alle Mitglieder
-  /// werden wieder einzeln sichtbar.
-  Future<void> unstackAssets(String stackId) =>
-      (update(assets)..where((t) => t.stackId.equals(stackId))).write(
-        const AssetsCompanion(
-          stackId: Value(null),
-          isStackCover: Value(false),
-          stackSize: Value(null),
-        ),
+  /// werden wieder einzeln sichtbar. Lag der Stapel im Archiv, bleiben sie
+  /// dort ([_vererbeArchiv]).
+  Future<void> unstackAssets(String stackId) => transaction(() async {
+    await _vererbeArchiv('stack_id = ?', [Variable.withString(stackId)]);
+    await (update(assets)..where((t) => t.stackId.equals(stackId))).write(
+      const AssetsCompanion(
+        stackId: Value(null),
+        isStackCover: Value(false),
+        stackSize: Value(null),
+      ),
+    );
+  });
+
+  /// Legt die Mitglieder, auf die [bedingung] zutrifft, ins Archiv, wenn das
+  /// Titelbild ihres Stapels dort liegt – bevor sie den Stapel verlassen.
+  ///
+  /// Ob ein Stapel im Archiv liegt (#304), sagt sein Titelbild: Nur das
+  /// sieht man, und nur das markiert das Archivieren aus der Auswahl. Die
+  /// verdeckten Fassungen behalten ihren Stand von vorher. Ohne das kämen
+  /// sie beim Auflösen in die Zeitleiste, obwohl man den Stapel archiviert
+  /// hatte (#372). Was schon vor dem Stapeln im Archiv lag, bleibt dort.
+  Future<void> _vererbeArchiv(String bedingung, List<Variable> werte) =>
+      customUpdate(
+        'UPDATE assets SET is_archived = 1 WHERE is_archived = 0 '
+        'AND $bedingung AND EXISTS (SELECT 1 FROM assets t '
+        'WHERE t.stack_id = assets.stack_id AND t.is_stack_cover = 1 '
+        'AND t.is_archived = 1)',
+        variables: werte,
+        updates: {assets},
+        updateKind: UpdateKind.update,
       );
 
   Future<List<AssetData>> assetsInStack(String stackId) =>

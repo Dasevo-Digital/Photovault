@@ -385,9 +385,10 @@ extension Formatstapel on AppDatabase {
     if (bilder.length < 2) return 0;
     final verworfen = await _formatausnahmen([for (final a in bilder) a.id]);
     bool frei(AssetData a) => !verworfen.contains(formatausnahme(a.id));
-    if (await _entflechte(bilder.where(frei).toList()) > 0) {
-      bilder = await lies();
-    }
+    final (:anzahl, :titelbilder) = await _entflechte(
+      bilder.where(frei).toList(),
+    );
+    if (anzahl > 0) bilder = await lies();
     final gruppen = formatgruppen(bilder.where(frei));
     if (gruppen.isEmpty) return 0;
     final alle = [for (final g in gruppen) ...g];
@@ -413,11 +414,21 @@ extension Formatstapel on AppDatabase {
         continue;
       }
       final bisher = [for (final s in stapel) ...await assetsInStack(s)];
+      // Hat [_entflechte] den Stapel eben aufgelöst, bleibt sein Titelbild
+      // oben, auch wenn es jemand von Hand gewählt hatte.
+      final zuvor = [
+        for (final a in gruppe)
+          if (titelbilder.contains(a.id)) a,
+      ];
       final titel =
           bisher
               .where((a) => a.isStackCover && !a.isTrashed && !a.isLocked)
               .firstOrNull ??
-          hauptfassung(gruppe, benannt: benannt, mitAngaben: mitAngaben);
+          hauptfassung(
+            zuvor.isEmpty ? gruppe : zuvor,
+            benannt: benannt,
+            mitAngaben: mitAngaben,
+          );
       final ids = {
         for (final a in gruppe) a.id,
         for (final a in bisher) a.id,
@@ -437,12 +448,17 @@ extension Formatstapel on AppDatabase {
         ids,
         titel.id,
       );
-      // Im Archiv (#304) liegt der Stapel nur, wenn alles darin dort lag:
-      // Sonst verschwände ein Foto aus der Zeitleiste, das dort zu sehen war.
-      final archiv = [
-        for (final a in gruppe) a.isArchived,
-        for (final a in bisher) a.isArchived,
-      ].every((x) => x);
+      // Im Archiv (#304) liegt der Stapel nur, wenn alles dort lag, was zu
+      // sehen war: Sonst verschwände ein Foto aus der Zeitleiste. Von einem
+      // Stapel sah man nur das Titelbild; die verdeckten Fassungen behalten
+      // ihren Stand von vor dem Stapeln und zählen nicht (#372).
+      final sichtbar = [
+        for (final a in gruppe)
+          if (a.stackId == null) a,
+        for (final a in bisher)
+          if (a.isStackCover) a,
+      ];
+      final archiv = sichtbar.isNotEmpty && sichtbar.every((a) => a.isArchived);
       if (titel.isArchived != archiv) {
         await (update(assets)..where((t) => t.id.equals(titel.id))).write(
           AssetsCompanion(isArchived: Value(archiv)),
@@ -502,7 +518,8 @@ extension Formatstapel on AppDatabase {
 
   /// Nimmt aus Formatstapeln und Gästen in fremden Stapeln heraus, was nach
   /// [_formateinteilung] nicht mehr zusammengehört. Gibt zurück, wie viele
-  /// Stapel oder Gäste es betraf.
+  /// Stapel oder Gäste es betraf, und die Titelbilder der aufgelösten
+  /// Stapel.
   ///
   /// Nur, wo Dateien verschiedener Nummern zusammenliegen ([_formatnummer],
   /// auch eine ohne neben einer mit): Nur dort kann eine neue Datei eine
@@ -512,9 +529,13 @@ extension Formatstapel on AppDatabase {
   /// zählen nicht mit, und von Hand Herausgeholtes ist gar nicht dabei.
   ///
   /// Ein Formatstapel löst sich ganz auf; was eindeutig ist, stapelt der
-  /// Lauf gleich danach neu. Ein Gast kommt nur heraus, wenn das Stapeln ihn
-  /// hineingelegt hat ([formatgast]).
-  Future<int> _entflechte(List<AssetData> bilder) async {
+  /// Lauf gleich danach neu, mit demselben Titelbild. Ein Gast kommt nur
+  /// heraus, wenn das Stapeln ihn hineingelegt hat ([formatgast]). Was
+  /// herauskommt, bleibt im Archiv, wenn der Stapel dort lag
+  /// ([_vererbeArchiv]).
+  Future<({int anzahl, Set<String> titelbilder})> _entflechte(
+    List<AssetData> bilder,
+  ) async {
     final gruppeVon = <String, int>{};
     final einteilung = _formateinteilung(bilder);
     for (var i = 0; i < einteilung.length; i++) {
@@ -534,8 +555,13 @@ extension Formatstapel on AppDatabase {
       }
     }
     var n = 0;
+    final titelbilder = <String>{};
     for (final MapEntry(key: s, value: m) in jeStapel.entries) {
       if (istFormatstapel(s) && gemischt(m) && getrennt(m)) {
+        titelbilder.addAll([
+          for (final a in m)
+            if (a.isStackCover) a.id,
+        ]);
         await unstackAssets(s);
         n++;
       }
@@ -573,17 +599,21 @@ extension Formatstapel on AppDatabase {
     for (final s in betroffen) {
       await _richteStapelNachEntnahme(s);
     }
-    return n;
+    return (anzahl: n, titelbilder: titelbilder);
   }
 
-  Future<void> _nimmAusStapel(String id) =>
-      (update(assets)..where((t) => t.id.equals(id))).write(
-        const AssetsCompanion(
-          stackId: Value(null),
-          isStackCover: Value(false),
-          stackSize: Value(null),
-        ),
-      );
+  /// Holt [id] aus seinem Stapel, im Archiv, wenn der Stapel dort liegt
+  /// ([_vererbeArchiv]).
+  Future<void> _nimmAusStapel(String id) async {
+    await _vererbeArchiv('id = ?', [Variable.withString(id)]);
+    await (update(assets)..where((t) => t.id.equals(id))).write(
+      const AssetsCompanion(
+        stackId: Value(null),
+        isStackCover: Value(false),
+        stackSize: Value(null),
+      ),
+    );
+  }
 
   /// Nachdem etwas aus [stackId] herausgekommen ist: die Grösse neu, oder
   /// ganz auflösen, wenn kein Paar mit Titelbild bleibt.
@@ -612,6 +642,9 @@ extension Formatstapel on AppDatabase {
   /// den Stand von vorher. Auch was das Stapeln in eine Serie oder in
   /// Varianten gelegt hat ([formatgast]), kommt wieder heraus.
   Future<int> loeseFormatstapelAuf() => transaction(() async {
+    await _vererbeArchiv('stack_id LIKE ?', [
+      Variable.withString('$formatstapelPraefix%'),
+    ]);
     final n =
         await (update(
           assets,

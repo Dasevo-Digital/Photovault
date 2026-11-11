@@ -49,6 +49,7 @@ void main() {
     int breite = 4032,
     int hoehe = 3024,
     bool favorit = false,
+    bool archiv = false,
     int sterne = 0,
     String? beschreibung,
     String? entwickelt,
@@ -71,6 +72,7 @@ void main() {
       widthPx: Value(breite),
       heightPx: Value(hoehe),
       isFavorite: Value(favorit),
+      isArchived: Value(archiv),
       rating: Value(sterne),
       description: Value(beschreibung),
       developedRelativePath: Value(entwickelt),
@@ -89,6 +91,14 @@ void main() {
   };
 
   Future<AssetData> zeile(String id) async => (await db.assetById(id))!;
+
+  Future<Set<String>> zeitleiste() async => {
+    for (final z
+        in await db
+            .customSelect('SELECT id FROM assets WHERE $zeitleisteSichtbar')
+            .get())
+      z.read<String>('id'),
+  };
 
   group('was zusammengehört', () {
     test('HEIC und JPG: ein Eintrag, das HEIC liegt oben', () async {
@@ -665,6 +675,89 @@ void main() {
     expect((await zeile('j')).stackSize, 3);
     expect((await zeile('d')).stackId, kennung);
     expect((await zeile('h')).stackId, kennung);
+  });
+
+  // Archiviert wird aus der Auswahl nur das Titelbild; die verdeckten
+  // Fassungen behalten ihren Stand von vor dem Stapeln (#304).
+  group('im Archiv (#372)', () {
+    test('entflochten bleibt im Archiv, was im Stapel dort lag', () async {
+      await lege('h', 'X.HEIC', kamera: 'C');
+      await lege('j', 'X.JPG', kamera: 'C');
+      await lege('r1', 'X 1.CR3', kamera: 'C');
+      await db.stapleFormate();
+      expect(await sichtbar(), {'h'});
+      await db.fuehreAus(const ArchivSetzen(['h'], true));
+      await lege('r2', 'X 2.CR3', kamera: 'C');
+      expect(await db.stapleFormate(name: 'X 2.CR3'), 1);
+      expect(await sichtbar(), {'h', 'r1', 'r2'}, reason: 'geteilt');
+      expect(await zeitleiste(), {'r2'}, reason: 'nur die neue Datei');
+      expect((await zeile('h')).isArchived, isTrue);
+      expect((await zeile('j')).stackId, (await zeile('h')).stackId);
+    });
+
+    test('ein Gast bleibt im Archiv, wenn seine Serie dort liegt', () async {
+      await lege('a', 'Hochzeit 1.CR3', kamera: 'C');
+      await lege(
+        'c',
+        'IMG_1097.CR3',
+        kamera: 'C',
+        am: zeit.add(const Duration(seconds: 1)),
+      );
+      await db.fuehreAus(const SerieBilden('s', ['a', 'c'], 'a'));
+      await lege('o', 'Hochzeit.jpg', kamera: 'C');
+      await db.stapleFormate();
+      expect((await zeile('o')).stackId, 's');
+      await db.fuehreAus(const ArchivSetzen(['a'], true));
+      await lege('r2', 'Hochzeit 2.CR3', kamera: 'C');
+      await db.stapleFormate();
+      expect((await zeile('o')).stackId, isNull, reason: 'mehrdeutig');
+      expect(await zeitleiste(), {'r2'});
+    });
+
+    test('kommt eine archivierte Datei dazu, bleibt der Stapel dort', () async {
+      await lege('h', 'Y.HEIC');
+      await lege('j', 'Y.JPG');
+      await db.stapleFormate();
+      await db.fuehreAus(const ArchivSetzen(['h'], true));
+      await lege('r', 'Y.CR3', archiv: true);
+      expect(await db.stapleFormate(), 1);
+      expect((await zeile('r')).stackId, (await zeile('h')).stackId);
+      expect(await zeitleiste(), isEmpty);
+    });
+
+    test('kommt eine sichtbare Datei dazu, kommt der Stapel heraus', () async {
+      await lege('h', 'Y.HEIC');
+      await lege('j', 'Y.JPG');
+      await db.stapleFormate();
+      await db.fuehreAus(const ArchivSetzen(['h'], true));
+      await lege('r', 'Y.CR3');
+      expect(await db.stapleFormate(), 1);
+      expect(await zeitleiste(), {'h'});
+    });
+
+    test('der Schalter aus lässt einen archivierten Stapel dort', () async {
+      await lege('h', 'IMG_18.HEIC');
+      await lege('j', 'IMG_18.JPG');
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await db.fuehreAus(const ArchivSetzen(['h'], true));
+      await db.fuehreAus(const FormateStapelnSetzen(false));
+      expect(await sichtbar(), {'h', 'j'});
+      expect(await zeitleiste(), isEmpty);
+    });
+  });
+
+  test('entflochten bleibt die von Hand gewählte Hauptversion', () async {
+    await lege('h', 'X.HEIC', kamera: 'C');
+    await lege('j', 'X.JPG', kamera: 'C');
+    await lege('r1', 'X 1.CR3', kamera: 'C');
+    await db.stapleFormate();
+    await db.fuehreAus(
+      VariantenHauptbildSetzen((await zeile('h')).stackId!, 'j'),
+    );
+    await lege('r2', 'X 2.CR3', kamera: 'C');
+    await db.stapleFormate();
+    expect(await sichtbar(), {'j', 'r1', 'r2'});
+    expect((await zeile('h')).stackId, (await zeile('j')).stackId);
   });
 
   group('der Schalter', () {
