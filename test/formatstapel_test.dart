@@ -315,6 +315,30 @@ void main() {
       expect((await zeile('b')).rating, 3);
     });
 
+    test('benannte Gesichter halten nicht ab', () async {
+      await serie();
+      await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10');
+      await db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: 'f',
+              assetId: 'b',
+              personId: const Value('p'),
+              boxX: 0,
+              boxY: 0,
+              boxW: 0.1,
+              boxH: 0.1,
+            ),
+          );
+      expect(await db.stapleFormate(), 1);
+      expect((await zeile('b')).stackId, 's');
+      // Die Seite der Person zeigt es weiter.
+      expect((await db.watchAssetsForPerson('p').first).map((a) => a.id), [
+        'b',
+      ]);
+    });
+
     test('Ausschalten holt es wieder heraus, die Serie bleibt', () async {
       await serie();
       await lege('b', 'IMG_1096.jpg', kamera: 'Canon EOS R10');

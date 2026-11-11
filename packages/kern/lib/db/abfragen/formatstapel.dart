@@ -309,15 +309,10 @@ extension Formatstapel on AppDatabase {
         // Serien oder eine Serie neben einem Formatstapel bleiben, wie sie
         // sind.
         if (stapel.length == 1 &&
-            await _nimmInStapelAuf(
-              stapel.single,
-              [
-                for (final a in gruppe)
-                  if (a.stackId == null) a,
-              ],
-              benannt: benannt,
-              mitAngaben: mitAngaben,
-            )) {
+            await _nimmInStapelAuf(stapel.single, [
+              for (final a in gruppe)
+                if (a.stackId == null) a,
+            ], mitAngaben: mitAngaben)) {
           gebildet++;
         }
         continue;
@@ -370,13 +365,17 @@ extension Formatstapel on AppDatabase {
   ///
   /// Anders als im Formatstapel ziehen hier keine Angaben um: Das Titelbild
   /// einer Serie ist meist ein anderes Bild, Sterne oder ein Album gehörten
-  /// dort nicht hin. Deshalb bleibt sichtbar, was Angaben oder benannte
-  /// Gesichter trägt, und ebenso, was nicht so im Archiv liegt wie das
-  /// Titelbild. Wer dann stapeln will, tut es von Hand.
+  /// dort nicht hin. Deshalb bleibt sichtbar, was Angaben trägt, und ebenso,
+  /// was nicht so im Archiv liegt wie das Titelbild. Wer dann stapeln will,
+  /// tut es von Hand.
+  ///
+  /// Benannte Gesichter halten nicht ab: Sie bleiben an der Datei, und die
+  /// Seite einer Person zeigt auch verdeckte Bilder eines Stapels
+  /// (`watchAssetsForPerson`). In einer echten Bibliothek blieben sonst acht
+  /// JPEGs einer Serie sichtbar, nur weil auf ihnen jemand erkannt war.
   Future<bool> _nimmInStapelAuf(
     String stackId,
     List<AssetData> frei, {
-    required Map<String, int> benannt,
     required Set<String> mitAngaben,
   }) async {
     final bisher = await assetsInStack(stackId);
@@ -386,10 +385,7 @@ extension Formatstapel on AppDatabase {
     if (titel == null) return false;
     final gaeste = [
       for (final a in frei)
-        if (!mitAngaben.contains(a.id) &&
-            (benannt[a.id] ?? 0) == 0 &&
-            a.isArchived == titel.isArchived)
-          a,
+        if (!mitAngaben.contains(a.id) && a.isArchived == titel.isArchived) a,
     ];
     if (gaeste.isEmpty) return false;
     await createStack(stackId, [
