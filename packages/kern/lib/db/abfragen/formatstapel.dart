@@ -111,7 +111,18 @@ bool _selbeKamera(AssetData a, AssetData b) {
 /// zwei Dateien zur selben Aufnahme gehören. Auch was schon in einer Serie
 /// oder in Varianten liegt, gehört dazu; was damit geschieht, entscheidet
 /// [Formatstapel.stapleFormate].
-List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
+List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) => [
+  for (final g in _formateinteilung(bilder))
+    if (_vollstaendig(g)) g,
+];
+
+bool _vollstaendig(List<AssetData> g) =>
+    {for (final a in g) _formatVon(a)}.length > 1;
+
+/// Wie [formatgruppen], aber mit allen Gruppen, auch denen mit nur einem
+/// Format: Daran sieht [Formatstapel._entflechte], ob ein Stapel noch so
+/// zusammengehört.
+List<List<AssetData>> _formateinteilung(Iterable<AssetData> bilder) {
   final jeStamm = <String, List<AssetData>>{};
   for (final a in bilder) {
     if (a.type != 'IMAGE' ||
@@ -126,8 +137,9 @@ List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
   return [
     for (final gleichnamig in jeStamm.values)
       if (gleichnamig.length > 1)
-        for (final g in _ordneNachNummer(gleichnamig))
-          if ({for (final a in g) _formatVon(a)}.length > 1) g,
+        ..._ordneNachNummer(gleichnamig)
+      else
+        gleichnamig,
   ];
 }
 
@@ -140,7 +152,9 @@ List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
 /// füreinander die einzige sind, die passt. Bei `Hochzeit.jpg` neben
 /// `Hochzeit 1.CR3` und `Hochzeit 2.CR3` aus derselben Sekunde hinge es
 /// sonst nur an der Reihenfolge, zu welchem RAW das JPEG käme (#369); im
-/// Zweifel bleibt es sichtbar.
+/// Zweifel bleibt es sichtbar. Und nur, wenn eine Seite allein kein Paar
+/// ist: `IMG_0001.CR3/.JPG` neben `IMG_0001 2.CR3/.JPG` sind zwei
+/// Aufnahmen (#370).
 List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
   final nummer = {
     for (final a in gleichnamig) a.id: _formatnummer(a.originalFileName),
@@ -175,7 +189,8 @@ List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
     for (final u in ohne)
       u: [
         for (final n in mit)
-          if (_passenZusammen(u, n)) n,
+          if (_passenZusammen(u, n) && !(_vollstaendig(u) && _vollstaendig(n)))
+            n,
       ],
   };
   final dazu = <List<AssetData>>{};
@@ -358,15 +373,22 @@ extension Formatstapel on AppDatabase {
   /// Liegt ein Format schon in einer Serie oder in Varianten, kommt der
   /// Rest dorthin ([_nimmInStapelAuf]); einen eigenen Formatstapel daneben
   /// gibt es nicht, ein Stapel im Stapel auch nicht.
+  ///
+  /// Zuerst nimmt der Lauf heraus, was die Regeln nicht mehr zusammenstellen
+  /// ([_entflechte]): Kommen die Dateien einzeln herein, kann eine spätere
+  /// eine frühere Zuordnung mehrdeutig machen (#370).
   Future<int> stapleFormate({String? name}) => transaction(() async {
-    final bilder = name == null
-        ? await _gleichnamigeBilder()
-        : await _bilderMitStamm(formatstamm(name));
+    Future<List<AssetData>> lies() => name == null
+        ? _gleichnamigeBilder()
+        : _bilderMitStamm(formatstamm(name));
+    var bilder = await lies();
     if (bilder.length < 2) return 0;
     final verworfen = await _formatausnahmen([for (final a in bilder) a.id]);
-    final gruppen = formatgruppen(
-      bilder.where((a) => !verworfen.contains(formatausnahme(a.id))),
-    );
+    bool frei(AssetData a) => !verworfen.contains(formatausnahme(a.id));
+    if (await _entflechte(bilder.where(frei).toList()) > 0) {
+      bilder = await lies();
+    }
+    final gruppen = formatgruppen(bilder.where(frei));
     if (gruppen.isEmpty) return 0;
     final alle = [for (final g in gruppen) ...g];
     final benannt = await _benannteGesichter([for (final a in alle) a.id]);
@@ -478,6 +500,113 @@ extension Formatstapel on AppDatabase {
     return true;
   }
 
+  /// Nimmt aus Formatstapeln und Gästen in fremden Stapeln heraus, was nach
+  /// [_formateinteilung] nicht mehr zusammengehört. Gibt zurück, wie viele
+  /// Stapel oder Gäste es betraf.
+  ///
+  /// Nur, wo Dateien verschiedener Nummern zusammenliegen ([_formatnummer],
+  /// auch eine ohne neben einer mit): Nur dort kann eine neue Datei eine
+  /// frühere Zuordnung mehrdeutig machen, etwa `Hochzeit 2.CR3` nach
+  /// `Hochzeit.jpg` und `Hochzeit 1.CR3` (#370). Alles andere bleibt, auch
+  /// wenn sich die Gruppen anders schnitten. Papierkorb und Gesperrtes
+  /// zählen nicht mit, und von Hand Herausgeholtes ist gar nicht dabei.
+  ///
+  /// Ein Formatstapel löst sich ganz auf; was eindeutig ist, stapelt der
+  /// Lauf gleich danach neu. Ein Gast kommt nur heraus, wenn das Stapeln ihn
+  /// hineingelegt hat ([formatgast]).
+  Future<int> _entflechte(List<AssetData> bilder) async {
+    final gruppeVon = <String, int>{};
+    final einteilung = _formateinteilung(bilder);
+    for (var i = 0; i < einteilung.length; i++) {
+      for (final a in einteilung[i]) {
+        gruppeVon[a.id] = i;
+      }
+    }
+    bool gemischt(Iterable<AssetData> m) =>
+        {for (final a in m) _formatnummer(a.originalFileName)}.length > 1;
+    bool getrennt(Iterable<AssetData> m) =>
+        {for (final a in m) gruppeVon[a.id]}.length > 1;
+    final jeStapel = <String, List<AssetData>>{};
+    for (final a in bilder) {
+      final s = a.stackId;
+      if (s != null && gruppeVon.containsKey(a.id)) {
+        (jeStapel[s] ??= []).add(a);
+      }
+    }
+    var n = 0;
+    for (final MapEntry(key: s, value: m) in jeStapel.entries) {
+      if (istFormatstapel(s) && gemischt(m) && getrennt(m)) {
+        await unstackAssets(s);
+        n++;
+      }
+    }
+    final gaeste = [
+      for (final MapEntry(key: s, value: m) in jeStapel.entries)
+        if (!istFormatstapel(s))
+          for (final a in m)
+            if (!a.isStackCover) a,
+    ];
+    final marken = await _vorhandeneSchluessel([
+      for (final a in gaeste) formatgast(a.id, a.stackId!),
+    ]);
+    final betroffen = <String>{};
+    for (final g in gaeste) {
+      final marke = formatgast(g.id, g.stackId!);
+      if (!marken.contains(marke)) continue;
+      final stamm = formatstamm(g.originalFileName);
+      final zwillinge = [
+        for (final b in jeStapel[g.stackId!]!)
+          if (b.id != g.id && formatstamm(b.originalFileName) == stamm) b,
+      ];
+      if (zwillinge.isEmpty ||
+          !gemischt([g, ...zwillinge]) ||
+          zwillinge.any((b) => gruppeVon[b.id] == gruppeVon[g.id])) {
+        continue;
+      }
+      await _nimmAusStapel(g.id);
+      await (delete(
+        verworfeneSerien,
+      )..where((t) => t.schluessel.equals(marke))).go();
+      betroffen.add(g.stackId!);
+      n++;
+    }
+    for (final s in betroffen) {
+      await _richteStapelNachEntnahme(s);
+    }
+    return n;
+  }
+
+  Future<void> _nimmAusStapel(String id) =>
+      (update(assets)..where((t) => t.id.equals(id))).write(
+        const AssetsCompanion(
+          stackId: Value(null),
+          isStackCover: Value(false),
+          stackSize: Value(null),
+        ),
+      );
+
+  /// Nachdem etwas aus [stackId] herausgekommen ist: die Grösse neu, oder
+  /// ganz auflösen, wenn kein Paar mit Titelbild bleibt.
+  Future<void> _richteStapelNachEntnahme(String stackId) async {
+    final rest = await assetsInStack(stackId);
+    final titel = rest.where((a) => a.isStackCover).firstOrNull;
+    if (rest.length < 2 || titel == null) {
+      await unstackAssets(stackId);
+    } else {
+      await createStack(stackId, [for (final a in rest) a.id], titel.id);
+    }
+  }
+
+  Future<Set<String>> _vorhandeneSchluessel(List<String> schluessel) async {
+    final da = <String>{};
+    for (final stueck in inStuecken(schluessel)) {
+      final q = select(verworfeneSerien)
+        ..where((t) => t.schluessel.isIn(stueck));
+      da.addAll([for (final z in await q.get()) z.schluessel]);
+    }
+    return da;
+  }
+
   /// Zeigt die Formate wieder einzeln. Gibt zurück, wie viele Aufnahmen
   /// es betraf. Keine Ausnahmen: Wer den Schalter wieder einschaltet, will
   /// den Stand von vorher. Auch was das Stapeln in eine Serie oder in
@@ -517,24 +646,12 @@ extension Formatstapel on AppDatabase {
       final stackId = rest.substring(trenner + 1);
       final a = await assetById(id);
       if (a == null || a.stackId != stackId || a.isStackCover) continue;
-      await (update(assets)..where((t) => t.id.equals(id))).write(
-        const AssetsCompanion(
-          stackId: Value(null),
-          isStackCover: Value(false),
-          stackSize: Value(null),
-        ),
-      );
+      await _nimmAusStapel(id);
       betroffen.add(stackId);
       n++;
     }
     for (final stackId in betroffen) {
-      final rest = await assetsInStack(stackId);
-      final titel = rest.where((a) => a.isStackCover).firstOrNull;
-      if (rest.length < 2 || titel == null) {
-        await unstackAssets(stackId);
-      } else {
-        await createStack(stackId, [for (final a in rest) a.id], titel.id);
-      }
+      await _richteStapelNachEntnahme(stackId);
     }
     return n;
   }

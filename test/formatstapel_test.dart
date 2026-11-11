@@ -306,6 +306,75 @@ void main() {
       });
     }
 
+    for (final reihe in [
+      ['o', 'r1', 'r2'],
+      ['r1', 'o', 'r2'],
+      ['r2', 'o', 'r1'],
+      ['r1', 'r2', 'o'],
+    ]) {
+      test(
+        'Datei für Datei: nichts hängt an der Reihenfolge (#370): $reihe',
+        () async {
+          await db.fuehreAus(const FormateStapelnSetzen(true));
+          for (final id in reihe) {
+            await lege(id, switch (id) {
+              'o' => 'Hochzeit.jpg',
+              'r1' => 'Hochzeit 1.CR3',
+              _ => 'Hochzeit 2.CR3',
+            }, kamera: 'Canon EOS R10');
+            await nb.neueAufnahme(id);
+          }
+          expect(await sichtbar(), {'o', 'r1', 'r2'});
+          for (final id in ['o', 'r1', 'r2']) {
+            expect((await zeile(id)).stackId, isNull, reason: id);
+          }
+        },
+      );
+    }
+
+    test('zwei vollständige Paare bleiben zwei Stapel (#370)', () async {
+      await lege('a', 'IMG_0001.CR3', kamera: 'C');
+      await lege('b', 'IMG_0001.JPG', kamera: 'C');
+      await lege('c', 'IMG_0001 2.CR3', kamera: 'C');
+      await lege('d', 'IMG_0001 2.JPG', kamera: 'C');
+      expect(await db.stapleFormate(), 2);
+      expect(await sichtbar(), {'b', 'd'});
+      expect((await zeile('a')).stackId, (await zeile('b')).stackId);
+      expect((await zeile('c')).stackId, (await zeile('d')).stackId);
+    });
+
+    test('ein früher zusammengelegter Stapel wird geteilt (#370)', () async {
+      await lege('a', 'IMG_0001.CR3', kamera: 'C');
+      await lege('b', 'IMG_0001.JPG', kamera: 'C', favorit: true);
+      await lege('c', 'IMG_0001 2.CR3', kamera: 'C');
+      await lege('d', 'IMG_0001 2.JPG', kamera: 'C');
+      // So hätte 3.66.4 sie gestapelt.
+      await db.createStack(variantenstapelId('format-alt'), [
+        'a',
+        'b',
+        'c',
+        'd',
+      ], 'b');
+      expect(await db.stapleFormate(), 2);
+      expect(await sichtbar(), {'b', 'd'});
+      expect((await zeile('b')).isFavorite, isTrue);
+      expect((await zeile('c')).stackId, (await zeile('d')).stackId);
+      expect((await zeile('c')).stackId, isNot((await zeile('b')).stackId));
+      // Ein zweiter Lauf ändert nichts.
+      expect(await db.stapleFormate(), 0);
+    });
+
+    test('was eindeutig gemischt ist, bleibt liegen', () async {
+      await lege('j', 'IMG_1068.jpg', kamera: 'C');
+      await lege('r', 'IMG_1068 (2).CR3', kamera: 'C');
+      expect(await db.stapleFormate(), 1);
+      final stapel = (await zeile('r')).stackId;
+      expect(await db.stapleFormate(), 0);
+      expect(await db.stapleFormate(name: 'IMG_1068.jpg'), 0);
+      expect((await zeile('r')).stackId, stapel);
+      expect((await zeile('j')).stackId, stapel);
+    });
+
     test('eindeutig: die Kopie eines RAWs kommt zu RAW und JPEG', () async {
       await lege('r', 'IMG_1144.CR3');
       await lege('k', 'IMG_1144 2.CR3');
@@ -404,6 +473,32 @@ void main() {
       expect((await zeile('b')).stackId, 's');
       expect(await sichtbar(), {'a'});
       expect((await zeile('a')).stackSize, 3);
+    });
+
+    test('ein Gast, der mehrdeutig wird, kommt heraus (#370)', () async {
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await lege('a', 'Hochzeit 1.CR3', kamera: 'Canon EOS R10');
+      await lege(
+        'c',
+        'IMG_1097.CR3',
+        kamera: 'Canon EOS R10',
+        am: zeit.add(const Duration(seconds: 1)),
+      );
+      await db.fuehreAus(const SerieBilden('s', ['a', 'c'], 'a'));
+      await lege('o', 'Hochzeit.jpg', kamera: 'Canon EOS R10');
+      await nb.neueAufnahme('o');
+      expect((await zeile('o')).stackId, 's');
+      await lege('r2', 'Hochzeit 2.CR3', kamera: 'Canon EOS R10');
+      await nb.neueAufnahme('r2');
+      expect((await zeile('o')).stackId, isNull);
+      expect((await zeile('r2')).stackId, isNull);
+      expect((await zeile('a')).stackSize, 2);
+      expect((await zeile('c')).stackId, 's');
+      final marken = await db.select(db.verworfeneSerien).get();
+      expect(
+        marken.where((m) => m.schluessel.startsWith('formatgast:')),
+        isEmpty,
+      );
     });
 
     test('benannte Gesichter halten nicht ab', () async {
