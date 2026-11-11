@@ -55,6 +55,7 @@ void main() {
     bool papierkorb = false,
     bool gesperrt = false,
     String typ = 'IMAGE',
+    String? verknuepft,
   }) => db.insertAsset(
     AssetsCompanion.insert(
       id: id,
@@ -75,6 +76,7 @@ void main() {
       developedRelativePath: Value(entwickelt),
       isTrashed: Value(papierkorb),
       isLocked: Value(gesperrt),
+      linkedAssetId: Value(verknuepft),
     ),
   );
 
@@ -264,6 +266,29 @@ void main() {
       expect(await sichtbar(), {'j', 'j2'});
     });
 
+    test('verschiedene Nummern sind zwei Aufnahmen (#367)', () async {
+      // Eine RAW+JPEG-Serie, umbenannt: alles in derselben Sekunde.
+      for (final n in [1, 2]) {
+        await lege('r$n', 'Hochzeit $n.CR3', kamera: 'Canon EOS R10');
+        await lege('j$n', 'Hochzeit $n.JPG', kamera: 'Canon EOS R10');
+      }
+      await lege('x', 'Foto 1.jpg', kamera: 'X');
+      await lege('y', 'Foto 2.heic', kamera: 'X');
+      expect(await db.stapleFormate(), 2);
+      expect(await sichtbar(), {'j1', 'j2', 'x', 'y'});
+      expect((await zeile('r1')).stackId, (await zeile('j1')).stackId);
+      expect((await zeile('r2')).stackId, (await zeile('j2')).stackId);
+    });
+
+    test('dieselbe Nummer passt, auch anders geschrieben', () async {
+      await lege('r', 'IMG_1144 (2).CR3');
+      await lege('j', 'IMG_1144 2.jpg');
+      await lege('h', 'IMG_0361+1-88c523ca.jpg');
+      await lege('d', 'IMG_0361+1.DNG');
+      expect(await db.stapleFormate(), 2);
+      expect(await sichtbar(), {'j', 'h'});
+    });
+
     test('der Import greift nicht auf einen längeren Namen über', () async {
       await db.fuehreAus(const FormateStapelnSetzen(true));
       await lege('a', 'IMG_05310.CR3');
@@ -313,6 +338,30 @@ void main() {
       expect(await db.stapleFormate(), 0);
       expect((await zeile('b')).stackId, isNull);
       expect((await zeile('b')).rating, 3);
+    });
+
+    test('ein Live Photo bleibt daneben sichtbar (#368)', () async {
+      await serie();
+      await lege('v', 'IMG_1096.MOV', typ: 'VIDEO', verknuepft: 'b');
+      await lege(
+        'b',
+        'IMG_1096.HEIC',
+        kamera: 'Canon EOS R10',
+        verknuepft: 'v',
+      );
+      expect(await db.stapleFormate(), 0);
+      expect((await zeile('b')).stackId, isNull);
+      expect(await sichtbar(), {'a', 'b'});
+    });
+
+    test('beim Import kommt das JPEG zu seinem RAW in der Serie', () async {
+      await db.fuehreAus(const FormateStapelnSetzen(true));
+      await serie();
+      await lege('b', 'IMG_1096-1bd0b0c6.jpg', kamera: 'Canon EOS R10');
+      await nb.neueAufnahme('b');
+      expect((await zeile('b')).stackId, 's');
+      expect(await sichtbar(), {'a'});
+      expect((await zeile('a')).stackSize, 3);
     });
 
     test('benannte Gesichter halten nicht ab', () async {

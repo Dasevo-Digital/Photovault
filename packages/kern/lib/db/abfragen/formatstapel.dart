@@ -51,15 +51,37 @@ final _namenszusatz = RegExp(
 ///
 /// Dass zwei verschiedene Aufnahmen so denselben Stamm bekommen, ist kein
 /// Fehler: [formatgruppen] verlangt dazu noch höchstens zwei Sekunden
-/// Abstand, keine zwei Kameras und zwei verschiedene Formate.
-String formatstamm(String name) {
+/// Abstand, keine zwei Kameras, keine zwei Nummern ([_formatnummer]) und
+/// zwei verschiedene Formate.
+String formatstamm(String name) => _zerlege(name).$1;
+
+/// Die Nummern unter den Zusätzen (` 2`, ` (2)`, `+2`), leer ohne. Die
+/// Hexziffern zählen nicht: Sie sind je Datei zufällig.
+///
+/// `Hochzeit 1.CR3` und `Hochzeit 2.JPG` haben denselben Stamm, sind aber
+/// zwei Aufnahmen, auch wenn eine Serie sie in derselben Sekunde
+/// aufnahm (#367). Zusammen gehören darum nur zwei Dateien mit derselben
+/// Nummer oder eine ohne.
+String _formatnummer(String name) => _zerlege(name).$2;
+
+(String, String) _zerlege(String name) {
   var stamm = p.basenameWithoutExtension(name).toLowerCase();
+  final nummern = <String>[];
   for (var i = 0; i < 3; i++) {
-    final kuerzer = stamm.replaceFirst(_namenszusatz, '');
-    if (kuerzer == stamm || kuerzer.isEmpty) break;
-    stamm = kuerzer;
+    final zusatz = _namenszusatz.firstMatch(stamm);
+    if (zusatz == null || zusatz.start == 0) break;
+    if (!zusatz[0]!.startsWith('-')) {
+      nummern.add(zusatz[0]!.replaceAll(RegExp(r'\D'), ''));
+    }
+    stamm = stamm.substring(0, zusatz.start);
   }
-  return stamm;
+  return (stamm, nummern.join(','));
+}
+
+bool _selbeNummer(AssetData a, AssetData b) {
+  final x = _formatnummer(a.originalFileName);
+  final y = _formatnummer(b.originalFileName);
+  return x.isEmpty || y.isEmpty || x == y;
 }
 
 /// Das Format ohne die Unterschiede, die nur die Schreibweise betreffen.
@@ -85,8 +107,8 @@ bool _selbeKamera(AssetData a, AssetData b) {
 /// Welche der [bilder] dieselbe Aufnahme in verschiedenen Formaten sind.
 ///
 /// Gleicher [formatstamm], Aufnahmezeit innerhalb von [formatgleichAbstand],
-/// keine zwei verschiedenen Kameras, und mindestens zwei Formate in der
-/// Gruppe. Ein geschätztes Datum zählt nicht: Es sagt nichts darüber, ob
+/// keine zwei verschiedenen Kameras, keine zwei verschiedenen Nummern
+/// ([_formatnummer]) und mindestens zwei Formate in der Gruppe. Ein geschätztes Datum zählt nicht: Es sagt nichts darüber, ob
 /// zwei Dateien zur selben Aufnahme gehören. Auch was schon in einer Serie
 /// oder in Varianten liegt, gehört dazu; was damit geschieht, entscheidet
 /// [Formatstapel.stapleFormate].
@@ -113,7 +135,7 @@ List<List<AssetData>> formatgruppen(Iterable<AssetData> bilder) {
             (g) =>
                 a.fileCreatedAt.difference(g.first.fileCreatedAt) <=
                     formatgleichAbstand &&
-                g.every((b) => _selbeKamera(a, b)),
+                g.every((b) => _selbeKamera(a, b) && _selbeNummer(a, b)),
           )
           .firstOrNull;
       if (passend == null) {
@@ -369,6 +391,10 @@ extension Formatstapel on AppDatabase {
   /// was nicht so im Archiv liegt wie das Titelbild. Wer dann stapeln will,
   /// tut es von Hand.
   ///
+  /// Ein Live Photo bleibt ebenfalls sichtbar (#368): Läge es verdeckt
+  /// hinter seinem JPEG als Titelbild, spielte das Raster sein Video nicht
+  /// mehr. Im Formatstapel kommt es dagegen nach oben ([hauptfassung]).
+  ///
   /// Benannte Gesichter halten nicht ab: Sie bleiben an der Datei, und die
   /// Seite einer Person zeigt auch verdeckte Bilder eines Stapels
   /// (`watchAssetsForPerson`). In einer echten Bibliothek blieben sonst acht
@@ -385,7 +411,10 @@ extension Formatstapel on AppDatabase {
     if (titel == null) return false;
     final gaeste = [
       for (final a in frei)
-        if (!mitAngaben.contains(a.id) && a.isArchived == titel.isArchived) a,
+        if (!mitAngaben.contains(a.id) &&
+            a.linkedAssetId == null &&
+            a.isArchived == titel.isArchived)
+          a,
     ];
     if (gaeste.isEmpty) return false;
     await createStack(stackId, [
