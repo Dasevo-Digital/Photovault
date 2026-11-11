@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.66.5" date="2026-11-11">
+      <description>
+        <p>Archive: take photos out of the timeline without locking them.</p>
+        <p>Optionally stack the same shot in several file formats, such as HEIC and JPG or RAW and JPG, even when one name carries a suffix like -1bd0b0c6 or (2).</p>
+        <p>Fixes for the import from Immich and for bursts from the iPhone.</p>
+      </description>
+    </release>
     <release version="3.66.4" date="2026-11-11">
       <description>
         <p>Archive: take photos out of the timeline without locking them.</p>
