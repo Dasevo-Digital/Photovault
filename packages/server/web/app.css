@@ -331,6 +331,12 @@ body.waehlt #raster .kachel::before { content: ''; position: absolute; left: 6px
 #auswahlleiste .auswahl-aktionen button:hover { background: var(--grund); }
 #auswahlleiste .auswahl-aktionen .zeichen { font-size: 20px; line-height: 24px; color: var(--akzent); }
 #auswahlleiste .auswahl-aktionen svg.zeichen { width: 24px; height: 24px; stroke-width: 1.9; }
+/* Mit der Maus gibt es kein Wischen, und macOS blendet die Bildlaufleiste
+   aus: Am Rechner stehen die Aktionen deshalb in Zeilen untereinander, statt
+   rechts aus dem Blatt zu laufen – „Papierkorb“ war sonst nicht zu erreichen. */
+@media (hover: hover) and (pointer: fine) {
+  #auswahlleiste .auswahl-aktionen { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); overflow-x: visible; }
+}
 #auswahl-alben-feld { border-top: 1px solid var(--rand); padding-top: 8px; }
 #auswahl-alben-feld h3 { margin: 0 4px 6px; font-size: 0.9em; }
 #auswahl-alben { display: flex; gap: 10px; overflow-x: auto; padding: 0 4px 4px; }

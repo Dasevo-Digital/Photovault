@@ -5078,6 +5078,22 @@ async function teile(aufnahmen) {
   }
 }
 
+// Die Reihen im Auswahlblatt laufen nach rechts weiter. Mit dem Mausrad
+// ohne Trackpad, und unter macOS ohne sichtbare Bildlaufleiste, kam man
+// sonst nicht an das, was rechts liegt. Das Rad schiebt sie deshalb
+// waagrecht, bis zum Ende.
+for (const reihe of document.querySelectorAll('#auswahlleiste .auswahl-aktionen, #auswahl-alben')) {
+  reihe.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+    const rest = reihe.scrollWidth - reihe.clientWidth;
+    if (rest <= 1) return;
+    const schritt = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? reihe.clientWidth : 1);
+    if (schritt > 0 ? reihe.scrollLeft >= rest - 1 : reihe.scrollLeft <= 0) return;
+    e.preventDefault();
+    reihe.scrollLeft += schritt;
+  }, { passive: false });
+}
+
 // In ein Album mit einem Tipp – der Streifen unter den Aktionen, wie auf
 // dem Telefon. Das Feld „Album“ mit der Liste bleibt daneben.
 async function ladeAlbenstreifen() {
