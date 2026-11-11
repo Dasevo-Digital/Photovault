@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -174,9 +175,36 @@ class Bibliothek extends StatelessWidget {
         ),
       ),
     ];
+    final abgleich = sitzung.abgleich;
+    final faelle = sitzung.abgleichszustand?.faelle ?? 0;
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
       children: [
+        // Hierhin zeigt der Punkt am Reiter (#366). Der Eintrag selbst lag
+        // nur hinter dem Kontokreis, und wer dem Punkt folgte, fand nichts.
+        if (abgleich != null && faelle > 0) ...[
+          Card(
+            margin: EdgeInsets.zero,
+            color: Theme.of(context).colorScheme.errorContainer,
+            child: ListTile(
+              leading: Badge(
+                child: Icon(
+                  Icons.sync_problem_outlined,
+                  color: Theme.of(context).colorScheme.onErrorContainer,
+                ),
+              ),
+              title: Text(t.syncUebersicht),
+              subtitle: Text(t.syncZuEntscheiden(faelle)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => Abgleichsuebersicht(abgleich: abgleich),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
         _Abschnittskopf(
           t.navPersonen,
           aktion: TextButton(

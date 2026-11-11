@@ -2894,6 +2894,17 @@ class AppTexteEn extends AppTexte {
   String get syncAnsehen => 'View';
 
   @override
+  String syncZuEntscheiden(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl changes are waiting for your decision',
+      one: 'One change is waiting for your decision',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String syncNichtUebernommen(int anzahl) {
     String _temp0 = intl.Intl.pluralLogic(
       anzahl,

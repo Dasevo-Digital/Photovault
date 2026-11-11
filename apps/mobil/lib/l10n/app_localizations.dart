@@ -4405,6 +4405,12 @@ abstract class AppTexte {
   /// **'Ansehen'**
   String get syncAnsehen;
 
+  /// No description provided for @syncZuEntscheiden.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Eine Änderung wartet auf deine Entscheidung} other{{anzahl} Änderungen warten auf deine Entscheidung}}'**
+  String syncZuEntscheiden(int anzahl);
+
   /// No description provided for @syncNichtUebernommen.
   ///
   /// In de, this message translates to:

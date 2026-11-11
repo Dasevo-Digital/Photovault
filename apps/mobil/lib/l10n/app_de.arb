@@ -1426,6 +1426,8 @@
   "kammerWartet": "{anzahl, plural, =1{1 Foto wartet} other{{anzahl} Fotos warten}} seit {tage, plural, =1{einem Tag} other{{tage} Tagen}} in der Fotokammer.",
   "@kammerWartet": {"placeholders": {"anzahl": {"type": "int"}, "tage": {"type": "int"}}},
   "syncAnsehen": "Ansehen",
+  "syncZuEntscheiden": "{anzahl, plural, =1{Eine Änderung wartet auf deine Entscheidung} other{{anzahl} Änderungen warten auf deine Entscheidung}}",
+  "@syncZuEntscheiden": {"placeholders": {"anzahl": {"type": "int"}}},
   "syncNichtUebernommen": "{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}",
   "@syncNichtUebernommen": {
     "placeholders": {

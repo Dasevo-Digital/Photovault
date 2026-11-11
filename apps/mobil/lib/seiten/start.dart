@@ -211,7 +211,8 @@ class _StartState extends State<Start> {
           ),
           NavigationDestination(
             // Der Punkt bleibt, bis die Fälle unter „Änderungen und
-            // Konflikte“ entschieden sind (#340).
+            // Konflikte“ entschieden sind (#340). Die Bibliothek zeigt dann
+            // oben den Weg dorthin (#366).
             icon: ListenableBuilder(
               listenable: widget.sitzung,
               builder: (context, _) => Badge(
