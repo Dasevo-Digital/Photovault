@@ -955,6 +955,9 @@ body.landschaft-offen { overflow: hidden; }
 .kammerkachel .video { position: absolute; left: 6px; bottom: 4px; color: #fff; text-shadow: 0 0 3px #000; }
 .kammerkachel::after { content: ''; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); }
 .kammerkachel.gewaehlt { outline: 3px solid var(--akzent); outline-offset: -3px; }
+.kammerkachel.abgelehnt img, .kammerkachel.abgelehnt .ohne { opacity: 0.35; }
+.kammerkachel .sterne { position: absolute; left: 6px; top: 4px; color: #ffd54a; font-size: 0.9em; letter-spacing: 1px; text-shadow: 0 0 3px #000; }
+.kammerkachel .nein { position: absolute; left: 6px; top: 2px; color: #ff6b6b; font-weight: 700; text-shadow: 0 0 3px #000; }
 .kammerkachel.gewaehlt::after { background: var(--akzent); border-color: #fff; }
 #kammer-gross { position: fixed; inset: 0; z-index: 60; background: #000; display: grid; grid-template-columns: 48px 1fr 48px; grid-template-rows: auto 1fr; align-items: center; }
 #kammer-gross[hidden] { display: none; }
@@ -962,6 +965,10 @@ body.landschaft-offen { overflow: hidden; }
 .kammer-gross-kopf span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kammer-gross-kopf button { padding: 6px 12px; border: 1px solid #555; border-radius: 8px; background: #222; color: #eee; }
 .kammer-gross-kopf button.primaer { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+#kammer-gross-sterne { display: flex; gap: 2px; }
+#kammer-gross-sterne button { padding: 2px 4px; border: 0; background: transparent; color: #888; font-size: 1.3em; line-height: 1; }
+#kammer-gross-sterne button.an { color: #ffd54a; }
+#kammer-gross-ablehnen.an { background: #a33; border-color: #a33; color: #fff; }
 #kammer-gross > button { height: 100%; border: 0; background: transparent; color: #aaa; font-size: 2.2em; cursor: pointer; }
 #kammer-gross-bild { max-width: 100%; max-height: calc(100vh - 56px); margin: auto; object-fit: contain; }
 

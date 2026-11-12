@@ -13,6 +13,13 @@
 // Foto gross. Dort blättern die Pfeiltasten, die Leertaste wählt aus, Esc
 // schliesst. Danach die Auswahl freigeben – und mit „Auswahl umkehren“ den
 // Rest verwerfen.
+//
+// Urteilen wie am Rechner und am Handy (#345, #358): Im grossen Bild
+// vergeben 1 bis 5 Sterne (dieselbe Zahl noch einmal nimmt sie zurück,
+// 0 ebenso), X lehnt ab und blättert weiter. Der Server merkt sich das je
+// Foto; die Sterne kommen beim Freigeben mit in die Bibliothek. „Sichtung
+// abschliessen“ gibt alles frei, was nicht abgelehnt ist, und verwirft
+// danach das Abgelehnte – erst, wenn das Freigeben ganz geklappt hat.
 
 const kammer = { eintraege: [], auswahl: new Set(), offen: -1, arbeit: false, bytes: 0 };
 
@@ -61,12 +68,56 @@ function zeichneKammer() {
       k.append(el('span', 'ohne', e.name));
     }
     if (e.art === 'VIDEO') k.append(el('span', 'video', '▶'));
+    zeichneUrteil(k, e);
     k.classList.toggle('gewaehlt', kammer.auswahl.has(e.id));
     k.addEventListener('click', () => { umschalteKammer(e.id); });
     k.addEventListener('dblclick', () => oeffneKammer(i));
     ziel.append(k);
   });
   kammerKnoepfe();
+}
+
+function zeichneUrteil(k, e) {
+  k.classList.toggle('abgelehnt', !!e.abgelehnt);
+  for (const alt of k.querySelectorAll('.sterne, .nein')) alt.remove();
+  if (e.abgelehnt) k.append(el('span', 'nein', '✕'));
+  else if (e.sterne > 0) k.append(el('span', 'sterne', '★'.repeat(e.sterne)));
+}
+
+// Wie am Handy: Sterne heben eine Ablehnung auf, Ablehnen nimmt die Sterne.
+// Die Kachel zeigt das Urteil sofort; lehnt der Server ab, kommt das alte
+// zurück.
+async function urteile(e, urteil) {
+  const vorher = { sterne: e.sterne || 0, abgelehnt: !!e.abgelehnt };
+  Object.assign(e, urteil);
+  zeigeUrteil(e);
+  try {
+    await api('/api/v1/kammer/sichten', { methode: 'POST', json: { ids: [e.id], ...urteil } });
+  } catch (x) {
+    Object.assign(e, vorher);
+    zeigeUrteil(e);
+    meldung(x.message, true);
+  }
+}
+
+function zeigeUrteil(e) {
+  const k = document.querySelector(`.kammerkachel[data-id="${e.id}"]`);
+  if (k) zeichneUrteil(k, e);
+  kammerKnoepfe();
+}
+
+function vergibSterne(n) {
+  const e = kammer.eintraege[kammer.offen];
+  if (!e || kammer.arbeit) return;
+  urteile(e, { sterne: (e.sterne || 0) === n ? 0 : n, abgelehnt: false });
+}
+
+function lehneAb() {
+  const e = kammer.eintraege[kammer.offen];
+  if (!e || kammer.arbeit) return;
+  const jetzt = !e.abgelehnt;
+  urteile(e, jetzt ? { abgelehnt: true, sterne: 0 } : { abgelehnt: false });
+  if (jetzt) blaettereKammer(1);
 }
 
 function umschalteKammer(id) {
@@ -86,14 +137,14 @@ function kammerKnoepfe() {
   $('kammer-verwerfen').disabled = n === 0 || kammer.arbeit;
   $('kammer-freigeben').textContent = n ? t('{n} freigeben', { n }) : t('Freigeben');
   $('kammer-verwerfen').textContent = n ? t('{n} verwerfen', { n }) : t('Verwerfen');
+  $('kammer-abschliessen').hidden = !kammer.eintraege.some((e) => e.abgelehnt);
+  $('kammer-abschliessen').disabled = kammer.arbeit;
   if (kammer.offen >= 0) zeigeKammerGross();
 }
 
-async function kammerFreigeben() {
-  const ids = kammer.eintraege.filter((e) => kammer.auswahl.has(e.id)).map((e) => e.id);
-  if (!ids.length || kammer.arbeit) return;
-  kammer.arbeit = true;
-  kammerKnoepfe();
+// Gibt [ids] in kleinen Stapeln frei; die Gründe der gescheiterten in
+// [fehler].
+async function gibFrei(ids) {
   let neu = 0;
   const fehler = [];
   try {
@@ -107,17 +158,62 @@ async function kammerFreigeben() {
     }
   } catch (x) {
     fehler.push(x.message);
+  }
+  return { neu, fehler };
+}
+
+function freigabeMeldung(neu, fehler, zusatz) {
+  meldung([
+    t('{n} in die Bibliothek übernommen', { n: neu }),
+    ...(zusatz ? [zusatz] : []),
+    ...(fehler.length ? [t('{n} nicht: {grund}', { n: fehler.length, grund: [...new Set(fehler)].join('; ') })] : []),
+  ].join(' · '), fehler.length > 0);
+}
+
+async function kammerFreigeben() {
+  const ids = kammer.eintraege.filter((e) => kammer.auswahl.has(e.id)).map((e) => e.id);
+  if (!ids.length || kammer.arbeit) return;
+  kammer.arbeit = true;
+  kammerKnoepfe();
+  let ergebnis = { neu: 0, fehler: [] };
+  try {
+    ergebnis = await gibFrei(ids);
   } finally {
     kammer.arbeit = false;
     kammer.auswahl.clear();
     // Neues erscheint in der Zeitleiste.
-    if (neu) zeitleiste.leeren();
+    if (ergebnis.neu) zeitleiste.leeren();
     await ladeKammer().catch(() => {});
   }
-  meldung([
-    t('{n} in die Bibliothek übernommen', { n: neu }),
-    ...(fehler.length ? [t('{n} nicht: {grund}', { n: fehler.length, grund: [...new Set(fehler)].join('; ') })] : []),
-  ].join(' · '), fehler.length > 0);
+  freigabeMeldung(ergebnis.neu, ergebnis.fehler);
+}
+
+async function kammerAbschliessen() {
+  const weg = kammer.eintraege.filter((e) => e.abgelehnt).map((e) => e.id);
+  const rest = kammer.eintraege.filter((e) => !e.abgelehnt).map((e) => e.id);
+  if (!weg.length || kammer.arbeit) return;
+  if (!confirm(t('{weg} abgelehnte Fotos endgültig verwerfen und {rest} Fotos in die Bibliothek übernehmen?', { weg: weg.length, rest: rest.length }))) return;
+  kammer.arbeit = true;
+  kammerKnoepfe();
+  let ergebnis = { neu: 0, fehler: [] };
+  let verworfen = null;
+  try {
+    // Erst freigeben: Scheitert das, ist noch nichts verworfen.
+    if (rest.length) ergebnis = await gibFrei(rest);
+    if (!ergebnis.fehler.length) {
+      verworfen = (await api('/api/v1/kammer/verwerfen', { methode: 'POST', json: { ids: weg } })).verworfen;
+    }
+  } catch (x) {
+    ergebnis.fehler.push(x.message);
+  } finally {
+    kammer.arbeit = false;
+    kammer.auswahl.clear();
+    if (ergebnis.neu) zeitleiste.leeren();
+    await ladeKammer().catch(() => {});
+  }
+  freigabeMeldung(ergebnis.neu, ergebnis.fehler, verworfen === null
+    ? t('Abgelehntes bleibt, bis alles freigegeben ist')
+    : t('{n} verworfen', { n: verworfen }));
 }
 
 async function kammerVerwerfen() {
@@ -173,6 +269,19 @@ function zeigeKammerGross() {
   const gewaehlt = kammer.auswahl.has(e.id);
   $('kammer-gross-waehlen').textContent = gewaehlt ? t('✓ Ausgewählt (Leertaste)') : t('Auswählen (Leertaste)');
   $('kammer-gross-waehlen').classList.toggle('primaer', gewaehlt);
+  const sterne = $('kammer-gross-sterne');
+  if (!sterne.children.length) {
+    for (let n = 1; n <= 5; n++) {
+      const b = el('button', '', '★');
+      b.type = 'button';
+      b.title = t('{n} Sterne ({n})', { n });
+      b.addEventListener('click', () => vergibSterne(n));
+      sterne.append(b);
+    }
+  }
+  for (const [i, b] of [...sterne.children].entries()) b.classList.toggle('an', i < (e.sterne || 0));
+  $('kammer-gross-ablehnen').classList.toggle('an', !!e.abgelehnt);
+  $('kammer-gross-ablehnen').textContent = e.abgelehnt ? t('✕ Abgelehnt (X)') : t('Ablehnen (X)');
   // Das nächste schon holen, damit Blättern nicht wartet.
   const weiter = kammer.eintraege[kammer.offen + 1];
   if (weiter && weiter.breite) new Image().src = `/api/v1/kammer/${weiter.id}/vorschau`;
@@ -194,6 +303,8 @@ $('kammer-umkehren').addEventListener('click', () => {
   zeichneKammer();
 });
 $('kammer-freigeben').addEventListener('click', kammerFreigeben);
+$('kammer-abschliessen').addEventListener('click', kammerAbschliessen);
+$('kammer-gross-ablehnen').addEventListener('click', lehneAb);
 $('kammer-verwerfen').addEventListener('click', kammerVerwerfen);
 $('kammer-erst').addEventListener('change', (e) => kammerSetzen(e.target.checked));
 $('kammer-gross-zu').addEventListener('click', schliesseKammer);
@@ -209,4 +320,9 @@ document.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowLeft') { e.preventDefault(); blaettereKammer(-1); }
   else if (e.key === ' ') { e.preventDefault(); const x = kammer.eintraege[kammer.offen]; if (x) umschalteKammer(x.id); }
   else if (e.key === 'Escape') { e.preventDefault(); schliesseKammer(); }
+  else if (/^[0-5]$/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+    e.preventDefault();
+    const n = Number(e.key);
+    if (n === 0) { const x = kammer.eintraege[kammer.offen]; if (x && x.sterne) urteile(x, { sterne: 0 }); } else vergibSterne(n);
+  } else if ((e.key === 'x' || e.key === 'X') && !e.metaKey && !e.ctrlKey && !e.altKey) { e.preventDefault(); lehneAb(); }
 });

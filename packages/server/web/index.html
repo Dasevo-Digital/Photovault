@@ -177,6 +177,7 @@
       <h2>Fotokammer</h2>
       <button id="kammer-alle" type="button" hidden>Alle auswählen</button>
       <button id="kammer-umkehren" type="button" hidden>Auswahl umkehren</button>
+      <button id="kammer-abschliessen" type="button" hidden>Sichtung abschliessen</button>
       <button id="kammer-verwerfen" type="button" disabled>Verwerfen</button>
       <button id="kammer-freigeben" type="button" class="primaer" disabled>Freigeben</button>
     </div>
@@ -515,6 +516,8 @@
 <div id="kammer-gross" hidden>
   <div class="kammer-gross-kopf">
     <span id="kammer-gross-titel"></span>
+    <div id="kammer-gross-sterne" role="group" aria-label="Sterne"></div>
+    <button id="kammer-gross-ablehnen" type="button">Ablehnen (X)</button>
     <button id="kammer-gross-waehlen" type="button">Auswählen (Leertaste)</button>
     <button id="kammer-gross-zu" type="button" aria-label="Schliessen">×</button>
   </div>
