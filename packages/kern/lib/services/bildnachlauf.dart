@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:drift/drift.dart';
 
 import '../db/database.dart';
+import 'asset_display_path.dart' show hatAnsichtsbild;
 import 'dateikopf.dart';
 import 'import_service.dart';
 import 'storage_paths.dart';
@@ -22,6 +23,9 @@ const nachlaufRohvorschau = 'nachlauf-rohvorschau-1';
 
 /// Vorschauen aus der Zeit vor [vorschauKante] 3000 neu erzeugen (#332).
 const nachlaufVorschaukante = 'nachlauf-vorschaukante-1';
+
+/// Ansichtsbilder für grosse JPEG aus der Zeit davor (#333).
+const nachlaufAnsichtsbilder = 'nachlauf-ansichtsbilder-1';
 
 /// Was früher die längste Vorschau war: Kleinere Fotos ändern sich nicht.
 const _alteVorschauKante = 2048;
@@ -176,7 +180,9 @@ Future<({int neu, String? weiter})> vergroessereVorschauen(
     }
     final a = await db.assetById(id);
     final vorschau = a?.previewRelativePath;
-    if (a == null || vorschau == null) continue;
+    // Ein Ansichtsbild (#333) ist schon so gross, wie es sein soll; neu
+    // geschrieben verlöre es seinen Namen und gälte als Vorschau.
+    if (a == null || vorschau == null || hatAnsichtsbild(a)) continue;
     final quelle = paths.absolute(a.relativePath);
     if (!await quelle.exists()) continue;
     if (await _schonGross(paths.absolute(vorschau), a)) continue;
@@ -193,6 +199,69 @@ Future<({int neu, String? weiter})> vergroessereVorschauen(
     } on FileSystemException {
       // Ein Rest bleibt liegen; die Integritätsprüfung findet ihn.
     }
+    neu++;
+  }
+  return (neu: neu, weiter: null);
+}
+
+/// Legt grossen JPEG ein Ansichtsbild daneben (#333), höchstens [frist]
+/// lang – in Etappen wie [vergroessereVorschauen], denn bei Tausenden
+/// Kamerafotos dauert das Stunden.
+///
+/// Nur dort aufzurufen, wo [ImportService.ansichtsbilder] gilt (am Server).
+/// Was eines bekommen hat, fällt aus der Suche heraus; nach einem Neustart
+/// geht es also beim nächsten weiter, ohne eine Datei zu öffnen. Die Zeile
+/// bekommt nur die Vorschau – Miniatur und Masse bleiben –, und mit ihr
+/// erfahren die Geräte davon.
+Future<({int neu, String? weiter})> ergaenzeAnsichtsbilder(
+  AppDatabase db,
+  StoragePaths paths,
+  ImportService importe, {
+  String? ab,
+  Duration frist = const Duration(minutes: 2),
+  bool Function()? abbrechen,
+}) async {
+  final t = db.assets;
+  final kandidaten =
+      await (db.selectOnly(t)
+            ..addColumns([t.id])
+            ..where(
+              t.type.equals('IMAGE') &
+                  t.previewRelativePath.isNull() &
+                  t.isLocked.equals(false) &
+                  (t.relativePath.like('%.jpg') |
+                      t.relativePath.like('%.jpeg')) &
+                  t.fileSizeBytes.isBiggerThanValue(ansichtsbildAb) &
+                  (t.widthPx.isBiggerThanValue(vorschauKante) |
+                      t.heightPx.isBiggerThanValue(vorschauKante)),
+            )
+            ..orderBy([OrderingTerm.asc(t.id)]))
+          .map((z) => z.read(t.id)!)
+          .get();
+  final uhr = Stopwatch()..start();
+  var neu = 0, versucht = 0;
+  for (var i = 0; i < kandidaten.length; i++) {
+    final id = kandidaten[i];
+    if (ab != null && id.compareTo(ab) <= 0) continue;
+    // Versucht statt gelungen: Scheitert der Wandler an jedem Foto, endet
+    // die Etappe trotzdem nach der Frist.
+    if ((abbrechen?.call() ?? false) ||
+        (versucht > 0 && uhr.elapsed >= frist)) {
+      return (neu: neu, weiter: i == 0 ? '' : kandidaten[i - 1]);
+    }
+    final a = await db.assetById(id);
+    if (a == null || a.previewRelativePath != null) continue;
+    final original = paths.absolute(a.relativePath);
+    if (!await original.exists()) continue;
+    versucht++;
+    final relativ = await importe.erzeugeAnsichtsbild(
+      original,
+      a.id,
+      breite: a.widthPx,
+      hoehe: a.heightPx,
+    );
+    if (relativ == null) continue;
+    await db.updateThumbnailInfo(a.id, previewRelativePath: relativ);
     neu++;
   }
   return (neu: neu, weiter: null);

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
 import 'package:shelf/shelf.dart';
 import 'package:uuid/uuid.dart';
 
@@ -206,9 +207,9 @@ class Rechenapi {
   }.intersection(teile);
 
   /// Die Datei, aus der gerechnet wird – dieselbe wie bei den Läufen des
-  /// Servers (`Auswertungen.decodableFile`).
-  static String _datei(AssetData asset) =>
-      asset.previewRelativePath ?? asset.relativePath;
+  /// Servers (`Auswertungen.decodableFile`): bei einem JPEG das Original,
+  /// nicht sein Ansichtsbild (#333).
+  static String _datei(AssetData asset) => lesbarerPfad(asset);
 
   /// `{auftrag, ergebnis}` – trägt ein, was der Rechner lieferte.
   Future<Response> ergebnis(Request anfrage) async {

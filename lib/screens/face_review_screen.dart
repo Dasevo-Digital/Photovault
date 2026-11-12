@@ -10,6 +10,7 @@ import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
 import '../services/bilddekodierung.dart';
 import '../services/gesicht_von_hand.dart';
 import '../state/library_state.dart';
@@ -159,9 +160,9 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
 
   /// Datei, die tatsächlich angezeigt/für Crops verwendet wird: die
   /// konvertierte Vorschau, falls das Originalformat (z.B. HEIC/DNG) von
-  /// Flutter nicht direkt gerendert werden kann – sonst das Original.
-  String get _displayRelativ =>
-      _asset.previewRelativePath ?? _asset.relativePath;
+  /// Flutter nicht direkt gerendert werden kann – sonst das Original, auch
+  /// neben einem Ansichtsbild (#333).
+  String get _displayRelativ => lesbarerPfad(_asset);
 
   /// Holt die Datei in einer verbundenen Bibliothek erst vom Server: Dort
   /// liegen die grossen Dateien nicht von vornherein auf dem Rechner.

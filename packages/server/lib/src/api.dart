@@ -2620,7 +2620,10 @@ class _Api {
     final kante = auftrag0.kante;
     final bilder = <Uint8List>[];
     for (final a in aufnahmen) {
-      final datei = b.pfade.absolute(displayRelativePath(a));
+      // Ein Feld kann grösser sein als ein Ansichtsbild (#333).
+      final datei = b.pfade.absolute(
+        displayRelativePath(a, mitAnsichtsbild: false),
+      );
       if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
         return _json({'fehler': 'Datei fehlt'}, status: 404);
       }

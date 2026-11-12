@@ -111,7 +111,9 @@ class StoragePaths {
 
   /// Nur für Formate relevant, die Flutter nicht direkt rendern kann
   /// (HEIC/HEIF, DNG & Co.) – eine größere, konvertierte JPEG-Version für
-  /// die Vollbildansicht (Thumbnails bleiben separat und kleiner).
+  /// die Vollbildansicht (Thumbnails bleiben separat und kleiner). Am
+  /// Server auch das Ansichtsbild eines grossen JPEG (#333, Zusatz
+  /// `-ansicht`, siehe `hatAnsichtsbild`).
   String previewRelativePath(String assetId, [String zusatz = '']) =>
       p.posix.join('previews', '$assetId$zusatz.jpg');
 

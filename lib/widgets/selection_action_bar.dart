@@ -355,7 +355,10 @@ VoidCallback? collageAktion(
           final schluessel = '$id@$kante';
           final b = vorrat[schluessel] ??=
               await NativeImageConverter.convertToJpegBytes(
-                library.paths.absolute(displayRelativePath(a)),
+                // Ein Feld kann grösser sein als ein Ansichtsbild (#333).
+                library.paths.absolute(
+                  displayRelativePath(a, mitAnsichtsbild: false),
+                ),
                 maxDimension: kante,
                 quality: 0.92,
               ) ??

@@ -147,7 +147,14 @@ class Bibliothek {
       ordner,
       db,
       pfade,
-      ImportService(db, pfade, bildwerkzeuge: bildwerkzeuge),
+      // Grosse JPEG mit Ansichtsbild: Handy und Browser holen jedes Foto
+      // über das Netz (#333).
+      ImportService(
+        db,
+        pfade,
+        bildwerkzeuge: bildwerkzeuge,
+        ansichtsbilder: true,
+      ),
       modelle ?? Modelle(),
       bildwerkzeuge,
       ortsverzeichnis,

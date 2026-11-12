@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
+import 'asset_display_path.dart' show ansichtsbildZusatz;
 import 'cr3_gps.dart';
 import 'dateikennung.dart';
 import 'exif_camera.dart';
@@ -145,6 +146,25 @@ decodeAndResizeThumbnailMitVorschau(Uint8List bytes) {
 /// Fotos weich und erst Sekunden später scharf.
 const int vorschauKante = 3000;
 
+/// Ab welcher Grösse ein JPEG am Server ein Ansichtsbild bekommt (#333,
+/// siehe `hatAnsichtsbild`).
+///
+/// Ein Ansichtsbild mit [vorschauKante] Punkten misst bei Qualität 90 etwa
+/// 1,5 bis 2,5 MB. Bei einem JPEG von 3 MB spart es kaum ein Drittel und
+/// läge doch als zweite Datei auf dem Server. Ab 4 MB halbiert es
+/// mindestens, was der Betrachter laden muss; bei einer Kamera mit 24
+/// Megapixeln (8 bis 20 MB) ist es ein Fünftel bis ein Zehntel.
+const int ansichtsbildAb = 4 * 1024 * 1024;
+
+/// Ob ein JPEG von [bytes] Bytes und [breite] × [hoehe] Pixeln ein
+/// Ansichtsbild bekommt: nur, wenn es grösser ist als [ansichtsbildAb] und
+/// an einer Seite länger als [vorschauKante]. Ein kürzeres wäre im
+/// Ansichtsbild so gross wie im Original, und der Betrachter holte beim
+/// Zoomen dasselbe Bild ein zweites Mal.
+bool lohntAnsichtsbild(int bytes, int? breite, int? hoehe) =>
+    bytes > ansichtsbildAb &&
+    ((breite ?? 0) > vorschauKante || (hoehe ?? 0) > vorschauKante);
+
 enum ImportOutcome { imported, duplicateSkipped, failed }
 
 class ImportResult {
@@ -248,12 +268,22 @@ class ImportDateiangaben {
 class ImportService {
   /// [bildwerkzeuge] ist der Weg der Plattform zu Pixeln und
   /// Aufnahmewerten; ohne Angabe gilt [Bildwerkzeuge.standard].
-  ImportService(this._db, this._paths, {Bildwerkzeuge? bildwerkzeuge})
-    : _bild = bildwerkzeuge ?? Bildwerkzeuge.standard;
+  ImportService(
+    this._db,
+    this._paths, {
+    Bildwerkzeuge? bildwerkzeuge,
+    this.ansichtsbilder = false,
+  }) : _bild = bildwerkzeuge ?? Bildwerkzeuge.standard;
 
   final AppDatabase _db;
   final StoragePaths _paths;
   final Bildwerkzeuge _bild;
+
+  /// Ob grosse JPEG ein Ansichtsbild bekommen (#333, siehe
+  /// [erzeugeAnsichtsbild]). Nur am Server: Dort holen Handy und Browser
+  /// jedes Foto über das Netz. Am Rechner liegt das Original auf der Platte,
+  /// und eine zweite Datei je Foto kostete dort nur Platz.
+  final bool ansichtsbilder;
   final _uuid = const Uuid();
 
   bool isSupported(String filePath) => unterstuetztesFormat(filePath);
@@ -551,11 +581,43 @@ class ImportService {
     return relativ;
   }
 
+  /// Das Ansichtsbild eines grossen JPEG (#333, siehe `hatAnsichtsbild`)
+  /// unter dem Namen mit [zusatz] – oder `null`: ausser am Server
+  /// ([ansichtsbilder]), für jedes andere Format, unter [lohntAnsichtsbild]
+  /// und wenn kein Wandler es erzeugen konnte. [breite] und [hoehe] sind
+  /// die des Originals.
+  ///
+  /// Derselbe Weg wie jede Vorschau ([erneuereVorschau]): nach der Lage im
+  /// EXIF gedreht und ohne dessen Angaben, also auch ohne Ort.
+  Future<String?> erzeugeAnsichtsbild(
+    File original,
+    String assetId, {
+    required int? breite,
+    required int? hoehe,
+    String zusatz = '',
+  }) async {
+    if (!ansichtsbilder) return null;
+    final endung = p.extension(original.path).toLowerCase();
+    if (endung != '.jpg' && endung != '.jpeg') return null;
+    // Die Bytes zählen, nicht der Name (siehe [kennungAus]): Ein HEIC unter
+    // `.jpg` hat schon eine Vorschau, und die braucht es.
+    if (await inhaltskennung(original, null) != '.jpg') return null;
+    if (!lohntAnsichtsbild(await original.length(), breite, hoehe)) {
+      return null;
+    }
+    return erneuereVorschau(
+      original,
+      assetId,
+      zusatz: '$zusatz$ansichtsbildZusatz',
+    );
+  }
+
   Future<void> _raeumeImportresteAuf(String assetId, File? original) async {
     final kandidaten = <File>{
       ?original,
       _paths.absolute(_paths.thumbnailRelativePath(assetId)),
       _paths.absolute(_paths.previewRelativePath(assetId)),
+      _paths.absolute(_paths.previewRelativePath(assetId, ansichtsbildZusatz)),
     };
     for (final datei in kandidaten) {
       try {
@@ -570,7 +632,8 @@ class ImportService {
   /// Erzeugt Thumbnail (immer, wenn möglich) und – nur für Formate, die
   /// Flutter selbst nicht rendern kann (HEIC/HEIF, DNG & Co., siehe
   /// [heicAndRawExtensions]) – zusätzlich eine größere, konvertierte
-  /// JPEG-Vorschau für die Vollbildansicht.
+  /// JPEG-Vorschau für die Vollbildansicht. Am Server bekommt ein grosses
+  /// JPEG an ihrer Stelle ein Ansichtsbild ([erzeugeAnsichtsbild], #333).
   ///
   /// Wird sowohl beim Import als auch beim manuellen "Vorschaubilder neu
   /// erstellen" in den Werkzeugen verwendet (z.B. für Fotos, die importiert
@@ -602,8 +665,10 @@ class ImportService {
         nurMitVorschau.contains(ext) ||
         (inhalt != null && nurMitVorschau.contains(inhalt));
 
+    final gewandelt =
+        needsNativeConversion || forceBoundedDecode || brauchtVorschau;
     Uint8List? convertedBytes;
-    if (needsNativeConversion || forceBoundedDecode || brauchtVorschau) {
+    if (gewandelt) {
       convertedBytes = await _bild.convertToJpegBytes(
         sourceFile,
         maxDimension: vorschauKante,
@@ -653,6 +718,16 @@ class ImportService {
       // Vollbildansicht sichern.
       previewRelativePath = _paths.previewRelativePath(assetId, zusatz);
       await _paths.absolute(previewRelativePath).writeAsBytes(convertedBytes);
+    } else if (!gewandelt) {
+      // Ein grosses JPEG bekommt am Server ein Ansichtsbild (#333). Masse
+      // und Miniatur kommen weiter aus dem Original.
+      previewRelativePath = await erzeugeAnsichtsbild(
+        sourceFile,
+        assetId,
+        breite: result.width,
+        hoehe: result.height,
+        zusatz: zusatz,
+      );
     }
 
     // Aus einer gewandelten Vorschau stammen nur ihre eigenen Masse – die

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -64,9 +65,7 @@ class _PhotoCompareScreenState extends State<PhotoCompareScreen> {
   }
 
   Widget _seite(AssetData asset, TransformationController regler) {
-    final datei = widget.paths.absolute(
-      asset.previewRelativePath ?? asset.relativePath,
-    );
+    final datei = widget.paths.absolute(lesbarerPfad(asset));
     return Column(
       children: [
         Expanded(

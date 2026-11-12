@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_server/photo_vault_server.dart';
@@ -25,6 +26,7 @@ void main() {
   late _Wandler wandler;
   late Handler api;
   late String token;
+  late Kontobereich bereich;
   late Bibliothek b;
 
   setUp(() async {
@@ -46,7 +48,8 @@ void main() {
     api = baueApi(konten: konten, bibliotheken: bibliotheken);
     final erika = await konten.legeAn('erika', 'ein langes passwort');
     token = konten.meldeAn(erika.id, 'Telefon', 'x').token;
-    b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    bereich = await bibliotheken.fuer(erika.id);
+    b = bereich.bibliothek;
   });
 
   tearDown(() async {
@@ -134,6 +137,61 @@ void main() {
         .setLastModified(DateTime.now().add(const Duration(minutes: 1)));
     expect((await voll('h')).statusCode, 200);
     expect(wandler.auftraege, hasLength(2));
+  });
+
+  test('ein grosses JPEG: die Ansicht aus dem Ansichtsbild, voll und '
+      'Auswertung aus dem Original (#333)', () async {
+    // Ein Kamerafoto aus der Zeit davor: über 4 MB, länger als 3000 Punkte,
+    // ohne Vorschau. Bis 3.66 ging es auch als Ansicht ganz hinaus.
+    final roh = img.encodeJpg(img.Image(width: 3200, height: 100));
+    final original = Uint8List(5 * 1024 * 1024)..setRange(0, roh.length, roh);
+    final datei = b.pfade.absolute('originals/g.jpg')
+      ..createSync(recursive: true)
+      ..writeAsBytesSync(original);
+    await b.db
+        .into(b.db.assets)
+        .insert(
+          AssetsCompanion.insert(
+            id: 'g',
+            originalFileName: 'DSC_0001.JPG',
+            relativePath: 'originals/g.jpg',
+            checksum: 'c_g',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2026, 10, 1),
+            importedAt: DateTime(2026, 10, 1),
+            widthPx: const Value(3200),
+            heightPx: const Value(100),
+            fileSizeBytes: Value(original.length),
+          ),
+        );
+    expect(await inhalt(await abruf('g', 'ansicht')), original);
+
+    // Der Nachlauf nach dem Start legt das Ansichtsbild daneben.
+    await bereich.auswertung.jetzt();
+    final a = (await b.db.assetById('g'))!;
+    expect(a.previewRelativePath, 'previews/g-ansicht.jpg');
+    expect(await b.db.aufgabeFertigAm(nachlaufAnsichtsbilder), isNotNull);
+    expect(wandler.auftraege, contains(3000));
+
+    final ansicht = img.decodeJpg(await inhalt(await abruf('g', 'ansicht')))!;
+    expect(ansicht.width, 40, reason: 'das Ansichtsbild des Wandlers');
+    final v = await voll('g');
+    expect(v.statusCode, 200);
+    expect(await inhalt(v), original, reason: 'das Original, ungewandelt');
+    expect(
+      bereich.bibliothek.auswertungen.decodableFile(a).path,
+      datei.path,
+      reason: 'ausgewertet wird das Original',
+    );
+
+    // Was neu hereinkommt, bekommt es beim Import.
+    final neu = File('${ordner.path}/DSC_0002.jpg')
+      ..writeAsBytesSync(
+        Uint8List.fromList(original)..[original.length - 1] = 1,
+      );
+    final r = await b.importe.importFile(neu.path);
+    final n = (await b.db.assetById(r.assetId!))!;
+    expect(n.previewRelativePath, 'previews/${n.id}-ansicht.jpg');
   });
 
   test('die entwickelte Fassung geht vor dem Original', () async {

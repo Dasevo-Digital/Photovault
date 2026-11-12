@@ -119,6 +119,22 @@ void main() {
     expect(relativ(o.zoom), 'originals/jpeg.jpg');
   });
 
+  test('ein grosses JPEG: erst das Ansichtsbild, zum Zoomen das Original '
+      '(#333)', () async {
+    // Bis 3.66 lud das Handy jedes JPEG ganz vom Server, aus einer Kamera
+    // oft 8 bis 20 MB, ehe es etwas zeigte.
+    final a = (await aufnahme('kamera', 'jpg', vorschau: false)).copyWith(
+      previewRelativePath: const Value('previews/kamera-ansicht.jpg'),
+    );
+    final q = bildquelleVomServer(paths, a);
+    expect(
+      relativ((q.ansicht as ResizeImage).imageProvider),
+      'previews/kamera-ansicht.jpg',
+    );
+    expect(relativ(q.zoom), 'originals/kamera.jpg', reason: 'ohne Wandlung');
+    expect(relativ(q.voll), 'originals/kamera.jpg');
+  });
+
   test(
     'vom Telefon kommt nur, was dasselbe zeigt wie der Server (#330)',
     () async {

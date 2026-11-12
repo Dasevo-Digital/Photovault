@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/asset_display_path.dart';
 import '../l10n/app_localizations.dart';
 import '../services/bilddekodierung.dart';
 import '../services/staubflecken.dart';
@@ -98,9 +99,7 @@ class _StaubsucheScreenState extends State<StaubsucheScreen> {
       // Es geht also keine Genauigkeit verloren, nur Speicher: Das grösste
       // Original der Prüfbibliothek treibt den Arbeitssatz beim Dekodieren
       // von 328 auf 1226 MB, seine Vorschau nicht messbar.
-      final datei = widget.library.paths.absolute(
-        asset.previewRelativePath ?? asset.relativePath,
-      );
+      final datei = widget.library.paths.absolute(lesbarerPfad(asset));
       try {
         if (await datei.exists()) {
           // In einem eigenen Isolat: Die Weichzeichnung braucht knapp eine

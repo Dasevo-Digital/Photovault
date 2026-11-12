@@ -146,8 +146,9 @@ mixin _Vorschau on _EntwickelnBasis {
 
   Future<void> _showExistingPreview() async {
     try {
+      // Am Rechner das Original, nicht das Ansichtsbild (#333).
       final bytes = await widget.paths
-          .absolute(displayRelativePath(widget.asset))
+          .absolute(displayRelativePath(widget.asset, mitAnsichtsbild: false))
           .readAsBytes();
       if (!mounted) return;
       setState(() => _previewBytes = bytes);

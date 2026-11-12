@@ -5183,6 +5183,24 @@ function vergleichZoome(i, faktor, px, py) {
   s.z = z;
   vergleichGrenze(s, feld);
   vergleichZeichne();
+  if (z > 1) vergleichVoll(i);
+}
+
+// Vergrössert die volle Auflösung, wie im Betrachter (#333): Die Ansicht
+// eines grossen JPEG ist ein Ansichtsbild mit 3000 Punkten, und gerade
+// beim Vergleichen zählt jeder Punkt. Gekoppelt für beide Seiten.
+function vergleichVoll(i) {
+  vergleichFelder.forEach((f, k) => {
+    if (!vergleich.gekoppelt && k !== i) return;
+    const img = f.querySelector('img');
+    const url = img.dataset.voll;
+    if (!url || !img.naturalWidth) return;
+    if (Math.max(img.naturalWidth, img.naturalHeight) >= Number(img.dataset.lang)) return;
+    delete img.dataset.voll;
+    const voll = new Image();
+    voll.onload = () => { if (img.dataset.fuer === url) img.src = voll.src; };
+    voll.src = url;
+  });
 }
 
 function vergleichZurueck() {
@@ -5198,7 +5216,11 @@ function oeffneVergleich(paar) {
   vergleich.gekoppelt = true;
   paar.forEach((a, i) => {
     const f = vergleichFelder[i];
-    f.querySelector('img').src = aufnahmeUrl(a.id, 'ansicht', a.stand);
+    const img = f.querySelector('img');
+    img.src = aufnahmeUrl(a.id, 'ansicht', a.stand);
+    // Für vergleichVoll: was es in voller Grösse gibt und wie gross.
+    img.dataset.voll = img.dataset.fuer = aufnahmeUrl(a.id, 'voll', a.stand);
+    img.dataset.lang = String(Math.max(a.breite || 0, a.hoehe || 0));
     f.querySelector('figcaption').textContent = a.name || '';
   });
   vergleichZurueck();
@@ -5207,7 +5229,12 @@ function oeffneVergleich(paar) {
 
 function schliesseVergleich() {
   $('vergleich').hidden = true;
-  for (const f of vergleichFelder) f.querySelector('img').removeAttribute('src');
+  for (const f of vergleichFelder) {
+    const img = f.querySelector('img');
+    img.removeAttribute('src');
+    delete img.dataset.voll;
+    delete img.dataset.fuer;
+  }
 }
 
 vergleichFelder.forEach((f, i) => {
@@ -5470,31 +5497,46 @@ function neuZeichnen() {
 let offen = -1;
 
 // Die volle Auflösung (#256): Zeigt die Ansicht nur die Vorschau – bei
-// HEIC, RAW und DNG 2048 Punkte –, kommt das Foto in Originalgrösse nach,
-// sobald es da ist. Ob es mehr gibt, sagen die Masse aus der Liste; ein
-// JPEG ist schon das Original und wird nicht zweimal geladen. Wie auf dem
-// Handy (apps/mobil, vollesBild).
+// HEIC, RAW und DNG, und bei einem grossen JPEG das Ansichtsbild (#333),
+// 3000 Punkte –, kommt das Foto in Originalgrösse nach. Ob es mehr gibt,
+// sagen die Masse aus der Liste; ein kleines JPEG ist schon das Original
+// und wird nicht zweimal geladen. Wie auf dem Handy (apps/mobil,
+// vollesBild).
 let vollLauf = 0;
+// Das Foto, dessen volle Auflösung noch kommen kann (siehe ladeVoll).
+let vollOffen = null;
 function holeVoll(a) {
   const lauf = vollLauf;
   const bild = $('bild');
+  vollOffen = null;
   bild.addEventListener('load', () => {
     if (lauf !== vollLauf) return;
     const lang = Math.max(a.breite || 0, a.hoehe || 0);
     if (Math.max(bild.naturalWidth, bild.naturalHeight) >= lang) return;
+    vollOffen = { lauf, a };
+    // Schon vergrössert, ehe die Ansicht da war.
+    if (blick.zoom > 1) { ladeVoll(); return; }
     // Die Vorschau reicht, solange das Fenster sie nicht vergrössert (#332).
     const dichte = window.devicePixelRatio || 1;
     if (Math.min(innerWidth * dichte / bild.naturalWidth, innerHeight * dichte / bild.naturalHeight) <= 1.02) return;
     // Erst nach kurzem Verweilen, wie in der Handy-App (#266): Wer mit den
     // Pfeiltasten durch HEIC oder RAW blättert, stiess sonst für jedes Foto
     // eine Wandlung am Server an.
-    setTimeout(() => {
-      if (lauf !== vollLauf) return;
-      const voll = new Image();
-      voll.onload = () => { if (lauf === vollLauf) bild.src = voll.src; };
-      voll.src = aufnahmeUrl(a.id, 'voll', a.stand);
-    }, 400);
+    setTimeout(ladeVoll, 400);
   }, { once: true });
+}
+
+// Holt die volle Auflösung, einmal je geöffnetem Foto: wenn das Fenster
+// mehr braucht als die Ansicht, oder sobald jemand zoomt (#333). Bis 3.66
+// lud der Browser beim Zoomen nichts nach; bei einem JPEG war die Ansicht
+// ohnehin das Original.
+function ladeVoll() {
+  const ziel = vollOffen;
+  if (!ziel || ziel.lauf !== vollLauf) return;
+  vollOffen = null;
+  const voll = new Image();
+  voll.onload = () => { if (ziel.lauf === vollLauf) $('bild').src = voll.src; };
+  voll.src = aufnahmeUrl(ziel.a.id, 'voll', ziel.a.stand);
 }
 
 function oeffne(i) {
@@ -6103,6 +6145,8 @@ function zoomeUm(ziel, px, py, gleitend) {
   blick.zoom = z;
   if (z === 1) { blick.x = 0; blick.y = 0; }
   setzeBlick(gleitend);
+  // Vergrössert zählt jeder Punkt (#333).
+  if (z > 1) ladeVoll();
 }
 
 function wischZiel(dx, dy) {

@@ -185,9 +185,9 @@ class Auswertungen {
   /// Datei, die tatsächlich dekodiert werden kann: die konvertierte
   /// Vorschau, falls das Originalformat (HEIC/DNG & Co.) von Flutter bzw.
   /// dem `image`-Paket nicht direkt gelesen werden kann – sonst das
-  /// Original selbst.
-  File decodableFile(AssetData asset) =>
-      paths.absolute(asset.previewRelativePath ?? asset.relativePath);
+  /// Original selbst, auch neben dem Ansichtsbild eines JPEG (#333, siehe
+  /// [lesbarerPfad]).
+  File decodableFile(AssetData asset) => paths.absolute(lesbarerPfad(asset));
 
   /// Lädt und dekodiert das Bild eines Assets einmalig – wird sowohl für
   /// die Gesichtserkennung als auch für die CLIP-Einbettung wiederverwendet

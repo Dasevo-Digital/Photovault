@@ -212,9 +212,8 @@ mixin _Masken on _EntwickelnBasis {
 
   /// Das Foto, aus dem eine Maske ihre Bildpunkte liest: die Vorschau der
   /// Bibliothek, also ohne die Regler (siehe [LuminanceRangeShape]).
-  Future<File> _maskenQuelle() => widget.paths.bereit(
-    widget.asset.previewRelativePath ?? widget.asset.relativePath,
-  );
+  Future<File> _maskenQuelle() =>
+      widget.paths.bereit(lesbarerPfad(widget.asset));
 
   img.Image? _kleineMaskenquelle;
 

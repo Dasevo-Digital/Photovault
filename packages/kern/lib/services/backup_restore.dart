@@ -9,6 +9,7 @@ import 'package:uuid/uuid.dart';
 import '../berechne.dart';
 import '../db/database.dart';
 import '../protokoll.dart';
+import 'asset_display_path.dart';
 import 'aufnahmedatum.dart';
 import 'backup_fotokammer.dart';
 import 'beilagenangaben.dart';
@@ -478,9 +479,7 @@ class BackupWiederhersteller {
       try {
         final asset = await _db.assetById(eintrag.key);
         if (asset != null) {
-          final datei = _paths.absolute(
-            asset.previewRelativePath ?? asset.relativePath,
-          );
+          final datei = _paths.absolute(lesbarerPfad(asset));
           if (await datei.exists()) {
             final bild = await berechne(_dekodiere, await datei.readAsBytes());
             if (bild != null) {

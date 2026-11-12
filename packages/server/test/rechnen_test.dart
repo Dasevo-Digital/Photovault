@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/auswertung/auswertungen.dart' show Analysestufe;
 import 'package:kern/auswertung/herkunft.dart';
@@ -58,17 +59,22 @@ void main() {
   Future<AppDatabase> db() async =>
       (await bibliotheken.fuer(konto.id)).bibliothek.db;
 
-  Future<void> foto(String id) async => (await db())
+  Future<void> foto(
+    String id, {
+    String endung = 'jpg',
+    String? vorschau,
+  }) async => (await db())
       .into((await db()).assets)
       .insert(
         AssetsCompanion.insert(
           id: id,
-          originalFileName: '$id.jpg',
-          relativePath: 'originals/$id.jpg',
+          originalFileName: '$id.$endung',
+          relativePath: 'originals/$id.$endung',
           checksum: 'pruef-$id',
           type: 'IMAGE',
           fileCreatedAt: DateTime(2025),
           importedAt: DateTime(2026),
+          previewRelativePath: Value(vorschau),
         ),
       );
 
@@ -228,6 +234,17 @@ void main() {
       expect(await hole(rechner, ['bildanalyse']), isEmpty, reason: 'erledigt');
     },
   );
+
+  test('gerechnet wird aus dem Original, nicht aus dem Ansichtsbild '
+      '(#333)', () async {
+    await foto('j', vorschau: 'previews/j-ansicht.jpg');
+    await foto('h', endung: 'heic', vorschau: 'previews/h.jpg');
+    final auftraege = await hole(rechner, ['texterkennung']);
+    expect(
+      {for (final a in auftraege) a.aufnahme: a.datei},
+      {'j': 'originals/j.jpg', 'h': 'previews/h.jpg'},
+    );
+  });
 
   test('Unsinn wird abgewiesen, ohne etwas einzutragen', () async {
     await foto('a');

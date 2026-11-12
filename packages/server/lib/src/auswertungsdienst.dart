@@ -80,9 +80,9 @@ class Auswertungsdienst {
   Timer? _warte;
   late final Timer _freigabe;
 
-  /// Wo die nächste Etappe der Vorschauen beginnt (siehe
-  /// [_vorschauEtappe]); nach einem Neustart wieder von vorn.
-  String? _vorschauAb;
+  /// Wo die nächste Etappe eines Nachlaufs beginnt, nach seinem Schlüssel
+  /// (siehe [_etappe]); nach einem Neustart wieder von vorn.
+  final _etappeAb = <String, String?>{};
   Future<void>? _lauf;
   bool _nochmal = false;
   bool _beendet = false;
@@ -224,36 +224,55 @@ class Auswertungsdienst {
         protokoll('Nachlauf $schluessel gescheitert: $e');
       }
     }
-    await _vorschauEtappe();
-  }
-
-  /// Vorschauen auf die neue Grösse bringen (#332), immer nur für kurze
-  /// Zeit: Das dauert Stunden, und neue Fotos sollen derweil nicht warten.
-  /// Nach jeder Etappe kommt die Auswertung an die Reihe, dann die nächste.
-  Future<void> _vorschauEtappe() async {
-    final db = bibliothek.db;
-    if (_beendet || await db.aufgabeFertigAm(nachlaufVorschaukante) != null) {
-      return;
-    }
-    try {
-      final r = await vergroessereVorschauen(
+    // Vorschauen auf die neue Grösse bringen (#332).
+    await _etappe(
+      nachlaufVorschaukante,
+      'Vorschauen',
+      (ab) => vergroessereVorschauen(
         db,
         bibliothek.pfade,
         bibliothek.importe,
-        ab: _vorschauAb,
+        ab: ab,
         abbrechen: () => _beendet,
-      );
+      ),
+    );
+    // Grossen JPEG ein Ansichtsbild für Handy und Browser (#333).
+    await _etappe(
+      nachlaufAnsichtsbilder,
+      'Ansichtsbilder',
+      (ab) => ergaenzeAnsichtsbilder(
+        db,
+        bibliothek.pfade,
+        bibliothek.importe,
+        ab: ab,
+        abbrechen: () => _beendet,
+      ),
+    );
+  }
+
+  /// Ein Nachlauf, der Stunden dauert, immer nur für kurze Zeit: Neue
+  /// Fotos sollen derweil nicht warten. Nach jeder Etappe kommt die
+  /// Auswertung an die Reihe, dann die nächste.
+  Future<void> _etappe(
+    String schluessel,
+    String name,
+    Future<({int neu, String? weiter})> Function(String? ab) lauf,
+  ) async {
+    final db = bibliothek.db;
+    if (_beendet || await db.aufgabeFertigAm(schluessel) != null) return;
+    try {
+      final r = await lauf(_etappeAb[schluessel]);
       if (_beendet) return;
-      if (r.neu > 0) protokoll('Nachlauf Vorschauen: ${r.neu} neu');
-      _vorschauAb = r.weiter;
+      if (r.neu > 0) protokoll('Nachlauf $name: ${r.neu} neu');
+      _etappeAb[schluessel] = r.weiter;
       if (r.weiter == null) {
-        await db.merkeAufgabenlauf(nachlaufVorschaukante);
-        protokoll('Nachlauf Vorschauen fertig');
+        await db.merkeAufgabenlauf(schluessel);
+        protokoll('Nachlauf $name fertig');
       } else {
         _nochmal = true;
       }
     } catch (e) {
-      protokoll('Nachlauf Vorschauen gescheitert: $e');
+      protokoll('Nachlauf $name gescheitert: $e');
     }
   }
 

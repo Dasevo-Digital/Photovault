@@ -1133,7 +1133,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                                   // stehen, gelöscht wurde aber schon das
                                   // nächste.
                                   key: ValueKey(
-                                    '${a.id}|${displayRelativePath(a)}',
+                                    '${a.id}|'
+                                    '${displayRelativePath(a, mitAnsichtsbild: false)}',
                                   ),
                                   asset: a,
                                   db: widget.db,
@@ -1641,7 +1642,12 @@ class _AssetPageState extends State<_AssetPage> {
   }
 
   Future<File> _resolveFile() {
-    final relativePath = displayRelativePath(widget.asset);
+    // Der Rechner zeigt das Original, nicht das Ansichtsbild für Handy und
+    // Browser (#333) – bis 4096 Punkte und beim Zoomen.
+    final relativePath = displayRelativePath(
+      widget.asset,
+      mitAnsichtsbild: false,
+    );
     if (widget.asset.isLocked && widget.library != null) {
       return widget.library!.decryptForViewing(relativePath);
     }
