@@ -14,10 +14,16 @@ import 'vollbild.dart';
 ///
 /// Die Zeit wird beim Ausliefern nicht aufgefrischt – sie steckt im ETag,
 /// und der Browser soll seine Kopie behalten dürfen.
+///
+/// [beilage]: die Endung kleiner Begleitdateien `<datei><beilage>`, etwa des
+/// Stands einer Kartenkachel beim Anbieter (#379). Sie zählen nicht mit und
+/// gehen mit ihrer Datei. Nach ihrer eigenen Zeit gingen sie sonst zuerst:
+/// Geschrieben werden sie jetzt, die Zeit einer Kachel ist ihre Frist.
 Future<void> begrenzeZwischenspeicher(
   Directory speicher,
   int grenze, {
   required File behalten,
+  String? beilage,
 }) async {
   final dateien = <(File, int, DateTime)>[];
   var summe = 0;
@@ -25,6 +31,7 @@ Future<void> begrenzeZwischenspeicher(
     if (e is! File || e.path == behalten.path) continue;
     // Eine Wandlung, die gerade schreibt.
     if (e.path.endsWith('.teil')) continue;
+    if (beilage != null && e.path.endsWith(beilage)) continue;
     try {
       final s = await e.stat();
       dateien.add((e, s.size, s.modified));
@@ -44,6 +51,12 @@ Future<void> begrenzeZwischenspeicher(
       summe -= bytes;
     } on FileSystemException {
       // Gerade weg – dann eben beim nächsten Mal.
+    }
+    if (beilage == null) continue;
+    try {
+      await File('${f.path}$beilage').delete();
+    } on FileSystemException {
+      // Keine da.
     }
   }
 }

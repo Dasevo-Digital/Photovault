@@ -10,13 +10,15 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/bildnachlauf.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
+import 'package:kern/services/dateikopf.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 
-/// Wandelt jede Datei in ein kleines JPEG und merkt sich, was verlangt
-/// wurde.
+/// Wandelt jede Datei in ein kleines rotes JPEG und merkt sich, was
+/// verlangt wurde. Rot, damit sich zeigt, was aus dem Ansichtsbild kommt
+/// (#379): Die Originale der Tests sind schwarz.
 class _Wandler extends KeineBildwerkzeuge {
   final aufrufe = <String>[];
   var scheitert = false;
@@ -30,7 +32,11 @@ class _Wandler extends KeineBildwerkzeuge {
   }) async {
     aufrufe.add('${p.basename(file.path)}@$maxDimension');
     if (scheitert) return null;
-    return Uint8List.fromList(img.encodeJpg(img.Image(width: 300, height: 20)));
+    final rot = img.fill(
+      img.Image(width: 300, height: 20),
+      color: img.ColorRgb8(255, 0, 0),
+    );
+    return Uint8List.fromList(img.encodeJpg(rot));
   }
 }
 
@@ -40,6 +46,20 @@ class _Wandler extends KeineBildwerkzeuge {
 Uint8List _jpeg(int breite, int hoehe, {int bytes = 0, img.Image? bild}) {
   final roh = img.encodeJpg(bild ?? img.Image(width: breite, height: hoehe));
   if (roh.length >= bytes) return roh;
+  return Uint8List(bytes)..setRange(0, roh.length, roh);
+}
+
+/// [jpeg] mit [anhaenge] leeren APP15-Abschnitten zu je 64 KB vor allem
+/// anderen, auf [bytes] gebracht wie bei [_jpeg]. So weit hinten stehen die
+/// Masse sonst nur bei Telefonen, die eine Tiefenkarte im XMP ablegen.
+Uint8List _mitAnhaengen(Uint8List jpeg, int anhaenge, {required int bytes}) {
+  final roh = [
+    ...jpeg.sublist(0, 2),
+    for (var i = 0; i < anhaenge; i++) ...[
+      0xFF, 0xEF, 0xFF, 0xFF, ...Uint8List(0xFFFD), //
+    ],
+    ...jpeg.sublist(2),
+  ];
   return Uint8List(bytes)..setRange(0, roh.length, roh);
 }
 
@@ -94,6 +114,16 @@ void main() {
     return (await db.assetById(r.assetId!))!;
   }
 
+  /// Ob die Miniatur von [a] aus dem roten Bild des Wandlers stammt und
+  /// nicht aus dem schwarzen Original (#379).
+  bool miniaturAusDemAnsichtsbild(AssetData a) {
+    final m = img.decodeJpg(
+      paths.absolute(a.thumbnailRelativePath!).readAsBytesSync(),
+    )!;
+    final punkt = m.getPixel(m.width ~/ 2, m.height ~/ 2);
+    return punkt.r > 200 && punkt.g < 60;
+  }
+
   group('beim Import', () {
     test('ein grosses JPEG bekommt ein Ansichtsbild', () async {
       final a = await importiere(
@@ -110,6 +140,9 @@ void main() {
         [3200, 100],
         reason: 'die Masse bleiben die des Originals',
       );
+      // Die Miniatur kommt aus dem Ansichtsbild, statt dass Dart dafür das
+      // ganze Original dekodiert (#379).
+      expect(miniaturAusDemAnsichtsbild(a), isTrue);
 
       // Handy und Browser zeigen das Ansichtsbild und holen zum Zoomen das
       // Original, das sie selbst lesen.
@@ -161,6 +194,47 @@ void main() {
       expect(a.previewRelativePath, isNull);
       expect(a.thumbnailRelativePath, isNotNull);
       expect(displayRelativePath(a), a.relativePath);
+      expect([a.widthPx, a.heightPx], [3200, 100]);
+      expect(
+        wandler.aufrufe,
+        hasLength(1),
+        reason: 'nicht ein zweites Mal für die Miniatur aus dem Original',
+      );
+    });
+
+    test('die Masse kommen aus dem Kopf, nach seiner Lage (#379)', () async {
+      // Quer gespeichert, laut EXIF hochkant. Das Ansichtsbild ist schon
+      // gedreht und sagt nichts über die Grösse des Originals.
+      final bild = img.Image(width: 3200, height: 100);
+      bild.exif.imageIfd.orientation = 6;
+      final a = await importiere(
+        server,
+        'DSC_0006.jpg',
+        _jpeg(0, 0, bytes: _gross, bild: bild),
+      );
+      expect([a.widthPx, a.heightPx], [100, 3200]);
+      expect(a.previewRelativePath, 'previews/${a.id}-ansicht.jpg');
+      expect(miniaturAusDemAnsichtsbild(a), isTrue);
+    });
+
+    test('stehen die Masse nicht im Kopf, geht es wie bisher', () async {
+      final a = await importiere(
+        server,
+        'PXL_0007.jpg',
+        _mitAnhaengen(
+          img.encodeJpg(img.Image(width: 3200, height: 100)),
+          5,
+          bytes: _gross,
+        ),
+      );
+      expect(a.previewRelativePath, 'previews/${a.id}-ansicht.jpg');
+      expect([a.widthPx, a.heightPx], [3200, 100]);
+      expect(
+        miniaturAusDemAnsichtsbild(a),
+        isFalse,
+        reason: 'aus dem Original',
+      );
+      expect(wandler.aufrufe, hasLength(1));
     });
 
     test(
@@ -194,6 +268,9 @@ void main() {
       Uint8List? inhalt,
       String? vorschau,
       bool gesperrt = false,
+      bool imPapierkorb = false,
+      String? entwickelt,
+      String? restauriert,
       bool original = true,
     }) async {
       final relativ = 'originals/$id.$endung';
@@ -209,6 +286,9 @@ void main() {
           heightPx: Value(hoehe),
           fileSizeBytes: Value(bytes),
           isLocked: Value(gesperrt),
+          isTrashed: Value(imPapierkorb),
+          developedRelativePath: Value(entwickelt),
+          restoredRelativePath: Value(restauriert),
           fileCreatedAt: DateTime(2026),
           checksum: id,
           importedAt: DateTime(2026),
@@ -253,6 +333,21 @@ void main() {
       final noch = await ergaenzeAnsichtsbilder(db, paths, server);
       expect(noch.neu, 0);
       expect(wandler.aufrufe, isEmpty);
+    });
+
+    test('übergeht, was das Ansichtsbild nie zeigen würde (#379)', () async {
+      await aufnahme('papierkorb', imPapierkorb: true);
+      await aufnahme('entwickelt', entwickelt: 'developed/entwickelt.jpg');
+      await aufnahme('restauriert', restauriert: 'restored/restauriert.jpg');
+      await aufnahme('a');
+
+      final r = await ergaenzeAnsichtsbilder(db, paths, server);
+
+      expect(r.neu, 1);
+      expect(wandler.aufrufe, ['a.jpg@$vorschauKante']);
+      for (final id in ['papierkorb', 'entwickelt', 'restauriert']) {
+        expect((await zeile(id)).previewRelativePath, isNull, reason: id);
+      }
     });
 
     test('das Vergrössern alter Vorschauen lässt Ansichtsbilder', () async {
@@ -373,6 +468,54 @@ void main() {
       expect(math.max(ansicht.width, ansicht.height), vorschauKante);
       expect(ansicht.exif.gpsIfd.gpsLatitude, isNull, reason: 'ohne Ort');
       expect(ansicht.exif.imageIfd.orientation ?? 1, 1);
+    });
+
+    test('die Miniatur aus dem Ansichtsbild ist einmal gedreht, nicht zweimal '
+        '(#379)', () async {
+      // Quer gespeichert, links rot und rechts blau, laut EXIF um 90° im
+      // Uhrzeigersinn zu drehen: hochkant, oben rot.
+      final bild = img.Image(width: 3200, height: 100);
+      img.fillRect(
+        bild,
+        x1: 0,
+        y1: 0,
+        x2: 1599,
+        y2: 99,
+        color: img.ColorRgb8(255, 0, 0),
+      );
+      img.fillRect(
+        bild,
+        x1: 1600,
+        y1: 0,
+        x2: 3199,
+        y2: 99,
+        color: img.ColorRgb8(0, 0, 255),
+      );
+      bild.exif.imageIfd.orientation = 6;
+      final importe = ImportService(
+        db,
+        paths,
+        bildwerkzeuge: const WerkzeugBildwerkzeuge(),
+        ansichtsbilder: true,
+      );
+
+      final a = await importiere(
+        importe,
+        'DSC_0008.jpg',
+        _jpeg(0, 0, bytes: _gross, bild: bild),
+      );
+
+      expect(a.previewRelativePath, 'previews/${a.id}-ansicht.jpg');
+      expect([a.widthPx, a.heightPx], [100, 3200]);
+      final roh = paths.absolute(a.thumbnailRelativePath!).readAsBytesSync();
+      expect(jpegExifLage(roh) ?? 1, 1, reason: 'kein Betrachter dreht nach');
+      final miniatur = img.decodeJpg(roh)!;
+      expect(miniatur.height, 400);
+      expect(miniatur.width, lessThan(miniatur.height), reason: 'hochkant');
+      final oben = miniatur.getPixel(miniatur.width ~/ 2, 50);
+      final unten = miniatur.getPixel(miniatur.width ~/ 2, 350);
+      expect([oben.r > 200, oben.b < 60], [true, true], reason: 'oben rot');
+      expect([unten.b > 200, unten.r < 60], [true, true], reason: 'unten blau');
     });
   });
 }

@@ -633,7 +633,8 @@ class ImportService {
   /// Flutter selbst nicht rendern kann (HEIC/HEIF, DNG & Co., siehe
   /// [heicAndRawExtensions]) – zusätzlich eine größere, konvertierte
   /// JPEG-Vorschau für die Vollbildansicht. Am Server bekommt ein grosses
-  /// JPEG an ihrer Stelle ein Ansichtsbild ([erzeugeAnsichtsbild], #333).
+  /// JPEG an ihrer Stelle ein Ansichtsbild ([erzeugeAnsichtsbild], #333),
+  /// und die Miniatur entsteht dann aus ihm (#379).
   ///
   /// Wird sowohl beim Import als auch beim manuellen "Vorschaubilder neu
   /// erstellen" in den Werkzeugen verwendet (z.B. für Fotos, die importiert
@@ -695,6 +696,52 @@ class ImportService {
       );
     }
 
+    // Am Server entsteht das Ansichtsbild eines grossen JPEG zuerst, und die
+    // Miniatur kommt aus ihm (#379). Bis dahin dekodierte Dart dafür das
+    // ganze Original – bei 24 Megapixeln 1 bis 3 s und 100 bis 200 MB –, und
+    // gleich danach las der Wandler dieselbe Datei noch einmal. Das
+    // Ansichtsbild ist schon nach dem EXIF gedreht und trägt keine Lage
+    // mehr; die Miniatur daraus wird nicht ein zweites Mal gedreht.
+    //
+    // Die Masse kommen aus dem Kopf des Originals: Sie stehen vor den
+    // Bilddaten, hinter EXIF, XMP und Farbprofil (je höchstens 64 KB), bei
+    // Kamerafotos in den ersten 256 KB. Stehen sie dort nicht oder scheitert
+    // das Ansichtsbild, geht es weiter wie bisher.
+    final kopf = ansichtsbilder && !gewandelt
+        ? jpegAnzeigemasse(
+            alreadyReadBytes ??
+                await _kopfbytes(sourceFile, wieviele: 256 * 1024),
+          )
+        : null;
+    String? ansicht;
+    if (kopf != null) {
+      ansicht = await erzeugeAnsichtsbild(
+        sourceFile,
+        assetId,
+        breite: kopf.breite,
+        hoehe: kopf.hoehe,
+        zusatz: zusatz,
+      );
+      final miniatur = ansicht == null
+          ? null
+          : await berechne(
+              decodeAndResizeThumbnail,
+              await _paths.absolute(ansicht).readAsBytes(),
+            );
+      if (miniatur != null) {
+        final thumbRelativePath = _paths.thumbnailRelativePath(assetId, zusatz);
+        await _paths
+            .absolute(thumbRelativePath)
+            .writeAsBytes(miniatur.jpegBytes);
+        return ThumbnailResult(
+          thumbnailRelativePath: thumbRelativePath,
+          previewRelativePath: ansicht,
+          width: kopf.breite,
+          height: kopf.hoehe,
+        );
+      }
+    }
+
     final bytesToDecode =
         convertedBytes ?? alreadyReadBytes ?? await sourceFile.readAsBytes();
     // Bei kurzen/beschädigten Dateien wirft `image` teils eine Exception
@@ -720,14 +767,18 @@ class ImportService {
       await _paths.absolute(previewRelativePath).writeAsBytes(convertedBytes);
     } else if (!gewandelt) {
       // Ein grosses JPEG bekommt am Server ein Ansichtsbild (#333). Masse
-      // und Miniatur kommen weiter aus dem Original.
-      previewRelativePath = await erzeugeAnsichtsbild(
-        sourceFile,
-        assetId,
-        breite: result.width,
-        hoehe: result.height,
-        zusatz: zusatz,
-      );
+      // und Miniatur kommen hier aus dem Original. Wurde es oben schon
+      // versucht, nicht noch einmal: Ein Wandler, der eben scheiterte,
+      // scheitert wieder (#379).
+      previewRelativePath = kopf != null
+          ? ansicht
+          : await erzeugeAnsichtsbild(
+              sourceFile,
+              assetId,
+              breite: result.width,
+              hoehe: result.height,
+              zusatz: zusatz,
+            );
     }
 
     // Aus einer gewandelten Vorschau stammen nur ihre eigenen Masse – die

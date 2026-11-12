@@ -466,6 +466,22 @@ int? jpegExifLage(Uint8List b) {
   return null;
 }
 
+/// Die Grösse, in der ein JPEG gezeigt wird, aus seinem Anfang [kopf]: die
+/// Masse aus dem SOF-Abschnitt, bei einer Lage von 5 bis 8 vertauscht – so,
+/// wie `package:image` und der Wandler es drehen. `null`, wenn [kopf] kein
+/// JPEG ist oder vor den Massen endet.
+///
+/// Für die Miniatur aus dem Ansichtsbild (#379): Dessen eigene Masse sind
+/// verkleinert, die des Originals stehen hier, ohne es zu dekodieren.
+({int breite, int hoehe})? jpegAnzeigemasse(Uint8List kopf) {
+  final masse = jpegMasse(kopf);
+  if (masse == null) return null;
+  final (b, h) = masse;
+  return (jpegExifLage(kopf) ?? 1) >= 5
+      ? (breite: h, hoehe: b)
+      : (breite: b, hoehe: h);
+}
+
 // --- ISO-BMFF (HEIF, AVIF, CR3) ---------------------------------------------
 
 class _Kiste {

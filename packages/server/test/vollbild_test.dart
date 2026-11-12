@@ -192,6 +192,17 @@ void main() {
     final r = await b.importe.importFile(neu.path);
     final n = (await b.db.assetById(r.assetId!))!;
     expect(n.previewRelativePath, 'previews/${n.id}-ansicht.jpg');
+    // Die Miniatur kommt aus dem Ansichtsbild, die Masse aus dem Kopf des
+    // Originals (#379).
+    final miniatur = img.decodeJpg(
+      await b.pfade.absolute(n.thumbnailRelativePath!).readAsBytes(),
+    )!;
+    expect(
+      (miniatur.width, miniatur.height),
+      (400, 300),
+      reason: 'aus den 40 × 30 des Wandlers, nicht aus 3200 × 100',
+    );
+    expect((n.widthPx, n.heightPx), (3200, 100));
   });
 
   test('die entwickelte Fassung geht vor dem Original', () async {
@@ -353,6 +364,39 @@ void main() {
       await Vollbilder.ziel(speicher, 'a', quellen[0].path).exists(),
       isFalse,
     );
+  });
+
+  test('Beilagen zählen nicht mit und gehen mit ihrer Datei (#379)', () async {
+    // Wie die Kartenkacheln: Die Zeit einer Kachel ist ihre Frist, ihr
+    // Stand beim Anbieter wird jetzt geschrieben und wäre so die älteste
+    // Datei.
+    final speicher = Directory('${ordner.path}/kacheln')..createSync();
+    File lege(String name, int tag) => File(p.join(speicher.path, name))
+      ..writeAsBytesSync(Uint8List(100))
+      ..setLastModifiedSync(DateTime(2026, 1, tag));
+    final spaet = lege('a.png', 5), spaetStand = lege('a.png.stand', 1);
+    final frueh = lege('b.png', 3), fruehStand = lege('b.png.stand', 1);
+    final zuletzt = lege('c.png', 7);
+
+    await begrenzeZwischenspeicher(
+      speicher,
+      300,
+      behalten: zuletzt,
+      beilage: '.stand',
+    );
+    expect(speicher.listSync(), hasLength(5), reason: 'drei Kacheln passen');
+
+    await begrenzeZwischenspeicher(
+      speicher,
+      250,
+      behalten: zuletzt,
+      beilage: '.stand',
+    );
+    expect(frueh.existsSync(), isFalse, reason: 'die früheste Frist');
+    expect(fruehStand.existsSync(), isFalse, reason: 'geht mit ihr');
+    expect(spaet.existsSync(), isTrue);
+    expect(spaetStand.existsSync(), isTrue, reason: 'nicht nach eigener Zeit');
+    expect(zuletzt.existsSync(), isTrue);
   });
 }
 

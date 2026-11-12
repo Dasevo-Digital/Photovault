@@ -213,6 +213,11 @@ Future<({int neu, String? weiter})> vergroessereVorschauen(
 /// geht es also beim nächsten weiter, ohne eine Datei zu öffnen. Die Zeile
 /// bekommt nur die Vorschau – Miniatur und Masse bleiben –, und mit ihr
 /// erfahren die Geräte davon.
+///
+/// Aussen vor bleibt, was das Ansichtsbild nie zeigen würde (#379): Ein
+/// entwickeltes oder restauriertes Foto zeigt der Betrachter in dieser
+/// Fassung (siehe `displayRelativePath`), und was im Papierkorb liegt,
+/// wartet aufs Löschen. Jedes wären Sekunden Rechenzeit für nichts.
 Future<({int neu, String? weiter})> ergaenzeAnsichtsbilder(
   AppDatabase db,
   StoragePaths paths,
@@ -229,6 +234,9 @@ Future<({int neu, String? weiter})> ergaenzeAnsichtsbilder(
               t.type.equals('IMAGE') &
                   t.previewRelativePath.isNull() &
                   t.isLocked.equals(false) &
+                  t.isTrashed.equals(false) &
+                  t.developedRelativePath.isNull() &
+                  t.restoredRelativePath.isNull() &
                   (t.relativePath.like('%.jpg') |
                       t.relativePath.like('%.jpeg')) &
                   t.fileSizeBytes.isBiggerThanValue(ansichtsbildAb) &

@@ -32,10 +32,15 @@ void main() {
   http.Response kachel({
     String cacheControl = 'max-age=3600',
     List<int>? bytes,
+    Map<String, String> stand = const {},
   }) => http.Response.bytes(
     bytes ?? png,
     200,
-    headers: {'content-type': 'image/png', 'cache-control': cacheControl},
+    headers: {
+      'content-type': 'image/png',
+      'cache-control': cacheControl,
+      ...stand,
+    },
   );
 
   setUp(() async {
@@ -97,6 +102,8 @@ void main() {
   int maxAge(Response r) => int.parse(
     RegExp(r'max-age=(\d+)').firstMatch(r.headers['cache-control']!)![1]!,
   );
+
+  Future<List<int>> inhalt(Response r) => r.read().expand((b) => b).toList();
 
   test('der Server meldet die Fähigkeit, ein älterer Aufbau nicht', () async {
     Future<Object?> stufe(Handler h) async {
@@ -178,6 +185,62 @@ void main() {
     jetzt = jetzt.add(const Duration(days: 20));
     await hole(h, 'osm/5/16/10.png');
     expect(beimAnbieter, hasLength(1));
+  });
+
+  test('abgelaufen wird nur nachgefragt: Bei 304 bleiben die Bytes, und die '
+      'Frist beginnt von vorn (#379)', () async {
+    const zeit = 'Tue, 03 Nov 2026 10:00:00 GMT';
+    anbieter = (_) async =>
+        kachel(stand: {'etag': '"v1"', 'last-modified': zeit});
+    final h = api(karte());
+    expect((await hole(h, 'osm/3/4/2.png')).statusCode, 200);
+    final erste = beimAnbieter.single.headers.keys;
+    expect(erste, isNot(contains('if-none-match')), reason: 'noch keine Kopie');
+    expect(erste, isNot(contains('if-modified-since')));
+
+    // Nach Ablauf fragt der Server, ob sich die Kachel geändert hat.
+    jetzt = jetzt.add(const Duration(days: 8));
+    anbieter = (_) async =>
+        http.Response('', 304, headers: {'cache-control': 'max-age=1209600'});
+    final bestaetigt = await hole(h, 'osm/3/4/2.png');
+    expect(bestaetigt.statusCode, 200);
+    expect(await inhalt(bestaetigt), png, reason: 'die Bytes bleiben');
+    expect(maxAge(bestaetigt), closeTo(const Duration(days: 14).inSeconds, 5));
+    expect(beimAnbieter, hasLength(2));
+    expect(beimAnbieter.last.headers['if-none-match'], '"v1"');
+    expect(beimAnbieter.last.headers['if-modified-since'], zeit);
+
+    // So lange wieder von der Platte.
+    jetzt = jetzt.add(const Duration(days: 13));
+    expect((await hole(h, 'osm/3/4/2.png')).statusCode, 200);
+    expect(beimAnbieter, hasLength(2));
+
+    // Ein 304 ohne Angaben: mindestens eine Woche, wie bei jeder Kachel.
+    jetzt = jetzt.add(const Duration(days: 2));
+    anbieter = (_) async => http.Response('', 304);
+    final ohne = await hole(h, 'osm/3/4/2.png');
+    expect(maxAge(ohne), closeTo(const Duration(days: 7).inSeconds, 5));
+    expect(beimAnbieter, hasLength(3));
+
+    // Hat sie sich geändert, kommt sie ganz, mit ihrem neuen Stand.
+    jetzt = jetzt.add(const Duration(days: 8));
+    final neu = [...png, 9];
+    anbieter = (_) async => kachel(bytes: neu, stand: {'etag': '"v2"'});
+    expect(await inhalt(await hole(h, 'osm/3/4/2.png')), neu);
+    jetzt = jetzt.add(const Duration(days: 8));
+    anbieter = (_) async => http.Response('', 304);
+    expect(await inhalt(await hole(h, 'osm/3/4/2.png')), neu);
+    expect(beimAnbieter.last.headers['if-none-match'], '"v2"');
+    expect(
+      beimAnbieter.last.headers.keys,
+      isNot(contains('if-modified-since')),
+      reason: 'der neue Stand nennt keine Zeit',
+    );
+
+    // Ohne Stand ist ein 304 keine Antwort: Wer ohne Bedingung fragt, muss
+    // die Kachel bekommen.
+    anbieter = (_) async => http.Response('', 304);
+    expect((await hole(h, 'osm/3/4/3.png')).statusCode, 502);
   });
 
   test('kein offener Vermittler: fremde Stile, Stufen und Koordinaten sind '
@@ -297,7 +360,7 @@ void main() {
 
   test('der Speicher bleibt unter seiner Grenze', () async {
     final gross = List<int>.filled(1000, 7);
-    anbieter = (_) async => kachel(bytes: gross);
+    anbieter = (_) async => kachel(bytes: gross, stand: {'etag': '"e"'});
     final k = karte(grenze: 3500);
     final h = api(k);
     for (var x = 0; x < 10; x++) {
@@ -308,12 +371,16 @@ void main() {
     final dateien = Directory(
       '${ordner.path}/kartenkacheln',
     ).listSync().whereType<File>().toList();
-    final summe = dateien.fold<int>(0, (s, f) => s + f.lengthSync());
+    final kacheln = dateien.where((f) => f.path.endsWith('.png'));
+    final summe = kacheln.fold<int>(0, (s, f) => s + f.lengthSync());
     expect(summe, lessThanOrEqualTo(3500));
     // Die zuletzt geholte bleibt immer.
-    expect(
-      dateien.map((f) => f.uri.pathSegments.last),
-      contains('osm-4-9-0.png'),
-    );
+    final namen = dateien.map((f) => f.uri.pathSegments.last).toSet();
+    expect(namen, contains('osm-4-9-0.png'));
+    // Der Stand einer Kachel geht mit ihr, und nur mit ihr (#379).
+    expect(namen, hasLength(kacheln.length * 2));
+    for (final kachel in kacheln) {
+      expect(namen, contains('${kachel.uri.pathSegments.last}.stand'));
+    }
   });
 }

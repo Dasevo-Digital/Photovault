@@ -35,10 +35,18 @@ import 'fassungen_aufraeumen.dart';
 /// **Vorgehalten, solange der Anbieter sagt, mindestens aber [mindestens].**
 /// Die Nutzungsregeln von OpenStreetMap verlangen, Kacheln
 /// zwischenzuspeichern und eine Woche lang nicht neu zu holen. Wie lange
-/// eine Kachel gilt, steht in der Änderungszeit ihrer Datei – so braucht
-/// es keine zweite Datei je Kachel, und das Aufräumen
-/// ([begrenzeZwischenspeicher], höchstens [grenze] Bytes) wirft zuerst
-/// die, die am frühesten ablaufen.
+/// eine Kachel gilt, steht in der Änderungszeit ihrer Datei, und das
+/// Aufräumen ([begrenzeZwischenspeicher], höchstens [grenze] Bytes) wirft
+/// zuerst die, die am frühesten ablaufen.
+///
+/// **Abgelaufen heisst nachfragen, nicht neu holen (#379).** Die meisten
+/// Kacheln sind nach einer Woche noch dieselben, und bis dahin kam trotzdem
+/// jede ganz noch einmal. Jetzt steht neben der Kachel, woran der Anbieter
+/// sie wiedererkennt (`ETag`, `Last-Modified`, siehe [_stand]); ist sie
+/// abgelaufen, fragt der Server mit `If-None-Match` und
+/// `If-Modified-Since`. Sagt der Anbieter 304, bleiben die Bytes, und die
+/// Frist beginnt nach seinen neuen Angaben von vorn – wieder mindestens
+/// [mindestens].
 ///
 /// **Zurückhaltend.** Höchstens [gleichzeitig] Abrufe auf einmal und
 /// dieselbe Kachel nur einmal, auch wenn mehrere Geräte sie zugleich
@@ -141,8 +149,13 @@ class Kartenkacheln {
     }
     final abruf = await _laufend.putIfAbsent(
       datei.path,
-      () => _hole(stil, Uri.https(quelle.host, '/$zi/$xi/$yi.png'), datei)
-          .whenComplete(() {
+      () =>
+          _hole(
+            stil,
+            Uri.https(quelle.host, '/$zi/$xi/$yi.png'),
+            datei,
+            vorhanden: gilt != null,
+          ).whenComplete(() {
             // Mit Block: `remove` gäbe dieses Future selbst zurück, und
             // `whenComplete` wartete darauf – auf sich selbst.
             _laufend.remove(datei.path);
@@ -185,17 +198,38 @@ class Kartenkacheln {
     }
   }
 
-  Future<_Abruf> _hole(String stil, Uri adresse, File datei) async {
+  /// Holt die Kachel beim Anbieter. Liegt sie schon da ([vorhanden]), nur
+  /// mit der Frage, ob sie sich geändert hat (#379).
+  Future<_Abruf> _hole(
+    String stil,
+    Uri adresse,
+    File datei, {
+    required bool vorhanden,
+  }) async {
     await _platz();
     try {
       final bis = _ruheBis[stil];
       if (bis != null && _uhr().isBefore(bis)) return const _Gestoert();
-      final (status, kopf, bytes) = await _abruf(adresse);
+      final stand = vorhanden
+          ? await _leseStand(datei)
+          : const <String, String>{};
+      final (status, kopf, bytes) = await _abruf(adresse, {
+        'if-none-match': ?stand['etag'],
+        'if-modified-since': ?stand['last-modified'],
+      });
+      if (status == 304 && stand.isNotEmpty) {
+        final gilt = _uhr().add(_haltbarkeit(kopf));
+        await datei.setLastModified(gilt);
+        _fehlerInFolge.remove(stil);
+        return _Geholt(gilt);
+      }
       if (status == 200 &&
           (kopf['content-type'] ?? '').startsWith('image/png') &&
           bytes.isNotEmpty) {
         final gilt = _uhr().add(_haltbarkeit(kopf));
-        await _lege(datei, bytes, gilt);
+        await _lege(datei, bytes, gilt, {
+          for (final name in _standKoepfe) name: ?kopf[name],
+        });
         _fehlerInFolge.remove(stil);
         return _Geholt(gilt);
       }
@@ -236,12 +270,16 @@ class Kartenkacheln {
     }
   }
 
-  Future<(int, Map<String, String>, Uint8List)> _abruf(Uri adresse) async {
+  Future<(int, Map<String, String>, Uint8List)> _abruf(
+    Uri adresse,
+    Map<String, String> bedingung,
+  ) async {
     final abbruch = Completer<void>();
     Future<(int, Map<String, String>, Uint8List)> lauf() async {
       final r = await _netz.send(
         http.AbortableRequest('GET', adresse, abortTrigger: abbruch.future)
-          ..headers['user-agent'] = kennung,
+          ..headers['user-agent'] = kennung
+          ..headers.addAll(bedingung),
       );
       if ((r.contentLength ?? 0) > _hoechstensBytes) throw const _ZuGross();
       final bytes = BytesBuilder(copy: false);
@@ -286,13 +324,51 @@ class Kartenkacheln {
     return angabe > _laengstens ? _laengstens : angabe;
   }
 
-  Future<void> _lege(File datei, Uint8List bytes, DateTime gilt) async {
+  /// Woran der Anbieter den Stand einer Kachel erkennt (#379): ihr `ETag`
+  /// und `Last-Modified`, als JSON in `<kachel>.stand`. Das Aufräumen nimmt
+  /// sie mit ihrer Kachel weg ([begrenzeZwischenspeicher], `beilage`).
+  static File _stand(File datei) => File('${datei.path}$_standEndung');
+  static const _standEndung = '.stand';
+  static const _standKoepfe = ['etag', 'last-modified'];
+
+  /// Der Stand von [datei] beim Anbieter; leer, wenn keiner vermerkt ist
+  /// oder sich nicht lesen lässt – dann wird ganz geholt.
+  static Future<Map<String, String>> _leseStand(File datei) async {
+    try {
+      final inhalt = jsonDecode(await _stand(datei).readAsString());
+      if (inhalt is! Map) return const {};
+      return {
+        for (final name in _standKoepfe)
+          if (inhalt[name] case final String wert) name: wert,
+      };
+    } on FileSystemException {
+      return const {};
+    } on FormatException {
+      return const {};
+    }
+  }
+
+  Future<void> _lege(
+    File datei,
+    Uint8List bytes,
+    DateTime gilt,
+    Map<String, String> stand,
+  ) async {
     await ordner.create(recursive: true);
+    // Der alte Stand zuerst weg: Er gehört zu den alten Bytes und soll auch
+    // nach einem Absturz mittendrin nicht für die neuen gelten.
+    final vermerk = _stand(datei);
+    try {
+      await vermerk.delete();
+    } on FileSystemException {
+      // Keiner da.
+    }
     final teil = File('${datei.path}.teil');
     await teil.writeAsBytes(bytes);
     // Vor dem Umbenennen: Wer die Datei sieht, sieht auch ihre Frist.
     await teil.setLastModified(gilt);
     await teil.rename(datei.path);
+    if (stand.isNotEmpty) await vermerk.writeAsString(jsonEncode(stand));
     _bisAufraeumen -= bytes.length;
     _zuletzt = datei;
     if (_bisAufraeumen <= 0) {
@@ -316,7 +392,12 @@ class Kartenkacheln {
         try {
           final behalten = _zuletzt;
           if (behalten != null) {
-            await begrenzeZwischenspeicher(ordner, grenze, behalten: behalten);
+            await begrenzeZwischenspeicher(
+              ordner,
+              grenze,
+              behalten: behalten,
+              beilage: _standEndung,
+            );
           }
         } on Object catch (f) {
           protokoll('Kartenkacheln nicht aufgeräumt: $f');
