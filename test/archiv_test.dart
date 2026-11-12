@@ -132,6 +132,37 @@ void main() {
     expect(await imArchiv(), {'a', 'b', 'c', 'd'});
   });
 
+  test('ein Titelbild nimmt den ganzen Stapel mit (#373)', () async {
+    await lege('a');
+    await lege('b');
+    await db.fuehreAus(const VariantenBilden('v', ['a', 'b'], 'a'));
+    await db.fuehreAus(const ArchivSetzen(['a'], true));
+    expect((await db.assetById('b'))!.isArchived, isTrue);
+    await db.fuehreAus(const ArchivSetzen(['a'], false));
+    expect((await db.assetById('b'))!.isArchived, isFalse);
+    // Eine verdeckte Fassung allein (etwa auf der Seite einer Person) lässt
+    // den Stapel, wo er ist.
+    await db.fuehreAus(const ArchivSetzen(['b'], true));
+    expect(await zeitleiste(), {'a'});
+  });
+
+  test(
+    'von Hand über ein archiviertes Foto gestapelt: aufgelöst wie vorher (#373)',
+    () async {
+      await lege('a', archiv: true);
+      await lege('b');
+      await lege('c', archiv: true);
+      await lege('d');
+      await db.fuehreAus(const VariantenBilden('v', ['a', 'b'], 'a'));
+      await db.fuehreAus(const SerieBilden('s', ['c', 'd'], 'c'));
+      expect(await zeitleiste(), isEmpty, reason: 'das Titelbild zählt');
+      await db.fuehreAus(const VariantenAufloesen('variante:v'));
+      await db.fuehreAus(const SerieAufloesen('s'));
+      expect(await zeitleiste(), {'b', 'd'});
+      expect(await imArchiv(), {'a', 'c'});
+    },
+  );
+
   test(
     'was vor dem Stapeln im Archiv lag, bleibt beim Auflösen dort',
     () async {

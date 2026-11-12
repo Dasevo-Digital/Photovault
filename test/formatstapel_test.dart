@@ -677,8 +677,8 @@ void main() {
     expect((await zeile('h')).stackId, kennung);
   });
 
-  // Archiviert wird aus der Auswahl nur das Titelbild; die verdeckten
-  // Fassungen behalten ihren Stand von vor dem Stapeln (#304).
+  // Archiviert wird aus der Auswahl das Titelbild, und damit der ganze
+  // Stapel (#304, #373).
   group('im Archiv (#372)', () {
     test('entflochten bleibt im Archiv, was im Stapel dort lag', () async {
       await lege('h', 'X.HEIC', kamera: 'C');

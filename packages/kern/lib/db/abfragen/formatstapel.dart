@@ -531,8 +531,8 @@ extension Formatstapel on AppDatabase {
   /// Ein Formatstapel löst sich ganz auf; was eindeutig ist, stapelt der
   /// Lauf gleich danach neu, mit demselben Titelbild. Ein Gast kommt nur
   /// heraus, wenn das Stapeln ihn hineingelegt hat ([formatgast]). Was
-  /// herauskommt, bleibt im Archiv, wenn der Stapel dort lag
-  /// ([_vererbeArchiv]).
+  /// herauskommt, behält, ob es im Archiv liegt: Wer einen Stapel
+  /// archiviert, archiviert alle seine Mitglieder (`setzeArchiviert`).
   Future<({int anzahl, Set<String> titelbilder})> _entflechte(
     List<AssetData> bilder,
   ) async {
@@ -602,18 +602,14 @@ extension Formatstapel on AppDatabase {
     return (anzahl: n, titelbilder: titelbilder);
   }
 
-  /// Holt [id] aus seinem Stapel, im Archiv, wenn der Stapel dort liegt
-  /// ([_vererbeArchiv]).
-  Future<void> _nimmAusStapel(String id) async {
-    await _vererbeArchiv('id = ?', [Variable.withString(id)]);
-    await (update(assets)..where((t) => t.id.equals(id))).write(
-      const AssetsCompanion(
-        stackId: Value(null),
-        isStackCover: Value(false),
-        stackSize: Value(null),
-      ),
-    );
-  }
+  Future<void> _nimmAusStapel(String id) =>
+      (update(assets)..where((t) => t.id.equals(id))).write(
+        const AssetsCompanion(
+          stackId: Value(null),
+          isStackCover: Value(false),
+          stackSize: Value(null),
+        ),
+      );
 
   /// Nachdem etwas aus [stackId] herausgekommen ist: die Grösse neu, oder
   /// ganz auflösen, wenn kein Paar mit Titelbild bleibt.
@@ -642,9 +638,6 @@ extension Formatstapel on AppDatabase {
   /// den Stand von vorher. Auch was das Stapeln in eine Serie oder in
   /// Varianten gelegt hat ([formatgast]), kommt wieder heraus.
   Future<int> loeseFormatstapelAuf() => transaction(() async {
-    await _vererbeArchiv('stack_id LIKE ?', [
-      Variable.withString('$formatstapelPraefix%'),
-    ]);
     final n =
         await (update(
           assets,

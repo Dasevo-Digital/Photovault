@@ -665,12 +665,26 @@ extension AufnahmenAbfragen on AppDatabase {
   }
 
   /// Legt [assetIds] ins Archiv oder holt sie heraus (#304).
+  ///
+  /// Bei einem Titelbild gilt das für den ganzen Stapel (#373): Man sieht
+  /// nur das Titelbild und meint alles, was dahinter liegt. Markierte das
+  /// Archivieren nur das Titelbild, kämen die verdeckten Fassungen beim
+  /// Auflösen in die Zeitleiste (#372). Sonst behält jedes Mitglied seinen
+  /// Stand: Wer von Hand ein archiviertes Foto über eines aus der Zeitleiste
+  /// stapelt, bekommt beim Auflösen beide zurück, wo sie waren.
   Future<void> setzeArchiviert(List<String> assetIds, bool an) =>
       transaction(() async {
         for (final stueck in inStuecken(assetIds)) {
-          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
-            AssetsCompanion(isArchived: Value(an)),
-          );
+          final stapel = selectOnly(assets)
+            ..addColumns([assets.stackId])
+            ..where(
+              assets.id.isIn(stueck) &
+                  assets.isStackCover.equals(true) &
+                  assets.stackId.isNotNull(),
+            );
+          await (update(assets)
+                ..where((t) => t.id.isIn(stueck) | t.stackId.isInQuery(stapel)))
+              .write(AssetsCompanion(isArchived: Value(an)));
         }
       });
 
