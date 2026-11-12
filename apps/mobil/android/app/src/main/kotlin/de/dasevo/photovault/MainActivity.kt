@@ -5,11 +5,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
-import io.flutter.embedding.android.FlutterActivity
+import android.view.WindowManager
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+// FragmentActivity: Die App-Sperre (local_auth, #376) braucht sie für den
+// Dialog zum Fingerabdruck.
+class MainActivity : FlutterFragmentActivity() {
     private var akkuAntwort: MethodChannel.Result? = null
 
     private val akkuFrei: Boolean
@@ -32,6 +35,16 @@ class MainActivity : FlutterActivity() {
                             nurBeimLaden = aufruf.argument<Boolean>("nurBeimLaden") == true,
                         )
                         antwort.success(if (an) "an" else "aus")
+                    }
+                    // App-Sperre (#376): kein Bild im Umschalter, keine
+                    // Bildschirmfotos, solange sie an ist.
+                    "abdeckung" -> {
+                        if (aufruf.arguments == true) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                        }
+                        antwort.success(null)
                     }
                     "akkuFrei" -> antwort.success(akkuFrei)
                     "akkuFreigeben" -> {

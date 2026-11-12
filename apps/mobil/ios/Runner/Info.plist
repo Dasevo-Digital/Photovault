@@ -23,6 +23,8 @@
 	</dict>
 	<!-- Die Sicherung der Kamerarolle liest die Fotomediathek und arbeitet
 	     im Hintergrund (BGProcessingTask, siehe sicherung/hintergrund.dart). -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Photo Vault uses Face ID to unlock the app when the app lock is on.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Photo Vault sichert die Fotos und Videos dieses Telefons auf deinem Server.</string>
 	<!-- „Aufs Telefon“ aus der Auswahl legt Aufnahmen in die Mediathek. -->

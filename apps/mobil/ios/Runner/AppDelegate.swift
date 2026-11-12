@@ -19,6 +19,7 @@ import workmanager_apple
         Zusatzfotokanal.richteEin(registrar)
       }
     }
+    Abdeckung.richteEin()
     WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "de.dasevo.photovault.sicherung")
     // Kurze Auffrischungen über den Tag (BGAppRefreshTask, rund 30 s je
     // Lauf): Die Verarbeitungsaufgabe allein lässt iOS meist nur nachts am
@@ -71,6 +72,9 @@ import workmanager_apple
               an: an, videos: videos, nurWlan: nurWlan, alben: alben)
             DispatchQueue.main.async { antwort(stand) }
           }
+        case "abdeckung":
+          Abdeckung.an = (aufruf.arguments as? Bool) ?? false
+          antwort(nil)
         case "sofortbericht":
           antwort(Sofortsteuerung.bericht)
         case "sofortGeschafft":
@@ -121,5 +125,51 @@ enum Zusatzfotokanal {
         }
       }
     }
+  }
+}
+
+/// Die Abdeckung im App-Umschalter (#376): iOS macht beim Verlassen ein
+/// Bild der App und zeigt es im Umschalter. Ist die App-Sperre an, liegt
+/// davor eine leere Fläche – sonst sähe man dort die Fotos, auch wenn die
+/// App beim Zurückkommen nach Face ID fragt. Über die Benachrichtigungen
+/// der Szenen statt im SceneDelegate: FlutterSceneDelegate gibt dafür keine
+/// überschreibbaren Methoden her und braucht seine eigenen.
+enum Abdeckung {
+  private static let schluessel = "appSperreAbdecken"
+  private static var flaechen: [ObjectIdentifier: UIView] = [:]
+
+  static var an: Bool {
+    get { UserDefaults.standard.bool(forKey: schluessel) }
+    set { UserDefaults.standard.set(newValue, forKey: schluessel) }
+  }
+
+  static func richteEin() {
+    let mitte = NotificationCenter.default
+    mitte.addObserver(forName: UIScene.willDeactivateNotification, object: nil, queue: .main) {
+      zeige(auf: $0.object as? UIWindowScene)
+    }
+    mitte.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) {
+      guard let szene = $0.object as? UIWindowScene else { return }
+      flaechen.removeValue(forKey: ObjectIdentifier(szene))?.removeFromSuperview()
+    }
+  }
+
+  private static func zeige(auf szene: UIWindowScene?) {
+    guard an, let szene, flaechen[ObjectIdentifier(szene)] == nil,
+      let fenster = szene.windows.first(where: { $0.isKeyWindow }) ?? szene.windows.first
+    else { return }
+    let flaeche = UIView(frame: fenster.bounds)
+    flaeche.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    flaeche.backgroundColor = .systemBackground
+    let schloss = UIImageView(image: UIImage(systemName: "lock.fill"))
+    schloss.tintColor = .secondaryLabel
+    schloss.translatesAutoresizingMaskIntoConstraints = false
+    flaeche.addSubview(schloss)
+    NSLayoutConstraint.activate([
+      schloss.centerXAnchor.constraint(equalTo: flaeche.centerXAnchor),
+      schloss.centerYAnchor.constraint(equalTo: flaeche.centerYAnchor),
+    ])
+    fenster.addSubview(flaeche)
+    flaechen[ObjectIdentifier(szene)] = flaeche
   }
 }

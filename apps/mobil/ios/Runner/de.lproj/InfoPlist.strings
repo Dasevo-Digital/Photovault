@@ -3,3 +3,6 @@
 
 /* Beim Speichern aus der Auswahl */
 "NSPhotoLibraryAddUsageDescription" = "Photo Vault legt ausgewählte Aufnahmen in deine Fotomediathek.";
+
+/* App-Sperre (#376) */
+"NSFaceIDUsageDescription" = "Photo Vault fragt nach Face ID, wenn die App-Sperre an ist.";

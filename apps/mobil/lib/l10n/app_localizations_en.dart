@@ -983,6 +983,34 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get appSperreTitel => 'App lock';
+
+  @override
+  String get appSperreText =>
+      'Face ID, Touch ID or the device passcode before the app shows anything. Applies to this device only; background backup keeps running.';
+
+  @override
+  String get appSperreSofort => 'Immediately';
+
+  @override
+  String appSperreMinuten(int n) {
+    return 'After $n min';
+  }
+
+  @override
+  String get appSperreGrund => 'Unlock Photo Vault';
+
+  @override
+  String get appSperreGesperrt => 'Photo Vault is locked';
+
+  @override
+  String get appSperreEntsperren => 'Unlock';
+
+  @override
+  String get appSperreNichtVerfuegbar =>
+      'This device has neither Face ID nor Touch ID nor a passcode set up.';
+
+  @override
   String angabenVarianten(Object n) {
     return '$n versions of this photo';
   }

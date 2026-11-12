@@ -563,6 +563,15 @@
   "angabenFormate": "Formate – antippen, um eines zu teilen",
   "angabenFassungTeilen": "{name} teilen",
   "@angabenFassungTeilen": {"placeholders": {"name": {"type": "String"}}},
+  "appSperreTitel": "App-Sperre",
+  "appSperreText": "Face ID, Touch ID oder der Gerätecode, bevor die App etwas zeigt. Gilt nur für dieses Gerät; die Sicherung im Hintergrund läuft weiter.",
+  "appSperreSofort": "Sofort",
+  "appSperreMinuten": "Nach {n} Min.",
+  "@appSperreMinuten": {"placeholders": {"n": {"type": "int"}}},
+  "appSperreGrund": "Photo Vault entsperren",
+  "appSperreGesperrt": "Photo Vault ist gesperrt",
+  "appSperreEntsperren": "Entsperren",
+  "appSperreNichtVerfuegbar": "Auf diesem Gerät ist weder Face ID oder Touch ID noch ein Gerätecode eingerichtet.",
   "angabenVarianten": "{n} Varianten dieser Aufnahme",
   "@angabenSerie": {
     "placeholders": {

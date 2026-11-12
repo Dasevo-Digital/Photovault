@@ -6,6 +6,7 @@ import 'package:zierbild/zierschrift.dart';
 import 'package:kern/protokoll.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'app_sperre.dart';
 import 'l10n/app_localizations.dart';
 import 'seiten/anmelden.dart';
 import 'seiten/start.dart';
@@ -23,7 +24,9 @@ Future<void> main() async {
   protokollZiel = debugPrint;
   // Die Sicherung der Kamerarolle im Hintergrund (sicherung/hintergrund.dart).
   await Workmanager().initialize(sicherungImHintergrund);
-  final sitzung = Sitzung();
+  // Vor dem ersten Bild: Ist die App-Sperre an, zeigt die App nichts,
+  // ehe Face ID oder der Gerätecode sie freigibt (#376).
+  final sitzung = Sitzung()..appSperre = await AppSperre.lade();
   // Die Schriften des Lebensbaums stehen unter der SIL Open Font License.
   zierschriftenLizenzenAnmelden();
   runApp(PhotoVaultMobil(sitzung: sitzung));
@@ -56,6 +59,10 @@ class PhotoVaultMobil extends StatelessWidget {
         GelaendeTexte.delegate,
       ],
       supportedLocales: AppTexte.supportedLocales,
+      builder: (context, kind) => switch (sitzung.appSperre) {
+        final sperre? => AppSperrschicht(sperre: sperre, child: kind!),
+        null => kind!,
+      },
       locale: switch (sitzung.sprache) {
         final s? => Locale(s),
         null => null,

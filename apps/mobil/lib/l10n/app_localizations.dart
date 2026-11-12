@@ -1513,6 +1513,54 @@ abstract class AppTexte {
   /// **'{name} teilen'**
   String angabenFassungTeilen(String name);
 
+  /// No description provided for @appSperreTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'App-Sperre'**
+  String get appSperreTitel;
+
+  /// No description provided for @appSperreText.
+  ///
+  /// In de, this message translates to:
+  /// **'Face ID, Touch ID oder der Gerätecode, bevor die App etwas zeigt. Gilt nur für dieses Gerät; die Sicherung im Hintergrund läuft weiter.'**
+  String get appSperreText;
+
+  /// No description provided for @appSperreSofort.
+  ///
+  /// In de, this message translates to:
+  /// **'Sofort'**
+  String get appSperreSofort;
+
+  /// No description provided for @appSperreMinuten.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach {n} Min.'**
+  String appSperreMinuten(int n);
+
+  /// No description provided for @appSperreGrund.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault entsperren'**
+  String get appSperreGrund;
+
+  /// No description provided for @appSperreGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault ist gesperrt'**
+  String get appSperreGesperrt;
+
+  /// No description provided for @appSperreEntsperren.
+  ///
+  /// In de, this message translates to:
+  /// **'Entsperren'**
+  String get appSperreEntsperren;
+
+  /// No description provided for @appSperreNichtVerfuegbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Gerät ist weder Face ID oder Touch ID noch ein Gerätecode eingerichtet.'**
+  String get appSperreNichtVerfuegbar;
+
   /// No description provided for @angabenVarianten.
   ///
   /// In de, this message translates to:

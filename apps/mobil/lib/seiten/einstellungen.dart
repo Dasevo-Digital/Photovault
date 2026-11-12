@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
 
+import '../app_sperre.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
@@ -66,6 +67,20 @@ class _EinstellungenState extends State<Einstellungen> {
     await _lade();
   }
 
+  /// Ein- und Ausschalten verlangt beides Face ID oder den Gerätecode:
+  /// Sonst schaltete sie ab, wer das entsperrte Telefon kurz in der Hand
+  /// hat, und einschalten soll nur, wer es auch wieder aufbekommt.
+  Future<void> _appSperre(AppSperre sperre, bool an) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    if (an && !await sperre.verfuegbar()) {
+      bote.showSnackBar(SnackBar(content: Text(t.appSperreNichtVerfuegbar)));
+      return;
+    }
+    if (!await sperre.pruefe(t.appSperreGrund)) return;
+    await sperre.setze(an: an);
+  }
+
   int get _tageZahl => (int.tryParse(_tage.text) ?? 30).clamp(1, 3650);
 
   static String _prozent(double w) => '${(w * 100).round()} %';
@@ -97,6 +112,36 @@ class _EinstellungenState extends State<Einstellungen> {
             ),
           ),
         ),
+        if (widget.sitzung.appSperre case final sperre?)
+          ListenableBuilder(
+            listenable: sperre,
+            builder: (context, _) => _Zeile(
+              titel: t.appSperreTitel,
+              text: t.appSperreText,
+              an: sperre.an,
+              beiAenderung: (an) => _appSperre(sperre, an),
+              zusatz: !sperre.an
+                  ? null
+                  : Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SegmentedButton<Duration>(
+                        segments: [
+                          for (final f in AppSperre.fristen)
+                            ButtonSegment(
+                              value: f,
+                              label: Text(
+                                f == Duration.zero
+                                    ? t.appSperreSofort
+                                    : t.appSperreMinuten(f.inMinutes),
+                              ),
+                            ),
+                        ],
+                        selected: {sperre.frist},
+                        onSelectionChanged: (w) => sperre.setze(frist: w.first),
+                      ),
+                    ),
+            ),
+          ),
         // Gilt wie die Sprache nur für dieses Telefon – darum über den
         // Einstellungen der Bibliothek. Dieselbe Seite wie unter „Konto“
         // (#204: dort fand man sie nicht).

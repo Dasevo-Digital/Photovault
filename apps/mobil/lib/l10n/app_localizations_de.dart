@@ -985,6 +985,34 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get appSperreTitel => 'App-Sperre';
+
+  @override
+  String get appSperreText =>
+      'Face ID, Touch ID oder der Gerätecode, bevor die App etwas zeigt. Gilt nur für dieses Gerät; die Sicherung im Hintergrund läuft weiter.';
+
+  @override
+  String get appSperreSofort => 'Sofort';
+
+  @override
+  String appSperreMinuten(int n) {
+    return 'Nach $n Min.';
+  }
+
+  @override
+  String get appSperreGrund => 'Photo Vault entsperren';
+
+  @override
+  String get appSperreGesperrt => 'Photo Vault ist gesperrt';
+
+  @override
+  String get appSperreEntsperren => 'Entsperren';
+
+  @override
+  String get appSperreNichtVerfuegbar =>
+      'Auf diesem Gerät ist weder Face ID oder Touch ID noch ein Gerätecode eingerichtet.';
+
+  @override
   String angabenVarianten(Object n) {
     return '$n Varianten dieser Aufnahme';
   }

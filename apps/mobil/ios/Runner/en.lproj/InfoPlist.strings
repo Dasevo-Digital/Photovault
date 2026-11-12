@@ -3,3 +3,6 @@
 
 /* When saving from a selection */
 "NSPhotoLibraryAddUsageDescription" = "Photo Vault adds selected photos and videos to your photo library.";
+
+/* App-Sperre (#376) */
+"NSFaceIDUsageDescription" = "Photo Vault uses Face ID to unlock the app when the app lock is on.";

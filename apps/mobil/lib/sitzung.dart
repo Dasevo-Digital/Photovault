@@ -2,6 +2,7 @@ import 'package:abgleich_ui/fotokammer_dienst.dart';
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
 import 'lokal/fallschluesselablage.dart';
+import 'app_sperre.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -451,6 +452,9 @@ class Sitzung extends ChangeNotifier {
     await verbindung!.schreibe(await _ordner());
     notifyListeners();
   }
+
+  /// Die App-Sperre dieses Geräts (#376); `null` in Tests ohne sie.
+  AppSperre? appSperre;
 
   /// Welche Fassung der Server ist (`/api/v1/zustand`), für die Kontoseite.
   String? serverfassung;
