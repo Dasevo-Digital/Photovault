@@ -11,7 +11,7 @@ Dokument beschreibt, wie es gehen soll, bevor Code entsteht.
 - Gesperrte Fotos liegen auf dem Server nur verschlüsselt. Der Schlüssel
   verlässt die Geräte nie im Klartext; der Server sieht weder Bild noch
   Schlüssel.
-- Rechner und Handy desselben Kontos entsperren mit demselben PIN.
+- Rechner und Handy desselben Kontos entsperren mit derselben Passphrase.
 - **Schutz vor:** jemandem mit Zugriff auf Platte, Datenbank oder
   Sicherungen des Servers, die *nach* dem Sperren entstanden sind.
 - **Kein Schutz vor:** älteren Sicherungen und Schnappschüssen (darin liegt
@@ -22,19 +22,23 @@ Dokument beschreibt, wie es gehen soll, bevor Code entsteht.
 ## Schlüssel
 
 - **Ein Hauptschlüssel je Bibliothek** (256 Bit, zufällig), erzeugt auf dem
-  Gerät, das zum ersten Mal sperrt. Mit dem PIN verpackt wie heute
-  (`VaultCrypto.wrapMasterKey`, Argon2id 64 MiB, 3 Durchgänge).
+  Gerät, das zum ersten Mal sperrt. Mit der Passphrase verpackt wie heute
+  mit dem PIN (`VaultCrypto.wrapMasterKey`, Argon2id 64 MiB, 3 Durchgänge).
 - Der **verpackte** Schlüssel liegt als undurchsichtiger Wert in einer
   abgeglichenen Einstellung der Bibliothek. So holt ihn jedes Gerät, und
   ein PIN-Wechsel verpackt nur neu, statt Dateien neu zu verschlüsseln.
-- Der Server könnte einen schwachen PIN offline durchprobieren. Deshalb:
-  mindestens sechs Ziffern oder eine Passphrase verlangen, und anbieten,
-  den Schlüssel nach dem ersten Entsperren im Schlüsselbund des Geräts zu
-  halten (Face ID, Touch ID, Windows Hello).
+- **Passphrase statt PIN, mindestens 10 Zeichen.** Der Server könnte das
+  Verpackte offline durchprobieren; ein Versuch kostet etwa eine halbe
+  Sekunde, eine sechsstellige PIN fiele so in Stunden bis Tagen. Damit
+  das Eintippen selten bleibt, hält das Gerät den Schlüssel nach dem
+  ersten Entsperren im Schlüsselbund (Face ID, Touch ID, Windows Hello).
+  Eine Bibliothek ohne Server, die schon einen PIN hat, verlangt beim
+  Verbinden einmal eine Passphrase und verpackt den Schlüssel damit neu.
 - **Wiederherstellungsschlüssel:** Beim Einrichten wird der Hauptschlüssel
   zusätzlich mit einem zufälligen 128-Bit-Code verpackt, den man
-  ausdruckt. Ohne PIN und ohne diesen Code sind die Fotos verloren – wie
-  heute, nur mit einem zweiten Weg.
+  ausdruckt (als Wortliste oder in Gruppen, mit Prüfziffer). Auch er liegt
+  nur verpackt am Server. Ohne Passphrase und ohne diesen Code sind die
+  Fotos verloren.
 
 ## Sperren
 
@@ -99,17 +103,19 @@ ausliefert.
    Tests für Tausch, Abbruch und jeden Ausschluss.
 2. Rechner verbunden: die vorhandenen Abläufe (`VaultCrypto`, Sperren,
    Entsperren, Ansehen) auf den neuen Weg umstellen.
-3. Handy: PIN-Eingabe, Entsperren, Ansehen und Teilen aus dem Tresor
-   (Argon2id in reinem Dart braucht auf einem aktuellen iPhone etwa eine
-   bis zwei Sekunden).
-4. Wiederherstellungsschlüssel und Schlüsselbund der Geräte.
+3. Wiederherstellungsschlüssel zum Ausdrucken und Schlüsselbund am
+   Rechner.
+4. Handy: Passphrase oder Face ID, dann gesperrte Fotos ansehen und
+   teilen (Argon2id in reinem Dart braucht auf einem aktuellen iPhone etwa
+   eine bis zwei Sekunden, danach hält der Schlüsselbund den Schlüssel).
+5. Später: Sperren und Entsperren auch am Handy.
 
 Jeder Schritt ist für sich nutzbar und lässt sich prüfen. Aufwand: gross,
 mehrere Runden.
 
-## Zu entscheiden
+## Entschieden (12.11.2026)
 
-- PIN mit mindestens sechs Ziffern oder Passphrase?
-- Wiederherstellungsschlüssel zum Ausdrucken: ja oder nein?
-- Soll das Handy gesperrte Fotos nur ansehen oder auch sperren und
-  entsperren können?
+- Passphrase mit mindestens 10 Zeichen statt PIN.
+- Wiederherstellungsschlüssel zum Ausdrucken: ja.
+- Handy zuerst nur ansehen und teilen; Sperren und Entsperren dort
+  später.
