@@ -1501,6 +1501,18 @@ abstract class AppTexte {
   /// **'Serie mit {n} Aufnahmen'**
   String angabenSerie(int n);
 
+  /// No description provided for @angabenFormate.
+  ///
+  /// In de, this message translates to:
+  /// **'Formate – antippen, um eines zu teilen'**
+  String get angabenFormate;
+
+  /// No description provided for @angabenFassungTeilen.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} teilen'**
+  String angabenFassungTeilen(String name);
+
   /// No description provided for @angabenVarianten.
   ///
   /// In de, this message translates to:

@@ -217,6 +217,14 @@ bool _passenZusammen(List<AssetData> u, List<AssetData> n) {
       u.every((a) => n.every((b) => _selbeKamera(a, b)));
 }
 
+/// In welcher Reihenfolge die Angaben die Fassungen eines Formatstapels
+/// nennen (#374): das Titelbild zuerst, danach nach Format.
+int vergleicheFassungen(AssetData a, AssetData b) {
+  if (a.isStackCover != b.isStackCover) return a.isStackCover ? -1 : 1;
+  final f = (_formatVon(a) ?? '').compareTo(_formatVon(b) ?? '');
+  return f != 0 ? f : a.originalFileName.compareTo(b.originalFileName);
+}
+
 /// Welche Fassung einer [gruppe] in der Zeitleiste steht.
 ///
 /// Zuerst, was sonst aus einer Ansicht verschwände: Benannte Gesichter

@@ -4011,6 +4011,16 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String infoFormate(String liste) {
+    return 'Formate: $liste – nur das Titelbild ist in der Übersicht sichtbar';
+  }
+
+  @override
+  String infoFassungExportieren(String name) {
+    return '$name exportieren';
+  }
+
+  @override
   String get infoNurTitelbild =>
       'Nur das Titelbild ist in der Übersicht sichtbar';
 

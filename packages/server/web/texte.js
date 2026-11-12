@@ -882,6 +882,8 @@ const EN = {
   '{n} verworfen': '{n} discarded',
   '✓ Ausgewählt (Leertaste)': '✓ Selected (space)',
   'Sichtung abschliessen': 'Finish review',
+  'Formate': 'Formats',
+  '{name} herunterladen': 'Download {name}',
   'Ablehnen (X)': 'Reject (X)',
   '✕ Abgelehnt (X)': '✕ Rejected (X)',
   'Sterne': 'Stars',

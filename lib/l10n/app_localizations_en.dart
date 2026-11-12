@@ -3984,6 +3984,16 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String infoFormate(String liste) {
+    return 'Formats: $liste – only the cover image is visible in the overview';
+  }
+
+  @override
+  String infoFassungExportieren(String name) {
+    return 'Export $name';
+  }
+
+  @override
   String get infoNurTitelbild =>
       'Only the cover image is visible in the overview';
 

@@ -3058,6 +3058,44 @@ void main() {
     ]);
   });
 
+  testWidgets('Angaben: die Formate eines Formatstapels zum Teilen (#374)', (
+    tester,
+  ) async {
+    final (sitzung, db) = await sitzungMit(tester, ['h', 'j', 'v1', 'v2']);
+    await tester.runAsync(() async {
+      await db.createStack(variantenstapelId('format-x'), ['h', 'j'], 'h');
+      await db.createStack(variantenstapelId('v'), ['v1', 'v2'], 'v1');
+    });
+    Future<void> zeige(String id) async {
+      final angaben = await tester.runAsync(() => aufnahmeangaben(db, id));
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: Scaffold(
+            body: Angabenliste(
+              key: ValueKey(id),
+              sitzung: sitzung,
+              angaben: angaben!,
+            ),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await zeige('h');
+    expect(find.text('Formate – antippen, um eines zu teilen'), findsOneWidget);
+    expect(find.byType(ActionChip), findsNWidgets(2));
+
+    await zeige('v1');
+    expect(find.byType(ActionChip), findsNothing, reason: 'kein Formatstapel');
+  });
+
   testWidgets('Angaben: Ort entfernen und ohne Ort setzen anbieten', (
     tester,
   ) async {

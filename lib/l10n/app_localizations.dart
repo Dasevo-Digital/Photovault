@@ -6669,6 +6669,18 @@ abstract class AppTexte {
   /// **'Serie: {anzahl} Fotos'**
   String infoSerie(int anzahl);
 
+  /// No description provided for @infoFormate.
+  ///
+  /// In de, this message translates to:
+  /// **'Formate: {liste} – nur das Titelbild ist in der Übersicht sichtbar'**
+  String infoFormate(String liste);
+
+  /// No description provided for @infoFassungExportieren.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} exportieren'**
+  String infoFassungExportieren(String name);
+
   /// No description provided for @infoNurTitelbild.
   ///
   /// In de, this message translates to:

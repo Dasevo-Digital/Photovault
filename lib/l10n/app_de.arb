@@ -2216,6 +2216,10 @@
       }
     }
   },
+  "infoFormate": "Formate: {liste} – nur das Titelbild ist in der Übersicht sichtbar",
+  "@infoFormate": {"placeholders": {"liste": {"type": "String"}}},
+  "infoFassungExportieren": "{name} exportieren",
+  "@infoFassungExportieren": {"placeholders": {"name": {"type": "String"}}},
   "infoNurTitelbild": "Nur das Titelbild ist in der Übersicht sichtbar",
   "infoSerieAufloesen": "Serie auflösen",
   "infoVarianten": "Varianten: {anzahl} Fassungen",

@@ -11,7 +11,8 @@ import 'package:kern/auswertung/gesicht_von_hand.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/listenangaben.dart';
 import 'package:kern/db/rasterzeile.dart';
-import 'package:kern/services/asset_format.dart' show bildendung;
+import 'package:kern/services/asset_format.dart'
+    show assetFormatLabel, bildendung;
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/bibliothekseinstellungen.dart';
@@ -1506,6 +1507,13 @@ class _Api {
       id,
       leseDatei: _datumsleser(b),
     );
+    // Die Fassungen eines Formatstapels (#374), zum gezielten Herunterladen.
+    final formate = a.isStackCover && istFormatstapel(a.stackId)
+        ? ([
+            for (final f in await db.assetsInStack(a.stackId!))
+              if (!f.isTrashed && !f.isLocked) f,
+          ]..sort(vergleicheFassungen))
+        : const <AssetData>[];
     return _json({
       ...zeileAlsJson(Rasterzeile.aus(a)),
       'importiert': a.importedAt.toIso8601String(),
@@ -1568,6 +1576,16 @@ class _Api {
       'alben': [
         for (final b in angaben.alben) {'id': b.id, 'name': b.name},
       ],
+      if (formate.length > 1)
+        'formate': [
+          for (final f in formate)
+            {
+              'id': f.id,
+              'name': f.originalFileName,
+              'format': assetFormatLabel(f),
+              'bytes': f.fileSizeBytes,
+            },
+        ],
     });
   }
 

@@ -977,6 +977,14 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get angabenFormate => 'Formate – antippen, um eines zu teilen';
+
+  @override
+  String angabenFassungTeilen(String name) {
+    return '$name teilen';
+  }
+
+  @override
   String angabenVarianten(Object n) {
     return '$n Varianten dieser Aufnahme';
   }

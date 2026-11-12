@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
+import 'package:kern/services/asset_format.dart' show assetFormatLabel;
 import 'package:kern/services/aufnahmeangaben.dart';
 import 'package:kern/services/laendernamen.dart';
 import 'package:kern/services/namensdatum.dart';
@@ -83,6 +85,42 @@ class _AngabenlisteState extends State<Angabenliste> {
   void initState() {
     super.initState();
     _holeVorschlag();
+  }
+
+  /// Die Fassungen eines Formatstapels (#374), Titelbild zuerst: Welche
+  /// Formate darin liegen, sah man bisher nirgends, und an ein bestimmtes
+  /// kam man nur über das Auflösen.
+  late final Future<List<AssetData>> _formate = _ladeFormate();
+
+  Future<List<AssetData>> _ladeFormate() async {
+    final a = widget.angaben.aufnahme;
+    if (!a.isStackCover || !istFormatstapel(a.stackId)) return const [];
+    return [
+      for (final f in await _db.assetsInStack(a.stackId!))
+        if (!f.isTrashed && !f.isLocked) f,
+    ]..sort(vergleicheFassungen);
+  }
+
+  /// Teilt das Original einer Fassung, etwa nur das RAW – wie „Teilen“ mit
+  /// „Original“ im Betrachter.
+  Future<void> _teileFassung(AssetData f) async {
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    bote.showSnackBar(SnackBar(content: Text(t.betrachterLaedtOriginal)));
+    try {
+      final datei = await widget.sitzung.paths.bereit(f.relativePath);
+      bote.hideCurrentSnackBar();
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(datei.path)],
+          fileNameOverrides: [f.originalFileName],
+        ),
+      );
+    } catch (_) {
+      bote
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(t.betrachterNichtGeladen)));
+    }
   }
 
   /// Nur wenn der Name überhaupt ein anderes Datum nennt, wird gefragt –
@@ -405,6 +443,32 @@ class _AngabenlisteState extends State<Angabenliste> {
               ),
             ),
           ),
+        FutureBuilder<List<AssetData>>(
+          future: _formate,
+          builder: (context, s) {
+            final formate = s.data ?? const <AssetData>[];
+            if (formate.length < 2) return const SizedBox.shrink();
+            return _Reihe(
+              symbol: Icons.download_outlined,
+              haupt: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final f in formate)
+                    ActionChip(
+                      label: Text(
+                        '${assetFormatLabel(f)} · '
+                        '${groesseText(f.fileSizeBytes)}',
+                      ),
+                      tooltip: t.angabenFassungTeilen(f.originalFileName),
+                      onPressed: () => _teileFassung(f),
+                    ),
+                ],
+              ),
+              neben: t.angabenFormate,
+            );
+          },
+        ),
         if ((a.ocrText ?? '').isNotEmpty)
           ExpansionTile(
             tilePadding: EdgeInsets.zero,

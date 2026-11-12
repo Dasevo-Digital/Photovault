@@ -5977,6 +5977,18 @@ async function zeigeAngaben() {
     v.addEventListener('click', schliesse);
     teile.push(reihe('⧉', v));
   }
+  // Welche Formate ein Formatstapel hält, jedes zum Herunterladen (#374).
+  if (d.formate && d.formate.length > 1) {
+    const formate = el('div', 'formate');
+    for (const f of d.formate) {
+      const l = el('a', null, `${f.format} · ${groesse(f.bytes)}`);
+      l.href = aufnahmeUrl(f.id, 'original');
+      l.download = f.name || '';
+      l.title = t('{name} herunterladen', { name: f.name });
+      formate.append(l);
+    }
+    teile.push(reihe('⤓', formate, t('Formate')));
+  }
   if (d.text) { const det = el('details'); det.append(el('summary', null, t('Erkannter Text')), el('pre', null, d.text)); teile.push(det); }
   if (d.transkript) { const det = el('details'); det.append(el('summary', null, t('Transkript')), el('pre', null, d.transkript)); teile.push(det); }
   teile.push(el('p', 'neben', t('Importiert {datum}', { datum: datumZeit.format(new Date(d.importiert)) })));

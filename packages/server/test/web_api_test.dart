@@ -1195,6 +1195,7 @@ void main() {
     expect((d['alben']! as List).cast<Map>().map((x) => x['name']), ['Küste']);
     expect(d['personen'], isEmpty);
     expect((d['serie']! as Map)['groesse'], 2);
+    expect(d.containsKey('formate'), isFalse, reason: 'nur Formatstapel');
     final serie = await jsonAus(
       await frag('GET', '/api/v1/serien/st1', token: erikaToken),
     );
@@ -1205,6 +1206,25 @@ void main() {
     for (final pfad in ['/api/v1/aufnahmen/$a/angaben', '/api/v1/serien/st1']) {
       expect((await frag('GET', pfad, token: maxToken)).statusCode, 404);
     }
+  });
+
+  test('Angaben: die Formate eines Formatstapels (#374)', () async {
+    final a = await ladeHoch(erikaToken, 'f1.jpg', 10);
+    final b = await ladeHoch(erikaToken, 'f2.jpg', 60);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    await db.createStack(variantenstapelId('format-x'), [a, b], a);
+    final d = await jsonAus(
+      await frag('GET', '/api/v1/aufnahmen/$a/angaben', token: erikaToken),
+    );
+    final formate = (d['formate']! as List).cast<Map>();
+    expect(formate.map((f) => f['id']), [a, b], reason: 'Titelbild zuerst');
+    expect(formate.map((f) => f['name']), ['f1.jpg', 'f2.jpg']);
+    expect(formate.map((f) => f['format']), ['JPG', 'JPG']);
+    expect(formate.every((f) => (f['bytes']! as int) > 0), isTrue);
+    final verdeckt = await jsonAus(
+      await frag('GET', '/api/v1/aufnahmen/$b/angaben', token: erikaToken),
+    );
+    expect(verdeckt.containsKey('formate'), isFalse, reason: 'nur am Titel');
   });
 
   test(

@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -16,6 +17,7 @@ import '../screens/serienvergleich_screen.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import 'package:kern/services/asset_format.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
+import '../services/export_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/textstellen.dart';
 import '../state/library_state.dart';
@@ -102,12 +104,51 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   late final FocusNode _kiFocusNode = FocusNode()
     ..addListener(_onKiFocusChange);
 
+  /// Die Fassungen eines Formatstapels (#374): Welche Formate darin liegen,
+  /// sah man bisher nirgends, und an ein bestimmtes kam man nur über das
+  /// Auflösen.
+  List<AssetData> _formate = const [];
+
   @override
   void initState() {
     super.initState();
     _loadTags();
     _loadPeople();
     _ladeDatumsvorschlag();
+    _ladeFormate();
+  }
+
+  Future<void> _ladeFormate() async {
+    final stapel = _asset.stackId;
+    var formate = const <AssetData>[];
+    if (_asset.isStackCover && istFormatstapel(stapel)) {
+      formate = [
+        for (final a in await widget.db.assetsInStack(stapel!))
+          if (!a.isTrashed) a,
+      ]..sort(vergleicheFassungen);
+    }
+    if (mounted && (formate.isNotEmpty || _formate.isNotEmpty)) {
+      setState(() => _formate = formate);
+    }
+  }
+
+  /// Exportiert das Original einer Fassung, etwa nur das RAW.
+  Future<void> _exportiereFassung(AssetData fassung) async {
+    final t = AppTexte.of(context);
+    final library = context.read<LibraryState>();
+    final ziel = await FilePicker.getDirectoryPath(
+      dialogTitle: t.viewerExportZielordner,
+    );
+    if (ziel == null || !mounted) return;
+    try {
+      final datei = await ExportService(
+        widget.paths,
+        library: library,
+      ).exportAsset(fassung, ziel);
+      if (mounted) melde.erfolg(t.viewerExportiert(datei));
+    } catch (e) {
+      if (mounted) melde.fehler(t.viewerExportFehlgeschlagen('$e'));
+    }
   }
 
   /// Nur wenn der Name überhaupt ein anderes Datum nennt, wird geprüft –
@@ -189,6 +230,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (updated == null || !mounted) return;
     setState(() => _asset = updated);
     widget.onUpdated(updated);
+    await _ladeFormate();
   }
 
   /// Tags getrennt von [_refresh] geladen, da [AppDatabase.tagsForAsset]
@@ -929,13 +971,43 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                               : AppTexte.of(
                                   context,
                                 ).infoSerie(asset.stackSize!),
-                          subtitle: AppTexte.of(context).infoNurTitelbild,
+                          subtitle: _formate.length > 1
+                              ? AppTexte.of(context).infoFormate(
+                                  _formate.map(assetFormatLabel).join(', '),
+                                )
+                              : AppTexte.of(context).infoNurTitelbild,
                           onEdit: _unstack,
                           editIcon: Icons.close,
                           editTooltip: istVariantenstapel(asset.stackId)
                               ? AppTexte.of(context).infoVariantenAufloesen
                               : AppTexte.of(context).infoSerieAufloesen,
                         ),
+                        if (_formate.length > 1)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 40, top: 4),
+                            child: Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: [
+                                for (final f in _formate)
+                                  ActionChip(
+                                    avatar: const Icon(
+                                      Icons.download_outlined,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      '${assetFormatLabel(f)} · '
+                                      '${_formatFileSize(f.fileSizeBytes)}',
+                                    ),
+                                    tooltip: AppTexte.of(context)
+                                        .infoFassungExportieren(
+                                          f.originalFileName,
+                                        ),
+                                    onPressed: () => _exportiereFassung(f),
+                                  ),
+                              ],
+                            ),
+                          ),
                         // Der zweite Weg in den Vergleich – der erste liegt
                         // beim Zusammenfassen. Danach kommt man dort nicht
                         // mehr hin, und genau dann will man ihn: Wer eine

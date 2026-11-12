@@ -560,6 +560,9 @@
     }
   },
   "angabenSerie": "Serie mit {n} Aufnahmen",
+  "angabenFormate": "Formate – antippen, um eines zu teilen",
+  "angabenFassungTeilen": "{name} teilen",
+  "@angabenFassungTeilen": {"placeholders": {"name": {"type": "String"}}},
   "angabenVarianten": "{n} Varianten dieser Aufnahme",
   "@angabenSerie": {
     "placeholders": {

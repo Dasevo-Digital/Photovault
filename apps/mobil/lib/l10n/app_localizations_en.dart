@@ -975,6 +975,14 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get angabenFormate => 'Formats – tap one to share it';
+
+  @override
+  String angabenFassungTeilen(String name) {
+    return 'Share $name';
+  }
+
+  @override
   String angabenVarianten(Object n) {
     return '$n versions of this photo';
   }

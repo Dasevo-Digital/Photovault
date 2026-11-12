@@ -954,6 +954,9 @@ body.landschaft-offen { overflow: hidden; }
 .kammerkachel .ohne { display: flex; align-items: center; justify-content: center; height: 100%; padding: 6px; font-size: 0.8em; color: var(--leise); word-break: break-all; }
 .kammerkachel .video { position: absolute; left: 6px; bottom: 4px; color: #fff; text-shadow: 0 0 3px #000; }
 .kammerkachel::after { content: ''; position: absolute; top: 6px; right: 6px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.8); box-shadow: 0 0 3px rgba(0, 0, 0, 0.5); }
+#angaben-feld .formate { display: flex; flex-wrap: wrap; gap: 6px; }
+#angaben-feld .formate a { padding: 2px 8px; border: 1px solid var(--rand); border-radius: 6px; color: inherit; text-decoration: none; }
+#angaben-feld .formate a:hover { border-color: var(--akzent); }
 .kammerkachel.gewaehlt { outline: 3px solid var(--akzent); outline-offset: -3px; }
 .kammerkachel.abgelehnt img, .kammerkachel.abgelehnt .ohne { opacity: 0.35; }
 .kammerkachel .sterne { position: absolute; left: 6px; top: 4px; color: #ffd54a; font-size: 0.9em; letter-spacing: 1px; text-shadow: 0 0 3px #000; }
