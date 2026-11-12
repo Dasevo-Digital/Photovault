@@ -397,6 +397,7 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: _Routenkarte(
+                      sitzung: widget.sitzung,
                       route: a.route,
                       spuren: [
                         for (final s in spuren)
@@ -452,12 +453,14 @@ class _AktivitaetSeiteState extends State<AktivitaetSeite> {
 /// Punkt je Aufnahme – ein Tipp darauf öffnet sie.
 class _Routenkarte extends StatelessWidget {
   const _Routenkarte({
+    required this.sitzung,
     required this.route,
     required this.oeffne,
     this.spuren = const [],
     this.stelle,
   });
 
+  final Sitzung sitzung;
   final List<Routenpunkt> route;
   final void Function(String id) oeffne;
 
@@ -489,7 +492,7 @@ class _Routenkarte extends StatelessWidget {
             ),
           ),
           children: [
-            kartenkacheln(context),
+            kartenkacheln(context, sitzung),
             PolylineLayer(
               polylines: [
                 for (final s in spuren)

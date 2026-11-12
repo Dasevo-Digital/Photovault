@@ -61,8 +61,10 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 In `PV_DATEN` liegen `server.sqlite` (Konten und Geräte),
 `server.schluessel` (verschlüsselt die TOTP-Geheimnisse; beide nur für
 den Besitzer lesbar), `bibliotheken/<Konto>/` und `eingang/<Konto>/`.
-Gesichert gehört der ganze Ordner. Fehlt der Schlüssel, ist nichts
-verloren ausser den TOTP-Einrichtungen (`konto totp-zuruecksetzen`).
+Gesichert gehört der ganze Ordner; nur `kartenkacheln/`, der
+Zwischenspeicher der Karten (höchstens 1 GB, siehe unten), darf fehlen.
+Fehlt der Schlüssel, ist nichts verloren ausser den TOTP-Einrichtungen
+(`konto totp-zuruecksetzen`).
 
 **Speicher:** Der Server misst alle fünf Minuten den freien Platz unter
 `PV_DATEN`. Knapp ist er ab `PV_SPEICHER_WARNUNG` Prozent belegt oder unter
@@ -441,13 +443,22 @@ mp4-muxer 5.2.2, beide mitgeliefert und erst dann geladen): Wanderkarte,
 Strassenkarte oder Luftbild, Wanderwege, Ortsnamen, selbst gerechnete
 Höhenlinien, Gipfel/Hütten/Quellen, vier Tageszeiten, der Flug mit Einflug,
 Messwerten, Fotos an ihrer Stelle und Abspann, und der Flug als MP4
-(WebCodecs; Chrome, Edge, Safari ab 16.4, Firefox ab 130). Dafür holt der
-**Browser** Kacheln direkt bei denselben Diensten wie die App am Rechner –
-Höhen von AWS (Tilezen), Luftbild und Beschriftung von Esri, Karten von
-OpenTopoMap und OpenStreetMap, Wanderwege von Waymarked Trails; die CSP
-lässt genau diese zu. Gipfel, Hütten und Quellen fragt dagegen der
-**Server** bei Overpass (`GET /api/v1/wanderobjekte`) und merkt sie sich in
-der Bibliothek, wie der Rechner.
+(WebCodecs; Chrome, Edge, Safari ab 16.4, Firefox ab 130). Höhen von AWS
+(Tilezen), Luftbild und Beschriftung von Esri und Wanderwege von Waymarked
+Trails holt der **Browser** dafür direkt; die CSP lässt genau diese zu.
+Gipfel, Hütten und Quellen fragt dagegen der **Server** bei Overpass
+(`GET /api/v1/wanderobjekte`) und merkt sie sich in der Bibliothek, wie der
+Rechner.
+
+**Karten über den Server** (Issue #180). Die Karten von OpenStreetMap und
+OpenTopoMap holt der Server selbst (`GET /api/v1/karte/…`, in der
+Weboberfläche, auf dem Handy und am verbundenen Rechner): mit eigener
+Kennung (`PhotoVault-Server/<Fassung>`), höchstens vier Abrufe zugleich und
+nur, was ein Gerät gerade ansieht. Er hält jede Kachel so lange vor, wie
+der Anbieter sagt, mindestens aber eine Woche, zusammen höchstens 1 GB in
+`<PV_DATEN>/kartenkacheln`. Die Anbieter sehen damit nur den Server, nicht
+die IP-Adresse von Besuchern und Geräten. Ist der Anbieter nicht
+erreichbar, liefert er die letzte Kopie.
 
 **Die Sitzung ist ein Gerät.** Der Browser bekommt ein Token wie die App,
 aber in einem Cookie, das nur der Server liest (`HttpOnly`,
@@ -726,6 +737,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 | `POST /pruefsummen` | `{pruefsummen: [SHA-256 …]}` → `{vorhanden: {pruefsumme: kennung}}` – was schon da ist (Sicherung der Kamerarolle) |
 | `PUT /sofort?name=…&geaendert=…` | eine ganze Datei als Körper, in einer Anfrage: so schickt iOS Fotos im Hintergrund, wenn die Handy-App nicht läuft (`funktionen.sofort`). → 201 `{ausgang, aufnahme}`, auch für eine Dublette; 422, wenn der Import scheitert |
 | `POST /suche/text` | `{text}` → `{vektor, text}` – Suchtext für die Bildsuche eingebettet; 404 ohne Modell |
+| `GET /karte/<stil>/<z>/<x>/<y>.png` | eine Kartenkachel, beim Anbieter geholt und vorgehalten (`funktionen.karte`, Issue #180): `osm` bis Stufe 19, `topo` (OpenTopoMap) bis 17; alles andere 404. `cache-control: private, max-age=…` mit der verbleibenden Haltbarkeit (mindestens sieben Tage ab dem Abruf); 502, wenn der Anbieter nicht antwortet und keine ältere Kopie da ist |
 | `GET /alben/<id>/aktivitaet`, `GET /geteilt/<id>/aktivitaet` | Kommentare und „Gefällt mir“ eines geteilten Albums, für den Besitzer bzw. einen Empfänger: `{kommentare: [{id, aufnahme?, name, text, angelegt, eigener, loeschbar}], gefaellt: {Aufnahme: {anzahl, ich, namen}}}` (Issue #297) |
 | `POST …/kommentare`, `DELETE …/kommentare/<k>`, `PUT\|DELETE …/gefaellt/<aufnahme>` | unter beiden Wegen: `{text, aufnahme?}` schreibt (höchstens 2000 Zeichen); entfernen darf der Schreiber seinen, der Besitzer jeden |
 | `GET\|PUT\|DELETE /alben/<id>/regel` | ein Album, das sich selbst füllt: `{personen: [Kennung], alle?, ab?: "JJJJ-MM-TT"}` legt die Regel an und füllt gleich → `{regel, dazu}`; danach alle zehn Minuten. Was der Besitzer herausnimmt, kommt nicht zurück; DELETE lässt liegen, was darin ist (Issue #298) |

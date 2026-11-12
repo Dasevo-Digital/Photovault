@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:kern/abgleich/kachelumleitung.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/search_filters.dart';
@@ -85,6 +87,24 @@ void main() {
       'rw-------',
       reason: 'das Token gehört niemand anderem',
     );
+  });
+
+  test('die Karte holt ihre Kacheln beim Server, wenn er es kann', () async {
+    await sitzung.holeServerfassung();
+    // Erst sicher sein, dass umgelenkt wird – sonst ginge der Abruf
+    // unten an den echten Kachelserver.
+    expect(sitzung.kartenUeberServer, isTrue);
+    final kachel = Uri.parse('https://tile.openstreetmap.org/25/0/0.png');
+    expect(serverKachelpfad(kachel), isNotNull);
+
+    // Eine Stufe, die es nicht gibt: Der Server antwortet selbst, ohne den
+    // Anbieter zu fragen – mit 404 und nicht mit 401, das Token ging mit.
+    final r = await sitzung.kachelnetz.get(kachel);
+    expect(r.statusCode, 404);
+    final ohneToken = await http.get(
+      adresse.resolve('api/v1/karte/osm/25/0/0.png'),
+    );
+    expect(ohneToken.statusCode, 401);
   });
 
   test('Bilder kommen erst, wenn man sie ansieht, und bleiben', () async {

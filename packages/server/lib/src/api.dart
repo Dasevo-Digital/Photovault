@@ -60,6 +60,7 @@ import 'konten/kontodienst.dart';
 import 'nachlass.dart';
 import 'konten_api.dart';
 import 'gastpruefung.dart';
+import 'kartenkacheln.dart';
 import 'oidc.dart';
 import 'passkey_api.dart';
 import 'packen.dart';
@@ -106,6 +107,7 @@ Handler baueApi({
   Gastpruefung? gastpruefung,
   http.Client? netz,
   DarktableEntwickler? darktable,
+  Kartenkacheln? karte,
 }) {
   final von = absender ?? Absender();
   final dt = darktable ?? DarktableEntwickler();
@@ -123,6 +125,7 @@ Handler baueApi({
     netz,
     vollbilder: vollbilder,
     darktable: dt,
+    karte: karte != null,
     teilungen: konten.albumteilungen,
     regeln: konten.albumregeln,
     kontoname: (id) => konten.konto(id)?.name,
@@ -321,6 +324,13 @@ Handler baueApi({
     ..get('/api/v1/aktivitaeten/<id>', api.aktivitaet)
     ..get('/api/v1/spuren', api.spurkennungen)
     ..get('/api/v1/wanderobjekte', api.wanderobjekte)
+    // Kartenkacheln über den Server (#180); Stufe und Koordinaten prüft
+    // [Kartenkacheln], hier nur, dass es Ziffern sind.
+    ..get(
+      '/api/v1/karte/<stil>/<z|[0-9]{1,2}>/<x|[0-9]{1,7}>/<y|[0-9]{1,7}>.png',
+      (Request r, String stil, String z, String x, String y) =>
+          karte?.kachel(r, stil, z, x, y) ?? Response.notFound('nicht da'),
+    )
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/orte/suche', api.orteSuche)
     ..get('/api/v1/laender', api.laender)
@@ -779,6 +789,7 @@ class _Api {
     this._netz, {
     required this.vollbilder,
     required this.darktable,
+    this.karte = false,
     this.teilungen,
     this.regeln,
     this.kontoname,
@@ -806,6 +817,9 @@ class _Api {
   /// Fotos in voller Auflösung für den Betrachter (#256).
   final Vollbilder vollbilder;
   final DarktableEntwickler darktable;
+
+  /// Ob der Server Kartenkacheln holt (#180, siehe [Kartenkacheln]).
+  final bool karte;
   final Future<Map<String, Object?>> Function()? _beschleuniger;
 
   Future<Kontobereich> _bereich(Request r) => bibliotheken.fuer(kontoVon(r).id);
@@ -843,6 +857,9 @@ class _Api {
           'fotokammer': 4,
           // Ob darktable-cli da ist (#351).
           'darktable': darktable.da ? 1 : 0,
+          // Kartenkacheln über den Server statt direkt beim Anbieter
+          // (#180, `GET /api/v1/karte/…`).
+          'karte': karte ? 1 : 0,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

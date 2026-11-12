@@ -223,6 +223,10 @@ void main() {
       expect(csp, contains("script-src 'self'"));
       expect(csp, contains("frame-ancestors 'none'"));
       expect(csp, isNot(contains('unsafe-inline')));
+      // Die Karten kommen über den Server (#180): Direkt darf die Seite
+      // OpenStreetMap und OpenTopoMap gar nicht erst fragen.
+      expect(csp, isNot(contains('openstreetmap')));
+      expect(csp, isNot(contains('opentopomap')));
       expect(seite.headers['x-frame-options'], 'DENY');
       expect(seite.headers['x-content-type-options'], 'nosniff');
       expect(seite.headers['cross-origin-opener-policy'], 'same-origin');

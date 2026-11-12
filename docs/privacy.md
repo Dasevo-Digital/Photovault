@@ -52,7 +52,9 @@ access key you supply yourself. Tiles are cached locally and requested again
 only once the validity stated by the service has expired (seven days if it
 states none). On explicit request, Settings → Map preloads the tiles around
 all photo locations; the map service then learns all areas where photos were
-taken at once.
+taken at once. For a connected library, a current Photo Vault Server fetches
+the OpenStreetMap and OpenTopoMap tiles instead of the app, including when
+preloading (see “Maps in the browser and the mobile app”).
 
 **Terrain and hiking information.** Opening the corresponding views loads
 elevation data from AWS Open Data and hiking routes from Waymarked Trails.
@@ -137,12 +139,18 @@ text, the account, its name and the time; everyone involved sees them. The
 author of a comment and the owner of the album can remove it. Comments go
 along with the album or with a permanently deleted item.
 
-**Maps in the browser and the mobile app.** Even with your own server, the
-browser interface and the mobile app fetch map tiles **directly** from the
-services, not through the Photo Vault Server: the map from OpenStreetMap
-(`tile.openstreetmap.org`), the terrain view and the 3D flight elevation data
-from AWS Open Data, aerial imagery from Esri/ArcGIS and hiking trails from
-Waymarked Trails. These services receive the device's IP address and the
+**Maps in the browser and the mobile app.** A current Photo Vault Server
+fetches the map tiles from OpenStreetMap (`tile.openstreetmap.org`) and
+OpenTopoMap itself and delivers them to the signed-in devices: the browser
+interface, the mobile app and a connected desktop app. These services then
+receive the server's IP address and the requested tile coordinates, not the
+device's IP address. The server keeps the tiles for at least a week (1 GB at
+most in total); anyone viewing the same area again is served from this cache.
+An older server cannot do this; the devices then fetch these tiles
+**directly** as before. They also fetch elevation data for the terrain view
+and the 3D flight from AWS Open Data, aerial imagery from Esri/ArcGIS and
+hiking trails from Waymarked Trails directly, and the apps' terrain view its
+maps as well. These services receive the device's IP address and the
 requested tile coordinates, from which the area being viewed can be inferred.
 Hiking objects, by contrast, are queried by the server from the Overpass API.
 

@@ -126,6 +126,7 @@ Future<void> main(List<String> argumente) async {
       ),
     ),
   );
+  final karte = Kartenkacheln(e.kartenkacheln);
   final server = await shelf_io.serve(
     baueApi(
       konten: konten,
@@ -139,6 +140,7 @@ Future<void> main(List<String> argumente) async {
       web: e.web,
       oeffentlich: e.oeffentlich,
       gastpruefung: gastpruefung,
+      karte: karte,
     ),
     e.adresse,
     e.port,
@@ -197,6 +199,7 @@ Future<void> main(List<String> argumente) async {
   nachlass.beende();
   await bibliotheken.schliesseAlle();
   oidc?.schliesse();
+  karte.schliesse();
   sdb.schliesse();
   onnx?.beende();
   exit(0);

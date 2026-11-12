@@ -3,6 +3,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/kartengruppen.dart';
+import 'package:kern/services/kartenstil.dart' show osmKachelUrl;
 import 'package:latlong2/latlong.dart';
 
 import '../bilder.dart';
@@ -90,7 +91,7 @@ class _KarteState extends State<Karte> {
         },
       ),
       children: [
-        kartenkacheln(context),
+        kartenkacheln(context, widget.sitzung),
         MarkerLayer(
           markers: [
             for (final g in gruppen)
@@ -168,10 +169,15 @@ class _Punkt extends StatelessWidget {
 /// Die Kacheln von OpenStreetMap – im dunklen Erscheinungsbild umgekehrt
 /// und im Farbton zurückgedreht, so bleibt Wasser blau und Grün grün, nur
 /// hell wird dunkel. Kein zweiter Kartendienst, kein Schlüssel.
-Widget kartenkacheln(BuildContext context) {
+///
+/// Geholt über den eigenen Server, wenn er es kann (#180, siehe
+/// [Sitzung.kachelnetz]). Die Adresse bleibt die von OpenStreetMap: So
+/// gilt der Kachelspeicher des Telefons für beide Wege, auch ohne Netz.
+Widget kartenkacheln(BuildContext context, Sitzung sitzung) {
   final kacheln = TileLayer(
-    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    urlTemplate: osmKachelUrl,
     userAgentPackageName: 'de.dasevo.photovault',
+    tileProvider: NetworkTileProvider(httpClient: sitzung.kachelnetz),
   );
   return Theme.of(context).brightness == Brightness.dark
       ? ColorFiltered(

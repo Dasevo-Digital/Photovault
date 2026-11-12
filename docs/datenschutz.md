@@ -58,7 +58,10 @@ werden lokal zwischengespeichert und erst neu angefragt, wenn ihre vom Dienst
 genannte Gültigkeit abgelaufen ist (ohne Angabe nach sieben Tagen). Auf
 ausdrücklichen Wunsch lädt die App unter Einstellungen → Karte die Kacheln
 rund um alle Aufnahmeorte vor; der Kartendienst erfährt dann auf einmal alle
-Gegenden, in denen Fotos entstanden sind.
+Gegenden, in denen Fotos entstanden sind. Bei einer verbundenen Bibliothek
+holt ein aktueller Photo Vault Server die Kacheln von OpenStreetMap und
+OpenTopoMap an Stelle der App, auch beim Vorladen (siehe „Karten in Browser
+und Handy-App“).
 
 **Gelände- und Wanderinformationen.** Beim Öffnen entsprechender Ansichten
 lädt die App Höhendaten von AWS Open Data, Wanderwege von Waymarked Trails
@@ -155,12 +158,19 @@ Namen und den Zeitpunkt; alle Beteiligten sehen sie. Wer einen Kommentar
 geschrieben hat, und der Besitzer des Albums können ihn entfernen. Mit dem
 Album oder der endgültig gelöschten Aufnahme gehen auch ihre Kommentare.
 
-**Karten in Browser und Handy-App.** Auch mit eigenem Server holen
-Browseroberfläche und Handy-App Kartenkacheln **direkt** bei den Diensten,
-nicht über den Photo Vault Server: die Karte bei OpenStreetMap
-(`tile.openstreetmap.org`), Geländeansicht und 3D-Flug Höhendaten bei AWS
-Open Data, Luftbilder bei Esri/ArcGIS und Wanderwege bei Waymarked Trails.
-Diese Dienste erhalten dabei die IP-Adresse des Geräts und die angefragten
+**Karten in Browser und Handy-App.** Ein aktueller Photo Vault Server holt
+die Kartenkacheln von OpenStreetMap (`tile.openstreetmap.org`) und
+OpenTopoMap selbst und liefert sie an die angemeldeten Geräte aus: an
+Browseroberfläche, Handy-App und verbundene Desktop-App. Diese Dienste
+erhalten dann die IP-Adresse des Servers und die angefragten
+Kachelkoordinaten, nicht die IP-Adresse des Geräts. Der Server hält die
+Kacheln mindestens eine Woche vor (zusammen höchstens 1 GB); wer dieselbe
+Gegend erneut ansieht, wird aus diesem Zwischenspeicher bedient. Ein älterer
+Server kann das nicht; dann holen die Geräte diese Kacheln wie bisher
+**direkt**. Ebenfalls direkt holen sie Höhendaten für Geländeansicht und
+3D-Flug bei AWS Open Data, Luftbilder bei Esri/ArcGIS und Wanderwege bei
+Waymarked Trails, und die Geländeansicht der Apps auch ihre Karten. Diese
+Dienste erhalten dabei die IP-Adresse des Geräts und die angefragten
 Kachelkoordinaten; daraus lässt sich ableiten, welche Gegend betrachtet wird.
 Wanderobjekte fragt dagegen der Server bei der Overpass API ab.
 

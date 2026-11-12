@@ -58,7 +58,11 @@ import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import '../widgets/mini_location_map.dart'
-    show setzeCartoSchluessel, setzeEigeneKarte, setzeKarteHochaufloesend;
+    show
+        setzeCartoSchluessel,
+        setzeEigeneKarte,
+        setzeKachelserver,
+        setzeKarteHochaufloesend;
 import '../services/segmentation_service.dart';
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/services/papierkorb_leeren.dart';
@@ -69,6 +73,7 @@ import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/spuren_nachreichen.dart';
 import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/kachelumleitung.dart' show serverLiefertKacheln;
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/rechenhilfe.dart';
 import 'package:kern/abgleich/sicherung.dart';
@@ -880,6 +885,8 @@ class LibraryState extends ChangeNotifier {
     // Die Kopie einer Bibliothek auf dem Server? Dann gleich hier den
     // Abgleich einrichten – vor allem anderen, das schreiben könnte.
     verbindung = await Verbindungsdatei.lies(bibliothek);
+    // Bis der Server sich meldet, holt die Karte selbst (#180).
+    setzeKachelserver(null);
     if (verbunden) await _verbinde();
     modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);
     _outdatedModelPipelines = await modelProcessingState!.initialize(
@@ -1099,6 +1106,10 @@ class LibraryState extends ChangeNotifier {
       if (z.erreichbar && !z.schemaAnders && !_kammerGeprueft) {
         _kammerGeprueft = true;
         unawaited(_pruefeKammer());
+      }
+      if (z.erreichbar && !_karteGeprueft) {
+        _karteGeprueft = true;
+        unawaited(_pruefeKarte(s));
       }
       if (z.erreichbar && !z.schemaAnders) {
         unawaited(_vorrat?.fuelle().catchError((_) => 0));
@@ -4292,6 +4303,23 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Einmal je Start, sobald der Server erreichbar ist: Holt er die
+  /// Kartenkacheln (#180)? Dann gehen sie über ihn, und OpenStreetMap
+  /// sieht diesen Rechner nicht mehr. Ein Server bis 3.66 kann es nicht;
+  /// dann bleibt es beim Anbieter direkt.
+  var _karteGeprueft = false;
+
+  Future<void> _pruefeKarte(Serververbindung s) async {
+    try {
+      final z = await s.hole('api/v1/zustand');
+      setzeKachelserver(serverLiefertKacheln(z) ? s : null);
+    } on KeineVerbindung {
+      _karteGeprueft = false;
+    } on Serverfehler {
+      _karteGeprueft = false;
+    }
+  }
+
   /// Zählt jedes Mal hoch, wenn der Server Änderungen abgelehnt hat (#340).
   /// Die Vorwegnahme ist dann schon zurückgedreht, und ohne Hinweis sähe
   /// man nur, dass eine Bearbeitung wieder weg ist.
@@ -4394,6 +4422,7 @@ class LibraryState extends ChangeNotifier {
     _speicherUhr?.cancel();
     unawaited(_abgleichsAbo?.cancel());
     unawaited(abgleich?.beende());
+    if (verbunden) setzeKachelserver(null);
     unawaited(beendeRechenhilfe());
     _fortschritt.dispose();
     super.dispose();

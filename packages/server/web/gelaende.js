@@ -39,18 +39,21 @@ const HOEHEN_URL = 'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/
 const HOEHEN_NENNUNG = 'Höhen: Tilezen / AWS Open Data';
 
 // Der Grund – was unten liegt (kern/services/gelaendeebenen.dart).
-// `pvref://` geht über [kachelHolen]: Die Server von OpenStreetMap sperren
-// Abrufe ohne Referer, und diese Seite schickt sonst keinen.
+// OpenTopoMap und OpenStreetMap kommen über den eigenen Server (#180, wie
+// osmKacheln in app.js): Die Anbieter sehen nur ihn, nicht den Browser.
+// Mit vollem Ursprung, damit die Adresse dasselbe meint, wo immer MapLibre
+// sie lädt – in der Seite oder in seinem Worker.
+const SERVERKACHELN = `${location.origin}/api/v1/karte`;
 const GRUENDE = {
   wanderkarte: {
     name: 'Topografie',
-    kacheln: ['pvref://tile.opentopomap.org/{z}/{x}/{y}.png'],
+    kacheln: [`${SERVERKACHELN}/topo/{z}/{x}/{y}.png`],
     max: 16,
     nennung: '© OpenStreetMap contributors, SRTM | © opentopomap.org (CC-BY-SA)',
   },
   hell: {
     name: 'Hell',
-    kacheln: ['pvref://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+    kacheln: [`${SERVERKACHELN}/osm/{z}/{x}/{y}.png`],
     max: 17,
     nennung: '© OpenStreetMap contributors',
   },
@@ -58,7 +61,7 @@ const GRUENDE = {
   // CARTO-Schlüssel: Grün bleibt grün, Wasser wird dunkelblau.
   dunkel: {
     name: 'Dunkel',
-    kacheln: ['pvref://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+    kacheln: [`${SERVERKACHELN}/osm/{z}/{x}/{y}.png`],
     max: 17,
     nennung: '© OpenStreetMap contributors',
     umkehren: true,
@@ -136,27 +139,13 @@ function ladeMaplibre() {
       stil.addEventListener('load', fertig, { once: true });
       stil.addEventListener('error', () => fehler(new Error(t('Die Karte ließ sich nicht laden.'))), { once: true });
     });
-    maplibreLaden = Promise.all([import('./maplibre/maplibre-gl.mjs'), stilDa]).then(([ml]) => {
-      ml.addProtocol('pvref', kachelHolen);
-      return ml;
-    }).catch((x) => {
+    maplibreLaden = Promise.all([import('./maplibre/maplibre-gl.mjs'), stilDa]).then(([ml]) => ml).catch((x) => {
       maplibreLaden = null;
       stil.remove();
       throw x;
     });
   }
   return maplibreLaden;
-}
-
-// Eine Kachel mit dem Ursprung als Referer (siehe osmKacheln in app.js):
-// welche Seite gerade offen ist, erfährt der Kartenserver nicht.
-async function kachelHolen(anfrage, abbruch) {
-  const r = await fetch(`https://${anfrage.url.slice('pvref://'.length)}`, {
-    referrerPolicy: 'strict-origin-when-cross-origin',
-    signal: abbruch.signal,
-  });
-  if (!r.ok) throw new Error(`${r.status}`);
-  return { data: await r.arrayBuffer() };
 }
 
 // --- Rechnen: Strecke, Kamera, Flug ---------------------------------------

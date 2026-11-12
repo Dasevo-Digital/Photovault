@@ -12,6 +12,8 @@ import 'package:http/io_client.dart';
 import 'package:http/retry.dart';
 import 'package:latlong2/latlong.dart' as ll;
 
+import 'package:kern/abgleich/kachelumleitung.dart';
+import 'package:kern/abgleich/verbindung.dart' show Serververbindung;
 import 'package:kern/services/kartenstil.dart';
 import '../services/kachelmitschnitt.dart';
 import 'package:kern/services/netzkennung.dart';
@@ -468,7 +470,10 @@ class FragmentloserSpeicher implements MapCachingProvider {
 /// 500, bleibt es beim Fehler. OpenTopoMap meldet mit 404, dass eine
 /// Kachel noch gerendert wird (siehe [kachelNochmalVersuchen]); wuerde
 /// hier die alte Kachel als Erfolg gelten, liefe die Nachfass-Staffel
-/// aus [Kachelschicht] nie an, und die fertige Kachel kaeme nie.
+/// aus [Kachelschicht] nie an, und die fertige Kachel kaeme nie. (Kommt
+/// die Kachel ueber den eigenen Server und erreicht der den Anbieter
+/// nicht, meldet [Kachelumleitung] das als Fehler der Verbindung – fuer
+/// das Geraet ist es dasselbe wie kein Netz.)
 class Offlinerueckfall extends BaseClient {
   Offlinerueckfall(this._innen, this._lager);
 
@@ -565,26 +570,45 @@ Nachfassanbieter kartenKachelAnbieter() =>
 
 Client? _kachelNetz;
 
+Serververbindung? _kachelserver;
+
+/// Der eigene Server, über den OpenStreetMap- und OpenTopoMap-Kacheln
+/// kommen (#180) – `null` heisst: direkt beim Anbieter.
+///
+/// Modulweit aus demselben Grund wie der CARTO-Schlüssel: Es ist eine
+/// app-weite Angabe, und [buildMapTileLayer] wird ohne jeden Zustand
+/// aufgerufen. Gesetzt wird er erst, wenn der verbundene Server die
+/// Fähigkeit meldet (`LibraryState`); eine lokale Bibliothek und ein
+/// Server bis 3.66 holen weiter selbst.
+void setzeKachelserver(Serververbindung? server) => _kachelserver = server;
+
 /// Der Client, über den alle Kacheln kommen: mit Wiederholungen und mit
 /// gedeckelter Zahl gleichzeitiger Verbindungen ([kachelVerbindungen]).
 ///
 /// Öffentlich, damit ein Prüfstand ihn gegen einen eigenen Server
 /// laufen lassen kann – die Deckelung ist sonst nirgends abzulesen.
 Client kachelNetzClient() => _kachelNetz ??= Offlinerueckfall(
-  RetryClient(
-    // Die Frist sitzt UNTER dem Mitschnitt und IM RetryClient: unter
-    // dem Mitschnitt, damit ein abgelaufener Abruf dort als Fehlschlag
-    // steht und nicht als Abruf, den es nie gab; im RetryClient, damit
-    // ein schweigender Server einen zweiten Anlauf bekommt, statt die
-    // Kachel gleich grau zu lassen.
-    MitschnittClient(
-      ZeitgrenzeClient(IOClient(kachelHttpClient())),
-      Kachelmitschnitt.instanz,
+  // Zwischen Rückfall und Wiederholungen: Die Wiederholungen gehen an den
+  // eigenen Server, der Rückfall sucht auf der Platte aber unter der
+  // Adresse des Anbieters – unter der liegt jede Kachel, egal auf welchem
+  // Weg sie kam (siehe [Kachelumleitung]).
+  Kachelumleitung(
+    RetryClient(
+      // Die Frist sitzt UNTER dem Mitschnitt und IM RetryClient: unter
+      // dem Mitschnitt, damit ein abgelaufener Abruf dort als Fehlschlag
+      // steht und nicht als Abruf, den es nie gab; im RetryClient, damit
+      // ein schweigender Server einen zweiten Anlauf bekommt, statt die
+      // Kachel gleich grau zu lassen.
+      MitschnittClient(
+        ZeitgrenzeClient(IOClient(kachelHttpClient())),
+        Kachelmitschnitt.instanz,
+      ),
+      retries: kachelVersuche,
+      when: (antwort) => kachelNochmalVersuchen(antwort.statusCode),
+      whenError: (fehler, _) => kachelFehlerNochmalVersuchen(fehler),
+      delay: kachelWartezeit,
     ),
-    retries: kachelVersuche,
-    when: (antwort) => kachelNochmalVersuchen(antwort.statusCode),
-    whenError: (fehler, _) => kachelFehlerNochmalVersuchen(fehler),
-    delay: kachelWartezeit,
+    server: () => _kachelserver,
   ),
   // Ganz aussen: erst wenn alle Wiederholungen durch sind, wird auf
   // die Platte zurueckgefallen. Siehe [Offlinerueckfall].

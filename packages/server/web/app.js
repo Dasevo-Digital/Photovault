@@ -2568,15 +2568,14 @@ function ladeLeaflet() {
   return leafletLaden;
 }
 
-// Die Kacheln von OpenStreetMap. Der Server schickt jeder Seite
-// `Referrer-Policy: no-referrer` mit; ohne Referer sperren die
-// OSM-Server Browser aber („Access blocked“, osm.wiki/Blocked). Für die
-// Kacheln geht deshalb nur der Ursprung mit (https://<server>/), kein
-// Pfad – welche Reise oder Person gerade offen ist, erfährt OSM nicht.
+// Die Kacheln von OpenStreetMap – über den eigenen Server (#180). Bis 3.66
+// holte sie der Browser selbst, und OpenStreetMap sah die IP-Adresse
+// jedes Besuchers samt der Gegend, die er ansah. Jetzt fragt nur der
+// Server, mit seiner eigenen Kennung, und hält die Kacheln vor; der
+// Browser schickt sein Cookie mit wie bei jedem Bild der Bibliothek.
 function osmKacheln() {
-  return L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  return L.tileLayer('/api/v1/karte/osm/{z}/{x}/{y}.png', {
     maxZoom: 19,
-    referrerPolicy: 'strict-origin-when-cross-origin',
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   });
 }

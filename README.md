@@ -234,7 +234,10 @@ echter Hardware.
   und ohne Schlüssel**; wer den feineren CARTO-Schnitt möchte, trägt
   unter *Einstellungen → Karte* einen eigenen Schlüssel ein
   (kostenlos und ohne Konto). Ausgeliefert wird keiner: Ein Schlüssel im
-  Quelltext wäre für jeden lesbar, der das Verzeichnis öffnet. Dazu
+  Quelltext wäre für jeden lesbar, der das Verzeichnis öffnet. Ist die
+  Bibliothek mit einem Server verbunden, kommen die Kacheln von
+  OpenStreetMap und OpenTopoMap über ihn; die Kartendienste sehen dann
+  nur den Server. Dazu
   lokale Umkehr-Geokodierung; lokale Umkehr-Geokodierung
   (GPS → Stadt/Land) über den offenen GeoNames-Datensatz, komplett offline.
   Dicht beieinanderliegende Fotos werden zoomabhängig zu einem Marker

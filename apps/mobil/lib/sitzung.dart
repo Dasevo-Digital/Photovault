@@ -7,8 +7,11 @@ import 'dart:io';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/retry.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
+import 'package:kern/abgleich/kachelumleitung.dart';
 import 'package:kern/abgleich/sicherung.dart';
 import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -452,6 +455,22 @@ class Sitzung extends ChangeNotifier {
   /// Welche Fassung der Server ist (`/api/v1/zustand`), für die Kontoseite.
   String? serverfassung;
 
+  /// Ob der Server die Kartenkacheln holt und vorhält (#180) – aus
+  /// demselben `/api/v1/zustand`. Ein Server bis 3.66 kann es nicht; dann
+  /// holt das Telefon sie wie bisher selbst bei OpenStreetMap.
+  bool kartenUeberServer = false;
+
+  http.Client? _kachelnetz;
+
+  /// Über diesen Client holt die Karte ihre Kacheln: beim Server, sobald
+  /// er es kann ([kartenUeberServer]), sonst beim Anbieter. Einer für die
+  /// ganze Sitzung – die Karte baut ihre Schicht bei jedem Zoomen neu, und
+  /// ein eigener Client je Schicht bliebe jedes Mal offen liegen.
+  http.Client get kachelnetz => _kachelnetz ??= Kachelumleitung(
+    RetryClient(http.Client()),
+    server: () => kartenUeberServer ? abgleich?.verbindung : null,
+  );
+
   Future<void> holeServerfassung() async {
     final a = abgleich;
     if (a == null) return;
@@ -462,6 +481,7 @@ class Sitzung extends ChangeNotifier {
       serverfassung = f == null
           ? null
           : (c == null || c.isEmpty ? f : '$f ($c)');
+      kartenUeberServer = serverLiefertKacheln(z);
       notifyListeners();
     } on KeineVerbindung {
       // Beim nächsten Mal.
@@ -585,6 +605,7 @@ class Sitzung extends ChangeNotifier {
   @override
   void dispose() {
     unawaited(beende());
+    _kachelnetz?.close();
     super.dispose();
   }
 }

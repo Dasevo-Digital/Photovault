@@ -244,6 +244,10 @@ class Einstellungen {
   Directory get beschleunigerZwischenspeicher =>
       Directory(p.join(daten.path, 'beschleuniger'));
 
+  /// Wo der Server die Kartenkacheln für seine Geräte vorhält (#180) – ein
+  /// Zwischenspeicher: Was fehlt, holt er beim Anbieter neu.
+  Directory get kartenkacheln => Directory(p.join(daten.path, 'kartenkacheln'));
+
   final File? onnxRuntime;
   final Directory geodaten;
   final bool totpPflicht;

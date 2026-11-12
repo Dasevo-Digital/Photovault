@@ -49,16 +49,20 @@ class Webapi {
   /// dieselben Dienste, die der Rechner für seinen Überflug fragt. Den
   /// Worker lädt MapLibre aus `maplibre/` (`worker-src` fällt auf
   /// `script-src 'self'` zurück) – kein `blob:` nötig.
+  ///
+  /// OpenStreetMap und OpenTopoMap stehen nicht mehr darin: Ihre Kacheln
+  /// kommen seit #180 vom Server selbst (`/api/v1/karte/…`). Fragte die
+  /// Seite sie doch noch direkt, liesse der Browser es nicht zu – und die
+  /// IP-Adresse des Besuchers bliebe trotzdem beim Server.
   static const csp =
       "default-src 'none'; script-src 'self'; style-src 'self'; "
-      "img-src 'self' blob: data: https://tile.openstreetmap.org; "
+      "img-src 'self' blob: data:; "
       "media-src 'self' blob:; connect-src 'self' $_landschaft; "
       "font-src 'self'; manifest-src 'self'; base-uri 'none'; "
       "form-action 'none'; frame-ancestors 'none'";
 
   static const _landschaft =
       'https://s3.amazonaws.com https://server.arcgisonline.com '
-      'https://tile.opentopomap.org https://tile.openstreetmap.org '
       'https://tile.waymarkedtrails.org';
 
   // Ein schlichter Name: Buchstaben, Ziffern, Strich, eine Endung aus der
