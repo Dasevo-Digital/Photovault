@@ -189,6 +189,10 @@ async function kammerFreigeben() {
 }
 
 async function kammerAbschliessen() {
+  if (kammer.arbeit) return;
+  // Den Stand frisch holen: Ein anderes Gerät kann inzwischen anders
+  // geurteilt haben, und Verworfenes ist weg.
+  await ladeKammer().catch(() => {});
   const weg = kammer.eintraege.filter((e) => e.abgelehnt).map((e) => e.id);
   const rest = kammer.eintraege.filter((e) => !e.abgelehnt).map((e) => e.id);
   if (!weg.length || kammer.arbeit) return;
@@ -201,7 +205,7 @@ async function kammerAbschliessen() {
     // Erst freigeben: Scheitert das, ist noch nichts verworfen.
     if (rest.length) ergebnis = await gibFrei(rest);
     if (!ergebnis.fehler.length) {
-      verworfen = (await api('/api/v1/kammer/verwerfen', { methode: 'POST', json: { ids: weg } })).verworfen;
+      verworfen = (await api('/api/v1/kammer/verwerfen', { methode: 'POST', json: { ids: weg, nurAbgelehnte: true } })).verworfen;
     }
   } catch (x) {
     ergebnis.fehler.push(x.message);

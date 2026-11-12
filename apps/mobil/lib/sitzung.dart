@@ -227,6 +227,13 @@ class Sitzung extends ChangeNotifier {
         _kammerGeprueft = true;
         unawaited(_pruefeKammer());
       }
+      // Ob der Server die Kacheln holt (#180), bei jeder Rückkehr des
+      // Servers neu: Wer offline gestartet ist, holte sonst bis zum Ende
+      // des Prozesses alles selbst bei OpenStreetMap, und nach einem
+      // Wechsel auf einen älteren Server bliebe die Karte leer.
+      if (z.erreichbar && (!_fassungGeholt || vorher?.erreichbar == false)) {
+        unawaited(holeServerfassung());
+      }
       if (vorher == null ||
           vorher.erreichbar != z.erreichbar ||
           vorher.ungeklaert != z.ungeklaert ||
@@ -475,9 +482,14 @@ class Sitzung extends ChangeNotifier {
     server: () => kartenUeberServer ? abgleich?.verbindung : null,
   );
 
+  /// Ob [holeServerfassung] seit dem Öffnen einmal durchkam.
+  var _fassungGeholt = false;
+  var _holtFassung = false;
+
   Future<void> holeServerfassung() async {
     final a = abgleich;
-    if (a == null) return;
+    if (a == null || _holtFassung) return;
+    _holtFassung = true;
     try {
       final z = await a.verbindung.hole('api/v1/zustand');
       final f = z['fassung'] as String?;
@@ -486,11 +498,14 @@ class Sitzung extends ChangeNotifier {
           ? null
           : (c == null || c.isEmpty ? f : '$f ($c)');
       kartenUeberServer = serverLiefertKacheln(z);
+      _fassungGeholt = true;
       notifyListeners();
     } on KeineVerbindung {
       // Beim nächsten Mal.
     } on Serverfehler {
       // Ebenso.
+    } finally {
+      _holtFassung = false;
     }
   }
 
@@ -593,6 +608,8 @@ class Sitzung extends ChangeNotifier {
     final a = abgleich;
     if (a == null) return;
     abgleich = null;
+    kartenUeberServer = false;
+    _fassungGeholt = false;
     partnerfotos.value = const [];
     _partnerstand = null;
     _speicherUhr?.cancel();

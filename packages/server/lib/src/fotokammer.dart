@@ -627,10 +627,16 @@ class Fotokammer {
   /// Löscht [id] samt Datei. Endgültig: Die Kammer hat keinen Papierkorb –
   /// die Oberfläche fragt vorher. Kam das Foto aus der Bibliothek, liegt die
   /// Aufnahme danach weiter im Papierkorb, bis der sich leert.
-  Future<bool> verwerfen(String id) async {
+  /// Mit [nurAbgelehnte] nur, wenn [id] jetzt noch abgelehnt ist: Hat ein
+  /// anderes Gerät die Ablehnung inzwischen aufgehoben, bleibt das Foto.
+  /// Die Fotokammer hat keinen Papierkorb (#358).
+  Future<bool> verwerfen(String id, {bool nurAbgelehnte = false}) async {
     if (!gueltig(id) || _inArbeit.contains(id)) return false;
     final platz = _platz(id);
     if (!await platz.exists()) return false;
+    if (nurAbgelehnte && (await _sichtungVon(id))['abgelehnt'] != true) {
+      return false;
+    }
     await platz.delete(recursive: true);
     return true;
   }
@@ -791,14 +797,22 @@ class Fotokammerapi {
     return _json({'geaendert': n});
   }
 
-  /// `{ids}` → `{verworfen}`.
+  /// `{ids, nurAbgelehnte?}` → `{verworfen}`. Mit `nurAbgelehnte` nur, was
+  /// beim Eintreffen noch abgelehnt ist (#358).
   Future<Response> verwerfen(Request r) async {
-    final ids = await _ids(r);
+    final Object? k;
+    try {
+      k = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return _json({'fehler': 'kein JSON'}, status: 400);
+    }
+    final ids = _idsAus(k);
     if (ids == null) return _json({'fehler': 'ids fehlt'}, status: 400);
-    final k = await _kammer(r);
+    final nurAbgelehnte = k is Map && k['nurAbgelehnte'] == true;
+    final kammer = await _kammer(r);
     var n = 0;
     for (final id in ids) {
-      if (await k.verwerfen(id)) n++;
+      if (await kammer.verwerfen(id, nurAbgelehnte: nurAbgelehnte)) n++;
     }
     return _json({'verworfen': n});
   }

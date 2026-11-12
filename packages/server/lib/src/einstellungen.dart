@@ -23,6 +23,7 @@ import 'oidc.dart';
 /// | `PV_BESCHLEUNIGER`   | `cpu`                 | `openvino`, `cuda`, … (siehe `Beschleuniger`) |
 /// | `PV_SELBST_RECHNEN`  | `alles`               | welche Stufen der Server selbst rechnet: `alles`, `nichts` oder eine Liste wie `schlagwoerter,wiedererkennung,spracherkennung` |
 /// | `PV_GEODATEN`        | `<PV_DATEN>/geodaten` | GeoNames für Ortsnamen                |
+/// | `PV_KARTEN`          | `an`                  | `aus`: keine Kartenkacheln über den Server, die Geräte holen sie selbst (#180) |
 /// | `PV_TOTP`            | `pflicht`             | `frei`: TOTP nur, wer es einrichtet   |
 /// | `PV_PROXY`           | –                     | vertraute Proxys (Adressen, Netze, `privat`) |
 /// | `PV_OEFFENTLICH`     | –                     | die Adresse von aussen (für OIDC)     |
@@ -49,6 +50,7 @@ class Einstellungen {
     this.beschleuniger = Beschleuniger.cpu,
     this.selbstRechnen = const {...Analysestufe.values},
     this.speicherWarnung = 0.85,
+    this.karten = true,
     this.speicherMindestGb = 2,
     this.sicherung,
     this.sicherungUm = (stunde: 3, minute: 30),
@@ -85,6 +87,7 @@ class Einstellungen {
       beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
       selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
       speicherWarnung: _prozent(u['PV_SPEICHER_WARNUNG'], 85) / 100,
+      karten: (u['PV_KARTEN'] ?? '').trim().toLowerCase() != 'aus',
       speicherMindestGb: _zahl(u['PV_SPEICHER_MINDEST'], 2),
       sicherung: (u['PV_SICHERUNG'] ?? '').trim().isEmpty
           ? null
@@ -239,6 +242,11 @@ class Einstellungen {
 
   /// Womit die Modelle rechnen (siehe [Beschleuniger]).
   final Beschleuniger beschleuniger;
+
+  /// Ob der Server Kartenkacheln holt und vorhält (#180). Ein Server ohne
+  /// Weg ins Internet schaltet es mit `PV_KARTEN=aus` ab; dann melden die
+  /// Geräte es nicht und holen ihre Kacheln wie bis 3.66 selbst.
+  final bool karten;
 
   /// Wohin OpenVINO die für die Grafik übersetzten Modelle legt.
   Directory get beschleunigerZwischenspeicher =>

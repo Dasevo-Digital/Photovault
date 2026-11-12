@@ -161,7 +161,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
         if (mounted) _melde(t.kammerFehler(r.gescheitert.values.join('; ')));
         return;
       }
-      await _d.verwerfen(weg);
+      await _d.verwerfen(weg, nurAbgelehnte: true);
       if (mounted) _melde(t.kammerFreigegeben(r.neu + r.schonDa));
     });
   }

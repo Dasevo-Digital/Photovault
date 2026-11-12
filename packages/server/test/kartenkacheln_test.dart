@@ -202,8 +202,8 @@ void main() {
     expect((await hole(h, 'topo/17/0/131071.png')).statusCode, 200);
   });
 
-  test('ist der Anbieter weg, gilt die alte Kachel – und er wird eine '
-      'Weile in Ruhe gelassen', () async {
+  test('ist der Anbieter weg, gilt die alte Kachel – und nach drei '
+      'Fehlern in Folge wird er eine Weile in Ruhe gelassen', () async {
     final h = api(karte());
     expect((await hole(h, 'osm/3/4/2.png')).statusCode, 200);
     jetzt = jetzt.add(const Duration(days: 8));
@@ -215,11 +215,17 @@ void main() {
     expect(maxAge(alt), 0, reason: 'beim nächsten Mal wieder fragen');
     expect(beimAnbieter, hasLength(2));
 
-    // Ohne Kopie: ein klarer Fehler. Und während der Ruhe kein Abruf.
+    // Ohne Kopie: ein klarer Fehler. Ein einzelner Fehler legt den Stil
+    // aber nicht lahm (#180): Die nächsten Kacheln werden noch gefragt.
     final ohne = await hole(h, 'osm/3/4/3.png');
     expect(ohne.statusCode, 502);
     expect(ohne.headers['content-type'], startsWith('application/json'));
-    expect(beimAnbieter, hasLength(2));
+    expect(beimAnbieter, hasLength(3));
+    expect((await hole(h, 'osm/3/4/4.png')).statusCode, 502);
+    expect(beimAnbieter, hasLength(4));
+    // Der dritte Fehler in Folge: Ruhe, kein Abruf mehr.
+    expect((await hole(h, 'osm/3/4/5.png')).statusCode, 502);
+    expect(beimAnbieter, hasLength(4));
 
     // Nach der Ruhe wieder, und eine neue Kachel ersetzt die alte.
     jetzt = jetzt.add(const Duration(minutes: 1));
@@ -228,7 +234,18 @@ void main() {
     final frisch = await hole(h, 'osm/3/4/2.png');
     expect(await frisch.read().expand((b) => b).toList(), neu);
     expect(maxAge(frisch), greaterThan(0));
-    expect(beimAnbieter, hasLength(3));
+    expect(beimAnbieter, hasLength(5));
+  });
+
+  test('429 vom Anbieter heisst gleich: in Ruhe lassen', () async {
+    final h = api(karte());
+    anbieter = (_) async => http.Response('zu viele', 429);
+    expect((await hole(h, 'osm/5/1/1.png')).statusCode, 502);
+    expect((await hole(h, 'osm/5/1/2.png')).statusCode, 502);
+    expect(beimAnbieter, hasLength(1));
+    // Der andere Stil bleibt unberührt.
+    anbieter = (_) async => kachel();
+    expect((await hole(h, 'topo/5/1/2.png')).statusCode, 200);
   });
 
   test('Fehlerseiten, 404 und Schweigen des Anbieters', () async {
@@ -281,11 +298,13 @@ void main() {
   test('der Speicher bleibt unter seiner Grenze', () async {
     final gross = List<int>.filled(1000, 7);
     anbieter = (_) async => kachel(bytes: gross);
-    final h = api(karte(grenze: 3500));
+    final k = karte(grenze: 3500);
+    final h = api(k);
     for (var x = 0; x < 10; x++) {
       jetzt = jetzt.add(const Duration(seconds: 1));
       expect((await hole(h, 'osm/4/$x/0.png')).statusCode, 200);
     }
+    await k.aufraeumenFertig();
     final dateien = Directory(
       '${ordner.path}/kartenkacheln',
     ).listSync().whereType<File>().toList();

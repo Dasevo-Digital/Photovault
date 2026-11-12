@@ -143,6 +143,26 @@ void main() {
     expect(fragen, isEmpty);
   });
 
+  testWidgets('ohne Gerätecode sperrt sie nicht aus, sondern schaltet ab', (
+    tester,
+  ) async {
+    final s = AppSperre(
+      an: true,
+      pruefe: (grund) async {
+        fragen.add(grund);
+        return false;
+      },
+      verfuegbar: () async => false,
+      jetzt: () => uhr,
+      abdecken: (an) async => abdeckungen.add(an),
+    );
+    await zeige(tester, s);
+    expect(find.text('Bibliothek'), findsOneWidget);
+    expect(s.gesperrt, isFalse);
+    expect(s.an, isFalse);
+    expect(fragen, isEmpty, reason: 'gar nicht erst gefragt');
+  });
+
   test('merkt sich An und Frist und schaltet die Abdeckung', () async {
     final ordner = Directory.systemTemp.createTempSync('pv_appsperre_');
     addTearDown(() => ordner.deleteSync(recursive: true));

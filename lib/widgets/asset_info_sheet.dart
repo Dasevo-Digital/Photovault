@@ -124,7 +124,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     if (_asset.isStackCover && istFormatstapel(stapel)) {
       formate = [
         for (final a in await widget.db.assetsInStack(stapel!))
-          if (!a.isTrashed) a,
+          if (!a.isTrashed && !a.isLocked) a,
       ]..sort(vergleicheFassungen);
     }
     if (mounted && (formate.isNotEmpty || _formate.isNotEmpty)) {

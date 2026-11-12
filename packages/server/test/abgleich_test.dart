@@ -778,6 +778,16 @@ void main() {
       throwsA(isA<Serverfehler>()),
     );
 
+    // Nur Abgelehntes verwerfen (#358): Hat ein anderes Gerät die Ablehnung
+    // aufgehoben, bleibt das Foto, auch wenn ein alter Stand es verwerfen
+    // wollte.
+    final nicht = await v.schicke('api/v1/kammer/verwerfen', {
+      'ids': [id1],
+      'nurAbgelehnte': true,
+    });
+    expect(nicht['verworfen'], 0);
+    expect((await v.hole('api/v1/kammer'))['anzahl'], 2);
+
     // Freigeben: in die Bibliothek, aus der Kammer heraus.
     final f = await v.schicke('api/v1/kammer/freigeben', {
       'ids': [id1],

@@ -378,13 +378,16 @@ class Fotokammerdienst {
   }
 
   /// Löscht [ids] endgültig vom Server; gibt zurück, wie viele es waren.
-  Future<int> verwerfen(List<String> ids) async {
+  /// Mit [nurAbgelehnte] nur, was am Server noch abgelehnt ist (#358): Ein
+  /// anderes Gerät kann die Ablehnung inzwischen aufgehoben haben.
+  Future<int> verwerfen(List<String> ids, {bool nurAbgelehnte = false}) async {
     var n = 0;
     // Der Server nimmt höchstens 500 auf einmal.
     for (var i = 0; i < ids.length; i += 200) {
       final teil = ids.sublist(i, (i + 200).clamp(0, ids.length));
       final j = await verbindung.schicke('api/v1/kammer/verwerfen', {
         'ids': teil,
+        if (nurAbgelehnte) 'nurAbgelehnte': true,
       });
       _vergiss(teil);
       n += (j['verworfen'] as num?)?.toInt() ?? 0;

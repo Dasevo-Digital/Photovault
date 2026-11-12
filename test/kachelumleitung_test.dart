@@ -90,6 +90,16 @@ void main() {
           netz.get(Uri.parse('https://tile.openstreetmap.org/3/4/2.png')),
           throwsA(isA<http.ClientException>()),
         );
+        // Abgemeldet oder Token abgelaufen: ebenso, damit am Rechner die
+        // Kopie auf der Platte greift statt einer leeren Karte.
+        for (final s in [401, 403]) {
+          fang.status = s;
+          await expectLater(
+            netz.get(Uri.parse('https://tile.openstreetmap.org/3/4/2.png')),
+            throwsA(isA<http.ClientException>()),
+            reason: '$s',
+          );
+        }
         // Eine echte Antwort bleibt eine: 404 heisst, die Kachel gibt es
         // nicht (oder OpenTopoMap rendert sie noch).
         fang.status = 404;

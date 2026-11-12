@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http/io_client.dart';
 import 'package:kern/abgleich/kachelumleitung.dart' show serverKartenquellen;
 import 'package:kern/protokoll.dart';
 import 'package:path/path.dart' as p;
@@ -41,10 +42,12 @@ import 'fassungen_aufraeumen.dart';
 ///
 /// **Zurückhaltend.** Höchstens [gleichzeitig] Abrufe auf einmal und
 /// dieselbe Kachel nur einmal, auch wenn mehrere Geräte sie zugleich
-/// wollen. Geholt wird nur, was ein Gerät gerade anfragt, nie eine Gegend
-/// auf Vorrat. Antwortet der Anbieter nicht oder mit einem Fehler, wird er
-/// [ruhe] lang nicht mehr gefragt – sonst wartete bei einem Ausfall jede
-/// Kachel des Bildschirms auf ihre eigene Frist.
+/// wollen. Geholt wird nur, was ein Gerät anfragt – beim Ansehen und beim
+/// Vorladen am Rechner, nie von sich aus. Sagt der Anbieter 429 oder 503,
+/// oder scheitern drei Abrufe in Folge, wird er [ruhe] lang nicht mehr
+/// gefragt – sonst wartete bei einem Ausfall jede Kachel des Bildschirms
+/// auf ihre eigene Frist. Ein einzelner Fehler legt den Stil nicht für alle
+/// Konten lahm.
 ///
 /// **Ist der Anbieter weg, gilt die alte Kachel.** Eine abgelaufene Kopie
 /// ist besser als ein Loch; sie geht mit `max-age=0` hinaus, damit das
@@ -59,7 +62,13 @@ class Kartenkacheln {
     this.frist = const Duration(seconds: 15),
     this.ruhe = const Duration(seconds: 30),
     DateTime Function()? uhr,
-  }) : _netz = netz ?? http.Client(),
+  }) : _netz =
+           netz ??
+           // Hinter einem Proxy (`HTTPS_PROXY`), wie ihn ein Server ohne
+           // eigenen Weg ins Internet braucht; dart:io fragt ihn sonst nicht.
+           IOClient(
+             HttpClient()..findProxy = HttpClient.findProxyFromEnvironment,
+           ),
        _uhr = uhr ?? DateTime.now;
 
   /// Wohin die Kacheln kommen (`<PV_DATEN>/kartenkacheln`), flach als
@@ -91,6 +100,10 @@ class Kartenkacheln {
 
   final _laufend = <String, Future<_Abruf>>{};
   final _ruheBis = <String, DateTime>{};
+  final _fehlerInFolge = <String, int>{};
+  Future<void>? _aufraeumen;
+  var _nochmal = false;
+  File? _zuletzt;
   var _aktiv = 0;
   final _wartend = Queue<Completer<void>>();
 
@@ -183,14 +196,18 @@ class Kartenkacheln {
           bytes.isNotEmpty) {
         final gilt = _uhr().add(_haltbarkeit(kopf));
         await _lege(datei, bytes, gilt);
+        _fehlerInFolge.remove(stil);
         return _Geholt(gilt);
       }
       // 404 ist eine Antwort und keine Störung: Die Kachel gibt es nicht,
       // oder OpenTopoMap rendert sie noch (siehe kachelNochmalVersuchen in
-      // der App). Alles andere – 429, 5xx, eine Fehlerseite statt eines
-      // Bildes – heisst: erst einmal in Ruhe lassen.
-      if (status == 404) return const _Fehlt();
-      _ruheBis[stil] = _uhr().add(ruhe);
+      // der App). 429 und 503 heissen ausdrücklich: in Ruhe lassen. Eine
+      // Fehlerseite oder ein 500 erst, wenn es sich wiederholt.
+      if (status == 404) {
+        _fehlerInFolge.remove(stil);
+        return const _Fehlt();
+      }
+      _gescheitert(stil, sofort: status == 429 || status == 503);
       return const _Gestoert();
     } on FileSystemException catch (f) {
       // Die Platte, nicht der Anbieter: kein Grund, ihn zu schonen.
@@ -203,10 +220,19 @@ class Kartenkacheln {
           f is! _ZuGross) {
         rethrow;
       }
-      _ruheBis[stil] = _uhr().add(ruhe);
+      _gescheitert(stil);
       return const _Gestoert();
     } finally {
       _frei();
+    }
+  }
+
+  void _gescheitert(String stil, {bool sofort = false}) {
+    final n = (_fehlerInFolge[stil] ?? 0) + 1;
+    _fehlerInFolge[stil] = n;
+    if (sofort || n >= 3) {
+      _ruheBis[stil] = _uhr().add(ruhe);
+      _fehlerInFolge.remove(stil);
     }
   }
 
@@ -268,9 +294,41 @@ class Kartenkacheln {
     await teil.setLastModified(gilt);
     await teil.rename(datei.path);
     _bisAufraeumen -= bytes.length;
+    _zuletzt = datei;
     if (_bisAufraeumen <= 0) {
       _bisAufraeumen = grenze ~/ 20;
-      await begrenzeZwischenspeicher(ordner, grenze, behalten: datei);
+      _raeumeAuf();
+    }
+  }
+
+  /// Hält den Speicher unter [grenze] – neben der Anfrage, nicht in ihr:
+  /// Bei vollem Speicher sieht das Aufräumen zehntausende Dateien an, und
+  /// die Kachel, die es auslöst, hielte so lange einen der Abrufplätze.
+  /// Kommt unterdessen genug Neues dazu, läuft es danach gleich noch einmal.
+  void _raeumeAuf() {
+    if (_aufraeumen != null) {
+      _nochmal = true;
+      return;
+    }
+    _aufraeumen = () async {
+      do {
+        _nochmal = false;
+        try {
+          final behalten = _zuletzt;
+          if (behalten != null) {
+            await begrenzeZwischenspeicher(ordner, grenze, behalten: behalten);
+          }
+        } on Object catch (f) {
+          protokoll('Kartenkacheln nicht aufgeräumt: $f');
+        }
+      } while (_nochmal);
+    }().whenComplete(() => _aufraeumen = null);
+  }
+
+  /// Wartet, bis ein laufendes Aufräumen fertig ist – für Tests.
+  Future<void> aufraeumenFertig() async {
+    for (var l = _aufraeumen; l != null; l = _aufraeumen) {
+      await l;
     }
   }
 

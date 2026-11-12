@@ -306,6 +306,14 @@ void main() {
     });
   });
 
+  test('PV_KARTEN (#180)', () {
+    bool karten(String? w) =>
+        Einstellungen.ausUmgebung({'PV_KARTEN': ?w}).karten;
+    expect(karten(null), isTrue);
+    expect(karten('an'), isTrue);
+    expect(karten(' AUS '), isFalse);
+  });
+
   test('PV_SELBST_RECHNEN', () {
     Set<Analysestufe> aus(String? w) =>
         Einstellungen.ausUmgebung({'PV_SELBST_RECHNEN': ?w}).selbstRechnen;

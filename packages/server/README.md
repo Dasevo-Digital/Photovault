@@ -45,6 +45,7 @@ Alles über Umgebungsvariablen, gleich ob Docker, systemd oder von Hand:
 | `PV_WEB` | im Bündel `web/` | Ordner der Weboberfläche (`/app/`); `aus` schaltet sie ab |
 | `PV_BESCHLEUNIGER`        | `cpu`                 | `openvino`, `cuda`, siehe Beschleuniger |
 | `PV_SELBST_RECHNEN`       | `alles`               | `nichts` oder Stufen, siehe Rechenhilfe |
+| `PV_KARTEN`               | `an`                  | `aus`: keine Kartenkacheln über den Server |
 | `PV_SPEICHER_WARNUNG`     | `85`                  | ab so viel Prozent belegt: knapp        |
 | `PV_SPEICHER_MINDEST`     | `2`                   | unter so vielen GB frei: keine Uploads  |
 | `PV_SICHERUNG`            | –                     | Ziel der nächtlichen Sicherung, siehe unten |
@@ -454,7 +455,10 @@ Rechner.
 OpenTopoMap holt der Server selbst (`GET /api/v1/karte/…`, in der
 Weboberfläche, auf dem Handy und am verbundenen Rechner): mit eigener
 Kennung (`PhotoVault-Server/<Fassung>`), höchstens vier Abrufe zugleich und
-nur, was ein Gerät gerade ansieht. Er hält jede Kachel so lange vor, wie
+nur, was ein Gerät anfragt – beim Ansehen und beim Vorladen am Rechner, das
+ganze Gegenden um die Fotos holt. Ein Server ohne Weg ins Internet schaltet
+es mit `PV_KARTEN=aus` ab (die Geräte holen dann selbst); hinter einem
+Proxy nimmt er `HTTPS_PROXY`. Er hält jede Kachel so lange vor, wie
 der Anbieter sagt, mindestens aber eine Woche, zusammen höchstens 1 GB in
 `<PV_DATEN>/kartenkacheln`. Die Anbieter sehen damit nur den Server, nicht
 die IP-Adresse von Besuchern und Geräten. Ist der Anbieter nicht

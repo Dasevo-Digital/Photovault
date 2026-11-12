@@ -604,7 +604,11 @@ Client kachelNetzClient() => _kachelNetz ??= Offlinerueckfall(
         Kachelmitschnitt.instanz,
       ),
       retries: kachelVersuche,
-      when: (antwort) => kachelNochmalVersuchen(antwort.statusCode),
+      // Der eigene Server lässt einen gestörten Anbieter schon ruhen;
+      // nachfragen hiesse nur, den Rückfall auf die Platte hinauszuzögern.
+      when: (antwort) =>
+          !(antwort.request?.url.path.contains('/api/v1/karte/') ?? false) &&
+          kachelNochmalVersuchen(antwort.statusCode),
       whenError: (fehler, _) => kachelFehlerNochmalVersuchen(fehler),
       delay: kachelWartezeit,
     ),

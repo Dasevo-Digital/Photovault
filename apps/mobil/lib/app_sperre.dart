@@ -112,8 +112,20 @@ class AppSperre extends ChangeNotifier {
     }
   }
 
+  /// Gibt die App frei, wenn Face ID, Touch ID oder der Gerätecode es
+  /// bestätigen.
+  ///
+  /// **Kein Aussperren.** Hat das Gerät gar keinen Code mehr (jemand hat
+  /// ihn nach dem Einschalten entfernt), liesse sich nie wieder prüfen,
+  /// und die Einstellung zum Abschalten läge hinter der Sperre. Dann ist
+  /// das Gerät ohnehin offen: Die Sperre schaltet sich ab.
   Future<bool> entsperre(String grund) async {
     if (!gesperrt) return true;
+    if (!await verfuegbar()) {
+      debugPrint('App-Sperre: kein Gerätecode mehr – abgeschaltet');
+      await setze(an: false);
+      return true;
+    }
     final ok = await pruefe(grund);
     if (ok) {
       gesperrt = false;

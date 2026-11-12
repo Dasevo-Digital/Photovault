@@ -103,11 +103,12 @@ class Kachelumleitung extends http.BaseClient {
     // **Kommt der Server nicht an die Kachel, zählt das wie kein Netz.**
     // 502 heisst: Der Anbieter antwortet ihm nicht, und eine ältere Kopie
     // hat er nicht; 503 und 504 kommen vom Reverse Proxy, wenn der Server
-    // selbst fehlt. Als Fehlerstatus liesse flutter_map die eigene Kopie
-    // auf der Platte links liegen (der Rückfall am Rechner greift nur bei
-    // einem Fehler der Verbindung, siehe `Offlinerueckfall`); als
-    // Verbindungsfehler zeigt es sie.
-    if (const {502, 503, 504}.contains(antwort.statusCode)) {
+    // selbst fehlt. 401 und 403: Das Gerät ist abgemeldet oder sein Token
+    // abgelaufen – auch dann soll die Karte nicht leer werden. Am Rechner
+    // greift so der Rückfall auf die Kopie auf der Platte
+    // (`Offlinerueckfall`, nur bei Fehlern der Verbindung); am Handy hilft
+    // es nicht, dort zeigt flutter_map bei einem Fehler nichts.
+    if (const {401, 403, 502, 503, 504}.contains(antwort.statusCode)) {
       await antwort.stream.drain<void>();
       throw http.ClientException(
         'Tile server unavailable (${antwort.statusCode})',
