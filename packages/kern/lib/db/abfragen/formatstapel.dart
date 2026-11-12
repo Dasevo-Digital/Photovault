@@ -51,8 +51,8 @@ final _namenszusatz = RegExp(
 ///
 /// Dass zwei verschiedene Aufnahmen so denselben Stamm bekommen, ist kein
 /// Fehler: [formatgruppen] verlangt dazu noch höchstens zwei Sekunden
-/// Abstand, keine zwei Kameras, keine zwei Nummern ([_formatnummer]) und
-/// zwei verschiedene Formate.
+/// Abstand, keine zwei Kameras, keine zwei Nummern ([_formatnummer]),
+/// zwei verschiedene Formate und keines doppelt (#375).
 String formatstamm(String name) => _zerlege(name).$1;
 
 /// Die Nummern unter den Zusätzen (` 2`, ` (2)`, `+2`), als Zahl
@@ -106,7 +106,8 @@ bool _selbeKamera(AssetData a, AssetData b) {
 ///
 /// Gleicher [formatstamm], Aufnahmezeit innerhalb von [formatgleichAbstand],
 /// keine zwei verschiedenen Kameras, keine zwei verschiedenen Nummern
-/// ([_ordneNachNummer]) und mindestens zwei Formate in der Gruppe. Ein
+/// ([_ordneNachNummer]), mindestens zwei Formate in der Gruppe und keines
+/// zweimal (#375). Ein
 /// geschätztes Datum zählt nicht: Es sagt nichts darüber, ob
 /// zwei Dateien zur selben Aufnahme gehören. Auch was schon in einer Serie
 /// oder in Varianten liegt, gehört dazu; was damit geschieht, entscheidet
@@ -155,11 +156,31 @@ List<List<AssetData>> _formateinteilung(Iterable<AssetData> bilder) {
 /// Zweifel bleibt es sichtbar. Und nur, wenn eine Seite allein kein Paar
 /// ist: `IMG_0001.CR3/.JPG` neben `IMG_0001 2.CR3/.JPG` sind zwei
 /// Aufnahmen (#370).
+///
+/// **Kein Format zweimal (#375).** Zwei Dateien desselben Formats sind nie
+/// dieselbe Aufnahme: Eine bitgleiche Kopie nimmt der Import gar nicht erst
+/// an, also ist `IMG_0001 2.CR3` neben `IMG_0001.CR3` ein anderes Bild – ein
+/// zweites Gehäuse in derselben Sekunde, ein bearbeiteter Export, eine neu
+/// gespeicherte Datei. Verdeckt im Stapel sähe es niemand mehr. Eine Datei
+/// kommt deshalb nur in eine Gruppe, in der ihr Format noch fehlt, und eine
+/// Gruppe ohne Nummer nur zu einer mit Nummer, wenn beide keine Formate
+/// teilen. Bei gleicher Zeit kommt der schlichtere Name zuerst, also
+/// `IMG_0531.jpg` vor `IMG_0531-1bd0b0c6.jpg`: So hängt nicht an der
+/// Reihenfolge in der Datenbank, welches JPEG beim RAW liegt.
 List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
   final nummer = {
     for (final a in gleichnamig) a.id: _formatnummer(a.originalFileName),
   };
-  gleichnamig.sort((a, b) => a.fileCreatedAt.compareTo(b.fileCreatedAt));
+  gleichnamig.sort((a, b) {
+    final zeit = a.fileCreatedAt.compareTo(b.fileCreatedAt);
+    if (zeit != 0) return zeit;
+    final laenge = a.originalFileName.length.compareTo(
+      b.originalFileName.length,
+    );
+    if (laenge != 0) return laenge;
+    final name = a.originalFileName.compareTo(b.originalFileName);
+    return name != 0 ? name : a.id.compareTo(b.id);
+  });
   final offen = <List<AssetData>>[];
   for (final a in gleichnamig) {
     final passend = offen
@@ -168,7 +189,8 @@ List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
               nummer[g.first.id] == nummer[a.id] &&
               a.fileCreatedAt.difference(g.first.fileCreatedAt) <=
                   formatgleichAbstand &&
-              g.every((b) => _selbeKamera(a, b)),
+              g.every((b) => _selbeKamera(a, b)) &&
+              g.every((b) => _formatVon(b) != _formatVon(a)),
         )
         .firstOrNull;
     if (passend == null) {
@@ -189,7 +211,9 @@ List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
     for (final u in ohne)
       u: [
         for (final n in mit)
-          if (_passenZusammen(u, n) && !(_vollstaendig(u) && _vollstaendig(n)))
+          if (_passenZusammen(u, n) &&
+              !(_vollstaendig(u) && _vollstaendig(n)) &&
+              _formateGetrennt(u, n))
             n,
       ],
   };
@@ -205,6 +229,12 @@ List<List<AssetData>> _ordneNachNummer(List<AssetData> gleichnamig) {
     for (final g in offen)
       if (!dazu.contains(g)) g,
   ];
+}
+
+/// Ob [u] und [n] kein Format gemeinsam haben (#375).
+bool _formateGetrennt(List<AssetData> u, List<AssetData> n) {
+  final formate = {for (final a in u) _formatVon(a)};
+  return n.every((b) => !formate.contains(_formatVon(b)));
 }
 
 /// Ob [u] und [n] zusammen noch eine Aufnahme sein können: alles innerhalb
@@ -530,10 +560,11 @@ extension Formatstapel on AppDatabase {
   /// Stapel.
   ///
   /// Nur, wo Dateien verschiedener Nummern zusammenliegen ([_formatnummer],
-  /// auch eine ohne neben einer mit): Nur dort kann eine neue Datei eine
-  /// frühere Zuordnung mehrdeutig machen, etwa `Hochzeit 2.CR3` nach
-  /// `Hochzeit.jpg` und `Hochzeit 1.CR3` (#370). Alles andere bleibt, auch
-  /// wenn sich die Gruppen anders schnitten. Papierkorb und Gesperrtes
+  /// auch eine ohne neben einer mit) oder ein Format in den Gruppen doppelt
+  /// vorkommt: Nur dort kann eine neue Datei eine frühere Zuordnung
+  /// mehrdeutig machen, etwa `Hochzeit 2.CR3` nach `Hochzeit.jpg` und
+  /// `Hochzeit 1.CR3` (#370) oder ein zweites JPEG gleichen Namens (#375).
+  /// Alles andere bleibt, auch wenn sich die Gruppen anders schnitten. Papierkorb und Gesperrtes
   /// zählen nicht mit, und von Hand Herausgeholtes ist gar nicht dabei.
   ///
   /// Ein Formatstapel löst sich ganz auf; was eindeutig ist, stapelt der
@@ -555,6 +586,19 @@ extension Formatstapel on AppDatabase {
         {for (final a in m) _formatnummer(a.originalFileName)}.length > 1;
     bool getrennt(Iterable<AssetData> m) =>
         {for (final a in m) gruppeVon[a.id]}.length > 1;
+    // Liegt ein Format in den Gruppen der Mitglieder zweimal, hat eine neue
+    // Datei gleichen Formats die Zuordnung mehrdeutig gemacht (#375): etwa
+    // `IMG_0531.jpg` nach `IMG_0531.CR3` und `IMG_0531-1bd0b0c6.jpg`.
+    bool doppelt(Iterable<AssetData> m) {
+      final formate = <String?>{};
+      for (final i in {for (final a in m) gruppeVon[a.id]!}) {
+        for (final a in einteilung[i]) {
+          if (!formate.add(_formatVon(a))) return true;
+        }
+      }
+      return false;
+    }
+
     final jeStapel = <String, List<AssetData>>{};
     for (final a in bilder) {
       final s = a.stackId;
@@ -565,7 +609,7 @@ extension Formatstapel on AppDatabase {
     var n = 0;
     final titelbilder = <String>{};
     for (final MapEntry(key: s, value: m) in jeStapel.entries) {
-      if (istFormatstapel(s) && gemischt(m) && getrennt(m)) {
+      if (istFormatstapel(s) && getrennt(m) && (gemischt(m) || doppelt(m))) {
         titelbilder.addAll([
           for (final a in m)
             if (a.isStackCover) a.id,

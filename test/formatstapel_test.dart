@@ -385,14 +385,71 @@ void main() {
       expect((await zeile('j')).stackId, stapel);
     });
 
-    test('eindeutig: die Kopie eines RAWs kommt zu RAW und JPEG', () async {
-      await lege('r', 'IMG_1144.CR3');
-      await lege('k', 'IMG_1144 2.CR3');
-      await lege('j', 'IMG_1144.JPG');
-      expect(await db.stapleFormate(), 1);
-      expect(await sichtbar(), {'j'});
-      expect((await zeile('k')).stackId, (await zeile('j')).stackId);
-    });
+    test(
+      'ein zweites RAW bleibt sichtbar, RAW und JPEG stapeln (#375)',
+      () async {
+        // Eine bitgleiche Kopie nimmt der Import nicht an; `IMG_1144 2.CR3`
+        // ist ein anderes Bild, etwa von einem zweiten Gehäuse.
+        await lege('r', 'IMG_1144.CR3');
+        await lege('k', 'IMG_1144 2.CR3');
+        await lege('j', 'IMG_1144.JPG');
+        expect(await db.stapleFormate(), 1);
+        expect(await sichtbar(), {'j', 'k'});
+        expect((await zeile('r')).stackId, (await zeile('j')).stackId);
+        expect((await zeile('k')).stackId, isNull);
+      },
+    );
+
+    for (final reihe in [
+      ['a1', 'a2', 'b1'],
+      ['b1', 'a1', 'a2'],
+      ['a2', 'b1', 'a1'],
+      ['b1', 'a2', 'a1'],
+    ]) {
+      test('kein Format zweimal, Datei für Datei (#375): $reihe', () async {
+        await db.fuehreAus(const FormateStapelnSetzen(true));
+        for (final id in reihe) {
+          await lege(id, switch (id) {
+            'a1' => 'IMG_0001.CR3',
+            'a2' => 'IMG_0001.JPG',
+            _ => 'IMG_0001 2.CR3',
+          }, kamera: 'Canon EOS R5');
+          await nb.neueAufnahme(id);
+        }
+        expect(await sichtbar(), {'a2', 'b1'});
+        expect((await zeile('a1')).stackId, (await zeile('a2')).stackId);
+        expect((await zeile('b1')).stackId, isNull);
+      });
+    }
+
+    for (final reihe in [
+      ['c', 'j', 'h'],
+      ['c', 'h', 'j'],
+      ['h', 'c', 'j'],
+    ]) {
+      test(
+        'von zwei JPEG gleichen Namens das schlichtere (#375): $reihe',
+        () async {
+          await db.fuehreAus(const FormateStapelnSetzen(true));
+          for (final id in reihe) {
+            await lege(id, switch (id) {
+              'c' => 'IMG_0531.CR3',
+              'j' => 'IMG_0531.JPG',
+              _ => 'IMG_0531-1bd0b0c6.JPG',
+            }, kamera: 'Canon EOS R10');
+            await nb.neueAufnahme(id);
+          }
+          expect(await sichtbar(), {'j', 'h'});
+          expect((await zeile('c')).stackId, (await zeile('j')).stackId);
+          expect((await zeile('h')).stackId, isNull);
+          expect(
+            await db.stapleFormate(),
+            0,
+            reason: 'ein voller Lauf ändert nichts',
+          );
+        },
+      );
+    }
 
     test('zwei ohne Nummer an einer mit Nummer: keine kommt dazu', () async {
       // JPEG und HEIC von zwei Kameras, das RAW ohne Angabe passte zu beiden.
