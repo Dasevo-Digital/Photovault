@@ -484,12 +484,16 @@ class Sitzung extends ChangeNotifier {
 
   /// Ob [holeServerfassung] seit dem Öffnen einmal durchkam.
   var _fassungGeholt = false;
-  var _holtFassung = false;
+  Future<void>? _fassungLauf;
 
-  Future<void> holeServerfassung() async {
+  /// Fragt den Server nach Fassung und Fähigkeiten. Läuft schon eine
+  /// Abfrage, wartet der Aufruf auf diese, statt eine zweite zu starten.
+  Future<void> holeServerfassung() => _fassungLauf ??= _holeServerfassung()
+      .whenComplete(() => _fassungLauf = null);
+
+  Future<void> _holeServerfassung() async {
     final a = abgleich;
-    if (a == null || _holtFassung) return;
-    _holtFassung = true;
+    if (a == null) return;
     try {
       final z = await a.verbindung.hole('api/v1/zustand');
       final f = z['fassung'] as String?;
@@ -504,8 +508,6 @@ class Sitzung extends ChangeNotifier {
       // Beim nächsten Mal.
     } on Serverfehler {
       // Ebenso.
-    } finally {
-      _holtFassung = false;
     }
   }
 
