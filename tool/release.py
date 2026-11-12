@@ -311,7 +311,7 @@ def bauen(args):
     fertig = []
     if 'mac' in nur:
         try:
-            _baue_mac(fassung, u)
+            _baue_mac(fassung, u, z)
         except SystemExit as e:
             fehler.append(f'macOS: {e}')
 
@@ -355,11 +355,13 @@ def bauen(args):
         sys.exit('\n'.join(fehler))
 
 
-def _baue_mac(fassung, u):
+def _baue_mac(fassung, u, z):
     # Xcode lädt Swift-Pakete (ONNX Runtime) beim ersten Bau eines Baums.
     try:
         lauf(['flutter', 'build', 'macos', '--release'], versuche=3)
+        _signiere_mac(z)
         _packe_mac(fassung, u)
+        _notarisiere_mac(fassung, u, z)
     finally:
         # Auch wenn etwas scheitert: Die Bündel unter build/ fänden Spotlight
         # und Launchpad – und öffneten womöglich die echte Bibliothek. Vorher
@@ -368,6 +370,41 @@ def _baue_mac(fassung, u):
             print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
         else:
             lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
+
+
+def _signiere_mac(z):
+    """Signiert das Bündel mit Hardened Runtime (#319, #1/#89).
+
+    Der Flutter-Bau signiert ad-hoc und ohne Hardened Runtime; damit liesse
+    sich fremder Code über DYLD_INSERT_LIBRARIES in die App laden. Steht in
+    ziele.json eine `mac_signatur` (der Name einer „Developer ID
+    Application“ im Schlüsselbund), signiert er damit, sonst ad-hoc.
+    Das Skript prüft danach jedes Teil nach und bricht ab, wenn eines nicht
+    gehärtet ist."""
+    app = REPO / 'build/macos/Build/Products/Release/Photo Vault.app'
+    kennung = z.get('mac_signatur')
+    lauf(['bash', str(REPO / 'tool/macos_signieren.sh'), str(app),
+          *(['--kennung', kennung] if kennung else [])])
+
+
+def _notarisiere_mac(fassung, u, z):
+    """Lässt das Paket von Apple notarisieren und heftet das Ticket an,
+    sofern eine Developer-ID signiert hat und ein Profil für notarytool
+    eingerichtet ist (`mac_notar_profil` in ziele.json, angelegt mit
+    `xcrun notarytool store-credentials`). Danach öffnet macOS die App ohne
+    Rechtsklick. Ohne beides bleibt es beim gehärteten, aber nicht
+    notarisierten Bündel."""
+    profil = z.get('mac_notar_profil')
+    if not (z.get('mac_signatur') and profil):
+        print('macOS: nicht notarisiert (keine Developer-ID oder kein Profil für notarytool)')
+        return
+    paket = f'PhotoVault-{fassung}-macos.zip'
+    lauf(['xcrun', 'notarytool', 'submit', paket, '--keychain-profile', profil, '--wait'], cwd=u, versuche=2)
+    lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u)
+    lauf(['xcrun', 'stapler', 'validate', 'Photo Vault.app'], cwd=u)
+    # Das Paket neu, mit dem angehefteten Ticket.
+    lauf(['rm', '-f', paket], cwd=u)
+    lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', paket], cwd=u)
 
 
 def _packe_mac(fassung, u):

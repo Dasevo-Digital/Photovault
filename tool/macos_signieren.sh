@@ -84,11 +84,15 @@ fi
 
 titel "Von innen nach aussen signieren"
 
+# Ad-hoc ohne Zeitstempel: Eine ad-hoc-Signatur bekommt keinen vom
+# Zeitstempelserver, und der Versuch liefe nur eine Minute in einen
+# Zeitüberlauf. Mit einer Developer-ID dagegen mit: Die Notarisierung
+# verlangt einen sicheren Zeitstempel.
+if [ "$KENNUNG" = "-" ]; then ZEITSTEMPEL="--timestamp=none"; else ZEITSTEMPEL="--timestamp"; fi
+
 signiere() { # pfad [zusätzliche Argumente]
   local ziel="$1"; shift
-  # --timestamp=none, weil eine ad-hoc-Signatur keinen Zeitstempelserver
-  # bekommt und der Versuch nur eine Minute in einen Zeitüberlauf läuft.
-  if codesign --force --options runtime --timestamp=none \
+  if codesign --force --options runtime "$ZEITSTEMPEL" \
        --sign "$KENNUNG" "$@" "$ziel" 2>/dev/null; then
     return 0
   fi
