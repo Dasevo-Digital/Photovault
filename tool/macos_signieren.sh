@@ -102,14 +102,24 @@ if [ "$KENNUNG" = "-" ]; then ZEITSTEMPEL="--timestamp=none"; else ZEITSTEMPEL="
 
 signiere() { # pfad [zusätzliche Argumente]
   local ziel="$1"; shift
-  local meldung
+  local meldung versuch
   # Die Meldung von codesign behalten: Mit einer Developer-ID scheitert es
   # etwa am nicht erreichbaren Zeitstempelserver, und ohne sie hiesse es
-  # nur, dass es scheiterte (#382).
-  if meldung="$(codesign --force --options runtime "$ZEITSTEMPEL" \
-       --sign "$KENNUNG" "$@" "$ziel" 2>&1)"; then
-    return 0
-  fi
+  # nur, dass es scheiterte (#382). Der Zeitstempeldienst von Apple setzt
+  # mitunter aus – bei 3.67.2 scheiterten so 16 von 25 Signaturen mit „A
+  # timestamp was expected but was not found“, Minuten später ging es. Ein
+  # solcher Aussetzer wird darum bis zu viermal mit Pause wiederholt.
+  for versuch in 1 2 3 4 5; do
+    if meldung="$(codesign --force --options runtime "$ZEITSTEMPEL" \
+         --sign "$KENNUNG" "$@" "$ziel" 2>&1)"; then
+      return 0
+    fi
+    case "$meldung" in
+      *timestamp*|*"timed out"*|*"network"*) ;;
+      *) break ;;
+    esac
+    [ "$versuch" -lt 5 ] && sleep 15
+  done
   fehler "$(basename "$ziel"): ${meldung##*$'\n'}"
   return 1
 }
