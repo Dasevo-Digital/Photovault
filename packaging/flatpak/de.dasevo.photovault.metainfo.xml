@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.2" date="2026-11-13">
+      <description>
+        <p>The app lock in the mobile app measures time in the background by the device uptime, so setting the clock back no longer gets past it; cancelling Face ID no longer brings the prompt back in a loop.</p>
+        <p>Finishing a review in staging only releases or discards photos that were on screen, and waits for ratings still on their way.</p>
+        <p>With PV_KARTEN=aus the browser is redirected to the map provider, so its maps work again.</p>
+      </description>
+    </release>
     <release version="3.67.1" date="2026-11-12">
       <description>
         <p>Archive: take photos out of the timeline without locking them.</p>
