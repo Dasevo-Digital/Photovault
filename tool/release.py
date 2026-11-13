@@ -40,6 +40,7 @@ Wohin es geht, steht nicht hier, sondern in
     {
       "gitea_api": "https://<gitea>/api/v1/repos/<besitzer>/<repo>",
       "upload_basis": "~/Desktop",
+      "arbeit_basis": "<Ordner ausserhalb von /tmp, z. B. …/worktrees.noindex/arbeit>",
       "linux_ssh": "<ssh-name>", "linux_repo": "~/photo_vault",
       "windows_ssh": "<ssh-name>",
       "windows_flutter": "C:\\\\src\\\\flutter\\\\bin",
@@ -142,8 +143,14 @@ def upload_ordner(z, fassung):
     return o
 
 
-def arbeitsordner(fassung):
-    o = Path(tempfile.gettempdir()) / f'pv-release-{fassung}'
+def arbeitsordner(fassung, z=None):
+    """Wo die Serverpakete gebaut werden, darunter das für den eigenen
+    Server (OpenVINO), das nicht in den Upload-Ordner kommt. Ohne
+    `arbeit_basis` im Temp-Ordner – den leerte macOS bei 3.67.2 aber
+    innerhalb von Stunden, und das Paket für `einspielen --server` war weg
+    (#382). Besser neben den Worktrees in einem `.noindex`-Ordner."""
+    basis = (z or {}).get('arbeit_basis')
+    o = (Path(os.path.expanduser(basis)) if basis else Path(tempfile.gettempdir())) / f'pv-release-{fassung}'
     o.mkdir(parents=True, exist_ok=True)
     return o
 
@@ -278,7 +285,7 @@ def bauen(args):
                       ausgabe=True).strip()
         if anders:
             sys.exit(f'HEAD weicht ausserhalb von tool/ von {marke} ab – erst vorbereiten:\n{anders}')
-    a = arbeitsordner(fassung)
+    a = arbeitsordner(fassung, z)
     u = upload_ordner(z, fassung)
 
     # Linux und Windows laufen im Hintergrund, während hier macOS baut.
@@ -689,7 +696,7 @@ def entwurf(args):
 def einspielen(args):
     z = ziele()
     fassung = args.fassung
-    a = arbeitsordner(fassung)
+    a = arbeitsordner(fassung, z)
     u = upload_ordner(z, fassung)
     from installation import FernInstallation, MacInstallation, Installationsfehler
     try:
