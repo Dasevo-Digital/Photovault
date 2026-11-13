@@ -100,9 +100,10 @@ titel "Von innen nach aussen signieren"
 # verlangt einen sicheren Zeitstempel.
 if [ "$KENNUNG" = "-" ]; then ZEITSTEMPEL="--timestamp=none"; else ZEITSTEMPEL="--timestamp"; fi
 
+WIEDERHOLT=0
 signiere() { # pfad [zusätzliche Argumente]
   local ziel="$1"; shift
-  local meldung versuch
+  local meldung versuch grund
   # Die Meldung von codesign behalten: Mit einer Developer-ID scheitert es
   # etwa am nicht erreichbaren Zeitstempelserver, und ohne sie hiesse es
   # nur, dass es scheiterte (#382). Der Zeitstempeldienst von Apple setzt
@@ -114,10 +115,18 @@ signiere() { # pfad [zusätzliche Argumente]
          --sign "$KENNUNG" "$@" "$ziel" 2>&1)"; then
       return 0
     fi
-    case "$meldung" in
-      *timestamp*|*"timed out"*|*"network"*) ;;
+    # Nur der Grund, ohne den Pfad davor (ein Teil namens „network…“
+    # wäre sonst immer ein Aussetzer), und gleich wie geschrieben.
+    grund="${meldung##*$'\n'}"
+    grund="$(printf '%s' "${grund##*: }" | tr '[:upper:]' '[:lower:]')"
+    case "$grund" in
+      *timestamp*|*"timed out"*|*network*|*offline*|*resolve*) ;;
       *) break ;;
     esac
+    # Höchstens 20 Wiederholungen für alle Teile zusammen: Ist der Dienst
+    # ganz weg, bricht der Bau nach Minuten ab, nicht nach Stunden.
+    [ "$WIEDERHOLT" -ge 20 ] && break
+    WIEDERHOLT=$((WIEDERHOLT + 1))
     [ "$versuch" -lt 5 ] && sleep 15
   done
   fehler "$(basename "$ziel"): ${meldung##*$'\n'}"

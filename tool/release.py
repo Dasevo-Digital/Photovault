@@ -62,6 +62,7 @@ import json
 import os
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -152,6 +153,15 @@ def arbeitsordner(fassung, z=None):
     basis = (z or {}).get('arbeit_basis')
     o = (Path(os.path.expanduser(basis)) if basis else Path(tempfile.gettempdir())) / f'pv-release-{fassung}'
     o.mkdir(parents=True, exist_ok=True)
+    if basis:
+        # Dort räumt niemand auf: Je Fassung liegen rund 200 MB Serverpakete.
+        # Die zwei neuesten anderen bleiben, für ein Zurück.
+        andere = sorted((p for p in o.parent.glob('pv-release-*')
+                         if p != o and p.is_dir() and re.fullmatch(r'pv-release-\d+\.\d+\.\d+', p.name)),
+                        key=lambda p: p.stat().st_mtime, reverse=True)
+        for alt in andere[2:]:
+            shutil.rmtree(alt, ignore_errors=True)
+            print('Arbeitsordner entfernt:', alt.name)
     return o
 
 
@@ -426,6 +436,7 @@ def _notarisiere_mac(fassung, u, z):
     antwort = {}
     for versuch in range(2):
         print('›', ' '.join(befehl), flush=True)
+        beginn = time.monotonic()
         r = subprocess.run(befehl, cwd=u, text=True, capture_output=True)
         antwort = _letztes_json(r.stdout)
         # Mit einer Kennung liegt das Paket bei Apple – auch wenn die Zeit
@@ -434,6 +445,12 @@ def _notarisiere_mac(fassung, u, z):
             break
         meldung = (r.stderr or r.stdout or '').strip()
         print(f'notarytool ohne Einreichung (Code {r.returncode}): {meldung[-600:]}', flush=True)
+        # Lief es lange, war das Paket wohl doch bei Apple und nur die
+        # Antwort fehlt – noch einmal einzureichen hiesse, wieder Stunden zu
+        # warten (#382).
+        if time.monotonic() - beginn > 600:
+            sys.exit('notarytool lief lange und meldete keine Einreichung – nicht noch einmal eingereicht. '
+                     f'Stand: xcrun notarytool history --keychain-profile {profil}')
         if versuch == 0:
             print('Neuer Versuch in 90 s.', flush=True)
             time.sleep(90)
@@ -441,15 +458,16 @@ def _notarisiere_mac(fassung, u, z):
     if status != 'Accepted':
         kennung = antwort.get('id')
         if kennung and status in (None, 'In Progress'):
-            sys.exit(f'Apple hat nach sechs Stunden noch nicht entschieden. Die Einreichung {kennung} '
-                     f'läuft weiter: xcrun notarytool info {kennung} --keychain-profile {profil}')
+            sys.exit(f'Apple hat nach sechs Stunden noch nicht entschieden (Einreichung {kennung}, '
+                     f'xcrun notarytool info {kennung} --keychain-profile {profil}). Das Paket ist '
+                     'weggeräumt; nach der Annahme mit bauen --nur mac neu bauen.')
         if kennung:
             lauf(['xcrun', 'notarytool', 'log', kennung, '--keychain-profile', profil], cwd=u, pruefen=False)
         sys.exit(f'Apple hat das Paket nicht notarisiert: {status or "keine Antwort"} {antwort.get("message", "")}'.strip())
     print(f'macOS: notarisiert ({antwort.get("id")})', flush=True)
     # Gleich nach der Annahme findet stapler das Ticket mitunter noch nicht
     # („Record not found“). Scheitert es, wäre die Notarisierung vertan.
-    lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u, versuche=3, pause=60)
+    lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u, versuche=4, pause=90)
     lauf(['xcrun', 'stapler', 'validate', 'Photo Vault.app'], cwd=u)
     # Das Paket neu, mit dem angehefteten Ticket.
     lauf(['rm', '-f', paket], cwd=u)
@@ -458,27 +476,24 @@ def _notarisiere_mac(fassung, u, z):
 
 def _letztes_json(text):
     """Das letzte JSON-Objekt in [text]. Mit `--output-format json` gibt
-    notarytool laut Hilfe am Ende genau eines aus; stünde davor doch noch
-    etwas, hielte der Bau eine Annahme sonst für „keine Antwort“ und reichte
-    dasselbe Paket ein zweites Mal ein."""
-    zeilen = (text or '').strip().splitlines()
-    for i in range(len(zeilen) - 1, -1, -1):
-        if not zeilen[i].lstrip().startswith('{'):
+    notarytool laut Hilfe am Ende genau eines aus; stünde davor oder danach
+    doch noch etwas, hielte der Bau eine Annahme sonst für „keine Antwort“
+    und reichte dasselbe Paket ein zweites Mal ein. Verschachtelte Objekte
+    zählen zu ihrem äusseren."""
+    text = text or ''
+    letztes = {}
+    dekoder = json.JSONDecoder()
+    i = text.find('{')
+    while i != -1:
+        try:
+            wert, ende = dekoder.raw_decode(text, i)
+        except json.JSONDecodeError:
+            i = text.find('{', i + 1)
             continue
-        # Ab dieser Zeile bis zum Ende: eine Zeile oder ein eingerücktes
-        # Objekt über mehrere.
-        for stueck in (zeilen[i], '\n'.join(zeilen[i:])):
-            try:
-                wert = json.loads(stueck)
-            except json.JSONDecodeError:
-                continue
-            if isinstance(wert, dict):
-                return wert
-    try:
-        wert = json.loads(text or '')
-    except (json.JSONDecodeError, TypeError):
-        return {}
-    return wert if isinstance(wert, dict) else {}
+        if isinstance(wert, dict):
+            letztes = wert
+        i = text.find('{', ende)
+    return letztes
 
 
 def _packe_mac(fassung, u):
@@ -535,6 +550,14 @@ def _baue_server(fassung, marke, a, u):
     for arch in ['amd64', 'arm64']:
         lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
               str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])
+
+
+def _sha256(pfad):
+    h = hashlib.sha256()
+    with open(pfad, 'rb') as f:
+        for stueck in iter(lambda: f.read(1 << 20), b''):
+            h.update(stueck)
+    return h.hexdigest()
 
 
 def summen(u, fassung):
@@ -621,10 +644,13 @@ def _lade_anhang(anhang, tok):
     if not url:
         return ''
     try:
-        req = urllib.request.Request(url, headers={'Authorization': 'token ' + tok})
+        req = urllib.request.Request(url)
+        # Nur an diese Adresse: Leitete Gitea zu einem Speicher weiter,
+        # ginge das Token sonst mit (#382).
+        req.add_unredirected_header('Authorization', 'token ' + tok)
         with urllib.request.urlopen(req, timeout=60) as a:
             return a.read(1 << 20).decode('utf-8', 'replace')
-    except (urllib.error.URLError, OSError):
+    except Exception:  # noqa: BLE001 – dann gilt alles als anders
         return ''
 
 
@@ -642,13 +668,22 @@ def entwurf(args):
     if st != 200 or not isinstance(rel, dict):
         _, alle = gitea(z, '/releases?draft=true&limit=30', tok=tok)
         rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
+    # Ein veröffentlichtes Release bleibt, wie es ist (#382): Der Abgleich
+    # nach GitHub legt nur fehlende Dateien an und ersetzt nichts – ein
+    # neuer Text oder eine neue SHA256SUMS.txt liefen dort auseinander. Nur
+    # mit --nachtragen kommen fehlende Pakete dazu (3.47.0: Linux und
+    # Windows nach Mac und Server).
+    veroeffentlicht = rel is not None and not rel.get('draft', True)
+    if veroeffentlicht and not getattr(args, 'nachtragen', False):
+        sys.exit('Das Release ist schon veröffentlicht – nichts geändert. '
+                 'Fehlende Pakete nur mit --nachtragen.')
     if rel is None:
         st, rel = gitea(z, '/releases', json.dumps({'tag_name': f'v{fassung}', 'name': f'Photo Vault {fassung}', 'body': text,
                                                      'draft': True, 'prerelease': False}).encode(), 'POST',
                         {'Content-Type': 'application/json'}, tok)
         if st != 201:
             sys.exit(f'Entwurf nicht angelegt: {st} {rel}')
-    else:
+    elif not veroeffentlicht:
         gitea(z, f'/releases/{rel["id"]}', json.dumps({'body': text}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     rid = rel['id']
     vorhanden = {x['name']: x for x in rel.get('assets', [])}
@@ -659,21 +694,31 @@ def entwurf(args):
     # gebautes Paket kann gleich gross sein. Blieb die alte Datei stehen,
     # passte sie nicht mehr zur neuen SHA256SUMS.txt (bei 3.67.1 das
     # notarisierte Mac-Paket nach dem nur signierten, #382).
-    lokal = summen_lesen((u / 'SHA256SUMS.txt').read_text()) if (u / 'SHA256SUMS.txt').exists() else {}
+    # Die Prüfsummen aus den Dateien selbst, nicht aus einer vorhandenen
+    # SHA256SUMS.txt: Eine von Hand ersetzte Datei gleicher Grösse fiele
+    # sonst nicht auf.
+    summen(u, fassung)
+    lokal = summen_lesen((u / 'SHA256SUMS.txt').read_text())
     oben = summen_lesen(_lade_anhang(vorhanden['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in vorhanden else {}
     anders = [n for n in vorhanden_hier if n in vorhanden
               and not (vorhanden[n].get('size') == (u / n).stat().st_size and oben.get(n) and oben.get(n) == lokal.get(n))]
-    # Ein veröffentlichtes Release wird nur ergänzt, nie ersetzt: Wer schon
-    # geladen hat, hätte sonst eine andere Datei als die Prüfsumme sagt, und
-    # der Abgleich nach GitHub ersetzt nichts – die beiden liefen auseinander.
-    if anders and not rel.get('draft', True):
-        sys.exit(f'Im veröffentlichten Release liegt anderes als hier: {", ".join(anders)}. '
-                 'Nichts ersetzt – dafür eine neue Fassung bauen.')
+    # Pakete im Entwurf, die hier fehlen, stammen von einem früheren Bau,
+    # der nicht mehr gilt – etwa ein nur signiertes Mac-Paket, nachdem der
+    # Neubau scheiterte und es weggeräumt hat.
+    veraltet = [n for n in dateien(fassung) if n in vorhanden and n not in vorhanden_hier]
+    if veroeffentlicht and (anders or veraltet):
+        sys.exit(f'Im veröffentlichten Release liegt anderes als hier: {", ".join(anders + veraltet)}. '
+                 'Nichts geändert – dafür eine neue Fassung bauen.')
+    for name in veraltet:
+        st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]["id"]}', methode='DELETE', tok=tok)
+        if st not in (200, 204):
+            sys.exit(f'{name} liess sich nicht entfernen: {st} {a}')
+        print(name, 'entfernt (hier nicht mehr gebaut)')
     for name in vorhanden_hier + ['SHA256SUMS.txt']:
         if name in vorhanden:
             if name != 'SHA256SUMS.txt' and name not in anders:
                 continue
-            if name == 'SHA256SUMS.txt' and oben and oben == lokal:
+            if name == 'SHA256SUMS.txt' and oben == lokal:
                 continue
             st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]["id"]}', methode='DELETE', tok=tok)
             if st not in (200, 204):
@@ -688,6 +733,9 @@ def entwurf(args):
             sys.exit(f'{name} kam nicht an: {st}')
     _, rel = gitea(z, f'/releases/{rid}', tok=tok)
     print('Freigabe', rel['id'], 'Entwurf' if rel.get('draft') else 'veröffentlicht', len(rel['assets']), 'Dateien')
+    if veroeffentlicht:
+        print('Achtung: Der Abgleich nach GitHub lädt die neuen Pakete nach, ersetzt aber '
+              'SHA256SUMS.txt dort nicht – die dort von Hand ersetzen.')
 
 
 # --- einspielen -------------------------------------------------------------------
@@ -748,13 +796,26 @@ def veroeffentlichen(args):
     rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
     if rel is None:
         sys.exit('Kein Entwurf zu dieser Fassung.')
-    # Nichts freigeben, dem ein Paket fehlt oder das nur halb oben liegt.
+    # Nichts freigeben, dem ein Paket fehlt, das nur halb oben liegt, das
+    # anders ist als hier oder das hier gar nicht mehr gebaut ist (#382) –
+    # nach der Prüfsumme, nicht nur nach der Grösse.
     u = upload_ordner(z, fassung)
-    oben = {x['name']: x.get('size') for x in rel.get('assets', [])}
-    fehlt = [n for n in dateien(fassung)
-             if (u / n).exists() and oben.get(n) != (u / n).stat().st_size]
-    if fehlt:
-        sys.exit(f'Im Entwurf fehlt oder stimmt nicht: {", ".join(fehlt)}')
+    anhaenge = {x['name']: x for x in rel.get('assets', [])}
+    lokal = {n: _sha256(u / n) for n in dateien(fassung) if (u / n).exists()}
+    oben = summen_lesen(_lade_anhang(anhaenge['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in anhaenge else {}
+    fehler = []
+    if not oben:
+        fehler.append('SHA256SUMS.txt fehlt im Entwurf oder liess sich nicht lesen')
+    for n, h in lokal.items():
+        if anhaenge.get(n, {}).get('size') != (u / n).stat().st_size:
+            fehler.append(f'{n}: fehlt im Entwurf oder ist anders gross')
+        elif oben and oben.get(n) != h:
+            fehler.append(f'{n}: Prüfsumme im Entwurf passt nicht')
+    for n in anhaenge:
+        if n != 'SHA256SUMS.txt' and n not in lokal:
+            fehler.append(f'{n}: liegt im Entwurf, aber nicht hier')
+    if fehler:
+        sys.exit('Nicht veröffentlicht:\n' + '\n'.join(fehler))
     st, r = gitea(z, f'/releases/{rel["id"]}', json.dumps({'draft': False}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     print('Freigabe', r['id'], 'Entwurf' if r['draft'] else 'veröffentlicht', len(r['assets']), 'Dateien')
     sync = os.path.expanduser(z.get('sync_py', '~/Library/Application Support/gitea-github-sync/sync.py'))
@@ -771,8 +832,11 @@ def main():
     b.add_argument('fassung')
     b.add_argument('--nur', nargs='+', choices=['linux', 'windows', 'mac', 'server'],
                    help='nur diese Plattformen bauen (sonst alle)')
-    for name in ['entwurf', 'veroeffentlichen']:
-        sub.add_parser(name).add_argument('fassung')
+    en = sub.add_parser('entwurf')
+    en.add_argument('fassung')
+    en.add_argument('--nachtragen', action='store_true',
+                    help='fehlende Pakete in ein schon veröffentlichtes Release legen')
+    sub.add_parser('veroeffentlichen').add_argument('fassung')
     e = sub.add_parser('einspielen')
     e.add_argument('fassung')
     for ziel in ['linux', 'windows', 'mac', 'server']:

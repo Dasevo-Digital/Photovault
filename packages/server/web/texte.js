@@ -895,6 +895,7 @@ const EN = {
   '{n} abgelehnte Fotos': '{n} rejected photos',
   '{weg} endgültig verwerfen und {rest} in die Bibliothek übernehmen?': 'Discard {weg} for good and move {rest} into the library?',
   '{weg} endgültig verwerfen?': 'Discard {weg} for good?',
+  'Die Fotokammer liess sich nicht neu laden.': 'Staging could not be reloaded.',
   'Abgelehntes bleibt, bis alles freigegeben ist': 'Rejected photos stay until everything is approved',
   'Auswählen (Leertaste)': 'Select (space)',
   '{n} in der Fotokammer': '{n} in staging',

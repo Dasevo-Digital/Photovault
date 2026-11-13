@@ -40,6 +40,7 @@ void main() {
     Future<int?> Function()? lauf,
     bool abdeckenWennInaktiv = true,
     Future<bool> Function()? frage,
+    bool android = false,
   }) => AppSperre(
     an: an,
     frist: frist,
@@ -53,6 +54,7 @@ void main() {
     abdecken: (an) async => abdeckungen.add(an),
     beiSperre: () async => sperrungen++,
     abdeckenWennInaktiv: abdeckenWennInaktiv,
+    android: android,
   );
 
   Future<void> zeige(WidgetTester tester, AppSperre s) async {
@@ -344,6 +346,7 @@ void main() {
     final bestaetigt = Completer<bool>();
     final s = sperre(frage: () => bestaetigt.future);
     final entsperrt = s.entsperre('x');
+    await Future<void>.delayed(Duration.zero); // die Abfrage läuft
     // Face ID erkennt, die Antwort ist unterwegs – da wischt man weg.
     s.lebenslauf(AppLifecycleState.inactive);
     s.lebenslauf(AppLifecycleState.hidden);
@@ -380,6 +383,65 @@ void main() {
       expect(find.text('Entsperren'), findsOneWidget);
     },
   );
+
+  test(
+    'Android 9/10: PIN bestätigt, während die App noch „paused“ ist',
+    () async {
+      // Die Antwort kann ankommen, ehe Flutter „resumed“ meldet. Was während
+      // der eigenen Abfrage begann, gehört zu ihr – sonst sperrte sie gleich
+      // wieder und fragte von vorn (#382).
+      final bestaetigt = Completer<bool>();
+      final s = sperre(frage: () => bestaetigt.future, android: true);
+      final entsperrt = s.entsperre('x');
+      await Future<void>.delayed(Duration.zero); // die Abfrage läuft
+      s.lebenslauf(AppLifecycleState.inactive);
+      s.lebenslauf(AppLifecycleState.hidden);
+      s.lebenslauf(AppLifecycleState.paused);
+      bestaetigt.complete(true);
+      expect(await entsperrt, isTrue);
+      s.lebenslauf(AppLifecycleState.hidden);
+      s.lebenslauf(AppLifecycleState.inactive);
+      s.lebenslauf(AppLifecycleState.resumed);
+      expect(s.gesperrt, isFalse);
+    },
+  );
+
+  test('Abschalten vergisst eine offene Abwesenheit', () async {
+    final s = sperre(frist: const Duration(minutes: 15));
+    expect(await s.entsperre('x'), isTrue);
+    s.lebenslauf(AppLifecycleState.paused);
+    await s.setze(an: false);
+    vergeht(const Duration(hours: 1));
+    await s.setze(an: true);
+    s.lebenslauf(AppLifecycleState.paused);
+    vergeht(const Duration(minutes: 1));
+    s.lebenslauf(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(s.gesperrt, isFalse, reason: 'eine Minute weg, nicht eine Stunde');
+  });
+
+  testWidgets('schon verdeckt: kein Fokus, die Tastatur schliesst (#382)', (
+    tester,
+  ) async {
+    final s = sperre(frist: const Duration(minutes: 15));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        builder: (context, kind) => AppSperrschicht(sperre: s, child: kind!),
+        home: const Scaffold(body: TextField()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(s.gesperrt, isFalse);
+    await tester.showKeyboard(find.byType(TextField));
+    await tester.pumpAndSettle();
+    expect(tester.testTextInput.isVisible, isTrue);
+    await wechsle(tester, [AppLifecycleState.inactive]);
+    expect(s.verdeckt, isTrue);
+    expect(tester.testTextInput.isVisible, isFalse);
+  });
 
   testWidgets('unter Android verdeckt Inaktiv nichts (FLAG_SECURE)', (
     tester,

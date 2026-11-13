@@ -21,7 +21,7 @@
 // abschliessen“ gibt alles frei, was nicht abgelehnt ist, und verwirft
 // danach das Abgelehnte – erst, wenn das Freigeben ganz geklappt hat.
 
-const kammer = { eintraege: [], auswahl: new Set(), offen: -1, arbeit: false, bytes: 0, urteileUnterwegs: new Set() };
+const kammer = { eintraege: [], auswahl: new Set(), offen: -1, arbeit: false, bytes: 0, urteileUnterwegs: new Set(), urteile: 0 };
 
 // „1 Foto“, nicht „1 Fotos“.
 const kammerFotos = (n) => (n === 1 ? t('1 Foto') : t('{n} Fotos', { n }));
@@ -94,6 +94,7 @@ async function urteile(e, urteil) {
   const vorher = { sterne: e.sterne || 0, abgelehnt: !!e.abgelehnt };
   Object.assign(e, urteil);
   zeigeUrteil(e);
+  kammer.urteile++;
   const lauf = api('/api/v1/kammer/sichten', { methode: 'POST', json: { ids: [e.id], ...urteil } });
   kammer.urteileUnterwegs.add(lauf);
   try {
@@ -197,25 +198,41 @@ async function kammerFreigeben() {
 
 async function kammerAbschliessen() {
   if (kammer.arbeit) return;
-  // Erst die eigenen Urteile ankommen lassen: Holte die Liste den Stand
-  // davor, fehlte die letzte Ablehnung, und das Foto käme in die
-  // Bibliothek (#382).
-  // Den Stand frisch holen: Ein anderes Gerät kann inzwischen anders
-  // geurteilt haben, und Verworfenes ist weg. Freigegeben wird aber nur,
-  // was hier schon zu sehen war – was inzwischen hinzukam, hat niemand
-  // gesichtet, und es bleibt in der Kammer. Kommt beim Holen noch ein
-  // Urteil von hier dazu, noch einmal.
+  // Beschäftigt schon beim Warten: Ein zweiter Klick brächte sonst eine
+  // zweite Rückfrage (#382).
+  kammer.arbeit = true;
+  kammerKnoepfe();
+  // Freigegeben und verworfen wird nur, was hier schon zu sehen war: Was
+  // inzwischen hinzukam, auch schon abgelehnt, hat niemand gesichtet und
+  // bleibt in der Kammer. Den Stand aber frisch, denn ein anderes Gerät
+  // kann anders geurteilt haben. Vorher die eigenen Urteile ankommen
+  // lassen; begann beim Holen noch eines, noch einmal (#382).
   const gesehen = new Set(kammer.eintraege.map((e) => e.id));
+  let frisch = false;
   for (let runde = 0; runde < 3; runde++) {
     await Promise.allSettled([...kammer.urteileUnterwegs]);
-    await ladeKammer().catch(() => {});
-    if (!kammer.urteileUnterwegs.size) break;
+    const begonnen = kammer.urteile;
+    try {
+      await ladeKammer();
+      frisch = true;
+    } catch (_) {
+      frisch = false;
+      break;
+    }
+    if (begonnen === kammer.urteile && !kammer.urteileUnterwegs.size) break;
   }
-  // Verworfen wird ebenso nur Gesehenes: Kam ein Foto schon abgelehnt
-  // herein, hat es hier noch niemand angesehen, und weg ist endgültig.
+  kammer.arbeit = false;
+  kammerKnoepfe();
+  // Ohne frischen Stand nicht weiter – verworfen ist endgültig. Und nicht,
+  // wenn inzwischen eine andere Seite offen ist.
+  if (!frisch) {
+    meldung(t('Die Fotokammer liess sich nicht neu laden.'), true);
+    return;
+  }
+  if (!location.hash.startsWith('#/fotokammer')) return;
   const weg = kammer.eintraege.filter((e) => e.abgelehnt && gesehen.has(e.id)).map((e) => e.id);
   const rest = kammer.eintraege.filter((e) => !e.abgelehnt && gesehen.has(e.id)).map((e) => e.id);
-  if (!weg.length || kammer.arbeit) return;
+  if (!weg.length) return;
   const abgelehnt = weg.length === 1 ? t('1 abgelehntes Foto') : t('{n} abgelehnte Fotos', { n: weg.length });
   if (!confirm(rest.length
     ? t('{weg} endgültig verwerfen und {rest} in die Bibliothek übernehmen?', { weg: abgelehnt, rest: kammerFotos(rest.length) })

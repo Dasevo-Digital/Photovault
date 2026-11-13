@@ -120,16 +120,23 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     final t = AppTexte.of(context);
     // Freigegeben wird nur, was hier schon zu sehen war (#382).
     final gesehen = {for (final e in _eintraege) e.id};
+    // Auch das Warten zählt als Arbeit: Sonst liesse sich der Knopf
+    // währenddessen noch einmal tippen (#382).
+    if (_arbeitet) return;
+    setState(() => _arbeitet = true);
     final List<Kammereintrag> stand;
     try {
-      await _d.urteileAngekommen();
-      stand = await _d.liste();
+      stand = await _d.listeNachUrteilen();
     } on Object catch (e) {
+      if (mounted) setState(() => _arbeitet = false);
       _melde(t.kammerFehler('$e'));
       return;
     }
     if (!mounted) return;
-    setState(() => _eintraege = stand);
+    setState(() {
+      _eintraege = stand;
+      _arbeitet = false;
+    });
     final (:weg, :rest) = kammerAbschluss(stand, gesehen);
     if (weg.isEmpty) return;
     final ja = await showDialog<bool>(

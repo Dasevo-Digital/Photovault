@@ -181,7 +181,11 @@ enum Abdeckung {
           if let teilen = blatt as? UIActivityViewController {
             let fertig = teilen.completionWithItemsHandler
             teilen.completionWithItemsHandler = nil
-            teilen.dismiss(animated: false)
+            // Über den, der es zeigt: Hat das Blatt selbst schon etwas
+            // geöffnet (Mail, Nachrichten, „In Dateien sichern“), schlösse
+            // ein dismiss am Blatt nur dieses – das Blatt bliebe mit
+            // Vorschau und Aktionen über der Sperre stehen (#382).
+            (teilen.presentingViewController ?? teilen).dismiss(animated: false)
             fertig?(nil, false, nil, nil)
             break
           }

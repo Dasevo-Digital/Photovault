@@ -235,6 +235,7 @@ class Fotokammerdienst {
 
   /// Merkt das Urteil über [ids] am Server.
   Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) {
+    _urteile++;
     final lauf = _sichte(ids, sterne: sterne, abgelehnt: abgelehnt);
     _urteileUnterwegs.add(lauf);
     return lauf.whenComplete(() => _urteileUnterwegs.remove(lauf));
@@ -252,6 +253,24 @@ class Fotokammerdienst {
   }
 
   final _urteileUnterwegs = <Future<void>>{};
+
+  /// Wie viele Urteile von hier begonnen haben – so fällt auf, wenn eines
+  /// während des Holens der Liste kam.
+  var _urteile = 0;
+
+  /// Die Liste für „Sichtung abschliessen“ (#382): erst, wenn die Urteile
+  /// von hier angekommen sind. Kommt während des Holens noch eines dazu,
+  /// wird noch einmal geholt – sonst fehlte eine eben vergebene Ablehnung.
+  Future<List<Kammereintrag>> listeNachUrteilen() async {
+    var l = const <Kammereintrag>[];
+    for (var runde = 0; runde < 3; runde++) {
+      await urteileAngekommen();
+      final vorher = _urteile;
+      l = await liste();
+      if (vorher == _urteile && _urteileUnterwegs.isEmpty) break;
+    }
+    return l;
+  }
 
   /// Wartet, bis die Urteile von hier beim Server sind (#382). Vor dem
   /// Abschliessen: Holte die Liste den Stand davor, fehlte eine eben

@@ -266,16 +266,23 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     // hier schon zu sehen war (#382): Was inzwischen hinzukam, hat noch
     // niemand gesichtet, und es bleibt in der Kammer.
     final gesehen = {for (final e in _eintraege) e.id};
+    // Auch das Warten zählt als Arbeit: Sonst liesse sich der Knopf
+    // währenddessen noch einmal drücken (#382).
+    if (_arbeit != null) return;
+    setState(() => _arbeit = (0, 0));
     final List<Kammereintrag> stand;
     try {
-      await d.urteileAngekommen();
-      stand = await d.liste();
+      stand = await d.listeNachUrteilen();
     } on Object catch (e) {
+      if (mounted) setState(() => _arbeit = null);
       bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
       return;
     }
     if (!mounted) return;
-    setState(() => _eintraege = stand);
+    setState(() {
+      _eintraege = stand;
+      _arbeit = null;
+    });
     final (:weg, :rest) = kammerAbschluss(stand, gesehen);
     if (weg.isEmpty) return;
     final ja = await showDialog<bool>(

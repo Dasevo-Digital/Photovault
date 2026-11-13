@@ -602,6 +602,31 @@ void main() {
       await kaputt.urteileAngekommen();
     });
 
+    test('ein Urteil während des Holens: noch einmal geholt (#382)', () async {
+      late Fotokammerdienst d;
+      var geholt = 0;
+      final client = MockClient((r) async {
+        http.Response json(Object? o) => http.Response(
+          jsonEncode(o),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+        if (r.url.path == '/api/v1/kammer') {
+          geholt++;
+          // Beim ersten Holen kommt hier noch eine Ablehnung dazu.
+          if (geholt == 1) unawaited(d.sichten(['x'], abgelehnt: true));
+          return json({'eintraege': <Object>[], 'anzahl': 0, 'bytes': 0});
+        }
+        return json({'geaendert': 1});
+      });
+      d = Fotokammerdienst(
+        Serververbindung(Uri.parse('http://server/'), 'x', client: client),
+        abgleichen: () async {},
+      );
+      await d.listeNachUrteilen();
+      expect(geholt, 2);
+    });
+
     testWidgets('ohne Abgelehnte gibt es den Knopf nicht', (tester) async {
       await zeige(tester, dienst());
       expect(find.text('Sichtung abschliessen'), findsNothing);

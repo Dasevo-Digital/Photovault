@@ -34,6 +34,7 @@ class AppSperre extends ChangeNotifier {
     Future<void> Function(bool an)? abdecken,
     Future<void> Function()? beiSperre,
     bool? abdeckenWennInaktiv,
+    bool? android,
   }) : _pruefe = pruefe ?? _systemPruefung,
        _verfuegbar = verfuegbar ?? LocalAuthentication().isDeviceSupported,
        _jetzt = jetzt ?? DateTime.now,
@@ -43,7 +44,9 @@ class AppSperre extends ChangeNotifier {
        // Android schützt den Umschalter mit FLAG_SECURE; eine Fläche bei
        // jedem Fokusverlust (geteilter Bildschirm, Berechtigungsdialog,
        // Benachrichtigungen) verdeckte dort nur grundlos die App (#382).
-       _abdeckenWennInaktiv = abdeckenWennInaktiv ?? !Platform.isAndroid,
+       _android = android ?? Platform.isAndroid,
+       _abdeckenWennInaktiv =
+           abdeckenWennInaktiv ?? !(android ?? Platform.isAndroid),
        gesperrt = an;
 
   /// Wie lange die App im Hintergrund sein darf, ehe sie wieder fragt.
@@ -73,6 +76,10 @@ class AppSperre extends ChangeNotifier {
   final Future<void> Function(bool an) _abdecken;
   final Future<void> Function() _beiSperre;
   final bool _abdeckenWennInaktiv;
+  final bool _android;
+
+  /// Ob die vermerkte Abwesenheit begann, während die eigene Abfrage lief.
+  bool _wegWaehrendFrage = false;
 
   /// Wann die App den Vordergrund verliess – nach der Uhrzeit und nach der
   /// [_laufzeit] des Geräts.
@@ -174,15 +181,16 @@ class AppSperre extends ChangeNotifier {
     final ok = await pruefe(grund);
     if (ok) {
       gesperrt = false;
-      // Wer eben bestätigt hat, war da. Unter Android 9 und 10 ist die
-      // Eingabe des Codes eine eigene Activity; ihr „weg“ soll nicht gleich
-      // wieder sperren (#382). Ist die App aber jetzt schon wieder im
-      // Hintergrund (nach dem Häkchen nach Hause gewischt), zählt diese
-      // Abwesenheit – sonst käme später jeder ohne Frage hinein.
-      if (_zustand != AppLifecycleState.hidden &&
-          _zustand != AppLifecycleState.paused) {
-        _vergiss();
-      }
+      // Wer eben bestätigt hat, war da (#382). Ist die App aber jetzt im
+      // Hintergrund (unter iOS nach dem Häkchen nach Hause gewischt), zählt
+      // diese Abwesenheit – sonst käme später jeder ohne Frage hinein.
+      // Ausnahme Android 9 und 10: Dort ist die Eingabe des Codes eine
+      // eigene Activity, die App dabei „paused“; was während der eigenen
+      // Abfrage begann, gehört zu ihr, wann immer die Antwort ankommt.
+      final imHintergrund =
+          _zustand == AppLifecycleState.hidden ||
+          _zustand == AppLifecycleState.paused;
+      if (!imHintergrund || (_android && _wegWaehrendFrage)) _vergiss();
       notifyListeners();
     }
     return ok;
@@ -192,7 +200,11 @@ class AppSperre extends ChangeNotifier {
   Future<void> setze({bool? an, Duration? frist}) async {
     this.an = an ?? this.an;
     this.frist = frist ?? this.frist;
-    if (!this.an) gesperrt = false;
+    if (!this.an) {
+      gesperrt = false;
+      // Sonst sperrte nach dem Wiedereinschalten eine alte Abwesenheit.
+      _vergiss();
+    }
     notifyListeners();
     await _abdecken(this.an).catchError((Object _) {});
     final ziel = datei;
@@ -216,8 +228,10 @@ class AppSperre extends ChangeNotifier {
   /// Face ID selbst macht sie nur inaktiv, nicht unsichtbar – das zählt
   /// nicht als weg.
   void lebenslauf(AppLifecycleState zustand) {
+    final vorher = _zustand;
     _zustand = zustand;
     if (!an) {
+      _vergiss();
       if (verdeckt) {
         verdeckt = false;
         notifyListeners();
@@ -230,8 +244,15 @@ class AppSperre extends ChangeNotifier {
           verdeckt = true;
           notifyListeners();
         }
+      // Von „paused“ nach „hidden“ ist der Rückweg (paused → hidden →
+      // inactive → resumed), kein neues Weggehen: Hat das Entsperren die
+      // Abwesenheit eben vergessen (Android 9/10), legte er sonst gleich eine
+      // neue an, und mit „Sofort“ wäre wieder gesperrt (#382).
+      case AppLifecycleState.hidden when vorher == AppLifecycleState.paused:
+        break;
       case AppLifecycleState.hidden || AppLifecycleState.paused:
         _rueckkehr++;
+        if (_weg == null) _wegWaehrendFrage = _fragtGerade;
         _weg ??= _jetzt();
         _wegLaufzeit ??= _sichereLaufzeit();
         if (!verdeckt) {
@@ -291,6 +312,7 @@ class AppSperre extends ChangeNotifier {
   void _vergiss() {
     _weg = null;
     _wegLaufzeit = null;
+    _wegWaehrendFrage = false;
   }
 
   void _sperre() {
@@ -426,10 +448,12 @@ class _AppSperrschichtState extends State<AppSperrschicht>
     }
     return Stack(
       children: [
-        // Nur gesperrt, nicht schon verdeckt: Sonst schlösse jedes
-        // Kontrollzentrum die Tastatur, und AutoFill verlöre seine Eingabe.
+        // Auch schon verdeckt: Die Tastatur liegt unter iOS in einem eigenen
+        // Fenster über der Abdeckung und erschiene samt Vorschlägen aus dem
+        // Textfeld im App-Umschalter (#382). Dafür schliesst sie, sobald die
+        // App inaktiv wird.
         ExcludeFocus(
-          excluding: s.an && s.gesperrt,
+          excluding: zeige,
           child: ExcludeSemantics(excluding: zeige, child: widget.child),
         ),
         if (zeige)

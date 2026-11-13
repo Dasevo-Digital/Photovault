@@ -269,6 +269,18 @@ class Notarisieren(unittest.TestCase):
         self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 1)
         schlafen.assert_not_called()
 
+    def test_langer_lauf_ohne_kennung_reicht_nicht_noch_einmal_ein(self):
+        uhr = iter([0, 7200, 7200, 7200])
+        with unittest.mock.patch('release.time.monotonic', side_effect=lambda: next(uhr)):
+            aufrufe, schlafen, fehler = self.laufe([('', 'Verbindung weg', 1)])
+        self.assertIsNotNone(fehler)
+        self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 1)
+        schlafen.assert_not_called()
+
+    def test_json_mit_nachspann_und_verschachtelt(self):
+        self.assertEqual(release._letztes_json('{\n "id": "a",\n "status": "Accepted"\n}\nfertig')['status'], 'Accepted')
+        self.assertEqual(release._letztes_json('{"id": "a", "x": {"status": "innen"}, "status": "Accepted"}')['status'], 'Accepted')
+
     def test_json_auch_eingerueckt_nach_vorspann(self):
         self.assertEqual(release._letztes_json('{\n  "status": "Invalid"\n}')['status'], 'Invalid')
         self.assertEqual(release._letztes_json('Warte …\n{\n  "id": "a",\n  "status": "Accepted"\n}\n')['id'], 'a')
@@ -331,13 +343,14 @@ class Entwurf(unittest.TestCase):
         self.mac = 'PhotoVault-9.9.9-macos.zip'
         (self.u / self.mac).write_bytes(b'neu notarisiert!')
 
-    def laufe(self, oben_summe, entwurf=True, groesse=None):
+    def laufe(self, oben_summe, entwurf=True, groesse=None, extra=(), nachtragen=False, lokale_summe=None):
         import hashlib
         lokal = hashlib.sha256((self.u / self.mac).read_bytes()).hexdigest()
-        (self.u / 'SHA256SUMS.txt').write_text(f'{lokal}  {self.mac}\n')
+        (self.u / 'SHA256SUMS.txt').write_text(f'{lokale_summe or lokal}  {self.mac}\n')
         rel = {'id': 7, 'draft': entwurf, 'assets': [
             {'id': 1, 'name': self.mac, 'size': groesse or (self.u / self.mac).stat().st_size},
             {'id': 2, 'name': 'SHA256SUMS.txt', 'size': 90, 'browser_download_url': 'x'},
+            *extra,
         ]}
         anfragen = []
 
@@ -358,7 +371,7 @@ class Entwurf(unittest.TestCase):
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
                 unittest.mock.patch('release._lade_anhang', return_value=f'{summe}  {self.mac}\n'):
             try:
-                release.entwurf(unittest.mock.Mock(fassung='9.9.9'))
+                release.entwurf(unittest.mock.Mock(fassung='9.9.9', nachtragen=nachtragen))
             except SystemExit as e:
                 return anfragen, e
         return anfragen, None
@@ -380,10 +393,149 @@ class Entwurf(unittest.TestCase):
         self.assertIsNotNone(fehler)
         self.assertNotIn('DELETE', [m for m, _ in anfragen])
         self.assertNotIn('POST', [m for m, _ in anfragen])
+        self.assertNotIn('PATCH', [m for m, _ in anfragen], 'auch der Text bleibt')
+
+    def test_veroeffentlicht_ohne_nachtragen_nicht_einmal_gleiches(self):
+        anfragen, fehler = self.laufe('gleich', entwurf=False)
+        self.assertIsNotNone(fehler)
+        self.assertEqual([m for m, _ in anfragen], ['GET'])
+
+    def test_nachtragen_legt_fehlendes_dazu_ohne_neuen_text(self):
+        flatpak = 'PhotoVault-9.9.9-x86_64.flatpak'
+        (self.u / flatpak).write_bytes(b'neu')
+        anfragen, fehler = self.laufe('gleich', entwurf=False, nachtragen=True)
+        self.assertIsNone(fehler)
+        self.assertIn(('POST', '/releases/7/assets'), anfragen)
+        self.assertNotIn(('DELETE', '/releases/7/assets/1'), anfragen, 'das Mac-Paket bleibt')
+        self.assertNotIn('PATCH', [m for m, _ in anfragen])
+
+    def test_veraltetes_paket_im_entwurf_kommt_weg(self):
+        # Hier nicht mehr gebaut (etwa nach einem gescheiterten Neubau):
+        # Es darf nicht mitveröffentlicht werden.
+        alt = {'id': 3, 'name': 'PhotoVault-9.9.9-windows-x64.zip', 'size': 5}
+        anfragen, fehler = self.laufe('gleich', extra=(alt,))
+        self.assertIsNone(fehler)
+        self.assertIn(('DELETE', '/releases/7/assets/3'), anfragen)
+
+    def test_von_hand_ersetzte_datei_faellt_auf(self):
+        # Die SHA256SUMS.txt hier ist veraltet, die Datei gleich gross:
+        # Gerechnet wird aus der Datei.
+        import hashlib
+        alt = hashlib.sha256((self.u / self.mac).read_bytes()).hexdigest()
+        (self.u / self.mac).write_bytes(b'neu notarisiert?')
+        neu = hashlib.sha256(b'neu notarisiert?').hexdigest()
+        # Oben liegt die alte Fassung, und die SHA256SUMS.txt hier nennt
+        # noch deren Summe – beide gleich gross.
+        with unittest.mock.patch('builtins.print'):
+            anfragen, fehler = self.laufe('gleich', lokale_summe=alt)
+        self.assertIsNone(fehler)
+        self.assertEqual(release.summen_lesen((self.u / 'SHA256SUMS.txt').read_text())[self.mac], neu)
 
     def test_summen_lesen(self):
         self.assertEqual(release.summen_lesen('a' * 64 + '  x.zip\nunsinn\n' + 'b' * 64 + ' *y.zip\n'),
                          {'x.zip': 'a' * 64, 'y.zip': 'b' * 64})
+
+
+
+class Veroeffentlichen(unittest.TestCase):
+    """Nichts freigeben, was nicht genau dem Upload-Ordner entspricht (#382)."""
+
+    def setUp(self):
+        self.u = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.u)
+        self.mac = 'PhotoVault-9.9.9-macos.zip'
+        (self.u / self.mac).write_bytes(b'paket')
+
+    def laufe(self, summe=None, extra=()):
+        import hashlib
+        h = summe or hashlib.sha256(b'paket').hexdigest()
+        rel = {'id': 7, 'draft': True, 'tag_name': 'v9.9.9', 'assets': [
+            {'id': 1, 'name': self.mac, 'size': 5},
+            {'id': 2, 'name': 'SHA256SUMS.txt', 'size': 80, 'browser_download_url': 'x'},
+            *extra,
+        ]}
+        anfragen = []
+
+        def gitea(z, pfad, daten=None, methode=None, kopf=None, tok=None):
+            anfragen.append((methode or 'GET', pfad.split('?')[0]))
+            if methode == 'PATCH':
+                return 200, {**rel, 'draft': False}
+            return 200, [rel]
+
+        with unittest.mock.patch('release.ziele', return_value={}), \
+                unittest.mock.patch('release.token', return_value='t'), \
+                unittest.mock.patch('release.upload_ordner', return_value=self.u), \
+                unittest.mock.patch('release.gitea', side_effect=gitea), \
+                unittest.mock.patch('release.lauf'), \
+                unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'):
+            try:
+                release.veroeffentlichen(unittest.mock.Mock(fassung='9.9.9'))
+            except SystemExit as e:
+                return anfragen, e
+        return anfragen, None
+
+    def test_alles_passt(self):
+        anfragen, fehler = self.laufe()
+        self.assertIsNone(fehler)
+        self.assertIn('PATCH', [m for m, _ in anfragen])
+
+    def test_pruefsumme_passt_nicht(self):
+        anfragen, fehler = self.laufe(summe='e' * 64)
+        self.assertIn('Prüfsumme', str(fehler))
+        self.assertNotIn('PATCH', [m for m, _ in anfragen])
+
+    def test_fremdes_paket_im_entwurf(self):
+        anfragen, fehler = self.laufe(extra=({'id': 3, 'name': 'PhotoVault-9.9.9-windows-x64.zip', 'size': 9},))
+        self.assertIn('nicht hier', str(fehler))
+        self.assertNotIn('PATCH', [m for m, _ in anfragen])
+
+
+class Anhang(unittest.TestCase):
+    """Das Gitea-Token geht nur an die Adresse selbst (#382)."""
+
+    def test_token_nicht_bei_weiterleitung(self):
+        gesehen = {}
+
+        class Antwort:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+            def read(self, n):
+                return b'x'
+
+        def oeffne(req, timeout):
+            gesehen['offen'] = dict(req.headers)
+            gesehen['nur_hier'] = dict(req.unredirected_hdrs)
+            return Antwort()
+
+        with unittest.mock.patch('release.urllib.request.urlopen', side_effect=oeffne):
+            release._lade_anhang({'browser_download_url': 'https://gitea.example/a'}, 'geheim')
+        self.assertNotIn('Authorization', gesehen['offen'])
+        self.assertEqual(gesehen['nur_hier'].get('Authorization'), 'token geheim')
+
+    def test_jeder_fehler_ist_leer(self):
+        with unittest.mock.patch('release.urllib.request.urlopen', side_effect=ValueError('kaputt')):
+            self.assertEqual(release._lade_anhang({'browser_download_url': 'x'}, 't'), '')
+
+
+class Arbeitsordner(unittest.TestCase):
+    """Neben den Worktrees räumt niemand auf – das Werkzeug selbst (#382)."""
+
+    def test_behaelt_die_zwei_neuesten_anderen(self):
+        basis = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, basis)
+        for i, v in enumerate(['3.60.0', '3.61.0', '3.62.0', '3.63.0']):
+            d = basis / f'pv-release-{v}'
+            d.mkdir()
+            os.utime(d, (1000 + i, 1000 + i))
+        (basis / 'anderes').mkdir()
+        with unittest.mock.patch('builtins.print'):
+            release.arbeitsordner('3.64.0', {'arbeit_basis': str(basis)})
+        self.assertEqual(sorted(p.name for p in basis.iterdir()),
+                         ['anderes', 'pv-release-3.62.0', 'pv-release-3.63.0', 'pv-release-3.64.0'])
 
 
 if __name__ == '__main__':
