@@ -137,7 +137,13 @@ void main() {
       final datei = Directory(
         '${sicherungVon(erika).path}/data',
       ).listSync().whereType<File>().first;
-      datei.writeAsBytesSync([8, 8, 8]);
+      // Bei gleicher Grösse: Eine gekürzte Datei schriebe der Lauf neu
+      // (#388), den Schaden fände erst die Probe beim Entschlüsseln.
+      final bytes = datei.readAsBytesSync();
+      for (var i = bytes.length ~/ 2; i < bytes.length ~/ 2 + 8; i++) {
+        bytes[i] ^= 0xff;
+      }
+      datei.writeAsBytesSync(bytes);
       jetzt = jetzt.add(const Duration(days: 1));
       await sicherung.jetzt();
       final nachher = await sicherung.stand();
@@ -148,6 +154,27 @@ void main() {
               as Map;
       expect(neu['erfolgreich'], isFalse);
       expect(neu['letzterErfolg'], probe['letzterErfolg']);
+    },
+  );
+
+  test(
+    'eine gekürzte Sicherungsdatei wird beim nächsten Lauf erneuert',
+    () async {
+      await sicherung.einrichten(passphrase);
+      await sicherung.jetzt();
+      final datei = Directory(
+        '${sicherungVon(erika).path}/data',
+      ).listSync().whereType<File>().first;
+      final ganz = datei.readAsBytesSync();
+      datei.writeAsBytesSync(ganz.sublist(0, ganz.length ~/ 2));
+      jetzt = jetzt.add(const Duration(days: 1));
+      await sicherung.jetzt();
+      final stand = await sicherung.stand();
+      expect(stand['ok'], isTrue);
+      final konto = (stand['konten']! as List).single as Map;
+      expect(konto['neu'], 1);
+      expect((konto['wiederherstellungsprobe'] as Map)['erfolgreich'], isTrue);
+      expect(datei.lengthSync(), ganz.length);
     },
   );
 
@@ -271,7 +298,15 @@ void main() {
       await sicherung.jetzt();
       final dort = kopie(gleich(1));
       final dateien = dort.listSync().map((e) => e.path.split('/').last);
-      expect(dateien, unorderedEquals(['datei.enc', 'angaben.enc']));
+      expect(
+        dateien,
+        unorderedEquals(['datei.enc', 'angaben.enc', 'gesichert']),
+      );
+      // Der Vermerk trägt nur den Zeitpunkt der Sicherung (#388).
+      expect(
+        DateTime.tryParse(File('${dort.path}/gesichert').readAsStringSync()),
+        isNotNull,
+      );
       expect(
         latin1.decode(File('${dort.path}/angaben.enc').readAsBytesSync()),
         isNot(contains('IMG_GEHEIM')),

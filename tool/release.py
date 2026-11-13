@@ -654,6 +654,25 @@ def _lade_anhang(anhang, tok):
         return ''
 
 
+def _sha256_anhang(anhang, tok):
+    """Die SHA-256 eines Anhangs, wie er tatsächlich auf dem Server liegt –
+    ganz geladen, nicht nach der gemeldeten Grösse (#392). `None`, wenn er
+    sich nicht laden lässt."""
+    url = anhang.get('browser_download_url')
+    if not url:
+        return None
+    try:
+        req = urllib.request.Request(url)
+        req.add_unredirected_header('Authorization', 'token ' + tok)
+        h = hashlib.sha256()
+        with urllib.request.urlopen(req, timeout=600) as a:
+            for stueck in iter(lambda: a.read(1 << 20), b''):
+                h.update(stueck)
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001 – dann gilt der Anhang als nicht geprüft
+        return None
+
+
 def entwurf(args):
     z = ziele()
     fassung = args.fassung
@@ -811,6 +830,10 @@ def veroeffentlichen(args):
             fehler.append(f'{n}: fehlt im Entwurf oder ist anders gross')
         elif oben and oben.get(n) != h:
             fehler.append(f'{n}: Prüfsumme im Entwurf passt nicht')
+        elif _sha256_anhang(anhaenge[n], tok) != h:
+            # Gleich gross und richtig in der SHA256SUMS.txt genannt, aber
+            # der Anhang selbst kann trotzdem ein anderer sein (#392).
+            fehler.append(f'{n}: der hochgeladene Anhang ist nicht die Datei von hier')
     for n in anhaenge:
         if n != 'SHA256SUMS.txt' and n not in lokal:
             fehler.append(f'{n}: liegt im Entwurf, aber nicht hier')

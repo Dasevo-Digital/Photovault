@@ -97,6 +97,28 @@ class BackupService {
   static Future<bool> _liegtImZiel(File ziel) async =>
       await ziel.exists() && await ziel.length() > 0;
 
+  /// Ob [ziel] in einer **verschlüsselten** Sicherung [asset] vollständig
+  /// trägt (#388). „Nicht leer“ genügte nicht: Eine Teilkopie – von einer
+  /// älteren Fassung über eine Dateisystemgrenze, oder im Ziel beschädigt –
+  /// wurde sonst jeden Lauf übersprungen, obwohl die Quelle heil daneben
+  /// lag; die Probe meldete den Schaden, aber nichts behob ihn. Die Grösse
+  /// einer vollständigen Verschlüsselung steht fest
+  /// ([VaultCrypto.passtZurGroesse]). Gemessen wird an der Datei der
+  /// Bibliothek, sonst an der Grösse aus der Datenbank.
+  Future<bool> _verschluesseltImZiel(AssetData asset, File ziel) async {
+    if (!await _liegtImZiel(ziel)) return false;
+    final hier = _paths.absolute(asset.relativePath);
+    final groesse = await hier.exists()
+        ? await hier.length()
+        : asset.fileSizeBytes;
+    if (groesse <= 0) return true;
+    if (await VaultCrypto.passtZurGroesse(ziel, groesse)) return true;
+    protokoll(
+      'Sicherung von ${asset.relativePath} unvollständig – wird neu geschrieben',
+    );
+    return false;
+  }
+
   /// Ob [ziel] in einer **unverschlüsselten** Sicherung noch [asset] trägt –
   /// nicht nur, ob dort etwas liegt (#251).
   ///
@@ -343,7 +365,7 @@ class BackupService {
           );
     Future<bool> aktuell(AssetData asset, File ziel) => encryptionKey == null
         ? _stimmtImZiel(asset, ziel, frueher)
-        : _liegtImZiel(ziel);
+        : _verschluesseltImZiel(asset, ziel);
     var done = 0;
     var totalBytes = 0;
     var geschriebeneBytes = 0;
@@ -884,7 +906,7 @@ class BackupService {
         // also niemandem auf.
         try {
           final target = await zielVon(asset);
-          final schonDa = await _liegtImZiel(target);
+          final schonDa = await _verschluesseltImZiel(asset, target);
           // Wie in [performBackup]: erst fragen, dann (verbunden) holen.
           final source = schonDa
               ? null
@@ -947,7 +969,7 @@ class BackupService {
     final offen = abgebrochenWegenLimit
         ? await _fehlenImZiel(
             pending.skip(done),
-            (a) async => _liegtImZiel(await zielVon(a)),
+            (a) async => _verschluesseltImZiel(a, await zielVon(a)),
           )
         : (anzahl: 0, bytes: 0);
     if (offen.anzahl == 0) abgebrochenWegenLimit = false;

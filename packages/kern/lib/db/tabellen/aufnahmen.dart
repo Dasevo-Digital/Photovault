@@ -60,6 +60,14 @@ class Assets extends Table {
   BoolColumn get isTrashed => boolean().withDefault(const Constant(false))();
   DateTimeColumn get trashedAt => dateTime().nullable()();
 
+  /// Welche Löschaktion die Aufnahme in den Papierkorb legte (#389). Daran
+  /// erkennt das Zurückholen, was zusammen ging. Bis Schema 97 tat es das
+  /// an [trashedAt], das nur ganze Sekunden kennt: Zwei getrennte
+  /// Löschaktionen in derselben Sekunde galten als eine, und eine vorher
+  /// für sich gelöschte Variante kam mit ihrer Hauptversion zurück.
+  /// `null` bei allem, was vor Schema 98 gelöscht wurde.
+  TextColumn get papierkorbAktion => text().nullable()();
+
   /// In den gesperrten (PIN-geschützten) Ordner verschoben – solche Assets
   /// werden aus Timeline, Kalender, Karte, Suche, Alben, Personen und
   /// Backup-Export herausgefiltert und sind nur über den gesperrten Ordner

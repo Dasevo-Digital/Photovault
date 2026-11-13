@@ -208,8 +208,11 @@ class Befehlsbasis {
           // der ganzen Zeile scheiterte das Löschen eines eben gesicherten
           // Fotos, sobald die Auswertung am Server Beschreibung, Text, Ort
           // oder Schärfe nachgetragen hatte (#339).
-          'inDenPapierkorb' ||
-          'ausDemPapierkorb' => ['is_trashed', 'trashed_at'],
+          'inDenPapierkorb' || 'ausDemPapierkorb' => [
+            'is_trashed',
+            'trashed_at',
+            'papierkorb_aktion',
+          ],
           // Dasselbe für alles, was die Auswertung eines frischen Fotos
           // nebenher nachträgt (#340): Wer in der Minute danach das Datum
           // korrigiert oder eine Serie bildet, meint nur diese Angaben.

@@ -1464,5 +1464,14 @@ extension Migrationsschritte on AppDatabase {
         'is_archived',
       );
     }
+    if (from < 98) {
+      await _addColumnIfMissing(
+        m,
+        assets,
+        assets.papierkorbAktion,
+        'assets',
+        'papierkorb_aktion',
+      );
+    }
   }
 }

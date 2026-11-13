@@ -134,11 +134,23 @@ class BackupWiederhersteller {
           wiederherstellung: bilanz(false),
         );
       }
-      await _applyMetadataExport(plan.manifest, streng: streng);
+      // Eine Auswahl begrenzt nicht nur die Dateien, sondern auch Angaben,
+      // Schnappschusszeilen und Live-Photo-Paare (#388): Bis 3.67.2 bekam
+      // ein nicht gewähltes, schon vorhandenes Foto Beschreibung und Sterne
+      // aus der Sicherung zurück.
+      await _applyMetadataExport(
+        plan.manifest,
+        streng: streng,
+        nurPruefsummen: auswahlPruefsummen,
+      );
       int? zeilen;
       if (plan.schnappschuss case final snapshot?) {
         try {
-          zeilen = await uebernimmAusSchnappschuss(snapshot, streng: streng);
+          zeilen = await uebernimmAusSchnappschuss(
+            snapshot,
+            streng: streng,
+            nurPruefsummen: auswahlPruefsummen,
+          );
           yield* _zeichneAusschnitteNach();
         } on Object catch (e) {
           if (streng) rethrow;
@@ -150,7 +162,7 @@ class BackupWiederhersteller {
           ...plan.manifest.livePaare,
           if (plan.schnappschuss case final snapshot?)
             ...BackupSchnappschussSpeicher().livePaareAusDatei(snapshot),
-        ]);
+        ], nurPruefsummen: auswahlPruefsummen);
       } on Object catch (e) {
         if (streng) rethrow;
         _problem('pv_restore_live_photos', e);
@@ -160,10 +172,28 @@ class BackupWiederhersteller {
       if (plan.schluessel case final key?
           when !streng && auswahlPruefsummen == null) {
         try {
-          await _holeFotokammer(wurzel, key, importe, temp);
+          await _holeFotokammer(
+            wurzel,
+            key,
+            importe,
+            temp,
+            generation: generationSnapshotPath,
+          );
         } on Object catch (e) {
           _problem('pv_restore_kammer', e);
         }
+      }
+      // Die Probe holt die Kammer nicht, liest aber ihre Angaben (#388):
+      // Eine beschädigte Kammer-Sicherung soll auffallen, bevor man sie
+      // braucht. Nur die kleinen Angaben – die Fotos prüft das Zurückholen.
+      if (plan.schluessel case final key? when streng) {
+        await FotokammerSicherung.eintraege(
+          wurzel,
+          key,
+          temp,
+          beiFehler: (_, _) =>
+              throw const FormatException('pv_probe_kammer_beschaedigt'),
+        );
       }
       final ergebnis = bilanz(true);
       yield BackupProgress(
@@ -185,17 +215,47 @@ class BackupWiederhersteller {
   /// und kann sie sichten. Dazu gehören auch Kopien, deren Eintrag vor
   /// wenigen Tagen aus der Kammer verschwand: Gerade für den Fall, dass das
   /// nicht gewollt war, bleiben sie liegen.
+  ///
+  /// Aus einer älteren Sicherungsstufe ([generation]) nur, was zu ihr gehört
+  /// ([FotokammerSicherung.gehoertZuStufe], #388). Was sich nicht lesen
+  /// lässt, zählt in der Bilanz als Fehler.
   Future<void> _holeFotokammer(
     String wurzel,
     SecretKey schluessel,
     ImportService importe,
-    Directory temp,
-  ) async {
-    final eintraege = await FotokammerSicherung.eintraege(
+    Directory temp, {
+    String? generation,
+  }) async {
+    var eintraege = await FotokammerSicherung.eintraege(
       wurzel,
       schluessel,
       temp,
+      beiFehler: (id, x) => _problem('pv_restore_kammer', '$id: $x'),
     );
+    if (generation != null) {
+      final stufen = await BackupSchnappschussSpeicher().generationen(wurzel);
+      final i = stufen.indexWhere(
+        (g) => p.equals(p.normalize(g.snapshotPath), p.normalize(generation)),
+      );
+      if (i >= 0) {
+        final stufe = stufen[i].createdAt;
+        final spaetere =
+            stufen
+                .map((g) => g.createdAt)
+                .where((t) => t.isAfter(stufe))
+                .toList()
+              ..sort();
+        eintraege = [
+          for (final e in eintraege)
+            if (FotokammerSicherung.gehoertZuStufe(
+              e.gesichertAm,
+              stufe: stufe,
+              naechste: spaetere.firstOrNull,
+            ))
+              e,
+        ];
+      }
+    }
     final neue = <String>[];
     for (final e in eintraege) {
       final ordner = await Directory(
@@ -300,9 +360,13 @@ class BackupWiederhersteller {
   /// Eine ältere Sicherung kennt weniger Spalten als die laufende Fassung,
   /// und eine von Hand gepflegte Aufzählung wäre die naheliegendste Art,
   /// dass eine neue Spalte still verlorengeht.
+  ///
+  /// Mit [nurPruefsummen] nur Zeilen dieser Aufnahmen (#388); Zeilen ohne
+  /// Bezug zu einer Aufnahme kommen wie immer nur dazu, wo sie fehlen.
   Future<int> uebernimmAusSchnappschuss(
     File schnappschuss, {
     bool streng = false,
+    Set<String>? nurPruefsummen,
   }) async {
     final quelle = sqlite3.open(schnappschuss.path, mode: OpenMode.readOnly);
     try {
@@ -315,7 +379,9 @@ class BackupWiederhersteller {
 
       // Prüfsumme -> Kennung in dieser Bibliothek.
       final nachPruefsumme = <String, String>{
-        for (final a in await _db.select(_db.assets).get()) a.checksum: a.id,
+        for (final a in await _db.select(_db.assets).get())
+          if (nurPruefsummen == null || nurPruefsummen.contains(a.checksum))
+            a.checksum: a.id,
       };
       // Kennung im Schnappschuss -> Kennung hier.
       final assetZuordnung = <String, String>{};
@@ -530,7 +596,10 @@ class BackupWiederhersteller {
   /// mehr verknüpft: Jede Videohälfte stand als eigenes Video in der
   /// Zeitleiste. Die Paare kommen als Prüfsummen aus der Beilage oder dem
   /// Schnappschuss; verknüpft wird nur, was hier noch frei ist.
-  Future<int> _verknuepfeLivePhotos(Iterable<(String, String)> paare) async {
+  Future<int> _verknuepfeLivePhotos(
+    Iterable<(String, String)> paare, {
+    Set<String>? nurPruefsummen,
+  }) async {
     final nachPruefsumme = <String, AssetData>{
       for (final a in await _db.select(_db.assets).get()) a.checksum: a,
     };
@@ -540,6 +609,12 @@ class BackupWiederhersteller {
     };
     var n = 0;
     for (final (x, y) in paare) {
+      // Mit Auswahl: nur Paare, von denen eine Hälfte gewählt ist.
+      if (nurPruefsummen != null &&
+          !nurPruefsummen.contains(x) &&
+          !nurPruefsummen.contains(y)) {
+        continue;
+      }
       final a = nachPruefsumme[x], b = nachPruefsumme[y];
       if (a == null || b == null || a.id == b.id) continue;
       if (vergeben.contains(a.id) || vergeben.contains(b.id)) continue;
@@ -553,12 +628,18 @@ class BackupWiederhersteller {
   Future<void> _applyMetadataExport(
     BackupManifest manifest, {
     bool streng = false,
+    Set<String>? nurPruefsummen,
   }) async {
     final content = manifest.alsJson();
     final assetsJson = manifest.aufnahmen.map((a) => a.werte);
 
-    final byChecksum = <String, String>{}; // checksum -> assetId in dieser DB
+    // checksum -> assetId in dieser DB; mit Auswahl nur deren Aufnahmen
+    // (#388) – Alben, Stapel und Angaben gehen alle über diese Zuordnung.
+    final byChecksum = <String, String>{};
     for (final row in await _db.select(_db.assets).get()) {
+      if (nurPruefsummen != null && !nurPruefsummen.contains(row.checksum)) {
+        continue;
+      }
       byChecksum[row.checksum] = row.id;
     }
 

@@ -205,6 +205,17 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     type: DriftSqlType.dateTime,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _papierkorbAktionMeta = const VerificationMeta(
+    'papierkorbAktion',
+  );
+  @override
+  late final GeneratedColumn<String> papierkorbAktion = GeneratedColumn<String>(
+    'papierkorb_aktion',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isLockedMeta = const VerificationMeta(
     'isLocked',
   );
@@ -812,6 +823,7 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     isArchived,
     isTrashed,
     trashedAt,
+    papierkorbAktion,
     isLocked,
     faceScanExcluded,
     description,
@@ -1011,6 +1023,15 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
       context.handle(
         _trashedAtMeta,
         trashedAt.isAcceptableOrUnknown(data['trashed_at']!, _trashedAtMeta),
+      );
+    }
+    if (data.containsKey('papierkorb_aktion')) {
+      context.handle(
+        _papierkorbAktionMeta,
+        papierkorbAktion.isAcceptableOrUnknown(
+          data['papierkorb_aktion']!,
+          _papierkorbAktionMeta,
+        ),
       );
     }
     if (data.containsKey('is_locked')) {
@@ -1462,6 +1483,10 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}trashed_at'],
       ),
+      papierkorbAktion: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}papierkorb_aktion'],
+      ),
       isLocked: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_locked'],
@@ -1716,6 +1741,14 @@ class AssetData extends DataClass implements Insertable<AssetData> {
   final bool isArchived;
   final bool isTrashed;
   final DateTime? trashedAt;
+
+  /// Welche Löschaktion die Aufnahme in den Papierkorb legte (#389). Daran
+  /// erkennt das Zurückholen, was zusammen ging. Bis Schema 97 tat es das
+  /// an [trashedAt], das nur ganze Sekunden kennt: Zwei getrennte
+  /// Löschaktionen in derselben Sekunde galten als eine, und eine vorher
+  /// für sich gelöschte Variante kam mit ihrer Hauptversion zurück.
+  /// `null` bei allem, was vor Schema 98 gelöscht wurde.
+  final String? papierkorbAktion;
 
   /// In den gesperrten (PIN-geschützten) Ordner verschoben – solche Assets
   /// werden aus Timeline, Kalender, Karte, Suche, Alben, Personen und
@@ -2005,6 +2038,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     required this.isArchived,
     required this.isTrashed,
     this.trashedAt,
+    this.papierkorbAktion,
     required this.isLocked,
     required this.faceScanExcluded,
     this.description,
@@ -2087,6 +2121,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     map['is_trashed'] = Variable<bool>(isTrashed);
     if (!nullToAbsent || trashedAt != null) {
       map['trashed_at'] = Variable<DateTime>(trashedAt);
+    }
+    if (!nullToAbsent || papierkorbAktion != null) {
+      map['papierkorb_aktion'] = Variable<String>(papierkorbAktion);
     }
     map['is_locked'] = Variable<bool>(isLocked);
     map['face_scan_excluded'] = Variable<bool>(faceScanExcluded);
@@ -2232,6 +2269,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       trashedAt: trashedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(trashedAt),
+      papierkorbAktion: papierkorbAktion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(papierkorbAktion),
       isLocked: Value(isLocked),
       faceScanExcluded: Value(faceScanExcluded),
       description: description == null && nullToAbsent
@@ -2374,6 +2414,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       isArchived: serializer.fromJson<bool>(json['isArchived']),
       isTrashed: serializer.fromJson<bool>(json['isTrashed']),
       trashedAt: serializer.fromJson<DateTime?>(json['trashedAt']),
+      papierkorbAktion: serializer.fromJson<String?>(json['papierkorbAktion']),
       isLocked: serializer.fromJson<bool>(json['isLocked']),
       faceScanExcluded: serializer.fromJson<bool>(json['faceScanExcluded']),
       description: serializer.fromJson<String?>(json['description']),
@@ -2455,6 +2496,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       'isArchived': serializer.toJson<bool>(isArchived),
       'isTrashed': serializer.toJson<bool>(isTrashed),
       'trashedAt': serializer.toJson<DateTime?>(trashedAt),
+      'papierkorbAktion': serializer.toJson<String?>(papierkorbAktion),
       'isLocked': serializer.toJson<bool>(isLocked),
       'faceScanExcluded': serializer.toJson<bool>(faceScanExcluded),
       'description': serializer.toJson<String?>(description),
@@ -2524,6 +2566,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     bool? isArchived,
     bool? isTrashed,
     Value<DateTime?> trashedAt = const Value.absent(),
+    Value<String?> papierkorbAktion = const Value.absent(),
     bool? isLocked,
     bool? faceScanExcluded,
     Value<String?> description = const Value.absent(),
@@ -2600,6 +2643,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     isArchived: isArchived ?? this.isArchived,
     isTrashed: isTrashed ?? this.isTrashed,
     trashedAt: trashedAt.present ? trashedAt.value : this.trashedAt,
+    papierkorbAktion: papierkorbAktion.present
+        ? papierkorbAktion.value
+        : this.papierkorbAktion,
     isLocked: isLocked ?? this.isLocked,
     faceScanExcluded: faceScanExcluded ?? this.faceScanExcluded,
     description: description.present ? description.value : this.description,
@@ -2714,6 +2760,9 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           : this.isArchived,
       isTrashed: data.isTrashed.present ? data.isTrashed.value : this.isTrashed,
       trashedAt: data.trashedAt.present ? data.trashedAt.value : this.trashedAt,
+      papierkorbAktion: data.papierkorbAktion.present
+          ? data.papierkorbAktion.value
+          : this.papierkorbAktion,
       isLocked: data.isLocked.present ? data.isLocked.value : this.isLocked,
       faceScanExcluded: data.faceScanExcluded.present
           ? data.faceScanExcluded.value
@@ -2849,6 +2898,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           ..write('isArchived: $isArchived, ')
           ..write('isTrashed: $isTrashed, ')
           ..write('trashedAt: $trashedAt, ')
+          ..write('papierkorbAktion: $papierkorbAktion, ')
           ..write('isLocked: $isLocked, ')
           ..write('faceScanExcluded: $faceScanExcluded, ')
           ..write('description: $description, ')
@@ -2920,6 +2970,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     isArchived,
     isTrashed,
     trashedAt,
+    papierkorbAktion,
     isLocked,
     faceScanExcluded,
     description,
@@ -2990,6 +3041,7 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           other.isArchived == this.isArchived &&
           other.isTrashed == this.isTrashed &&
           other.trashedAt == this.trashedAt &&
+          other.papierkorbAktion == this.papierkorbAktion &&
           other.isLocked == this.isLocked &&
           other.faceScanExcluded == this.faceScanExcluded &&
           other.description == this.description &&
@@ -3058,6 +3110,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
   final Value<bool> isArchived;
   final Value<bool> isTrashed;
   final Value<DateTime?> trashedAt;
+  final Value<String?> papierkorbAktion;
   final Value<bool> isLocked;
   final Value<bool> faceScanExcluded;
   final Value<String?> description;
@@ -3125,6 +3178,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.isArchived = const Value.absent(),
     this.isTrashed = const Value.absent(),
     this.trashedAt = const Value.absent(),
+    this.papierkorbAktion = const Value.absent(),
     this.isLocked = const Value.absent(),
     this.faceScanExcluded = const Value.absent(),
     this.description = const Value.absent(),
@@ -3193,6 +3247,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.isArchived = const Value.absent(),
     this.isTrashed = const Value.absent(),
     this.trashedAt = const Value.absent(),
+    this.papierkorbAktion = const Value.absent(),
     this.isLocked = const Value.absent(),
     this.faceScanExcluded = const Value.absent(),
     this.description = const Value.absent(),
@@ -3267,6 +3322,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Expression<bool>? isArchived,
     Expression<bool>? isTrashed,
     Expression<DateTime>? trashedAt,
+    Expression<String>? papierkorbAktion,
     Expression<bool>? isLocked,
     Expression<bool>? faceScanExcluded,
     Expression<String>? description,
@@ -3340,6 +3396,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       if (isArchived != null) 'is_archived': isArchived,
       if (isTrashed != null) 'is_trashed': isTrashed,
       if (trashedAt != null) 'trashed_at': trashedAt,
+      if (papierkorbAktion != null) 'papierkorb_aktion': papierkorbAktion,
       if (isLocked != null) 'is_locked': isLocked,
       if (faceScanExcluded != null) 'face_scan_excluded': faceScanExcluded,
       if (description != null) 'description': description,
@@ -3412,6 +3469,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Value<bool>? isArchived,
     Value<bool>? isTrashed,
     Value<DateTime?>? trashedAt,
+    Value<String?>? papierkorbAktion,
     Value<bool>? isLocked,
     Value<bool>? faceScanExcluded,
     Value<String?>? description,
@@ -3482,6 +3540,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       isArchived: isArchived ?? this.isArchived,
       isTrashed: isTrashed ?? this.isTrashed,
       trashedAt: trashedAt ?? this.trashedAt,
+      papierkorbAktion: papierkorbAktion ?? this.papierkorbAktion,
       isLocked: isLocked ?? this.isLocked,
       faceScanExcluded: faceScanExcluded ?? this.faceScanExcluded,
       description: description ?? this.description,
@@ -3597,6 +3656,9 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     }
     if (trashedAt.present) {
       map['trashed_at'] = Variable<DateTime>(trashedAt.value);
+    }
+    if (papierkorbAktion.present) {
+      map['papierkorb_aktion'] = Variable<String>(papierkorbAktion.value);
     }
     if (isLocked.present) {
       map['is_locked'] = Variable<bool>(isLocked.value);
@@ -3770,6 +3832,7 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
           ..write('isArchived: $isArchived, ')
           ..write('isTrashed: $isTrashed, ')
           ..write('trashedAt: $trashedAt, ')
+          ..write('papierkorbAktion: $papierkorbAktion, ')
           ..write('isLocked: $isLocked, ')
           ..write('faceScanExcluded: $faceScanExcluded, ')
           ..write('description: $description, ')
@@ -26729,6 +26792,7 @@ typedef $$AssetsTableCreateCompanionBuilder =
       Value<bool> isArchived,
       Value<bool> isTrashed,
       Value<DateTime?> trashedAt,
+      Value<String?> papierkorbAktion,
       Value<bool> isLocked,
       Value<bool> faceScanExcluded,
       Value<String?> description,
@@ -26798,6 +26862,7 @@ typedef $$AssetsTableUpdateCompanionBuilder =
       Value<bool> isArchived,
       Value<bool> isTrashed,
       Value<DateTime?> trashedAt,
+      Value<String?> papierkorbAktion,
       Value<bool> isLocked,
       Value<bool> faceScanExcluded,
       Value<String?> description,
@@ -26940,6 +27005,11 @@ class $$AssetsTableFilterComposer
 
   ColumnFilters<DateTime> get trashedAt => $composableBuilder(
     column: $table.trashedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get papierkorbAktion => $composableBuilder(
+    column: $table.papierkorbAktion,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -27278,6 +27348,11 @@ class $$AssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get papierkorbAktion => $composableBuilder(
+    column: $table.papierkorbAktion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isLocked => $composableBuilder(
     column: $table.isLocked,
     builder: (column) => ColumnOrderings(column),
@@ -27603,6 +27678,11 @@ class $$AssetsTableAnnotationComposer
   GeneratedColumn<DateTime> get trashedAt =>
       $composableBuilder(column: $table.trashedAt, builder: (column) => column);
 
+  GeneratedColumn<String> get papierkorbAktion => $composableBuilder(
+    column: $table.papierkorbAktion,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get isLocked =>
       $composableBuilder(column: $table.isLocked, builder: (column) => column);
 
@@ -27857,6 +27937,7 @@ class $$AssetsTableTableManager
                 Value<bool> isArchived = const Value.absent(),
                 Value<bool> isTrashed = const Value.absent(),
                 Value<DateTime?> trashedAt = const Value.absent(),
+                Value<String?> papierkorbAktion = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
                 Value<bool> faceScanExcluded = const Value.absent(),
                 Value<String?> description = const Value.absent(),
@@ -27924,6 +28005,7 @@ class $$AssetsTableTableManager
                 isArchived: isArchived,
                 isTrashed: isTrashed,
                 trashedAt: trashedAt,
+                papierkorbAktion: papierkorbAktion,
                 isLocked: isLocked,
                 faceScanExcluded: faceScanExcluded,
                 description: description,
@@ -27993,6 +28075,7 @@ class $$AssetsTableTableManager
                 Value<bool> isArchived = const Value.absent(),
                 Value<bool> isTrashed = const Value.absent(),
                 Value<DateTime?> trashedAt = const Value.absent(),
+                Value<String?> papierkorbAktion = const Value.absent(),
                 Value<bool> isLocked = const Value.absent(),
                 Value<bool> faceScanExcluded = const Value.absent(),
                 Value<String?> description = const Value.absent(),
@@ -28060,6 +28143,7 @@ class $$AssetsTableTableManager
                 isArchived: isArchived,
                 isTrashed: isTrashed,
                 trashedAt: trashedAt,
+                papierkorbAktion: papierkorbAktion,
                 isLocked: isLocked,
                 faceScanExcluded: faceScanExcluded,
                 description: description,

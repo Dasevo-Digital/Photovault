@@ -28,10 +28,15 @@ class KammerSicherungsbilanz {
 
 /// Ein Eintrag der Kammer, aus der Sicherung gelesen.
 class GesicherterKammereintrag {
-  const GesicherterKammereintrag(this.ordner, this.angaben);
+  const GesicherterKammereintrag(this.ordner, this.angaben, {this.gesichertAm});
 
   final Directory ordner;
   final Map<String, Object?> angaben;
+
+  /// Wann der Eintrag gesichert wurde – aus dem Vermerk
+  /// [FotokammerSicherung.gesichertName], bei älteren Einträgen ohne ihn
+  /// die Änderungszeit der Angaben (#388).
+  final DateTime? gesichertAm;
 
   File get datei => File(p.join(ordner.path, FotokammerSicherung.dateiName));
 }
@@ -60,6 +65,11 @@ abstract final class FotokammerSicherung {
   static const ordnerName = 'fotokammer';
   static const dateiName = 'datei.enc';
   static const angabenName = 'angaben.enc';
+
+  /// Wann der Eintrag gesichert wurde, als Zeitstempel im Klartext (#388):
+  /// Eine ältere Sicherungsstufe holt nur, was zu ihr gehört
+  /// ([gehoertZuStufe]). Ohne Punkt, damit er auch ausser Haus mitkommt.
+  static const gesichertName = 'gesichert';
 
   /// Mit Punkt: Die Sicherung ausser Haus überspringt solche Dateien.
   static const _wegSeitName = '.weg-seit';
@@ -97,6 +107,9 @@ abstract final class FotokammerSicherung {
             File(p.join(platz.path, dateiName)),
             schluessel,
           );
+          await File(
+            p.join(platz.path, gesichertName),
+          ).writeAsString(jetzt.toUtc().toIso8601String());
           await _verschluessele(angaben, zielAngaben, schluessel);
           neu++;
         } on Object catch (x) {
@@ -155,13 +168,39 @@ abstract final class FotokammerSicherung {
     return entfernt;
   }
 
-  /// Die vollständigen Einträge einer Sicherung unter [wurzel]; was sich
-  /// nicht lesen lässt, zählt nicht.
+  /// Ob ein Eintrag, gesichert um [gesichertAm], zur Sicherungsstufe von
+  /// [stufe] gehört, wenn die nächste Stufe um [naechste] entstand (#388).
+  ///
+  /// Der Server sichert die Kammer gleich nach der Bibliothek, also Minuten
+  /// nach dem Schnappschuss der Stufe. Dazu gehört, was bis [nachlauf]
+  /// danach gesichert wurde, aber nicht mehr, was zur nächsten Stufe kam.
+  /// Bis 3.67.2 holte jede ältere Stufe auch Kammerfotos, die erst später
+  /// gesichert wurden. Die neueste Stufe ([naechste] `null`) holt alles,
+  /// wie eine Wiederherstellung ohne gewählte Stufe.
+  static bool gehoertZuStufe(
+    DateTime? gesichertAm, {
+    required DateTime stufe,
+    DateTime? naechste,
+  }) {
+    if (gesichertAm == null || naechste == null) return true;
+    var bis = stufe.add(nachlauf);
+    if (naechste.isBefore(bis)) bis = naechste;
+    return !gesichertAm.isAfter(bis);
+  }
+
+  /// Wie lange nach einer Sicherungsstufe die Kammer noch zu ihr zählt.
+  static const nachlauf = Duration(hours: 12);
+
+  /// Die vollständigen Einträge einer Sicherung unter [wurzel]. Was sich
+  /// nicht lesen lässt oder ohne Datei dasteht, meldet [beiFehler] (#388) –
+  /// bis 3.67.2 stand es nur im Protokoll, und eine Wiederherstellung mit
+  /// beschädigten Angaben galt als erfolgreich.
   static Future<List<GesicherterKammereintrag>> eintraege(
     String wurzel,
     SecretKey schluessel,
-    Directory zwischenlager,
-  ) async {
+    Directory zwischenlager, {
+    void Function(String eintrag, Object fehler)? beiFehler,
+  }) async {
     final ordner = Directory(p.join(wurzel, ordnerName));
     if (!await ordner.exists()) return const [];
     final aus = <GesicherterKammereintrag>[];
@@ -172,14 +211,28 @@ abstract final class FotokammerSicherung {
       final klar = File(
         p.join(zwischenlager.path, '${p.basename(e.path)}.json'),
       );
+      final id = p.basename(e.path);
       try {
+        if (!await File(p.join(e.path, dateiName)).exists()) {
+          throw const FormatException('pv_restore_kammer_datei_fehlt');
+        }
         await VaultCrypto.decryptFile(angaben, klar, schluessel);
         final j = jsonDecode(await klar.readAsString());
-        if (j is Map) {
-          aus.add(GesicherterKammereintrag(e, j.cast<String, Object?>()));
-        }
+        if (j is! Map) throw const FormatException('pv_restore_kammer_angaben');
+        final vermerk = File(p.join(e.path, gesichertName));
+        final am = await vermerk.exists()
+            ? DateTime.tryParse((await vermerk.readAsString()).trim())
+            : null;
+        aus.add(
+          GesicherterKammereintrag(
+            e,
+            j.cast<String, Object?>(),
+            gesichertAm: am ?? (await angaben.stat()).modified,
+          ),
+        );
       } on Object catch (x) {
-        protokoll('pv_restore_kammer: ${p.basename(e.path)}: $x');
+        protokoll('pv_restore_kammer: $id: $x');
+        beiFehler?.call(id, x);
       } finally {
         if (await klar.exists()) await klar.delete();
       }

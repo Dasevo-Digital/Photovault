@@ -98,10 +98,17 @@ class BackupKoordinator {
     String destination, {
     required bool encrypt,
   }) async* {
+    // Verschlüsselt verlangt, aber kein Schlüssel: abbrechen, ehe etwas
+    // geschrieben ist. `null` hiesse dem Dienst „unverschlüsselt“, und es
+    // entstünde still eine Klartextkopie (#388).
+    final schluessel = encrypt ? _backupKey : null;
+    if (encrypt && schluessel == null) {
+      throw StateError('Die Backup-Passphrase muss vorher entsperrt sein.');
+    }
     final grenze = await _backupGrenzeBytes();
     yield* backupService.performBackup(
       destination,
-      encryptionKey: encrypt ? _backupKey : null,
+      encryptionKey: schluessel,
       maxBytesPerRun: grenze,
       markieren: !verbunden,
     );

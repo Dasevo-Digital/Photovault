@@ -190,6 +190,41 @@ class VaultCrypto {
     ..._blockNummer(nummer),
   ];
 
+  /// Ob [datei] so gross ist, wie eine vollständige Verschlüsselung von
+  /// [klartextBytes] Bytes in ihrem Format sein muss (#388). Fängt eine
+  /// abgeschnittene Teilkopie, ohne zu entschlüsseln: Jedes Format legt die
+  /// Grösse fest – PVE1: Kopf (4) und je Block 32 Bytes Rahmen; PVE2
+  /// zusätzlich ein leerer Abschlussblock; PVE3 dazu 32 Bytes Dateikennung.
+  /// Ein unbekannter Kopf gilt als unpassend.
+  static Future<bool> passtZurGroesse(File datei, int klartextBytes) async {
+    final RandomAccessFile f;
+    try {
+      f = await datei.open();
+    } on FileSystemException {
+      return false;
+    }
+    try {
+      final magic = await f.read(4);
+      final laenge = await f.length();
+      final bloecke = (klartextBytes + _chunkSize - 1) ~/ _chunkSize;
+      const rahmen = 4 + 12 + _macLength;
+      final int erwartet;
+      if (_bytesEqual(magic, _magicV3)) {
+        erwartet =
+            4 + _dateikennungLaenge + klartextBytes + (bloecke + 1) * rahmen;
+      } else if (_bytesEqual(magic, _magicV2)) {
+        erwartet = 4 + klartextBytes + (bloecke + 1) * rahmen;
+      } else if (_bytesEqual(magic, _magicV1)) {
+        erwartet = 4 + klartextBytes + bloecke * rahmen;
+      } else {
+        return false;
+      }
+      return laenge == erwartet;
+    } finally {
+      await f.close();
+    }
+  }
+
   /// Verschlüsselt [source] blockweise nach [destination].
   ///
   /// Dateiformat: 4 Bytes Magic ("PVE3"), 32 Bytes Dateikennung, danach

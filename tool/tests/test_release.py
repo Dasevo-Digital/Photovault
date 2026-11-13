@@ -446,7 +446,7 @@ class Veroeffentlichen(unittest.TestCase):
         self.mac = 'PhotoVault-9.9.9-macos.zip'
         (self.u / self.mac).write_bytes(b'paket')
 
-    def laufe(self, summe=None, extra=()):
+    def laufe(self, summe=None, extra=(), anhang=b'paket'):
         import hashlib
         h = summe or hashlib.sha256(b'paket').hexdigest()
         rel = {'id': 7, 'draft': True, 'tag_name': 'v9.9.9', 'assets': [
@@ -467,7 +467,8 @@ class Veroeffentlichen(unittest.TestCase):
                 unittest.mock.patch('release.upload_ordner', return_value=self.u), \
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
                 unittest.mock.patch('release.lauf'), \
-                unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'):
+                unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'), \
+                unittest.mock.patch('release._sha256_anhang', return_value=hashlib.sha256(anhang).hexdigest()):
             try:
                 release.veroeffentlichen(unittest.mock.Mock(fassung='9.9.9'))
             except SystemExit as e:
@@ -482,6 +483,13 @@ class Veroeffentlichen(unittest.TestCase):
     def test_pruefsumme_passt_nicht(self):
         anfragen, fehler = self.laufe(summe='e' * 64)
         self.assertIn('Prüfsumme', str(fehler))
+        self.assertNotIn('PATCH', [m for m, _ in anfragen])
+
+    def test_gleich_gross_und_richtig_genannt_aber_anderer_anhang(self):
+        # Aus dem Prüfbericht vom 13.11.: Die SHA256SUMS.txt im Entwurf passt,
+        # die Grösse auch – der Anhang selbst ist ein anderer (#392).
+        anfragen, fehler = self.laufe(anhang=b'kaput')
+        self.assertIn('hochgeladene Anhang', str(fehler))
         self.assertNotIn('PATCH', [m for m, _ in anfragen])
 
     def test_fremdes_paket_im_entwurf(self):

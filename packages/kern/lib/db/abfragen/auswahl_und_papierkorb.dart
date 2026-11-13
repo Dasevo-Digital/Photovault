@@ -195,14 +195,19 @@ extension AuswahlAbfragen on AppDatabase {
   /// dessen Original liegt als Variante dahinter.
   Future<void> moveToTrash(List<String> assetIds) => transaction(() async {
     final alle = await zugehoerige(assetIds);
-    // Was schon im Papierkorb liegt, behält seinen Zeitpunkt: Daran
-    // erkennt das Zurückholen, was zusammen ging.
+    // Was schon im Papierkorb liegt, behält Zeitpunkt und Aktion: An der
+    // Aktion erkennt das Zurückholen, was zusammen ging (#389).
     final jetzt = DateTime.now();
+    final aktion = const Uuid().v4();
     for (final stueck in inStuecken(alle)) {
       await (update(
         assets,
       )..where((t) => t.id.isIn(stueck) & t.isTrashed.equals(false))).write(
-        AssetsCompanion(isTrashed: const Value(true), trashedAt: Value(jetzt)),
+        AssetsCompanion(
+          isTrashed: const Value(true),
+          trashedAt: Value(jetzt),
+          papierkorbAktion: Value(aktion),
+        ),
       );
     }
     await sichtbaresTitelbild(await _stapelVon(alle));
@@ -298,53 +303,55 @@ extension AuswahlAbfragen on AppDatabase {
   /// Aufnahmen wieder zu sehen oder im Papierkorb sind.
   Future<int> repariereVerdeckteZugehoerige() => transaction(() async {
     var anzahl = 0;
-    // Live Photos: das Video folgt seinem Foto in den Papierkorb.
-    final videos = await customSelect(
-      'SELECT v.id AS id, f.trashed_at AS am, f.id IS NULL AS weg '
-      'FROM assets v LEFT JOIN assets f ON f.id = v.linked_asset_id '
-      "WHERE v.type = 'VIDEO' AND v.linked_asset_id IS NOT NULL "
-      'AND +v.is_trashed = 0 AND (f.id IS NULL OR f.is_trashed = 1)',
-      readsFrom: {assets},
-    ).get();
-    for (final z in videos) {
-      final am = z.read<int?>('am');
-      await (update(
-        assets,
-      )..where((t) => t.id.equals(z.read<String>('id')))).write(
-        AssetsCompanion(
-          isTrashed: const Value(true),
-          trashedAt: Value(
-            am == null
-                ? DateTime.now()
-                : DateTime.fromMillisecondsSinceEpoch(am * 1000),
+    // In den Papierkorb, mit Zeit und Aktion dessen, dem es folgt.
+    Future<int> folge(List<QueryRow> zeilen) async {
+      for (final z in zeilen) {
+        final am = z.read<int?>('am');
+        await (update(
+          assets,
+        )..where((t) => t.id.equals(z.read<String>('id')))).write(
+          AssetsCompanion(
+            isTrashed: const Value(true),
+            trashedAt: Value(
+              am == null
+                  ? DateTime.now()
+                  : DateTime.fromMillisecondsSinceEpoch(am * 1000),
+            ),
+            papierkorbAktion: Value(z.read<String?>('aktion')),
           ),
-        ),
-      );
-      anzahl++;
+        );
+      }
+      return zeilen.length;
     }
-    // Varianten hinter einer Hauptversion im Papierkorb gehen mit.
-    final varianten = await customSelect(
-      'SELECT m.id AS id, c.trashed_at AS am FROM assets m '
-      'JOIN assets c ON c.stack_id = m.stack_id AND c.is_stack_cover = 1 '
-      "WHERE m.stack_id IS NOT NULL AND m.stack_id LIKE 'variante:%' "
-      'AND m.is_stack_cover = 0 AND +m.is_trashed = 0 AND +c.is_trashed = 1',
-      readsFrom: {assets},
-    ).get();
-    for (final z in varianten) {
-      final am = z.read<int?>('am');
-      await (update(
-        assets,
-      )..where((t) => t.id.equals(z.read<String>('id')))).write(
-        AssetsCompanion(
-          isTrashed: const Value(true),
-          trashedAt: Value(
-            am == null
-                ? DateTime.now()
-                : DateTime.fromMillisecondsSinceEpoch(am * 1000),
-          ),
-        ),
+
+    // Bis nichts mehr folgt (#389): Nimmt der zweite Schritt das Foto einer
+    // Live-Photo-Variante mit, muss dessen Video danach auch noch gehen –
+    // bis 3.67.2 erst beim nächsten Start. Ein Aufruf repariert vollständig.
+    for (var runde = 0; runde < 8; runde++) {
+      // Live Photos: das Video folgt seinem Foto in den Papierkorb.
+      final videos = await folge(
+        await customSelect(
+          'SELECT v.id AS id, f.trashed_at AS am, '
+          'f.papierkorb_aktion AS aktion, f.id IS NULL AS weg '
+          'FROM assets v LEFT JOIN assets f ON f.id = v.linked_asset_id '
+          "WHERE v.type = 'VIDEO' AND v.linked_asset_id IS NOT NULL "
+          'AND +v.is_trashed = 0 AND (f.id IS NULL OR f.is_trashed = 1)',
+          readsFrom: {assets},
+        ).get(),
       );
-      anzahl++;
+      // Varianten hinter einer Hauptversion im Papierkorb gehen mit.
+      final varianten = await folge(
+        await customSelect(
+          'SELECT m.id AS id, c.trashed_at AS am, '
+          'c.papierkorb_aktion AS aktion FROM assets m '
+          'JOIN assets c ON c.stack_id = m.stack_id AND c.is_stack_cover = 1 '
+          "WHERE m.stack_id IS NOT NULL AND m.stack_id LIKE 'variante:%' "
+          'AND m.is_stack_cover = 0 AND +m.is_trashed = 0 AND +c.is_trashed = 1',
+          readsFrom: {assets},
+        ).get(),
+      );
+      anzahl += videos + varianten;
+      if (videos + varianten == 0) break;
     }
     // Was danach noch ohne sichtbares Titelbild dasteht: Serien, gesperrte
     // oder gelöschte Hauptversionen.
@@ -516,8 +523,8 @@ extension AuswahlAbfragen on AppDatabase {
   /// [moveToTrash] (#254).
   ///
   /// Bei einem Variantenstapel, dessen Hauptversion im Papierkorb liegt,
-  /// kommen Hauptversion und alles mit, was im selben Augenblick mit ihr
-  /// ging – auch wenn nur eine verdeckte Variante angetippt wurde: Ohne
+  /// kommen Hauptversion und alles mit, was in derselben Löschaktion mit
+  /// ihr ging – auch wenn nur eine verdeckte Variante angetippt wurde: Ohne
   /// ihre Hauptversion bliebe sie unsichtbar. Eine Variante, die schon
   /// vorher für sich gelöscht wurde, bleibt, wo sie ist.
   Future<void> restoreFromTrash(List<String> assetIds) => transaction(() async {
@@ -527,15 +534,27 @@ extension AuswahlAbfragen on AppDatabase {
       final mitglieder = await assetsInStack(s);
       final titel = mitglieder.where((m) => m.isStackCover).firstOrNull;
       if (titel == null || !titel.isTrashed) continue;
+      // Zusammen ging, was dieselbe Aktion trägt (#389). Vor Schema 98
+      // Gelöschtes hat keine; dort bleibt nur der Zeitpunkt.
+      final aktion = titel.papierkorbAktion;
       ids.addAll([
         for (final m in mitglieder)
-          if (m.isTrashed && m.trashedAt == titel.trashedAt) m.id,
+          if (m.isTrashed &&
+              (aktion != null
+                  ? m.papierkorbAktion == aktion
+                  : m.papierkorbAktion == null &&
+                        m.trashedAt == titel.trashedAt))
+            m.id,
       ]);
     }
     final alle = await zugehoerige(ids.toList(), varianten: false);
     for (final stueck in inStuecken(alle)) {
       await (update(assets)..where((t) => t.id.isIn(stueck))).write(
-        const AssetsCompanion(isTrashed: Value(false), trashedAt: Value(null)),
+        const AssetsCompanion(
+          isTrashed: Value(false),
+          trashedAt: Value(null),
+          papierkorbAktion: Value(null),
+        ),
       );
     }
     await sichtbaresTitelbild(await _stapelVon(alle));

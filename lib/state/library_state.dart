@@ -2929,7 +2929,16 @@ class LibraryState extends ChangeNotifier {
   /// und ob es seither eingelesen ist (#252). Nur im Speicher: Nach einem
   /// Start liest der erste Durchgang einmal alles.
   final _ordnerGesehen =
-      <String, ({int groesse, DateTime geaendert, bool eingelesen})>{};
+      <
+        String,
+        ({int groesse, DateTime geaendert, bool eingelesen, int fehlversuche})
+      >{};
+
+  /// So oft versucht der Ordner eine Datei, deren Import scheiterte, in
+  /// den folgenden Durchgängen noch einmal (#390). Danach gilt sie als
+  /// gesehen, bis sie sich ändert – eine kaputte Datei soll nicht jeden
+  /// Durchgang ganz gelesen werden.
+  static const _ordnerFehlversuche = 5;
 
   /// Sieht im überwachten Ordner nach neuen Dateien und importiert sie.
   ///
@@ -2996,6 +3005,7 @@ class LibraryState extends ChangeNotifier {
           groesse: st.size,
           geaendert: st.modified,
           eingelesen: false,
+          fehlversuche: gleich ? vorher.fehlversuche : 0,
         );
         if (gleich || jetzt.difference(st.modified) >= _ordnerRuhe) {
           faellig.add(d);
@@ -3007,21 +3017,27 @@ class LibraryState extends ChangeNotifier {
       if (faellig.isEmpty) return 0;
 
       var neue = 0;
+      final gescheitert = <String>{};
       await for (final p in importFiles(faellig)) {
         if (p.assetId != null) neue++;
+        if (p.gescheitert && p.pfad != null) gescheitert.add(p.pfad!);
       }
       // Erst nach dem ganzen Lauf: Bricht er ab, kommt alles noch einmal.
-      // Was als Dublette oder fehlerhaft übergangen wurde, gilt ebenfalls
-      // als gesehen; ändert es sich, kommt es wieder.
+      // Eingelesen ist, was hereinkam oder schon da war. Was scheiterte –
+      // oft nur vorübergehend: Platz, Rechte, eine Ablage im Netz –, kommt
+      // im nächsten Durchgang wieder, bis zu [_ordnerFehlversuche] Mal
+      // (#390). Bis 3.67.2 galt es gleich als gesehen und blieb bis zum
+      // nächsten Start draussen.
       for (final d in faellig) {
         final e = _ordnerGesehen[d];
-        if (e != null) {
-          _ordnerGesehen[d] = (
-            groesse: e.groesse,
-            geaendert: e.geaendert,
-            eingelesen: true,
-          );
-        }
+        if (e == null) continue;
+        final fehl = gescheitert.contains(d) ? e.fehlversuche + 1 : 0;
+        _ordnerGesehen[d] = (
+          groesse: e.groesse,
+          geaendert: e.geaendert,
+          eingelesen: fehl == 0 || fehl >= _ordnerFehlversuche,
+          fehlversuche: fehl,
+        );
       }
       return neue;
     } catch (e) {
