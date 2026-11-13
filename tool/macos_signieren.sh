@@ -72,13 +72,23 @@ hinweis "Kennung: $([ "$KENNUNG" = "-" ] && echo "ad-hoc" || echo "$KENNUNG")"
 # Teile dieselbe Team-ID und Library Validation greift. Deshalb hängt die
 # Ausnahme an --kennung und steht nicht in Release.entitlements.
 if [ "$KENNUNG" = "-" ]; then
-  ERWEITERT="$(mktemp -t photovault-rechte).plist"
-  cp "$RECHTE" "$ERWEITERT"
-  /usr/libexec/PlistBuddy -c \
-    'Add :com.apple.security.cs.disable-library-validation bool true' \
-    "$ERWEITERT" >/dev/null 2>&1
+  # Ein eigener Ordner: mktemp legt die Datei selbst an, und eine Endung
+  # dahinter liesse sie liegen.
+  ERWEITERT_ORDNER="$(mktemp -d -t photovault-rechte)"
+  trap 'rm -rf "$ERWEITERT_ORDNER"' EXIT
+  ERWEITERT="$ERWEITERT_ORDNER/rechte.plist"
+  # Ohne die Ausnahme startete die ad-hoc signierte App mit einem
+  # einzigen Framework nicht – also abbrechen, statt still ohne sie zu
+  # signieren (#382).
+  if ! cp "$RECHTE" "$ERWEITERT" ||
+    ! /usr/libexec/PlistBuddy -c \
+      'Add :com.apple.security.cs.disable-library-validation bool true' \
+      "$ERWEITERT" >/dev/null ||
+    [ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.cs.disable-library-validation' "$ERWEITERT" 2>/dev/null)" != "true" ]; then
+    fehler "Library-Validation-Ausnahme liess sich nicht eintragen"
+    exit 1
+  fi
   RECHTE="$ERWEITERT"
-  trap 'rm -f "$ERWEITERT"' EXIT
   hinweis "ad-hoc: Library Validation abgeschaltet (siehe Kommentar im Skript)"
 fi
 
@@ -92,11 +102,15 @@ if [ "$KENNUNG" = "-" ]; then ZEITSTEMPEL="--timestamp=none"; else ZEITSTEMPEL="
 
 signiere() { # pfad [zusätzliche Argumente]
   local ziel="$1"; shift
-  if codesign --force --options runtime "$ZEITSTEMPEL" \
-       --sign "$KENNUNG" "$@" "$ziel" 2>/dev/null; then
+  local meldung
+  # Die Meldung von codesign behalten: Mit einer Developer-ID scheitert es
+  # etwa am nicht erreichbaren Zeitstempelserver, und ohne sie hiesse es
+  # nur, dass es scheiterte (#382).
+  if meldung="$(codesign --force --options runtime "$ZEITSTEMPEL" \
+       --sign "$KENNUNG" "$@" "$ziel" 2>&1)"; then
     return 0
   fi
-  fehler "$(basename "$ziel")"
+  fehler "$(basename "$ziel"): ${meldung##*$'\n'}"
   return 1
 }
 

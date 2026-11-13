@@ -112,7 +112,11 @@ void main() {
   late Konto erika;
   late Handler api;
 
-  Handler baue({bool totpPflicht = false, bool mitWeb = true}) {
+  Handler baue({
+    bool totpPflicht = false,
+    bool mitWeb = true,
+    bool mitKarte = true,
+  }) {
     konten = Kontodienst(
       sdb,
       Tresorschluessel(List.filled(32, 7)),
@@ -124,6 +128,10 @@ void main() {
       bibliotheken: bibliotheken,
       absender: Absender([proxyNetz]),
       web: mitWeb ? web : null,
+      // Ohne Netz: Diese Tests holen keine Kachel.
+      karte: mitKarte
+          ? Kartenkacheln(Directory('${ordner.path}/kartenkacheln'))
+          : null,
     );
   }
 
@@ -227,6 +235,28 @@ void main() {
       // OpenStreetMap und OpenTopoMap gar nicht erst fragen.
       expect(csp, isNot(contains('openstreetmap')));
       expect(csp, isNot(contains('opentopomap')));
+
+      // Mit PV_KARTEN=aus schickt der Server den Browser zum Anbieter
+      // weiter (#382); dann muss die Seite dessen Kacheln laden dürfen,
+      // sonst bleibt jede Karte leer.
+      final ohne = await frag('GET', '/app/', an: baue(mitKarte: false));
+      final offen = ohne.headers['content-security-policy']!;
+      for (final host in [
+        'https://tile.openstreetmap.org',
+        'https://tile.opentopomap.org',
+      ]) {
+        expect(
+          RegExp('img-src [^;]*$host').hasMatch(offen),
+          isTrue,
+          reason: host,
+        );
+        expect(
+          RegExp('connect-src [^;]*$host').hasMatch(offen),
+          isTrue,
+          reason: host,
+        );
+      }
+      expect(offen, contains("script-src 'self'"));
       expect(seite.headers['x-frame-options'], 'DENY');
       expect(seite.headers['x-content-type-options'], 'nosniff');
       expect(seite.headers['cross-origin-opener-policy'], 'same-origin');

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:kern/abgleich/kachelumleitung.dart' show serverKartenquellen;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
@@ -34,13 +35,24 @@ import 'packen.dart';
 /// fremde Seiten. Was der Server an Daten liefert, ist JSON und wird im
 /// Browser als Text eingesetzt, nie als HTML.
 class Webapi {
-  Webapi(this.konten, this.absender, {required this.ordner});
+  Webapi(
+    this.konten,
+    this.absender, {
+    required this.ordner,
+    this.kartenBeimAnbieter = false,
+  });
 
   final Kontodienst konten;
   final Absender absender;
 
   /// Wo `index.html`, `app.js` und `app.css` liegen.
   final Directory ordner;
+
+  /// Ob der Server keine Kartenkacheln liefert (`PV_KARTEN=aus`). Dann
+  /// schickt `/api/v1/karte/…` den Browser zum Anbieter weiter, wie die
+  /// Geräte ihn selbst fragen, und die Seite darf dessen Kacheln laden
+  /// (#382) – sonst bliebe jede Karte im Browser leer.
+  final bool kartenBeimAnbieter;
 
   /// Was die Seite laden und tun darf – und sonst nichts.
   ///
@@ -53,11 +65,20 @@ class Webapi {
   /// OpenStreetMap und OpenTopoMap stehen nicht mehr darin: Ihre Kacheln
   /// kommen seit #180 vom Server selbst (`/api/v1/karte/…`). Fragte die
   /// Seite sie doch noch direkt, liesse der Browser es nicht zu – und die
-  /// IP-Adresse des Besuchers bliebe trotzdem beim Server.
-  static const csp =
+  /// IP-Adresse des Besuchers bliebe trotzdem beim Server. Nur wenn der
+  /// Server sie gar nicht liefert ([kartenBeimAnbieter]), stehen sie in
+  /// [cspMitAnbietern].
+  static final csp = _richtlinie('');
+
+  static final cspMitAnbietern = _richtlinie(
+    [for (final q in serverKartenquellen.values) ' https://${q.host}'].join(),
+  );
+
+  static String _richtlinie(String kartenquellen) =>
       "default-src 'none'; script-src 'self'; style-src 'self'; "
-      "img-src 'self' blob: data:; "
-      "media-src 'self' blob:; connect-src 'self' $_landschaft; "
+      "img-src 'self' blob: data:$kartenquellen; "
+      "media-src 'self' blob:; "
+      "connect-src 'self' $_landschaft$kartenquellen; "
       "font-src 'self'; manifest-src 'self'; base-uri 'none'; "
       "form-action 'none'; frame-ancestors 'none'";
 
@@ -152,7 +173,8 @@ class Webapi {
       // soll nichts zurückbleiben); die übrigen Dateien immer nachfragen.
       'cache-control': endung == 'html' ? 'no-store' : 'no-cache',
       if (endung != 'html') 'etag': etag,
-      if (endung == 'html') 'content-security-policy': csp,
+      if (endung == 'html')
+        'content-security-policy': kartenBeimAnbieter ? cspMitAnbietern : csp,
       // Ein SVG kann Skript tragen – nur als Bild, nie als Seite.
       if (endung == 'svg')
         'content-security-policy':

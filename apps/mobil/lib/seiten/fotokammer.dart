@@ -118,6 +118,8 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
   /// kann das Urteil inzwischen geändert haben.
   Future<void> _abschliessen() async {
     final t = AppTexte.of(context);
+    // Freigegeben wird nur, was hier schon zu sehen war (#382).
+    final gesehen = {for (final e in _eintraege) e.id};
     final List<Kammereintrag> stand;
     try {
       stand = await _d.liste();
@@ -127,14 +129,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     }
     if (!mounted) return;
     setState(() => _eintraege = stand);
-    final weg = [
-      for (final e in stand)
-        if (e.abgelehnt) e.id,
-    ];
-    final rest = [
-      for (final e in stand)
-        if (!e.abgelehnt) e.id,
-    ];
+    final (:weg, :rest) = kammerAbschluss(stand, gesehen);
     if (weg.isEmpty) return;
     final ja = await showDialog<bool>(
       context: context,

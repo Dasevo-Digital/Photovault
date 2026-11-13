@@ -262,7 +262,10 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
     // Frisch vom Server: Verworfen wird endgültig, und ein anderes Gerät
-    // kann das Urteil inzwischen geändert haben.
+    // kann das Urteil inzwischen geändert haben. Freigegeben wird nur, was
+    // hier schon zu sehen war (#382): Was inzwischen hinzukam, hat noch
+    // niemand gesichtet, und es bleibt in der Kammer.
+    final gesehen = {for (final e in _eintraege) e.id};
     final List<Kammereintrag> stand;
     try {
       stand = await d.liste();
@@ -272,14 +275,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     }
     if (!mounted) return;
     setState(() => _eintraege = stand);
-    final weg = [
-      for (final e in stand)
-        if (e.abgelehnt) e.id,
-    ];
-    final rest = [
-      for (final e in stand)
-        if (!e.abgelehnt) e.id,
-    ];
+    final (:weg, :rest) = kammerAbschluss(stand, gesehen);
     if (weg.isEmpty) return;
     final ja = await showDialog<bool>(
       context: context,
@@ -322,7 +318,10 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
         );
         return;
       }
-      await d.verwerfen(weg);
+      // Nur, was dann noch abgelehnt ist: Hebt ein anderes Gerät eine
+      // Ablehnung auf, während hier noch freigegeben wird, bleibt das Foto
+      // (#358, #382). Die Kammer hat keinen Papierkorb.
+      await d.verwerfen(weg, nurAbgelehnte: true);
       bote.showSnackBar(
         SnackBar(content: Text(t.kammerFreigegeben(r.neu + r.schonDa))),
       );

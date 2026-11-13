@@ -21,7 +21,10 @@
 // abschliessen“ gibt alles frei, was nicht abgelehnt ist, und verwirft
 // danach das Abgelehnte – erst, wenn das Freigeben ganz geklappt hat.
 
-const kammer = { eintraege: [], auswahl: new Set(), offen: -1, arbeit: false, bytes: 0 };
+const kammer = { eintraege: [], auswahl: new Set(), offen: -1, arbeit: false, bytes: 0, urteileUnterwegs: new Set() };
+
+// „1 Foto“, nicht „1 Fotos“.
+const kammerFotos = (n) => (n === 1 ? t('1 Foto') : t('{n} Fotos', { n }));
 
 // So viele auf einmal: Der Server importiert sie nacheinander, ein RAW
 // braucht Sekunden, und ein Proxy davor wartet nicht ewig.
@@ -49,7 +52,7 @@ function zeichneKammer() {
   const n = kammer.eintraege.length;
   $('kammer-hinweis').textContent = n === 0
     ? t('Die Fotokammer ist leer. Ist „Neue Uploads erst in die Fotokammer“ angehakt, landen hochgeladene Fotos zuerst hier.')
-    : t('{n} Fotos, {g}. Klicken wählt aus, doppelt klicken zeigt das Foto groß.', { n, g: groesse(kammer.bytes) });
+    : t('{fotos}, {g}. Klicken wählt aus, doppelt klicken zeigt das Foto groß.', { fotos: kammerFotos(n), g: groesse(kammer.bytes) });
   kammer.eintraege.forEach((e, i) => {
     const k = el('button', 'kammerkachel');
     k.type = 'button';
@@ -91,12 +94,16 @@ async function urteile(e, urteil) {
   const vorher = { sterne: e.sterne || 0, abgelehnt: !!e.abgelehnt };
   Object.assign(e, urteil);
   zeigeUrteil(e);
+  const lauf = api('/api/v1/kammer/sichten', { methode: 'POST', json: { ids: [e.id], ...urteil } });
+  kammer.urteileUnterwegs.add(lauf);
   try {
-    await api('/api/v1/kammer/sichten', { methode: 'POST', json: { ids: [e.id], ...urteil } });
+    await lauf;
   } catch (x) {
     Object.assign(e, vorher);
     zeigeUrteil(e);
     meldung(x.message, true);
+  } finally {
+    kammer.urteileUnterwegs.delete(lauf);
   }
 }
 
@@ -190,13 +197,23 @@ async function kammerFreigeben() {
 
 async function kammerAbschliessen() {
   if (kammer.arbeit) return;
+  // Erst die eigenen Urteile ankommen lassen: Holte die Liste den Stand
+  // davor, fehlte die letzte Ablehnung, und das Foto käme in die
+  // Bibliothek (#382).
+  await Promise.allSettled([...kammer.urteileUnterwegs]);
   // Den Stand frisch holen: Ein anderes Gerät kann inzwischen anders
-  // geurteilt haben, und Verworfenes ist weg.
+  // geurteilt haben, und Verworfenes ist weg. Freigegeben wird aber nur,
+  // was hier schon zu sehen war – was inzwischen hinzukam, hat niemand
+  // gesichtet, und es bleibt in der Kammer.
+  const gesehen = new Set(kammer.eintraege.map((e) => e.id));
   await ladeKammer().catch(() => {});
   const weg = kammer.eintraege.filter((e) => e.abgelehnt).map((e) => e.id);
-  const rest = kammer.eintraege.filter((e) => !e.abgelehnt).map((e) => e.id);
+  const rest = kammer.eintraege.filter((e) => !e.abgelehnt && gesehen.has(e.id)).map((e) => e.id);
   if (!weg.length || kammer.arbeit) return;
-  if (!confirm(t('{weg} abgelehnte Fotos endgültig verwerfen und {rest} Fotos in die Bibliothek übernehmen?', { weg: weg.length, rest: rest.length }))) return;
+  const abgelehnt = weg.length === 1 ? t('1 abgelehntes Foto') : t('{n} abgelehnte Fotos', { n: weg.length });
+  if (!confirm(rest.length
+    ? t('{weg} endgültig verwerfen und {rest} in die Bibliothek übernehmen?', { weg: abgelehnt, rest: kammerFotos(rest.length) })
+    : t('{weg} endgültig verwerfen?', { weg: abgelehnt }))) return;
   kammer.arbeit = true;
   kammerKnoepfe();
   let ergebnis = { neu: 0, fehler: [] };
@@ -278,7 +295,7 @@ function zeigeKammerGross() {
     for (let n = 1; n <= 5; n++) {
       const b = el('button', '', '★');
       b.type = 'button';
-      b.title = t('{n} Sterne ({n})', { n });
+      b.title = n === 1 ? t('1 Stern (1)') : t('{n} Sterne ({n})', { n });
       b.addEventListener('click', () => vergibSterne(n));
       sterne.append(b);
     }

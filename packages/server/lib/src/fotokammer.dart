@@ -630,15 +630,32 @@ class Fotokammer {
   /// Mit [nurAbgelehnte] nur, wenn [id] jetzt noch abgelehnt ist: Hat ein
   /// anderes Gerät die Ablehnung inzwischen aufgehoben, bleibt das Foto.
   /// Die Fotokammer hat keinen Papierkorb (#358).
-  Future<bool> verwerfen(String id, {bool nurAbgelehnte = false}) async {
-    if (!gueltig(id) || _inArbeit.contains(id)) return false;
-    final platz = _platz(id);
-    if (!await platz.exists()) return false;
-    if (nurAbgelehnte && (await _sichtungVon(id))['abgelehnt'] != true) {
-      return false;
+  ///
+  /// In der Reihe der Urteile und als Arbeit am Eintrag (#382): Sonst hob
+  /// ein Gerät die Ablehnung zwischen Prüfen und Löschen auf, bekam
+  /// „geändert“ gemeldet, und das Foto war trotzdem weg; ein laufendes
+  /// Freigeben verlor seinen Ordner mitten im Import.
+  Future<bool> verwerfen(String id, {bool nurAbgelehnte = false}) {
+    final fertig = _sichtReihe.then(
+      (_) => _verwerfen(id, nurAbgelehnte: nurAbgelehnte),
+    );
+    _sichtReihe = fertig.then((_) {}, onError: (_) {});
+    return fertig;
+  }
+
+  Future<bool> _verwerfen(String id, {required bool nurAbgelehnte}) async {
+    if (!gueltig(id) || !_inArbeit.add(id)) return false;
+    try {
+      final platz = _platz(id);
+      if (!await platz.exists()) return false;
+      if (nurAbgelehnte && (await _sichtungVon(id))['abgelehnt'] != true) {
+        return false;
+      }
+      await platz.delete(recursive: true);
+      return true;
+    } finally {
+      _inArbeit.remove(id);
     }
-    await platz.delete(recursive: true);
-    return true;
   }
 
   /// Reste abgebrochener Einträge (ohne Angaben) wegräumen.
@@ -808,7 +825,15 @@ class Fotokammerapi {
     }
     final ids = _idsAus(k);
     if (ids == null) return _json({'fehler': 'ids fehlt'}, status: 400);
-    final nurAbgelehnte = k is Map && k['nurAbgelehnte'] == true;
+    // Ein falsch geschriebener Schalter („true“, 1) fiel sonst still auf
+    // „alles Genannte verwerfen“ zurück – endgültig (#382).
+    final schalter = (k as Map)['nurAbgelehnte'];
+    if (schalter != null && schalter is! bool) {
+      return _json({
+        'fehler': 'nurAbgelehnte muss true oder false sein',
+      }, status: 400);
+    }
+    final nurAbgelehnte = schalter == true;
     final kammer = await _kammer(r);
     var n = 0;
     for (final id in ids) {

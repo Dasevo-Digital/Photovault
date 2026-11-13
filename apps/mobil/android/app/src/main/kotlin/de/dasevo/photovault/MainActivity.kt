@@ -4,6 +4,7 @@ import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.WindowManager
 import io.flutter.embedding.android.FlutterFragmentActivity
@@ -46,6 +47,10 @@ class MainActivity : FlutterFragmentActivity() {
                         }
                         antwort.success(null)
                     }
+                    // Die Frist der App-Sperre (#382): Zeit seit dem Start des
+                    // Geräts, auch im Tiefschlaf. Anders als die Uhrzeit lässt
+                    // sie sich nicht zurückstellen.
+                    "laufzeit" -> antwort.success(SystemClock.elapsedRealtime())
                     "akkuFrei" -> antwort.success(akkuFrei)
                     "akkuFreigeben" -> {
                         // Ein zweiter Tipp, solange der Dialog aufgeht.

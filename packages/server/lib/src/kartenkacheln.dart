@@ -368,7 +368,16 @@ class Kartenkacheln {
     // Vor dem Umbenennen: Wer die Datei sieht, sieht auch ihre Frist.
     await teil.setLastModified(gilt);
     await teil.rename(datei.path);
-    if (stand.isNotEmpty) await vermerk.writeAsString(jsonEncode(stand));
+    // Die Kachel liegt damit schon richtig. Ohne Vermerk wird sie beim
+    // Ablauf nur ganz statt bedingt geholt – kein Grund, sie jetzt als
+    // gescheitert zu melden und das Aufräumen auszulassen (#382).
+    if (stand.isNotEmpty) {
+      try {
+        await vermerk.writeAsString(jsonEncode(stand));
+      } on FileSystemException {
+        // Platte voll: Das Aufräumen unten schafft Luft.
+      }
+    }
     _bisAufraeumen -= bytes.length;
     _zuletzt = datei;
     if (_bisAufraeumen <= 0) {

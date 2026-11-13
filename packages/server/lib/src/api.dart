@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:crypto/crypto.dart' show sha256;
 import 'package:drift/drift.dart';
 import 'package:http/http.dart' as http;
+import 'package:kern/abgleich/kachelumleitung.dart' show serverKartenquellen;
 import 'package:kern/auswertung/gesicht_von_hand.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/listenangaben.dart';
@@ -113,7 +114,9 @@ Handler baueApi({
   final dt = darktable ?? DarktableEntwickler();
   unawaited(dt.suche());
   final immich = Immichuebernahme(bibliotheken);
-  final oberflaeche = web == null ? null : Webapi(konten, von, ordner: web);
+  final oberflaeche = web == null
+      ? null
+      : Webapi(konten, von, ordner: web, kartenBeimAnbieter: karte == null);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final passkeys = Passkeyapi(konten, von);
   final video = Videofassungen();
@@ -329,7 +332,7 @@ Handler baueApi({
     ..get(
       '/api/v1/karte/<stil>/<z|[0-9]{1,2}>/<x|[0-9]{1,7}>/<y|[0-9]{1,7}>.png',
       (Request r, String stil, String z, String x, String y) =>
-          karte?.kachel(r, stil, z, x, y) ?? Response.notFound('nicht da'),
+          karte?.kachel(r, stil, z, x, y) ?? _kachelBeimAnbieter(stil, z, x, y),
     )
     ..get('/api/v1/orte', api.orte)
     ..get('/api/v1/orte/suche', api.orteSuche)
@@ -780,6 +783,20 @@ Response _json(Object? daten, {int status = 200}) => Response(
   body: jsonEncode(daten),
   headers: {'content-type': 'application/json; charset=utf-8'},
 );
+
+/// Liefert der Server keine Kartenkacheln (`PV_KARTEN=aus`), holt der
+/// Browser sie beim Anbieter, wie die Geräte es dann selbst tun (#382). Die
+/// Seite fragt weiter `/api/v1/karte/…`; die Weiterleitung lässt ihre
+/// Inhaltsrichtlinie dann zu ([Webapi.kartenBeimAnbieter]). Nur die
+/// bekannten Quellen, also kein offener Umleiter.
+Response _kachelBeimAnbieter(String stil, String z, String x, String y) {
+  final quelle = serverKartenquellen[stil];
+  if (quelle == null) return Response.notFound('nicht da');
+  return Response.found(
+    'https://${quelle.host}/$z/$x/$y.png',
+    headers: {'cache-control': 'private, max-age=86400'},
+  );
+}
 
 class _Api {
   _Api(

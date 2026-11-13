@@ -75,6 +75,14 @@ import workmanager_apple
         case "abdeckung":
           Abdeckung.an = (aufruf.arguments as? Bool) ?? false
           antwort(nil)
+        case "laufzeit":
+          // Die Frist der App-Sperre (#382): CLOCK_MONOTONIC zählt auch,
+          // während das Gerät schläft, und lässt sich anders als die
+          // Uhrzeit nicht zurückstellen.
+          antwort(Int64(clock_gettime_nsec_np(CLOCK_MONOTONIC) / 1_000_000))
+        case "sperrt":
+          Abdeckung.schliesseBlaetter()
+          antwort(nil)
         case "sofortbericht":
           antwort(Sofortsteuerung.bericht)
         case "sofortGeschafft":
@@ -151,6 +159,18 @@ enum Abdeckung {
     mitte.addObserver(forName: UIScene.didActivateNotification, object: nil, queue: .main) {
       guard let szene = $0.object as? UIWindowScene else { return }
       flaechen.removeValue(forKey: ObjectIdentifier(szene))?.removeFromSuperview()
+    }
+  }
+
+  /// Die App-Sperre greift (#382): Was iOS selbst über der App zeigt – das
+  /// Teilen-Blatt mit seiner Vorschau, der Browser in der App –, läge sonst
+  /// über der Sperre, die Flutter zeichnet.
+  static func schliesseBlaetter() {
+    for szene in UIApplication.shared.connectedScenes {
+      guard let szene = szene as? UIWindowScene else { continue }
+      for fenster in szene.windows {
+        fenster.rootViewController?.presentedViewController?.dismiss(animated: false)
+      }
     }
   }
 

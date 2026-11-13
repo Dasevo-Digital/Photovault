@@ -356,12 +356,21 @@ def bauen(args):
 
 
 def _baue_mac(fassung, u, z):
+    # Was von einem früheren Lauf liegt oder von diesem nur halb fertig wurde
+    # (signiert, aber nicht notarisiert), darf nicht als fertig gelten:
+    # summen() nähme es auf, entwurf lüde es hoch, einspielen spielte es
+    # ein (#382). Scheitert ein Schritt, liegt für macOS also nichts da.
+    reste = [str(u / f'PhotoVault-{fassung}-macos.zip'), str(u / 'Photo Vault.app')]
+    lauf(['rm', '-rf', *reste])
     # Xcode lädt Swift-Pakete (ONNX Runtime) beim ersten Bau eines Baums.
     try:
         lauf(['flutter', 'build', 'macos', '--release'], versuche=3)
         _signiere_mac(z)
         _packe_mac(fassung, u)
         _notarisiere_mac(fassung, u, z)
+    except SystemExit:
+        lauf(['rm', '-rf', *reste])
+        raise
     finally:
         # Auch wenn etwas scheitert: Die Bündel unter build/ fänden Spotlight
         # und Launchpad – und öffneten womöglich die echte Bibliothek. Vorher
@@ -399,7 +408,31 @@ def _notarisiere_mac(fassung, u, z):
         print('macOS: nicht notarisiert (keine Developer-ID oder kein Profil für notarytool)')
         return
     paket = f'PhotoVault-{fassung}-macos.zip'
-    lauf(['xcrun', 'notarytool', 'submit', paket, '--keychain-profile', profil, '--wait'], cwd=u, versuche=2)
+    # Die erste Einreichung eines neuen Teams lag bei 3.67.1 drei Stunden bei
+    # Apple. Länger als sechs wartet der Bau nicht. Ein zweiter Versuch nur,
+    # wenn keine Antwort kam – eine Ablehnung wird nicht anders, wenn man
+    # dasselbe Paket noch einmal schickt; dann holt der Bau Apples Begründung.
+    print('macOS: zur Notarisierung bei Apple – das kann Stunden dauern.', flush=True)
+    antwort = {}
+    for versuch in range(2):
+        roh = lauf(['xcrun', 'notarytool', 'submit', paket, '--keychain-profile', profil,
+                    '--wait', '--timeout', '6h', '--output-format', 'json'],
+                   cwd=u, ausgabe=True, pruefen=False)
+        try:
+            antwort = json.loads(roh)
+        except (json.JSONDecodeError, TypeError):
+            antwort = {}
+        if antwort.get('status'):
+            break
+        if versuch == 0:
+            print(f'Keine Antwort von notarytool: {(roh or "").strip()[:300]} – neuer Versuch in 90 s.', flush=True)
+            time.sleep(90)
+    status = antwort.get('status')
+    if status != 'Accepted':
+        if antwort.get('id'):
+            lauf(['xcrun', 'notarytool', 'log', antwort['id'], '--keychain-profile', profil], cwd=u, pruefen=False)
+        sys.exit(f'Apple hat das Paket nicht notarisiert: {status or "keine Antwort"} {antwort.get("message", "")}'.strip())
+    print(f'macOS: notarisiert ({antwort.get("id")})', flush=True)
     lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u)
     lauf(['xcrun', 'stapler', 'validate', 'Photo Vault.app'], cwd=u)
     # Das Paket neu, mit dem angehefteten Ticket.
@@ -553,14 +586,18 @@ def entwurf(args):
     else:
         gitea(z, f'/releases/{rel["id"]}', json.dumps({'body': text}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     rid = rel['id']
-    vorhanden = {x['name']: x['id'] for x in rel.get('assets', [])}
+    vorhanden = {x['name']: x for x in rel.get('assets', [])}
     # Nur, was gebaut wurde: 3.41 bis 3.44.1 gingen nur an Mac und Server.
     vorhanden_hier = [n for n in dateien(fassung) if (u / n).exists()]
     for name in vorhanden_hier + ['SHA256SUMS.txt']:
         if name in vorhanden:
-            if name != 'SHA256SUMS.txt':
+            # Gleich gross: schon oben, nicht noch einmal hochladen. Sonst ist
+            # die Datei neu gebaut (bei 3.67.1 das notarisierte Mac-Paket nach
+            # dem nur signierten) und ersetzt die alte – blieb die stehen,
+            # passte sie nicht mehr zu SHA256SUMS.txt (#382).
+            if name != 'SHA256SUMS.txt' and vorhanden[name].get('size') == (u / name).stat().st_size:
                 continue
-            st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]}', methode='DELETE', tok=tok)
+            st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]["id"]}', methode='DELETE', tok=tok)
             if st not in (200, 204):
                 sys.exit(f'{name} liess sich nicht ersetzen: {st} {a}')
         g = uuid.uuid4().hex

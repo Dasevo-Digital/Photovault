@@ -116,7 +116,23 @@ void main() {
 
     expect(await stufe(api(karte())), 1);
     expect(await stufe(api(null)), 0);
-    expect((await hole(api(null), 'osm/3/4/2.png')).statusCode, 404);
+    // Ohne Kacheln über den Server (PV_KARTEN=aus) geht der Browser zum
+    // Anbieter (#382) – nur zu den bekannten, kein offener Umleiter.
+    final weiter = await hole(api(null), 'osm/3/4/2.png');
+    expect(weiter.statusCode, 302);
+    expect(
+      weiter.headers['location'],
+      'https://tile.openstreetmap.org/3/4/2.png',
+    );
+    expect(
+      (await hole(api(null), 'topo/5/1/2.png')).headers['location'],
+      'https://tile.opentopomap.org/5/1/2.png',
+    );
+    expect((await hole(api(null), 'fremd/3/4/2.png')).statusCode, 404);
+    expect(
+      (await hole(api(null), 'osm/3/4/2.png', angemeldet: false)).statusCode,
+      401,
+    );
   });
 
   test('nur angemeldet – mit Token oder dem Cookie des Browsers', () async {

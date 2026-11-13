@@ -188,5 +188,66 @@ class PrePush(unittest.TestCase):
         self.assertIn('pre-push: python3', r.stderr)
 
 
+class Notarisieren(unittest.TestCase):
+    """Apple notarisiert das Mac-Paket (#319, #89, #382)."""
+
+    ZIELE = {'mac_signatur': 'ABC', 'mac_notar_profil': 'pv-notar'}
+
+    def laufe(self, antworten):
+        """Spielt notarytool mit [antworten] nach; merkt sich jeden Aufruf."""
+        aufrufe = []
+        antworten = list(antworten)
+
+        def lauf(befehl, **kw):
+            aufrufe.append(befehl)
+            if befehl[:3] == ['xcrun', 'notarytool', 'submit']:
+                return antworten.pop(0)
+            return '' if kw.get('ausgabe') else 0
+
+        with unittest.mock.patch('release.lauf', side_effect=lauf), \
+                unittest.mock.patch('release.time.sleep') as schlafen:
+            try:
+                release._notarisiere_mac('9.9.9', Path('/gibt/es/nicht'), self.ZIELE)
+            except SystemExit as e:
+                return aufrufe, schlafen, e
+        return aufrufe, schlafen, None
+
+    @staticmethod
+    def art(aufrufe):
+        return [' '.join(a[:3]) for a in aufrufe]
+
+    def test_angenommen_heftet_das_ticket_an_und_packt_neu(self):
+        aufrufe, _, fehler = self.laufe(['{"id": "x1", "status": "Accepted"}'])
+        self.assertIsNone(fehler)
+        self.assertIn('xcrun stapler staple', self.art(aufrufe))
+        self.assertEqual(aufrufe[-1][0], 'ditto')
+
+    def test_abgelehnt_holt_die_begruendung_und_schickt_nicht_noch_einmal(self):
+        aufrufe, schlafen, fehler = self.laufe(['{"id": "x2", "status": "Invalid", "message": "nein"}'])
+        self.assertIsNotNone(fehler)
+        self.assertIn('Invalid', str(fehler))
+        arten = self.art(aufrufe)
+        self.assertEqual(arten.count('xcrun notarytool submit'), 1)
+        self.assertIn('xcrun notarytool log', arten)
+        self.assertNotIn('xcrun stapler staple', arten)
+        schlafen.assert_not_called()
+
+    def test_ohne_antwort_ein_zweiter_versuch(self):
+        aufrufe, schlafen, fehler = self.laufe(['', '{"id": "x3", "status": "Accepted"}'])
+        self.assertIsNone(fehler)
+        self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 2)
+        self.assertEqual(schlafen.call_count, 1)
+
+    def test_zweimal_ohne_antwort_bricht_ab(self):
+        aufrufe, _, fehler = self.laufe(['Fehler', 'Fehler'])
+        self.assertIsNotNone(fehler)
+        self.assertNotIn('xcrun stapler staple', self.art(aufrufe))
+
+    def test_ohne_profil_bleibt_es_unnotarisiert(self):
+        with unittest.mock.patch('release.lauf') as lauf:
+            release._notarisiere_mac('9.9.9', Path('/x'), {'mac_signatur': 'ABC'})
+        lauf.assert_not_called()
+
+
 if __name__ == '__main__':
     unittest.main()

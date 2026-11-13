@@ -73,6 +73,27 @@ class Kammereintrag {
   bool get istVideo => art == 'VIDEO';
 }
 
+/// Was „Sichtung abschliessen“ mit dem frisch geholten [stand] tut (#345):
+/// verwerfen, was abgelehnt ist, und freigeben, was es nicht ist – aber
+/// nur, was schon in [gesehen] stand (#382). Was seit dem letzten Blick
+/// hinzukam, etwa vom Handy, hat niemand gesichtet; es bleibt in der Kammer.
+///
+/// Verworfen wird dann mit `nurAbgelehnte`: Hebt ein anderes Gerät eine
+/// Ablehnung auf, während noch freigegeben wird, bleibt das Foto.
+({List<String> weg, List<String> rest}) kammerAbschluss(
+  Iterable<Kammereintrag> stand,
+  Set<String> gesehen,
+) => (
+  weg: [
+    for (final e in stand)
+      if (e.abgelehnt) e.id,
+  ],
+  rest: [
+    for (final e in stand)
+      if (!e.abgelehnt && gesehen.contains(e.id)) e.id,
+  ],
+);
+
 /// Fotos, die kurz nacheinander entstanden sind (#348).
 class Kammerserie {
   const Kammerserie(this.fotos);

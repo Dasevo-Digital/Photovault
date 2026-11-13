@@ -30,11 +30,20 @@ class AppSperre extends ChangeNotifier {
     Future<bool> Function(String grund)? pruefe,
     Future<bool> Function()? verfuegbar,
     DateTime Function()? jetzt,
+    Future<int?> Function()? laufzeit,
     Future<void> Function(bool an)? abdecken,
+    Future<void> Function()? beiSperre,
+    bool? abdeckenWennInaktiv,
   }) : _pruefe = pruefe ?? _systemPruefung,
        _verfuegbar = verfuegbar ?? LocalAuthentication().isDeviceSupported,
        _jetzt = jetzt ?? DateTime.now,
+       _laufzeit = laufzeit ?? _systemLaufzeit,
        _abdecken = abdecken ?? _systemAbdeckung,
+       _beiSperre = beiSperre ?? _systemSperre,
+       // Android schützt den Umschalter mit FLAG_SECURE; eine Fläche bei
+       // jedem Fokusverlust (geteilter Bildschirm, Berechtigungsdialog,
+       // Benachrichtigungen) verdeckte dort nur grundlos die App (#382).
+       _abdeckenWennInaktiv = abdeckenWennInaktiv ?? !Platform.isAndroid,
        gesperrt = an;
 
   /// Wie lange die App im Hintergrund sein darf, ehe sie wieder fragt.
@@ -60,40 +69,66 @@ class AppSperre extends ChangeNotifier {
   final Future<bool> Function(String grund) _pruefe;
   final Future<bool> Function() _verfuegbar;
   final DateTime Function() _jetzt;
+  final Future<int?> Function() _laufzeit;
   final Future<void> Function(bool an) _abdecken;
+  final Future<void> Function() _beiSperre;
+  final bool _abdeckenWennInaktiv;
+
+  /// Wann die App den Vordergrund verliess – nach der Uhrzeit und nach der
+  /// [_laufzeit] des Geräts.
   DateTime? _weg;
+  Future<int?>? _wegLaufzeit;
+
+  /// Zählt die Rückkehren; eine ältere Prüfung der Laufzeit, die erst nach
+  /// dem nächsten Verlassen fertig wird, gilt nicht mehr.
+  var _rueckkehr = 0;
   bool _fragtGerade = false;
 
-  /// Liest die Einstellung dieses Geräts. Ohne Datei oder bei einem Fehler
-  /// ist die Sperre aus.
+  /// Liest die Einstellung dieses Geräts. Ohne Datei ist die Sperre aus.
+  ///
+  /// Lässt sich eine vorhandene Datei nicht lesen, ist sie an (#382): Die
+  /// Datei gibt es nur, seit jemand die Sperre einmal geschaltet hat, und
+  /// ein Fehler soll sie nicht still abschalten. Hat das Gerät gar keinen
+  /// Code, schaltet [entsperre] sie ohnehin ab.
   static Future<AppSperre> lade() async {
     final datei = File(
       p.join((await getApplicationSupportDirectory()).path, 'app_sperre.json'),
     );
-    var an = false;
-    var frist = Duration.zero;
-    try {
-      if (await datei.exists()) {
-        final w = jsonDecode(await datei.readAsString());
-        if (w is Map) {
-          an = w['an'] == true;
-          frist = Duration(seconds: (w['frist'] as num?)?.toInt() ?? 0);
-        }
-      }
-    } on Object catch (e) {
-      debugPrint('App-Sperre nicht gelesen: $e');
-    }
+    final (an, frist) = await leseEinstellung(datei);
     final sperre = AppSperre(an: an, frist: frist, datei: datei);
     unawaited(sperre._abdecken(an).catchError((Object _) {}));
     return sperre;
   }
 
+  /// An und Frist aus [datei]; siehe [lade].
+  @visibleForTesting
+  static Future<(bool, Duration)> leseEinstellung(File datei) async {
+    try {
+      if (!await datei.exists()) return (false, Duration.zero);
+      final w = jsonDecode(await datei.readAsString());
+      if (w is! Map) return (true, Duration.zero);
+      return (
+        w['an'] != false,
+        Duration(seconds: (w['frist'] as num?)?.toInt() ?? 0),
+      );
+    } on Object catch (e) {
+      debugPrint('App-Sperre nicht gelesen: $e');
+      return (true, Duration.zero);
+    }
+  }
+
   /// Ob das Gerät überhaupt Face ID, Touch ID oder einen Gerätecode hat.
-  Future<bool> verfuegbar() async {
+  /// Ein Fehler zählt hier als nein: Einschalten soll nur, wer es sicher
+  /// wieder aufbekommt.
+  Future<bool> verfuegbar() async => await _sicherVerfuegbar() ?? false;
+
+  /// `null`, wenn das System nicht antwortet.
+  Future<bool?> _sicherVerfuegbar() async {
     try {
       return await _verfuegbar();
-    } on Object {
-      return false;
+    } on Object catch (e) {
+      debugPrint('App-Sperre: Verfügbarkeit unbekannt: $e');
+      return null;
     }
   }
 
@@ -118,17 +153,26 @@ class AppSperre extends ChangeNotifier {
   /// **Kein Aussperren.** Hat das Gerät gar keinen Code mehr (jemand hat
   /// ihn nach dem Einschalten entfernt), liesse sich nie wieder prüfen,
   /// und die Einstellung zum Abschalten läge hinter der Sperre. Dann ist
-  /// das Gerät ohnehin offen: Die Sperre schaltet sich ab.
+  /// das Gerät ohnehin offen: Die Sperre schaltet sich ab. Nur wenn das
+  /// System das sagt – ein Fehler beim Fragen schaltet nichts ab (#382).
   Future<bool> entsperre(String grund) async {
     if (!gesperrt) return true;
-    if (!await verfuegbar()) {
+    if (await _sicherVerfuegbar() == false) {
       debugPrint('App-Sperre: kein Gerätecode mehr – abgeschaltet');
       await setze(an: false);
       return true;
     }
+    // Inzwischen anders entsperrt: keine zweite Abfrage über der offenen
+    // App.
+    if (!gesperrt) return true;
     final ok = await pruefe(grund);
     if (ok) {
       gesperrt = false;
+      // Wer eben bestätigt hat, war da. Unter Android 9 und 10 ist die
+      // Eingabe des Codes eine eigene Activity; ihr „weg“ soll nicht gleich
+      // wieder sperren (#382).
+      _weg = null;
+      _wegLaufzeit = null;
       notifyListeners();
     }
     return ok;
@@ -145,16 +189,22 @@ class AppSperre extends ChangeNotifier {
     if (ziel == null) return;
     try {
       await ziel.parent.create(recursive: true);
-      await ziel.writeAsString(
+      // Erst daneben, dann an die Stelle: Bricht das Schreiben ab, bleibt
+      // die alte Einstellung ganz statt einer halben (#382).
+      final teil = File('${ziel.path}.neu');
+      await teil.writeAsString(
         jsonEncode({'an': this.an, 'frist': this.frist.inSeconds}),
+        flush: true,
       );
+      await teil.rename(ziel.path);
     } on Object catch (e) {
       debugPrint('App-Sperre nicht gespeichert: $e');
     }
   }
 
-  /// Die App verlässt den Vordergrund. Der Dialog von Face ID selbst macht
-  /// sie nur inaktiv, nicht unsichtbar – das zählt nicht als weg.
+  /// Die App verlässt den Vordergrund oder kommt zurück. Der Dialog von
+  /// Face ID selbst macht sie nur inaktiv, nicht unsichtbar – das zählt
+  /// nicht als weg.
   void lebenslauf(AppLifecycleState zustand) {
     if (!an) {
       if (verdeckt) {
@@ -165,24 +215,81 @@ class AppSperre extends ChangeNotifier {
     }
     switch (zustand) {
       case AppLifecycleState.inactive:
-        if (!_fragtGerade && !verdeckt) {
+        if (_abdeckenWennInaktiv && !_fragtGerade && !verdeckt) {
           verdeckt = true;
           notifyListeners();
         }
       case AppLifecycleState.hidden || AppLifecycleState.paused:
+        _rueckkehr++;
         _weg ??= _jetzt();
+        _wegLaufzeit ??= _sichereLaufzeit();
         if (!verdeckt) {
           verdeckt = true;
           notifyListeners();
         }
       case AppLifecycleState.resumed:
-        final weg = _weg;
-        _weg = null;
-        if (weg != null && _jetzt().difference(weg) >= frist) gesperrt = true;
-        verdeckt = false;
-        notifyListeners();
+        _zurueck();
       case AppLifecycleState.detached:
         break;
+    }
+  }
+
+  /// Zurück im Vordergrund: Lag die Frist dazwischen, wird gesperrt.
+  ///
+  /// **Nicht nach der Uhrzeit allein** (#382). Wer das entsperrte Telefon
+  /// hat, stellt sie in den Einstellungen zurück und käme ohne Abfrage
+  /// hinein. Massgeblich ist darum auch die Laufzeit des Geräts, die sich
+  /// nicht verstellen lässt und im Schlaf weiterzählt. Eine Uhrzeit vor
+  /// dem Verlassen sperrt sofort; liegt sie innerhalb der Frist, bleibt die
+  /// Abdeckung, bis die Laufzeit es bestätigt. Antwortet das System nicht,
+  /// wird gesperrt.
+  void _zurueck() {
+    final weg = _weg;
+    final wegLaufzeit = _wegLaufzeit;
+    _weg = null;
+    _wegLaufzeit = null;
+    if (weg == null) {
+      _decke(auf: false);
+      return;
+    }
+    final vergangen = _jetzt().difference(weg);
+    if (vergangen.isNegative || vergangen >= frist) {
+      _sperre();
+      _decke(auf: false);
+      return;
+    }
+    final nr = _rueckkehr;
+    unawaited(() async {
+      final vorher = await wegLaufzeit;
+      final jetzt = await _sichereLaufzeit();
+      if (nr != _rueckkehr) return;
+      if (vorher == null ||
+          jetzt == null ||
+          jetzt < vorher ||
+          Duration(milliseconds: jetzt - vorher) >= frist) {
+        _sperre();
+      }
+      _decke(auf: false);
+    }());
+  }
+
+  void _sperre() {
+    if (gesperrt) return;
+    gesperrt = true;
+    unawaited(_beiSperre().catchError((Object _) {}));
+  }
+
+  void _decke({required bool auf}) {
+    verdeckt = auf;
+    notifyListeners();
+  }
+
+  Future<int?> _sichereLaufzeit() async {
+    try {
+      return await _laufzeit();
+    } on Object catch (e) {
+      debugPrint('App-Sperre: keine Laufzeit: $e');
+      return null;
     }
   }
 
@@ -195,12 +302,26 @@ class AppSperre extends ChangeNotifier {
     if (!Platform.isIOS && !Platform.isAndroid) return;
     await _kanal.invokeMethod<void>('abdeckung', an);
   }
+
+  static Future<int?> _systemLaufzeit() async {
+    if (!Platform.isIOS && !Platform.isAndroid) return null;
+    return _kanal.invokeMethod<int>('laufzeit');
+  }
+
+  /// Schliesst unter iOS, was das System über der App zeigt (Teilen-Blatt,
+  /// Browser in der App): Es läge sonst über der Sperre. Unter Android ist
+  /// die Auswahl zum Teilen eine eigene Activity und vorne, solange sie
+  /// offen ist; dort ist nichts zu tun.
+  static Future<void> _systemSperre() async {
+    if (!Platform.isIOS) return;
+    await _kanal.invokeMethod<void>('sperrt');
+  }
 }
 
 /// Legt die Sperre über die ganze App: davor die Abfrage, solange
 /// [AppSperre.gesperrt], und eine leere Fläche, solange die App nicht vorne
-/// ist. Was darunter liegt, bekommt keine Berührung und keine Ansage für
-/// VoiceOver.
+/// ist. Was darunter liegt, bekommt keine Berührung, keinen Tastaturfokus
+/// und keine Ansage für VoiceOver.
 class AppSperrschicht extends StatefulWidget {
   const AppSperrschicht({super.key, required this.sperre, required this.child});
 
@@ -214,6 +335,10 @@ class AppSperrschicht extends StatefulWidget {
 class _AppSperrschichtState extends State<AppSperrschicht>
     with WidgetsBindingObserver {
   var _gefragt = false;
+
+  /// Ob die App seit der letzten Abfrage wirklich weg war (hidden/paused).
+  /// Nur dann fragt sie beim Zurückkommen wieder von selbst.
+  var _warWeg = false;
 
   @override
   void initState() {
@@ -236,8 +361,19 @@ class _AppSperrschichtState extends State<AppSperrschicht>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Wer die Abfrage abgebrochen hat und wiederkommt, wird wieder gefragt.
-    if (state == AppLifecycleState.resumed) _gefragt = false;
+    switch (state) {
+      case AppLifecycleState.hidden || AppLifecycleState.paused:
+        _warWeg = true;
+      case AppLifecycleState.resumed:
+        // Wer die Abfrage abgebrochen hat und aus dem Hintergrund
+        // wiederkommt, wird wieder gefragt. Nicht aber nach dem Dialog von
+        // Face ID selbst: Der macht die App nur kurz inaktiv, und nach
+        // „Abbrechen“ stünde er sonst sofort wieder da – immer wieder (#382).
+        if (_warWeg) _gefragt = false;
+        _warWeg = false;
+      case AppLifecycleState.inactive || AppLifecycleState.detached:
+        break;
+    }
     widget.sperre.lebenslauf(state);
   }
 
@@ -260,7 +396,10 @@ class _AppSperrschichtState extends State<AppSperrschicht>
     }
     return Stack(
       children: [
-        ExcludeSemantics(excluding: zeige, child: widget.child),
+        ExcludeFocus(
+          excluding: zeige,
+          child: ExcludeSemantics(excluding: zeige, child: widget.child),
+        ),
         if (zeige)
           Positioned.fill(
             child: _Sperrbild(

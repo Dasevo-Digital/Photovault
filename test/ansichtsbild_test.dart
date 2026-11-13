@@ -335,7 +335,11 @@ void main() {
       expect(wandler.aufrufe, isEmpty);
     });
 
-    test('übergeht, was das Ansichtsbild nie zeigen würde (#379)', () async {
+    test('auch im Papierkorb, entwickelt oder restauriert (#382)', () async {
+      // Der Nachlauf läuft je Bibliothek nur einmal. Was er übergeht, bekäme
+      // nach dem Zurückholen, Zurücksetzen oder Verwerfen der Restaurierung
+      // nie ein Ansichtsbild, und Handy und Browser lüden das ganze
+      // Original.
       await aufnahme('papierkorb', imPapierkorb: true);
       await aufnahme('entwickelt', entwickelt: 'developed/entwickelt.jpg');
       await aufnahme('restauriert', restauriert: 'restored/restauriert.jpg');
@@ -343,10 +347,9 @@ void main() {
 
       final r = await ergaenzeAnsichtsbilder(db, paths, server);
 
-      expect(r.neu, 1);
-      expect(wandler.aufrufe, ['a.jpg@$vorschauKante']);
-      for (final id in ['papierkorb', 'entwickelt', 'restauriert']) {
-        expect((await zeile(id)).previewRelativePath, isNull, reason: id);
+      expect(r.neu, 4);
+      for (final id in ['a', 'papierkorb', 'entwickelt', 'restauriert']) {
+        expect((await zeile(id)).previewRelativePath, isNotNull, reason: id);
       }
     });
 

@@ -787,6 +787,18 @@ void main() {
     });
     expect(nicht['verworfen'], 0);
     expect((await v.hole('api/v1/kammer'))['anzahl'], 2);
+    // Ein falsch geschriebener Schalter verwirft nicht still alles (#382).
+    for (final falsch in ['true', 1]) {
+      await expectLater(
+        v.schicke('api/v1/kammer/verwerfen', {
+          'ids': [id1],
+          'nurAbgelehnte': falsch,
+        }),
+        throwsA(isA<Serverfehler>()),
+        reason: '$falsch',
+      );
+    }
+    expect((await v.hole('api/v1/kammer'))['anzahl'], 2);
 
     // Freigeben: in die Bibliothek, aus der Kammer heraus.
     final f = await v.schicke('api/v1/kammer/freigeben', {

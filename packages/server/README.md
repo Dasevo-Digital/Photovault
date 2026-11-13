@@ -457,7 +457,8 @@ Weboberfläche, auf dem Handy und am verbundenen Rechner): mit eigener
 Kennung (`PhotoVault-Server/<Fassung>`), höchstens vier Abrufe zugleich und
 nur, was ein Gerät anfragt – beim Ansehen und beim Vorladen am Rechner, das
 ganze Gegenden um die Fotos holt. Ein Server ohne Weg ins Internet schaltet
-es mit `PV_KARTEN=aus` ab (die Geräte holen dann selbst); hinter einem
+es mit `PV_KARTEN=aus` ab (die Geräte holen dann selbst, und der Browser
+wird zum Anbieter weitergeleitet); hinter einem
 Proxy nimmt er `HTTPS_PROXY`. Er hält jede Kachel so lange vor, wie
 der Anbieter sagt, mindestens aber eine Woche, zusammen höchstens 1 GB in
 `<PV_DATEN>/kartenkacheln`. Die Anbieter sehen damit nur den Server, nicht

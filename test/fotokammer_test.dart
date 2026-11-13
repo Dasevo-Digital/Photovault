@@ -18,6 +18,7 @@ void main() {
   late List<String> anfragen;
   late List<List<String>> freigegeben;
   late List<List<String>> verworfen;
+  late List<Object?> nurAbgelehnte;
   late int nachFreigabe;
   late List<Map<String, Object?>> urteile;
   late int stufe;
@@ -95,6 +96,7 @@ void main() {
       }
       if (pfad == '/api/v1/kammer/verwerfen') {
         verworfen.add(ids);
+        nurAbgelehnte.add((jsonDecode(r.body) as Map)['nurAbgelehnte']);
         eintraege.removeWhere((e) => ids.contains(e['id']));
         return json({'verworfen': ids.length});
       }
@@ -114,6 +116,7 @@ void main() {
     anfragen = [];
     freigegeben = [];
     verworfen = [];
+    nurAbgelehnte = [];
     nachFreigabe = 0;
     urteile = [];
     stufe = 4;
@@ -495,6 +498,29 @@ void main() {
       expect(freigegeben.expand((s) => s), hasLength(4));
       expect(freigegeben.expand((s) => s), isNot(contains(abgelehnte.first)));
       expect(verworfen, [abgelehnte]);
+      // Nur, was dann noch abgelehnt ist (#358, #382): Hebt ein anderes
+      // Gerät eine Ablehnung währenddessen auf, bleibt das Foto.
+      expect(nurAbgelehnte, [true]);
+    });
+
+    testWidgets('abschliessen gibt nur frei, was schon zu sehen war (#382)', (
+      tester,
+    ) async {
+      eintraege[0] = {...eintraege[0], 'abgelehnt': true};
+      await zeige(tester, dienst());
+      // Unterdessen kommt vom Handy ein neues Foto in die Kammer.
+      final neu = {...eintrag(7), 'id': '00000000-0000-4000-8000-000000000077'};
+      eintraege.add(neu);
+      await tester.tap(find.text('Sichtung abschliessen'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('5 Fotos kommen'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(FilledButton, 'Sichtung abschliessen').last,
+      );
+      await tester.pumpAndSettle();
+      expect(freigegeben.expand((s) => s), hasLength(5));
+      expect(freigegeben.expand((s) => s), isNot(contains(neu['id'])));
+      expect(eintraege.map((e) => e['id']), [neu['id']]);
     });
 
     testWidgets('abschliessen fragt vorher den Server, was jetzt gilt', (

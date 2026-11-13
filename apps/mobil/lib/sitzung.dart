@@ -231,7 +231,16 @@ class Sitzung extends ChangeNotifier {
       // Servers neu: Wer offline gestartet ist, holte sonst bis zum Ende
       // des Prozesses alles selbst bei OpenStreetMap, und nach einem
       // Wechsel auf einen älteren Server bliebe die Karte leer.
-      if (z.erreichbar && (!_fassungGeholt || vorher?.erreichbar == false)) {
+      // Antwortet der Server darauf mit einem Fehler, nicht bei jeder
+      // weiteren Meldung gleich wieder, sondern höchstens einmal je Minute
+      // (#382).
+      final jetzt = DateTime.now();
+      final faellig =
+          _fassungVersucht == null ||
+          jetzt.difference(_fassungVersucht!) >= const Duration(minutes: 1);
+      if (z.erreichbar &&
+          (vorher?.erreichbar == false || (!_fassungGeholt && faellig))) {
+        _fassungVersucht = jetzt;
         unawaited(holeServerfassung());
       }
       if (vorher == null ||
@@ -484,6 +493,7 @@ class Sitzung extends ChangeNotifier {
 
   /// Ob [holeServerfassung] seit dem Öffnen einmal durchkam.
   var _fassungGeholt = false;
+  DateTime? _fassungVersucht;
   Future<void>? _fassungLauf;
 
   /// Fragt den Server nach Fassung und Fähigkeiten. Läuft schon eine
@@ -496,6 +506,9 @@ class Sitzung extends ChangeNotifier {
     if (a == null) return;
     try {
       final z = await a.verbindung.hole('api/v1/zustand');
+      // Inzwischen abgemeldet oder an einem anderen Server: Die Antwort
+      // gehört nicht mehr zu dieser Sitzung (#382).
+      if (!identical(abgleich, a)) return;
       final f = z['fassung'] as String?;
       final c = z['commit'] as String?;
       serverfassung = f == null
@@ -612,6 +625,7 @@ class Sitzung extends ChangeNotifier {
     abgleich = null;
     kartenUeberServer = false;
     _fassungGeholt = false;
+    _fassungVersucht = null;
     partnerfotos.value = const [];
     _partnerstand = null;
     _speicherUhr?.cancel();

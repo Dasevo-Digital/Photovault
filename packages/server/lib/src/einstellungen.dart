@@ -87,7 +87,16 @@ class Einstellungen {
       beschleuniger: Beschleuniger.aus(u['PV_BESCHLEUNIGER']),
       selbstRechnen: selbstRechnenAus(u['PV_SELBST_RECHNEN']),
       speicherWarnung: _prozent(u['PV_SPEICHER_WARNUNG'], 85) / 100,
-      karten: (u['PV_KARTEN'] ?? '').trim().toLowerCase() != 'aus',
+      // Auch die üblichen anderen Schreibweisen: Wer `off` oder `0` setzt,
+      // meint aus und bekäme sonst still weiter Kacheln über den Server.
+      karten: !const {
+        'aus',
+        'off',
+        'false',
+        '0',
+        'nein',
+        'no',
+      }.contains((u['PV_KARTEN'] ?? '').trim().toLowerCase()),
       speicherMindestGb: _zahl(u['PV_SPEICHER_MINDEST'], 2),
       sicherung: (u['PV_SICHERUNG'] ?? '').trim().isEmpty
           ? null
@@ -245,7 +254,8 @@ class Einstellungen {
 
   /// Ob der Server Kartenkacheln holt und vorhält (#180). Ein Server ohne
   /// Weg ins Internet schaltet es mit `PV_KARTEN=aus` ab; dann melden die
-  /// Geräte es nicht und holen ihre Kacheln wie bis 3.66 selbst.
+  /// Geräte es nicht und holen ihre Kacheln wie bis 3.66 selbst; den
+  /// Browser leitet `/api/v1/karte/…` zum Anbieter weiter (#382).
   final bool karten;
 
   /// Wohin OpenVINO die für die Grafik übersetzten Modelle legt.

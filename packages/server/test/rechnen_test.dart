@@ -312,6 +312,10 @@ void main() {
     expect(karten(null), isTrue);
     expect(karten('an'), isTrue);
     expect(karten(' AUS '), isFalse);
+    // Die anderen üblichen Schreibweisen meinen dasselbe (#382).
+    for (final w in ['off', 'False', '0', 'nein', 'no']) {
+      expect(karten(w), isFalse, reason: w);
+    }
   });
 
   test('PV_SELBST_RECHNEN', () {

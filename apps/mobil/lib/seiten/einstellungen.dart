@@ -81,6 +81,18 @@ class _EinstellungenState extends State<Einstellungen> {
     await sperre.setze(an: an);
   }
 
+  /// Eine längere Frist nur mit Face ID oder dem Gerätecode (#382): Sonst
+  /// stellte, wer das Telefon kurz in der Hand hat, eine Viertelstunde ein
+  /// – das Abschalten ist aus demselben Grund geschützt. Kürzer macht sie
+  /// nur strenger.
+  Future<void> _frist(AppSperre sperre, Duration neu) async {
+    if (neu > sperre.frist &&
+        !await sperre.pruefe(AppTexte.of(context).appSperreGrund)) {
+      return;
+    }
+    await sperre.setze(frist: neu);
+  }
+
   int get _tageZahl => (int.tryParse(_tage.text) ?? 30).clamp(1, 3650);
 
   static String _prozent(double w) => '${(w * 100).round()} %';
@@ -137,7 +149,7 @@ class _EinstellungenState extends State<Einstellungen> {
                             ),
                         ],
                         selected: {sperre.frist},
-                        onSelectionChanged: (w) => sperre.setze(frist: w.first),
+                        onSelectionChanged: (w) => _frist(sperre, w.first),
                       ),
                     ),
             ),
