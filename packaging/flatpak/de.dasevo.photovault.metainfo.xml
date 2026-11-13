@@ -75,6 +75,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.3" date="2026-11-13">
+      <description>
+        <p>A partial copy of an encrypted backup file is now detected by its size and written again; requesting an encrypted backup without the passphrase unlocked stops instead of writing plain files.</p>
+        <p>Restoring only selected photos no longer changes the details of other photos; an older backup generation no longer brings back staging photos saved after it, and damaged staging entries count as an error.</p>
+        <p>Restoring from the trash brings back exactly what was deleted together, even when two deletions fall into the same second.</p>
+        <p>The watched folder retries a failed import in the following runs, at most five times.</p>
+        <p>Server requests and downloads that stall after the first bytes are cancelled and leave no partial file behind.</p>
+      </description>
+    </release>
     <release version="3.67.2" date="2026-11-13">
       <description>
         <p>The app lock in the mobile app measures time in the background by the device uptime, so setting the clock back no longer gets past it; cancelling Face ID no longer brings the prompt back in a loop.</p>
