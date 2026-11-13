@@ -268,6 +268,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     final gesehen = {for (final e in _eintraege) e.id};
     final List<Kammereintrag> stand;
     try {
+      await d.urteileAngekommen();
       stand = await d.liste();
     } on Object catch (e) {
       bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));

@@ -498,8 +498,17 @@ class Sitzung extends ChangeNotifier {
 
   /// Fragt den Server nach Fassung und Fähigkeiten. Läuft schon eine
   /// Abfrage, wartet der Aufruf auf diese, statt eine zweite zu starten.
-  Future<void> holeServerfassung() => _fassungLauf ??= _holeServerfassung()
-      .whenComplete(() => _fassungLauf = null);
+  Future<void> holeServerfassung() {
+    final laufend = _fassungLauf;
+    if (laufend != null) return laufend;
+    late final Future<void> lauf;
+    // Nur die eigene Abfrage austragen: Nach dem Abmelden kann schon eine
+    // neue laufen (#382).
+    lauf = _holeServerfassung().whenComplete(() {
+      if (identical(_fassungLauf, lauf)) _fassungLauf = null;
+    });
+    return _fassungLauf = lauf;
+  }
 
   Future<void> _holeServerfassung() async {
     final a = abgleich;
@@ -626,6 +635,8 @@ class Sitzung extends ChangeNotifier {
     kartenUeberServer = false;
     _fassungGeholt = false;
     _fassungVersucht = null;
+    // Die neue Sitzung wartet nicht auf die Abfrage der alten (#382).
+    _fassungLauf = null;
     partnerfotos.value = const [];
     _partnerstand = null;
     _speicherUhr?.cancel();

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -38,12 +39,13 @@ void main() {
     Duration frist = Duration.zero,
     Future<int?> Function()? lauf,
     bool abdeckenWennInaktiv = true,
+    Future<bool> Function()? frage,
   }) => AppSperre(
     an: an,
     frist: frist,
     pruefe: (grund) async {
       fragen.add(grund);
-      return antwort;
+      return frage == null ? antwort : await frage();
     },
     verfuegbar: () async => true,
     jetzt: () => uhr,
@@ -175,11 +177,88 @@ void main() {
       ]);
     }
 
-    testWidgets('vor das Verlassen: sperrt, auch mit „Sofort“', (tester) async {
-      final s = await weg(tester, frist: Duration.zero);
-      laufzeit += const Duration(hours: 1);
+    testWidgets('vor das Verlassen: sperrt, auch wenn die Laufzeit passt', (
+      tester,
+    ) async {
+      final s = await weg(tester);
+      // Eine Minute weg – nach der Laufzeit frei; die Uhr aber zwei Stunden
+      // vor dem Verlassen: Das kann nur Verstellen sein.
+      laufzeit += const Duration(minutes: 1);
       uhr = uhr.subtract(const Duration(hours: 2));
       await zurueck(tester);
+      expect(s.gesperrt, isTrue);
+    });
+
+    testWidgets('Laufzeit wirft oder läuft rückwärts: sperrt', (tester) async {
+      var n = 0;
+      final s = await weg(
+        tester,
+        lauf: () async => ++n == 1 ? 5000 : throw PlatformException(code: 'x'),
+      );
+      vergeht(const Duration(minutes: 1));
+      await zurueck(tester);
+      expect(s.gesperrt, isTrue);
+    });
+
+    testWidgets('Laufzeit kleiner als beim Verlassen: sperrt', (tester) async {
+      var n = 0;
+      final s = await weg(tester, lauf: () async => ++n == 1 ? 90000 : 1000);
+      vergeht(const Duration(minutes: 1));
+      await zurueck(tester);
+      expect(s.gesperrt, isTrue);
+    });
+
+    testWidgets('die Abdeckung bleibt, bis die Laufzeit antwortet', (
+      tester,
+    ) async {
+      final spaeter = Completer<int?>();
+      var n = 0;
+      final s = await weg(
+        tester,
+        lauf: () => ++n == 1 ? Future.value(1000) : spaeter.future,
+      );
+      vergeht(const Duration(minutes: 1));
+      await zurueck(tester);
+      expect(s.verdeckt, isTrue, reason: 'nichts zeigen, ehe entschieden ist');
+      expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+      spaeter.complete(1000 + const Duration(minutes: 1).inMilliseconds);
+      await tester.pumpAndSettle();
+      expect(s.verdeckt, isFalse);
+      expect(s.gesperrt, isFalse);
+    });
+
+    testWidgets('kurz zurück und gleich wieder weg: es zählt das erste Gehen', (
+      tester,
+    ) async {
+      // Uhr jeweils zurückgestellt: Erst die Laufzeit verrät es. Kommt die
+      // App vor ihrer Antwort wieder weg, darf die erste Abwesenheit nicht
+      // vergessen werden.
+      final antworten = <Completer<int?>>[];
+      final s = await weg(
+        tester,
+        lauf: () {
+          final c = Completer<int?>();
+          antworten.add(c);
+          return c.future;
+        },
+      );
+      antworten.last.complete(0);
+      laufzeit = const Duration(hours: 1);
+      uhr = uhr.add(const Duration(minutes: 1));
+      await zurueck(tester);
+      // Noch ehe die Laufzeit antwortet: wieder weg.
+      await wechsle(tester, [
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]);
+      antworten[1].complete(const Duration(hours: 1).inMilliseconds);
+      await tester.pumpAndSettle();
+      uhr = uhr.add(const Duration(minutes: 1));
+      await zurueck(tester);
+      antworten.last.complete(
+        const Duration(hours: 1, minutes: 1).inMilliseconds,
+      );
+      await tester.pumpAndSettle();
       expect(s.gesperrt, isTrue);
     });
 
@@ -260,6 +339,47 @@ void main() {
     await tester.pumpAndSettle();
     expect(s.gesperrt, isFalse);
   });
+
+  test('nach dem Häkchen gleich nach Hause: diese Abwesenheit zählt', () async {
+    final bestaetigt = Completer<bool>();
+    final s = sperre(frage: () => bestaetigt.future);
+    final entsperrt = s.entsperre('x');
+    // Face ID erkennt, die Antwort ist unterwegs – da wischt man weg.
+    s.lebenslauf(AppLifecycleState.inactive);
+    s.lebenslauf(AppLifecycleState.hidden);
+    s.lebenslauf(AppLifecycleState.paused);
+    bestaetigt.complete(true);
+    expect(await entsperrt, isTrue);
+    expect(s.gesperrt, isFalse);
+    vergeht(const Duration(hours: 2));
+    s.lebenslauf(AppLifecycleState.resumed);
+    expect(s.gesperrt, isTrue, reason: 'mit „Sofort“ gesperrt');
+  });
+
+  testWidgets(
+    'Android 9/10: Code-Eingabe als Activity, „Zurück“ ohne Schleife',
+    (tester) async {
+      var offen = Completer<bool>();
+      final s = sperre(frage: () => (offen = Completer<bool>()).future);
+      await zeige(tester, s);
+      expect(fragen, hasLength(1));
+      // Die Eingabe des Codes ist eine eigene Activity: die App ist „paused“.
+      await wechsle(tester, [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ]);
+      offen.complete(false);
+      await wechsle(tester, [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]);
+      expect(fragen, hasLength(1), reason: 'nicht gleich wieder');
+      expect(s.gesperrt, isTrue);
+      expect(find.text('Entsperren'), findsOneWidget);
+    },
+  );
 
   testWidgets('unter Android verdeckt Inaktiv nichts (FLAG_SECURE)', (
     tester,

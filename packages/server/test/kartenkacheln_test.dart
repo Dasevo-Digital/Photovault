@@ -124,6 +124,13 @@ void main() {
       weiter.headers['location'],
       'https://tile.openstreetmap.org/3/4/2.png',
     );
+    // OSM sperrt Browser ohne Referer (#179): Die Weiterleitung darf den
+    // Ursprung nicht wegnehmen. Und sie wird nicht vorgehalten.
+    expect(
+      weiter.headers['referrer-policy'],
+      'strict-origin-when-cross-origin',
+    );
+    expect(weiter.headers['cache-control'], 'no-store');
     expect(
       (await hole(api(null), 'topo/5/1/2.png')).headers['location'],
       'https://tile.opentopomap.org/5/1/2.png',

@@ -84,6 +84,12 @@ class AppSperre extends ChangeNotifier {
   var _rueckkehr = 0;
   bool _fragtGerade = false;
 
+  /// Der letzte Zustand aus [lebenslauf].
+  AppLifecycleState? _zustand;
+
+  /// Ob gerade nach Face ID, Touch ID oder dem Gerätecode gefragt wird.
+  bool get fragtGerade => _fragtGerade;
+
   /// Liest die Einstellung dieses Geräts. Ohne Datei ist die Sperre aus.
   ///
   /// Lässt sich eine vorhandene Datei nicht lesen, ist sie an (#382): Die
@@ -170,9 +176,13 @@ class AppSperre extends ChangeNotifier {
       gesperrt = false;
       // Wer eben bestätigt hat, war da. Unter Android 9 und 10 ist die
       // Eingabe des Codes eine eigene Activity; ihr „weg“ soll nicht gleich
-      // wieder sperren (#382).
-      _weg = null;
-      _wegLaufzeit = null;
+      // wieder sperren (#382). Ist die App aber jetzt schon wieder im
+      // Hintergrund (nach dem Häkchen nach Hause gewischt), zählt diese
+      // Abwesenheit – sonst käme später jeder ohne Frage hinein.
+      if (_zustand != AppLifecycleState.hidden &&
+          _zustand != AppLifecycleState.paused) {
+        _vergiss();
+      }
       notifyListeners();
     }
     return ok;
@@ -206,6 +216,7 @@ class AppSperre extends ChangeNotifier {
   /// Face ID selbst macht sie nur inaktiv, nicht unsichtbar – das zählt
   /// nicht als weg.
   void lebenslauf(AppLifecycleState zustand) {
+    _zustand = zustand;
     if (!an) {
       if (verdeckt) {
         verdeckt = false;
@@ -243,21 +254,24 @@ class AppSperre extends ChangeNotifier {
   /// dem Verlassen sperrt sofort; liegt sie innerhalb der Frist, bleibt die
   /// Abdeckung, bis die Laufzeit es bestätigt. Antwortet das System nicht,
   /// wird gesperrt.
+  ///
+  /// Das Verlassen bleibt vermerkt, bis eine Prüfung entschieden hat. Geht
+  /// die App vorher wieder weg, zählt die Abwesenheit ab dem ersten
+  /// Verlassen weiter (#382).
   void _zurueck() {
     final weg = _weg;
-    final wegLaufzeit = _wegLaufzeit;
-    _weg = null;
-    _wegLaufzeit = null;
     if (weg == null) {
       _decke(auf: false);
       return;
     }
     final vergangen = _jetzt().difference(weg);
     if (vergangen.isNegative || vergangen >= frist) {
+      _vergiss();
       _sperre();
       _decke(auf: false);
       return;
     }
+    final wegLaufzeit = _wegLaufzeit;
     final nr = _rueckkehr;
     unawaited(() async {
       final vorher = await wegLaufzeit;
@@ -269,8 +283,14 @@ class AppSperre extends ChangeNotifier {
           Duration(milliseconds: jetzt - vorher) >= frist) {
         _sperre();
       }
+      _vergiss();
       _decke(auf: false);
     }());
+  }
+
+  void _vergiss() {
+    _weg = null;
+    _wegLaufzeit = null;
   }
 
   void _sperre() {
@@ -293,8 +313,15 @@ class AppSperre extends ChangeNotifier {
     }
   }
 
-  static Future<bool> _systemPruefung(String grund) => LocalAuthentication()
-      .authenticate(localizedReason: grund, persistAcrossBackgrounding: true);
+  /// Unter iOS fragt der Dialog nach dem Hintergrund von selbst weiter.
+  /// Unter Android nicht: Dort stellt das Plugin bei jedem Zurückkommen eine
+  /// neue Abfrage, auch nach der Code-Eingabe in eigener Activity (Android
+  /// 9/10) – eine zweite stünde dann über der eben entsperrten App (#382).
+  static Future<bool> _systemPruefung(String grund) =>
+      LocalAuthentication().authenticate(
+        localizedReason: grund,
+        persistAcrossBackgrounding: !Platform.isAndroid,
+      );
 
   static const _kanal = MethodChannel('de.dasevo.photovault/gemeinsam');
 
@@ -363,7 +390,10 @@ class _AppSperrschichtState extends State<AppSperrschicht>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
       case AppLifecycleState.hidden || AppLifecycleState.paused:
-        _warWeg = true;
+        // Nicht, solange die eigene Abfrage läuft: Unter Android 9/10 ist die
+        // Eingabe des Codes eine eigene Activity, und nach „Zurück“ stünde
+        // sie sonst gleich wieder da – immer wieder (#382).
+        if (!widget.sperre.fragtGerade) _warWeg = true;
       case AppLifecycleState.resumed:
         // Wer die Abfrage abgebrochen hat und aus dem Hintergrund
         // wiederkommt, wird wieder gefragt. Nicht aber nach dem Dialog von
@@ -396,8 +426,10 @@ class _AppSperrschichtState extends State<AppSperrschicht>
     }
     return Stack(
       children: [
+        // Nur gesperrt, nicht schon verdeckt: Sonst schlösse jedes
+        // Kontrollzentrum die Tastatur, und AutoFill verlöre seine Eingabe.
         ExcludeFocus(
-          excluding: zeige,
+          excluding: s.an && s.gesperrt,
           child: ExcludeSemantics(excluding: zeige, child: widget.child),
         ),
         if (zeige)

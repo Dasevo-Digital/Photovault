@@ -200,14 +200,20 @@ async function kammerAbschliessen() {
   // Erst die eigenen Urteile ankommen lassen: Holte die Liste den Stand
   // davor, fehlte die letzte Ablehnung, und das Foto käme in die
   // Bibliothek (#382).
-  await Promise.allSettled([...kammer.urteileUnterwegs]);
   // Den Stand frisch holen: Ein anderes Gerät kann inzwischen anders
   // geurteilt haben, und Verworfenes ist weg. Freigegeben wird aber nur,
   // was hier schon zu sehen war – was inzwischen hinzukam, hat niemand
-  // gesichtet, und es bleibt in der Kammer.
+  // gesichtet, und es bleibt in der Kammer. Kommt beim Holen noch ein
+  // Urteil von hier dazu, noch einmal.
   const gesehen = new Set(kammer.eintraege.map((e) => e.id));
-  await ladeKammer().catch(() => {});
-  const weg = kammer.eintraege.filter((e) => e.abgelehnt).map((e) => e.id);
+  for (let runde = 0; runde < 3; runde++) {
+    await Promise.allSettled([...kammer.urteileUnterwegs]);
+    await ladeKammer().catch(() => {});
+    if (!kammer.urteileUnterwegs.size) break;
+  }
+  // Verworfen wird ebenso nur Gesehenes: Kam ein Foto schon abgelehnt
+  // herein, hat es hier noch niemand angesehen, und weg ist endgültig.
+  const weg = kammer.eintraege.filter((e) => e.abgelehnt && gesehen.has(e.id)).map((e) => e.id);
   const rest = kammer.eintraege.filter((e) => !e.abgelehnt && gesehen.has(e.id)).map((e) => e.id);
   if (!weg.length || kammer.arbeit) return;
   const abgelehnt = weg.length === 1 ? t('1 abgelehntes Foto') : t('{n} abgelehnte Fotos', { n: weg.length });

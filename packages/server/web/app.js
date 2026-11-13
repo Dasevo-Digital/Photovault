@@ -2573,9 +2573,15 @@ function ladeLeaflet() {
 // jedes Besuchers samt der Gegend, die er ansah. Jetzt fragt nur der
 // Server, mit seiner eigenen Kennung, und hält die Kacheln vor; der
 // Browser schickt sein Cookie mit wie bei jedem Bild der Bibliothek.
+//
+// Liefert der Server keine Kacheln (PV_KARTEN=aus), leitet er zum Anbieter
+// weiter (#382) – und OSM sperrt Browser ohne Referer („Access blocked“,
+// #179). Die Seite schickt sonst keinen mit; für die Kacheln darf es der
+// Ursprung sein, ohne Pfad.
 function osmKacheln() {
   return L.tileLayer('/api/v1/karte/osm/{z}/{x}/{y}.png', {
     maxZoom: 19,
+    referrerPolicy: 'strict-origin-when-cross-origin',
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   });
 }

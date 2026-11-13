@@ -194,17 +194,22 @@ class Notarisieren(unittest.TestCase):
     ZIELE = {'mac_signatur': 'ABC', 'mac_notar_profil': 'pv-notar'}
 
     def laufe(self, antworten):
-        """Spielt notarytool mit [antworten] nach; merkt sich jeden Aufruf."""
+        """Spielt notarytool mit [antworten] nach – je Einreichung (stdout,
+        stderr, Code) oder nur stdout; merkt sich jeden Aufruf."""
         aufrufe = []
-        antworten = list(antworten)
+        antworten = [a if isinstance(a, tuple) else (a, '', 0) for a in antworten]
+
+        def run(befehl, **kw):
+            aufrufe.append(befehl)
+            aus, fehler, code = antworten.pop(0)
+            return subprocess.CompletedProcess(befehl, code, aus, fehler)
 
         def lauf(befehl, **kw):
             aufrufe.append(befehl)
-            if befehl[:3] == ['xcrun', 'notarytool', 'submit']:
-                return antworten.pop(0)
             return '' if kw.get('ausgabe') else 0
 
-        with unittest.mock.patch('release.lauf', side_effect=lauf), \
+        with unittest.mock.patch('release.subprocess.run', side_effect=run), \
+                unittest.mock.patch('release.lauf', side_effect=lauf), \
                 unittest.mock.patch('release.time.sleep') as schlafen:
             try:
                 release._notarisiere_mac('9.9.9', Path('/gibt/es/nicht'), self.ZIELE)
@@ -232,21 +237,153 @@ class Notarisieren(unittest.TestCase):
         self.assertNotIn('xcrun stapler staple', arten)
         schlafen.assert_not_called()
 
-    def test_ohne_antwort_ein_zweiter_versuch(self):
-        aufrufe, schlafen, fehler = self.laufe(['', '{"id": "x3", "status": "Accepted"}'])
+    def test_zeit_um_reicht_nicht_noch_einmal_ein(self):
+        # Nach --timeout liegt das Paket weiter bei Apple: eine zweite
+        # Einreichung wartete nur noch einmal sechs Stunden.
+        aufrufe, schlafen, fehler = self.laufe([('{"id": "x5", "status": "In Progress"}', '', 1)])
+        self.assertIsNotNone(fehler)
+        self.assertIn('x5', str(fehler))
+        self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 1)
+        schlafen.assert_not_called()
+
+    def test_ohne_einreichung_ein_zweiter_versuch_mit_grund(self):
+        with unittest.mock.patch('builtins.print') as drucke:
+            aufrufe, schlafen, fehler = self.laufe([
+                ('', 'Error: No Keychain password item found for profile', 69),
+                '{"id": "x3", "status": "Accepted"}',
+            ])
         self.assertIsNone(fehler)
         self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 2)
         self.assertEqual(schlafen.call_count, 1)
+        gedruckt = ' '.join(str(c.args[0]) for c in drucke.call_args_list if c.args)
+        self.assertIn('Keychain password item', gedruckt, 'der Grund geht nicht verloren')
 
-    def test_zweimal_ohne_antwort_bricht_ab(self):
-        aufrufe, _, fehler = self.laufe(['Fehler', 'Fehler'])
+    def test_zweimal_ohne_einreichung_bricht_ab(self):
+        aufrufe, _, fehler = self.laufe([('Fehler', '', 1), ('Fehler', '', 1)])
         self.assertIsNotNone(fehler)
         self.assertNotIn('xcrun stapler staple', self.art(aufrufe))
+
+    def test_vorspann_vor_dem_json_zaehlt_nicht_als_keine_antwort(self):
+        aufrufe, schlafen, fehler = self.laufe(['Waiting...\n{"id": "x4", "status": "Accepted"}\n'])
+        self.assertIsNone(fehler)
+        self.assertEqual(self.art(aufrufe).count('xcrun notarytool submit'), 1)
+        schlafen.assert_not_called()
+
+    def test_json_auch_eingerueckt_nach_vorspann(self):
+        self.assertEqual(release._letztes_json('{\n  "status": "Invalid"\n}')['status'], 'Invalid')
+        self.assertEqual(release._letztes_json('Warte …\n{\n  "id": "a",\n  "status": "Accepted"\n}\n')['id'], 'a')
+        self.assertEqual(release._letztes_json('kein json'), {})
 
     def test_ohne_profil_bleibt_es_unnotarisiert(self):
         with unittest.mock.patch('release.lauf') as lauf:
             release._notarisiere_mac('9.9.9', Path('/x'), {'mac_signatur': 'ABC'})
         lauf.assert_not_called()
+
+
+class MacBau(unittest.TestCase):
+    """Ein halbes Mac-Paket bleibt nicht liegen (#382)."""
+
+    def setUp(self):
+        self.u = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.u)
+
+    def baue(self, scheitern):
+        (self.u / 'PhotoVault-9.9.9-macos.zip').write_text('alt')
+        (self.u / 'Photo Vault.app').mkdir()
+
+        def lauf(befehl, **kw):
+            if isinstance(befehl, list) and befehl[:2] == ['rm', '-rf']:
+                for p in befehl[2:]:
+                    shutil.rmtree(p, ignore_errors=True) if Path(p).is_dir() else Path(p).unlink(missing_ok=True)
+            if isinstance(befehl, str) and befehl.startswith('ps'):
+                return ''
+            return '' if kw.get('ausgabe') else 0
+
+        def packe(fassung, u):
+            (u / f'PhotoVault-{fassung}-macos.zip').write_text('signiert, nicht notarisiert')
+            (u / 'Photo Vault.app').mkdir(exist_ok=True)
+
+        with unittest.mock.patch('release.lauf', side_effect=lauf), \
+                unittest.mock.patch('release._signiere_mac'), \
+                unittest.mock.patch('release._packe_mac', side_effect=packe), \
+                unittest.mock.patch('release._notarisiere_mac', side_effect=scheitern):
+            release._baue_mac('9.9.9', self.u, {})
+
+    def test_scheitert_die_notarisierung_liegt_nichts_da(self):
+        with self.assertRaises(SystemExit):
+            self.baue(SystemExit('abgelehnt'))
+        self.assertFalse((self.u / 'PhotoVault-9.9.9-macos.zip').exists())
+        self.assertFalse((self.u / 'Photo Vault.app').exists())
+
+    def test_auch_bei_ctrl_c(self):
+        with self.assertRaises(KeyboardInterrupt):
+            self.baue(KeyboardInterrupt())
+        self.assertFalse((self.u / 'PhotoVault-9.9.9-macos.zip').exists())
+
+
+class Entwurf(unittest.TestCase):
+    """Was im Entwurf schon liegt, bleibt nur, wenn es dasselbe ist (#382)."""
+
+    def setUp(self):
+        self.u = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.u)
+        (self.u / 'RELEASE-TEXT-v9.9.9.md').write_text('# Photo Vault 9.9.9')
+        self.mac = 'PhotoVault-9.9.9-macos.zip'
+        (self.u / self.mac).write_bytes(b'neu notarisiert!')
+
+    def laufe(self, oben_summe, entwurf=True, groesse=None):
+        import hashlib
+        lokal = hashlib.sha256((self.u / self.mac).read_bytes()).hexdigest()
+        (self.u / 'SHA256SUMS.txt').write_text(f'{lokal}  {self.mac}\n')
+        rel = {'id': 7, 'draft': entwurf, 'assets': [
+            {'id': 1, 'name': self.mac, 'size': groesse or (self.u / self.mac).stat().st_size},
+            {'id': 2, 'name': 'SHA256SUMS.txt', 'size': 90, 'browser_download_url': 'x'},
+        ]}
+        anfragen = []
+
+        def gitea(z, pfad, daten=None, methode=None, kopf=None, tok=None):
+            anfragen.append((methode or 'GET', pfad.split('?')[0]))
+            if pfad == '/releases/tags/v9.9.9':
+                return 200, rel
+            if methode == 'POST':
+                return 201, {'size': 1}
+            if methode == 'DELETE':
+                return 204, None
+            return 200, rel
+
+        summe = lokal if oben_summe == 'gleich' else 'f' * 64
+        with unittest.mock.patch('release.ziele', return_value={}), \
+                unittest.mock.patch('release.token', return_value='t'), \
+                unittest.mock.patch('release.upload_ordner', return_value=self.u), \
+                unittest.mock.patch('release.gitea', side_effect=gitea), \
+                unittest.mock.patch('release._lade_anhang', return_value=f'{summe}  {self.mac}\n'):
+            try:
+                release.entwurf(unittest.mock.Mock(fassung='9.9.9'))
+            except SystemExit as e:
+                return anfragen, e
+        return anfragen, None
+
+    def test_gleich_bleibt(self):
+        anfragen, fehler = self.laufe('gleich')
+        self.assertIsNone(fehler)
+        self.assertNotIn(('DELETE', '/releases/7/assets/1'), anfragen)
+        self.assertNotIn(('DELETE', '/releases/7/assets/2'), anfragen)
+
+    def test_gleich_gross_aber_anders_wird_ersetzt(self):
+        anfragen, fehler = self.laufe('anders')
+        self.assertIsNone(fehler)
+        self.assertIn(('DELETE', '/releases/7/assets/1'), anfragen)
+        self.assertIn(('DELETE', '/releases/7/assets/2'), anfragen)
+
+    def test_veroeffentlicht_wird_nichts_ersetzt(self):
+        anfragen, fehler = self.laufe('anders', entwurf=False)
+        self.assertIsNotNone(fehler)
+        self.assertNotIn('DELETE', [m for m, _ in anfragen])
+        self.assertNotIn('POST', [m for m, _ in anfragen])
+
+    def test_summen_lesen(self):
+        self.assertEqual(release.summen_lesen('a' * 64 + '  x.zip\nunsinn\n' + 'b' * 64 + ' *y.zip\n'),
+                         {'x.zip': 'a' * 64, 'y.zip': 'b' * 64})
 
 
 if __name__ == '__main__':

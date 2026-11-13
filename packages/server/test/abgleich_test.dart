@@ -794,11 +794,22 @@ void main() {
           'ids': [id1],
           'nurAbgelehnte': falsch,
         }),
-        throwsA(isA<Serverfehler>()),
+        throwsA(isA<Serverfehler>().having((f) => f.status, 'status', 400)),
         reason: '$falsch',
       );
     }
     expect((await v.hole('api/v1/kammer'))['anzahl'], 2);
+
+    // In der Reihe der Urteile (#382): Hebt ein Gerät die Ablehnung auf,
+    // während ein anderes gerade verwirft, gilt die Reihenfolge – das Foto
+    // bleibt, und „geändert“ stimmt.
+    final fotokammer = (await bibliotheken.fuer(erika.id)).kammer;
+    final aufheben = fotokammer.sichte(id2, abgelehnt: false);
+    final verwerfen = fotokammer.verwerfen(id2, nurAbgelehnte: true);
+    expect(await aufheben, isTrue);
+    expect(await verwerfen, isFalse);
+    expect(await fotokammer.eintrag(id2), isNotNull);
+    await fotokammer.sichte(id2, abgelehnt: true);
 
     // Freigeben: in die Bibliothek, aus der Kammer heraus.
     final f = await v.schicke('api/v1/kammer/freigeben', {

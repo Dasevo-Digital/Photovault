@@ -368,7 +368,8 @@ def _baue_mac(fassung, u, z):
         _signiere_mac(z)
         _packe_mac(fassung, u)
         _notarisiere_mac(fassung, u, z)
-    except SystemExit:
+    except BaseException:
+        # Auch bei Ctrl-C mitten im stundenlangen Warten auf Apple.
         lauf(['rm', '-rf', *reste])
         raise
     finally:
@@ -413,31 +414,64 @@ def _notarisiere_mac(fassung, u, z):
     # wenn keine Antwort kam – eine Ablehnung wird nicht anders, wenn man
     # dasselbe Paket noch einmal schickt; dann holt der Bau Apples Begründung.
     print('macOS: zur Notarisierung bei Apple – das kann Stunden dauern.', flush=True)
+    befehl = ['xcrun', 'notarytool', 'submit', paket, '--keychain-profile', profil,
+              '--wait', '--timeout', '6h', '--output-format', 'json']
     antwort = {}
     for versuch in range(2):
-        roh = lauf(['xcrun', 'notarytool', 'submit', paket, '--keychain-profile', profil,
-                    '--wait', '--timeout', '6h', '--output-format', 'json'],
-                   cwd=u, ausgabe=True, pruefen=False)
-        try:
-            antwort = json.loads(roh)
-        except (json.JSONDecodeError, TypeError):
-            antwort = {}
-        if antwort.get('status'):
+        print('›', ' '.join(befehl), flush=True)
+        r = subprocess.run(befehl, cwd=u, text=True, capture_output=True)
+        antwort = _letztes_json(r.stdout)
+        # Mit einer Kennung liegt das Paket bei Apple – auch wenn die Zeit
+        # um ist. Nur ohne sie kam es gar nicht an (Netz, Schlüsselbund).
+        if antwort.get('id'):
             break
+        meldung = (r.stderr or r.stdout or '').strip()
+        print(f'notarytool ohne Einreichung (Code {r.returncode}): {meldung[-600:]}', flush=True)
         if versuch == 0:
-            print(f'Keine Antwort von notarytool: {(roh or "").strip()[:300]} – neuer Versuch in 90 s.', flush=True)
+            print('Neuer Versuch in 90 s.', flush=True)
             time.sleep(90)
     status = antwort.get('status')
     if status != 'Accepted':
-        if antwort.get('id'):
-            lauf(['xcrun', 'notarytool', 'log', antwort['id'], '--keychain-profile', profil], cwd=u, pruefen=False)
+        kennung = antwort.get('id')
+        if kennung and status in (None, 'In Progress'):
+            sys.exit(f'Apple hat nach sechs Stunden noch nicht entschieden. Die Einreichung {kennung} '
+                     f'läuft weiter: xcrun notarytool info {kennung} --keychain-profile {profil}')
+        if kennung:
+            lauf(['xcrun', 'notarytool', 'log', kennung, '--keychain-profile', profil], cwd=u, pruefen=False)
         sys.exit(f'Apple hat das Paket nicht notarisiert: {status or "keine Antwort"} {antwort.get("message", "")}'.strip())
     print(f'macOS: notarisiert ({antwort.get("id")})', flush=True)
-    lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u)
+    # Gleich nach der Annahme findet stapler das Ticket mitunter noch nicht
+    # („Record not found“). Scheitert es, wäre die Notarisierung vertan.
+    lauf(['xcrun', 'stapler', 'staple', 'Photo Vault.app'], cwd=u, versuche=3, pause=60)
     lauf(['xcrun', 'stapler', 'validate', 'Photo Vault.app'], cwd=u)
     # Das Paket neu, mit dem angehefteten Ticket.
     lauf(['rm', '-f', paket], cwd=u)
     lauf(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', 'Photo Vault.app', paket], cwd=u)
+
+
+def _letztes_json(text):
+    """Das letzte JSON-Objekt in [text]. Mit `--output-format json` gibt
+    notarytool laut Hilfe am Ende genau eines aus; stünde davor doch noch
+    etwas, hielte der Bau eine Annahme sonst für „keine Antwort“ und reichte
+    dasselbe Paket ein zweites Mal ein."""
+    zeilen = (text or '').strip().splitlines()
+    for i in range(len(zeilen) - 1, -1, -1):
+        if not zeilen[i].lstrip().startswith('{'):
+            continue
+        # Ab dieser Zeile bis zum Ende: eine Zeile oder ein eingerücktes
+        # Objekt über mehrere.
+        for stueck in (zeilen[i], '\n'.join(zeilen[i:])):
+            try:
+                wert = json.loads(stueck)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(wert, dict):
+                return wert
+    try:
+        wert = json.loads(text or '')
+    except (json.JSONDecodeError, TypeError):
+        return {}
+    return wert if isinstance(wert, dict) else {}
 
 
 def _packe_mac(fassung, u):
@@ -563,6 +597,30 @@ def fern_bereitlegen(z, plattform, fassung, u, runner=None):
 
 # --- entwurf ----------------------------------------------------------------------
 
+def summen_lesen(text):
+    """`<sha256>  <name>` je Zeile → {name: sha256}."""
+    summen = {}
+    for zeile in (text or '').splitlines():
+        teile = zeile.split(None, 1)
+        if len(teile) == 2 and re.fullmatch(r'[0-9a-f]{64}', teile[0]):
+            summen[teile[1].strip().lstrip('*')] = teile[0]
+    return summen
+
+
+def _lade_anhang(anhang, tok):
+    """Der Inhalt einer kleinen Datei im Release (SHA256SUMS.txt); leer,
+    wenn sie sich nicht laden lässt – dann gilt alles als anders."""
+    url = anhang.get('browser_download_url')
+    if not url:
+        return ''
+    try:
+        req = urllib.request.Request(url, headers={'Authorization': 'token ' + tok})
+        with urllib.request.urlopen(req, timeout=60) as a:
+            return a.read(1 << 20).decode('utf-8', 'replace')
+    except (urllib.error.URLError, OSError):
+        return ''
+
+
 def entwurf(args):
     z = ziele()
     fassung = args.fassung
@@ -589,13 +647,26 @@ def entwurf(args):
     vorhanden = {x['name']: x for x in rel.get('assets', [])}
     # Nur, was gebaut wurde: 3.41 bis 3.44.1 gingen nur an Mac und Server.
     vorhanden_hier = [n for n in dateien(fassung) if (u / n).exists()]
+    # Was oben schon liegt, bleibt nur, wenn es dasselbe ist – nach der
+    # Prüfsumme in der SHA256SUMS.txt dort, nicht nach der Grösse: Ein neu
+    # gebautes Paket kann gleich gross sein. Blieb die alte Datei stehen,
+    # passte sie nicht mehr zur neuen SHA256SUMS.txt (bei 3.67.1 das
+    # notarisierte Mac-Paket nach dem nur signierten, #382).
+    lokal = summen_lesen((u / 'SHA256SUMS.txt').read_text()) if (u / 'SHA256SUMS.txt').exists() else {}
+    oben = summen_lesen(_lade_anhang(vorhanden['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in vorhanden else {}
+    anders = [n for n in vorhanden_hier if n in vorhanden
+              and not (vorhanden[n].get('size') == (u / n).stat().st_size and oben.get(n) and oben.get(n) == lokal.get(n))]
+    # Ein veröffentlichtes Release wird nur ergänzt, nie ersetzt: Wer schon
+    # geladen hat, hätte sonst eine andere Datei als die Prüfsumme sagt, und
+    # der Abgleich nach GitHub ersetzt nichts – die beiden liefen auseinander.
+    if anders and not rel.get('draft', True):
+        sys.exit(f'Im veröffentlichten Release liegt anderes als hier: {", ".join(anders)}. '
+                 'Nichts ersetzt – dafür eine neue Fassung bauen.')
     for name in vorhanden_hier + ['SHA256SUMS.txt']:
         if name in vorhanden:
-            # Gleich gross: schon oben, nicht noch einmal hochladen. Sonst ist
-            # die Datei neu gebaut (bei 3.67.1 das notarisierte Mac-Paket nach
-            # dem nur signierten) und ersetzt die alte – blieb die stehen,
-            # passte sie nicht mehr zu SHA256SUMS.txt (#382).
-            if name != 'SHA256SUMS.txt' and vorhanden[name].get('size') == (u / name).stat().st_size:
+            if name != 'SHA256SUMS.txt' and name not in anders:
+                continue
+            if name == 'SHA256SUMS.txt' and oben and oben == lokal:
                 continue
             st, a = gitea(z, f'/releases/{rid}/assets/{vorhanden[name]["id"]}', methode='DELETE', tok=tok)
             if st not in (200, 204):

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -546,6 +547,59 @@ void main() {
       final d = dienst();
       await d.verwerfen([for (var i = 0; i < 450; i++) 'x$i']);
       expect(verworfen.map((s) => s.length), [200, 200, 50]);
+    });
+
+    test('kammerAbschluss: nur Gesehenes, auch beim Verwerfen (#382)', () {
+      Kammereintrag e(String id, {bool abgelehnt = false}) =>
+          Kammereintrag.aus({...eintrag(1), 'id': id, 'abgelehnt': abgelehnt});
+      final r = kammerAbschluss(
+        [
+          e('a', abgelehnt: true),
+          e('b'),
+          // Kam erst nach dem letzten Blick – schon abgelehnt (Vermerk beim
+          // Hochladen, anderes Gerät) oder nicht: beides bleibt.
+          e('c', abgelehnt: true),
+          e('d'),
+        ],
+        {'a', 'b'},
+      );
+      expect(r.weg, ['a']);
+      expect(r.rest, ['b']);
+    });
+
+    test('vor dem Abschliessen kommen laufende Urteile an (#382)', () async {
+      final unterwegs = Completer<void>();
+      final client = MockClient((r) async {
+        if (r.url.path == '/api/v1/kammer/sichten') await unterwegs.future;
+        return http.Response(
+          jsonEncode({'geaendert': 1}),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+      final d = Fotokammerdienst(
+        Serververbindung(Uri.parse('http://server/'), 'x', client: client),
+        abgleichen: () async {},
+      );
+      unawaited(d.sichten(['x'], abgelehnt: true));
+      var angekommen = false;
+      final warten = d.urteileAngekommen().then((_) => angekommen = true);
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(angekommen, isFalse, reason: 'das Urteil ist noch unterwegs');
+      unterwegs.complete();
+      await warten;
+      expect(angekommen, isTrue);
+      // Ein gescheitertes Urteil hält nichts auf.
+      final kaputt = Fotokammerdienst(
+        Serververbindung(
+          Uri.parse('http://server/'),
+          'x',
+          client: MockClient((_) async => http.Response('nein', 500)),
+        ),
+        abgleichen: () async {},
+      );
+      await expectLater(kaputt.sichten(['x'], sterne: 2), throwsA(anything));
+      await kaputt.urteileAngekommen();
     });
 
     testWidgets('ohne Abgelehnte gibt es den Knopf nicht', (tester) async {

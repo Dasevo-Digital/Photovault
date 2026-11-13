@@ -44,6 +44,15 @@ const HOEHEN_NENNUNG = 'Höhen: Tilezen / AWS Open Data';
 // Mit vollem Ursprung, damit die Adresse dasselbe meint, wo immer MapLibre
 // sie lädt – in der Seite oder in seinem Worker.
 const SERVERKACHELN = `${location.origin}/api/v1/karte`;
+
+// Liefert der Server keine Kacheln (PV_KARTEN=aus), leitet er zum Anbieter
+// weiter (#382), und OSM sperrt Browser ohne Referer (#179). Nur für die
+// eigenen Kachelpfade darf der Ursprung mit; alles andere bleibt ohne.
+function kachelAnfrage(url) {
+  return url.startsWith(SERVERKACHELN)
+    ? { url, referrerPolicy: 'strict-origin-when-cross-origin' }
+    : { url };
+}
 const GRUENDE = {
   wanderkarte: {
     name: 'Topografie',
@@ -765,6 +774,7 @@ function baueKarte(z, kartenbox) {
     bearing: UEBERSICHT_DREHUNG,
     maxPitch: 85,
     attributionControl: false,
+    transformRequest: kachelAnfrage,
   });
   z.karte = karte;
   karte.addControl(new ml.NavigationControl({ visualizePitch: true }), 'top-right');
@@ -1334,6 +1344,7 @@ async function videoAusgeben(z) {
       style: stilFuer(z),
       pixelRatio: 1,
       interactive: false,
+      transformRequest: kachelAnfrage,
       attributionControl: false,
       fadeDuration: 0,
       canvasContextAttributes: { preserveDrawingBuffer: true, antialias: true },

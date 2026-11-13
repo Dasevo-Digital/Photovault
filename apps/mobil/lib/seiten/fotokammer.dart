@@ -122,6 +122,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     final gesehen = {for (final e in _eintraege) e.id};
     final List<Kammereintrag> stand;
     try {
+      await _d.urteileAngekommen();
       stand = await _d.liste();
     } on Object catch (e) {
       _melde(t.kammerFehler('$e'));

@@ -751,7 +751,10 @@ Middleware get _sicherheitskoepfe =>
       return antwort.change(
         headers: {
           'x-content-type-options': 'nosniff',
-          'referrer-policy': 'no-referrer',
+          // Ausser die Antwort bringt eine eigene mit (die Weiterleitung
+          // zum Kartenanbieter, _kachelBeimAnbieter).
+          if (!k.containsKey('referrer-policy'))
+            'referrer-policy': 'no-referrer',
           'x-frame-options': 'DENY',
           'cross-origin-opener-policy': 'same-origin',
           'cross-origin-resource-policy': 'same-origin',
@@ -794,7 +797,15 @@ Response _kachelBeimAnbieter(String stil, String z, String x, String y) {
   if (quelle == null) return Response.notFound('nicht da');
   return Response.found(
     'https://${quelle.host}/$z/$x/$y.png',
-    headers: {'cache-control': 'private, max-age=86400'},
+    headers: {
+      // OSM sperrt Browser ohne Referer (#179). Eine Weiterleitung mit
+      // no-referrer nähme ihn auch einer Anfrage, die ihn mitschickt.
+      'referrer-policy': 'strict-origin-when-cross-origin',
+      // Nicht vorhalten: Schaltet der Betreiber die Kacheln über den
+      // Server wieder ein, liesse die Seite den Anbieter nicht mehr zu,
+      // und gemerkte Weiterleitungen blieben leer.
+      'cache-control': 'no-store',
+    },
   );
 }
 

@@ -74,9 +74,11 @@ class Kammereintrag {
 }
 
 /// Was „Sichtung abschliessen“ mit dem frisch geholten [stand] tut (#345):
-/// verwerfen, was abgelehnt ist, und freigeben, was es nicht ist – aber
-/// nur, was schon in [gesehen] stand (#382). Was seit dem letzten Blick
-/// hinzukam, etwa vom Handy, hat niemand gesichtet; es bleibt in der Kammer.
+/// verwerfen, was abgelehnt ist, und freigeben, was es nicht ist – beides
+/// nur für das, was schon in [gesehen] stand (#382). Was seit dem letzten
+/// Blick hinzukam, etwa vom Handy, hat hier niemand gesichtet; es bleibt in
+/// der Kammer. Auch wenn es schon abgelehnt ankam (ein Vermerk beim
+/// Hochladen, ein anderes Gerät): Verworfen ist endgültig.
 ///
 /// Verworfen wird dann mit `nurAbgelehnte`: Hebt ein anderes Gerät eine
 /// Ablehnung auf, während noch freigegeben wird, bleibt das Foto.
@@ -86,7 +88,7 @@ class Kammereintrag {
 ) => (
   weg: [
     for (final e in stand)
-      if (e.abgelehnt) e.id,
+      if (e.abgelehnt && gesehen.contains(e.id)) e.id,
   ],
   rest: [
     for (final e in stand)
@@ -232,7 +234,13 @@ class Fotokammerdienst {
   }
 
   /// Merkt das Urteil über [ids] am Server.
-  Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) async {
+  Future<void> sichten(List<String> ids, {int? sterne, bool? abgelehnt}) {
+    final lauf = _sichte(ids, sterne: sterne, abgelehnt: abgelehnt);
+    _urteileUnterwegs.add(lauf);
+    return lauf.whenComplete(() => _urteileUnterwegs.remove(lauf));
+  }
+
+  Future<void> _sichte(List<String> ids, {int? sterne, bool? abgelehnt}) async {
     // Der Server nimmt höchstens 500 auf einmal.
     for (var i = 0; i < ids.length; i += 200) {
       await verbindung.schicke('api/v1/kammer/sichten', {
@@ -240,6 +248,21 @@ class Fotokammerdienst {
         'sterne': ?sterne,
         'abgelehnt': ?abgelehnt,
       });
+    }
+  }
+
+  final _urteileUnterwegs = <Future<void>>{};
+
+  /// Wartet, bis die Urteile von hier beim Server sind (#382). Vor dem
+  /// Abschliessen: Holte die Liste den Stand davor, fehlte eine eben
+  /// vergebene Ablehnung, und das Foto käme in die Bibliothek. Ein
+  /// gescheitertes Urteil zählt als angekommen – die Oberfläche hat es
+  /// schon zurückgenommen.
+  Future<void> urteileAngekommen() async {
+    for (var runde = 0; runde < 3 && _urteileUnterwegs.isNotEmpty; runde++) {
+      await Future.wait([
+        for (final f in [..._urteileUnterwegs]) f.catchError((Object _) {}),
+      ]);
     }
   }
 

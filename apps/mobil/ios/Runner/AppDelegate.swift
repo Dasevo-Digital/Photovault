@@ -162,14 +162,31 @@ enum Abdeckung {
     }
   }
 
-  /// Die App-Sperre greift (#382): Was iOS selbst über der App zeigt – das
-  /// Teilen-Blatt mit seiner Vorschau, der Browser in der App –, läge sonst
-  /// über der Sperre, die Flutter zeichnet.
+  /// Die App-Sperre greift (#382): Das Teilen-Blatt zeigt eine Vorschau
+  /// der Fotos und läge sonst über der Sperre, die Flutter zeichnet. Nur
+  /// dieses Blatt – die Auswahl der Fotomediathek oder der Browser zeigen
+  /// nichts aus der App, und ihre Plugins warteten nach einem fremden
+  /// Schliessen vergeblich auf ihre Antwort.
+  ///
+  /// share_plus wartet auf `completionWithItemsHandler`. Ob iOS ihn beim
+  /// Schliessen von aussen noch ruft, ist nicht zugesagt; zweimal darf er
+  /// nicht kommen. Darum nehmen wir ihn vorher an uns und rufen ihn genau
+  /// einmal selbst: abgebrochen.
   static func schliesseBlaetter() {
     for szene in UIApplication.shared.connectedScenes {
       guard let szene = szene as? UIWindowScene else { continue }
       for fenster in szene.windows {
-        fenster.rootViewController?.presentedViewController?.dismiss(animated: false)
+        var oben = fenster.rootViewController?.presentedViewController
+        while let blatt = oben {
+          if let teilen = blatt as? UIActivityViewController {
+            let fertig = teilen.completionWithItemsHandler
+            teilen.completionWithItemsHandler = nil
+            teilen.dismiss(animated: false)
+            fertig?(nil, false, nil, nil)
+            break
+          }
+          oben = blatt.presentedViewController
+        }
       }
     }
   }
