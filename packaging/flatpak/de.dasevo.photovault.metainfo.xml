@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.5" date="2026-11-15">
+      <description>
+        <p>A backup no longer replaces an intact copy with a damaged library file: a copy is only replaced when the library file still matches the photo's checksum. Incomplete staging entries in the server backup are written again.</p>
+        <p>The watched folder keeps trying files while the server cannot be reached, and light video versions made before 3.67.4 are created again with the 8 Mbit/s cap.</p>
+      </description>
+    </release>
     <release version="3.67.4" date="2026-11-15">
       <description>
         <p>The light video version the server prepares for phones and browsers is capped at 8 Mbit/s, so it also starts over a home upload or a mobile network.</p>
