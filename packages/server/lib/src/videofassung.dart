@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
+import 'package:kern/db/database.dart';
+
 import 'fassungen_aufraeumen.dart';
 
 /// Videos als H.264 für Browser, die das Original nicht abspielen.
@@ -70,6 +72,97 @@ class Videofassungen {
   /// Fassungen, die sich nicht erzeugen liessen – bis zum Neustart nicht
   /// noch einmal versucht.
   final gescheitert = <String>{};
+
+  /// Ab welcher Datenrate ein Original als schwer gilt – wie in der
+  /// Handy-App: Ein iPhone filmt 4K mit HDR und rund 50 Mbit/s, mehr, als
+  /// der Upload daheim oder ein Mobilnetz verlässlich liefert (#393).
+  static const schwerAbBitProSekunde = 20 * 1000 * 1000;
+
+  /// Wie alt eine Aufnahme höchstens ist, damit sie schon nach dem Import
+  /// eine Fassung bekommt ([vormerken]). Angesehen wird vor allem, was
+  /// gerade aufgenommen wurde; ein Archiv alter Videos verdrängte sonst
+  /// die Fassungen, die schon jemand abgespielt hat.
+  static const vorratFrisch = Duration(days: 30);
+
+  /// Ob [a] schon nach dem Import eine Fassung bekommen soll (#394): ein
+  /// frisches, schweres Video, nicht gesperrt und nicht im Papierkorb.
+  static bool lohntVorrat(AssetData a, {required DateTime jetzt}) {
+    final dauer = a.durationSeconds;
+    if (a.type != 'VIDEO' || a.isLocked || a.isTrashed) return false;
+    if (dauer == null || dauer <= 0 || a.fileSizeBytes <= 0) return false;
+    if (jetzt.difference(a.fileCreatedAt) > vorratFrisch) return false;
+    return a.fileSizeBytes * 8 / dauer > schwerAbBitProSekunde;
+  }
+
+  /// Was schon vor dem ersten Abruf entstehen soll, in der Reihenfolge des
+  /// Vormerkens.
+  final _vorrat = <String, (Directory, String, File)>{};
+  Future<void>? _vorratLauf;
+
+  /// Bis der Vorrat abgearbeitet ist – für Tests.
+  Future<void> get vorratAbgearbeitet => _vorratLauf ?? Future.value();
+
+  /// Höchstens so viele Fassungen warten im Vorrat.
+  static const vorratGrenze = 20;
+
+  /// Merkt die Fassung von [id] vor, damit sie schon vor dem ersten Abruf
+  /// entsteht (#394). Bis 3.67.5 entstand sie erst, wenn jemand das Video
+  /// öffnete, und Handy und Browser warteten beim ersten Mal minutenlang
+  /// auf die Umwandlung – auch ein kurzes Vorbeiwischen im Betrachter
+  /// stiess sie an.
+  ///
+  /// Angefragte Fassungen gehen vor: Der Vorrat wartet, bis keine mehr
+  /// ansteht, und wandelt dann eine nach der anderen. Er belegt höchstens
+  /// die Hälfte von [grenze]; was schon jemand abgespielt hat, verdrängt
+  /// er nicht.
+  void vormerken(Directory zwischenspeicher, String id, File original) {
+    final datei = ziel(zwischenspeicher, id);
+    if (gescheitert.contains(datei.path) ||
+        _laufend.containsKey(datei.path) ||
+        _vorrat.length >= vorratGrenze) {
+      return;
+    }
+    _vorrat[datei.path] = (zwischenspeicher, id, original);
+    _vorratLauf ??= _arbeiteVorrat();
+  }
+
+  /// Läuft, bis der Vorrat leer ist. Das `finally` folgt dem letzten
+  /// Durchgang ohne Pause; was danach vorgemerkt wird, startet neu.
+  Future<void> _arbeiteVorrat() async {
+    try {
+      while (_vorrat.isNotEmpty) {
+        while (_laufend.isNotEmpty) {
+          await Future.wait(_laufend.values.toList());
+        }
+        final schluessel = _vorrat.keys.first;
+        final (speicher, id, original) = _vorrat.remove(schluessel)!;
+        try {
+          if (await _aktuell(ziel(speicher, id), original)) continue;
+          if (await _belegt(speicher) > grenze ~/ 2) continue;
+          await erzeuge(speicher, id, original);
+        } catch (_) {
+          // Etwa das Original inzwischen gelöscht: dann eben beim Abruf.
+        }
+      }
+    } finally {
+      _vorratLauf = null;
+    }
+  }
+
+  static Future<int> _belegt(Directory speicher) async {
+    if (!await speicher.exists()) return 0;
+    var summe = 0;
+    await for (final e in speicher.list(followLinks: false)) {
+      if (e is File) {
+        try {
+          summe += await e.length();
+        } on FileSystemException {
+          // Zwischen Auflisten und Messen gelöscht.
+        }
+      }
+    }
+    return summe;
+  }
 
   /// Erzeugt die Fassung (oder wartet auf die schon laufende).
   Future<File?> erzeuge(Directory zwischenspeicher, String id, File original) {

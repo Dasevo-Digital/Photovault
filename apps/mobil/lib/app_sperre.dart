@@ -371,6 +371,43 @@ class AppSperre extends ChangeNotifier {
 /// [AppSperre.gesperrt], und eine leere Fläche, solange die App nicht vorne
 /// ist. Was darunter liegt, bekommt keine Berührung, keinen Tastaturfokus
 /// und keine Ansage für VoiceOver.
+/// Ruft [halteAn], sobald die Sperre die App verdeckt oder sperrt (#385).
+///
+/// Ein Video lief bis 0.19.6 hinter der Sperre mit Ton weiter:
+/// `video_player` hält es beim Wechsel in den Hintergrund an und spielt es
+/// bei der Rückkehr wieder ab – auch hinter der Sperre. Hält die Seite es
+/// schon beim Verdecken an, gilt es dort als angehalten und bleibt es.
+/// Gibt zurück, womit das Zuhören endet. Ohne Sperre geschieht nichts.
+VoidCallback beimVerdecken(AppSperre? sperre, VoidCallback halteAn) {
+  if (sperre == null) return () {};
+  bool vorne() => sperre.an && (sperre.gesperrt || sperre.verdeckt);
+  var war = vorne();
+  void hoere() {
+    final jetzt = vorne();
+    if (jetzt && !war) halteAn();
+    war = jetzt;
+  }
+
+  sperre.addListener(hoere);
+  return () => sperre.removeListener(hoere);
+}
+
+/// Fängt das Zurück von Android ab, solange die Sperre vorne steht (#385).
+/// Bis 0.19.6 ging es an den Navigator dahinter, und jedes Zurück schloss
+/// unsichtbar eine Seite – nach dem Entsperren stand man woanders.
+///
+/// Vor `runApp` anmelden: Flutter fragt die Beobachter in der Reihenfolge
+/// ihrer Anmeldung, und der Navigator meldet sich mit der App an.
+class SperrZurueck with WidgetsBindingObserver {
+  SperrZurueck(this.sperre);
+
+  final AppSperre sperre;
+
+  @override
+  Future<bool> didPopRoute() async =>
+      sperre.an && (sperre.gesperrt || sperre.verdeckt);
+}
+
 class AppSperrschicht extends StatefulWidget {
   const AppSperrschicht({super.key, required this.sperre, required this.child});
 

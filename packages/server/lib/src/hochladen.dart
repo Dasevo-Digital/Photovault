@@ -47,6 +47,7 @@ class Hochladen {
     this.bibliothek, {
     this.hoechstens = 64 * 1024 * 1024 * 1024,
     this.nachImport,
+    this.neueAufnahme,
     this.pfad = '/api/v1/hochladen',
     this.abschluss,
     this.kammer,
@@ -80,6 +81,10 @@ class Hochladen {
 
   /// Nach jeder neu aufgenommenen Datei.
   final void Function()? nachImport;
+
+  /// Mit der Kennung jeder neu aufgenommenen Datei, nach [nachImport] –
+  /// etwa für die leichte Fassung eines schweren Videos (#394).
+  final void Function(String aufnahme)? neueAufnahme;
 
   static const _fassung = '1.0.0';
   static final _kennungMuster = RegExp(r'^[0-9a-f-]{36}$');
@@ -517,6 +522,7 @@ class Hochladen {
         protokoll('Beilage von ${a['name']} nicht übernommen: $e');
       }
       nachImport?.call();
+      neueAufnahme?.call(aufnahme);
     }
     if (r.outcome == ImportOutcome.duplicateSkipped) {
       final summe = await sha256.bind(datei.openRead()).first;

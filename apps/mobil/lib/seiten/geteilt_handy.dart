@@ -7,6 +7,7 @@ import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:video_player/video_player.dart';
 
 import '../l10n/app_localizations.dart';
+import '../app_sperre.dart';
 import '../sitzung.dart';
 
 // Was am Telefon zu den geteilten Alben (packages/teilen_ui) dazukommt:
@@ -20,7 +21,7 @@ Teilungszugang? teilungszugang(Sitzung sitzung) {
     verbindung: v,
     ablage: sitzung.paths.geteiltDir,
     waehle: waehleFotos,
-    video: (context, video) => _GeteiltesVideo(video),
+    video: (context, video) => _GeteiltesVideo(video, sitzung.appSperre),
     // Fotos von Partnern stehen am Telefon in der Zeitleiste (#299).
     zeitleisteMischt: true,
     partnerGeaendert: () => unawaited(sitzung.ladePartnerfotos()),
@@ -190,9 +191,10 @@ class _FotowahlState extends State<_Fotowahl> {
 /// Ein Video aus einem geteilten Album: so, wie es ist, sonst die
 /// H.264-Fassung des Servers.
 class _GeteiltesVideo extends StatefulWidget {
-  const _GeteiltesVideo(this.video);
+  const _GeteiltesVideo(this.video, this.sperre);
 
   final Fernvideo video;
+  final AppSperre? sperre;
 
   @override
   State<_GeteiltesVideo> createState() => _GeteiltesVideoState();
@@ -202,10 +204,13 @@ class _GeteiltesVideoState extends State<_GeteiltesVideo> {
   VideoPlayerController? _spieler;
   var _fehler = false;
   var _weg = false;
+  late final VoidCallback _sperreAus;
 
   @override
   void initState() {
     super.initState();
+    // Hinter der Sperre kein Ton (#385).
+    _sperreAus = beimVerdecken(widget.sperre, () => _spieler?.pause());
     _starte();
   }
 
@@ -249,6 +254,7 @@ class _GeteiltesVideoState extends State<_GeteiltesVideo> {
 
   @override
   void dispose() {
+    _sperreAus();
     _weg = true;
     _spieler?.dispose();
     super.dispose();

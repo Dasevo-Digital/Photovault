@@ -308,6 +308,8 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       final r = await d.freigeben(
         rest,
         ziel: _ziel,
+        // Inzwischen abgelehnt: bleibt in der Kammer (#396).
+        ohneAbgelehnte: true,
         fortschritt: (n, gesamt) {
           if (mounted) setState(() => _arbeit = (n, gesamt));
         },

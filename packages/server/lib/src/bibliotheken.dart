@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
@@ -15,6 +16,7 @@ import 'fassungen_aufraeumen.dart';
 import 'rechnen.dart';
 import 'fotokammer.dart';
 import 'hochladen.dart';
+import 'videofassung.dart';
 
 /// Was zu einem Konto gehört: seine Bibliothek, sein Eingang für Uploads
 /// und seine Auswertung.
@@ -53,7 +55,9 @@ class Bibliotheken {
     this.bildwerkzeuge = const WerkzeugBildwerkzeuge(),
     this.ruhe = const Duration(seconds: 10),
     this.selbst = const {...Analysestufe.values},
-  }) : modelle = modelle ?? Modelle() {
+    Videofassungen? videofassungen,
+  }) : modelle = modelle ?? Modelle(),
+       videofassungen = videofassungen ?? Videofassungen() {
     // drift warnt, sobald es AppDatabase zweimal gibt – für den Fall, dass
     // zwei Instanzen auf dieselbe Datei schreiben. Hier hat jedes Konto
     // seine eigene Datei, und genau das ist gewollt.
@@ -73,9 +77,33 @@ class Bibliotheken {
   final Duration ruhe;
   final reihe = Rechenreihe();
 
+  /// Die Videofassungen aller Konten – dieselben, die die Schnittstelle
+  /// ausliefert, damit Vorrat und Abruf eine Reihe teilen (#394).
+  final Videofassungen videofassungen;
+
   final _offen = <String, Future<Kontobereich>>{};
 
   static final _kennung = RegExp(r'^[0-9a-f-]{36}$');
+
+  /// Merkt die leichte Fassung von [id] vor, wenn es ein frisches, schweres
+  /// Video ist ([Videofassungen.lohntVorrat]) – unter demselben Namen wie
+  /// der Abruf in der Schnittstelle.
+  Future<void> _videoVorrat(Bibliothek b, String id) async {
+    try {
+      final a = await b.db.assetById(id);
+      if (a == null || !Videofassungen.lohntVorrat(a, jetzt: DateTime.now())) {
+        return;
+      }
+      final gekuerzt = a.trimmedRelativePath != null;
+      videofassungen.vormerken(
+        Directory(p.join(b.ordner.path, 'abspielbar')),
+        gekuerzt ? '${a.id}-gekuerzt' : a.id,
+        b.pfade.absolute(a.trimmedRelativePath ?? a.relativePath),
+      );
+    } catch (e) {
+      protokoll('Leichte Fassung von $id nicht vorgemerkt: $e');
+    }
+  }
 
   /// Der Bereich von [kontoId]; beim ersten Mal wird er geöffnet und eine
   /// Auswertung angestossen, die nachholt, was offen ist.
@@ -113,6 +141,7 @@ class Bibliotheken {
       Directory(p.join(eingang.path, kontoId)),
       b,
       nachImport: auswertung.anstossen,
+      neueAufnahme: (id) => unawaited(_videoVorrat(b, id)),
       kammer: kammer,
     );
     kammer.importiere = hochladen.importiereDatei;

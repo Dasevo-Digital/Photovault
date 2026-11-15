@@ -136,15 +136,20 @@ def buendel(a, name, marke, basis):
     return datei
 
 
-def upload_ordner(z, fassung):
+def upload_ordner(z, fassung, anlegen=True):
     # Nicht auf „.0“ enden lassen: Spotlight hielte den Ordner sonst für ein
     # Programm – daher das „-Upload“.
     o = Path(os.path.expanduser(z.get('upload_basis', '~/Desktop'))) / f'PhotoVault-Release-v{fassung}-Upload'
-    o.mkdir(parents=True, exist_ok=True)
+    if anlegen:
+        o.mkdir(parents=True, exist_ok=True)
     return o
 
 
-def arbeitsordner(fassung, z=None):
+def _fassung_von(ordner):
+    return tuple(int(t) for t in ordner.name.removeprefix('pv-release-').split('.'))
+
+
+def arbeitsordner(fassung, z=None, anlegen=True):
     """Wo die Serverpakete gebaut werden, darunter das für den eigenen
     Server (OpenVINO), das nicht in den Upload-Ordner kommt. Ohne
     `arbeit_basis` im Temp-Ordner – den leerte macOS bei 3.67.2 aber
@@ -152,14 +157,24 @@ def arbeitsordner(fassung, z=None):
     (#382). Besser neben den Worktrees in einem `.noindex`-Ordner."""
     basis = (z or {}).get('arbeit_basis')
     o = (Path(os.path.expanduser(basis)) if basis else Path(tempfile.gettempdir())) / f'pv-release-{fassung}'
+    if not anlegen:
+        return o
     o.mkdir(parents=True, exist_ok=True)
     if basis:
         # Dort räumt niemand auf: Je Fassung liegen rund 200 MB Serverpakete.
-        # Die zwei neuesten anderen bleiben, für ein Zurück.
-        andere = sorted((p for p in o.parent.glob('pv-release-*')
-                         if p != o and p.is_dir() and re.fullmatch(r'pv-release-\d+\.\d+\.\d+', p.name)),
-                        key=lambda p: p.stat().st_mtime, reverse=True)
-        for alt in andere[2:]:
+        # Die zwei neuesten anderen bleiben, für ein Zurück – nach der
+        # Fassung, nicht nach der Zeit, und ein leerer Ordner zählt nicht
+        # mit: Ein vertippter Lauf verdrängte sonst einen echten (#396).
+        andere = []
+        for p in o.parent.glob('pv-release-*'):
+            try:
+                if p != o and p.is_dir() and re.fullmatch(r'pv-release-\d+\.\d+\.\d+', p.name):
+                    andere.append((p, any(p.iterdir())))
+            except OSError:
+                continue  # gerade weg
+        leer = [p for p, voll in andere if not voll]
+        volle = sorted((p for p, voll in andere if voll), key=_fassung_von, reverse=True)
+        for alt in leer + volle[2:]:
             shutil.rmtree(alt, ignore_errors=True)
             print('Arbeitsordner entfernt:', alt.name)
     return o
@@ -482,6 +497,7 @@ def _letztes_json(text):
     zählen zu ihrem äusseren."""
     text = text or ''
     letztes = {}
+    antwort = None
     dekoder = json.JSONDecoder()
     i = text.find('{')
     while i != -1:
@@ -492,8 +508,12 @@ def _letztes_json(text):
             continue
         if isinstance(wert, dict):
             letztes = wert
+            # Die Antwort trägt Kennung oder Stand; ein anderes Objekt danach
+            # verdeckt sie nicht (#396).
+            if 'id' in wert or 'status' in wert:
+                antwort = wert
         i = text.find('{', ende)
-    return letztes
+    return antwort if antwort is not None else letztes
 
 
 def _packe_mac(fassung, u):
@@ -678,10 +698,39 @@ def _sha256_anhang(anhang, tok):
         raise AnhangNichtGeladen(f'{type(e).__name__}: {e}') from e
 
 
+def _lade_hoch(z, rid, name, daten, kopf, tok, groesse, versuche=3, pause=10):
+    """Legt einen Anhang ins Release, mit Wiederholung (#396). Vor jedem
+    neuen Versuch wird nachgesehen, ob er nicht doch angekommen ist – sonst
+    läge er doppelt da. Gibt Status und Antwort des letzten Versuchs."""
+    st, a = None, None
+    for versuch in range(versuche):
+        if versuch:
+            time.sleep(pause)
+            try:
+                _, rel = gitea(z, f'/releases/{rid}', tok=tok)
+            except (urllib.error.URLError, OSError):
+                rel = None
+            da = next((x for x in (rel or {}).get('assets', [])
+                       if x.get('name') == name and x.get('size') == groesse), None) if isinstance(rel, dict) else None
+            if da:
+                return 201, da
+        try:
+            st, a = gitea(z, f'/releases/{rid}/assets?name={urllib.parse.quote(name)}', daten, 'POST', kopf, tok)
+        except (urllib.error.URLError, OSError) as e:
+            st, a = None, f'{type(e).__name__}: {e}'
+        if st == 201:
+            return st, a
+        if versuch + 1 < versuche:
+            print(f'{name}: {st} – neuer Versuch in {pause} s')
+    return st, a
+
+
 def entwurf(args):
     z = ziele()
     fassung = args.fassung
-    u = upload_ordner(z, fassung)
+    u = upload_ordner(z, fassung, anlegen=False)
+    if not u.is_dir():
+        sys.exit(f'Kein Upload-Ordner {u.name} – ist {fassung} gebaut?')
     text = (u / f'RELEASE-TEXT-v{fassung}.md').read_text(encoding='utf-8')
     tok = token(z)
     # Ein veröffentlichtes Release findet /releases/tags/<marke> – so lassen
@@ -764,10 +813,14 @@ def entwurf(args):
         g = uuid.uuid4().hex
         daten = (f'--{g}\r\nContent-Disposition: form-data; name="attachment"; filename="{name}"\r\n'
                  f'Content-Type: application/octet-stream\r\n\r\n').encode() + (u / name).read_bytes() + f'\r\n--{g}--\r\n'.encode()
-        st, a = gitea(z, f'/releases/{rid}/assets?name={urllib.parse.quote(name)}', daten, 'POST',
-                      {'Content-Type': f'multipart/form-data; boundary={g}'}, tok)
+        st, a = _lade_hoch(z, rid, name, daten, {'Content-Type': f'multipart/form-data; boundary={g}'}, tok,
+                           groesse=(u / name).stat().st_size)
         print(name, st, a.get('size') if isinstance(a, dict) else a)
         if st != 201:
+            if name == 'SHA256SUMS.txt' and veroeffentlicht:
+                # Die alte ist schon gelöscht (#396).
+                sys.exit('SHA256SUMS.txt kam nicht an – im veröffentlichten Release fehlt jetzt die Liste. '
+                         f'Gleich noch einmal: release.py entwurf {fassung} --nachtragen')
             sys.exit(f'{name} kam nicht an: {st}')
     _, rel = gitea(z, f'/releases/{rid}', tok=tok)
     print('Freigabe', rel['id'], 'Entwurf' if rel.get('draft') else 'veröffentlicht', len(rel['assets']), 'Dateien')
@@ -782,8 +835,12 @@ def entwurf(args):
 def einspielen(args):
     z = ziele()
     fassung = args.fassung
-    a = arbeitsordner(fassung, z)
-    u = upload_ordner(z, fassung)
+    # Nichts anlegen: Eine vertippte Fassung liess sonst leere Ordner auf
+    # dem Schreibtisch und neben den Worktrees zurück (#396).
+    u = upload_ordner(z, fassung, anlegen=False)
+    if not u.is_dir():
+        sys.exit(f'Kein Upload-Ordner {u.name} – ist {fassung} gebaut?')
+    a = arbeitsordner(fassung, z, anlegen=False)
     from installation import FernInstallation, MacInstallation, Installationsfehler
     try:
         # Auch hier: Wurde mit einem älteren Skript oder mit --nur gebaut,
@@ -837,7 +894,7 @@ def veroeffentlichen(args):
     # Nichts freigeben, dem ein Paket fehlt, das nur halb oben liegt, das
     # anders ist als hier oder das hier gar nicht mehr gebaut ist (#382) –
     # nach der Prüfsumme, nicht nur nach der Grösse.
-    u = upload_ordner(z, fassung)
+    u = upload_ordner(z, fassung, anlegen=False)
     anhaenge = {x['name']: x for x in rel.get('assets', [])}
     lokal = {n: _sha256(u / n) for n in dateien(fassung) if (u / n).exists()}
     oben = summen_lesen(_lade_anhang(anhaenge['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in anhaenge else {}

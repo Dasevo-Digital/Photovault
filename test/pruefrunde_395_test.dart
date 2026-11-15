@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/native.dart';
@@ -12,6 +13,7 @@ import 'package:kern/services/backup_service.dart';
 import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:kern/services/import_plan.dart';
 import 'package:kern/services/import_service.dart';
+import 'package:kern/services/jpeg_ohne_angaben.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/vault_crypto.dart';
 import 'package:photo_vault/state/library_state.dart';
@@ -163,6 +165,19 @@ void main() {
       expect((await sichere(DateTime.utc(2026, 11, 16))).neu, 0);
     });
 
+    test('unlesbare Angaben in der Sicherung kommen neu (#396)', () async {
+      await sichere(DateTime.utc(2026, 11, 14));
+      final angaben = File(platz(FotokammerSicherung.angabenName));
+      final b = angaben.readAsBytesSync();
+      // Gleich gross, aber ein Byte im Chiffretext verdreht.
+      b[b.length - 20] ^= 0xff;
+      angaben.writeAsBytesSync(b);
+
+      expect((await sichere(DateTime.utc(2026, 11, 15))).neu, 1);
+      final klar = await VaultCrypto.decryptFileToBytes(angaben, schluessel);
+      expect(jsonDecode(utf8.decode(klar)), {'name': 'e1.jpg'});
+    });
+
     test('ein Eintrag ohne Vermerk bekommt die Zeit seiner Angaben', () async {
       await sichere(DateTime.utc(2026, 10, 1));
       File(platz(FotokammerSicherung.gesichertName)).deleteSync();
@@ -175,6 +190,56 @@ void main() {
         File(platz(FotokammerSicherung.gesichertName)).readAsStringSync(),
       );
       expect(vermerk, damals);
+    });
+  });
+
+  group('Miniaturen ohne die Angaben des Originals (#380)', () {
+    // Quer gespeichert, hochkant gehalten (Lage 6), mit Ort.
+    img.Image bildMitOrt() {
+      final bild = img.Image(width: 40, height: 20);
+      img.fill(bild, color: img.ColorRgb8(200, 30, 30));
+      bild.exif.imageIfd.orientation = 6;
+      bild.exif.imageIfd['Make'] = img.IfdValueAscii('Kamerahersteller');
+      bild.exif.gpsIfd['GPSLatitudeRef'] = img.IfdValueAscii('N');
+      bild.exif.gpsIfd['GPSLatitude'] = img.IfdValueRational(54, 1);
+      return bild;
+    }
+
+    Uint8List mitOrt() => img.encodeJpg(bildMitOrt());
+
+    void ohneAngaben(Uint8List jpeg) {
+      final b = img.decodeJpg(jpeg)!;
+      expect(b.exif.gpsIfd.isEmpty, isTrue, reason: 'kein Ort');
+      expect(b.exif.imageIfd['Make'], isNull, reason: 'keine Kamera');
+      expect(b.exif.imageIfd.hasOrientation, isFalse);
+      expect(b.height > b.width, isTrue, reason: 'hochkant');
+    }
+
+    test('die Probe trägt wirklich einen Ort', () {
+      // Der Dekoder dreht schon nach der Lage; der Ort bleibt dran.
+      final b = img.decodeJpg(mitOrt())!;
+      expect(b.exif.gpsIfd.isEmpty, isFalse);
+      expect(b.exif.imageIfd['Make'], isNotNull);
+    });
+
+    test('Miniatur', () {
+      ohneAngaben(decodeAndResizeThumbnail(mitOrt())!.jpegBytes);
+    });
+
+    test('Miniatur und Vorschau – auch unverkleinert', () {
+      final r = decodeAndResizeThumbnailMitVorschau(mitOrt())!;
+      ohneAngaben(r.jpegBytes);
+      ohneAngaben(r.vorschau);
+    });
+
+    test('ungedreht wird gedreht, und das Bild selbst behält alles', () {
+      final b = bildMitOrt();
+      ohneAngaben(jpegOhneAngaben(b, quality: 80));
+      expect(b.exif.imageIfd.orientation, 6);
+      expect(b.exif.gpsIfd.isEmpty, isFalse);
+      final gerade = bildMitOrt()..exif.imageIfd.orientation = 1;
+      jpegOhneAngaben(gerade, quality: 80);
+      expect(gerade.exif.gpsIfd.isEmpty, isFalse);
     });
   });
 

@@ -13,6 +13,7 @@ import '../bilder.dart';
 import '../formate.dart';
 import '../l10n/app_localizations.dart';
 import '../lokal/geraetefoto.dart';
+import '../app_sperre.dart';
 import '../sitzung.dart';
 import 'angaben.dart';
 import 'als_jpeg.dart';
@@ -960,10 +961,17 @@ class _VideoSeiteState extends State<_VideoSeite> {
   var _ohneLeichte = false;
   final _stillstand = Stillstand();
   Timer? _wache;
+  late final VoidCallback _sperreAus;
 
   @override
   void initState() {
     super.initState();
+    // Hinter der Sperre kein Ton (#385); weiter geht es mit einem Tipp.
+    _sperreAus = beimVerdecken(widget.sitzung.appSperre, () {
+      if (!mounted) return;
+      setState(() => _angehalten = true);
+      _spieler?.pause();
+    });
     _starte();
   }
 
@@ -1102,6 +1110,7 @@ class _VideoSeiteState extends State<_VideoSeite> {
 
   @override
   void dispose() {
+    _sperreAus();
     _wache?.cancel();
     _spieler?.removeListener(_hoere);
     _spieler?.dispose();

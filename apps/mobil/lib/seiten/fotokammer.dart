@@ -158,8 +158,9 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     );
     if (ja != true) return;
     await _mitArbeit(() async {
-      // Erst freigeben: Scheitert das, ist noch nichts gelöscht.
-      final r = await _d.freigeben(rest);
+      // Erst freigeben: Scheitert das, ist noch nichts gelöscht. Inzwischen
+      // Abgelehntes bleibt in der Kammer (#396).
+      final r = await _d.freigeben(rest, ohneAbgelehnte: true);
       if (r.gescheitert.isNotEmpty) {
         if (mounted) _melde(t.kammerFehler(r.gescheitert.values.join('; ')));
         return;

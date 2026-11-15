@@ -14,6 +14,7 @@ import '../services/embedding_codec.dart';
 import '../services/eye_state_service.dart';
 import '../services/face_engine_service.dart';
 import '../services/face_postprocess.dart';
+import '../services/jpeg_ohne_angaben.dart';
 import '../services/textstellen.dart';
 import 'auswertungen.dart';
 import 'herkunft.dart';
@@ -454,7 +455,7 @@ Future<List<Gesichtsfund>> erkenneGesichter(
         breite: box.width,
         hoehe: box.height,
         schaerfe: gesichtsschaerfe(ausschnitt),
-        ausschnitt: img.encodeJpg(ausschnitt, quality: 85),
+        ausschnitt: jpegOhneAngaben(ausschnitt, quality: 85),
         merkmal: merkmal,
         augen: augen,
       ),

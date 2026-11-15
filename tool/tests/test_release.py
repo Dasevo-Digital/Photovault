@@ -528,6 +528,53 @@ class Veroeffentlichen(unittest.TestCase):
         self.assertNotIn('PATCH', [m for m, _ in anfragen])
 
 
+class Hochladen(unittest.TestCase):
+    """Ein Anhang kommt mit Wiederholung an, aber nie doppelt (#396)."""
+
+    def laufe(self, antworten, liegt_schon=False):
+        posts = []
+
+        def gitea(z, pfad, daten=None, methode=None, kopf=None, tok=None):
+            if methode == 'POST':
+                posts.append(pfad)
+                antwort = antworten.pop(0)
+                if isinstance(antwort, Exception):
+                    raise antwort
+                return antwort
+            assets = [{'name': 'a.zip', 'size': 3}] if liegt_schon else []
+            return 200, {'assets': assets}
+
+        with unittest.mock.patch('release.gitea', side_effect=gitea), \
+                unittest.mock.patch('release.time.sleep'), \
+                unittest.mock.patch('builtins.print'):
+            st, _ = release._lade_hoch({}, 7, 'a.zip', b'...', {}, 't', groesse=3)
+        return st, posts
+
+    def test_beim_zweiten_mal(self):
+        st, posts = self.laufe([(502, b'bad gateway'), (201, {'size': 3})])
+        self.assertEqual(st, 201)
+        self.assertEqual(len(posts), 2)
+
+    def test_angekommen_trotz_fehler_wird_nicht_doppelt_geschickt(self):
+        st, posts = self.laufe([release.urllib.error.URLError('Zeit um')], liegt_schon=True)
+        self.assertEqual(st, 201)
+        self.assertEqual(len(posts), 1)
+
+    def test_gibt_nach_drei_versuchen_auf(self):
+        st, posts = self.laufe([(500, b''), (500, b''), (500, b'')])
+        self.assertEqual(st, 500)
+        self.assertEqual(len(posts), 3)
+
+
+class LetztesJson(unittest.TestCase):
+    def test_die_antwort_mit_kennung_zaehlt(self):
+        text = 'Vorspann\n{"id": "abc", "status": "Accepted"}\n{"hinweis": "danach"}\n'
+        self.assertEqual(release._letztes_json(text)['id'], 'abc')
+
+    def test_ohne_kennung_das_letzte(self):
+        self.assertEqual(release._letztes_json('{"a": 1} {"b": 2}'), {'b': 2})
+
+
 class Anhang(unittest.TestCase):
     """Das Gitea-Token geht nur an die Adresse selbst (#382)."""
 
@@ -570,15 +617,30 @@ class Arbeitsordner(unittest.TestCase):
     def test_behaelt_die_zwei_neuesten_anderen(self):
         basis = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, basis)
-        for i, v in enumerate(['3.60.0', '3.61.0', '3.62.0', '3.63.0']):
+        # Nach der Fassung, nicht nach der Zeit: 3.9.0 ist die jüngste Datei,
+        # aber die älteste Fassung (#396).
+        for i, v in enumerate(['3.60.0', '3.61.0', '3.62.0', '3.63.0', '3.9.0']):
             d = basis / f'pv-release-{v}'
             d.mkdir()
+            (d / 'paket.tar.gz').write_bytes(b'x')
             os.utime(d, (1000 + i, 1000 + i))
         (basis / 'anderes').mkdir()
+        # Ein vertippter Lauf: leer, und er verdrängt nichts.
+        (basis / 'pv-release-3.99.0').mkdir()
         with unittest.mock.patch('builtins.print'):
             release.arbeitsordner('3.64.0', {'arbeit_basis': str(basis)})
         self.assertEqual(sorted(p.name for p in basis.iterdir()),
                          ['anderes', 'pv-release-3.62.0', 'pv-release-3.63.0', 'pv-release-3.64.0'])
+
+    def test_einspielen_einer_vertippten_fassung_legt_nichts_an(self):
+        basis = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, basis)
+        z = {'arbeit_basis': str(basis / 'arbeit'), 'upload_basis': str(basis / 'schreibtisch')}
+        with unittest.mock.patch('release.ziele', return_value=z):
+            with self.assertRaises(SystemExit):
+                release.einspielen(unittest.mock.Mock(fassung='3.67.55', linux=True, windows=False,
+                                                      mac=False, server=False))
+        self.assertEqual(list(basis.iterdir()), [])
 
 
 if __name__ == '__main__':

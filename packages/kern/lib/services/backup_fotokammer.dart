@@ -112,17 +112,19 @@ abstract final class FotokammerSicherung {
                 (await zielAngaben.stat()).modified.toUtc().toIso8601String(),
               );
             }
-            // Fehlt die Datei dort oder ist sie zu kurz, kommt der Eintrag
-            // noch einmal, solange er in der Kammer liegt (#395). Bis
-            // 3.67.4 meldete die strenge Probe ihn jede Nacht, und der
-            // Server legte keine neue Stufe der Bibliothek mehr an.
+            // Fehlt die Datei dort, ist sie zu kurz oder lassen sich die
+            // Angaben nicht lesen, kommt der Eintrag noch einmal, solange er
+            // in der Kammer liegt (#395, #396). Bis 3.67.4 meldete die
+            // strenge Probe ihn jede Nacht, und der Server legte keine neue
+            // Stufe der Bibliothek mehr an.
             if (await VaultCrypto.passtZurGroesse(
-              zielDatei,
-              await quelle.length(),
-            )) {
+                  zielDatei,
+                  await quelle.length(),
+                ) &&
+                await _lesbar(zielAngaben, schluessel)) {
               continue;
             }
-            protokoll('Fotokammer: $id in der Sicherung unvollständig');
+            protokoll('Fotokammer: $id in der Sicherung beschädigt');
             await zielAngaben.delete();
           }
           await platz.create(recursive: true);
@@ -149,6 +151,17 @@ abstract final class FotokammerSicherung {
       gescheitert: gescheitert,
       entfernt: await _raeumeAuf(ziel, da, jetzt),
     );
+  }
+
+  /// Ob sich [angaben] entschlüsseln und lesen lassen – im Speicher, sie
+  /// sind klein (#396).
+  static Future<bool> _lesbar(File angaben, SecretKey schluessel) async {
+    try {
+      final klar = await VaultCrypto.decryptFileToBytes(angaben, schluessel);
+      return jsonDecode(utf8.decode(klar)) is Map;
+    } on Object {
+      return false;
+    }
   }
 
   static Future<void> _verschluessele(

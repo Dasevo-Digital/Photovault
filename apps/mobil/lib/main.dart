@@ -27,6 +27,8 @@ Future<void> main() async {
   // Vor dem ersten Bild: Ist die App-Sperre an, zeigt die App nichts,
   // ehe Face ID oder der Gerätecode sie freigibt (#376).
   final sitzung = Sitzung()..appSperre = await AppSperre.lade();
+  // Vor runApp, damit die Sperre vor dem Navigator gefragt wird (#385).
+  WidgetsBinding.instance.addObserver(SperrZurueck(sitzung.appSperre!));
   // Die Schriften des Lebensbaums stehen unter der SIL Open Font License.
   zierschriftenLizenzenAnmelden();
   runApp(PhotoVaultMobil(sitzung: sitzung));

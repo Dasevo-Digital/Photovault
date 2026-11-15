@@ -573,15 +573,26 @@ class Fotokammer {
   /// Nimmt [id] in die Bibliothek auf. Danach ist der Eintrag fort – auch
   /// wenn die Bibliothek das Foto schon hatte. Scheitert der Import, bleibt
   /// er liegen.
+  ///
+  /// Mit [ohneAbgelehnte] bleibt, was beim Eintreffen abgelehnt ist
+  /// (`ausgang: abgelehnt`) – das Gegenstück zu `nurAbgelehnte` beim
+  /// Verwerfen (#396): Lehnte ein anderes Gerät ein Foto ab, nachdem die
+  /// Sichtung ihre Liste geholt hatte, kam es sonst in die Bibliothek.
   Future<Map<String, Object?>> freigeben(
     String id, {
     Freigabeziel? ziel,
+    bool ohneAbgelehnte = false,
   }) async {
     final e = await eintrag(id);
     if (e == null || !_inArbeit.add(id)) {
       return {'id': id, 'ausgang': 'unbekannt'};
     }
-    final sterne = (await _sichtungVon(id))['sterne'] as int?;
+    final sichtung = await _sichtungVon(id);
+    if (ohneAbgelehnte && sichtung['abgelehnt'] == true) {
+      _inArbeit.remove(id);
+      return {'id': id, 'ausgang': 'abgelehnt'};
+    }
+    final sterne = sichtung['sterne'] as int?;
     try {
       // Kam es aus der Bibliothek (#337) und liegt es noch im Papierkorb,
       // kehrt es zurück – mit allem, was daran hing.
@@ -745,9 +756,10 @@ class Fotokammerapi {
     );
   }
 
-  /// `{ids}` → `{ergebnisse: [{id, ausgang, aufnahme?, fehler?}]}`. Der
-  /// Import dauert je Foto einige Sekunden – Clients schicken wenige auf
-  /// einmal.
+  /// `{ids, ziel?, ohneAbgelehnte?}` → `{ergebnisse: [{id, ausgang,
+  /// aufnahme?, fehler?}]}`. Der Import dauert je Foto einige Sekunden –
+  /// Clients schicken wenige auf einmal. Mit `ohneAbgelehnte` bleibt, was
+  /// beim Eintreffen abgelehnt ist (`ausgang: abgelehnt`, #396).
   Future<Response> freigeben(Request r) async {
     final Object? anfrage;
     try {
@@ -758,10 +770,18 @@ class Fotokammerapi {
     final ids = _idsAus(anfrage);
     if (ids == null) return _json({'fehler': 'ids fehlt'}, status: 400);
     final ziel = Freigabeziel.aus(anfrage is Map ? anfrage['ziel'] : null);
+    final schalter = (anfrage as Map)['ohneAbgelehnte'];
+    if (schalter != null && schalter is! bool) {
+      return _json({
+        'fehler': 'ohneAbgelehnte muss true oder false sein',
+      }, status: 400);
+    }
     final k = await _kammer(r);
     final ergebnisse = <Map<String, Object?>>[];
     for (final id in ids) {
-      ergebnisse.add(await k.freigeben(id, ziel: ziel));
+      ergebnisse.add(
+        await k.freigeben(id, ziel: ziel, ohneAbgelehnte: schalter == true),
+      );
     }
     return _json({'ergebnisse': ergebnisse});
   }

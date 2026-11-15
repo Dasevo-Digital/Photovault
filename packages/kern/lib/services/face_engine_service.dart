@@ -6,6 +6,7 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
 import 'face_postprocess.dart';
+import 'jpeg_ohne_angaben.dart';
 import 'modellthreads.dart';
 
 export 'face_postprocess.dart' show DetectedFace;
@@ -402,7 +403,7 @@ class FaceEngineService {
     File targetFile,
   ) async {
     await targetFile.create(recursive: true);
-    await targetFile.writeAsBytes(img.encodeJpg(croppedThumb, quality: 85));
+    await targetFile.writeAsBytes(jpegOhneAngaben(croppedThumb, quality: 85));
     return targetFile;
   }
 

@@ -151,17 +151,20 @@ function kammerKnoepfe() {
 }
 
 // Gibt [ids] in kleinen Stapeln frei; die Gründe der gescheiterten in
-// [fehler].
-async function gibFrei(ids) {
+// [fehler]. Mit [ohneAbgelehnte] bleibt, was der Server beim Eintreffen
+// als abgelehnt kennt – beim Abschliessen einer Sichtung (#396).
+async function gibFrei(ids, ohneAbgelehnte = false) {
   let neu = 0;
   const fehler = [];
   try {
     for (let i = 0; i < ids.length; i += KAMMER_STAPEL) {
       $('kammer-hinweis').textContent = t('Gebe frei … {i} von {n}', { i: i, n: ids.length });
-      const r = await api('/api/v1/kammer/freigeben', { methode: 'POST', json: { ids: ids.slice(i, i + KAMMER_STAPEL) } });
+      const teil = { ids: ids.slice(i, i + KAMMER_STAPEL) };
+      if (ohneAbgelehnte) teil.ohneAbgelehnte = true;
+      const r = await api('/api/v1/kammer/freigeben', { methode: 'POST', json: teil });
       for (const e of r.ergebnisse) {
         if (e.ausgang === 'imported' || e.ausgang === 'duplicateSkipped') neu++;
-        else fehler.push(e.fehler || e.ausgang);
+        else if (e.ausgang !== 'abgelehnt') fehler.push(e.fehler || e.ausgang);
       }
     }
   } catch (x) {
@@ -243,7 +246,7 @@ async function kammerAbschliessen() {
   let verworfen = null;
   try {
     // Erst freigeben: Scheitert das, ist noch nichts verworfen.
-    if (rest.length) ergebnis = await gibFrei(rest);
+    if (rest.length) ergebnis = await gibFrei(rest, true);
     if (!ergebnis.fehler.length) {
       verworfen = (await api('/api/v1/kammer/verwerfen', { methode: 'POST', json: { ids: weg, nurAbgelehnte: true } })).verworfen;
     }

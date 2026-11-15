@@ -468,6 +468,83 @@ void main() {
     expect(tester.testTextInput.isVisible, isTrue);
   });
 
+  test('beimVerdecken meldet jedes neue Verdecken einmal (#385)', () async {
+    final s = sperre(frist: const Duration(minutes: 15));
+    var angehalten = 0;
+    final aus = beimVerdecken(s, () => angehalten++);
+    expect(await s.entsperre('x'), isTrue);
+    expect(angehalten, 0);
+    s.lebenslauf(AppLifecycleState.inactive);
+    expect(angehalten, 1);
+    s.lebenslauf(AppLifecycleState.hidden);
+    s.lebenslauf(AppLifecycleState.paused);
+    expect(angehalten, 1, reason: 'schon verdeckt');
+    s.lebenslauf(AppLifecycleState.hidden);
+    s.lebenslauf(AppLifecycleState.inactive);
+    s.lebenslauf(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    expect(s.verdeckt || s.gesperrt, isFalse);
+    s.lebenslauf(AppLifecycleState.inactive);
+    expect(angehalten, 2);
+    aus();
+    s.lebenslauf(AppLifecycleState.resumed);
+    await Future<void>.delayed(Duration.zero);
+    s.lebenslauf(AppLifecycleState.inactive);
+    expect(angehalten, 2, reason: 'abgemeldet');
+  });
+
+  testWidgets('hinter der Sperre schliesst Zurück keine Seite (#385)', (
+    tester,
+  ) async {
+    final s = sperre();
+    final zurueck = SperrZurueck(s);
+    // Wie in main(): vor der App angemeldet.
+    tester.binding.addObserver(zurueck);
+    addTearDown(() => tester.binding.removeObserver(zurueck));
+    final navigator = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigator,
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        builder: (context, kind) => AppSperrschicht(sperre: s, child: kind!),
+        home: const Scaffold(body: Text('Bibliothek')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(s.gesperrt, isFalse);
+    unawaited(
+      navigator.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('Foto')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    antwort = false;
+    await wechsle(tester, [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]);
+    expect(s.gesperrt, isTrue);
+    expect(await tester.binding.handlePopRoute(), isTrue);
+    await tester.pumpAndSettle();
+    expect(find.text('Foto'), findsOneWidget, reason: 'die Seite bleibt');
+
+    antwort = true;
+    expect(await s.entsperre('x'), isTrue);
+    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Foto'), findsNothing, reason: 'entsperrt wie immer');
+  });
+
   testWidgets('unter Android verdeckt Inaktiv nichts (FLAG_SECURE)', (
     tester,
   ) async {

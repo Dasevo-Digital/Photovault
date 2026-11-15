@@ -811,9 +811,31 @@ void main() {
     expect(await fotokammer.eintrag(id2), isNotNull);
     await fotokammer.sichte(id2, abgelehnt: true);
 
-    // Freigeben: in die Bibliothek, aus der Kammer heraus.
+    // Beim Abschliessen nichts, was inzwischen abgelehnt ist (#396): Es
+    // bleibt in der Kammer und ist kein Fehler.
+    final bleibt = await v.schicke('api/v1/kammer/freigeben', {
+      'ids': [id2],
+      'ohneAbgelehnte': true,
+    });
+    expect(
+      ((bleibt['ergebnisse'] as List).single as Map)['ausgang'],
+      'abgelehnt',
+    );
+    expect(await fotokammer.eintrag(id2), isNotNull);
+    expect(await db.select(db.assets).get(), isEmpty);
+    await expectLater(
+      v.schicke('api/v1/kammer/freigeben', {
+        'ids': [id1],
+        'ohneAbgelehnte': 'ja',
+      }),
+      throwsA(isA<Serverfehler>().having((f) => f.status, 'status', 400)),
+    );
+
+    // Freigeben: in die Bibliothek, aus der Kammer heraus – mit dem
+    // Schalter wie beim Abschliessen; id1 ist nicht abgelehnt.
     final f = await v.schicke('api/v1/kammer/freigeben', {
       'ids': [id1],
+      'ohneAbgelehnte': true,
     });
     final e = (f['ergebnisse'] as List).single as Map;
     expect(e['ausgang'], 'imported');

@@ -81,7 +81,9 @@ class Kammereintrag {
 /// Hochladen, ein anderes Gerät): Verworfen ist endgültig.
 ///
 /// Verworfen wird dann mit `nurAbgelehnte`: Hebt ein anderes Gerät eine
-/// Ablehnung auf, während noch freigegeben wird, bleibt das Foto.
+/// Ablehnung auf, während noch freigegeben wird, bleibt das Foto. Und
+/// freigegeben mit `ohneAbgelehnte`: Lehnt es eines ab, nachdem die Liste
+/// geholt war, bleibt es ebenso (#396).
 ({List<String> weg, List<String> rest}) kammerAbschluss(
   Iterable<Kammereintrag> stand,
   Set<String> gesehen,
@@ -187,6 +189,9 @@ class Kammerziel {
 class Kammerfreigabe {
   int neu = 0;
   int schonDa = 0;
+
+  /// Mit `ohneAbgelehnte`: inzwischen abgelehnt, in der Kammer geblieben.
+  int abgelehnt = 0;
   final gescheitert = <String, String?>{};
 }
 
@@ -375,11 +380,15 @@ class Fotokammerdienst {
   }
 
   /// Gibt [ids] frei, in kleinen Stapeln; [fortschritt] bekommt, wie
-  /// viele schon durch sind.
+  /// viele schon durch sind. Mit [ohneAbgelehnte] bleibt, was der Server
+  /// beim Eintreffen als abgelehnt kennt ([Kammerfreigabe.abgelehnt],
+  /// #396) – für das Abschliessen einer Sichtung, nicht für ein ausdrücklich
+  /// gewähltes Foto.
   Future<Kammerfreigabe> freigeben(
     List<String> ids, {
     void Function(int erledigt, int gesamt)? fortschritt,
     Kammerziel? ziel,
+    bool ohneAbgelehnte = false,
   }) async {
     final r = Kammerfreigabe();
     try {
@@ -388,6 +397,7 @@ class Fotokammerdienst {
         final j = await verbindung.schicke('api/v1/kammer/freigeben', {
           'ids': teil,
           if (ziel != null && !ziel.leer) 'ziel': ziel.alsJson,
+          if (ohneAbgelehnte) 'ohneAbgelehnte': true,
         }, zeitlimit: const Duration(minutes: 5));
         for (final e in (j['ergebnisse'] as List? ?? const [])) {
           if (e is! Map) continue;
@@ -396,6 +406,8 @@ class Fotokammerdienst {
               r.neu++;
             case 'duplicateSkipped':
               r.schonDa++;
+            case 'abgelehnt':
+              r.abgelehnt++;
             default:
               r.gescheitert['${e['id']}'] = e['fehler'] as String?;
           }

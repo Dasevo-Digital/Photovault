@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
-import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 import '../services/blur_detection.dart';
 import '../services/embedding_codec.dart';
 import '../services/face_engine_service.dart';
+import '../services/jpeg_ohne_angaben.dart';
 import 'auswertungen.dart';
 
 /// Ob ein aufgezogener Rahmen gross genug ist, um ein Gesicht zu sein – in
@@ -56,7 +56,7 @@ extension GesichtVonHand on Auswertungen {
     final pfad = paths.faceRelativePath(id);
     final datei = paths.absolute(pfad);
     await datei.create(recursive: true);
-    await datei.writeAsBytes(img.encodeJpg(ausschnitt, quality: 85));
+    await datei.writeAsBytes(jpegOhneAngaben(ausschnitt, quality: 85));
     Float32List? merkmal;
     try {
       merkmal = await faceEngineHalter.mit<Float32List?>(

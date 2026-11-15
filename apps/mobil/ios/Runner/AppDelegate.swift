@@ -179,20 +179,32 @@ enum Abdeckung {
         var oben = fenster.rootViewController?.presentedViewController
         while let blatt = oben {
           if let teilen = blatt as? UIActivityViewController {
-            let fertig = teilen.completionWithItemsHandler
-            teilen.completionWithItemsHandler = nil
-            // Über den, der es zeigt: Hat das Blatt selbst schon etwas
-            // geöffnet (Mail, Nachrichten, „In Dateien sichern“), schlösse
-            // ein dismiss am Blatt nur dieses – das Blatt bliebe mit
-            // Vorschau und Aktionen über der Sperre stehen (#382).
-            (teilen.presentingViewController ?? teilen).dismiss(animated: false)
-            fertig?(nil, false, nil, nil)
+            // Blendet es gerade erst ein, ginge ein dismiss jetzt unter, und
+            // das Blatt stünde danach über der Sperre: dann erst, wenn es
+            // steht (#396).
+            if teilen.isBeingPresented, let lauf = teilen.transitionCoordinator,
+              lauf.animate(alongsideTransition: nil, completion: { _ in schliesse(teilen) })
+            {
+              break
+            }
+            schliesse(teilen)
             break
           }
           oben = blatt.presentedViewController
         }
       }
     }
+  }
+
+  private static func schliesse(_ teilen: UIActivityViewController) {
+    let fertig = teilen.completionWithItemsHandler
+    teilen.completionWithItemsHandler = nil
+    // Über den, der es zeigt: Hat das Blatt selbst schon etwas geöffnet
+    // (Mail, Nachrichten, „In Dateien sichern“), schlösse ein dismiss am
+    // Blatt nur dieses – das Blatt bliebe mit Vorschau und Aktionen über
+    // der Sperre stehen (#382).
+    (teilen.presentingViewController ?? teilen).dismiss(animated: false)
+    fertig?(nil, false, nil, nil)
   }
 
   private static func zeige(auf szene: UIWindowScene?) {

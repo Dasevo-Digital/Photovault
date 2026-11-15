@@ -20,6 +20,7 @@ import 'exif_gps.dart';
 import 'namensdatum.dart';
 import 'bildwerkzeuge.dart';
 import 'dateikopf.dart';
+import 'jpeg_ohne_angaben.dart';
 import 'raw_formats.dart';
 import 'raw_identify_parser.dart';
 import 'storage_paths.dart';
@@ -97,7 +98,7 @@ const int videoStandbildKante = 2048;
     height: decoded.height > decoded.width ? 400 : null,
   );
   return (
-    jpegBytes: Uint8List.fromList(img.encodeJpg(thumb, quality: 80)),
+    jpegBytes: jpegOhneAngaben(thumb, quality: 80),
     width: decoded.width,
     height: decoded.height,
   );
@@ -131,10 +132,10 @@ decodeAndResizeThumbnailMitVorschau(Uint8List bytes) {
     height: quer ? null : 400,
   );
   return (
-    jpegBytes: Uint8List.fromList(img.encodeJpg(thumb, quality: 80)),
+    jpegBytes: jpegOhneAngaben(thumb, quality: 80),
     width: decoded.width,
     height: decoded.height,
-    vorschau: Uint8List.fromList(img.encodeJpg(vorschau, quality: 90)),
+    vorschau: jpegOhneAngaben(vorschau, quality: 90),
   );
 }
 

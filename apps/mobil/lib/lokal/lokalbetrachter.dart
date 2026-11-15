@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 import '../l10n/app_localizations.dart';
 import '../seiten/sicherung.dart';
 import '../sicherung/photo_manager_rolle.dart';
+import '../app_sperre.dart';
 import '../sitzung.dart';
 import 'ungesichert.dart';
 
@@ -105,7 +106,7 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
           if (e == null) {
             return const ColoredBox(color: Colors.black26);
           }
-          if (x.video) return _LokalesVideo(x);
+          if (x.video) return _LokalesVideo(x, widget.sitzung.appSperre);
           return InteractiveViewer(
             maxScale: 6,
             child: Center(
@@ -120,9 +121,10 @@ class _LokalbetrachterState extends State<Lokalbetrachter> {
 
 /// Ein Video vom Telefon: aus der Datei, Tipp startet und hält an.
 class _LokalesVideo extends StatefulWidget {
-  const _LokalesVideo(this.aufnahme);
+  const _LokalesVideo(this.aufnahme, this.sperre);
 
   final LokaleAufnahme aufnahme;
+  final AppSperre? sperre;
 
   @override
   State<_LokalesVideo> createState() => _LokalesVideoState();
@@ -131,10 +133,13 @@ class _LokalesVideo extends StatefulWidget {
 class _LokalesVideoState extends State<_LokalesVideo> {
   VideoPlayerController? _spieler;
   var _fehler = false;
+  late final VoidCallback _sperreAus;
 
   @override
   void initState() {
     super.initState();
+    // Hinter der Sperre kein Ton (#385).
+    _sperreAus = beimVerdecken(widget.sperre, () => _spieler?.pause());
     _starte();
   }
 
@@ -156,6 +161,7 @@ class _LokalesVideoState extends State<_LokalesVideo> {
 
   @override
   void dispose() {
+    _sperreAus();
     _spieler?.dispose();
     super.dispose();
   }

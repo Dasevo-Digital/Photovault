@@ -119,7 +119,8 @@ Handler baueApi({
       : Webapi(konten, von, ordner: web, kartenBeimAnbieter: karte == null);
   final anmeldung = Anmeldungsapi(konten, von, oidc);
   final passkeys = Passkeyapi(konten, von);
-  final video = Videofassungen();
+  // Dieselben wie beim Import: Vorrat und Abruf teilen eine Reihe (#394).
+  final video = bibliotheken.videofassungen;
   final vollbilder = Vollbilder();
   final api = _Api(
     bibliotheken,
