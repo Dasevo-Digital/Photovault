@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.6" date="2026-11-15">
+      <description>
+        <p>Thumbnails, previews and face crops no longer carry the EXIF data of the original, such as the location; the orientation is applied to the pixels instead. The server prepares the light version of a heavy new video right after the import.</p>
+        <p>In the mobile app a video pauses when the app lock covers the app, and the Android back button no longer closes pages hidden behind the lock.</p>
+      </description>
+    </release>
     <release version="3.67.5" date="2026-11-15">
       <description>
         <p>A backup no longer replaces an intact copy with a damaged library file: a copy is only replaced when the library file still matches the photo's checksum. Incomplete staging entries in the server backup are written again.</p>
