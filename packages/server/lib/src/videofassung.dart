@@ -109,6 +109,10 @@ class Videofassungen {
       '-map_metadata', '-1',
       '-vf', filter,
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
+      // Höchstens 8 Mbit/s: Die Fassung muss auch über den Upload daheim
+      // oder ein Mobilnetz anlaufen. Ohne Grenze kam ein 4K-Video vom
+      // iPhone mit Laub und Wasser auf 24 Mbit/s (#393).
+      '-maxrate', '8M', '-bufsize', '16M',
       '-c:a', 'aac', '-b:a', '128k',
       '-movflags', '+faststart',
       '-f', 'mp4', teil.path,

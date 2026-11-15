@@ -925,6 +925,11 @@ class _BildSeiteState extends State<_BildSeite> {
 
 /// Ein Video: spielt vom Server mit Teilabruf, ohne es erst ganz zu laden;
 /// liegt es schon hier, von hier.
+///
+/// Läuft das Original nach dem Start nicht an oder scheitert der Spieler
+/// danach, kommt die leichte Fassung des Servers (#393). Bis 0.19.4 blieb
+/// die Seite dann schwarz: Der Spieler hatte sich bereit gemeldet, und auf
+/// das, was danach geschah, achtete niemand.
 class _VideoSeite extends StatefulWidget {
   const _VideoSeite({
     required this.sitzung,
@@ -944,6 +949,11 @@ class _VideoSeiteState extends State<_VideoSeite> {
   VideoPlayerController? _spieler;
   var _fehler = false;
   var _wandelt = false;
+  Timer? _anlauf;
+
+  /// So lange darf das Original nach dem Start stehen, ehe die leichte
+  /// Fassung kommt. Im eigenen Netz läuft es nach einem Bruchteil davon.
+  static const _anlaufZeit = Duration(seconds: 6);
 
   @override
   void initState() {
@@ -951,7 +961,7 @@ class _VideoSeiteState extends State<_VideoSeite> {
     _starte();
   }
 
-  Future<void> _starte() async {
+  Future<void> _starte({bool leicht = false}) async {
     final a = await widget.lade(widget.id);
     if (a == null || !mounted) return;
     try {
@@ -962,20 +972,61 @@ class _VideoSeiteState extends State<_VideoSeite> {
           if (mounted) setState(() => _wandelt = true);
         },
         abgebrochen: () => !mounted,
+        leicht: leicht,
       );
       if (!mounted) {
         await spieler.dispose();
         return;
       }
       await spieler.play();
+      if (!mounted) {
+        await spieler.dispose();
+        return;
+      }
       setState(() => _spieler = spieler);
+      _bewache(spieler);
     } catch (_) {
       if (mounted) setState(() => _fehler = true);
     }
   }
 
+  /// Achtet auf [s], solange es läuft: ein Fehler des Spielers jederzeit,
+  /// beim Original dazu, ob es binnen [_anlaufZeit] anläuft.
+  void _bewache(VideoPlayerController s) {
+    void hoere() {
+      if (!s.value.hasError) return;
+      s.removeListener(hoere);
+      _weiche(s);
+    }
+
+    s.addListener(hoere);
+    if (spieltLeichteFassung(s)) return;
+    _anlauf = Timer(_anlaufZeit, () {
+      // Wer angehalten hat, will nicht, dass etwas anderes kommt.
+      if (s.value.isPlaying && s.value.position == Duration.zero) _weiche(s);
+    });
+  }
+
+  /// Weg mit [alt]; war es das Original, kommt die leichte Fassung, sonst
+  /// die Meldung, dass es nicht geht.
+  Future<void> _weiche(VideoPlayerController alt) async {
+    // Nicht mitten aus der Benachrichtigung des Spielers heraus entsorgen.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted || _spieler != alt) return;
+    _anlauf?.cancel();
+    final zurLeichten = !spieltLeichteFassung(alt);
+    setState(() {
+      _spieler = null;
+      _fehler = !zurLeichten;
+      _wandelt = zurLeichten;
+    });
+    await alt.dispose();
+    if (zurLeichten) await _starte(leicht: true);
+  }
+
   @override
   void dispose() {
+    _anlauf?.cancel();
     _spieler?.dispose();
     super.dispose();
   }
