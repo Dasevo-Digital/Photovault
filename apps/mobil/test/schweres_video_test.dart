@@ -58,6 +58,59 @@ void main() {
     expect(istSchweresVideo(await video('ohne_groesse', sekunden: 3)), isFalse);
   });
 
+  group('Stillstand (#395)', () {
+    final t0 = DateTime(2026, 11, 15, 12);
+    VideoPlayerValue bei(int sekunde, {bool spielt = true}) => VideoPlayerValue(
+      duration: const Duration(seconds: 30),
+      position: Duration(seconds: sekunde),
+      isPlaying: spielt,
+    );
+    DateTime nach(int s) => t0.add(Duration(seconds: s));
+
+    test('steht erst nach der Grenze, auch wenn isPlaying falsch ist', () {
+      final w = Stillstand();
+      // Unter Android beim Puffern: isPlaying falsch, Position steht.
+      expect(
+        w.steht(bei(0, spielt: false), angehalten: false, jetzt: t0),
+        isFalse,
+      );
+      expect(
+        w.steht(bei(0, spielt: false), angehalten: false, jetzt: nach(5)),
+        isFalse,
+      );
+      expect(
+        w.steht(bei(0, spielt: false), angehalten: false, jetzt: nach(6)),
+        isTrue,
+      );
+    });
+
+    test('stockt es mittendrin, zählt die Zeit ab dem letzten Fortschritt', () {
+      final w = Stillstand();
+      expect(w.steht(bei(0), angehalten: false, jetzt: t0), isFalse);
+      expect(w.steht(bei(4), angehalten: false, jetzt: nach(4)), isFalse);
+      expect(w.steht(bei(4), angehalten: false, jetzt: nach(9)), isFalse);
+      expect(w.steht(bei(4), angehalten: false, jetzt: nach(10)), isTrue);
+    });
+
+    test('angehalten oder am Ende steht nichts', () {
+      final w = Stillstand();
+      expect(w.steht(bei(3), angehalten: true, jetzt: t0), isFalse);
+      expect(w.steht(bei(3), angehalten: true, jetzt: nach(60)), isFalse);
+      // Weiter: Die Frist beginnt neu.
+      expect(w.steht(bei(3), angehalten: false, jetzt: nach(61)), isFalse);
+      expect(w.steht(bei(3), angehalten: false, jetzt: nach(66)), isFalse);
+      expect(w.steht(bei(3), angehalten: false, jetzt: nach(67)), isTrue);
+
+      final ende = Stillstand();
+      for (var s = 0; s < 20; s++) {
+        expect(
+          ende.steht(bei(30, spielt: false), angehalten: false, jetzt: nach(s)),
+          isFalse,
+        );
+      }
+    });
+  });
+
   test('die leichte Fassung erkennt der Betrachter an ihrer Adresse', () {
     final leicht = VideoPlayerController.networkUrl(
       Uri.parse('https://fotos.example.de/api/v1/aufnahmen/a%201/abspielbar'),

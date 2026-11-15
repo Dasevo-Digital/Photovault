@@ -370,22 +370,45 @@ final class DateinameSetzen extends Befehl<void> {
 }
 
 /// In den Papierkorb legen.
+///
+/// Kennung und Zeitpunkt der Aktion entstehen mit dem Befehl, nicht erst
+/// beim Anwenden (#395): Gerät und Server schreiben so dieselben Werte.
+/// Bis 3.67.4 erzeugte jede Seite eigene, und wer gleich „Rückgängig“
+/// tippte, ehe der Server geantwortet hatte, bekam einen Konflikt – die
+/// Basis des Zurückholens nannte die Werte des Geräts. Ein Befehl älterer
+/// Fassungen ohne sie bekommt beim Anwenden neue, wie bisher; eine ältere
+/// Fassung übergeht die neuen Werte. Darum derselbe Name ([art]).
 final class InDenPapierkorb extends Befehl<void> {
-  const InDenPapierkorb(this.ids);
+  InDenPapierkorb(this.ids, {String? aktion, DateTime? zeit})
+    : aktion = aktion ?? const Uuid().v4(),
+      zeit = zeit ?? DateTime.now();
 
-  static InDenPapierkorb aus(Map<String, Object?> w) =>
-      InDenPapierkorb(_kennungen(w['ids']));
+  static InDenPapierkorb aus(Map<String, Object?> w) => InDenPapierkorb(
+    _kennungen(w['ids']),
+    aktion: w['aktion'] as String?,
+    zeit: switch (w['zeit']) {
+      final String z => DateTime.tryParse(z),
+      _ => null,
+    },
+  );
 
   final List<String> ids;
+  final String aktion;
+  final DateTime zeit;
 
   @override
   String get art => 'inDenPapierkorb';
 
   @override
-  Map<String, Object?> get werte => {'ids': ids};
+  Map<String, Object?> get werte => {
+    'ids': ids,
+    'aktion': aktion,
+    'zeit': zeit.toUtc().toIso8601String(),
+  };
 
   @override
-  Future<void> anwenden(AppDatabase db) => db.moveToTrash(ids);
+  Future<void> anwenden(AppDatabase db) =>
+      db.moveToTrash(ids, aktion: aktion, zeit: zeit);
 }
 
 /// Aus dem Papierkorb zurückholen.

@@ -343,7 +343,8 @@ class Entwurf(unittest.TestCase):
         self.mac = 'PhotoVault-9.9.9-macos.zip'
         (self.u / self.mac).write_bytes(b'neu notarisiert!')
 
-    def laufe(self, oben_summe, entwurf=True, groesse=None, extra=(), nachtragen=False, lokale_summe=None):
+    def laufe(self, oben_summe, entwurf=True, groesse=None, extra=(), nachtragen=False, lokale_summe=None,
+              pruefen=False, anhang=None):
         import hashlib
         lokal = hashlib.sha256((self.u / self.mac).read_bytes()).hexdigest()
         (self.u / 'SHA256SUMS.txt').write_text(f'{lokale_summe or lokal}  {self.mac}\n')
@@ -369,9 +370,11 @@ class Entwurf(unittest.TestCase):
                 unittest.mock.patch('release.token', return_value='t'), \
                 unittest.mock.patch('release.upload_ordner', return_value=self.u), \
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
-                unittest.mock.patch('release._lade_anhang', return_value=f'{summe}  {self.mac}\n'):
+                unittest.mock.patch('release._lade_anhang', return_value=f'{summe}  {self.mac}\n'), \
+                unittest.mock.patch('release._sha256_anhang',
+                                    return_value=hashlib.sha256(anhang or (self.u / self.mac).read_bytes()).hexdigest()):
             try:
-                release.entwurf(unittest.mock.Mock(fassung='9.9.9', nachtragen=nachtragen))
+                release.entwurf(unittest.mock.Mock(fassung='9.9.9', nachtragen=nachtragen, pruefen=pruefen))
             except SystemExit as e:
                 return anfragen, e
         return anfragen, None
@@ -431,6 +434,21 @@ class Entwurf(unittest.TestCase):
         self.assertIsNone(fehler)
         self.assertEqual(release.summen_lesen((self.u / 'SHA256SUMS.txt').read_text())[self.mac], neu)
 
+    def test_pruefen_ersetzt_einen_anderen_anhang(self):
+        # Gleich gross und richtig genannt, die Bytes oben aber andere: Nur
+        # mit --pruefen fällt das auf, und dann wird ersetzt (#395).
+        anfragen, fehler = self.laufe('gleich', anhang=b'anders notariert')
+        self.assertIsNone(fehler)
+        self.assertNotIn(('DELETE', '/releases/7/assets/1'), anfragen)
+        anfragen, fehler = self.laufe('gleich', pruefen=True, anhang=b'anders notariert')
+        self.assertIsNone(fehler)
+        self.assertIn(('DELETE', '/releases/7/assets/1'), anfragen)
+
+    def test_pruefen_laesst_gleiches(self):
+        anfragen, fehler = self.laufe('gleich', pruefen=True)
+        self.assertIsNone(fehler)
+        self.assertNotIn(('DELETE', '/releases/7/assets/1'), anfragen)
+
     def test_summen_lesen(self):
         self.assertEqual(release.summen_lesen('a' * 64 + '  x.zip\nunsinn\n' + 'b' * 64 + ' *y.zip\n'),
                          {'x.zip': 'a' * 64, 'y.zip': 'b' * 64})
@@ -446,9 +464,13 @@ class Veroeffentlichen(unittest.TestCase):
         self.mac = 'PhotoVault-9.9.9-macos.zip'
         (self.u / self.mac).write_bytes(b'paket')
 
-    def laufe(self, summe=None, extra=(), anhang=b'paket'):
+    def laufe(self, summe=None, extra=(), anhang=b'paket', nicht_geladen=None):
         import hashlib
         h = summe or hashlib.sha256(b'paket').hexdigest()
+        if nicht_geladen:
+            anhang_summe = {'side_effect': release.AnhangNichtGeladen(nicht_geladen)}
+        else:
+            anhang_summe = {'return_value': hashlib.sha256(anhang).hexdigest()}
         rel = {'id': 7, 'draft': True, 'tag_name': 'v9.9.9', 'assets': [
             {'id': 1, 'name': self.mac, 'size': 5},
             {'id': 2, 'name': 'SHA256SUMS.txt', 'size': 80, 'browser_download_url': 'x'},
@@ -468,7 +490,7 @@ class Veroeffentlichen(unittest.TestCase):
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
                 unittest.mock.patch('release.lauf'), \
                 unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'), \
-                unittest.mock.patch('release._sha256_anhang', return_value=hashlib.sha256(anhang).hexdigest()):
+                unittest.mock.patch('release._sha256_anhang', **anhang_summe):
             try:
                 release.veroeffentlichen(unittest.mock.Mock(fassung='9.9.9'))
             except SystemExit as e:
@@ -490,6 +512,14 @@ class Veroeffentlichen(unittest.TestCase):
         # die Grösse auch – der Anhang selbst ist ein anderer (#392).
         anfragen, fehler = self.laufe(anhang=b'kaput')
         self.assertIn('hochgeladene Anhang', str(fehler))
+        self.assertIn('--pruefen', str(fehler))
+        self.assertNotIn('PATCH', [m for m, _ in anfragen])
+
+    def test_nicht_geladen_heisst_nicht_falsch(self):
+        # Ein Netzfehler ist kein falscher Anhang (#395).
+        anfragen, fehler = self.laufe(nicht_geladen='URLError: Zeit um')
+        self.assertIn('nicht laden (URLError: Zeit um)', str(fehler))
+        self.assertNotIn('hochgeladene Anhang', str(fehler))
         self.assertNotIn('PATCH', [m for m, _ in anfragen])
 
     def test_fremdes_paket_im_entwurf(self):
@@ -523,6 +553,11 @@ class Anhang(unittest.TestCase):
             release._lade_anhang({'browser_download_url': 'https://gitea.example/a'}, 'geheim')
         self.assertNotIn('Authorization', gesehen['offen'])
         self.assertEqual(gesehen['nur_hier'].get('Authorization'), 'token geheim')
+
+    def test_summe_nennt_den_grund(self):
+        with unittest.mock.patch('release.urllib.request.urlopen', side_effect=ValueError('kaputt')):
+            with self.assertRaisesRegex(release.AnhangNichtGeladen, 'ValueError: kaputt'):
+                release._sha256_anhang({'browser_download_url': 'https://gitea.example/a'}, 't')
 
     def test_jeder_fehler_ist_leer(self):
         with unittest.mock.patch('release.urllib.request.urlopen', side_effect=ValueError('kaputt')):

@@ -33,6 +33,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 import '../services/exif_camera.dart';

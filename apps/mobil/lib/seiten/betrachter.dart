@@ -926,10 +926,10 @@ class _BildSeiteState extends State<_BildSeite> {
 /// Ein Video: spielt vom Server mit Teilabruf, ohne es erst ganz zu laden;
 /// liegt es schon hier, von hier.
 ///
-/// Läuft das Original nach dem Start nicht an oder scheitert der Spieler
-/// danach, kommt die leichte Fassung des Servers (#393). Bis 0.19.4 blieb
-/// die Seite dann schwarz: Der Spieler hatte sich bereit gemeldet, und auf
-/// das, was danach geschah, achtete niemand.
+/// Läuft das Original nicht an, stockt es oder scheitert der Spieler, kommt
+/// die leichte Fassung des Servers (#393, #395). Bis 0.19.4 blieb die Seite
+/// dann schwarz: Der Spieler hatte sich bereit gemeldet, und auf das, was
+/// danach geschah, achtete niemand.
 class _VideoSeite extends StatefulWidget {
   const _VideoSeite({
     required this.sitzung,
@@ -947,13 +947,19 @@ class _VideoSeite extends StatefulWidget {
 
 class _VideoSeiteState extends State<_VideoSeite> {
   VideoPlayerController? _spieler;
+  AssetData? _aufnahme;
   var _fehler = false;
   var _wandelt = false;
-  Timer? _anlauf;
 
-  /// So lange darf das Original nach dem Start stehen, ehe die leichte
-  /// Fassung kommt. Im eigenen Netz läuft es nach einem Bruchteil davon.
-  static const _anlaufZeit = Duration(seconds: 6);
+  /// Ob der Nutzer angehalten hat. Nicht aus [VideoPlayerValue.isPlaying]:
+  /// Das ist unter Android auch beim Puffern falsch (#395).
+  var _angehalten = false;
+
+  /// Die leichte Fassung wird gerade geholt, oder es gibt keine.
+  var _holtLeichte = false;
+  var _ohneLeichte = false;
+  final _stillstand = Stillstand();
+  Timer? _wache;
 
   @override
   void initState() {
@@ -961,9 +967,14 @@ class _VideoSeiteState extends State<_VideoSeite> {
     _starte();
   }
 
-  Future<void> _starte({bool leicht = false}) async {
+  Future<void> _starte() async {
     final a = await widget.lade(widget.id);
-    if (a == null || !mounted) return;
+    if (!mounted) return;
+    if (a == null) {
+      setState(() => _fehler = true);
+      return;
+    }
+    _aufnahme = a;
     try {
       final spieler = await videospieler(
         widget.sitzung,
@@ -972,61 +983,127 @@ class _VideoSeiteState extends State<_VideoSeite> {
           if (mounted) setState(() => _wandelt = true);
         },
         abgebrochen: () => !mounted,
-        leicht: leicht,
       );
-      if (!mounted) {
-        await spieler.dispose();
-        return;
-      }
-      await spieler.play();
-      if (!mounted) {
-        await spieler.dispose();
-        return;
-      }
-      setState(() => _spieler = spieler);
-      _bewache(spieler);
+      await _zeige(spieler);
     } catch (_) {
       if (mounted) setState(() => _fehler = true);
     }
   }
 
-  /// Achtet auf [s], solange es läuft: ein Fehler des Spielers jederzeit,
-  /// beim Original dazu, ob es binnen [_anlaufZeit] anläuft.
-  void _bewache(VideoPlayerController s) {
-    void hoere() {
-      if (!s.value.hasError) return;
-      s.removeListener(hoere);
-      _weiche(s);
+  /// Zeigt [s] statt des bisherigen Spielers, ab [ab]; hatte der Nutzer
+  /// angehalten, bleibt es angehalten.
+  Future<void> _zeige(
+    VideoPlayerController s, {
+    Duration ab = Duration.zero,
+  }) async {
+    try {
+      if (!mounted) throw StateError('weg');
+      if (ab > Duration.zero) await s.seekTo(ab);
+      if (!_angehalten) await s.play();
+      if (!mounted) throw StateError('weg');
+    } catch (_) {
+      await s.dispose();
+      if (mounted) rethrow;
+      return;
     }
-
-    s.addListener(hoere);
-    if (spieltLeichteFassung(s)) return;
-    _anlauf = Timer(_anlaufZeit, () {
-      // Wer angehalten hat, will nicht, dass etwas anderes kommt.
-      if (s.value.isPlaying && s.value.position == Duration.zero) _weiche(s);
+    final alt = _spieler;
+    alt?.removeListener(_hoere);
+    setState(() {
+      _spieler = s;
+      _wandelt = false;
     });
+    s.addListener(_hoere);
+    _wache ??= Timer.periodic(const Duration(seconds: 1), (_) => _pruefe());
+    // Ein Fehler, der schon vor dem Zuhören kam, meldet sich nicht mehr.
+    _hoere();
+    if (alt != null) {
+      // Erst wenn das Bild den neuen Spieler zeigt.
+      await WidgetsBinding.instance.endOfFrame;
+      await alt.dispose();
+    }
   }
 
-  /// Weg mit [alt]; war es das Original, kommt die leichte Fassung, sonst
-  /// die Meldung, dass es nicht geht.
-  Future<void> _weiche(VideoPlayerController alt) async {
+  void _hoere() {
+    final s = _spieler;
+    if (s == null || !s.value.hasError) return;
+    s.removeListener(_hoere);
+    unawaited(_weiche(s, kaputt: true));
+  }
+
+  /// Jede Sekunde: Steht das Original länger als [Stillstand.grenze], ohne
+  /// dass jemand angehalten hat – beim Anlaufen oder mittendrin –, kommt
+  /// die leichte Fassung.
+  void _pruefe() {
+    final s = _spieler;
+    if (s == null) return;
+    final steht = _stillstand.steht(
+      s.value,
+      angehalten: _angehalten,
+      jetzt: DateTime.now(),
+    );
+    if (steht && !_holtLeichte && !_ohneLeichte && !spieltLeichteFassung(s)) {
+      unawaited(_weiche(s));
+    }
+  }
+
+  /// Vom Original [alt] zur leichten Fassung. Ist es [kaputt], geht es
+  /// gleich; sonst läuft es weiter, bis die leichte Fassung bereitliegt,
+  /// und sie übernimmt an derselben Stelle. Kommt keine, bleibt das
+  /// Original (#395): Bis 0.19.5 wich ein langsames, aber heiles Original
+  /// nach sechs Sekunden einer Umwandlung, die auch scheitern konnte, und
+  /// zurück ging es nicht.
+  Future<void> _weiche(VideoPlayerController alt, {bool kaputt = false}) async {
     // Nicht mitten aus der Benachrichtigung des Spielers heraus entsorgen.
     await Future<void>.delayed(Duration.zero);
-    if (!mounted || _spieler != alt) return;
-    _anlauf?.cancel();
-    final zurLeichten = !spieltLeichteFassung(alt);
+    final a = _aufnahme;
+    if (!mounted || _spieler != alt || _holtLeichte || a == null) return;
+    if (spieltLeichteFassung(alt) || _ohneLeichte) {
+      // Auch die leichte Fassung geht nicht – oder es gibt keine.
+      setState(() {
+        _spieler = null;
+        _fehler = true;
+      });
+      await alt.dispose();
+      return;
+    }
+    _holtLeichte = true;
     setState(() {
-      _spieler = null;
-      _fehler = !zurLeichten;
-      _wandelt = zurLeichten;
+      _wandelt = true;
+      if (kaputt) _spieler = null;
     });
-    await alt.dispose();
-    if (zurLeichten) await _starte(leicht: true);
+    if (kaputt) await alt.dispose();
+    try {
+      final leicht = await videospieler(
+        widget.sitzung,
+        a,
+        leicht: true,
+        abgebrochen: () => !mounted,
+      );
+      await _zeige(leicht, ab: kaputt ? Duration.zero : alt.value.position);
+    } catch (_) {
+      _ohneLeichte = true;
+      if (mounted) {
+        setState(() {
+          _wandelt = false;
+          if (kaputt) _fehler = true;
+        });
+      }
+    } finally {
+      _holtLeichte = false;
+    }
+  }
+
+  void _tippe(VideoPlayerController s) {
+    final v = s.value;
+    final amEnde = v.duration > Duration.zero && v.position >= v.duration;
+    setState(() => _angehalten = !_angehalten && !amEnde);
+    _angehalten ? s.pause() : s.play();
   }
 
   @override
   void dispose() {
-    _anlauf?.cancel();
+    _wache?.cancel();
+    _spieler?.removeListener(_hoere);
     _spieler?.dispose();
     super.dispose();
   }
@@ -1034,35 +1111,38 @@ class _VideoSeiteState extends State<_VideoSeite> {
   @override
   Widget build(BuildContext context) {
     final s = _spieler;
+    final t = AppTexte.of(context);
     if (_fehler) {
       return Center(
         child: Text(
-          AppTexte.of(context).betrachterNichtGeladen,
+          t.betrachterNichtGeladen,
           style: const TextStyle(color: Colors.white70),
         ),
       );
     }
+    final hinweis = _wandelt
+        ? Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              t.betrachterWirdUmgewandelt,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white70),
+            ),
+          )
+        : null;
     if (s == null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const CircularProgressIndicator(color: Colors.white54),
-            if (_wandelt)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  AppTexte.of(context).betrachterWirdUmgewandelt,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70),
-                ),
-              ),
+            ?hinweis,
           ],
         ),
       );
     }
     return GestureDetector(
-      onTap: () => setState(() => s.value.isPlaying ? s.pause() : s.play()),
+      onTap: () => _tippe(s),
       child: Center(
         child: AspectRatio(
           aspectRatio: s.value.aspectRatio,
@@ -1070,6 +1150,17 @@ class _VideoSeiteState extends State<_VideoSeite> {
             alignment: Alignment.bottomCenter,
             children: [
               VideoPlayer(s),
+              // Puffern zeigt der Kreis, nicht ein stehendes Bild.
+              ValueListenableBuilder(
+                valueListenable: s,
+                builder: (_, v, _) => v.isBuffering
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.white54),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+              if (hinweis != null)
+                Align(alignment: Alignment.topCenter, child: hinweis),
               VideoProgressIndicator(s, allowScrubbing: true),
             ],
           ),

@@ -79,8 +79,8 @@ void main() {
       await db.fuehreAus(
         const VariantenBilden('probe', ['haupt', 'variante'], 'haupt'),
       );
-      await db.fuehreAus(const InDenPapierkorb(['variante']));
-      await db.fuehreAus(const InDenPapierkorb(['haupt']));
+      await db.fuehreAus(InDenPapierkorb(['variante']));
+      await db.fuehreAus(InDenPapierkorb(['haupt']));
       // Dieselbe Sekunde erzwingen: Bis 3.67.2 entschied allein sie.
       final am = (await db.assetById('haupt'))!.trashedAt;
       await (db.update(db.assets)..where((a) => a.id.equals('variante'))).write(
@@ -101,7 +101,7 @@ void main() {
       await db.fuehreAus(
         const VariantenBilden('probe', ['haupt', 'variante'], 'haupt'),
       );
-      await db.fuehreAus(const InDenPapierkorb(['haupt']));
+      await db.fuehreAus(InDenPapierkorb(['haupt']));
       final h = (await db.assetById('haupt'))!;
       final v = (await db.assetById('variante'))!;
       expect(v.isTrashed, isTrue);
@@ -487,10 +487,11 @@ void main() {
       'das Zeitlimit gilt auch für einen stockenden Antwortinhalt',
       () async {
         final inhalt = StreamController<List<int>>();
+        final client = _Strom(inhalt.stream);
         final verbindung = Serververbindung(
           Uri.parse('http://127.0.0.1/'),
           'synthetisch',
-          client: _Strom(inhalt.stream),
+          client: client,
         );
         addTearDown(verbindung.schliesse);
         Object? fehler;
@@ -509,6 +510,7 @@ void main() {
             );
         await Future<void>.delayed(const Duration(milliseconds: 120));
         expect(fehler, isA<KeineVerbindung>());
+        expect(client.abgebrochen, 1, reason: 'die Anfrage selbst');
         inhalt.add(utf8.encode('fertig'));
         await inhalt.close();
         await offen;
@@ -520,13 +522,14 @@ void main() {
       () async {
         final stockt = StreamController<List<int>>();
         addTearDown(stockt.close);
+        final client = _Folge([
+          stockt.stream,
+          Stream.value(utf8.encode('ganze Datei')),
+        ]);
         final verbindung = Serververbindung(
           Uri.parse('http://127.0.0.1/'),
           'synthetisch',
-          client: _Folge([
-            stockt.stream,
-            Stream.value(utf8.encode('ganze Datei')),
-          ]),
+          client: client,
           downloadStille: const Duration(milliseconds: 20),
         );
         addTearDown(verbindung.schliesse);
@@ -539,9 +542,29 @@ void main() {
         );
         expect(ziel.existsSync(), isFalse);
         expect(File('${ziel.path}.teil').existsSync(), isFalse);
+        expect(client.abgebrochen, 1);
 
         await verbindung.ladeHerunter('datei', ziel);
         expect(ziel.readAsStringSync(), 'ganze Datei');
+      },
+    );
+
+    test(
+      'ohne Kopfzeilen bricht die Frist die Anfrage selbst ab (#395)',
+      () async {
+        final client = _Stumm();
+        final verbindung = Serververbindung(
+          Uri.parse('http://127.0.0.1/'),
+          'synthetisch',
+          client: client,
+          downloadStille: const Duration(milliseconds: 20),
+        );
+        addTearDown(verbindung.schliesse);
+        await expectLater(
+          verbindung.ladeHerunter('datei', File('${temp.path}/stumm/d.bin')),
+          throwsA(isA<KeineVerbindung>()),
+        );
+        expect(client.abgebrochen, 1);
       },
     );
   });
@@ -577,20 +600,58 @@ class _Scheitert extends ImportService {
   }
 }
 
+/// Wie `IOClient`: Löst die Frist den Abbruch aus, endet der Inhalt mit
+/// einem Fehler, und der Abbruch wird gezählt – ein blosses Aufgeben des
+/// Wartens fiele so auf (#395).
+abstract class _Abbrechbar extends http.BaseClient {
+  var abgebrochen = 0;
+
+  Stream<List<int>> abbrechbar(http.BaseRequest r, Stream<List<int>> s) {
+    final aus = StreamController<List<int>>();
+    final abo = s.listen(aus.add, onError: aus.addError, onDone: aus.close);
+    if (r case http.Abortable(:final abortTrigger?)) {
+      abortTrigger.then((_) async {
+        abgebrochen++;
+        await abo.cancel();
+        if (!aus.isClosed) {
+          aus.addError(http.RequestAbortedException(r.url));
+          await aus.close();
+        }
+      });
+    }
+    return aus.stream;
+  }
+}
+
 /// Liefert je Anfrage den nächsten Antwortinhalt aus [inhalte].
-class _Folge extends http.BaseClient {
+class _Folge extends _Abbrechbar {
   _Folge(this.inhalte);
   final List<Stream<List<int>>> inhalte;
   var _n = 0;
   @override
   Future<http.StreamedResponse> send(http.BaseRequest r) async =>
-      http.StreamedResponse(inhalte[_n++], 200);
+      http.StreamedResponse(abbrechbar(r, inhalte[_n++]), 200);
 }
 
-class _Strom extends http.BaseClient {
+class _Strom extends _Abbrechbar {
   _Strom(this.stream);
   final Stream<List<int>> stream;
   @override
   Future<http.StreamedResponse> send(http.BaseRequest r) async =>
-      http.StreamedResponse(stream, 200);
+      http.StreamedResponse(abbrechbar(r, stream), 200);
+}
+
+/// Antwortet nie; nur der Abbruch beendet die Anfrage.
+class _Stumm extends _Abbrechbar {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest r) {
+    final fertig = Completer<http.StreamedResponse>();
+    if (r case http.Abortable(:final abortTrigger?)) {
+      abortTrigger.then((_) {
+        abgebrochen++;
+        fertig.completeError(http.RequestAbortedException(r.url));
+      });
+    }
+    return fertig.future;
+  }
 }

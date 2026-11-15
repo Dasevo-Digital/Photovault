@@ -170,6 +170,9 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
   }
 
   Future<void> _oeffne(int i) async {
+    // Nicht, während die Liste für das Abschliessen geholt wird: Die
+    // Rückfrage erschiene sonst über dem Betrachter (#395).
+    if (_arbeitet) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => _Kammerbetrachter(

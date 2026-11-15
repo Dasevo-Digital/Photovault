@@ -81,10 +81,14 @@ Future<Sicherungsstand> _zaehleImZiel(
       x.pruefsumme,
       schluessel,
     );
-    // Wie BackupService._liegtImZiel, hier ohne Umweg: Im eigenen Isolate
-    // stört das Warten niemanden.
+    // Wie BackupService._verschluesseltImZiel, hier ohne Umweg: Im eigenen
+    // Isolate stört das Warten niemanden. Nach der Grösse, wie die
+    // Sicherung: Eine Teilkopie zählte sonst als gesichert, und der nächste
+    // Lauf schriebe sie neu (#395).
     final stat = FileStat.statSync(p.join(daten, name));
-    if (stat.type == FileSystemEntityType.file && stat.size > 0) {
+    if (stat.type == FileSystemEntityType.file &&
+        stat.size > 0 &&
+        (x.bytes <= 0 || VaultCrypto.passtNachGroesse(stat.size, x.bytes))) {
       gesichert++;
       gesichertBytes += x.bytes;
     } else {

@@ -2276,7 +2276,7 @@ void main() {
     expect(treffer().toSet(), {'s1', 's2', 's3'});
 
     // Gelöscht wie aus dem Betrachter oder am Rechner.
-    await tester.runAsync(() => db.fuehreAus(const InDenPapierkorb(['s2'])));
+    await tester.runAsync(() => db.fuehreAus(InDenPapierkorb(['s2'])));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),

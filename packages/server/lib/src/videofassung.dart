@@ -39,9 +39,19 @@ class Videofassungen {
   final _laufend = <String, Future<File?>>{};
   Future<void> _reihe = Future.value();
 
+  /// Der Stand der Umwandlung, im Namen jeder Fassung (#395). Steigt er,
+  /// passt der Name einer älteren Fassung nicht mehr: Sie entsteht neu,
+  /// und das Aufräumen nimmt die alte mit. Ohne ihn galt eine Fassung als
+  /// aktuell, solange das Original nicht neuer war – auch eine ohne die
+  /// Obergrenze von 8 Mbit/s, die über eine langsame Leitung so schlecht
+  /// anlief wie das Original.
+  ///
+  /// 2: höchstens 8 Mbit/s (3.67.4, #393).
+  static const stand = 2;
+
   /// Wo die Fassung von [id] liegt (oder liegen wird).
   static File ziel(Directory zwischenspeicher, String id) =>
-      File(p.join(zwischenspeicher.path, '$id.mp4'));
+      File(p.join(zwischenspeicher.path, '$id.s$stand.mp4'));
 
   /// Die fertige Fassung – oder `null`, dann ist sie angestossen (oder
   /// gescheitert, siehe [gescheitert]).

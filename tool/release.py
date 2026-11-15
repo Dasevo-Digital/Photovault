@@ -654,13 +654,18 @@ def _lade_anhang(anhang, tok):
         return ''
 
 
+class AnhangNichtGeladen(Exception):
+    """Ein Anhang liess sich nicht laden – nicht dasselbe wie ein falscher."""
+
+
 def _sha256_anhang(anhang, tok):
     """Die SHA-256 eines Anhangs, wie er tatsächlich auf dem Server liegt –
-    ganz geladen, nicht nach der gemeldeten Grösse (#392). `None`, wenn er
-    sich nicht laden lässt."""
+    ganz geladen, nicht nach der gemeldeten Grösse (#392). Lässt er sich
+    nicht laden, [AnhangNichtGeladen] mit dem Grund: Bis 3.67.4 hiess auch
+    ein Netzfehler „nicht die Datei von hier“ (#395)."""
     url = anhang.get('browser_download_url')
     if not url:
-        return None
+        raise AnhangNichtGeladen('ohne Adresse')
     try:
         req = urllib.request.Request(url)
         req.add_unredirected_header('Authorization', 'token ' + tok)
@@ -669,8 +674,8 @@ def _sha256_anhang(anhang, tok):
             for stueck in iter(lambda: a.read(1 << 20), b''):
                 h.update(stueck)
         return h.hexdigest()
-    except Exception:  # noqa: BLE001 – dann gilt der Anhang als nicht geprüft
-        return None
+    except Exception as e:  # noqa: BLE001 – der Grund geht mit
+        raise AnhangNichtGeladen(f'{type(e).__name__}: {e}') from e
 
 
 def entwurf(args):
@@ -719,8 +724,22 @@ def entwurf(args):
     summen(u, fassung)
     lokal = summen_lesen((u / 'SHA256SUMS.txt').read_text())
     oben = summen_lesen(_lade_anhang(vorhanden['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in vorhanden else {}
-    anders = [n for n in vorhanden_hier if n in vorhanden
-              and not (vorhanden[n].get('size') == (u / n).stat().st_size and oben.get(n) and oben.get(n) == lokal.get(n))]
+
+    # Mit --pruefen zählt der Anhang selbst, nicht, was die SHA256SUMS.txt
+    # dort über ihn sagt (#395): Meldet veroeffentlichen einen Anhang, der
+    # gleich gross und richtig genannt, aber nicht die Datei von hier ist,
+    # ersetzt ihn nur das. Bis 3.67.4 half dann nur Löschen von Hand.
+    def gleich(n):
+        if not (vorhanden[n].get('size') == (u / n).stat().st_size and oben.get(n) and oben.get(n) == lokal.get(n)):
+            return False
+        if not getattr(args, 'pruefen', False):
+            return True
+        try:
+            return _sha256_anhang(vorhanden[n], tok) == lokal.get(n)
+        except AnhangNichtGeladen as e:
+            sys.exit(f'{n} liess sich zum Prüfen nicht laden ({e}) – nichts geändert.')
+
+    anders = [n for n in vorhanden_hier if n in vorhanden and not gleich(n)]
     # Pakete im Entwurf, die hier fehlen, stammen von einem früheren Bau,
     # der nicht mehr gilt – etwa ein nur signiertes Mac-Paket, nachdem der
     # Neubau scheiterte und es weggeräumt hat.
@@ -830,10 +849,18 @@ def veroeffentlichen(args):
             fehler.append(f'{n}: fehlt im Entwurf oder ist anders gross')
         elif oben and oben.get(n) != h:
             fehler.append(f'{n}: Prüfsumme im Entwurf passt nicht')
-        elif _sha256_anhang(anhaenge[n], tok) != h:
-            # Gleich gross und richtig in der SHA256SUMS.txt genannt, aber
-            # der Anhang selbst kann trotzdem ein anderer sein (#392).
-            fehler.append(f'{n}: der hochgeladene Anhang ist nicht die Datei von hier')
+        else:
+            try:
+                ist = _sha256_anhang(anhaenge[n], tok)
+            except AnhangNichtGeladen as e:
+                fehler.append(f'{n}: liess sich zum Prüfen nicht laden ({e})')
+                continue
+            if ist != h:
+                # Gleich gross und richtig in der SHA256SUMS.txt genannt,
+                # aber der Anhang selbst kann trotzdem ein anderer sein
+                # (#392).
+                fehler.append(f'{n}: der hochgeladene Anhang ist nicht die Datei von hier – '
+                              f'„release.py entwurf {fassung} --pruefen“ lädt ihn neu hoch')
     for n in anhaenge:
         if n != 'SHA256SUMS.txt' and n not in lokal:
             fehler.append(f'{n}: liegt im Entwurf, aber nicht hier')
@@ -859,6 +886,8 @@ def main():
     en.add_argument('fassung')
     en.add_argument('--nachtragen', action='store_true',
                     help='fehlende Pakete in ein schon veröffentlichtes Release legen')
+    en.add_argument('--pruefen', action='store_true',
+                    help='vorhandene Anhänge ganz laden und ersetzen, was nicht die Datei von hier ist')
     sub.add_parser('veroeffentlichen').add_argument('fassung')
     e = sub.add_parser('einspielen')
     e.add_argument('fassung')

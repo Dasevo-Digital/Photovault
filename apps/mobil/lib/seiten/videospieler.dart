@@ -28,6 +28,45 @@ bool spieltLeichteFassung(VideoPlayerController c) =>
     c.dataSourceType == DataSourceType.network &&
     Uri.parse(c.dataSource).path.endsWith('/abspielbar');
 
+/// Ob ein Video steht, ohne dass jemand angehalten hat (#393, #395).
+///
+/// Gemessen am Fortschritt der Position, nicht an
+/// [VideoPlayerValue.isPlaying]: Das ist unter Android auch beim Puffern
+/// falsch, und ein Video, das erst lief und dann stockt, fiele sonst nie
+/// auf. Bis 0.19.5 griff der Wächter des Betrachters deshalb nur unter
+/// iOS und nur, wenn das Original gar nicht anlief.
+class Stillstand {
+  Stillstand({this.grenze = const Duration(seconds: 6)});
+
+  /// So lange darf die Position stehen. Im eigenen Netz läuft ein Video
+  /// nach einem Bruchteil davon an.
+  final Duration grenze;
+
+  Duration? _zuletzt;
+  DateTime? _seit;
+  var _warAngehalten = false;
+
+  /// Der Stand von [v] um [jetzt]: `true`, wenn die Position seit [grenze]
+  /// nicht vorankam. Angehalten oder am Ende steht nichts.
+  bool steht(
+    VideoPlayerValue v, {
+    required bool angehalten,
+    required DateTime jetzt,
+  }) {
+    final ende = v.duration > Duration.zero && v.position >= v.duration;
+    final seit = _seit;
+    // Nach dem Weiterspielen beginnt die Frist neu.
+    final neu = angehalten || _warAngehalten;
+    _warAngehalten = angehalten;
+    if (neu || ende || seit == null || v.position != _zuletzt) {
+      _zuletzt = v.position;
+      _seit = jetzt;
+      return false;
+    }
+    return jetzt.difference(seit) >= grenze;
+  }
+}
+
 /// Ein fertig geladener Spieler für das Video [a] – wie im Browser: was der
 /// Betrachter abspielt (gekürzt, sonst das Original), von hier, wenn es
 /// hier liegt, sonst vom Server mit Teilabruf.
@@ -64,9 +103,12 @@ Future<VideoPlayerController> videospieler(
   // 200: liegt bereit, 202: entsteht gerade, sonst geht es nicht.
   Future<int?> frage() async {
     try {
+      // Kurz: Die Frage steht vor dem Original, und ohne Antwort sähe man
+      // sonst bis zu fünf Minuten nur den Kreis (#395).
       return (await abgleich.verbindung.anfrage(
         'GET',
         '$pfad?pruefen=1',
+        zeitlimit: const Duration(seconds: 15),
       )).statusCode;
     } on Object {
       return null;

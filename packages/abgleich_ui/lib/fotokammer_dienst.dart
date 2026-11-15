@@ -347,8 +347,10 @@ class Fotokammerdienst {
     final r = await verbindung.anfrage(
       'GET',
       'api/v1/kammer/$id/vollbild',
-      // Ein RAW zu wandeln kann dauern, wenn andere davor warten.
-      zeitlimit: const Duration(minutes: 5),
+      // Ein RAW zu wandeln kann dauern, wenn andere davor warten, und die
+      // Frist gilt bis zum letzten Byte (#391) – 20 MB und mehr über einen
+      // langsamen Upload (#395).
+      zeitlimit: const Duration(minutes: 10),
     );
     if (r.statusCode == 404 || r.statusCode == 422) return null;
     if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);

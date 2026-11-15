@@ -10,6 +10,7 @@ import 'package:kern/services/bildwerkzeuge.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:photo_vault_server/src/fassungen_aufraeumen.dart';
+import 'package:photo_vault_server/src/videofassung.dart';
 import 'package:photo_vault_server/src/vollbild.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -311,7 +312,7 @@ void main() {
       final heute = vollbild.listSync().single as File;
       final vorher = lege(vollbild, 'k-000000000000.jpg');
       await aufnahme('t', 'heic');
-      await b.db.fuehreAus(const InDenPapierkorb(['t']));
+      await b.db.fuehreAus(InDenPapierkorb(['t']));
       final papierkorb = Vollbilder.ziel(
         vollbild,
         't',
@@ -321,12 +322,19 @@ void main() {
       final gesperrt = lege(vollbild, 'z-bbbbbbbbbbbb.jpg');
       final geloescht = lege(vollbild, 'weg-aaaaaaaaaaaa.jpg');
       await aufnahme('v', 'mov', typ: 'VIDEO');
-      final video = lege(abspielbar, 'v.mp4');
-      final gekuerzt = lege(abspielbar, 'v-gekuerzt.mp4');
+      final video = lege(
+        abspielbar,
+        p.basename(Videofassungen.ziel(abspielbar, 'v').path),
+      );
+      final gekuerzt = lege(
+        abspielbar,
+        p.basename(Videofassungen.ziel(abspielbar, 'v-gekuerzt').path),
+      );
       final halb = lege(abspielbar, 'v.mp4.teil');
       final videoWeg = lege(abspielbar, 'weg.mp4');
+      final ohneStand = lege(abspielbar, 'v.mp4');
 
-      expect(await raeumeFassungenAuf(b, beimOeffnen: true), 6);
+      expect(await raeumeFassungenAuf(b, beimOeffnen: true), 7);
 
       expect(heute.existsSync(), isTrue, reason: 'was der Betrachter zeigt');
       expect(papierkorb.existsSync(), isTrue, reason: 'lässt sich zurückholen');
@@ -337,6 +345,7 @@ void main() {
       expect(gekuerzt.existsSync(), isFalse, reason: 'nicht mehr gekürzt');
       expect(halb.existsSync(), isFalse, reason: 'abgebrochene Wandlung');
       expect(videoWeg.existsSync(), isFalse);
+      expect(ohneStand.existsSync(), isFalse, reason: 'vor Stand 2 (#395)');
     },
   );
 

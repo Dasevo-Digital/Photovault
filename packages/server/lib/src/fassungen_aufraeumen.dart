@@ -94,8 +94,8 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
   ];
   if (dateien.isEmpty) return 0;
 
-  // Die Kennungen aus den Namen: `<id>-<12 Zeichen>.jpg`, `<id>.mp4` und
-  // `<id>-gekuerzt.mp4`.
+  // Die Kennungen aus den Namen: `<id>-<12 Zeichen>.jpg`, `<id>.s<Stand>.mp4`
+  // und `<id>-gekuerzt.s<Stand>.mp4` (vor Stand 2 ohne `.s<Stand>`).
   String? kennung(File f) {
     var name = p.basename(f.path);
     if (name.endsWith('.teil')) return null;
@@ -106,7 +106,9 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
       return RegExp(r'^(.+)-[0-9a-f]{12}\.jpg$').firstMatch(name)?.group(1);
     }
     if (!name.endsWith('.mp4')) return null;
-    name = name.substring(0, name.length - 4);
+    name = name
+        .substring(0, name.length - 4)
+        .replaceFirst(RegExp(r'\.s\d+$'), '');
     return name.endsWith('-gekuerzt')
         ? name.substring(0, name.length - '-gekuerzt'.length)
         : name;

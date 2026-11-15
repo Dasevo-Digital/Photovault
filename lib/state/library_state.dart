@@ -3018,9 +3018,20 @@ class LibraryState extends ChangeNotifier {
 
       var neue = 0;
       final gescheitert = <String>{};
+      final spaeter = <String>{};
       await for (final p in importFiles(faellig)) {
         if (p.assetId != null) neue++;
-        if (p.gescheitert && p.pfad != null) gescheitert.add(p.pfad!);
+        if (p.gescheitert && p.pfad != null) {
+          // Server nicht erreichbar oder überlastet: Das liegt nicht an der
+          // Datei und zählt nicht als Fehlversuch (#395). Sonst galten
+          // nach fünf Durchgängen ohne Server alle neuen Dateien als
+          // gesehen und kamen erst nach dem nächsten Start.
+          final grund = p.grund;
+          (grund != null && TusHochladen.voruebergehend(grund)
+                  ? spaeter
+                  : gescheitert)
+              .add(p.pfad!);
+        }
       }
       // Erst nach dem ganzen Lauf: Bricht er ab, kommt alles noch einmal.
       // Eingelesen ist, was hereinkam oder schon da war. Was scheiterte –
@@ -3030,7 +3041,7 @@ class LibraryState extends ChangeNotifier {
       // nächsten Start draussen.
       for (final d in faellig) {
         final e = _ordnerGesehen[d];
-        if (e == null) continue;
+        if (e == null || spaeter.contains(d)) continue;
         final fehl = gescheitert.contains(d) ? e.fehlversuche + 1 : 0;
         _ordnerGesehen[d] = (
           groesse: e.groesse,

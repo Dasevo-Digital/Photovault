@@ -95,21 +95,41 @@ abstract final class FotokammerSicherung {
         da.add(id);
         final platz = Directory(p.join(ziel.path, id));
         final zielAngaben = File(p.join(platz.path, angabenName));
-        // Die Angaben kommen zuletzt: Sind sie da, ist es auch die Datei,
-        // und ein Eintrag ändert sich nie.
-        if (await zielAngaben.exists()) continue;
+        final zielDatei = File(p.join(platz.path, dateiName));
+        final vermerk = File(p.join(platz.path, gesichertName));
         try {
           final j = jsonDecode(await angaben.readAsString()) as Map;
-          final name = p.basename('${j['name']}');
+          final quelle = File(p.join(e.path, p.basename('${j['name']}')));
+          // Die Angaben kommen zuletzt: Sind sie da, war die Datei fertig,
+          // und ein Eintrag ändert sich nie.
+          if (await zielAngaben.exists()) {
+            // Einträge von vor 3.67.3 tragen keinen Vermerk. Hier stimmt
+            // die Zeit ihrer Angaben noch; nach dem Kopieren ausser Haus
+            // wäre sie die des Kopierens, und eine ältere Stufe liesse den
+            // Eintrag still aus (#395).
+            if (!await vermerk.exists()) {
+              await vermerk.writeAsString(
+                (await zielAngaben.stat()).modified.toUtc().toIso8601String(),
+              );
+            }
+            // Fehlt die Datei dort oder ist sie zu kurz, kommt der Eintrag
+            // noch einmal, solange er in der Kammer liegt (#395). Bis
+            // 3.67.4 meldete die strenge Probe ihn jede Nacht, und der
+            // Server legte keine neue Stufe der Bibliothek mehr an.
+            if (await VaultCrypto.passtZurGroesse(
+              zielDatei,
+              await quelle.length(),
+            )) {
+              continue;
+            }
+            protokoll('Fotokammer: $id in der Sicherung unvollständig');
+            await zielAngaben.delete();
+          }
           await platz.create(recursive: true);
-          await _verschluessele(
-            File(p.join(e.path, name)),
-            File(p.join(platz.path, dateiName)),
-            schluessel,
-          );
-          await File(
-            p.join(platz.path, gesichertName),
-          ).writeAsString(jetzt.toUtc().toIso8601String());
+          await _verschluessele(quelle, zielDatei, schluessel);
+          if (!await vermerk.exists()) {
+            await vermerk.writeAsString(jetzt.toUtc().toIso8601String());
+          }
           await _verschluessele(angaben, zielAngaben, schluessel);
           neu++;
         } on Object catch (x) {

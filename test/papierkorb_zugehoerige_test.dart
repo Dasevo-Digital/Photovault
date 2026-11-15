@@ -53,7 +53,7 @@ void main() {
     });
 
     test('die Hauptversion nimmt ihre Varianten mit', () async {
-      await db.fuehreAus(const InDenPapierkorb(['haupt']));
+      await db.fuehreAus(InDenPapierkorb(['haupt']));
 
       expect(await sichtbar(), ['einzeln']);
       expect(await imPapierkorb(), ['haupt', 'original']);
@@ -64,7 +64,7 @@ void main() {
     });
 
     test('eine verdeckte Variante holt ihre Hauptversion mit zurück', () async {
-      await db.fuehreAus(const InDenPapierkorb(['haupt']));
+      await db.fuehreAus(InDenPapierkorb(['haupt']));
 
       await db.fuehreAus(const AusDemPapierkorb(['original']));
 
@@ -73,12 +73,12 @@ void main() {
     });
 
     test('eine schon vorher gelöschte Variante bleibt im Papierkorb', () async {
-      await db.fuehreAus(const InDenPapierkorb(['original']));
+      await db.fuehreAus(InDenPapierkorb(['original']));
       // Ein Tag früher: Wer sie einzeln gelöscht hat, wollte sie los sein.
       await (db.update(db.assets)..where((t) => t.id.equals('original'))).write(
         AssetsCompanion(trashedAt: Value(DateTime(2026, 1, 1))),
       );
-      await db.fuehreAus(const InDenPapierkorb(['haupt']));
+      await db.fuehreAus(InDenPapierkorb(['haupt']));
 
       await db.fuehreAus(const AusDemPapierkorb(['haupt']));
 
@@ -87,7 +87,7 @@ void main() {
     });
 
     test('nur eine verdeckte Variante zu löschen lässt den Rest', () async {
-      await db.fuehreAus(const InDenPapierkorb(['original']));
+      await db.fuehreAus(InDenPapierkorb(['original']));
 
       expect(await sichtbar(), ['einzeln', 'haupt']);
       expect(await imPapierkorb(), ['original']);
@@ -100,7 +100,7 @@ void main() {
     await aufnahme('c', tag: 3);
     await db.fuehreAus(const SerieBilden('serie-1', ['a', 'b', 'c'], 'b'));
 
-    await db.fuehreAus(const InDenPapierkorb(['b']));
+    await db.fuehreAus(InDenPapierkorb(['b']));
 
     expect(await sichtbar(), ['a'], reason: 'das früheste rückt nach');
     expect(await imPapierkorb(), ['b']);
@@ -115,7 +115,7 @@ void main() {
     await aufnahme('foto', partner: 'video');
     await aufnahme('video', typ: 'VIDEO', partner: 'foto');
 
-    await db.fuehreAus(const InDenPapierkorb(['foto']));
+    await db.fuehreAus(InDenPapierkorb(['foto']));
     expect(await imPapierkorb(), ['foto', 'video']);
 
     // Im Papierkorb stehen beide; wer das Video antippt, holt das Foto mit.

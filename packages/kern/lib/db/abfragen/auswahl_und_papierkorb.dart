@@ -193,12 +193,19 @@ extension AuswahlAbfragen on AppDatabase {
   /// weder dort noch sonst irgendwo, und nach dem Leeren blieben sie für
   /// immer verborgen. Seit 3.49.7 betraf das jedes bearbeitete Foto, denn
   /// dessen Original liegt als Variante dahinter.
-  Future<void> moveToTrash(List<String> assetIds) => transaction(() async {
+  ///
+  /// [aktion] und [zeit] bringt der Befehl mit ([InDenPapierkorb]), damit
+  /// Gerät und Server dieselben schreiben (#395).
+  Future<void> moveToTrash(
+    List<String> assetIds, {
+    String? aktion,
+    DateTime? zeit,
+  }) => transaction(() async {
     final alle = await zugehoerige(assetIds);
     // Was schon im Papierkorb liegt, behält Zeitpunkt und Aktion: An der
     // Aktion erkennt das Zurückholen, was zusammen ging (#389).
-    final jetzt = DateTime.now();
-    final aktion = const Uuid().v4();
+    final jetzt = zeit ?? DateTime.now();
+    aktion ??= const Uuid().v4();
     for (final stueck in inStuecken(alle)) {
       await (update(
         assets,

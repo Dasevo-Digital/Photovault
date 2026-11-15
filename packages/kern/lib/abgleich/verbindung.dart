@@ -144,25 +144,29 @@ class Serververbindung {
       if (!abbruch.isCompleted) abbruch.complete();
     }
 
+    await ziel.parent.create(recursive: true);
+    // Auch bis zu den Kopfzeilen bricht die Frist die Anfrage selbst ab
+    // (#395): Ein blosses `timeout` gab nur das Warten auf, und kam die
+    // Antwort gleich danach, hörte ihr niemand mehr zu – die Verbindung
+    // blieb belegt, bis der Server sie schloss.
+    final wache = Timer(downloadStille, brichAb);
     final http.StreamedResponse r;
     try {
-      r = await _http
-          .send(
-            http.AbortableRequest(
-              'GET',
-              adresse(pfad),
-              abortTrigger: abbruch.future,
-            )..headers.addAll(_kopf),
-          )
-          .timeout(downloadStille);
+      r = await _http.send(
+        http.AbortableRequest(
+          'GET',
+          adresse(pfad),
+          abortTrigger: abbruch.future,
+        )..headers.addAll(_kopf),
+      );
     } on SocketException catch (e) {
       brichAb();
       throw KeineVerbindung(e);
-    } on TimeoutException catch (e) {
-      brichAb();
-      throw KeineVerbindung(e);
     } on http.ClientException catch (e) {
+      // Auch der Abbruch durch die Frist.
       throw KeineVerbindung(e);
+    } finally {
+      wache.cancel();
     }
     final inhalt = r.stream.timeout(
       downloadStille,
@@ -182,14 +186,18 @@ class Serververbindung {
       }
       throw Serverfehler(r.statusCode, text);
     }
-    await ziel.parent.create(recursive: true);
     final teil = File('${ziel.path}.teil');
     final aus = teil.openWrite();
     try {
       await inhalt.pipe(aus);
     } catch (e) {
       brichAb();
-      if (await teil.exists()) await teil.delete();
+      try {
+        if (await teil.exists()) await teil.delete();
+      } on FileSystemException {
+        // Unter Windows womöglich noch offen; der nächste Versuch
+        // überschreibt sie. Gemeldet wird der Abbruch, nicht das.
+      }
       throw KeineVerbindung(e);
     }
     await teil.rename(ziel.path);
@@ -231,9 +239,15 @@ class Serververbindung {
     File datei, {
     Map<String, String>? parameter,
     void Function(int gesendet, int gesamt)? fortschritt,
-    Duration zeitlimit = const Duration(minutes: 30),
+    Duration? zeitlimit,
   }) async {
     final gesamt = await datei.length();
+    // Seit die Frist die Anfrage selbst abbricht (#391), muss sie für das
+    // ganze Hochladen reichen: eine halbe Stunde und dazu, was die Datei
+    // mit 1 Mbit/s braucht. Ein Video von 1 GB über einen langsamen Upload
+    // käme sonst nie an (#395).
+    zeitlimit ??=
+        const Duration(minutes: 30) + Duration(seconds: gesamt ~/ 125000);
     return _json(zeitlimit, (frist) async {
       final anfrage =
           http.AbortableStreamedRequest(

@@ -163,7 +163,7 @@ void main() {
         [text, text],
       );
       await auswerten('Bildschirmfoto');
-      await db.fuehreAus(const InDenPapierkorb(['foto']));
+      await db.fuehreAus(InDenPapierkorb(['foto']));
       await a.sende();
       await a.empfange();
       expect(a.zustandJetzt.faelle, 0);
@@ -178,6 +178,22 @@ void main() {
       expect(a.zustandJetzt.faelle, 0);
       expect((await quelle.assetById('foto'))!.isTrashed, isFalse);
       expect((await db.assetById('foto'))!.aiCaption, 'neu beschrieben');
+    },
+  );
+
+  test(
+    'Rückgängig, ehe der Server das Löschen bestätigt hat: kein Konflikt (#395)',
+    () async {
+      // Im Betrachter gleich „Rückgängig“: Beide Befehle gehen zusammen
+      // hinaus. Die Basis des Zurückholens nennt Aktion und Zeitpunkt des
+      // Geräts – der Server muss dieselben geschrieben haben.
+      await db.fuehreAus(InDenPapierkorb(['foto']));
+      await db.fuehreAus(const AusDemPapierkorb(['foto']));
+      await a.sende();
+      await a.empfange();
+      expect(a.zustandJetzt.faelle, 0);
+      expect((await quelle.assetById('foto'))!.isTrashed, isFalse);
+      expect((await db.assetById('foto'))!.isTrashed, isFalse);
     },
   );
 
@@ -253,7 +269,7 @@ void main() {
       await quelle.customStatement(
         "UPDATE assets SET is_locked = 1 WHERE id = 'foto'",
       );
-      await db.fuehreAus(const InDenPapierkorb(['foto']));
+      await db.fuehreAus(InDenPapierkorb(['foto']));
       await a.sende();
       await a.empfange();
       expect(a.zustandJetzt.faelle, 1);

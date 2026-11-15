@@ -167,6 +167,20 @@ class BackupService {
     }
   }
 
+  /// Ob [quelle] noch die Bytes trägt, für die [asset] steht – gefragt,
+  /// bevor eine Kopie im Ziel ersetzt wird (#395).
+  ///
+  /// Ersetzt wird, was im Ziel unvollständig oder veraltet aussieht. Das
+  /// misst sich an der Datei der Bibliothek. Ist aber gerade sie beschädigt
+  /// – abgeschnitten, von einem anderen Programm am Ort geändert, von
+  /// Schadsoftware verschlüsselt –, ersetzte die Sicherung ihre heile Kopie
+  /// durch die kaputte. Verschlüsselt teilen alle Sicherungsstufen dieselbe
+  /// Datei in `data/`, und jede verlöre das Foto. Bis 3.67.4 geschah das.
+  /// Passt die Quelle nicht zur Prüfsumme, bleibt die Kopie, und der Lauf
+  /// meldet die Datei als Fehler.
+  static Future<bool> _quelleStimmt(AssetData asset, File quelle) async =>
+      (await sha256.bind(quelle.openRead()).first).toString() == asset.checksum;
+
   /// Legt eine veraltete Datei im unverschlüsselten Ziel beiseite, bevor
   /// die neue Fassung sie ersetzt – falls die Bibliothek ihren Inhalt nicht
   /// mehr hat.
@@ -414,6 +428,14 @@ class BackupService {
           if (!schonDa && (source == null || !await source.exists())) {
             throw FileSystemException(
               'pv_backup_quelle_fehlt',
+              asset.relativePath,
+            );
+          }
+          if (source != null &&
+              await target.exists() &&
+              !await _quelleStimmt(asset, source)) {
+            throw FileSystemException(
+              'pv_backup_quelle_beschaedigt',
               asset.relativePath,
             );
           }
@@ -914,6 +936,16 @@ class BackupService {
           if (!schonDa && (source == null || !await source.exists())) {
             throw FileSystemException(
               'pv_backup_quelle_fehlt',
+              asset.relativePath,
+            );
+          }
+          // Wie in [performBackup]: eine heile Kopie nie durch eine
+          // beschädigte Quelle ersetzen (#395).
+          if (source != null &&
+              await target.exists() &&
+              !await _quelleStimmt(asset, source)) {
+            throw FileSystemException(
+              'pv_backup_quelle_beschaedigt',
               asset.relativePath,
             );
           }

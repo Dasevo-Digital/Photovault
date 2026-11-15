@@ -196,33 +196,45 @@ class VaultCrypto {
   /// Grösse fest – PVE1: Kopf (4) und je Block 32 Bytes Rahmen; PVE2
   /// zusätzlich ein leerer Abschlussblock; PVE3 dazu 32 Bytes Dateikennung.
   /// Ein unbekannter Kopf gilt als unpassend.
+  ///
+  /// Geöffnet wird die Datei nur, wenn ihre Grösse nicht schon zu PVE3
+  /// passt (#395): Die Sicherung fragt jede Datei in jedem Lauf, und bei
+  /// einem Ziel in der Cloud mit Dateien nur online hiesse schon das Lesen
+  /// des Kopfs, die ganze Datei herunterzuladen.
   static Future<bool> passtZurGroesse(File datei, int klartextBytes) async {
-    final RandomAccessFile f;
+    final (:v2, :v3) = _groessen(klartextBytes);
+    const rahmen = 4 + 12 + _macLength;
     try {
-      f = await datei.open();
+      final laenge = await datei.length();
+      if (laenge == v3) return true;
+      final f = await datei.open();
+      try {
+        final magic = await f.read(4);
+        if (_bytesEqual(magic, _magicV2)) return laenge == v2;
+        if (_bytesEqual(magic, _magicV1)) return laenge == v2 - rahmen;
+        return false;
+      } finally {
+        await f.close();
+      }
     } on FileSystemException {
       return false;
     }
-    try {
-      final magic = await f.read(4);
-      final laenge = await f.length();
-      final bloecke = (klartextBytes + _chunkSize - 1) ~/ _chunkSize;
-      const rahmen = 4 + 12 + _macLength;
-      final int erwartet;
-      if (_bytesEqual(magic, _magicV3)) {
-        erwartet =
-            4 + _dateikennungLaenge + klartextBytes + (bloecke + 1) * rahmen;
-      } else if (_bytesEqual(magic, _magicV2)) {
-        erwartet = 4 + klartextBytes + (bloecke + 1) * rahmen;
-      } else if (_bytesEqual(magic, _magicV1)) {
-        erwartet = 4 + klartextBytes + bloecke * rahmen;
-      } else {
-        return false;
-      }
-      return laenge == erwartet;
-    } finally {
-      await f.close();
-    }
+  }
+
+  /// Ob [laenge] die Grösse einer vollständigen Verschlüsselung von
+  /// [klartextBytes] Bytes in irgendeinem Format sein kann – ohne die Datei
+  /// zu öffnen, für die Anzeige des Stands (#395). Die Sicherung selbst
+  /// fragt [passtZurGroesse].
+  static bool passtNachGroesse(int laenge, int klartextBytes) {
+    final (:v2, :v3) = _groessen(klartextBytes);
+    return laenge == v3 || laenge == v2 || laenge == v2 - (4 + 12 + _macLength);
+  }
+
+  static ({int v2, int v3}) _groessen(int klartextBytes) {
+    final bloecke = (klartextBytes + _chunkSize - 1) ~/ _chunkSize;
+    const rahmen = 4 + 12 + _macLength;
+    final v2 = 4 + klartextBytes + (bloecke + 1) * rahmen;
+    return (v2: v2, v3: v2 + _dateikennungLaenge);
   }
 
   /// Verschlüsselt [source] blockweise nach [destination].
@@ -272,12 +284,23 @@ class VaultCrypto {
         );
       }
 
+      // Jeder Block bis auf den letzten ganz voll, auch wenn ein Dateisystem
+      // (FUSE, Netzablage) kürzer liest als verlangt: Sonst stimmte die
+      // Grösse nicht mehr zu [passtZurGroesse], und die Sicherung schriebe
+      // eine heile Datei in jedem Lauf neu (#395).
+      final puffer = Uint8List(_chunkSize);
       var nummer = 0;
       while (true) {
-        final chunk = await input.read(_chunkSize);
-        if (chunk.isEmpty) break;
-        await schreibe(chunk, nummer);
+        var gelesen = 0;
+        while (gelesen < _chunkSize) {
+          final n = await input.readInto(puffer, gelesen);
+          if (n == 0) break;
+          gelesen += n;
+        }
+        if (gelesen == 0) break;
+        await schreibe(Uint8List.sublistView(puffer, 0, gelesen), nummer);
         nummer++;
+        if (gelesen < _chunkSize) break;
       }
       await schreibe(const <int>[], nummer);
       await ausgabe.flush();

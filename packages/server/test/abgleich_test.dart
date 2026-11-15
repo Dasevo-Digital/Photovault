@@ -145,7 +145,7 @@ void main() {
       ],
     ];
 
-    await s.fuehreAus(const InDenPapierkorb(['weg']));
+    await s.fuehreAus(InDenPapierkorb(['weg']));
     expect(
       await leereImBereich(
         await bibliotheken.fuer(erika.id),

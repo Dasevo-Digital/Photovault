@@ -116,8 +116,10 @@ signiere() { # pfad [zusätzliche Argumente]
       return 0
     fi
     # Nur der Grund, ohne den Pfad davor (ein Teil namens „network…“
-    # wäre sonst immer ein Aussetzer), und gleich wie geschrieben.
-    grund="${meldung##*$'\n'}"
+    # wäre sonst immer ein Aussetzer), und gleich wie geschrieben. Bei
+    # einem eingebetteten Teil nennt die letzte Zeile nur dessen Pfad
+    # („In subcomponent: …“) – der Grund steht davor (#395).
+    grund="$(printf '%s\n' "$meldung" | grep -v '^In subcomponent:' | tail -n 1)"
     grund="$(printf '%s' "${grund##*: }" | tr '[:upper:]' '[:lower:]')"
     case "$grund" in
       *timestamp*|*"timed out"*|*network*|*offline*|*resolve*) ;;

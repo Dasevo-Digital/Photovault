@@ -443,6 +443,31 @@ void main() {
     expect(tester.testTextInput.isVisible, isFalse);
   });
 
+  testWidgets('ein Passwortfeld behält beim Verdecken den Fokus (#395)', (
+    tester,
+  ) async {
+    // Das Face ID von AutoFill macht die App inaktiv. Ging der Fokus, kam
+    // das Passwort nicht an.
+    final s = sperre(frist: const Duration(minutes: 15));
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        builder: (context, kind) => AppSperrschicht(sperre: s, child: kind!),
+        home: const Scaffold(body: TextField(obscureText: true)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.showKeyboard(find.byType(TextField));
+    await tester.pumpAndSettle();
+    await wechsle(tester, [AppLifecycleState.inactive]);
+    expect(s.verdeckt, isTrue);
+    expect(tester.testTextInput.isVisible, isTrue);
+    await wechsle(tester, [AppLifecycleState.resumed]);
+    expect(tester.testTextInput.isVisible, isTrue);
+  });
+
   testWidgets('unter Android verdeckt Inaktiv nichts (FLAG_SECURE)', (
     tester,
   ) async {

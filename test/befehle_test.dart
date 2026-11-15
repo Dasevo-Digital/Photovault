@@ -239,7 +239,7 @@ void main() {
         (id: 'a2', zeitpunkt: DateTime.utc(2018, 5, 17, 10), geschaetzt: true),
       ]),
       const DateinameSetzen('a1', 'IMG_0001.JPG'),
-      const InDenPapierkorb(['a2']),
+      InDenPapierkorb(['a2']),
       const AusDemPapierkorb(['a2']),
       const DuplikateZusammenfuehren(behaltenId: 'a1', duplikatIds: ['a2']),
       const DuplikatgruppeIgnorieren(['a1', 'a2']),
@@ -699,7 +699,7 @@ void main() {
     test('Ort, Papierkorb und Serien', () async {
       await db.fuehreAus(const OrtSetzen(['a1', 'a2'], 54.1, 10.9));
       await db.fuehreAus(const OrtSetzen(['a2'], null, null));
-      await db.fuehreAus(const InDenPapierkorb(['a3']));
+      await db.fuehreAus(InDenPapierkorb(['a3']));
       await db.fuehreAus(const SerieBilden('st1', ['a1', 'a2'], 'a2'));
       final a1 = await aufnahme('a1');
       final a2 = await aufnahme('a2');

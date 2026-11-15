@@ -54,7 +54,7 @@ void main() {
   test(
     'nochSuchbar lässt Papierkorb und Gesperrtes weg, in Reihenfolge',
     () async {
-      await db.fuehreAus(const InDenPapierkorb(['u2']));
+      await db.fuehreAus(InDenPapierkorb(['u2']));
       await (db.update(db.assets)..where((t) => t.id.equals('u1'))).write(
         const AssetsCompanion(isLocked: Value(true)),
       );
@@ -98,7 +98,7 @@ void main() {
     expect(treffer(), ['u3', 'u2', 'u1']);
 
     // Gelöscht wie aus dem Betrachter oder von einem anderen Gerät.
-    await tester.runAsync(() => db.fuehreAus(const InDenPapierkorb(['u2'])));
+    await tester.runAsync(() => db.fuehreAus(InDenPapierkorb(['u2'])));
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 100));
     expect(treffer(), ['u3', 'u1']);

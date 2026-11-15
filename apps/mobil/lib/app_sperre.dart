@@ -434,6 +434,19 @@ class _AppSperrschichtState extends State<AppSperrschicht>
     await widget.sperre.entsperre(t.appSperreGrund);
   }
 
+  /// Ob das Feld mit dem Fokus AutoFill nutzt: ein Passwort oder ein Feld
+  /// mit [EditableText.autofillHints]. Das Face ID von AutoFill macht die
+  /// App nur inaktiv; nähme die Abdeckung dem Feld dabei den Fokus, verlöre
+  /// AutoFill seine Eingabe (#395). Hier bleibt die Tastatur beim Verdecken
+  /// stehen – ein Passwortfeld zeigt keine Wortvorschläge. Gesperrt geht
+  /// der Fokus in jedem Fall.
+  static bool _autofillImFokus() {
+    final feld = FocusManager.instance.primaryFocus?.context
+        ?.findAncestorWidgetOfExactType<EditableText>();
+    return feld != null &&
+        (feld.obscureText || (feld.autofillHints?.isNotEmpty ?? false));
+  }
+
   @override
   Widget build(BuildContext context) {
     final s = widget.sperre;
@@ -451,9 +464,10 @@ class _AppSperrschichtState extends State<AppSperrschicht>
         // Auch schon verdeckt: Die Tastatur liegt unter iOS in einem eigenen
         // Fenster über der Abdeckung und erschiene samt Vorschlägen aus dem
         // Textfeld im App-Umschalter (#382). Dafür schliesst sie, sobald die
-        // App inaktiv wird.
+        // App inaktiv wird – ausser bei einem Feld mit AutoFill (#395).
         ExcludeFocus(
-          excluding: zeige,
+          excluding:
+              s.an && (s.gesperrt || (s.verdeckt && !_autofillImFokus())),
           child: ExcludeSemantics(excluding: zeige, child: widget.child),
         ),
         if (zeige)
