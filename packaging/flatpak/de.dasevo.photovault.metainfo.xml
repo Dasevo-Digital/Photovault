@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.7" date="2026-11-16">
+      <description>
+        <p>The 3D flight over an activity has a second style, "Close up": the camera follows a glowing point low along the track, the route ahead lights up, and cards show the title, the destination and the photos of the tour.</p>
+        <p>The video export offers portrait and landscape and suggests portrait for the close-up style.</p>
+      </description>
+    </release>
     <release version="3.67.6" date="2026-11-15">
       <description>
         <p>Thumbnails, previews and face crops no longer carry the EXIF data of the original, such as the location; the orientation is applied to the pixels instead. The server prepares the light version of a heavy new video right after the import.</p>
