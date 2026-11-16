@@ -94,6 +94,14 @@ const double schildHoeheMeter = 12;
 /// ist dann nicht mehr zu sehen, und genau die war der Zweck.
 const int hoechstensBeschriftet = 12;
 
+/// Wie viele Schilder im Flugstil „Nah dran" höchstens stehen.
+///
+/// Drei. Aus der Nähe ist jedes Schild gross im Verhältnis zum Bild, und
+/// das Bild hat schon die Leuchtspur, den Leuchtpunkt und die Tafeln. Mit
+/// zwölf Namen und den Zeichen aller Wegweiser dazu war es voll, bevor
+/// die Landschaft zu sehen war.
+const int hoechstensBeschriftetSparsam = 3;
+
 /// Ob die Sichtlinie von [von] nach [nach] frei ist.
 ///
 /// **Ohne Tiefenpuffer bleibt nur Nachmessen.** Die Höhen entlang der
@@ -139,6 +147,15 @@ bool sichtfrei(
 /// als eines, weil sie einander verdecken. Die erste Fassung dieses
 /// Tests ging mit ausgebauter Deckelung durch. Gezählt wird deshalb, was
 /// wirklich entstanden ist.
+///
+/// **[sparsam]** ist die Auswahl für den Flugstil „Nah dran": nur
+/// benannte Punkte und keine Wegweiser, höchstens
+/// [hoechstensBeschriftetSparsam], jedes Schild ganz im Bild, und ein
+/// Zeichen nur dort, wo auch sein Name steht. [nurOberhalb] lässt nur
+/// Schilder zu, die im Bild höher stehen – dort ist es der Leuchtpunkt:
+/// Was darunter liegt, ist näher als er, also neben oder hinter dem Weg,
+/// und dort liegen auch die Leisten am unteren Rand. [freihalten] sind
+/// Flächen, in die kein Schild ragen darf – die Tafeln.
 int zeichneSchilder(
   ui.Canvas leinwand,
   ui.Size flaeche,
@@ -148,17 +165,26 @@ int zeichneSchilder(
   Lichtstimmung stimmung = stimmungMittag,
   double schriftgroesse = 12,
   String? schriftart,
+  bool sparsam = false,
+  double? nurOberhalb,
+  List<Rect> freihalten = const [],
 }) {
   if (schilder.isEmpty || flaeche.isEmpty) return 0;
   final wo = kamera.standort;
+  final grenze = sparsam ? hoechstensBeschriftetSparsam : hoechstensBeschriftet;
+  final bild = (Offset.zero & flaeche).deflate(4);
 
   // Erst sammeln, dann zeichnen: Die Reihenfolge entscheidet, wer bei
   // Überdeckung gewinnt, und das lässt sich erst sagen, wenn alle
   // Tiefen bekannt sind.
   final sichtbar = <({Gelaendeschild schild, Offset stelle, double tiefe})>[];
   for (final s in schilder) {
+    if (sparsam && (s.beschriftung == null || s.art == Wanderart.wegweiser)) {
+      continue;
+    }
     final b = kamera.projiziere(s.ort);
     if (b.tiefe <= 1) continue;
+    if (nurOberhalb != null && b.stelle.dy >= nurOberhalb) continue;
     if (b.stelle.dx < -200 ||
         b.stelle.dx > flaeche.width + 200 ||
         b.stelle.dy < -100 ||
@@ -185,7 +211,8 @@ int zeichneSchilder(
     final deckkraft = (1 - 0.55 * t).clamp(0.3, 1.0);
     final zeichen = _zeichenfarbe(e.schild.art);
 
-    final absatz = beschriftet < hoechstensBeschriftet
+    if (sparsam && beschriftet >= grenze) break;
+    final absatz = beschriftet < grenze
         ? e.schild.absatz(schriftgroesse, schriftart)
         : null;
     Rect? kasten;
@@ -203,7 +230,13 @@ int zeichneSchilder(
       // gezeichnetes überdeckt, fällt weg. Ohne das ist die Ferne eine
       // Wand aus Kästchen.
       if (belegt.any((r) => r.overlaps(kasten!.inflate(2)))) kasten = null;
+      if (kasten != null && freihalten.any((r) => r.overlaps(kasten!))) {
+        kasten = null;
+      }
+      // Ein halbes Schild am Bildrand ist ein abgeschnittenes Wort.
+      if (sparsam && kasten != null && !_umfasst(bild, kasten)) kasten = null;
     }
+    if (sparsam && kasten == null) continue;
 
     _zeichenMalen(leinwand, e.stelle, e.schild.art, zeichen, deckkraft);
 
@@ -238,6 +271,12 @@ int zeichneSchilder(
   }
   return beschriftet;
 }
+
+bool _umfasst(Rect aussen, Rect innen) =>
+    innen.left >= aussen.left &&
+    innen.top >= aussen.top &&
+    innen.right <= aussen.right &&
+    innen.bottom <= aussen.bottom;
 
 /// Die Farbe je Art – nicht Zierrat, sondern die einzige Auskunft, die
 /// ein namenloser Punkt gibt.

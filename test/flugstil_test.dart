@@ -384,6 +384,132 @@ void main() {
     });
   });
 
+  group('Aufgeräumt', () {
+    // Eine fast senkrechte Kamera über einem Raster aus zwölf Gipfeln.
+    const kamera = Gelaendekamera(
+      drehung: 0,
+      neigung: 1.5,
+      entfernung: 2000,
+      brennweite: 800,
+      mitte: Offset(400, 300),
+    );
+    const flaeche = Size(800, 600);
+    final gipfel = [
+      for (final x in [-900.0, -300.0, 300.0, 900.0])
+        for (final y in [-500.0, 0.0, 500.0])
+          Gelaendeschild(
+            ort: (x: x, y: y, z: 0.0),
+            art: Wanderart.gipfel,
+            beschriftung: 'Gipfel ${x.round()}/${y.round()}',
+            name: 'Gipfel ${x.round()}/${y.round()}',
+          ),
+    ];
+
+    int zaehle(
+      List<Gelaendeschild> schilder, {
+      bool sparsam = false,
+      double? nurOberhalb,
+      List<Rect> freihalten = const [],
+    }) => zeichneSchilder(
+      ui.Canvas(ui.PictureRecorder()),
+      flaeche,
+      kamera,
+      schilder,
+      sparsam: sparsam,
+      nurOberhalb: nurOberhalb,
+      freihalten: freihalten,
+    );
+
+    test('sparsam stehen höchstens drei Namen', () {
+      expect(zaehle(gipfel), greaterThan(hoechstensBeschriftetSparsam));
+      expect(zaehle(gipfel, sparsam: true), hoechstensBeschriftetSparsam);
+    });
+
+    test('sparsam keine Wegweiser und nichts ohne Namen', () {
+      final wege = [
+        for (final g in gipfel)
+          Gelaendeschild(
+            ort: g.ort,
+            art: Wanderart.wegweiser,
+            beschriftung: g.beschriftung,
+            name: g.name,
+          ),
+      ];
+      final namenlos = [
+        for (final g in gipfel) Gelaendeschild(ort: g.ort, art: g.art),
+      ];
+      expect(zaehle(wege), greaterThan(0));
+      expect(zaehle(wege, sparsam: true), 0);
+      expect(zaehle(namenlos, sparsam: true), 0);
+    });
+
+    test('nur jenseits des Leuchtpunkts und nicht unter den Tafeln', () {
+      expect(zaehle(gipfel, sparsam: true, nurOberhalb: 0), 0);
+      expect(
+        zaehle(gipfel, sparsam: true, freihalten: [Offset.zero & flaeche]),
+        0,
+      );
+      // Was über der Zeile steht, darf bleiben – aber nur das.
+      final zeile = kamera.projiziere(gipfel[1].ort).stelle.dy;
+      expect(zaehle(gipfel, sparsam: true, nurOberhalb: zeile), greaterThan(0));
+    });
+
+    testWidgets('sparsam kein Zeichen ohne seinen Namen', (tester) async {
+      final ort = (x: 0.0, y: 0.0, z: 0.0);
+      final stelle = kamera.projiziere(ort).stelle;
+      Future<int> rot({required bool sparsam}) async =>
+          (await tester.runAsync(() async {
+            final sammler = ui.PictureRecorder();
+            final c = ui.Canvas(sammler);
+            c.drawRect(
+              Offset.zero & flaeche,
+              Paint()..color = const Color(0xFFFFFFFF),
+            );
+            zeichneSchilder(c, flaeche, kamera, [
+              Gelaendeschild(ort: ort, art: Wanderart.huette),
+            ], sparsam: sparsam);
+            final bild = await sammler.endRecording().toImage(800, 600);
+            final d = (await bild.toByteData())!;
+            bild.dispose();
+            // Grün statt Rot: Das Haus ist rot, sein Saum weiss.
+            return d.getUint8(
+              ((stelle.dy.round() + 2) * 800 + stelle.dx.round()) * 4 + 1,
+            );
+          }))!;
+      expect(await rot(sparsam: false), lessThan(120), reason: 'Überblick');
+      expect(await rot(sparsam: true), 255, reason: 'Nah dran');
+    });
+
+    testWidgets('die Flächen der Tafeln sind die gemalten', (tester) async {
+      const size = Size(540, 960);
+      final bild = (await tester.runAsync(() async {
+        final sammler = ui.PictureRecorder();
+        ui.Canvas(sammler).drawColor(const Color(0xFF336699), BlendMode.src);
+        return sammler.endRecording().toImage(30, 20);
+      }))!;
+      addTearDown(bild.dispose);
+      final text = (
+        titel: 'Stoos Gratweg',
+        zeilen: const ['Klingenstock bis Fronalpstock'],
+        deckkraft: 1.0,
+      );
+      final foto = (bild: bild, unterschrift: '10:01', deckkraft: 1.0);
+      final flaechen = flugtafelFlaechen(size, text: text, foto: foto);
+      expect(flaechen, hasLength(2));
+      expect(flaechen[0].contains(fototafelRahmen(size).center), isTrue);
+      expect(flaechen[0].bottom, greaterThan(fototafelRahmen(size).bottom));
+      expect(flaechen[1].topLeft, texttafelEcke(size));
+      expect(
+        flugtafelFlaechen(
+          size,
+          text: (titel: 'x', zeilen: const <String>[], deckkraft: 0.0),
+        ),
+        isEmpty,
+        reason: 'eine unsichtbare Tafel hält nichts frei',
+      );
+    });
+  });
+
   group('Am Bildschirm', () {
     Gelaendemaler maler(WidgetTester tester) => tester
         .widgetList<CustomPaint>(find.byType(CustomPaint))
@@ -394,6 +520,7 @@ void main() {
     Widget ansicht({
       Flugstil stil = Flugstil.nahDran,
       List<Gelaendeschild> schilder = const [],
+      List<Widget> fussnoten = const [],
     }) {
       final n = _netz(ueberhoehung: stil.ueberhoehung);
       final s = _spur(n);
@@ -409,6 +536,7 @@ void main() {
             stil: stil,
             titel: 'Probetour',
             schilder: schilder,
+            fussnoten: fussnoten,
           ),
         ),
       );
@@ -470,6 +598,50 @@ void main() {
       // Die Zahlentafel des Überblicks gibt es hier nicht – die Zahlen
       // stehen auf der Zieltafel.
       expect(find.byKey(const ValueKey('gelaende-abspann')), findsNothing);
+    });
+
+    testWidgets('im Flug steht nur die Namensnennung, und der Leuchtpunkt '
+        'über den Leisten', (tester) async {
+      // Ein Telefon im Hochformat, unter der Titelleiste.
+      tester.view.physicalSize = const Size(390 * 3, 577 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      const quellen =
+          'Höhen: Tilezen / AWS Open Data · Esri, Maxar, Earthstar '
+          'Geographics · Esri, HERE, Garmin, © OpenStreetMap contributors';
+      await tester.pumpWidget(
+        ansicht(
+          fussnoten: const [
+            Text('Ziehen dreht und kippt · Höhe 1,5-fach überhöht'),
+            Text(quellen),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.textContaining('Ziehen dreht'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.flight_takeoff));
+      await tester.pump();
+      tester.widget<Slider>(find.byType(Slider)).onChanged!(0.5);
+      await tester.pump();
+      // Das zweite Bild: Erst nach dem ersten steht fest, wie hoch die
+      // Leisten ohne die Bedienungszeile sind.
+      await tester.pump();
+      expect(find.textContaining('Ziehen dreht'), findsNothing);
+      expect(find.text(quellen), findsOneWidget);
+
+      final m = maler(tester);
+      final kopf = m.kamera.projiziere(m.kopf!).stelle;
+      expect(
+        kopf.dy,
+        lessThan(tester.getTopLeft(find.text(quellen)).dy),
+        reason: 'der Leuchtpunkt steht über den Leisten, nicht darunter',
+      );
+
+      await tester.tap(find.byIcon(Icons.zoom_out_map));
+      await tester.pump();
+      await tester.pump();
+      expect(find.textContaining('Ziehen dreht'), findsOneWidget);
     });
 
     testWidgets('der Überblick bleibt ohne Leuchtspur und Tafeln', (

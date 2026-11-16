@@ -259,6 +259,12 @@ class Gelaendemaler extends CustomPainter {
     // Die Schilder ganz zuletzt: Sie gehören nicht in die Landschaft,
     // sondern davor – auch vor die Spur, denn ein Name, den ein Strich
     // durchkreuzt, ist keiner.
+    //
+    // Mit der Leuchtspur sparsam: wenige Namen, nur jenseits des
+    // Leuchtpunkts und nicht unter den Tafeln (siehe [zeichneSchilder]).
+    final kopfstelle = leuchtspur && kopf != null
+        ? kamera.projiziere(kopf!)
+        : null;
     zeichneSchilder(
       canvas,
       size,
@@ -267,6 +273,19 @@ class Gelaendemaler extends CustomPainter {
       hoeheBei: hoeheBei,
       stimmung: stimmung,
       schriftart: schriftart,
+      sparsam: leuchtspur,
+      nurOberhalb: kopfstelle != null && kopfstelle.tiefe > 1
+          ? kopfstelle.stelle.dy
+          : null,
+      freihalten: switch (tafeln) {
+        final t? => flugtafelFlaechen(
+          size,
+          text: t.text,
+          foto: t.foto,
+          schriftart: schriftart,
+        ),
+        null => const [],
+      },
     );
 
     _flugbildMalen(canvas, size);

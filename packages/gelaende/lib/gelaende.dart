@@ -258,6 +258,22 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// Ziehen ändert im Flug „Nah dran" nur diese.
   double _nahNeigung = nahDranNeigung;
 
+  /// Die Leisten am unteren Rand (Fussnote und Flugleiste) – zum
+  /// Nachmessen ihrer Höhe.
+  final _untenSchluessel = GlobalKey();
+
+  /// Wie hoch die Leisten unten die Landschaft verdecken, in Punkten.
+  /// Nur der Verfolger braucht das (siehe [_flugkamera]).
+  double _unten = 0;
+
+  void _untenMessen(Duration _) {
+    if (!mounted) return;
+    final kasten = _untenSchluessel.currentContext?.findRenderObject();
+    if (kasten is! RenderBox || !kasten.hasSize) return;
+    final hoehe = kasten.size.height;
+    if ((hoehe - _unten).abs() > 0.5) setState(() => _unten = hoehe);
+  }
+
   late final AnimationController _uhr;
   late Gelaendeflug _flug;
 
@@ -650,12 +666,19 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// zweiten Flugstil wären es vier Fassungen geworden. [zoom] und
   /// [versatz] kommen von der Hand am Bildschirm; im Video sind sie
   /// neutral.
+  ///
+  /// [unten] ist der Teil der Fläche, den am Bildschirm die Leisten
+  /// verdecken (Flugleiste und Fussnote). Der Verfolger rechnet seinen
+  /// Leuchtpunkt über diesem Rand ein; mit der ganzen Höhe stand er
+  /// mitten zwischen den Fussnoten, halb über der Flugleiste. Im Video
+  /// verdeckt nichts.
   Gelaendekamera _flugkamera(
     double zeit,
     double breite,
     double hoehe, {
     double zoom = 1,
     double versatz = 0,
+    double unten = 0,
   }) {
     // Der Abstand richtet sich nach der Ausdehnung: Eine
     // Zwölf-Kilometer-Wanderung und ein Mittelgebirge sollen beide
@@ -680,7 +703,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         ? verfolgerkamera(
             stand: stand,
             breite: breite,
-            hoehe: hoehe,
+            hoehe: math.max(hoehe * 0.5, hoehe - unten),
             tempo: _tempo,
             neigung: _nahNeigung,
             zoom: zoom,
@@ -1255,8 +1278,12 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                 hoehe,
                 zoom: _zoom,
                 versatz: _flugversatz,
+                unten: _unten,
               );
         final nahImFlug = _nah && stand != null;
+        // Nach dem Bild nachmessen, wie hoch die Leisten unten sind –
+        // erst dann steht es fest, und es ändert sich mit der Fussnote.
+        if (_nah) WidgetsBinding.instance.addPostFrameCallback(_untenMessen);
 
         // **Sagen, was gebraucht wird – in jedem Bild.** Der Lader
         // arbeitet immer nur an einer Sache und fragt nach jedem
@@ -1385,6 +1412,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
               right: 0,
               bottom: 0,
               child: Column(
+                key: _untenSchluessel,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (widget.fussnoten.isNotEmpty)
@@ -1400,13 +1428,22 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                       // Namensnennung. Auf einem schmalen Fenster passen
                       // sie nicht nebeneinander, und ein starres `Row`
                       // lief dort um 413 Punkte über.
+                      //
+                      // Im Flug „Nah dran" nur die Namensnennung – sie
+                      // ist eine Lizenzauflage, die Bedienung braucht
+                      // man im Flug nicht. Zwei halbe Spalten standen
+                      // dort fünf Zeilen hoch über dem Leuchtpunkt.
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Flexible(child: widget.fussnoten.first),
-                          const SizedBox(width: AppSpacing.sm),
-                          if (widget.fussnoten.length > 1)
-                            Flexible(child: widget.fussnoten[1]),
+                          if (nahImFlug && widget.fussnoten.length > 1)
+                            Flexible(child: widget.fussnoten.last)
+                          else ...[
+                            Flexible(child: widget.fussnoten.first),
+                            const SizedBox(width: AppSpacing.sm),
+                            if (widget.fussnoten.length > 1)
+                              Flexible(child: widget.fussnoten[1]),
+                          ],
                         ],
                       ),
                     ),

@@ -15,8 +15,9 @@
 /// ```
 ///
 /// `spur.csv`: breite,laenge[,hoehe] je Zeile. `orte.csv`:
-/// name,breite,laenge[,hoehe] – Gipfel und Hütten, aus denen die Tafeln
-/// Start und Ziel nennen. Ohne `PV_VIDEO` entstehen Standbilder im
+/// name,breite,laenge[,hoehe[,art]] – Gipfel und Hütten, aus denen die
+/// Tafeln Start und Ziel nennen; `art` ist ein Name aus `Wanderart`
+/// (Vorgabe `gipfel`), ein leerer Name ein namenloser Punkt. Ohne `PV_VIDEO` entstehen Standbilder im
 /// Sekundenabstand, mit `PV_VIDEO` (Pfad zu ffmpeg) ein ganzes Video.
 library;
 
@@ -263,12 +264,18 @@ void main() {
         final b = double.parse(z[1]), l = double.parse(z[2]);
         final h = g.anOrt(b, l);
         if (h == null) continue;
-        final ele = z.length > 3 ? z[3] : null;
+        final ele = z.length > 3 && z[3].isNotEmpty ? z[3] : null;
+        final art = z.length > 4 && z[4].isNotEmpty
+            ? Wanderart.values.byName(z[4])
+            : Wanderart.gipfel;
+        final name = z[0].isEmpty ? null : z[0];
         schilder.add(
           Gelaendeschild(
-            art: Wanderart.gipfel,
-            name: z[0],
-            beschriftung: ele == null ? z[0] : '${z[0]}  $ele m',
+            art: art,
+            name: name,
+            beschriftung: name == null
+                ? null
+                : (ele == null ? name : '$name  $ele m'),
             ort: imNetz(b, l, h + schildHoeheMeter),
           ),
         );

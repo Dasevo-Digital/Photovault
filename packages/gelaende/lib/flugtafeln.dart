@@ -62,12 +62,31 @@ void maleFlugtafeln(
 }) {
   if (size.isEmpty) return;
   if (foto != null && foto.deckkraft > 0.01) {
-    _fotoMalen(canvas, size, foto, schriftart);
+    _fotoMalen(canvas, size, _fotoSatz(size, foto, schriftart), foto);
   }
   if (text != null && text.deckkraft > 0.01) {
-    _textMalen(canvas, size, text, schriftart);
+    _textMalen(canvas, size, _textSatz(size, text, schriftart), text);
   }
 }
+
+/// Die Flächen, die die Tafeln gerade belegen – mit Rand und Zeile, so
+/// wie [maleFlugtafeln] sie malt.
+///
+/// **Für die Schilder.** Die liegen in der Landschaft unter den Tafeln;
+/// ein Gipfelname, der halb unter einem Foto hervorschaut oder durch ein
+/// gerade aufblendendes Foto hindurchscheint, macht das Bild unruhig,
+/// ohne etwas zu sagen. Die Schilder lassen diese Flächen deshalb frei.
+List<Rect> flugtafelFlaechen(
+  Size size, {
+  Flugtafel? text,
+  Fototafel? foto,
+  String? schriftart,
+}) => [
+  if (!size.isEmpty && foto != null && foto.deckkraft > 0.01)
+    _fotoSatz(size, foto, schriftart).kasten,
+  if (!size.isEmpty && text != null && text.deckkraft > 0.01)
+    _textSatz(size, text, schriftart).kasten,
+];
 
 ui.Paragraph _absatz(
   String text,
@@ -101,7 +120,16 @@ ui.Paragraph _absatz(
 /// Landschaft darunter Teil des Bildes.
 const Color _grund = Color(0xFF101418);
 
-void _textMalen(Canvas canvas, Size size, Flugtafel t, String? schriftart) {
+/// Eine gesetzte Texttafel: der Kasten und was darin steht.
+typedef _Textsatz = ({
+  Rect kasten,
+  ui.Paragraph titel,
+  List<ui.Paragraph> zeilen,
+  double innen,
+  double luft,
+});
+
+_Textsatz _textSatz(Size size, Flugtafel t, String? schriftart) {
   final deck = t.deckkraft.clamp(0.0, 1.0);
   final e = math.min(size.width, size.height);
   final hochkant = size.height > size.width;
@@ -145,20 +173,42 @@ void _textMalen(Canvas canvas, Size size, Flugtafel t, String? schriftart) {
     breite + innen * 2,
     hoehe + luft + innen * 2,
   );
+  return (
+    kasten: kasten,
+    titel: titel,
+    zeilen: zeilen,
+    innen: innen,
+    luft: luft,
+  );
+}
+
+void _textMalen(Canvas canvas, Size size, _Textsatz satz, Flugtafel t) {
+  final deck = t.deckkraft.clamp(0.0, 1.0);
+  final e = math.min(size.width, size.height);
+  final kasten = satz.kasten;
   canvas.drawRRect(
     RRect.fromRectAndRadius(kasten, Radius.circular(e * 0.022)),
     Paint()..color = _grund.withValues(alpha: 0.62 * deck),
   );
-  var y = kasten.top + innen;
-  canvas.drawParagraph(titel, Offset(kasten.left + innen, y));
-  y += titel.height + luft;
-  for (final z in zeilen) {
-    canvas.drawParagraph(z, Offset(kasten.left + innen, y));
+  var y = kasten.top + satz.innen;
+  canvas.drawParagraph(satz.titel, Offset(kasten.left + satz.innen, y));
+  y += satz.titel.height + satz.luft;
+  for (final z in satz.zeilen) {
+    canvas.drawParagraph(z, Offset(kasten.left + satz.innen, y));
     y += z.height;
   }
 }
 
-void _fotoMalen(Canvas canvas, Size size, Fototafel f, String? schriftart) {
+/// Eine gesetzte Fototafel: Kasten samt Zeile, der Bildrahmen darin und
+/// die Zeile selbst.
+typedef _Fotosatz = ({
+  Rect kasten,
+  Rect rahmen,
+  ui.Paragraph? unterschrift,
+  double rand,
+});
+
+_Fotosatz _fotoSatz(Size size, Fototafel f, String? schriftart) {
   final deck = f.deckkraft.clamp(0.0, 1.0);
   final e = math.min(size.width, size.height);
   final rahmen = fototafelRahmen(size);
@@ -179,9 +229,21 @@ void _fotoMalen(Canvas canvas, Size size, Fototafel f, String? schriftart) {
     rahmen.right + rand,
     rahmen.bottom + rand + unten,
   );
+  return (
+    kasten: kasten,
+    rahmen: rahmen,
+    unterschrift: unterschrift,
+    rand: rand,
+  );
+}
+
+void _fotoMalen(Canvas canvas, Size size, _Fotosatz satz, Fototafel f) {
+  final deck = f.deckkraft.clamp(0.0, 1.0);
+  final e = math.min(size.width, size.height);
+  final rahmen = satz.rahmen;
   final radius = Radius.circular(e * 0.022);
   canvas.drawRRect(
-    RRect.fromRectAndRadius(kasten, radius),
+    RRect.fromRectAndRadius(satz.kasten, radius),
     Paint()..color = _grund.withValues(alpha: 0.75 * deck),
   );
 
@@ -204,10 +266,10 @@ void _fotoMalen(Canvas canvas, Size size, Fototafel f, String? schriftart) {
   );
   canvas.restore();
 
-  if (unterschrift != null) {
+  if (satz.unterschrift case final zeile?) {
     canvas.drawParagraph(
-      unterschrift,
-      Offset(rahmen.left + rand, rahmen.bottom + rand * 2),
+      zeile,
+      Offset(rahmen.left + satz.rand, rahmen.bottom + satz.rand * 2),
     );
   }
 }
