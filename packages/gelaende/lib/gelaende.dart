@@ -28,6 +28,8 @@ import 'gesten.dart' show istWischen;
 
 import 'gelaendeflug.dart';
 import 'abstaende.dart';
+import 'flugstil.dart';
+import 'flugtafeln.dart';
 
 import 'gelaendekacheln.dart';
 import 'blocktexturen.dart';
@@ -185,6 +187,21 @@ class Gelaendeansicht extends StatefulWidget {
   /// damit ein Test nicht davon abhängt, was auf dieser Platte liegt.
   final http.Client? netzKlient;
 
+  /// Wie der Flug die Spur zeigt – siehe `flugstil.dart`.
+  ///
+  /// **Muss zu [netz] und [spur] passen**, wie [stimmung]: Der Stil
+  /// „Nah dran" fliegt über ein flacher überhöhtes Netz und eine Spur,
+  /// die auf dem Gelände liegt. Beides baut der Bildschirm, der die
+  /// Kacheln hat; hier wird nur geflogen.
+  final Flugstil stil;
+
+  /// Der Name der Tour – für die Titeltafel im Stil „Nah dran".
+  final String? titel;
+
+  /// Die Schrift von Schildern und Tafeln – nur für Bildwerkzeuge (siehe
+  /// [Gelaendemaler.schriftart]). In der App bleibt sie `null`.
+  final String? schriftart;
+
   const Gelaendeansicht({
     super.key,
     required this.netz,
@@ -203,6 +220,9 @@ class Gelaendeansicht extends StatefulWidget {
     this.beiVideoFertig,
     this.melde,
     this.netzKlient,
+    this.stil = Flugstil.ueberblick,
+    this.titel,
+    this.schriftart,
   });
 
   @override
@@ -226,6 +246,17 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// 150 m/s wirkt eine Tageswanderung wie eine Diaschau, bei 600 sieht
   /// man das Gelände nicht mehr.
   static const double _flugtempo = 300;
+
+  /// Das Tempo dieses Fluges – im Stil „Nah dran" nach der Länge der
+  /// Tour (siehe [nahDranTempo]), im Überblick fest.
+  double get _tempo => _nah ? nahDranTempo(_flug.laengeMeter) : _flugtempo;
+
+  bool get _nah => widget.stil == Flugstil.nahDran;
+
+  /// Die Neigung des Verfolgerblicks – eigene Zahl, weil der Überblick
+  /// mit 0,95 von oben blickt und der Verfolger mit 0,55 von hinten.
+  /// Ziehen ändert im Flug „Nah dran" nur diese.
+  double _nahNeigung = nahDranNeigung;
 
   late final AnimationController _uhr;
   late Gelaendeflug _flug;
@@ -260,7 +291,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   @override
   void initState() {
     super.initState();
-    _flug = Gelaendeflug(widget.spur, werte: widget.spurwerte);
+    _flug = _baueFlug();
     _laderAufsetzen();
     _uhr = AnimationController(vsync: this, duration: _dauer())
       ..addListener(() => setState(() {}))
@@ -274,8 +305,10 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   @override
   void didUpdateWidget(Gelaendeansicht alt) {
     super.didUpdateWidget(alt);
-    if (alt.spur != widget.spur || alt.spurwerte != widget.spurwerte) {
-      _flug = Gelaendeflug(widget.spur, werte: widget.spurwerte);
+    if (alt.spur != widget.spur ||
+        alt.spurwerte != widget.spurwerte ||
+        alt.stil != widget.stil) {
+      _flug = _baueFlug();
       _uhr.duration = _dauer();
     }
     // Anderes Gelände oder andere Karte heisst andere Texturen. Der alte
@@ -285,6 +318,19 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       _lader?.schliessen();
       _laderAufsetzen();
     }
+  }
+
+  /// Der Flug über die Spur – im Stil „Nah dran" mit einer Blickglättung,
+  /// die zu seinem langsameren Tempo passt (siehe
+  /// [nahDranBlickglaettung]).
+  Gelaendeflug _baueFlug() {
+    final roh = Gelaendeflug(widget.spur, werte: widget.spurwerte);
+    if (!_nah) return roh;
+    return Gelaendeflug(
+      widget.spur,
+      werte: widget.spurwerte,
+      blickglaettung: nahDranBlickglaettung(nahDranTempo(roh.laengeMeter)),
+    );
   }
 
   void _laderAufsetzen() {
@@ -318,7 +364,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
         netz.nord - (0.5 - y / netz.hoeheMeter) * (netz.nord - netz.sued);
     final h = g.anOrt(breite, laenge);
     if (h == null) return null;
-    return (h - netz.mittlereHoehe) * gelaendeUeberhoehung;
+    return (h - netz.mittlereHoehe) * netz.ueberhoehung;
   }
 
   /// Was die Übersichtskarte an dieser Stelle hergibt, in Metern je
@@ -340,14 +386,17 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// überhaupt.* Er beginnt in der Übersicht, die man gerade noch
   /// gesehen hat, und geht von dort auf den Startpunkt zu – dieselbe
   /// Bewegung, die Strava und Relive an den Anfang stellen.
-  static const double _einflugAnteil = 0.07;
+  ///
+  /// Sieben Prozent im Überblick, acht im Stil „Nah dran" – und der
+  /// Abspann am Ende (aufziehen und die Zahlen zeigen) zehn bzw.
+  /// fünfzehn. Die Zahlen stehen bei [flugAnteile].
+  double get _einflugAnteil => flugAnteile(widget.stil).einflug;
 
-  /// Und der Abspann am Ende – aufziehen und die Zahlen zeigen.
-  static const double _abspannAnteil = 0.10;
+  double get _abspannAnteil => flugAnteile(widget.stil).abspann;
 
   Duration _dauer() {
     final flug = _flug.moeglich
-        ? _flug.dauerBei(_flugtempo)
+        ? _flug.dauerBei(_tempo)
         : const Duration(seconds: 10);
     // Einflug und Abspann kommen oben drauf, statt vom Flug abzugehen:
     // Sonst wäre eine kurze Wanderung nach dem Einflug schon vorbei.
@@ -359,21 +408,17 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// Drei Abschnitte auf einer Uhr: Einflug, Flug, Abspann. Sie liegen
   /// auf **einer** Uhr und nicht auf dreien, damit der Regler unter dem
   /// Bild die ganze Vorführung zeigt und nicht nur ihren Mittelteil.
-  ({double einflug, double flug, double abspann}) get _abschnitt {
-    final t = _uhr.value;
-    const a = _einflugAnteil;
-    const b = 1 - _abspannAnteil;
-    return (
-      einflug: t < a ? (t / a).clamp(0.0, 1.0) : 1.0,
-      flug: ((t - a) / (b - a)).clamp(0.0, 1.0),
-      abspann: t <= b ? 0.0 : ((t - b) / (1 - b)).clamp(0.0, 1.0),
-    );
-  }
+  ({double einflug, double flug, double abspann}) get _abschnitt =>
+      _abschnittBei(_uhr.value);
 
   @override
   void dispose() {
     _lader?.schliessen();
     _uhr.dispose();
+    for (final b in _tafelbilder.values) {
+      b.dispose();
+    }
+    _tafelbilder.clear();
     super.dispose();
   }
 
@@ -593,7 +638,28 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   }
 
   /// Die Kamera für ein Videobild – dieselbe Rechnung wie am Bildschirm.
-  Gelaendekamera _videokamera(double zeit, double breite, double hoehe) {
+  Gelaendekamera _videokamera(double zeit, double breite, double hoehe) =>
+      _flugkamera(zeit, breite, hoehe);
+
+  /// Die Kamera zur Stelle [zeit] der Vorführung (0 bis 1) auf einer
+  /// Fläche von [breite] mal [hoehe].
+  ///
+  /// **Eine Rechnung für Bildschirm und Video.** Bis 3.67 stand sie
+  /// zweimal da, einmal im Aufbau der Ansicht und einmal für das Video,
+  /// und die beiden unterschieden sich nur in Zoom und Versatz. Mit einem
+  /// zweiten Flugstil wären es vier Fassungen geworden. [zoom] und
+  /// [versatz] kommen von der Hand am Bildschirm; im Video sind sie
+  /// neutral.
+  Gelaendekamera _flugkamera(
+    double zeit,
+    double breite,
+    double hoehe, {
+    double zoom = 1,
+    double versatz = 0,
+  }) {
+    // Der Abstand richtet sich nach der Ausdehnung: Eine
+    // Zwölf-Kilometer-Wanderung und ein Mittelgebirge sollen beide
+    // ins Bild passen, ohne dass jemand zoomt.
     final ausdehnung = math.max(
       widget.netz.breiteMeter,
       widget.netz.hoeheMeter,
@@ -601,27 +667,54 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     final abschnitt = _abschnittBei(zeit);
     final stand = _flug.bei(abschnitt.flug);
     final brennweite = math.min(breite, hoehe) * 1.1;
+    // Am Bildschirm eingestellt: Mit dem Faktor 1,6 lag die Landschaft
+    // als Briefmarke in der Mitte eines schwarzen Fensters.
     final uebersicht = Gelaendekamera(
       drehung: _drehung,
       neigung: _neigung,
-      entfernung: ausdehnung * 0.95,
+      entfernung: ausdehnung * 0.95 / zoom,
       brennweite: brennweite,
       mitte: Offset(breite / 2, hoehe * 0.5),
     );
-    final flugkamera = Gelaendekamera(
-      drehung: stand.drehung,
-      neigung: _neigung,
-      entfernung: Gelaendeflug.flugabstand(
-        ausdehnung: ausdehnung,
-        kante: gelaendeGitterkante,
-        brennweite: brennweite,
-      ),
-      brennweite: brennweite,
-      mitte: Offset(breite / 2, hoehe * 0.62),
-      blickpunkt: stand.blickpunkt,
-    );
-    // Dieselbe Anhebung wie am Bildschirm: Ein Video, das durch den Berg
-    // fliegt, waere derselbe Fehler in haltbar.
+    final flugkamera = _nah
+        ? verfolgerkamera(
+            stand: stand,
+            breite: breite,
+            hoehe: hoehe,
+            tempo: _tempo,
+            neigung: _nahNeigung,
+            zoom: zoom,
+            versatz: versatz,
+          )
+        : Gelaendekamera(
+            drehung: stand.drehung + versatz,
+            neigung: _neigung,
+            entfernung:
+                Gelaendeflug.flugabstand(
+                  ausdehnung: ausdehnung,
+                  kante: gelaendeGitterkante,
+                  brennweite: brennweite,
+                ) /
+                zoom,
+            brennweite: brennweite,
+            // Beim Flug höher angesetzt: Der Weg soll im unteren
+            // Drittel liegen, damit oben die Landschaft steht, in die er
+            // hineinführt.
+            mitte: Offset(breite / 2, hoehe * 0.62),
+            blickpunkt: stand.blickpunkt,
+          );
+    // Am Ende zieht der Überblick auf die ganze Landschaft auf; der
+    // Verfolger hebt über dem Ziel zum Rundblick ab.
+    final schluss = _nah ? panoramakamera(flugkamera) : uebersicht;
+
+    // **Einflug und Abspann sind dieselbe Bewegung, rückwärts.** Am
+    // Anfang von der Übersicht auf den Startpunkt zu, am Ende von der
+    // letzten Stelle wieder auf. Eine Kurve dazwischen, damit es nicht
+    // ruckt: `easeInOutCubic` beschleunigt und bremst, ein linearer
+    // Übergang setzte an beiden Enden hart an.
+    //
+    // Und immer über dem Boden: Ein Video, das durch den Berg fliegt,
+    // wäre derselbe Fehler in haltbar.
     if (abschnitt.einflug < 1) {
       return _ueberDemBoden(
         _zwischenKamera(
@@ -635,7 +728,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       return _ueberDemBoden(
         _zwischenKamera(
           flugkamera,
-          uebersicht,
+          schluss,
           Curves.easeInOutCubic.transform(abschnitt.abspann),
         ),
       );
@@ -658,6 +751,36 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     final foto = _fotoBei(stand.gefahrenMeter);
     final bild = foto == null ? null : fotos[foto.meter];
 
+    if (_nah) {
+      Gelaendemaler(
+        netz: widget.netz,
+        kamera: kamera,
+        spur: widget.spur,
+        karte: widget.karte,
+        blocktexturen: _lader?.bilder,
+        spurfarbe: const Color(0xFFFF6A00),
+        stimmung: widget.stimmung,
+        gefahrenBis: stand.gefahrenMeter,
+        streckeJePunkt: _flug.streckeJePunkt,
+        schilder: widget.schilder,
+        hoeheBei: _hoeheBei,
+        namensnennung: widget.namensnennung,
+        schriftart: widget.schriftart,
+        leuchtspur: true,
+        kopf: _flug.punktBei(stand.gefahrenMeter),
+        // Keine Messwerte und kein Abspann mit Zahlentafel: Das Video
+        // dieses Stils erzählt mit Titel, Fotos und Ziel. Die Zahlen der
+        // Tour stehen auf den beiden Tafeln.
+        tafeln: _tafeln(
+          zeit,
+          gesamtSekunden:
+              (_videoauftrag?.dauer ?? _dauer()).inMilliseconds / 1000,
+          bild: (f) => fotos[f.meter],
+        ),
+      ).paint(leinwand, flaeche);
+      return;
+    }
+
     Gelaendemaler(
       netz: widget.netz,
       kamera: kamera,
@@ -678,6 +801,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
               unterschrift: foto!.unterschrift,
             ),
       namensnennung: widget.namensnennung,
+      schriftart: widget.schriftart,
       // Sie kommen mit dem Einflug und gehen mit dem Abspann: Was der
       // Flug gerade misst, hat neben den Zahlen der ganzen Tour nichts
       // mehr zu suchen.
@@ -699,8 +823,8 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
   /// Dieselbe Abschnittsrechnung wie [_abschnitt], nur für eine Zeit, die
   /// nicht von der Uhr kommt – beim Video läuft keine.
   ({double einflug, double flug, double abspann}) _abschnittBei(double t) {
-    const a = _einflugAnteil;
-    const b = 1 - _abspannAnteil;
+    final a = _einflugAnteil;
+    final b = 1 - _abspannAnteil;
     return (
       einflug: t < a ? (t / a).clamp(0.0, 1.0) : 1.0,
       flug: ((t - a) / (b - a)).clamp(0.0, 1.0),
@@ -858,6 +982,178 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
     return ((meter - f.meter) / _einblendweg).clamp(0.0, 1.0);
   }
 
+  /// Die Fotos für die Tafeln am Bildschirm, nach ihrer Stelle auf der
+  /// Spur – im Video deckt `_videoAusgeben` sie vorher alle auf.
+  ///
+  /// **Nur das, das gerade dran ist** – geholt, sobald es aufblendet,
+  /// und weggeräumt, sobald ein anderes kommt. Eine Aktivität kann
+  /// hundert Fotos haben; alle als fertige Bilder im Speicher der
+  /// Grafikkarte zu halten, um je eines ein paar Sekunden zu zeigen,
+  /// wäre ein Vielfaches dessen, was die Landschaft selbst belegt. Ein
+  /// Vorschaubild ist da, bevor das Aufblenden (gut eine halbe Sekunde)
+  /// vorbei ist.
+  final Map<double, ui.Image> _tafelbilder = {};
+  final Set<double> _tafelbilderUnterwegs = {};
+
+  /// Das Bild zu [foto] für die Tafel am Bildschirm – `null`, solange es
+  /// noch lädt. Stösst das Laden an und räumt auf, was nicht mehr dran
+  /// ist.
+  ui.Image? _tafelbild(Flugfoto foto) {
+    final fertig = _tafelbilder[foto.meter];
+    if (fertig != null) return fertig;
+    if (_tafelbilderUnterwegs.add(foto.meter)) {
+      _bildAufdecken(foto.bild).then((bild) {
+        _tafelbilderUnterwegs.remove(foto.meter);
+        if (bild == null) return;
+        if (!mounted) {
+          bild.dispose();
+          return;
+        }
+        setState(() {
+          _tafelbilder[foto.meter]?.dispose();
+          _tafelbilder[foto.meter] = bild;
+          // Behalten wird das neue und das, was gerade zu sehen ist.
+          final jetzt = _imFlug
+              ? _fotoBei(_flug.bei(_abschnitt.flug).gefahrenMeter)?.meter
+              : null;
+          _tafelbilder.removeWhere((meter, b) {
+            final weg = meter != foto.meter && meter != jetzt;
+            if (weg) b.dispose();
+            return weg;
+          });
+        });
+      });
+    }
+    return null;
+  }
+
+  /// Die Namen in der Landschaft, aus denen die Tafeln Start und Ziel
+  /// nehmen.
+  List<Ortsname> get _ortsnamen => [
+    for (final s in widget.schilder)
+      if (s.name case final n? when n.trim().isNotEmpty) (ort: s.ort, name: n),
+  ];
+
+  /// Wie weit ein Name vom Anfang oder Ende der Spur weg sein darf –
+  /// 300 Meter, bei langen Touren ein Fünfundzwanzigstel.
+  double get _namensgrenze => math.max(300.0, _flug.laengeMeter / 25);
+
+  String? get _startname =>
+      naechsterName(_ortsnamen, _flug.punktBei(0), _namensgrenze);
+
+  String? get _zielname => naechsterName(
+    _ortsnamen,
+    _flug.punktBei(_flug.laengeMeter),
+    _namensgrenze,
+  );
+
+  String _km(double meter) => NumberFormat(
+    '#,##0.0',
+    Localizations.localeOf(context).toLanguageTag(),
+  ).format(meter / 1000);
+
+  /// Eine Höhe, auf zehn Meter gerundet – „rund 1920 m". Auf den Meter
+  /// genau wäre eine Behauptung, die weder GPS noch Höhenmodell hergeben.
+  static int _aufZehn(double meter) => (meter / 10).round() * 10;
+
+  /// Die Titeltafel: Name der Tour, Start und Ziel, Länge und Aufstieg.
+  Flugtafel _titeltafel(double deckkraft) {
+    final t = gelaendeTexte(context);
+    final rund = istRundweg(_flug);
+    final start = _startname;
+    final ziel = _zielname;
+    final hoch = _flug.aufstiegMeter;
+    final strecke = [
+      t.flugTafelStrecke(_km(_flug.laengeMeter)),
+      if (hoch != null && hoch >= 10) t.flugTafelAufstieg(hoch.round()),
+    ].join(' · ');
+    final weg = rund
+        ? (start == null ? null : t.flugTafelRundweg(start))
+        : (start != null && ziel != null && start != ziel
+              ? t.flugTafelVonBis(start, ziel)
+              : null);
+    final titel = (widget.titel ?? '').trim();
+    final kopf = titel.isNotEmpty ? titel : (rund ? start : ziel);
+    if (kopf == null) {
+      return (titel: strecke, zeilen: [?weg], deckkraft: deckkraft);
+    }
+    return (titel: kopf, zeilen: [?weg, strecke], deckkraft: deckkraft);
+  }
+
+  /// Die Zieltafel: wo man angekommen ist, wie hoch – und die Bilanz.
+  Flugtafel _zieltafel(double deckkraft) {
+    final t = gelaendeTexte(context);
+    final rund = istRundweg(_flug);
+    final titel = (widget.titel ?? '').trim();
+    final kopf = rund
+        ? (titel.isNotEmpty ? titel : _startname)
+        : (_zielname ?? (titel.isNotEmpty ? titel : null));
+    final ende = _flug.hoeheBei(_flug.laengeMeter);
+    double? hoechste;
+    for (final p in _flug.hoehenprofil) {
+      if (hoechste == null || p.hoehe > hoechste) hoechste = p.hoehe;
+    }
+    final hoch = _flug.aufstiegMeter;
+    final dauer = _flug.gesamtdauer;
+    final bilanz = [
+      '${_km(_flug.laengeMeter)} km',
+      if (hoch != null && hoch >= 10) t.flugTafelAufstieg(hoch.round()),
+      if (dauer != null) '${_Abspann._dauerText(dauer)} ${t.flugUnterwegs}',
+    ].join(' · ');
+    final lage = rund
+        ? (hoechste == null
+              ? null
+              : t.flugTafelHoechsterPunkt(_aufZehn(hoechste)))
+        : (ende == null ? null : t.flugTafelHoehe(_aufZehn(ende)));
+    if (kopf == null) {
+      return (titel: bilanz, zeilen: [?lage], deckkraft: deckkraft);
+    }
+    return (titel: kopf, zeilen: [?lage, bilanz], deckkraft: deckkraft);
+  }
+
+  /// Was im Stil „Nah dran" an Tafeln über dem Bild liegt, zur Stelle
+  /// [zeit] einer Vorführung von [gesamtSekunden].
+  ///
+  /// Höchstens eine Texttafel und ein Foto, und die Texttafel geht vor:
+  /// Am Anfang steht der Titel, am Ende das Ziel, und ein Foto, das
+  /// gerade dort fällig wäre, tritt so lange zurück. Zwei Tafeln
+  /// übereinander wären eine Seite, kein Bild.
+  ({Flugtafel? text, Fototafel? foto}) _tafeln(
+    double zeit, {
+    required double gesamtSekunden,
+    required ui.Image? Function(Flugfoto foto) bild,
+  }) {
+    final abschnitt = _abschnittBei(zeit);
+    final stand = _flug.bei(abschnitt.flug);
+    final titel = titeltafelDeckkraft(
+      sekunde: zeit * gesamtSekunden,
+      einflugEnde: _einflugAnteil * gesamtSekunden,
+    );
+    final ziel = zieltafelDeckkraft(abschnitt.abspann);
+    final text = ziel > 0
+        ? _zieltafel(ziel)
+        : (titel > 0 ? _titeltafel(titel) : null);
+
+    Fototafel? foto;
+    final f = _fotoBei(stand.gefahrenMeter);
+    if (f != null) {
+      final deck =
+          fototafelDeckkraft(
+            meter: stand.gefahrenMeter,
+            fotoMeter: f.meter,
+            einblendweg: _einblendweg,
+            haltMeter: _tempo * 3.5,
+          ) *
+          (1 - titel) *
+          (1 - ziel);
+      final b = deck > 0.01 ? bild(f) : null;
+      if (b != null) {
+        foto = (bild: b, unterschrift: f.unterschrift, deckkraft: deck);
+      }
+    }
+    return (text: text, foto: foto);
+  }
+
   /// Mischt zwei Kameraeinstellungen – für Einflug und Abspann.
   ///
   /// **Die Drehung braucht Sonderbehandlung.** Sie ist ein Winkel, und
@@ -917,7 +1213,11 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       } else {
         _drehung += d.delta.dx * 0.01;
       }
-      _neigung = (_neigung - d.delta.dy * 0.01).clamp(0.15, 1.45);
+      if (_imFlug && _nah) {
+        _nahNeigung = (_nahNeigung - d.delta.dy * 0.01).clamp(0.2, 1.4);
+      } else {
+        _neigung = (_neigung - d.delta.dy * 0.01).clamp(0.15, 1.45);
+      }
     });
   }
 
@@ -933,74 +1233,30 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       builder: (context, platz) {
         final breite = platz.maxWidth;
         final hoehe = platz.maxHeight;
-        // Der Abstand richtet sich nach der Ausdehnung: Eine
-        // Zwölf-Kilometer-Wanderung und ein Mittelgebirge sollen beide
-        // ins Bild passen, ohne dass jemand zoomt.
-        final ausdehnung = math.max(
-          widget.netz.breiteMeter,
-          widget.netz.hoeheMeter,
-        );
-        // Am Bildschirm eingestellt: Mit dem Faktor 1,6 lag die
-        // Landschaft als Briefmarke in der Mitte eines schwarzen
-        // Fensters.
-        final uebersichtkamera = Gelaendekamera(
-          drehung: _drehung,
-          neigung: _neigung,
-          entfernung: ausdehnung * 0.95 / _zoom,
-          brennweite: math.min(breite, hoehe) * 1.1,
-          mitte: Offset(breite / 2, hoehe * 0.5),
-        );
-        final kamera = stand == null
-            ? Gelaendekamera(
-                drehung: _drehung,
-                neigung: _neigung,
-                entfernung: ausdehnung * 0.95 / _zoom,
-                brennweite: math.min(breite, hoehe) * 1.1,
-                // Etwas über der Mitte: Bei gekippter Sicht läuft die
-                // Landschaft nach hinten oben aus, der Schwerpunkt liegt
-                // also unterhalb des Fluchtpunkts.
-                mitte: Offset(breite / 2, hoehe * 0.5),
+        final kameraJetzt = stand == null
+            ? _ueberDemBoden(
+                Gelaendekamera(
+                  drehung: _drehung,
+                  neigung: _neigung,
+                  entfernung:
+                      math.max(
+                        widget.netz.breiteMeter,
+                        widget.netz.hoeheMeter,
+                      ) *
+                      0.95 /
+                      _zoom,
+                  brennweite: math.min(breite, hoehe) * 1.1,
+                  mitte: Offset(breite / 2, hoehe * 0.5),
+                ),
               )
-            : Gelaendekamera(
-                drehung: stand.drehung + _flugversatz,
-                neigung: _neigung,
-                entfernung:
-                    Gelaendeflug.flugabstand(
-                      ausdehnung: ausdehnung,
-                      kante: gelaendeGitterkante,
-                      brennweite: math.min(breite, hoehe) * 1.1,
-                    ) /
-                    _zoom,
-                brennweite: math.min(breite, hoehe) * 1.1,
-                // Beim Flug höher angesetzt: Der Weg soll im unteren
-                // Drittel liegen, damit oben die Landschaft steht, in
-                // die er hineinführt.
-                mitte: Offset(breite / 2, hoehe * 0.62),
-                blickpunkt: stand.blickpunkt,
+            : _flugkamera(
+                _uhr.value,
+                breite,
+                hoehe,
+                zoom: _zoom,
+                versatz: _flugversatz,
               );
-
-        // **Einflug und Abspann sind dieselbe Bewegung, rückwärts.** Am
-        // Anfang von der Übersicht auf den Startpunkt zu, am Ende von der
-        // letzten Stelle wieder auf. Eine Kurve dazwischen, damit es
-        // nicht ruckt: `easeInOutCubic` beschleunigt und bremst, ein
-        // linearer Übergang setzte an beiden Enden hart an.
-        final kameraJetzt = _ueberDemBoden(
-          stand == null
-              ? kamera
-              : (_abschnitt.einflug < 1
-                    ? _zwischenKamera(
-                        uebersichtkamera,
-                        kamera,
-                        Curves.easeInOutCubic.transform(_abschnitt.einflug),
-                      )
-                    : _abschnitt.abspann > 0
-                    ? _zwischenKamera(
-                        kamera,
-                        uebersichtkamera,
-                        Curves.easeInOutCubic.transform(_abschnitt.abspann),
-                      )
-                    : kamera),
-        );
+        final nahImFlug = _nah && stand != null;
 
         // **Sagen, was gebraucht wird – in jedem Bild.** Der Lader
         // arbeitet immer nur an einer Sache und fragt nach jedem
@@ -1077,6 +1333,20 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                       streckeJePunkt: _imFlug ? _flug.streckeJePunkt : null,
                       schilder: widget.schilder,
                       hoeheBei: _hoeheBei,
+                      schriftart: widget.schriftart,
+                      leuchtspur: nahImFlug,
+                      kopf: nahImFlug
+                          ? _flug.punktBei(stand.gefahrenMeter)
+                          : null,
+                      tafeln: nahImFlug
+                          ? _tafeln(
+                              _uhr.value,
+                              gesamtSekunden:
+                                  (_uhr.duration ?? _dauer()).inMilliseconds /
+                                  1000,
+                              bild: _tafelbild,
+                            )
+                          : null,
                     ),
                   ),
                 ),
@@ -1084,7 +1354,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
             ),
             // Das Foto zur Stelle – oben rechts, damit es die Spur
             // unten und die Schilder in der Mitte nicht verdeckt.
-            if (stand != null)
+            if (stand != null && !_nah)
               Positioned(
                 top: AppSpacing.md,
                 right: AppSpacing.md,
@@ -1093,7 +1363,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                   deckkraft: _fotoDeckkraft(stand.gefahrenMeter),
                 ),
               ),
-            if (stand != null && _abschnitt.abspann > 0)
+            if (stand != null && !_nah && _abschnitt.abspann > 0)
               Positioned.fill(
                 child: IgnorePointer(
                   child: Center(
@@ -1104,7 +1374,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
                       child: _Abspann(
                         key: _Abspann.schluessel,
                         flug: _flug,
-                        tempo: _flugtempo,
+                        tempo: _tempo,
                       ),
                     ),
                   ),

@@ -182,9 +182,19 @@ class Gelaendenetz {
   /// Gitter, läge der Weg um die Differenz über oder unter dem Boden.
   final double mittlereHoehe;
 
+  /// Mit welcher Überhöhung die Höhen in [bloecke] stehen.
+  ///
+  /// **Steht hier und nicht nur als Konstante**, seit der Flugstil „Nah
+  /// dran" ein flacheres Netz baut (siehe `flugstil.dart`). Spur,
+  /// Schilder und die Höhenabfrage der Kamera müssen dieselbe Zahl
+  /// benutzen wie das Netz; nähmen sie weiter die Konstante, schwebte
+  /// die Spur bei 1,5-facher Überhöhung doppelt so hoch über dem Grund.
+  final double ueberhoehung;
+
   Gelaendenetz({
     required this.bloecke,
     required this.mittlereHoehe,
+    this.ueberhoehung = gelaendeUeberhoehung,
     required this.breiteMeter,
     required this.hoeheMeter,
     required this.sued,
@@ -240,6 +250,12 @@ int passendeGrundstufe({
 /// [ueberhoehung] übertreibt die Höhe; siehe [gelaendeUeberhoehung] für
 /// den Grund.
 ///
+/// [weich] schattiert je Gitterpunkt statt je Dreieck – für den
+/// Flugstil „Nah dran". Von oben machen die harten Kanten das Gelände
+/// lesbar (siehe unten); aus zweihundert Metern Abstand über einem
+/// Luftbild, das seine eigenen Schatten mitbringt, stehen sie als grosse,
+/// verschieden helle Dreiecke im Hang und sehen aus wie ein Fehler.
+///
 /// **Das Gitter wird an den Blockgrenzen ausgerichtet und nicht
 /// gleichmässig über den Ausschnitt gelegt.** Läge es gleichmässig, ginge
 /// eine Masche irgendwo quer über eine Blockgrenze; ihre Texturstellen
@@ -261,6 +277,7 @@ Gelaendenetz baueNetz(
   Lichtstimmung stimmung = stimmungMittag,
   int? grundstufe,
   double reliefstaerke = 1.0,
+  bool weich = false,
 }) {
   final mitteBreite = (gitter.nord + gitter.sued) / 2;
   final mLaenge = meterJeGradLaenge(mitteBreite);
@@ -393,6 +410,40 @@ Gelaendenetz baueNetz(
     double laengeBei(int i) => west + (ost - west) * i / maschenX;
     double breiteBei(int j) => nord - (nord - sued) * j / maschenY;
 
+    // Weich: eine Farbe je Gitterpunkt, aus der Normalen über die beiden
+    // Nachbarn in jeder Richtung. Einmal je Punkt und nicht je Ecke –
+    // jeder Punkt gehört zu bis zu sechs Dreiecken.
+    final spalten = maschenX + 1;
+    Int32List? punktfarben;
+    if (weich) {
+      final tafel = Int32List(spalten * (maschenY + 1));
+      final dl = (ost - west) / maschenX;
+      final db = (nord - sued) / maschenY;
+      for (var j = 0; j <= maschenY; j++) {
+        final br = breiteBei(j);
+        for (var i = 0; i <= maschenX; i++) {
+          final la = laengeBei(i);
+          final w = punkt(br, la - dl);
+          final o = punkt(br, la + dl);
+          final n = punkt(br + db, la);
+          final s = punkt(br - db, la);
+          // Dieselbe Reihenfolge wie bei den Dreiecken unten (Osten,
+          // dann Süden), damit die Normale in dieselbe Richtung zeigt.
+          final nrm = normale(
+            (x: 0, y: 0, z: 0),
+            (x: o.x - w.x, y: o.y - w.y, z: o.z - w.z),
+            (x: s.x - n.x, y: s.y - n.y, z: s.z - n.z),
+          );
+          tafel[j * spalten + i] = _farbe(
+            grundfarbe,
+            _gedaempft(schattierung(nrm, stimmung), reliefstaerke),
+            stimmung,
+          );
+        }
+      }
+      punktfarben = tafel;
+    }
+
     for (var j = 0; j < maschenY; j++) {
       final b0 = breiteBei(j);
       final b1 = breiteBei(j + 1);
@@ -403,6 +454,19 @@ Gelaendenetz baueNetz(
         final bb = punkt(b0, l1);
         final c = punkt(b1, l0);
         final d = punkt(b1, l1);
+        if (punktfarben != null) {
+          final fa = punktfarben[j * spalten + i];
+          final fb = punktfarben[j * spalten + i + 1];
+          final fc = punktfarben[(j + 1) * spalten + i];
+          final fd = punktfarben[(j + 1) * spalten + i + 1];
+          lege(a, b0, l0, fa);
+          lege(bb, b0, l1, fb);
+          lege(c, b1, l0, fc);
+          lege(bb, b0, l1, fb);
+          lege(d, b1, l1, fd);
+          lege(c, b1, l0, fc);
+          continue;
+        }
         // Zwei Dreiecke je Feld, jedes mit seiner eigenen Schattierung.
         // Eine Schattierung je Eckpunkt sähe weicher aus und verwischte
         // genau die Kanten, die ein Gelände lesbar machen.
@@ -456,6 +520,7 @@ Gelaendenetz baueNetz(
   return Gelaendenetz(
     bloecke: netze,
     mittlereHoehe: mittlereHoehe,
+    ueberhoehung: ueberhoehung,
     breiteMeter: breiteMeter,
     hoeheMeter: hoeheMeter,
     sued: gitter.sued,

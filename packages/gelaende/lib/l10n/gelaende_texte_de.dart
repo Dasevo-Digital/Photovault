@@ -223,4 +223,60 @@ class GelaendeTexteDe extends GelaendeTexte {
   @override
   String get flugProfilBeschreibung =>
       'Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.';
+
+  @override
+  String get flugStil => 'Flugstil';
+
+  @override
+  String get flugStilUeberblick => 'Überblick';
+
+  @override
+  String get flugStilUeberblickHinweis =>
+      'Hoch über der Spur, die ganze Gegend im Blick';
+
+  @override
+  String get flugStilNahDran => 'Nah dran';
+
+  @override
+  String get flugStilNahDranHinweis =>
+      'Tief hinter einem Leuchtpunkt, die Strecke voraus leuchtet';
+
+  @override
+  String flugTafelVonBis(String start, String ziel) {
+    return '$start bis $ziel';
+  }
+
+  @override
+  String flugTafelRundweg(String start) {
+    return 'Rundweg ab $start';
+  }
+
+  @override
+  String flugTafelStrecke(String km) {
+    return 'rund $km km';
+  }
+
+  @override
+  String flugTafelAufstieg(int meter) {
+    return '$meter m Aufstieg';
+  }
+
+  @override
+  String flugTafelHoehe(int meter) {
+    return 'rund $meter m ü. M.';
+  }
+
+  @override
+  String flugTafelHoechsterPunkt(int meter) {
+    return 'höchster Punkt rund $meter m ü. M.';
+  }
+
+  @override
+  String get flugVideoFormat => 'Format';
+
+  @override
+  String get flugVideoQuer => 'Querformat';
+
+  @override
+  String get flugVideoHoch => 'Hochformat';
 }

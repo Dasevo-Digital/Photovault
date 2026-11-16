@@ -473,6 +473,16 @@ echter Hardware.
   in der Sekunde alles rechts davon. Geschrieben wird über AVFoundation
   (macOS) bzw. das mitgelieferte ffmpeg (Linux, Windows), und zwar als
   rohe Bildpunkte durch `stdin` statt über tausend Einzeldateien.
+- **Zwei Flugstile** – neben dem Überblick gibt es **„Nah dran"**: Die
+  Kamera fliegt tief hinter einem Leuchtpunkt her, der Weg davor leuchtet
+  und wird mit der Entfernung dünner, was hinter einem liegt,
+  verschwindet. Am Anfang nennt eine Tafel die Tour mit Start, Ziel,
+  Länge und Aufstieg, am Ende eine zweite das Ziel mit seiner Höhe; Fotos
+  erscheinen als grosse Tafel und blenden nach ein paar Sekunden wieder
+  aus. Zum Schluss hebt die Kamera über dem Ziel zum Rundblick ab. Dafür
+  lädt die Ansicht drei Kilometer Landschaft um die Spur, überhöht nur
+  anderthalbfach, schattiert weich und legt die Linie aufs Gelände statt
+  auf die gemessene Höhe. Beim Video ist das Hochformat vorgeschlagen.
 - **Familienstammbaum** – fünf Ansichten (Baum, Fächer, Sanduhr,
   Nachfahren, Liste) plus **Zeitleiste** und **Familienstatistik**.
   Adoptiv- und Pflegekanten sind eigene Arten, es gibt eine Kreisprüfung

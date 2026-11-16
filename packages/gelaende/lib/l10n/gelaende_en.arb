@@ -160,5 +160,64 @@
   "stimmungBlaueStunde": "Blue hour",
   "stimmungMittag": "Midday",
   "stimmungMorgen": "Morning",
-  "flugProfilBeschreibung": "Elevation profile of the track with the point the flight has reached."
+  "flugProfilBeschreibung": "Elevation profile of the track with the point the flight has reached.",
+  "flugStil": "Flight style",
+  "flugStilUeberblick": "Overview",
+  "flugStilUeberblickHinweis": "High above the track, with the whole area in view",
+  "flugStilNahDran": "Close up",
+  "flugStilNahDranHinweis": "Low behind a glowing marker, with the route ahead lit up",
+  "flugTafelVonBis": "{start} to {ziel}",
+  "@flugTafelVonBis": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelRundweg": "Loop from {start}",
+  "@flugTafelRundweg": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelStrecke": "about {km} km",
+  "@flugTafelStrecke": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelAufstieg": "{meter} m ascent",
+  "@flugTafelAufstieg": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugTafelHoehe": "about {meter} m above sea level",
+  "@flugTafelHoehe": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugTafelHoechsterPunkt": "highest point about {meter} m above sea level",
+  "@flugTafelHoechsterPunkt": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoFormat": "Format",
+  "flugVideoQuer": "Landscape",
+  "flugVideoHoch": "Portrait"
 }

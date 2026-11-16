@@ -35,7 +35,12 @@ import 'package:kern/services/wanderobjekte.dart';
 /// setzen ist der teuerste Einzelposten einer Beschriftung, und der Text
 /// ändert sich nie.
 class Gelaendeschild {
-  Gelaendeschild({required this.ort, required this.art, this.beschriftung});
+  Gelaendeschild({
+    required this.ort,
+    required this.art,
+    this.beschriftung,
+    this.name,
+  });
 
   /// Wo es steht – in denselben Metern wie das Netz.
   final Raumpunkt ort;
@@ -44,6 +49,11 @@ class Gelaendeschild {
   /// Was daraufsteht. `null` heisst: nur das Zeichen, kein Text – so wie
   /// bei den namenlosen Wegweisern.
   final String? beschriftung;
+
+  /// Der Name allein, ohne die Höhe, die [beschriftung] dazusetzt – für
+  /// die Tafeln des Flugstils „Nah dran", die Start und Ziel nennen
+  /// („Klingenstock bis Fronalpstock"). `null` bei namenlosen Punkten.
+  final String? name;
 
   ui.Paragraph? _absatz;
 

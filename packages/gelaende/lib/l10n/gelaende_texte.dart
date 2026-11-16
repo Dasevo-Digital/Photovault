@@ -439,6 +439,90 @@ abstract class GelaendeTexte {
   /// In de, this message translates to:
   /// **'Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.'**
   String get flugProfilBeschreibung;
+
+  /// No description provided for @flugStil.
+  ///
+  /// In de, this message translates to:
+  /// **'Flugstil'**
+  String get flugStil;
+
+  /// No description provided for @flugStilUeberblick.
+  ///
+  /// In de, this message translates to:
+  /// **'Überblick'**
+  String get flugStilUeberblick;
+
+  /// No description provided for @flugStilUeberblickHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Hoch über der Spur, die ganze Gegend im Blick'**
+  String get flugStilUeberblickHinweis;
+
+  /// No description provided for @flugStilNahDran.
+  ///
+  /// In de, this message translates to:
+  /// **'Nah dran'**
+  String get flugStilNahDran;
+
+  /// No description provided for @flugStilNahDranHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Tief hinter einem Leuchtpunkt, die Strecke voraus leuchtet'**
+  String get flugStilNahDranHinweis;
+
+  /// No description provided for @flugTafelVonBis.
+  ///
+  /// In de, this message translates to:
+  /// **'{start} bis {ziel}'**
+  String flugTafelVonBis(String start, String ziel);
+
+  /// No description provided for @flugTafelRundweg.
+  ///
+  /// In de, this message translates to:
+  /// **'Rundweg ab {start}'**
+  String flugTafelRundweg(String start);
+
+  /// No description provided for @flugTafelStrecke.
+  ///
+  /// In de, this message translates to:
+  /// **'rund {km} km'**
+  String flugTafelStrecke(String km);
+
+  /// No description provided for @flugTafelAufstieg.
+  ///
+  /// In de, this message translates to:
+  /// **'{meter} m Aufstieg'**
+  String flugTafelAufstieg(int meter);
+
+  /// No description provided for @flugTafelHoehe.
+  ///
+  /// In de, this message translates to:
+  /// **'rund {meter} m ü. M.'**
+  String flugTafelHoehe(int meter);
+
+  /// No description provided for @flugTafelHoechsterPunkt.
+  ///
+  /// In de, this message translates to:
+  /// **'höchster Punkt rund {meter} m ü. M.'**
+  String flugTafelHoechsterPunkt(int meter);
+
+  /// No description provided for @flugVideoFormat.
+  ///
+  /// In de, this message translates to:
+  /// **'Format'**
+  String get flugVideoFormat;
+
+  /// No description provided for @flugVideoQuer.
+  ///
+  /// In de, this message translates to:
+  /// **'Querformat'**
+  String get flugVideoQuer;
+
+  /// No description provided for @flugVideoHoch.
+  ///
+  /// In de, this message translates to:
+  /// **'Hochformat'**
+  String get flugVideoHoch;
 }
 
 class _GelaendeTexteDelegate extends LocalizationsDelegate<GelaendeTexte> {

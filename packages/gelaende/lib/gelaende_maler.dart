@@ -100,6 +100,24 @@ class Gelaendemaler extends CustomPainter {
   /// die Schrift des Themas.
   final String? schriftart;
 
+  /// Die Spur als **Leuchtspur** – für den Flugstil „Nah dran".
+  ///
+  /// Gezeichnet wird dann nur, was noch kommt: hell, leuchtend und mit
+  /// der Entfernung dünner. Was zurückliegt, verschwindet. Im Überblick
+  /// ist es umgekehrt (zurückgelegt kräftig, kommend blass), weil man
+  /// dort die ganze Tour sieht und wissen will, wie weit man ist; aus der
+  /// Nähe sieht man den Weg hinter sich ohnehin nicht, und vor sich will
+  /// man sehen, wohin er führt.
+  final bool leuchtspur;
+
+  /// Wo der Leuchtpunkt steht – die Stelle auf der Spur, an der der Flug
+  /// gerade ist. Nur mit [leuchtspur].
+  final Raumpunkt? kopf;
+
+  /// Titel-, Ziel- und Fototafel des Flugstils „Nah dran" – am
+  /// Bildschirm wie im Video (siehe `flugtafeln.dart`).
+  final ({Flugtafel? text, Fototafel? foto})? tafeln;
+
   Gelaendemaler({
     required this.netz,
     required this.kamera,
@@ -117,6 +135,9 @@ class Gelaendemaler extends CustomPainter {
     this.namensnennung,
     this.abspann,
     this.messwerte,
+    this.leuchtspur = false,
+    this.kopf,
+    this.tafeln,
   });
 
   /// Die Grösse des letzten Bildes – die Dunstschicht braucht sie für
@@ -187,7 +208,9 @@ class Gelaendemaler extends CustomPainter {
 
     _dunstDarueber(canvas, ordnung, nahste, fernste);
 
-    if (spur.length > 1) {
+    if (leuchtspur) {
+      _leuchtspurMalen(canvas, size);
+    } else if (spur.length > 1) {
       // Zwei Pfade statt eines: der zurückgelegte Teil und der, der noch
       // kommt. Getrennt gezeichnet und nicht als ein Pfad mit
       // wechselnder Farbe – ein Path kennt nur eine.
@@ -252,7 +275,151 @@ class Gelaendemaler extends CustomPainter {
     // sie verabschieden sich, während er kommt.
     _messwerteMalen(canvas, size);
     _abspannMalen(canvas, size);
+    if (tafeln case final t?) {
+      maleFlugtafeln(
+        canvas,
+        size,
+        text: t.text,
+        foto: t.foto,
+        schriftart: schriftart,
+      );
+    }
     _nennungMalen(canvas, size);
+  }
+
+  /// In wie vielen Tiefenstufen die Leuchtspur gezeichnet wird.
+  ///
+  /// Ein Pfad kennt nur eine Strichbreite. Je Teilstück einen eigenen
+  /// Zug zu machen, wären bei einer Tagestour tausende; zehn Stufen
+  /// reichen, damit die Linie gleichmässig dünner wird, ohne dass man
+  /// die Sprünge sieht.
+  static const int _leuchtstufen = 10;
+
+  /// Malt, was von der Spur noch kommt, als Leuchtspur – und den
+  /// Leuchtpunkt an ihrem Anfang.
+  ///
+  /// **Die Breite folgt der Entfernung.** Eine Linie, die vorne so dünn
+  /// ist wie am Horizont, liegt nicht in der Landschaft, sondern auf der
+  /// Scheibe davor. Gerechnet wird mit drei Metern Wegbreite, auf dem
+  /// Bild begrenzt zwischen gut einem und elf Bildpunkten (auf 1080
+  /// gerechnet) – sonst wäre die Linie unter der Kamera ein Balken und
+  /// am Horizont unsichtbar.
+  void _leuchtspurMalen(Canvas canvas, Size size) {
+    final e = math.min(size.width, size.height);
+    final skala = e / 1080;
+    final bezug = math.max(1.0, kamera.entfernung);
+    // Stufe 0 liegt bei halber Kameraentfernung, die letzte beim
+    // 32-fachen – auf einer logarithmischen Skala, weil die Breite mit
+    // eins durch Entfernung fällt.
+    int stufeVon(double tiefe) {
+      final l = math.log(tiefe / bezug) / math.ln2;
+      return (((l + 1) / 6) * (_leuchtstufen - 1)).round().clamp(
+        0,
+        _leuchtstufen - 1,
+      );
+    }
+
+    double tiefeVon(int stufe) =>
+        bezug * math.pow(2, stufe / (_leuchtstufen - 1) * 6 - 1);
+
+    final pfade = List.generate(_leuchtstufen, (_) => Path());
+    final belegt = List<bool>.filled(_leuchtstufen, false);
+    final strecke = streckeJePunkt;
+    final ab = gefahrenBis ?? 0;
+    final teilen = strecke != null && strecke.length == spur.length;
+    Bildpunkt? vorher;
+    void weiter(Raumpunkt p) {
+      final b = kamera.projiziere(p);
+      if (b.tiefe <= 1) {
+        vorher = null;
+        return;
+      }
+      final v = vorher;
+      if (v != null) {
+        final s = stufeVon((v.tiefe + b.tiefe) / 2);
+        pfade[s]
+          ..moveTo(v.stelle.dx, v.stelle.dy)
+          ..lineTo(b.stelle.dx, b.stelle.dy);
+        belegt[s] = true;
+      }
+      vorher = b;
+    }
+
+    if (kopf case final k?) weiter(k);
+    for (var i = 0; i < spur.length; i++) {
+      if (teilen && strecke[i] <= ab) continue;
+      weiter(spur[i]);
+    }
+
+    // Erst der Schein, dann der Kern, dann die helle Mitte – von hinten
+    // nach vorn, damit die nahen, breiten Stücke obenauf liegen.
+    for (final zug in const [0, 1, 2]) {
+      for (var s = _leuchtstufen - 1; s >= 0; s--) {
+        if (!belegt[s]) continue;
+        final breite = (3.0 * kamera.brennweite / tiefeVon(s)).clamp(
+          1.3 * skala,
+          11 * skala,
+        );
+        // In der Ferne blasser – derselbe Dunst, der auch auf dem
+        // Gelände liegt.
+        final ferne = 1 - 0.55 * s / (_leuchtstufen - 1);
+        final paint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+        switch (zug) {
+          case 0:
+            paint
+              ..color = const Color(0xFFFF8A1F).withValues(alpha: 0.32 * ferne)
+              ..strokeWidth = breite * 2.8
+              ..maskFilter = MaskFilter.blur(BlurStyle.normal, breite * 0.7);
+          case 1:
+            paint
+              ..color = const Color(0xFFFF6A00).withValues(alpha: ferne)
+              ..strokeWidth = breite;
+          default:
+            paint
+              ..color = const Color(0xFFFFD9A8).withValues(alpha: 0.9 * ferne)
+              ..strokeWidth = breite * 0.32;
+        }
+        canvas.drawPath(pfade[s], paint);
+      }
+    }
+    _kopfMalen(canvas, e);
+  }
+
+  /// Der Leuchtpunkt: ein heller Kern mit warmem Schein.
+  ///
+  /// In Bildpunkten bemessen und nicht in Metern: Er steht immer etwa
+  /// gleich weit vor der Kamera, und er soll das Auge führen, nicht die
+  /// Grösse eines Wanderers zeigen.
+  void _kopfMalen(Canvas canvas, double e) {
+    final k = kopf;
+    if (k == null) return;
+    final b = kamera.projiziere(k);
+    if (b.tiefe <= 1) return;
+    final r = e * 0.042;
+    canvas.drawCircle(
+      b.stelle,
+      r,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          b.stelle,
+          r,
+          const [
+            Color(0xFFFFFFFF),
+            Color(0xFFFFF2D0),
+            Color(0x99FFB347),
+            Color(0x00FF7A1A),
+          ],
+          const [0.0, 0.16, 0.42, 1.0],
+        ),
+    );
+    canvas.drawCircle(
+      b.stelle,
+      r * 0.17,
+      Paint()..color = const Color(0xFFFFFFFF),
+    );
   }
 
   /// Baut einen Textabsatz – einmal je Aufruf, und das ist hier in
@@ -871,5 +1038,8 @@ class Gelaendemaler extends CustomPainter {
       // Ohne diese Zeile stünde der Schnitt zwischen zurückgelegt und
       // kommend still, sobald die Kamera einmal gleich bleibt – etwa
       // beim Spulen an derselben Stelle.
-      alt.gefahrenBis != gefahrenBis;
+      alt.gefahrenBis != gefahrenBis ||
+      alt.leuchtspur != leuchtspur ||
+      alt.kopf != kopf ||
+      alt.tafeln != tafeln;
 }

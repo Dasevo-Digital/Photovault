@@ -163,5 +163,64 @@
   "stimmungBlaueStunde": "Blaue Stunde",
   "stimmungMittag": "Mittag",
   "stimmungMorgen": "Morgen",
-  "flugProfilBeschreibung": "Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht."
+  "flugProfilBeschreibung": "Höhenprofil der Spur mit der Stelle, an der der Flug gerade steht.",
+  "flugStil": "Flugstil",
+  "flugStilUeberblick": "Überblick",
+  "flugStilUeberblickHinweis": "Hoch über der Spur, die ganze Gegend im Blick",
+  "flugStilNahDran": "Nah dran",
+  "flugStilNahDranHinweis": "Tief hinter einem Leuchtpunkt, die Strecke voraus leuchtet",
+  "flugTafelVonBis": "{start} bis {ziel}",
+  "@flugTafelVonBis": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelRundweg": "Rundweg ab {start}",
+  "@flugTafelRundweg": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelStrecke": "rund {km} km",
+  "@flugTafelStrecke": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "flugTafelAufstieg": "{meter} m Aufstieg",
+  "@flugTafelAufstieg": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugTafelHoehe": "rund {meter} m ü. M.",
+  "@flugTafelHoehe": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugTafelHoechsterPunkt": "höchster Punkt rund {meter} m ü. M.",
+  "@flugTafelHoechsterPunkt": {
+    "placeholders": {
+      "meter": {
+        "type": "int"
+      }
+    }
+  },
+  "flugVideoFormat": "Format",
+  "flugVideoQuer": "Querformat",
+  "flugVideoHoch": "Hochformat"
 }

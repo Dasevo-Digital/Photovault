@@ -223,4 +223,60 @@ class GelaendeTexteEn extends GelaendeTexte {
   @override
   String get flugProfilBeschreibung =>
       'Elevation profile of the track with the point the flight has reached.';
+
+  @override
+  String get flugStil => 'Flight style';
+
+  @override
+  String get flugStilUeberblick => 'Overview';
+
+  @override
+  String get flugStilUeberblickHinweis =>
+      'High above the track, with the whole area in view';
+
+  @override
+  String get flugStilNahDran => 'Close up';
+
+  @override
+  String get flugStilNahDranHinweis =>
+      'Low behind a glowing marker, with the route ahead lit up';
+
+  @override
+  String flugTafelVonBis(String start, String ziel) {
+    return '$start to $ziel';
+  }
+
+  @override
+  String flugTafelRundweg(String start) {
+    return 'Loop from $start';
+  }
+
+  @override
+  String flugTafelStrecke(String km) {
+    return 'about $km km';
+  }
+
+  @override
+  String flugTafelAufstieg(int meter) {
+    return '$meter m ascent';
+  }
+
+  @override
+  String flugTafelHoehe(int meter) {
+    return 'about $meter m above sea level';
+  }
+
+  @override
+  String flugTafelHoechsterPunkt(int meter) {
+    return 'highest point about $meter m above sea level';
+  }
+
+  @override
+  String get flugVideoFormat => 'Format';
+
+  @override
+  String get flugVideoQuer => 'Landscape';
+
+  @override
+  String get flugVideoHoch => 'Portrait';
 }

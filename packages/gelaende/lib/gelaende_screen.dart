@@ -7,12 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart'
     show DisabledMapCachingProvider, MapCachingProvider;
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart' show NumberFormat;
 
 import 'texte.dart';
 import 'gelaende_laden.dart';
 import 'flugvideo.dart';
 import 'package:kern/services/gelaendeebenen.dart';
 import 'gelaendeflug.dart';
+import 'flugstil.dart';
 import 'gelaendekacheln.dart';
 import 'gelaendesicht.dart';
 import 'lichtstimmung.dart';
@@ -147,6 +149,17 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   late Gelaendekarte _auflage = widget.auflage;
   late Tageszeit _stimmung = widget.stimmung;
 
+  /// Wie der Flug die Spur zeigt (siehe `flugstil.dart`).
+  ///
+  /// **Gemerkt für die Dauer der Sitzung, nicht in der Bibliothek.**
+  /// Tageszeit und Karte stehen in den Einstellungen der Bibliothek; ein
+  /// weiterer Wert dort hiesse eine neue Spalte und damit eine neue
+  /// Fassung des Schemas, die auch der Server mitmachen müsste. Wer
+  /// mehrere Touren hintereinander als Video ausgibt, behält seine Wahl
+  /// trotzdem.
+  static Flugstil _zuletztGewaehlt = Flugstil.ueberblick;
+  Flugstil _flugstil = _zuletztGewaehlt;
+
   /// Höhengitter und Ausschnitt bleiben gemerkt, damit ein Wechsel der
   /// Textur nicht auch die Höhen noch einmal aus dem Netz holt.
   Hoehengitter? _gitter;
@@ -245,24 +258,84 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
   /// weder Höhen- noch Kartenkacheln, also wird nur das Netz aus dem
   /// gemerkten Gitter neu gerechnet. Ohne dieses Neubauen bekäme man
   /// einen Morgenhimmel über einer Mittagslandschaft.
+  PopupMenuItem<Flugstil> _flugstilEintrag(
+    Flugstil stil,
+    IconData symbol,
+    String name,
+    String hinweis,
+  ) {
+    final farben = Theme.of(context).colorScheme;
+    final gewaehlt = stil == _flugstil;
+    return PopupMenuItem(
+      value: stil,
+      child: Row(
+        children: [
+          Icon(symbol, size: 18, color: gewaehlt ? farben.primary : null),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name),
+                Text(
+                  hinweis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: farben.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _stimmungWechseln(Tageszeit neu) {
     if (neu == _stimmung) return;
     final gitter = _gitter;
     setState(() => _stimmung = neu);
     widget.beimStimmungswechsel?.call(neu);
     if (gitter == null) return;
-    final gebaut = baueNetz(
-      gitter,
-      grundfarbe: _karte == null ? gelaendeGrundfarbe : const Color(0xFFFFFFFF),
-      stimmung: stimmungFuer(neu),
-      reliefstaerke: _auflage.reliefstaerke,
-    );
+    final gebaut = _netzBauen(gitter, mitKarte: _karte != null);
     final gerechnet = _spurInMeter(gitter, gebaut);
     setState(() {
       _netz = gebaut;
       _spurImRaum = gerechnet.linie;
       _spurwerte = gerechnet.werte;
     });
+  }
+
+  /// Baut das Netz aus dem Gitter – mit Tageszeit, Relief und der
+  /// Überhöhung und Feinheit des Flugstils.
+  ///
+  /// [mitKarte]: Liegt eine Karte darauf, muss die Grundfarbe Weiss sein
+  /// (siehe [gelaendeGrundfarbe]).
+  Gelaendenetz _netzBauen(Hoehengitter gitter, {required bool mitKarte}) =>
+      baueNetz(
+        gitter,
+        grundfarbe: mitKarte ? const Color(0xFFFFFFFF) : gelaendeGrundfarbe,
+        stimmung: stimmungFuer(_stimmung),
+        reliefstaerke: _auflage.reliefstaerke,
+        ueberhoehung: _flugstil.ueberhoehung,
+        kante: _flugstil.gitterkante,
+        weich: _flugstil.weicheSchattierung,
+      );
+
+  /// Wechselt den Flugstil – **mit neuem Laden**, anders als die
+  /// Tageszeit.
+  ///
+  /// Der Stil „Nah dran" braucht mehr Landschaft um die Spur (siehe
+  /// [gelaendeAusschnitt]), ein flacher überhöhtes und feineres Netz und
+  /// eine Spur auf dem Gelände. Der Ausschnitt ist ein anderer, also auch
+  /// das Höhengitter; die Kacheln kommen dabei meist aus dem
+  /// Kachelspeicher.
+  void _flugstilWechseln(Flugstil neu) {
+    if (neu == _flugstil) return;
+    _zuletztGewaehlt = neu;
+    setState(() => _flugstil = neu);
+    unawaited(_laden());
   }
 
   /// Wechselt die Textur, **ohne das Höhengitter neu zu holen**.
@@ -340,14 +413,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         karte?.dispose();
         return;
       }
-      final gebaut = baueNetz(
-        gitter,
-        grundfarbe: karte == null
-            ? gelaendeGrundfarbe
-            : const Color(0xFFFFFFFF),
-        stimmung: stimmungFuer(_stimmung),
-        reliefstaerke: neu.reliefstaerke,
-      );
+      final gebaut = _netzBauen(gitter, mitKarte: karte != null);
       final gerechnet = _spurInMeter(gitter, gebaut);
       final alt = _karte;
       setState(() {
@@ -369,14 +435,15 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     super.dispose();
   }
 
-  /// Wie viel Rand um die Spur herum geladen wird.
-  ///
-  /// Ein Fünftel der Ausdehnung. Ohne Rand endete die Landschaft genau
-  /// an der Spur, und ein Weg, der am Abgrund der Welt entlangläuft,
-  /// sieht falsch aus.
-  static const double _randanteil = 0.2;
+  /// Zählt die Ladeläufe – damit ein älterer, der später fertig wird,
+  /// nicht über einen neueren schreibt. Seit der Flugstil neu lädt, kann
+  /// das passieren: zweimal schnell umgeschaltet, und der erste Lauf
+  /// (anderer Ausschnitt) käme womöglich als letzter an.
+  int _ladelauf = 0;
 
   Future<void> _laden() async {
+    final lauf = ++_ladelauf;
+    bool veraltet() => !mounted || lauf != _ladelauf;
     setState(() => _laedt = true);
     final netz = widget.netz ?? http.Client();
     final MapCachingProvider? speicher = widget.netz == null
@@ -397,14 +464,19 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         if (mounted) setState(() => _laedt = false);
         return;
       }
-      // Eine Mindestausdehnung, damit eine Spur, die auf der Stelle
-      // aufgezeichnet wurde, kein Rechteck von null Grad ergibt.
-      final randB = math.max((nord - sued) * _randanteil, 0.005);
-      final randL = math.max((ost - west) * _randanteil, 0.005);
-      sued -= randB;
-      nord += randB;
-      west -= randL;
-      ost += randL;
+      // Mit Rand – wie viel, sagt der Flugstil (siehe
+      // [gelaendeAusschnitt]).
+      final ausschnitt = gelaendeAusschnitt(
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+        stil: _flugstil,
+      );
+      sued = ausschnitt.sued;
+      west = ausschnitt.west;
+      nord = ausschnitt.nord;
+      ost = ausschnitt.ost;
 
       final gitter = await ladeHoehengitter(
         sued: sued,
@@ -414,7 +486,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         netz: netz,
         speicher: speicher,
       );
-      if (!mounted) return;
+      if (veraltet()) return;
       if (gitter == null) {
         setState(() {
           _netz = null;
@@ -432,22 +504,19 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         hoehen: gitter,
         speicher: speicher,
       );
-      if (!mounted) {
+      if (veraltet()) {
         karte?.dispose();
         return;
       }
 
       // Erst die Karte, dann das Netz: Liegt eine Karte darauf, muss
       // die Grundfarbe Weiss sein (siehe [gelaendeGrundfarbe]).
-      final gebaut = baueNetz(
-        gitter,
-        grundfarbe: karte == null
-            ? gelaendeGrundfarbe
-            : const Color(0xFFFFFFFF),
-        stimmung: stimmungFuer(_stimmung),
-        reliefstaerke: _auflage.reliefstaerke,
-      );
+      final gebaut = _netzBauen(gitter, mitKarte: karte != null);
       final gerechnet = _spurInMeter(gitter, gebaut);
+      // Das alte Kartenbild freigeben, wie beim Kartenwechsel: Seit der
+      // Flugstil neu lädt, läuft dieser Weg mehr als einmal, und jedes
+      // Mal blieben sonst einige Megabyte im Speicher der Grafikkarte.
+      final altesBild = _karte;
       setState(() {
         _gitter = gitter;
         _ausschnitt = (sued: sued, west: west, nord: nord, ost: ost);
@@ -457,6 +526,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         _spurwerte = gerechnet.werte;
         _laedt = false;
       });
+      if (!identical(altesBild, karte)) altesBild?.dispose();
       // **Nach der Landschaft und ohne sie aufzuhalten.** Overpass
       // rechnet die Abfrage bei Bedarf und antwortet bei Andrang gar
       // nicht; eine Landschaft, die darauf wartet, erscheint nie.
@@ -498,7 +568,22 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     final holen = widget.wanderobjekte;
     if (holen == null || !_auflage.wanderobjekte) return;
     final punkte = await holen(sued: sued, west: west, nord: nord, ost: ost);
-    if (!mounted || punkte.isEmpty) return;
+    // **Nur auf die Landschaft, für die gefragt wurde.** Wer während der
+    // Abfrage den Flugstil gewechselt hat, hat inzwischen einen anderen
+    // Ausschnitt und ein anders überhöhtes Netz; die Antwort gehört zum
+    // alten und käme an falschen Stellen zu stehen. Die neue Abfrage
+    // läuft schon.
+    if (!mounted || punkte.isEmpty || !identical(_gitter, gitter)) return;
+    setState(() => _schilder = _schilderRechnen(gitter, _netz ?? netz, punkte));
+  }
+
+  /// Rechnet Wanderobjekte in Schilder auf [netz] um.
+  List<Gelaendeschild> _schilderRechnen(
+    Hoehengitter gitter,
+    Gelaendenetz netz,
+    List<Wanderobjekt> punkte,
+  ) {
+    if (!_auflage.wanderobjekte) return const [];
     final schilder = <Gelaendeschild>[];
     for (final p in punkte) {
       final h = gitter.anOrt(p.breite, p.laenge);
@@ -507,6 +592,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         Gelaendeschild(
           art: p.art,
           beschriftung: _beschriftung(p),
+          name: p.name,
           ort: (
             x:
                 ((p.laenge - gitter.west) / (gitter.ost - gitter.west) - 0.5) *
@@ -515,13 +601,13 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
                 (0.5 - (gitter.nord - p.breite) / (gitter.nord - gitter.sued)) *
                 netz.hoeheMeter,
             z:
-                (h - netz.mittlereHoehe) * gelaendeUeberhoehung +
-                schildHoeheMeter * gelaendeUeberhoehung,
+                (h - netz.mittlereHoehe) * netz.ueberhoehung +
+                schildHoeheMeter * netz.ueberhoehung,
           ),
         ),
       );
     }
-    setState(() => _schilder = schilder);
+    return schilder;
   }
 
   /// Fragt, **was** ausgegeben werden soll und **wohin**.
@@ -539,8 +625,14 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     final t = gelaendeTexte(context);
     final wahl = await showDialog<({int breite, int hoehe, int sekunden})>(
       context: context,
-      builder: (_) =>
-          _VideoDialog(vorgabe: vorgabe, weiter: widget.videoWeiter),
+      builder: (_) => _VideoDialog(
+        vorgabe: vorgabe,
+        weiter: widget.videoWeiter,
+        // Der Verfolgerflug ist für das Hochformat gemacht, in dem man
+        // solche Videos am Telefon ansieht und weitergibt. Umstellen
+        // lässt es sich im Dialog.
+        hochkant: _flugstil == Flugstil.nahDran,
+      ),
     );
     if (wahl == null || !mounted) return null;
 
@@ -656,13 +748,17 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     final mittlereHoehe = netz.mittlereHoehe;
     final linie = <Raumpunkt>[];
     final werte = <Flugwert>[];
+    // Im Stil „Nah dran" liegt die **Linie** auf dem Gelände (siehe
+    // [Flugstil.spurAufDemGelaende]); die Werte bleiben die gemessenen.
+    final amBoden = _flugstil.spurAufDemGelaende;
     for (final p in widget.spur) {
-      final h = p.hoehe ?? g.anOrt(p.breite, p.laenge);
+      final gelaende = amBoden ? g.anOrt(p.breite, p.laenge) : null;
+      final h = gelaende ?? p.hoehe ?? g.anOrt(p.breite, p.laenge);
       if (h == null) continue;
       linie.add((
         x: ((p.laenge - g.west) / (g.ost - g.west) - 0.5) * netz.breiteMeter,
         y: (0.5 - (g.nord - p.breite) / (g.nord - g.sued)) * netz.hoeheMeter,
-        z: (h + 2 - mittlereHoehe) * gelaendeUeberhoehung,
+        z: (h + 2 - mittlereHoehe) * netz.ueberhoehung,
       ));
       // **Die Höhe der Datei, nicht die aus dem Gitter.** Wo die
       // Aufzeichnung eine trägt, ist sie die Aussage; das Gelände ist
@@ -746,6 +842,32 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
           // aus", sondern wie stark das Gelände hervortreten soll. Eine
           // flache Sonne zeigt jede Mulde, eine hohe lässt die Karte
           // lesbar.
+          // Der Flugstil – wie der Flug die Spur zeigt. Ganz links von
+          // den dreien, weil er am meisten ändert: Karte und Tageszeit
+          // färben dieselbe Ansicht, der Stil wählt eine andere.
+          PopupMenuButton<Flugstil>(
+            tooltip: t.flugStil,
+            icon: Icon(
+              _flugstil == Flugstil.nahDran
+                  ? Icons.directions_walk
+                  : Icons.flight_outlined,
+            ),
+            onSelected: _flugstilWechseln,
+            itemBuilder: (context) => [
+              _flugstilEintrag(
+                Flugstil.ueberblick,
+                Icons.flight_outlined,
+                t.flugStilUeberblick,
+                t.flugStilUeberblickHinweis,
+              ),
+              _flugstilEintrag(
+                Flugstil.nahDran,
+                Icons.directions_walk,
+                t.flugStilNahDran,
+                t.flugStilNahDranHinweis,
+              ),
+            ],
+          ),
           PopupMenuButton<Tageszeit>(
             tooltip: t.gelaendeStimmung,
             icon: const Icon(Icons.wb_twilight_outlined),
@@ -818,8 +940,14 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
               // behielte die Ansicht ihren Texturvorrat aus der
               // alten Karte, und der Bildschirm zeigte
               // Luftbildkacheln über einer Wanderkarte.
-              key: ValueKey(_auflage),
+              //
+              // Ebenso beim Wechsel des Flugstils: Ein Flug, der im
+              // Überblick begann, soll nicht als Verfolger weiterlaufen,
+              // sondern in der Übersicht neu anfangen.
+              key: ValueKey((_auflage, _flugstil)),
               netz: _netz!,
+              stil: _flugstil,
+              titel: widget.titel,
               spur: _spurImRaum,
               spurwerte: _spurwerte,
               karte: _karte,
@@ -839,7 +967,10 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
                   [
                     t.gelaendeBedienung,
                     t.gelaendeUeberhoeht(
-                      gelaendeUeberhoehung.toStringAsFixed(0),
+                      NumberFormat(
+                        '0.#',
+                        Localizations.localeOf(context).toLanguageTag(),
+                      ).format(_netz!.ueberhoehung),
                     ),
                   ].join(' · '),
                 ),
@@ -909,7 +1040,14 @@ class _Kartenwahl {
 /// Höhenprofil. Und die Frage stellt sich genau einmal – beim Ausgeben –,
 /// nicht während man fliegt.
 class _VideoDialog extends StatefulWidget {
-  const _VideoDialog({required this.vorgabe, this.weiter});
+  const _VideoDialog({
+    required this.vorgabe,
+    this.weiter,
+    this.hochkant = false,
+  });
+
+  /// Ob das Hochformat vorgewählt ist.
+  final bool hochkant;
 
   /// Was auf dem Knopf zum Ausgeben steht – sonst „Speichern unter …“.
   final String? weiter;
@@ -936,6 +1074,9 @@ class _VideoDialogState extends State<_VideoDialog> {
   int _grad = 1;
   late double _sekunden;
 
+  /// Hochformat: dieselben drei Grössen, Breite und Höhe getauscht.
+  late bool _hochkant = widget.hochkant;
+
   @override
   void initState() {
     super.initState();
@@ -948,7 +1089,8 @@ class _VideoDialogState extends State<_VideoDialog> {
   Widget build(BuildContext context) {
     final t = gelaendeTexte(context);
     final schmal = MediaQuery.sizeOf(context).width < 500;
-    final (breite, hoehe) = _groessen[_grad];
+    final (lang, kurz) = _groessen[_grad];
+    final (breite, hoehe) = _hochkant ? (kurz, lang) : (lang, kurz);
     final bilder = (_sekunden * videoBilderJeSekunde).round();
     return AlertDialog(
       title: Text(t.flugVideoEinstellungen),
@@ -958,6 +1100,29 @@ class _VideoDialogState extends State<_VideoDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              t.flugVideoFormat,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            SegmentedButton<bool>(
+              segments: [
+                ButtonSegment(
+                  value: false,
+                  icon: const Icon(Icons.crop_landscape),
+                  label: Text(t.flugVideoQuer),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: const Icon(Icons.crop_portrait),
+                  label: Text(t.flugVideoHoch),
+                ),
+              ],
+              selected: {_hochkant},
+              showSelectedIcon: false,
+              onSelectionChanged: (w) => setState(() => _hochkant = w.first),
+            ),
+            const SizedBox(height: AppSpacing.md),
             Text(
               t.flugVideoAufloesung,
               style: Theme.of(context).textTheme.labelLarge,
@@ -974,6 +1139,8 @@ class _VideoDialogState extends State<_VideoDialog> {
                     label: Text(
                       schmal
                           ? '${_groessen[i].$2}p'
+                          : _hochkant
+                          ? '${_groessen[i].$2}×${_groessen[i].$1}'
                           : '${_groessen[i].$1}×${_groessen[i].$2}',
                     ),
                   ),
