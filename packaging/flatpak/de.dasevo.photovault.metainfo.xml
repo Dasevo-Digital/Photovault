@@ -75,6 +75,11 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.8" date="2026-11-16">
+      <description>
+        <p>The close-up style of the 3D flight shows a calmer picture: at most three named places ahead of the glowing point, none under the cards, and only the attribution below the view during the flight.</p>
+      </description>
+    </release>
     <release version="3.67.7" date="2026-11-16">
       <description>
         <p>The 3D flight over an activity has a second style, "Close up": the camera follows a glowing point low along the track, the route ahead lights up, and cards show the title, the destination and the photos of the tour.</p>
