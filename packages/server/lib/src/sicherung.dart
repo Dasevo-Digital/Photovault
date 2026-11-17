@@ -249,53 +249,65 @@ class Serversicherung {
         nonce: base64.decode('${s['nonce']}'),
         wrapped: base64.decode('${s['wrapped']}'),
       );
+      // Jedes Konto für sich (#404): Ein Ziel, das sich für ein Konto nicht
+      // beschreiben lässt, oder eine Bibliothek, die sich nicht öffnen
+      // lässt, hielt vorher die übrigen Konten auf – der Lauf brach beim
+      // ersten Fehler ab, und der Fehler nannte nur einen Pfad.
+      final kontofehler = <String>[];
       for (final k in konten.alle()) {
-        final b = (await bibliotheken.fuer(k.id)).bibliothek;
-        await _verpackterSchluesselIn(b.db, verpackt);
-        final dienst = BackupService(b.db, b.pfade);
-        var gesamt = 0, fehlgeschlagen = 0;
-        BackupProbeErgebnis? probe;
-        await for (final f in dienst.performAutoBackup(
-          p.join(ziel!.path, ordnerFuer(k)),
-          schluessel,
-          markieren: false,
-        )) {
-          gesamt = f.total;
-          fehlgeschlagen += f.fehlgeschlagen ?? 0;
-          probe = f.wiederherstellungsprobe ?? probe;
-        }
-        await b.db.setLastAutoBackupAt(_uhr());
-        // Die Fotokammer gehört nicht zur Bibliothek, liegt aber oft nur
-        // hier: Die Karte ist womöglich schon formatiert (#341).
-        final kammer = await FotokammerSicherung.sichere(
-          kammer: Fotokammer(b).ordner,
-          sicherung: Directory(
-            p.join(
-              ziel!.path,
-              ordnerFuer(k),
-              BackupService.autoBackupFolderName,
+        try {
+          final b = (await bibliotheken.fuer(k.id)).bibliothek;
+          await _verpackterSchluesselIn(b.db, verpackt);
+          final dienst = BackupService(b.db, b.pfade);
+          var gesamt = 0, fehlgeschlagen = 0;
+          BackupProbeErgebnis? probe;
+          await for (final f in dienst.performAutoBackup(
+            p.join(ziel!.path, ordnerFuer(k)),
+            schluessel,
+            markieren: false,
+          )) {
+            gesamt = f.total;
+            fehlgeschlagen += f.fehlgeschlagen ?? 0;
+            probe = f.wiederherstellungsprobe ?? probe;
+          }
+          await b.db.setLastAutoBackupAt(_uhr());
+          // Die Fotokammer gehört nicht zur Bibliothek, liegt aber oft nur
+          // hier: Die Karte ist womöglich schon formatiert (#341).
+          final kammer = await FotokammerSicherung.sichere(
+            kammer: Fotokammer(b).ordner,
+            sicherung: Directory(
+              p.join(
+                ziel!.path,
+                ordnerFuer(k),
+                BackupService.autoBackupFolderName,
+              ),
             ),
-          ),
-          schluessel: schluessel,
-          jetzt: _uhr(),
-        );
-        fehlgeschlagen += kammer.gescheitert;
-        ergebnis.add({
-          'konto': k.name,
-          'dateien': gesamt,
-          'neu': dienst.letzterLaufNeu,
-          'kammer': kammer.eintraege,
-          'kammerNeu': kammer.neu,
-          'fehlgeschlagen': fehlgeschlagen,
-          'wiederherstellungsprobe': probe?.alsJson(),
-        });
-        if (probe != null && !probe.erfolgreich) {
-          fehler ??= 'pv_probe_unlesbar';
-        }
-        if (fehlgeschlagen > 0) {
-          fehler ??= '$fehlgeschlagen Dateien von „${k.name}“ nicht gesichert';
+            schluessel: schluessel,
+            jetzt: _uhr(),
+          );
+          fehlgeschlagen += kammer.gescheitert;
+          ergebnis.add({
+            'konto': k.name,
+            'dateien': gesamt,
+            'neu': dienst.letzterLaufNeu,
+            'kammer': kammer.eintraege,
+            'kammerNeu': kammer.neu,
+            'fehlgeschlagen': fehlgeschlagen,
+            'wiederherstellungsprobe': probe?.alsJson(),
+          });
+          if (probe != null && !probe.erfolgreich) {
+            fehler ??= 'pv_probe_unlesbar';
+          }
+          if (fehlgeschlagen > 0) {
+            fehler ??=
+                '$fehlgeschlagen Dateien von „${k.name}“ nicht gesichert';
+          }
+        } catch (e) {
+          protokoll('Sicherung von ${k.name} gescheitert: $e');
+          kontofehler.add('„${k.name}“: $e');
         }
       }
+      if (kontofehler.isNotEmpty) fehler = kontofehler.join('; ');
     } catch (e) {
       fehler = '$e';
     }

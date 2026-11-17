@@ -178,6 +178,29 @@ void main() {
     },
   );
 
+  test('ein Konto mit Fehler hält die übrigen nicht auf (#404)', () async {
+    final bert = await konten.legeAn('bert', 'ein langes passwort');
+    final zora = await konten.legeAn('zora', 'ein langes passwort');
+    await sicherung.einrichten(passphrase);
+    // Wo der Ordner von bert hingehört, liegt eine Datei: Sein Ziel lässt
+    // sich nicht anlegen.
+    File('${nas.path}/${Serversicherung.ordnerFuer(bert)}')
+      ..createSync()
+      ..writeAsStringSync('im Weg');
+
+    await sicherung.jetzt();
+    final stand = await sicherung.stand();
+    expect(stand['ok'], isFalse);
+    final gesichert = [
+      for (final k in stand['konten']! as List) (k as Map)['konto'],
+    ];
+    expect(gesichert, containsAll(['erika', 'zora']));
+    expect(gesichert, isNot(contains('bert')));
+    expect('${stand['fehler']}', contains('bert'));
+    expect(sicherungVon(zora).existsSync(), isTrue);
+    expect(verschluesselteDateien(), 2, reason: 'erika vollständig');
+  });
+
   test('ohne Kennmarke kein Byte, ein neues Ziel füllt sich wieder', () async {
     await sicherung.einrichten(passphrase);
     await sicherung.jetzt();

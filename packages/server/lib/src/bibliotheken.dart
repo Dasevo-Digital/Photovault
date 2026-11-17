@@ -115,7 +115,17 @@ class Bibliotheken {
       final bereich = _oeffne(kontoId);
       // Scheitert das Öffnen einmal (Platte voll), gälte das sonst bis zum
       // nächsten Neustart für jede Anfrage dieses Kontos.
-      bereich.then<void>((_) {}, onError: (_) => _offen.remove(kontoId));
+      //
+      // Mit Blockkörper: Ein Pfeil gäbe die entfernte, gescheiterte Future
+      // zurück. Die hier abgeleitete scheiterte dann ein zweites Mal, ohne
+      // dass jemand zuhört – und eine einzige unlesbare Bibliothek beendete
+      // den ganzen Server (#404).
+      bereich.then<void>(
+        (_) {},
+        onError: (Object _) {
+          _offen.remove(kontoId);
+        },
+      );
       return bereich;
     });
   }
