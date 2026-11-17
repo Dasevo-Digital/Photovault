@@ -189,6 +189,24 @@ void main() {
       },
     );
 
+    test('Sperren nimmt die Standbilder aus der Datenbank (#403)', () async {
+      // Die Abfragen filtern gesperrte Videos aus – die Vektoren lagen aber
+      // trotzdem im Klartext in der Datenbank. Nach dem Entsperren holt der
+      // Nachtrag sie neu.
+      await anlegen('v', dauer: 60);
+      await db.setzeVideoeinbettungen('v', [
+        (stelle: 0.25, vector: vektor(1)),
+        (stelle: 0.75, vector: vektor(0.5)),
+      ]);
+      await db.clearDerivedContentData(['v']);
+      final rest = await (db.select(
+        db.videoeinbettungen,
+      )..where((t) => t.assetId.equals('v'))).get();
+      expect(rest, isEmpty);
+      expect((await db.assetById('v'))!.videobilderGeprueft, isFalse);
+      expect(await db.countVideobilder(), 1, reason: 'wieder offen');
+    });
+
     test('die Suchkandidaten tragen die Stelle im Schlüssel', () async {
       // Damit die Rangfolge jedes Standbild einzeln bewerten kann: Es
       // zaehlt das BESTE, nicht das Mittel. Ein Mittelwert ueber

@@ -2953,9 +2953,8 @@ void main() {
     },
   );
 
-  // Befund: Sperren lässt die Videoeinbettungen im Klartext und videobilder_geprueft gesetzt (gesperrter_ordner.dart:184 clearDerivedContentData).
+  // Behoben in #403: Sperren nimmt auch die Videoeinbettungen weg.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-044 Befundpruefung Sperren entfernt Videoeinbettungen',
     (tester) async {

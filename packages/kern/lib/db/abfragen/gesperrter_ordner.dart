@@ -198,6 +198,9 @@ extension GesperrteAbfragen on AppDatabase {
         transkript: Value(null),
         transkriptSprache: Value(null),
         transkriptGeprueft: Value(false),
+        // Die Einbettungen der Standbilder fallen unten weg; nach dem
+        // Entsperren holt der Nachtrag sie neu.
+        videobilderGeprueft: Value(false),
       ),
     );
 
@@ -219,6 +222,12 @@ extension GesperrteAbfragen on AppDatabase {
         );
     await (delete(
       imageEmbeddings,
+    )..where((t) => t.assetId.isIn(assetIds))).go();
+    // Die Standbilder eines Videos sind dieselbe Art Bildinhalt wie die
+    // Einbettung oben. Bis #403 blieben sie beim Sperren im Klartext
+    // stehen; nur die Abfragen filterten das gesperrte Video aus.
+    await (delete(
+      videoeinbettungen,
     )..where((t) => t.assetId.isIn(assetIds))).go();
     await (delete(assetTags)..where(
           (t) => t.assetId.isIn(assetIds) & t.quelle.equals(Tagquelle.ki),
