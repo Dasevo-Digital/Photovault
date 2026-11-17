@@ -162,7 +162,8 @@ SHA-256. Ein Gerät, das 180 Tage nicht da war, ist abgemeldet.
 
 **Bremse:** Nach fünf Fehlversuchen in Folge ist ein Name eine Minute
 gesperrt, danach doppelt so lange bis höchstens eine Stunde – auch Namen,
-die es nicht gibt, damit die Sperre nichts verrät. Eine Adresse mit zehn
+die es nicht gibt, damit die Sperre nichts verrät. Die Sperre gilt dem
+Konto, also auch für Passkey und OIDC. Eine Adresse mit zehn
 Fehlversuchen in 15 Minuten wird abgewiesen, bevor gerechnet wird.
 
 ## Reverse Proxy und VPN

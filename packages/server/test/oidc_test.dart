@@ -275,6 +275,41 @@ void main() {
     expect((r['geraet']! as Map)['name'], 'Pixel');
   });
 
+  test('ein gesperrtes Konto bleibt auch über OIDC zu (#402)', () async {
+    await verknuepfe('nutzer-17');
+    // Fünf falsche Passwörter von verschiedenen Adressen: Das sperrt das
+    // Konto selbst, nicht nur eine Adresse.
+    for (var i = 0; i < 5; i++) {
+      await konten.anmelden(
+        'erika',
+        'falsch $i',
+        geraet: 'Rechner',
+        adresse: 'a$i',
+      );
+    }
+    expect(
+      await konten.anmelden(
+        'erika',
+        'ein langes passwort',
+        geraet: 'Rechner',
+        adresse: 'b',
+      ),
+      isA<Abgewiesen>().having((a) => a.warte, 'warte', isNotNull),
+      reason: 'das Passwort ist jetzt auch richtig gesperrt',
+    );
+
+    final zurApp = await zurueck(await starteAnmeldung(), 'nutzer-17');
+    final r = await frag(
+      'POST',
+      '/api/v1/anmelden/oidc/einloesen',
+      json: {'code': zurApp.queryParameters['code'], 'pruefer': pruefer},
+    );
+    expect(r.statusCode, 429);
+    final j = await jsonAus(r);
+    expect(j, isNot(contains('token')));
+    expect(j['warte'], isA<int>());
+  });
+
   test('der Code taugt nur mit dem Prüfer und nur einmal', () async {
     await verknuepfe('nutzer-17');
     final zurApp = await zurueck(await starteAnmeldung(), 'nutzer-17');

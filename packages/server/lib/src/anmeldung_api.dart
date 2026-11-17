@@ -421,7 +421,9 @@ class Anmeldungsapi {
                 'anmelden und unter „Konto“ verknüpfen.',
           }, status: 403);
         }
-        return _ergebnis(konten.meldeAn(konto.id, e.geraet, adresse));
+        return _ergebnis(
+          konten.meldeMitOidcAn(konto.id, geraet: e.geraet, adresse: adresse),
+        );
       case OidcAbsicht.verknuepfen:
         // Die Verknüpfung gilt nur für das Konto, das sie begonnen hat,
         // und nur, wenn es sie selbst einlöst – mit dem Token des Geräts

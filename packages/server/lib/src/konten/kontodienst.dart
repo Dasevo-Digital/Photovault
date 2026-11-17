@@ -434,12 +434,8 @@ class Kontodienst {
     final zeile = z.first;
     final kontoId = zeile['id'] as String;
     final stand = zeile['anmelde_stand'] as int;
-    final gesperrt = zeile['gesperrt_bis'] as int?;
-    if (gesperrt != null && gesperrt > _uhr().millisecondsSinceEpoch) {
-      return Abgewiesen(
-        warte: Duration(milliseconds: gesperrt - _uhr().millisecondsSinceEpoch),
-      );
-    }
+    final sperre = _sperreVon(zeile);
+    if (sperre != null) return Abgewiesen(warte: sperre);
     final pruefwert = zeile['passwort'] as String?;
     final stimmt = pruefwert == null
         ? await _ampel.mit(() async {
@@ -600,12 +596,8 @@ class Kontodienst {
     }
     final z = _zeile(kontoId);
     if (z == null) return const Abgewiesen();
-    final gesperrt = z['gesperrt_bis'] as int?;
-    if (gesperrt != null && gesperrt > _uhr().millisecondsSinceEpoch) {
-      return Abgewiesen(
-        warte: Duration(milliseconds: gesperrt - _uhr().millisecondsSinceEpoch),
-      );
-    }
+    final sperre = _sperreVon(z);
+    if (sperre != null) return Abgewiesen(warte: sperre);
     return _meldeNachPruefungAn(
       kontoId,
       z['anmelde_stand'] as int,
@@ -614,8 +606,35 @@ class Kontodienst {
     );
   }
 
-  /// Ein Gerät für [kontoId] anmelden – nach bestandener Prüfung (auch
-  /// über OIDC).
+  /// Meldet nach einer Anmeldung beim OIDC-Anbieter an.
+  ///
+  /// Wer es ist, hat der Anbieter geprüft. Gesperrt bleibt ein Konto nach
+  /// zu vielen Fehlversuchen trotzdem: Die Sperre gilt dem Konto, nicht
+  /// einem Weg hinein. Vorher bekam ein gesperrtes Konto über OIDC sofort
+  /// ein Token, während Passwort und Passkey abgewiesen wurden (#402).
+  Anmeldeergebnis meldeMitOidcAn(
+    String kontoId, {
+    required String geraet,
+    required String adresse,
+  }) {
+    final z = _zeile(kontoId);
+    if (z == null) return const Abgewiesen();
+    final sperre = _sperreVon(z);
+    if (sperre != null) return Abgewiesen(warte: sperre);
+    return meldeAn(kontoId, geraet, adresse);
+  }
+
+  /// Wie lange das Konto in [zeile] noch gesperrt ist, oder `null`. Für
+  /// jeden Weg hinein dieselbe Regel: Passwort, Passkey und OIDC.
+  Duration? _sperreVon(Row zeile) {
+    final gesperrt = zeile['gesperrt_bis'] as int?;
+    final jetzt = _uhr().millisecondsSinceEpoch;
+    if (gesperrt == null || gesperrt <= jetzt) return null;
+    return Duration(milliseconds: gesperrt - jetzt);
+  }
+
+  /// Ein Gerät für [kontoId] anmelden – nach bestandener Prüfung. Prüft
+  /// selbst keine Sperre; von aussen über [meldeMitOidcAn].
   Angemeldet meldeAn(String kontoId, String name, String adresse) {
     final token = 'pv1_${_zufallstext(43)}';
     final id = const Uuid().v4();
