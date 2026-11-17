@@ -103,4 +103,38 @@ void main() {
       );
     },
   );
+
+  test('auch ein unbearbeitetes Foto behält Datum und Kamera (#403)', () async {
+    // Der Wandler streift jeden EXIF-Anhang ab. Vorher kamen die
+    // Aufnahmeangaben nur bei bearbeiteten Fotos zurück; ein unbearbeitetes
+    // stand nach „Web – 2048 px“ im nächsten Programm am Exporttag.
+    final rein = File(p.join(tempRoot.path, 'feld.jpg'))
+      ..writeAsBytesSync(jpeg(0, 200, 0));
+    final r = await ImportService(db, paths).importFile(rein.path);
+    final id = r.assetId!;
+    await (db.update(db.assets)..where((t) => t.id.equals(id))).write(
+      AssetsCompanion(
+        fileCreatedAt: Value(DateTime(2019, 6, 2, 14, 5, 9)),
+        cameraMake: const Value('Beispielkamera'),
+        cameraModel: const Value('Modell 1'),
+        latitude: const Value(51.3),
+        longitude: const Value(12.4),
+      ),
+    );
+    final a = (await db.assetById(id))!;
+    final name = await ExportService(paths).exportAsset(
+      a,
+      ziel.path,
+      vorgabe: const Exportvorgabe(nachJpeg: true, maxKante: 2048),
+    );
+    final bild = img.decodeJpg(
+      File(p.join(ziel.path, name)).readAsBytesSync(),
+    )!;
+    expect(
+      bild.exif.exifIfd['DateTimeOriginal']?.toString(),
+      '2019:06:02 14:05:09',
+    );
+    expect(bild.exif.imageIfd.make, 'Beispielkamera');
+    expect(bild.exif.gpsIfd.isEmpty, isTrue, reason: 'der Ort bleibt daheim');
+  });
 }

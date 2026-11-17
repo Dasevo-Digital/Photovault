@@ -216,10 +216,11 @@ class ExportService {
         // Die bearbeitete Fassung ist schon entzerrt.
         objektivkorrektur: bearbeitet == null,
       );
-      // Die bearbeitete Fassung trägt keine Aufnahmeangaben; ohne sie
-      // stünde das Foto im nächsten Programm am Tag des Exports. Der Ort
-      // kommt – wie beim Server – nicht mit.
-      if (gerendert != null && bearbeitet != null && !v.metadatenEntfernen) {
+      // Gewandelt trägt kein Foto mehr Aufnahmeangaben: Der Wandler streift
+      // sie ab, auch beim unbearbeiteten Original. Ohne sie stünde das Foto
+      // im nächsten Programm am Tag des Exports. Bis #403 galt das nur für
+      // bearbeitete Fotos. Der Ort kommt – wie beim Server – nicht mit.
+      if (gerendert != null && !v.metadatenEntfernen) {
         gerendert = mitAufnahmeangaben(gerendert, asset);
       }
       if (gerendert != null && v.gesichterVerdecken && _library != null) {
