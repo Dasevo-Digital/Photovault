@@ -2157,53 +2157,48 @@ void main() {
     await ende(tester);
   }, timeout: _frist);
 
-  // Befund: Der Tresorwächter der Hülle hört nie zu. `_tresor` ist ein
-  // `late final`-Feld (lib/screens/home_shell.dart:349), das nur in dispose
-  // (Z. 722) angefasst wird – horche() läuft also nie, und beim Verbergen
-  // oder Minimieren bleibt der gesperrte Ordner entsperrt.
-  testWidgets(
-    'GRU-051 Gesperrter Ordner wird beim Verbergen gesperrt',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      await bibliothek.setupVaultPin('2468');
-      expect(bibliothek.vaultUnlockedThisSession, isTrue);
-      // Gegenprobe: nur Fokuswechsel.
-      await lebenszyklus(tester, [AppLifecycleState.inactive]);
-      expect(
-        bibliothek.vaultUnlockedThisSession,
-        isTrue,
-        reason: 'Fokuswechsel sperrt nicht',
-      );
-      await lebenszyklus(tester, [AppLifecycleState.resumed]);
-      expect(bibliothek.vaultUnlockedThisSession, isTrue);
-      // Verbergen.
-      await lebenszyklus(tester, [
-        AppLifecycleState.inactive,
-        AppLifecycleState.hidden,
-      ]);
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(bibliothek.vaultUnlockedThisSession, isFalse);
-      await lebenszyklus(tester, [
-        AppLifecycleState.inactive,
-        AppLifecycleState.resumed,
-      ]);
-      await settle(tester);
-      // Ordner öffnen verlangt wieder die PIN.
-      await einstellungen(tester);
-      await gruppe(tester, de.einstAbschnittGesperrterOrdner);
-      await tippe(tester, knopf(de.einstGesperrtOeffnen));
-      await waitFor(tester, find.text(de.pinEingebenTitel));
-      await enter(tester, find.byType(TextField).last, '2468');
-      await tippe(tester, knopf('OK'));
-      await waitFor(tester, find.byType(LockedFolderScreen));
-      expect(bibliothek.vaultUnlockedThisSession, isTrue);
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #400: Der Tresorwächter der Hülle horchte nie, weil sein
+  // `late`-Feld erst in dispose entstand.
+  testWidgets('GRU-051 Gesperrter Ordner wird beim Verbergen gesperrt', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    await bibliothek.setupVaultPin('2468');
+    expect(bibliothek.vaultUnlockedThisSession, isTrue);
+    // Gegenprobe: nur Fokuswechsel.
+    await lebenszyklus(tester, [AppLifecycleState.inactive]);
+    expect(
+      bibliothek.vaultUnlockedThisSession,
+      isTrue,
+      reason: 'Fokuswechsel sperrt nicht',
+    );
+    await lebenszyklus(tester, [AppLifecycleState.resumed]);
+    expect(bibliothek.vaultUnlockedThisSession, isTrue);
+    // Verbergen.
+    await lebenszyklus(tester, [
+      AppLifecycleState.inactive,
+      AppLifecycleState.hidden,
+    ]);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(bibliothek.vaultUnlockedThisSession, isFalse);
+    await lebenszyklus(tester, [
+      AppLifecycleState.inactive,
+      AppLifecycleState.resumed,
+    ]);
+    await settle(tester);
+    // Ordner öffnen verlangt wieder die PIN.
+    await einstellungen(tester);
+    await gruppe(tester, de.einstAbschnittGesperrterOrdner);
+    await tippe(tester, knopf(de.einstGesperrtOeffnen));
+    await waitFor(tester, find.text(de.pinEingebenTitel));
+    await enter(tester, find.byType(TextField).last, '2468');
+    await tippe(tester, knopf('OK'));
+    await waitFor(tester, find.byType(LockedFolderScreen));
+    expect(bibliothek.vaultUnlockedThisSession, isTrue);
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets('GRU-056 Band der KI-Restaurierung', (tester) async {
     filtereSemantik();

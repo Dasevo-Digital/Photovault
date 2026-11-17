@@ -372,6 +372,11 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _lebenslauf;
+    // Beide Felder sind `late` und entstehen erst beim ersten Zugriff.
+    // Ohne diesen hier legte erst `dispose` den Wächter an – er horchte
+    // die ganze Sitzung über nie, und beim Verbergen blieb der Tresor
+    // offen (#400).
+    _tresor;
     Leistenmerker.lies().then((f) {
       if (mounted && f != _fixiert) setState(() => _fixiert = f);
     });

@@ -2053,10 +2053,7 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: home_shell.dart:349 legt den Tresorwaechter als `late final` an,
-  // berührt ihn aber nur in dispose() (Zeile 722). Er wird während der
-  // Sitzung nie erzeugt, `horche()` läuft nie – Verbergen des Fensters
-  // sperrt den gesperrten Ordner nicht.
+  // Behoben in #400 (der Tresorwächter horchte nie).
   testWidgets('IMP-205 Verbergen des Fensters sperrt', (tester) async {
     await zweimal(tester, () async {
       await importiereDirekt(tester, [testfoto('w.jpg')]);
@@ -2083,7 +2080,7 @@ void main() {
       expect(nachVerbergen, isFalse, reason: 'Verbergen sperrt die Sitzung');
       await waitGone(tester, find.byType(LockedFolderScreen));
     });
-  }, skip: true);
+  });
 
   // ---------------------------------------------------------------------
   // Integritätsprüfung
