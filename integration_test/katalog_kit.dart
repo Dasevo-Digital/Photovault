@@ -136,6 +136,35 @@ void _taktgeberStarten() {
   });
 }
 
+/// Übergeht Zusicherungen aus dem Rahmenwerk selbst bis zum Ende der
+/// Prüfung – nicht aus der App:
+///
+/// - zum Semantikbaum (`'!child.attached'`, `'node.built'`). Die kommen
+///   nur, wenn auf dem Rechner eine Bedienungshilfe die Semantik
+///   einschaltet, dann aber bei jedem Bild.
+/// - von einem abgebauten `RawTooltip`, der noch am globalen Zeigerweg
+///   hängt und beim nächsten Klick einen zweiten Ticker anlegt
+///   (raw_tooltip.dart).
+void semantikZusicherungenUebergehen() {
+  final vorher = FlutterError.onError;
+  FlutterError.onError = (details) {
+    final text = details.exception.toString();
+    final stapel = details.stack?.toString() ?? '';
+    if (text.contains('package:flutter/src/semantics/semantics.dart') ||
+        text.contains("'!child.attached'") ||
+        text.contains("'node.built'")) {
+      return;
+    }
+    if (stapel.contains('raw_tooltip.dart') &&
+        (text.contains('SingleTickerProviderStateMixin') ||
+            text.contains("Looking up a deactivated widget's ancestor"))) {
+      return;
+    }
+    vorher?.call(details);
+  };
+  addTearDown(() => FlutterError.onError = vorher);
+}
+
 /// Startet die App mit einer frischen Bibliothek.
 ///
 /// [fotos] werden ohne Oberfläche importiert (schnell, für

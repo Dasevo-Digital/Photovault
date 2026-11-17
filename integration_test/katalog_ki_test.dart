@@ -4879,12 +4879,12 @@ void main() {
     },
   );
 
-  // Befund: Scan-Analyse scheitert immer: Isolate.run-Closure nimmt den State mit, LibraryState._tresorWarteschlange (Future) ist nicht sendbar (scan_workspace_screen.dart:73, library_state.dart:3839).
+  // Behoben in #405 (Scan-Analyse im Isolate über berechne).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-128 KI-130 KI-131 KI-132 KI-140 KI-141 Befundpruefung Scan mit zwei Fotos',
     (tester) async {
+      semantikZusicherungenUebergehen();
       await startApp(tester);
       await autoAus(tester);
       final merker = EndungenDialog();
@@ -5007,12 +5007,12 @@ void main() {
     },
   );
 
-  // Befund: Scan-Analyse scheitert immer (siehe KI-128).
+  // Behoben in #405 (Scan-Analyse im Isolate über berechne).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-129 KI-133 KI-134 KI-135 Befundpruefung Scan: Formate, Beschreibung, Datum',
     (tester) async {
+      semantikZusicherungenUebergehen();
       await startApp(tester);
       await autoAus(tester);
 
@@ -5161,12 +5161,12 @@ void main() {
     },
   );
 
-  // Befund: Scan-Analyse scheitert immer (siehe KI-128).
+  // Behoben in #405 (Scan-Analyse im Isolate über berechne).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-136 KI-137 KI-138 Befundpruefung Vorder- und Rueckseiten stapeln',
     (tester) async {
+      semantikZusicherungenUebergehen();
       await startApp(tester);
       await autoAus(tester);
       final a = scanbild(
@@ -5239,12 +5239,12 @@ void main() {
     },
   );
 
-  // Befund: Scan-Analyse scheitert immer (siehe KI-128).
+  // Behoben in #405 (Scan-Analyse im Isolate über berechne).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-139 Befundpruefung Scan: nach dem Import restaurieren',
     (tester) async {
+      semantikZusicherungenUebergehen();
       await startApp(tester);
       await autoAus(tester);
       final scan = scanbild('rest.png', fotos: [(200, 200, 300, 250, rot)]);
@@ -5281,12 +5281,12 @@ void main() {
     },
   );
 
-  // Befund: Scan-Analyse scheitert immer (siehe KI-128); dazu verwirft der catch ausserhalb der Schleife die ganze Auswahl (scan_workspace_screen.dart:56–80).
+  // Behoben in #405 (Scan-Analyse im Isolate über berechne).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-142 Befundpruefung unlesbare Datei verwirft die Auswahl',
     (tester) async {
+      semantikZusicherungenUebergehen();
       await startApp(tester);
       final gut = scanbild('gut.png', fotos: [(200, 200, 300, 250, blau)]);
       final kaputt = File(p.join(eingang.path, 'kaputt.png'))

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -7,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
+import 'package:kern/berechne.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../services/meldungsdienst.dart';
@@ -69,14 +69,26 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
     try {
       final neu = <_ScanQuelle>[];
       for (final pfad in pfade) {
-        final bytes = await File(pfad).readAsBytes();
-        final analyse = await Isolate.run(() => analysiereScan(bytes));
-        neu.add(_ScanQuelle.aus(pfad, bytes, analyse));
+        // Je Datei für sich: Eine unlesbare Datei verwarf vorher die ganze
+        // Auswahl (#405).
+        try {
+          final bytes = await File(pfad).readAsBytes();
+          // Über [berechne], nicht `Isolate.run(() => …)` hier: Die Closure
+          // nähme den Rahmen dieser Methode mit und damit den State samt
+          // Bibliothek, die sich nicht in ein Isolate schicken lässt. So
+          // scheiterte jede Auswahl mit „object is unsendable“ (#405).
+          final analyse = await berechne(analysiereScan, bytes);
+          neu.add(_ScanQuelle.aus(pfad, bytes, analyse));
+        } catch (e) {
+          if (mounted) {
+            melde.fehler(
+              AppTexte.of(context).scanFehler('${p.basename(pfad)}: $e'),
+            );
+          }
+        }
         if (mounted) setState(() => _fortschritt++);
       }
       if (mounted) setState(() => _quellen.addAll(neu));
-    } catch (e) {
-      if (mounted) melde.fehler(AppTexte.of(context).scanFehler('$e'));
     } finally {
       if (mounted) setState(() => _beschaeftigt = false);
     }
@@ -91,9 +103,7 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
         breite: quelle.breite,
         hoehe: quelle.hoehe,
       );
-      final vorschau = await Isolate.run(
-        () => erzeugeScanVorschau(quelle.bytes, bereich),
-      );
+      final vorschau = await berechne(_vorschau, (quelle.bytes, bereich));
       if (mounted) {
         setState(() {
           quelle.kandidaten
@@ -156,13 +166,11 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
         ];
         final bytes = quelle.bytes;
         final verlustfrei = scanVerlustfrei(quelle.pfad);
-        final ausschnitte = await Isolate.run(
-          () => erzeugeScanAusschnitte(
-            bytes,
-            auftraege,
-            verlustfrei: verlustfrei,
-          ),
-        );
+        final ausschnitte = await berechne(_ausschnitte, (
+          bytes: bytes,
+          auftraege: auftraege,
+          verlustfrei: verlustfrei,
+        ));
         final basis = p.basenameWithoutExtension(quelle.pfad);
         for (var j = 0; j < stellen.length; j++) {
           final i = stellen[j];
@@ -446,3 +454,18 @@ class _KandidatenKarte extends StatelessWidget {
     );
   }
 }
+
+// Die Arbeit für [berechne] steht ausserhalb des States, damit nur ihre
+// Eingabe ins Isolate reist (#405).
+
+Uint8List _vorschau((Uint8List, ScanBereich) e) =>
+    erzeugeScanVorschau(e.$1, e.$2);
+
+List<ScanAusschnitt> _ausschnitte(
+  ({
+    Uint8List bytes,
+    List<({ScanBereich bereich, int drehungen})> auftraege,
+    bool verlustfrei,
+  })
+  e,
+) => erzeugeScanAusschnitte(e.bytes, e.auftraege, verlustfrei: e.verlustfrei);
