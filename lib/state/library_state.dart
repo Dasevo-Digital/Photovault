@@ -815,6 +815,12 @@ class LibraryState extends ChangeNotifier {
     await mitFrist('Abgleich', () async => abgleich?.beende());
     await mitFrist('Rechenhilfe', beendeRechenhilfe);
     if (_datenbankGeoeffnet) {
+      // Die Restaurierung wartet auf Leerlauf und fragt danach die
+      // Datenbank – nach dem Schliessen liefe das ins Leere.
+      await mitFrist('Restaurierung', () async => restoreQueue.beende());
+      // Geladene Modelle freigeben, solange ihre Halter noch leben; sonst
+      // bleiben sie bis zum Prozessende im Speicher.
+      await mitFrist('Modelle', _sweepIdleModels);
       await mitFrist('Datenbank', () => db.close());
       _datenbankGeoeffnet = false;
     }

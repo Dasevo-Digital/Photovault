@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/services/restore_queue_service.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// Vor dem Beenden schliesst die Bibliothek ihre Datenbank (#215) – sonst
@@ -27,4 +28,25 @@ void main() {
     await expectLater(db.select(db.assets).get(), throwsA(anything));
     await bib.vorDemBeenden();
   });
+
+  test(
+    'die Restaurierung fragt nach dem Anhalten die Datenbank nicht mehr',
+    () async {
+      // Ihr Leerlauf-Wecker feuerte bis zu 20 s nach dem Schliessen und
+      // fragte dann eine geschlossene Datenbank ("connection was closed").
+      final temp = Directory.systemTemp.createTempSync('pv_beenden_queue_');
+      addTearDown(() => temp.deleteSync(recursive: true));
+      final db = AppDatabase(NativeDatabase.memory());
+      final queue = RestoreQueueService(
+        db,
+        await StoragePaths.forTesting(Directory(p.join(temp.path, 'lib'))),
+      );
+      queue.beende();
+      await db.close();
+      // Ohne beende() liefe das in die geschlossene Datenbank.
+      await queue.resume();
+      queue.noteUserInteraction();
+      await queue.resumeWhenIdle();
+    },
+  );
 }

@@ -222,6 +222,19 @@ class RestoreQueueService {
     });
   }
 
+  /// Hält die Warteschlange für immer an, bevor die Datenbank geschlossen
+  /// wird (LibraryState.vorDemBeenden): Der Leerlauf-Wecker feuert sonst
+  /// bis zu [idleDelay] später und fragt eine geschlossene Datenbank.
+  void beende() {
+    _beendet = true;
+    _idle = false;
+    _idleTimer?.cancel();
+    _idleTimer = null;
+    _lauf?.pausieren();
+  }
+
+  bool _beendet = false;
+
   Future<void> _maybeStartNext() async {
     // _processing wird bewusst VOR dem ersten await gesetzt (statt erst
     // nachdem [nextQueuedRestoreJob] zurückkommt) – Audit-Fund: zwei
@@ -230,7 +243,7 @@ class RestoreQueueService {
     // beiden _processing setzt, und so zwei Aufträge parallel verarbeiten
     // (verdoppelte CPU/GPU-Last, doppelter Speicherbedarf für die
     // Kachel-Puffer) statt der vorgesehenen Ein-Auftrag-gleichzeitig-Regel.
-    if (_processing || !_idle) return;
+    if (_beendet || _processing || !_idle) return;
     _processing = true;
     try {
       final next = await _db.nextQueuedRestoreJob();
