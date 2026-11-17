@@ -641,6 +641,11 @@ class LibraryState extends ChangeNotifier {
   /// das Umhaengen einer Zuordnung, das Zahl und Zeilenzahl unveraendert
   /// liesse. Und die Schwellen kommen mit, weil eine Ablehnung sie
   /// verschiebt, ohne ein einziges Gesicht anzufassen.
+  ///
+  /// Gezählt wird genau, was [einbettungenZugeordneterGesichter] liefert:
+  /// ohne gesperrte und gelöschte Fotos. Vorher zählte der Abdruck sie mit,
+  /// das Sperren änderte ihn also nicht, und der Vorrat schlug weiter einen
+  /// Namen aus Fotos vor, die eben weggeschlossen worden waren (#403).
   static const _abdruckSql =
       'SELECT count(*) AS n, coalesce(sum(f.rowid),0) AS a, '
       'coalesce(sum(p.rowid),0) AS b, coalesce(sum(f.rowid*p.rowid),0) AS c, '
@@ -648,7 +653,8 @@ class LibraryState extends ChangeNotifier {
       '(SELECT coalesce(sum(coalesce(similarity_threshold,0)),0) FROM people) '
       '  AS ps '
       'FROM faces f JOIN people p ON p.id = f.person_id '
-      'WHERE f.embedding IS NOT NULL';
+      'JOIN assets s ON s.id = f.asset_id '
+      'WHERE f.embedding IS NOT NULL AND s.is_trashed = 0 AND s.is_locked = 0';
 
   Future<String> _zuordnungsabdruck() async {
     final z = await db.customSelect(_abdruckSql).getSingle();

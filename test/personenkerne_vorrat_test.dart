@@ -111,6 +111,33 @@ void main() {
     expect(vorschlag?.id, anna);
   });
 
+  test('gesperrte und gelöschte Fotos fallen aus dem Vorrat (#403)', () async {
+    final anna = await person('Anna');
+    await foto('a');
+    await gesicht('a', [1, 0, 0], personId: anna);
+    // Einmal gerechnet: Der Vorrat steht.
+    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+
+    await (db.update(db.assets)..where((t) => t.id.equals('a'))).write(
+      const AssetsCompanion(isLocked: Value(true)),
+    );
+    expect(
+      await library.personenvorschlag(vektor([1, 0, 0])),
+      isNull,
+      reason: 'kein Name aus einem weggeschlossenen Foto',
+    );
+
+    await (db.update(db.assets)..where((t) => t.id.equals('a'))).write(
+      const AssetsCompanion(isLocked: Value(false), isTrashed: Value(true)),
+    );
+    expect(await library.personenvorschlag(vektor([1, 0, 0])), isNull);
+
+    await (db.update(db.assets)..where((t) => t.id.equals('a'))).write(
+      const AssetsCompanion(isTrashed: Value(false)),
+    );
+    expect((await library.personenvorschlag(vektor([1, 0, 0])))?.id, anna);
+  });
+
   test(
     'eine weggenommene Zuordnung verschwindet auch aus den Kernen',
     () async {

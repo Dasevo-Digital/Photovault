@@ -3761,11 +3761,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Die Personenkerne werden zwischengespeichert, und ihr Abdruck
-  // (lib/state/library_state.dart:644–651) zählt nur Gesichter und
-  // Personen, nicht ob ein Foto gesperrt ist. Wurde vor dem Sperren
-  // einmal ein Vorschlag gerechnet, schlägt die App die Person aus den
-  // gesperrten Fotos weiter vor, bis sie neu startet.
+  // Behoben in #403: Der Abdruck des Vorrats zählt gesperrte Fotos nicht
+  // mehr mit, Sperren verwirft ihn also.
   pruefung('PER-106 Kein Namensvorschlag aus gesperrten Fotos', (tester) async {
     await start(tester);
     final f = await fotos(tester, bilder('ns', 3));
@@ -3797,7 +3794,7 @@ void main() {
     print('PER-106: Vorschlag trotz gesperrter Fotos: $vorschlag');
     expect(vorschlag, isFalse);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-108 Gesichtserkennung ohne Netz', (tester) async {
     await start(tester, modelle: _gesichtsmodelle);
