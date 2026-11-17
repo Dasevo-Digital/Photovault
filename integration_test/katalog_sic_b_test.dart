@@ -2530,13 +2530,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Scheitert der Umzug, schliesst verlegeBibliothek nicht das
-  // Fortschrittsfenster, sondern die Seite darunter: Es poppt den Navigator
-  // des Einstellungs-Kontexts (innerer Navigator des Arbeitsbereichs), das
-  // Fenster liegt aber im Wurzel-Navigator
-  // (lib/screens/einstellungen/gemeinsam.dart:114 showDialog, :180 pop).
-  // Das modale Fenster „Die Bibliothek zieht auf den Server …“ bleibt
-  // stehen; nur ein Neustart hilft.
+  // Behoben in #406: Das Fortschrittsfenster wird auf dem Wurzel-Navigator
+  // geschlossen, auf dem es liegt.
   testWidgets('SIC-119 Nach dem Abbruch schliesst das Fortschrittsfenster', (
     tester,
   ) async {
@@ -2545,7 +2540,7 @@ void main() {
     expect(find.text(de.serverZiehtUm), findsNothing, reason: 'Fenster offen');
     expect(find.text(de.serverUmziehen), findsOneWidget, reason: 'Wahl weg');
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('SIC-176 SIC-177 SIC-178 SIC-179 Nur ohne Server', (
     tester,

@@ -579,7 +579,8 @@ mixin _Verlauf on _EntwickelnBasis {
     if (los != true || !mounted) return;
     setState(() => _saving = true);
     final stand = ValueNotifier((0, 0));
-    final navigator = Navigator.of(context);
+    // Wie showDialog: der Wurzel-Navigator, auf dem das Fenster liegt (#406).
+    final navigator = Navigator.of(context, rootNavigator: true);
     var abgebrochen = false;
     var offen = true;
     Restaurierungslauf? lauf;

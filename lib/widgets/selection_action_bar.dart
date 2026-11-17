@@ -1346,7 +1346,10 @@ Future<void> runBatchExport(
   }
 
   if (context.mounted) {
-    Navigator.of(context).pop();
+    // Das Fenster liegt auf dem Wurzel-Navigator (showDialog). Ohne
+    // rootNavigator schloss pop die Zeitleiste im Arbeitsbereich, und
+    // „Exportiere …“ blieb stehen (#406).
+    Navigator.of(context, rootNavigator: true).pop();
     final t = AppTexte.of(context);
     melde.erfolg(t.auswExportFertig(exported, assets.length, destination));
     // Nach der Erfolgsmeldung und als Warnung, nicht als Hinweis: Sie

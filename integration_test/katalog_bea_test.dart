@@ -8074,14 +8074,8 @@ void _befundTests() {
     await abschluss(tester);
   }, skip: true);
 
-  // Befund: Nach jedem Export aus der Auswahlleiste (Größen, eigene
-  // Voreinstellungen, Datenschutzexport) bleibt das Fenster „Exportiere …“
-  // stehen, und der Arbeitsbereich verliert seine Seite (Fehlerfläche statt
-  // Zeitleiste). runBatchExport öffnet das Fenster mit showDialog auf dem
-  // Navigator des Fensters (lib/widgets/selection_action_bar.dart:1291),
-  // schliesst es aber mit Navigator.of(context).pop() (Zeile 1349) – das
-  // trifft den inneren Navigator des Arbeitsbereichs, dessen einzige Seite
-  // die Zeitleiste ist.
+  // Behoben in #406: Das Fenster „Exportiere …“ wird auf dem
+  // Wurzel-Navigator geschlossen, auf dem es liegt; die Zeitleiste bleibt.
   testWidgets(
     'BEA-127 Befund: Fortschrittsfenster bleibt nach dem Export stehen',
     (tester) async {
@@ -8113,6 +8107,5 @@ void _befundTests() {
       await alleSchliessen(tester);
       await abschluss(tester);
     },
-    skip: true,
   );
 }

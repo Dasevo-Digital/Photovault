@@ -2014,10 +2014,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Der Fortschrittsdialog liegt auf dem obersten Navigator,
-  // geschlossen wird aber der innere des Arbeitsbereichs
-  // (lib/screens/people_screen.dart:629 gegen 683–688). Ohne Gruppen
-  // bleibt der Dialog stehen, und die Personen-Seite selbst verschwindet.
+  // Behoben in #406: Der Fortschrittsdialog wird auf seinem eigenen
+  // (Wurzel-)Navigator geschlossen.
   pruefung('PER-043 Gruppieren ohne ähnliche Gruppen', (tester) async {
     await start(tester);
     final f = await fotos(tester, bilder('kg', 4));
@@ -2043,13 +2041,9 @@ void main() {
     expect(dialogOffen, isFalse, reason: 'Fortschrittsdialog schliesst');
     expect(seiteDa, isTrue, reason: 'Personen-Seite bleibt');
     await finish(tester);
-  }, skip: true);
+  });
 
-  // Befund: Der Fortschrittsdialog liegt auf dem obersten Navigator,
-  // geschlossen wird der innere des Arbeitsbereichs
-  // (lib/screens/people_screen.dart:629 gegen 683–688). „Vorschläge
-  // prüfen“ erscheint, aber der Dialog bleibt mit seiner Barriere darüber
-  // stehen; nichts darunter lässt sich anklicken.
+  // Behoben in #406 (Fortschrittsdialog auf dem Wurzel-Navigator).
   pruefung('PER-044 Ansicht „Vorschläge prüfen“', (tester) async {
     await start(tester);
     final f = await fotos(tester, bilder('ag', 8));
@@ -2135,7 +2129,7 @@ void main() {
     );
     print('PER-044 a=$a g1=${g1.length} g2=${g2.length} g3=${g3.length}');
     await finish(tester);
-  }, skip: true);
+  });
 
   // Wie PER-044, aber der hängende Fortschrittsdialog wird – wie es ein
   // Mensch täte – mit „Abbrechen“ weggeklickt; seine Folgefehler im

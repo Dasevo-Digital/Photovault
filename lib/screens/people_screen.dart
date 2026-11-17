@@ -680,7 +680,10 @@ class _PeopleScreenState extends State<PeopleScreen>
       );
     }
 
-    final navigator = Navigator.of(context);
+    // Das Fenster liegt auf dem Wurzel-Navigator (showDialog). Der nächste
+    // Navigator über [context] ist der des Arbeitsbereichs: pop schloss
+    // dort die Personen-Seite, und das Fenster blieb stehen (#406).
+    final navigator = Navigator.of(context, rootNavigator: true);
     var dialogOffen = false;
     void dialogSchliessen() {
       if (dialogOffen && !abgebrochen) {

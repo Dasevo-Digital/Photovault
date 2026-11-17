@@ -180,7 +180,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     }
 
     if (context.mounted) {
-      Navigator.of(context).pop(); // Ladeanzeige schließen
+      // Das Fenster liegt auf dem Wurzel-Navigator (showDialog), nicht auf
+      // dem des Arbeitsbereichs (#406).
+      Navigator.of(context, rootNavigator: true).pop(); // Ladeanzeige
       melde.erfolg(
         AppTexte.of(
           context,

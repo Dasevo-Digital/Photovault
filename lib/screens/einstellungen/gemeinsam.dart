@@ -160,7 +160,9 @@ Future<void> verlegeBibliothek(
   try {
     await action();
     if (!context.mounted) return;
-    Navigator.of(context).pop(); // Ladeanzeige schließen
+    // Das Fenster liegt auf dem Wurzel-Navigator (showDialog); der nächste
+    // Navigator über [context] wäre der des Arbeitsbereichs (#406).
+    Navigator.of(context, rootNavigator: true).pop(); // Ladeanzeige
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -177,7 +179,7 @@ Future<void> verlegeBibliothek(
     );
   } catch (e) {
     if (context.mounted) {
-      Navigator.of(context).pop(); // Ladeanzeige schließen
+      Navigator.of(context, rootNavigator: true).pop(); // Ladeanzeige
       melde.fehler('$errorPrefix: ${fehlertext(context, e)}');
     }
   }
