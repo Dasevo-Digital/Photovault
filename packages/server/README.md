@@ -64,8 +64,12 @@ In `PV_DATEN` liegen `server.sqlite` (Konten und Geräte),
 den Besitzer lesbar), `bibliotheken/<Konto>/` und `eingang/<Konto>/`.
 Gesichert gehört der ganze Ordner; nur `kartenkacheln/`, der
 Zwischenspeicher der Karten (höchstens 1 GB, siehe unten), darf fehlen.
-Fehlt der Schlüssel, ist nichts verloren ausser den TOTP-Einrichtungen
-(`konto totp-zuruecksetzen`).
+Fehlt der Schlüssel, legt der Server einen neuen an. Fotos, Konten und
+Passwörter bleiben; nicht mehr lesbar sind dann die TOTP-Einrichtungen
+(`konto totp-zuruecksetzen`, die Wiederherstellungscodes gelten weiter),
+die Adressen der Freigabe-Links (neu anlegen), der Schlüssel der
+Serversicherung und das Geheimnis der Aussensicherung (beide neu
+einrichten).
 
 **Speicher:** Der Server misst alle fünf Minuten den freien Platz unter
 `PV_DATEN`. Knapp ist er ab `PV_SPEICHER_WARNUNG` Prozent belegt oder unter

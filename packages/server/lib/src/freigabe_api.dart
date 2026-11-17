@@ -20,6 +20,7 @@ import 'dateiantwort.dart';
 import 'freigaben.dart';
 import 'gastbeitraege.dart';
 import 'gastpruefung.dart';
+import 'konten/tresorschluessel.dart' show SchluesselPasstNicht;
 import 'konten/bremse.dart';
 import 'speicher.dart';
 import 'teilbilder.dart';
@@ -214,10 +215,15 @@ class Freigabeapi {
   Future<Response> liste(Request r) async {
     final konto = kontoVon(r);
     final db = (await bibliotheken.fuer(konto.id)).bibliothek.db;
+    final List<({Freigabe freigabe, String link})> alle;
+    try {
+      alle = await dienst.von(konto.id);
+    } on SchluesselPasstNicht catch (e) {
+      return _json({'fehler': 'Die Links der Freigaben: $e'}, status: 500);
+    }
     return _json({
       'freigaben': [
-        for (final x in await dienst.von(konto.id))
-          await _alsJson(r, x.freigabe, x.link, db),
+        for (final x in alle) await _alsJson(r, x.freigabe, x.link, db),
       ],
     });
   }

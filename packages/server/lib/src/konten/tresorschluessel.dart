@@ -10,9 +10,13 @@ import 'package:cryptography/cryptography.dart';
 /// nicht reichen.
 ///
 /// Der Schlüssel (256 Bit, AES-GCM) liegt in einer eigenen Datei, nur für
-/// den Besitzer lesbar. Geht sie verloren, ist nichts verloren ausser den
-/// TOTP-Einrichtungen: Die lassen sich je Konto neu anlegen
-/// (`konto totp-zuruecksetzen`).
+/// den Besitzer lesbar. Mit ihm verschlüsselt sind die TOTP-Geheimnisse,
+/// die Adressen der Freigabe-Links, der Schlüssel der Serversicherung und
+/// das Geheimnis der Aussensicherung. Geht die Datei verloren, legt der
+/// Server beim Start eine neue an, und all das lässt sich nicht mehr lesen
+/// (#404): TOTP je Konto neu einrichten (`konto totp-zuruecksetzen`),
+/// Freigaben neu anlegen, Sicherung und Aussensicherung neu einrichten.
+/// Fotos, Konten und Passwörter bleiben.
 class Tresorschluessel {
   Tresorschluessel(List<int> schluessel) : _schluessel = SecretKey(schluessel);
 
@@ -47,14 +51,34 @@ class Tresorschluessel {
     return base64.encode(kiste.concatenation());
   }
 
-  /// Entschlüsselt, was [verschluessele] geschrieben hat. Wirft, wenn es
-  /// mit einem anderen Schlüssel entstand oder verändert wurde.
+  /// Entschlüsselt, was [verschluessele] geschrieben hat. Wirft
+  /// [SchluesselPasstNicht], wenn es mit einem anderen Schlüssel entstand
+  /// oder verändert wurde.
   Future<List<int>> entschluessele(String text) async {
     final kiste = SecretBox.fromConcatenation(
       base64.decode(text),
       nonceLength: _aes.nonceLength,
       macLength: _aes.macAlgorithm.macLength,
     );
-    return _aes.decrypt(kiste, secretKey: _schluessel);
+    try {
+      return await _aes.decrypt(kiste, secretKey: _schluessel);
+    } on SecretBoxAuthenticationError {
+      throw const SchluesselPasstNicht();
+    }
   }
+}
+
+/// Etwas wurde mit einem anderen `server.schluessel` verschlüsselt – meist
+/// ist die Datei verloren gegangen und neu angelegt worden.
+///
+/// Statt der rohen Meldung der Verschlüsselung („SecretBox has wrong
+/// message authentication code“) ein Satz, mit dem man etwas anfangen kann.
+class SchluesselPasstNicht implements Exception {
+  const SchluesselPasstNicht();
+
+  @override
+  String toString() =>
+      'Mit dem jetzigen server.schluessel nicht zu öffnen – ist die Datei '
+      'verloren gegangen oder ersetzt worden? Die alte zurücklegen, sonst '
+      'neu einrichten (siehe README, „PV_DATEN“).';
 }

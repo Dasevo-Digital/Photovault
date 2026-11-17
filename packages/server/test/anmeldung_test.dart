@@ -215,6 +215,41 @@ void main() {
       expect(konten.geraete(konten.kontoNamens('erika')!.id), hasLength(2));
     });
 
+    test(
+      'ein ersetzter server.schluessel: Code abgewiesen statt 500 (#404)',
+      () async {
+        await konten.legeAn('erika', 'ein langes passwort');
+        final erste = await ersteAnmeldung('erika', 'ein langes passwort');
+        // Die Datei ging verloren, der Server legte einen neuen Schlüssel an.
+        final neu = Kontodienst(
+          sdb,
+          Tresorschluessel(List.filled(32, 7)),
+          passwort: const Passwort(speicher: 64, durchgaenge: 1),
+          totpPflicht: true,
+          uhr: () => jetzt,
+        );
+        Future<Anmeldeergebnis> mitCode(String code) async {
+          final v = await neu.anmelden(
+            'erika',
+            'ein langes passwort',
+            geraet: 'Rechner',
+            adresse: '192.0.2.8',
+          );
+          return neu.bestaetige(
+            (v as TotpNoetig).vorgang,
+            code,
+            adresse: '192.0.2.8',
+          );
+        }
+
+        jetzt = jetzt.add(const Duration(seconds: 30));
+        final code = Totp.code(erste.geheimnis, Totp.schritt(jetzt));
+        expect(await mitCode(code), isA<Abgewiesen>());
+        // Die Wiederherstellungscodes hängen nicht am Schlüssel.
+        expect(await mitCode(erste.codes.first), isA<Angemeldet>());
+      },
+    );
+
     test('ein Wiederherstellungscode gilt genau einmal', () async {
       await konten.legeAn('erika', 'ein langes passwort');
       final erste = await ersteAnmeldung('erika', 'ein langes passwort');

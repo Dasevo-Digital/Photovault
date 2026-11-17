@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:kern/protokoll.dart';
 import 'package:crypto/crypto.dart';
 
 import '../albumregeln.dart';
@@ -553,7 +554,15 @@ class Kontodienst {
     final verschluesselt = z?['totp'] as String?;
     if (z == null || verschluesselt == null) return false;
     if (RegExp(r'^\s*\d{3}\s*\d{3}\s*$').hasMatch(code)) {
-      final geheimnis = await _tresor.entschluessele(verschluesselt);
+      final List<int> geheimnis;
+      try {
+        geheimnis = await _tresor.entschluessele(verschluesselt);
+      } on SchluesselPasstNicht catch (e) {
+        // Ein Code, den niemand mehr prüfen kann, ist ein falscher Code –
+        // keine 500 (#404). Die Wiederherstellungscodes gelten weiter.
+        protokoll('TOTP von ${z['name']} nicht prüfbar: $e');
+        return false;
+      }
       final schritt = Totp.pruefe(
         geheimnis,
         code,
