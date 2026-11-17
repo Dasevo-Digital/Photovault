@@ -6,6 +6,7 @@ import '../l10n/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/exif_camera.dart' show fruehesteAufnahme;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/einfuegbares_menue.dart';
@@ -387,7 +388,7 @@ class _AutomationRuleEditorDialogState
     final picked = await showDatePicker(
       context: context,
       initialDate: (isFrom ? _dateFrom : _dateTo) ?? DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: fruehesteAufnahme, // auch alte Scans (#407)
       lastDate: DateTime(2100),
     );
     if (picked == null) return;

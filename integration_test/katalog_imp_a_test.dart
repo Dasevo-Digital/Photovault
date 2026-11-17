@@ -1476,7 +1476,7 @@ void main() {
     expect(a.fileCreatedAt, DateTime(1985, 6, 1, 12));
     expect(a.datumGeschaetzt, isFalse);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('IMP-022 IMP-024 IMP-025 Regeltreffer in der Vorschau, '
       'Regel mit gelöschtem Album', (tester) async {

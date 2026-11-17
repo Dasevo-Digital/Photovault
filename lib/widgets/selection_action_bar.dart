@@ -11,6 +11,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/collage.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
+import 'package:kern/services/exif_camera.dart' show fruehesteAufnahme;
 import '../l10n/app_localizations.dart';
 import 'namens_dialog.dart' show MitTextsteuerung;
 import '../screens/photo_compare_screen.dart';
@@ -707,7 +708,7 @@ class _BatchMetadataDialogState extends State<_BatchMetadataDialog> {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
-      firstDate: DateTime(1970),
+      firstDate: fruehesteAufnahme, // auch alte Scans (#407)
       lastDate: DateTime.now(),
     );
     if (picked != null && mounted) setState(() => _date = picked);

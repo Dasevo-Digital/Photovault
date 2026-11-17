@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/lebenslauf.dart';
+import 'package:kern/services/exif_camera.dart' show ersteWahl;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/mini_location_map.dart';
@@ -196,7 +197,7 @@ class _EreignisDialogState extends State<_EreignisDialog> {
     final gewaehlt = await showDatePicker(
       context: context,
       initialDate: _datum ?? DateTime.now(),
-      firstDate: DateTime(1800),
+      firstDate: ersteWahl(DateTime(1000), _datum), // (#407)
       lastDate: DateTime.now(),
     );
     if (gewaehlt == null || !mounted) return;

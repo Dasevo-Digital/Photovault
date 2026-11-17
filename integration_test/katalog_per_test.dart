@@ -4104,7 +4104,7 @@ void main() {
     expect(fehler, isNull);
     expect(find.byType(DatePickerDialog), findsOneWidget);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-139 PER-147 PER-155 PER-158 Ansichten', (tester) async {
     await start(tester);

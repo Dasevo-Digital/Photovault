@@ -5695,9 +5695,8 @@ void main() {
     },
   );
 
-  // Befund: Datumswahl erst ab 2000 (automation_rules_screen.dart:390 firstDate: DateTime(2000)).
+  // Behoben in #407: Die Datumswahl der Regeln beginnt mit dem ersten Foto.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-160 Befundpruefung Datumsregel fuer Fotos vor 2000',
     (tester) async {
@@ -5726,12 +5725,20 @@ void main() {
         of: find.byType(DatePickerDialog),
         matching: find.byType(Scrollable),
       );
-      await tester.fling(jahre.first, const Offset(0, 3000), 4000);
-      await pumpe(tester, 1000);
-      final gibt2000 = _findet(find.text('2000'));
-      final gibt1999 = _findet(find.text('1999'));
-      print('KI-160 Jahresauswahl: 2000 da $gibt2000, 1999 da $gibt1999');
-      expect(gibt1999, isTrue, reason: 'Datumswahl beginnt erst im Jahr 2000');
+      // Ganz nach oben: Seit #407 beginnt die Wahl mit dem ersten Foto.
+      for (var i = 0; i < 4; i++) {
+        await tester.fling(jahre.first, const Offset(0, 3000), 4000);
+        await pumpe(tester, 600);
+      }
+      final gibt1826 = _findet(find.text('1826'));
+      final gibt1825 = _findet(find.text('1825'));
+      print('KI-160 Jahresauswahl: 1826 da $gibt1826, 1825 da $gibt1825');
+      expect(
+        gibt1826,
+        isTrue,
+        reason: 'Datumswahl beginnt mit dem ersten Foto',
+      );
+      expect(gibt1825, isFalse);
       await finish(tester);
     },
   );

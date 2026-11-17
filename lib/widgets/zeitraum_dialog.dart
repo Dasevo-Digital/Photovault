@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/aktivitaeten.dart';
+import 'package:kern/services/exif_camera.dart'
+    show ersteWahl, fruehesteAufnahme;
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'aktivitaetsart_anzeige.dart';
@@ -116,7 +118,7 @@ class _ZeitraumDialogState extends State<_ZeitraumDialog> {
     final gewaehlt = await showDatePicker(
       context: context,
       initialDate: anfang ? _von : _bis,
-      firstDate: DateTime(1900),
+      firstDate: ersteWahl(fruehesteAufnahme, anfang ? _von : _bis),
       lastDate: DateTime.now().add(const Duration(days: 366)),
     );
     if (gewaehlt == null || !mounted) return;

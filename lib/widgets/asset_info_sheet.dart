@@ -31,6 +31,8 @@ import '../services/meldungsdienst.dart';
 import 'namens_dialog.dart' show frageNamen;
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'package:kern/services/exif_camera.dart'
+    show ersteWahl, fruehesteAufnahme;
 import 'einfuegbares_menue.dart';
 
 /// Info-Ansicht für ein einzelnes Asset (Foto/Video) in der Vollbildvorschau
@@ -364,7 +366,8 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     final date = await showDatePicker(
       context: context,
       initialDate: _asset.fileCreatedAt,
-      firstDate: DateTime(1990),
+      // Auch gescannte Abzüge von früher (#407).
+      firstDate: ersteWahl(fruehesteAufnahme, _asset.fileCreatedAt),
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (date == null || !mounted) return;

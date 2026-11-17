@@ -3108,7 +3108,7 @@ void main() {
     );
     expect(dialog.firstDate.isBefore(DateTime(1975)), isTrue);
     await ende(tester);
-  }, skip: true);
+  });
 }
 
 // ---------------------------------------------------------------------------

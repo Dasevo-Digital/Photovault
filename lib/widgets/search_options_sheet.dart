@@ -15,6 +15,7 @@ import 'color_label_picker.dart';
 import 'star_rating.dart';
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
+import 'package:kern/services/exif_camera.dart' show fruehesteAufnahme;
 import 'einfuegbares_menue.dart';
 
 /// Panel mit allen kombinierbaren Suchfiltern (Personen, Text-Suche, Tags,
@@ -297,7 +298,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     final picked = await showDatePicker(
       context: context,
       initialDate: (isStart ? _startDate : _endDate) ?? DateTime.now(),
-      firstDate: DateTime(1990),
+      firstDate: fruehesteAufnahme, // auch alte Scans (#407)
       lastDate: DateTime.now().add(const Duration(days: 1)),
     );
     if (picked == null) return;

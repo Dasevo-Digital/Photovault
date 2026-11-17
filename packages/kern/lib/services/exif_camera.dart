@@ -99,6 +99,25 @@ CameraInfo parseExifCameraInfo(Map<String, IfdTag> tags) {
 /// Steht hier und nicht im ImportService, weil inzwischen zwei Wege ihn
 /// brauchen: die EXIF-Tags aus `package:exif` und die Antwort des nativen
 /// Kanals für Dateien, die `package:exif` nicht lesen kann.
+/// Das früheste Datum, das eine Aufnahme tragen kann: Das älteste
+/// erhaltene Foto entstand 1826/27.
+///
+/// Gescannte Abzüge und Dias tragen Daten lange vor den Digitalkameras.
+/// Bis #407 verwarf der Import ein EXIF-Datum vor 1990, und die
+/// Datumswahl begann je nach Stelle erst 1990 oder 2000 – ein Scan von
+/// 1985 bekam den Dateizeitstempel und liess sich nicht von Hand richten.
+final DateTime fruehesteAufnahme = DateTime(1826);
+
+/// Die erste wählbare Stelle einer Datumswahl: [grenze], oder früher, wenn
+/// der Wert schon davor liegt.
+///
+/// `showDatePicker` bricht mit einer Zusicherung ab, wenn der
+/// Ausgangswert vor `firstDate` liegt (#407). So bleibt ein altes Datum
+/// aus einem Stammbaum oder einem Import wählbar, statt die Wahl zu
+/// sprengen.
+DateTime ersteWahl(DateTime grenze, [DateTime? wert]) =>
+    wert != null && wert.isBefore(grenze) ? DateTime(wert.year) : grenze;
+
 DateTime? exifDatumAusText(String? roh) {
   if (roh == null) return null;
   final teile = roh.trim().split(' ');
@@ -108,8 +127,11 @@ DateTime? exifDatumAusText(String? roh) {
   if (datum.length != 3 || zeit.length != 3) return null;
   try {
     final jahr = int.parse(datum[0]);
-    // Kameras schreiben bei ungestellter Uhr „0000:00:00 00:00:00".
-    if (jahr < 1990) return null;
+    // Kameras schreiben bei ungestellter Uhr „0000:00:00 00:00:00", manche
+    // den Beginn ihrer Zählung („1970:01:01 00:00:00"). Alles andere ab dem
+    // ersten Foto gilt – auch ein Scan von 1985 (#407).
+    if (jahr < fruehesteAufnahme.year) return null;
+    if (roh.trim() == '1970:01:01 00:00:00') return null;
     return DateTime(
       jahr,
       int.parse(datum[1]),

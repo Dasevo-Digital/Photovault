@@ -37,6 +37,7 @@ import '../widgets/familien_zeitleiste.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/sanduhr_ansicht.dart';
 import 'package:kern/services/zierbaum.dart';
+import 'package:kern/services/exif_camera.dart' show ersteWahl;
 import '../theme/zierbaum_farben.dart';
 import '../widgets/verwandtschaft_text.dart';
 import '../widgets/zoomsteuerung.dart';
@@ -3014,7 +3015,9 @@ class _LebensdatenDialogState extends State<_LebensdatenDialog> {
     final gewaehlt = await showDatePicker(
       context: context,
       initialDate: (geburt ? _geburt : _tod) ?? DateTime(jetzt.year - 40),
-      firstDate: DateTime(1800),
+      // Ein Stammbaum reicht weit zurück; ein noch älteres Datum aus einem
+      // Import sprengte sonst die Wahl (#407).
+      firstDate: ersteWahl(DateTime(1000), geburt ? _geburt : _tod),
       lastDate: jetzt,
     );
     if (gewaehlt == null || !mounted) return;

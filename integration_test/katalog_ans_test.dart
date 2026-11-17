@@ -8097,9 +8097,7 @@ void main() {
   // firstDate: DateTime(1990) und initialDate = Aufnahmedatum (1985) –
   // das verletzt die Vorbedingung (initialDate >= firstDate), die
   // Zusicherung wirft, und vor 1990 ist ohnehin kein Tag wählbar.
-  testWidgets('ANS-071 Aufnahmedatum vor 1990 ändern', skip: true, (
-    tester,
-  ) async {
+  testWidgets('ANS-071 Aufnahmedatum vor 1990 ändern', (tester) async {
     await startApp(
       tester,
       fotos: [testfoto('d1985.jpg', datum: DateTime(1985, 7, 4, 12))],
@@ -8146,7 +8144,7 @@ void main() {
   // 1984 ist nicht wählbar. Hat die Satzdeutung („1985“) ein früheres
   // Anfangsdatum gesetzt, verletzt es als Startwert die Vorbedingung von
   // showDatePicker; der Kalender öffnet sich nicht.
-  testWidgets('ANS-109 Zeitraum vor 1990', skip: true, (tester) async {
+  testWidgets('ANS-109 Zeitraum vor 1990', (tester) async {
     await startApp(
       tester,
       fotos: [
