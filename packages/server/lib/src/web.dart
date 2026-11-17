@@ -310,12 +310,7 @@ class Webapi {
   /// Ob der Browser über HTTPS kam – direkt, oder über einen vertrauten
   /// Proxy, der es sagt. Nur dann trägt das Cookie `Secure`: Im Heimnetz
   /// über http nähme der Browser es sonst gar nicht erst an.
-  bool _verschluesselt(Request anfrage) {
-    if (anfrage.requestedUri.scheme == 'https') return true;
-    if (!absender.ueberVertrautenProxy(anfrage)) return false;
-    final proto = anfrage.headers['x-forwarded-proto'] ?? '';
-    return proto.split(',').first.trim().toLowerCase() == 'https';
-  }
+  bool _verschluesselt(Request anfrage) => absender.verschluesselt(anfrage);
 
   /// „Browser (Firefox)“ – was in der Geräteliste steht.
   static String _geraetName(Request anfrage) {

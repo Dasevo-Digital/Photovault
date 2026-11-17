@@ -111,15 +111,7 @@ class Freigabeapi {
       final s = o.toString();
       return s.endsWith('/') ? s.substring(0, s.length - 1) : s;
     }
-    final host = r.headers['x-forwarded-host'];
-    if (host != null && host.isNotEmpty && absender.ueberVertrautenProxy(r)) {
-      final proto = (r.headers['x-forwarded-proto'] ?? 'https')
-          .split(',')
-          .first
-          .trim();
-      return '$proto://${host.split(',').first.trim()}';
-    }
-    return r.requestedUri.origin;
+    return absender.herkunft(r);
   }
 
   Future<Map<String, Object?>> _alsJson(
@@ -358,15 +350,7 @@ class Freigabeapi {
       bremse.fehlschlag(adresse);
       return _json({'fehler': 'Passwort falsch'}, status: 401);
     }
-    final sicher =
-        r.requestedUri.scheme == 'https' ||
-        (absender.ueberVertrautenProxy(r) &&
-            (r.headers['x-forwarded-proto'] ?? '')
-                    .split(',')
-                    .first
-                    .trim()
-                    .toLowerCase() ==
-                'https');
+    final sicher = absender.verschluesselt(r);
     return Response(
       204,
       headers: {
