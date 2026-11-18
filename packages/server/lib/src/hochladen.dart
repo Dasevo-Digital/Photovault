@@ -139,7 +139,11 @@ class Hochladen {
     if (laenge == null || laenge < 0) {
       return Response(400, body: 'Upload-Length fehlt', headers: _tus);
     }
-    if (laenge > hoechstens) return Response(413, headers: _tus);
+    // Mit der Grenze, damit der Browser sie nennen kann (statt „Kein
+    // Platz“, wie bei vollem Speicher).
+    if (laenge > hoechstens) {
+      return Response(413, headers: {..._tus, 'tus-max-size': '$hoechstens'});
+    }
     final meta = _metadaten(anfrage.headers['upload-metadata']);
     if (meta['xmp'] case final text?) {
       try {

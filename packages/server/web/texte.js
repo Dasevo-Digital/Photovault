@@ -939,6 +939,8 @@ const EN = {
   'Fertig': 'Done',
   'Format nicht unterstützt': 'Format not supported',
   'Kein Platz auf dem Server': 'No space left on the server',
+  'Datei zu gross ({groesse}, höchstens {grenze})': 'File too large ({groesse}, at most {grenze})',
+  'Datei zu gross ({groesse})': 'File too large ({groesse})',
   'Der Server konnte die Datei nicht aufnehmen': 'The server could not import the file',
   // Reisen und Aktivitäten
   'Aktivitäten': 'Activities',

@@ -54,7 +54,12 @@ async function hlDatei(datei, fortschritt) {
     'Upload-Metadata': hlMeta({ filename: datei.name, geaendert: datei.lastModified || Date.now(), ...(kammerAn() ? { kammer: 1 } : {}) }),
   });
   if (angelegt.status === 415) return { ausgang: 'abgelehnt', grund: (await angelegt.text()).trim() || t('Format nicht unterstützt') };
-  if (angelegt.status === 507 || angelegt.status === 413) return { ausgang: 'abgelehnt', grund: t('Kein Platz auf dem Server') };
+  if (angelegt.status === 507) return { ausgang: 'abgelehnt', grund: t('Kein Platz auf dem Server') };
+  // Grösser, als der Server annimmt – kein Platzmangel. Die Grenze schickt er mit.
+  if (angelegt.status === 413) {
+    const grenze = Number(angelegt.headers.get('Tus-Max-Size')) || 0;
+    return { ausgang: 'abgelehnt', grund: grenze ? t('Datei zu gross ({groesse}, höchstens {grenze})', { groesse: groesse(datei.size), grenze: groesse(grenze) }) : t('Datei zu gross ({groesse})', { groesse: groesse(datei.size) }) };
+  }
   if (angelegt.status !== 201) throw new Error(t('Fehler {n}', { n: angelegt.status }));
   const ort = angelegt.headers.get('Location');
   let versatz = 0;

@@ -174,6 +174,21 @@ void main() {
     expect(eingang.listSync(), isEmpty);
   });
 
+  test('tus: zu gross schon beim Anlegen, mit der Grenze', () async {
+    final eingang = Directory(p.join(ordner.path, 'grenze-tus'));
+    final h = Hochladen(eingang, null, hoechstens: 10);
+    final r = await h.anlegen(
+      Request(
+        'POST',
+        Uri.parse('http://server/api/v1/hochladen'),
+        headers: {'tus-resumable': '1.0.0', 'upload-length': '11'},
+      ),
+    );
+    expect(r.statusCode, 413);
+    // Die Weboberfläche nennt sie im Grund (hochladen.js).
+    expect(r.headers['tus-max-size'], '10');
+  });
+
   group('ein Upload, dessen Import verloren ging (#311)', () {
     Future<(Hochladen, String)> angekommen() async {
       final eingang = Directory(p.join(ordner.path, 'tus'))..createSync();
