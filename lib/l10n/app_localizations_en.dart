@@ -2035,7 +2035,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get aufgLivePhotoText =>
-      'Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. The number counts photographs without a partner; most have none and never will. After the first run it only counts what has been added since.';
+      'Links HEIC/JPG stills with MOV videos of the same name and extracts the video embedded in Google and Samsung Motion Photos. Wrongly linked pairs – photo and video taken far apart in time – are separated again. The number counts photographs without a partner; most have none and never will. After the first run it only counts what has been added since.';
 
   @override
   String get aufgRendernText =>

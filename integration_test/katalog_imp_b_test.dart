@@ -2780,10 +2780,8 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: relinkLivePhotos (library_state.dart:2329-2342) sieht nur
-  // unverknüpfte Fotos an. Ein falsch verknüpftes Paar (Jahre auseinander)
-  // löst die Aufgabe nicht – das tut nur der einmalige Startnachlauf
-  // repariereLivePhotoPaare (library_state.dart:366-369).
+  // Behoben in #409: Die Aufgabe löst falsch verknüpfte Paare vor dem
+  // Verknüpfen (Nachbearbeitung.loeseFalscheLivePhotoPaare).
   testWidgets('IMP-133 falsch verknüpfte Paare werden gelöst', (tester) async {
     await zweimal(tester, () async {
       final foto2 = testfoto('IMG_0002.JPG', datum: DateTime(2015, 1, 1, 9));
@@ -2816,7 +2814,7 @@ void main() {
       final f2n = (await mitDb(tester, () => bibliothek.db.assetById(f2.id)))!;
       expect(f2n.linkedAssetId, isNull, reason: 'falsches Paar gelöst');
     });
-  }, skip: true);
+  });
 
   // Behoben in #409: „Fehlende“ nimmt auch Aufnahmen, deren eingetragene
   // Miniatur auf der Platte fehlt (LibraryState.aufnahmenOhneVorschaubild).

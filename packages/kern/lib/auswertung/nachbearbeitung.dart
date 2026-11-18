@@ -190,6 +190,20 @@ class Nachbearbeitung {
   /// widerlegt ein Paar nicht. Paare aus zwei Fotos löst es immer – sie
   /// sind gar kein Live Photo (siehe `bildpaare`).
   Future<int> repariereLivePhotoPaare() async {
+    final geloest = await loeseFalscheLivePhotoPaare();
+    await verknuepfeOffeneLivePhotos();
+    return geloest;
+  }
+
+  /// Der erste Teil von [repariereLivePhotoPaare]: löst Paare aus zwei
+  /// Fotos und Paare, deren Hälften zeitlich nicht zusammengehören. Gibt
+  /// zurück, wie viele es waren.
+  ///
+  /// Eigens, damit auch die Aufgabe „Live-Photo-Paare prüfen“ es tut und
+  /// nicht nur der einmalige Nachlauf beim Start: Ein Paar, das danach
+  /// falsch entstand (etwa aus einer Sicherung), blieb sonst für immer
+  /// verknüpft (IMP-133).
+  Future<int> loeseFalscheLivePhotoPaare() async {
     var geloest = 0;
     for (final (a, b) in await db.bildpaare()) {
       await db.trenneAssets(a, b);
@@ -202,7 +216,6 @@ class Nachbearbeitung {
       await db.trenneAssets(video.id, foto.id);
       geloest++;
     }
-    await verknuepfeOffeneLivePhotos();
     return geloest;
   }
 

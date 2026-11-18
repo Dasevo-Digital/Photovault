@@ -2419,7 +2419,13 @@ class LibraryState extends ChangeNotifier {
   /// Prüft die komplette Bibliothek erneut auf Live-Photo-Paare – für
   /// Fotos/Videos, die bereits vor Einführung dieser Funktion importiert
   /// wurden.
+  ///
+  /// Vorher löst er falsch verknüpfte Paare (zwei Fotos, oder Hälften, die
+  /// zeitlich nicht zusammengehören); deren Fotos sucht er danach wie alle
+  /// unverknüpften neu zu. Das tat bis hierher nur der einmalige Nachlauf
+  /// beim Start (IMP-133).
   Stream<ImportProgress> relinkLivePhotos() async* {
+    await nachbearbeitung.loeseFalscheLivePhotoPaare();
     final images = await db.unlinkedAssetsOfType('IMAGE');
     var done = 0;
     yield ImportProgress(0, images.length);

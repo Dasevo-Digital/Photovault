@@ -12,6 +12,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/state/library_state.dart';
 
 /// Live Photos werden über Name **und** Zeit verknüpft (#213). Das iPhone
 /// zählt `IMG_0001` bis `IMG_9999` und beginnt dann von vorn; bis 3.47
@@ -124,6 +125,32 @@ void main() {
     expect(await partner('video'), 'foto-2023');
     expect(await partner('foto-2023'), 'video');
     expect(await partner('foto-2013'), isNull);
+    expect(await partner('ok-video'), 'ok-foto');
+  });
+
+  // Die Aufgabe „Live-Photo-Paare prüfen“ löst falsche Paare ebenso – nicht
+  // nur der einmalige Nachlauf beim Start (IMP-133).
+  test('die Aufgabe löst falsche Paare und verknüpft richtig', () async {
+    await lege('foto-2015', 'IMG_1712.JPG', 'IMAGE', alt, verknuepft: 'video');
+    await lege('foto-2024', 'IMG_1712.JPG', 'IMAGE', neu);
+    await lege('video', 'IMG_1712.MOV', 'VIDEO', neu, verknuepft: 'foto-2015');
+    await lege(
+      'ok-foto',
+      'IMG_0100.HEIC',
+      'IMAGE',
+      neu,
+      verknuepft: 'ok-video',
+    );
+    await lege('ok-video', 'IMG_0100.MOV', 'VIDEO', neu, verknuepft: 'ok-foto');
+    final library = LibraryState()
+      ..db = db
+      ..paths = paths
+      ..importService = ImportService(db, paths);
+
+    await library.relinkLivePhotos().drain<void>();
+
+    expect(await partner('foto-2015'), isNull);
+    expect(await partner('video'), 'foto-2024');
     expect(await partner('ok-video'), 'ok-foto');
   });
 
