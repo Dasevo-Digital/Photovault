@@ -209,6 +209,13 @@ void main() {
         expect(Rasterzeile.aus(berichtigt).kuerzel, 'JPG');
         // Die Laufzeit eines Standbildes ist keine Zahl, sondern keine.
         expect(berichtigt.durationSeconds, isNull);
+        // Und gleich mit Vorschaubild – sonst stünde das Foto als leere
+        // Kachel da, bis „Vorschaubilder erzeugen“ läuft (IMP-132).
+        expect(berichtigt.thumbnailRelativePath, isNotNull);
+        expect(
+          pfade.absolute(berichtigt.thumbnailRelativePath!).existsSync(),
+          isTrue,
+        );
         expect((await db.assetById('echt'))!.type, 'VIDEO');
       },
     );

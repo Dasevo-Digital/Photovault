@@ -949,7 +949,9 @@ List<Aufgabe> _aufgaben(
     // nur hier?" unmöglich.
     titel: t.aufgVorschauTitel,
     beschreibung: t.aufgVorschauText,
-    offeneZahl: () => library.db.countThumbnailRegen(onlyMissing: true),
+    // Auch Miniaturen, deren Datei fehlt (IMP-135) – dieselbe Liste wie
+    // der Lauf „Fehlende“.
+    offeneZahl: () async => (await library.aufnahmenOhneVorschaubild()).length,
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.alle,

@@ -2271,41 +2271,79 @@ class LibraryState extends ChangeNotifier {
   Stream<ImportProgress> regenerateThumbnails({
     required bool onlyMissing,
   }) async* {
-    final assets = await db.assetsForThumbnailRegen(onlyMissing: onlyMissing);
+    final assets = onlyMissing
+        ? await aufnahmenOhneVorschaubild()
+        : await db.assetsForThumbnailRegen(onlyMissing: false);
     var done = 0;
     yield ImportProgress(0, assets.length);
     for (final asset in assets) {
-      try {
-        final result = asset.type == 'IMAGE'
-            ? await importService.generateThumbnailAndPreview(
-                (await paths.bereit(asset.relativePath)),
-                asset.id,
-                p.extension(asset.originalFileName),
-              )
-            : await importService.generateVideoThumbnail(
-                (await paths.bereit(asset.relativePath)),
-                asset.id,
-              );
-        if (result.hasThumbnail || result.durationSeconds != null) {
-          await db.updateThumbnailInfo(
-            asset.id,
-            thumbnailRelativePath: result.thumbnailRelativePath,
-            previewRelativePath: result.previewRelativePath,
-            widthPx: result.width,
-            heightPx: result.height,
-            durationSeconds: result.durationSeconds,
-          );
-        }
-      } catch (e) {
-        debugPrint(
-          'Vorschau-Erzeugung fehlgeschlagen für ${asset.originalFileName}: $e',
-        );
-      }
+      await _erzeugeVorschaubild(asset, bild: asset.type == 'IMAGE');
       done++;
       yield ImportProgress(
         done,
         assets.length,
         currentFile: asset.originalFileName,
+      );
+    }
+  }
+
+  /// Aufnahmen, denen ein Vorschaubild fehlt: ohne Eintrag in der
+  /// Datenbank (siehe `assetsForThumbnailRegen`) – oder mit einem Eintrag,
+  /// dessen Datei nicht mehr da ist.
+  ///
+  /// **Warum auch die Datei.** Wurde eine Miniatur im Bibliotheksordner
+  /// gelöscht, stand ihr Pfad weiter in der Datenbank, und „Fehlende
+  /// erzeugen“ fand nichts (IMP-135). In einer verbundenen Bibliothek ist
+  /// der Ordner ein Zwischenspeicher: Dort fehlt eine Datei nicht, sie ist
+  /// nur noch nicht geholt.
+  Future<List<AssetData>> aufnahmenOhneVorschaubild() async {
+    final ohneEintrag = await db.assetsForThumbnailRegen(onlyMissing: true);
+    if (paths.beschaffe != null) return ohneEintrag;
+    final schon = {for (final a in ohneEintrag) a.id};
+    final fehlend = [...ohneEintrag];
+    for (final a in await db.assetsForThumbnailRegen(onlyMissing: false)) {
+      if (schon.contains(a.id)) continue;
+      for (final pfad in [a.thumbnailRelativePath, a.previewRelativePath]) {
+        if (pfad != null && !await paths.absolute(pfad).exists()) {
+          fehlend.add(a);
+          break;
+        }
+      }
+    }
+    return fehlend;
+  }
+
+  /// Erzeugt Miniatur und Vorschau von [asset] neu – als Bild oder, mit
+  /// [bild] `false`, als Video – und trägt sie ein. Scheitert es, bleibt
+  /// es beim Eintrag im Protokoll; der Lauf geht weiter.
+  Future<void> _erzeugeVorschaubild(
+    AssetData asset, {
+    required bool bild,
+  }) async {
+    try {
+      // Verbunden holt [StoragePaths.bereit] ein noch nicht geholtes
+      // Original erst her.
+      final quelle = await paths.bereit(asset.relativePath);
+      final result = bild
+          ? await importService.generateThumbnailAndPreview(
+              quelle,
+              asset.id,
+              p.extension(asset.originalFileName),
+            )
+          : await importService.generateVideoThumbnail(quelle, asset.id);
+      if (result.hasThumbnail || result.durationSeconds != null) {
+        await db.updateThumbnailInfo(
+          asset.id,
+          thumbnailRelativePath: result.thumbnailRelativePath,
+          previewRelativePath: result.previewRelativePath,
+          widthPx: result.width,
+          heightPx: result.height,
+          durationSeconds: result.durationSeconds,
+        );
+      }
+    } catch (e) {
+      debugPrint(
+        'Vorschau-Erzeugung fehlgeschlagen für ${asset.originalFileName}: $e',
       );
     }
   }
@@ -2408,9 +2446,11 @@ class LibraryState extends ChangeNotifier {
   /// der 440 hatten keine).
   ///
   /// Die Datei bleibt liegen, wo sie liegt, und behält ihren Namen. Nur
-  /// die Art wird berichtigt und alles Abgeleitete verworfen; Miniatur,
-  /// Vorschau, Ort, Datum und Auswertung holen danach die gewohnten
-  /// Aufgaben nach — sie sehen die Aufnahme jetzt zum ersten Mal.
+  /// die Art wird berichtigt und alles Abgeleitete verworfen; Ort, Datum
+  /// und Auswertung holen danach die gewohnten Aufgaben nach — sie sehen
+  /// die Aufnahme jetzt zum ersten Mal. Miniatur und Vorschau entstehen
+  /// gleich hier: Ohne sie stünde das Foto als leere Kachel da, bis jemand
+  /// „Vorschaubilder erzeugen“ anstösst (IMP-132).
   Stream<ImportProgress> repariereDateiarten() async* {
     final verdaechtig = await db.alsVideoGefuehrte();
     var done = 0;
@@ -2427,6 +2467,7 @@ class LibraryState extends ChangeNotifier {
               'IMAGE',
               dateiformat: kennung.substring(1),
             );
+            await _erzeugeVorschaubild(asset, bild: true);
             berichtigt++;
           }
         }

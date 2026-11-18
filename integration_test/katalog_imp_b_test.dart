@@ -2690,10 +2690,8 @@ void main() {
     },
   );
 
-  // Befund: setzeDateiart (packages/kern/lib/db/abfragen/serien.dart:452)
-  // verwirft beim Berichtigen Miniatur und Vorschau. Nach „Dateiarten
-  // prüfen" ist das Standbild ein Foto ohne Vorschaubild, bis jemand
-  // „Vorschaubilder erzeugen" anstösst.
+  // Behoben in #409: „Dateiarten prüfen“ erzeugt für das berichtigte Foto
+  // gleich Miniatur und Vorschau.
   testWidgets('IMP-132 nach Dateiarten-Lauf hat das Foto ein Vorschaubild', (
     tester,
   ) async {
@@ -2726,7 +2724,7 @@ void main() {
         was: 'Foto mit Vorschaubild',
       );
     });
-  }, skip: true);
+  });
 
   testWidgets('IMP-133 Live-Photo-Paare prüfen', (tester) async {
     await startApp(tester);
@@ -2820,10 +2818,8 @@ void main() {
     });
   }, skip: true);
 
-  // Befund: „Vorschaubilder erzeugen → Fehlende" findet eine gelöschte
-  // Miniaturdatei nicht. Die Abfrage (packages/kern/lib/db/abfragen/
-  // serien.dart:376, _fehlendeVorschau) prüft nur, ob der Pfad in der
-  // Datenbank leer ist, nicht, ob die Datei da ist.
+  // Behoben in #409: „Fehlende“ nimmt auch Aufnahmen, deren eingetragene
+  // Miniatur auf der Platte fehlt (LibraryState.aufnahmenOhneVorschaubild).
   testWidgets('IMP-135 Vorschaubilder erzeugen nach gelöschter Miniatur', (
     tester,
   ) async {
@@ -2848,7 +2844,7 @@ void main() {
         return pfad != null && bibliothek.paths.absolute(pfad).existsSync();
       }, was: 'Miniatur wieder da (${miniatur.path})');
     });
-  }, skip: true);
+  });
 
   testWidgets('IMP-135 Vorschaubilder erzeugen nach ausgetragenem Pfad', (
     tester,
