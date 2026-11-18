@@ -933,16 +933,10 @@ void main() {
     (tester) => ki059(tester, doppelPruefen: false),
   );
 
-  // Befund (zweimal nachgestellt: dieselbe Stelle wie das Handgesicht von
-  // „Person A“, neue unbenannte Zeile): „Gesichter scannen – Alle“ legt
-  // über einem zugeordneten Gesicht
-  // eine zweite, unbenannte Erkennung an. Ausgelassen werden nur
-  // beiseitegelegte Stellen (auswertungen.dart:279–283 nimmt nur
-  // f.isIgnored in ignorierteBoxen, rechenhilfe.dart:483–488 ebenso), die
-  // zugeordneten bleiben stehen (spuren.dart:547–553 löscht nur
-  // unbenannte) – die Erkennung findet sie wieder.
+  // Behoben in #420: Der Scan lässt jede Stelle aus, an der schon ein
+  // Gesicht steht – benannt, beiseitegelegt oder unbenannt
+  // (belegteGesichtsstellen in rechenhilfe.dart).
   testWidgets(
-    skip: true,
     timeout: lang,
     'KI-059 Befundpruefung keine Doppelerkennung ueber Person A',
     (tester) => ki059(tester, doppelPruefen: true),

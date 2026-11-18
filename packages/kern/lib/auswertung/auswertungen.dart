@@ -224,7 +224,6 @@ class Auswertungen {
     required FaceEngineService engine,
     EyeStateService? eyeState,
     required bool deleteExistingUnassigned,
-    bool nurNeueStellen = false,
   }) async {
     // **Ohne Bild wird gar nichts angefasst.** Nicht die vorhandenen
     // Gesichter gelöscht, und vor allem nicht der Vermerk „gescannt"
@@ -265,22 +264,11 @@ class Auswertungen {
       }
     }
 
-    // Was beiseitegelegt wurde, darf ein erneuter Scan nicht als neue
-    // Erkennung zurückbringen. Das Löschen oben verschont diese Gesichter
-    // zwar, aber die Erkennung findet dieselbe Stelle wieder – ohne diesen
-    // Abgleich stünde neben jedem ignorierten Plakatgesicht nach dem
-    // nächsten Scan ein frisches, unbenanntes.
-    //
-    // [nurNeueStellen] weitet das auf ALLE vorhandenen Gesichter aus – der
-    // Fall der weiteren Standbilder eines Videos: Wer zwei Sekunden lang
-    // stillsteht, ist auf jedem Standbild an derselben Stelle und soll
-    // trotzdem einmal in der Bibliothek stehen. Wer sich bewegt hat,
-    // bekommt eine zweite Zeile, und das ist richtig so.
-    final ignorierteBoxen = [
-      for (final f in await db.facesForAsset(asset.id))
-        if (nurNeueStellen || f.isIgnored)
-          DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
-    ];
+    // Wo schon ein Gesicht steht, entsteht kein zweites – siehe
+    // [GesichterSpeichern.belegteGesichtsstellen]. Das Löschen oben
+    // verschont benannte und beiseitegelegte Gesichter, die Erkennung
+    // findet ihre Stellen aber wieder.
+    final belegteBoxen = await belegteGesichtsstellen(asset.id);
 
     // Erkennen und Eintragen in zwei Schritten – dieselben, mit denen ein
     // Rechner für den Server rechnet und der Server einträgt (siehe
@@ -290,7 +278,7 @@ class Auswertungen {
         decoded,
         engine,
         eyeState,
-        auslassen: ignorierteBoxen,
+        auslassen: belegteBoxen,
       );
       await speichereGesichter(asset, funde);
       await _vermerke(asset.id, Ergebnisart.gesichter);
@@ -590,16 +578,16 @@ class Auswertungen {
                     }
                   }
                   if (gesichter != null) {
-                    // `nurNeueStellen`: Wer im Video stillsteht, ist auf
-                    // jedem Standbild an derselben Stelle und soll
-                    // trotzdem einmal in der Bibliothek stehen.
+                    // Wer im Video stillsteht, ist auf jedem Standbild an
+                    // derselben Stelle und soll trotzdem einmal in der
+                    // Bibliothek stehen – belegte Stellen lässt der Scan
+                    // aus. Wer sich bewegt hat, bekommt eine zweite Zeile.
                     await scanFacesForDecodedAsset(
                       video,
                       dekodiert,
                       engine: gesichter,
                       eyeState: augenzustand,
                       deleteExistingUnassigned: false,
-                      nurNeueStellen: true,
                     );
                   }
                 }

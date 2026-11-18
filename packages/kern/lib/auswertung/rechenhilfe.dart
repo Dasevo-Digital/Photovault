@@ -465,9 +465,23 @@ Future<List<Gesichtsfund>> erkenneGesichter(
 }
 
 /// Trägt [funde] als Gesichter von [asset] ein und vermerkt es als
-/// gescannt. Was beiseitegelegt wurde, kommt nicht zurück (dieselbe Regel
+/// gescannt. Wo schon ein Gesicht steht, kommt keines dazu (dieselbe Regel
 /// wie `scanFacesForDecodedAsset`).
 extension GesichterSpeichern on Auswertungen {
+  /// Die Stellen, an denen [assetId] schon ein Gesicht hat – benannt,
+  /// beiseitegelegt oder unbenannt. Ein Scan legt dort kein zweites an.
+  ///
+  /// Früher galt das nur für beiseitegelegte Gesichter. „Gesichter
+  /// scannen – Alle“ löscht die unbenannten Erkennungen und lässt
+  /// benannte stehen; die Erkennung fand das Gesicht von „Person A“
+  /// wieder und legte darüber eine zweite, unbenannte Erkennung mit
+  /// demselben Rahmen an. Dasselbe Gesicht stand danach als Person A und
+  /// als Unbekannt da.
+  Future<List<DetectedFace>> belegteGesichtsstellen(String assetId) async => [
+    for (final f in await db.facesForAsset(assetId))
+      DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
+  ];
+
   Future<void> speichereGesichter(
     AssetData asset,
     List<Gesichtsfund> funde,
@@ -478,13 +492,10 @@ extension GesichterSpeichern on Auswertungen {
       await db.markFacesScanned([asset.id]);
       return;
     }
-    final ignoriert = [
-      for (final f in await db.facesForAsset(asset.id))
-        if (f.isIgnored) DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
-    ];
+    final belegt = await belegteGesichtsstellen(asset.id);
     for (final f in funde) {
       final box = DetectedFace(f.x, f.y, f.breite, f.hoehe, 1.0);
-      if (ignoriert.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
+      if (belegt.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
         continue;
       }
       final faceId = const Uuid().v4();
