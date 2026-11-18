@@ -4351,9 +4351,8 @@ void main() {
     },
   );
 
-  // Befund: Videobilder suchen Gesichter auch bei „Nicht mehr nach Gesichtern durchsuchen“ (einbettungen.dart:237, auswertungen.dart:596).
+  // Behoben in #414: scanFacesForDecodedAsset und speichereGesichter lassen von der Gesichtssuche ausgenommene Aufnahmen aus.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-108 Befundpruefung Videobilder beachten die Gesichter-Ausnahme',
     (tester) async {

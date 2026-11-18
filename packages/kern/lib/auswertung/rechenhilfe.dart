@@ -487,8 +487,9 @@ extension GesichterSpeichern on Auswertungen {
     List<Gesichtsfund> funde,
   ) async {
     // Auch was ein anderer Rechner fand: Die Videohälfte eines Live Photos
-    // bekommt keine eigenen Gesichter (#226).
-    if (istLivePhotoVideo(asset)) {
+    // bekommt keine eigenen Gesichter (#226), eine von der Gesichtssuche
+    // ausgenommene Aufnahme ebenso wenig.
+    if (istLivePhotoVideo(asset) || asset.faceScanExcluded) {
       await db.markFacesScanned([asset.id]);
       return;
     }

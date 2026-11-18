@@ -249,6 +249,12 @@ class Auswertungen {
       return;
     }
 
+    // „Nicht mehr nach Gesichtern durchsuchen“ gilt für jeden Weg hierher,
+    // nicht nur für die Auswahl der Gesichtssuche (assetsForFaceScan). Die
+    // Stufe Videobilder kam früher daran vorbei und suchte auf jedem
+    // Standbild eines ausgenommenen Videos nach Gesichtern.
+    if (asset.faceScanExcluded) return;
+
     // Ein früher Ausstieg und keine Bedingung um den Vermerk herum, damit
     // die Regel baulich gilt und nicht an einer Stelle hängt, die beim
     // nächsten Umbau mitwandern muss.

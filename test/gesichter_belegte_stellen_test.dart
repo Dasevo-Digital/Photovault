@@ -101,6 +101,32 @@ void main() {
     },
   );
 
+  test('eine ausgenommene Aufnahme bekommt keine Gesichter', () async {
+    // KI-108: „Nicht mehr nach Gesichtern durchsuchen“ galt nur für die
+    // Auswahl der Gesichtssuche, nicht für die Wege, die Gesichter
+    // eintragen.
+    await db.setzeGesichtssucheAusgenommen('foto', true);
+    final foto = (await db.assetById('foto'))!;
+    await auswertungen.speichereGesichter(foto, [fund(0.4)]);
+    expect(await db.facesForAsset('foto'), isEmpty);
+  });
+
+  test('auch die Suche auf einem dekodierten Bild beachtet die Ausnahme', () {
+    // scanFacesForDecodedAsset braucht ein geladenes YuNet, das es hier
+    // nicht gibt – deshalb am Quelltext, wie in
+    // analyse_laedt_nur_bei_arbeit_test.dart. Über diesen Weg sucht die
+    // Stufe Videobilder auf jedem Standbild.
+    final quelle = File(
+      'packages/kern/lib/auswertung/auswertungen.dart',
+    ).readAsStringSync();
+    final von = quelle.indexOf('Future<void> scanFacesForDecodedAsset(');
+    expect(von, greaterThan(0), reason: 'umbenannt? Dann hier mit.');
+    final rumpf = quelle.substring(von, quelle.indexOf('\n  Future<', von));
+    final ausstieg = rumpf.indexOf('if (asset.faceScanExcluded) return;');
+    expect(ausstieg, greaterThan(0), reason: 'die Ausnahme fehlt');
+    expect(ausstieg, lessThan(rumpf.indexOf('erkenneGesichter(')));
+  });
+
   test(
     'die belegten Stellen umfassen benannte, beiseitegelegte und unbenannte',
     () async {
