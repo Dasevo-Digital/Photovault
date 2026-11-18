@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
+import 'package:photo_vault/widgets/month_grouped_asset_grid.dart';
 import 'package:photo_vault/widgets/timeline_scrubber.dart';
 
 import 'goldbilder.dart';
@@ -301,32 +302,43 @@ void main() {
     }
   });
 
-  testWidgets('bei sehr wenigen Monaten erscheint der Regler gar nicht', (
-    tester,
-  ) async {
-    // Ein Schnell-Scroll-Regler über zwei Gruppen wäre nur Unruhe.
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
-        supportedLocales: AppTexte.supportedLocales,
-        home: Scaffold(
-          body: SizedBox(
-            width: 64,
-            height: 600,
-            child: TimelineScrubber(
-              orderedKeys: const [202601],
-              groups: {
-                202601: [_foto('a', DateTime(2026, 1, 5))],
-              },
-              controller: ScrollController(),
-              gridWidth: 800,
+  for (final monate in const [1, 2]) {
+    testWidgets(
+      'bei sehr wenigen Monaten erscheint der Regler gar nicht ($monate)',
+      (tester) async {
+        // Ein Schnell-Scroll-Regler über ein, zwei Gruppen wäre nur Unruhe.
+        final keys = [for (var m = 1; m <= monate; m++) 202600 + m];
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: const Locale('de'),
+            localizationsDelegates: AppTexte.localizationsDelegates,
+            supportedLocales: AppTexte.supportedLocales,
+            home: Scaffold(
+              body: SizedBox(
+                width: 64,
+                height: 600,
+                child: TimelineScrubber(
+                  orderedKeys: keys,
+                  groups: {
+                    for (final k in keys)
+                      k: [_foto('a$k', DateTime(2026, k - 202600, 5))],
+                  },
+                  controller: ScrollController(),
+                  gridWidth: 800,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+        expect(find.text('2026'), findsNothing);
+        expect(rasterMitZeitstrahl(monate), isFalse);
+      },
     );
-    expect(find.text('2026'), findsNothing);
+  }
+
+  test('ab drei Gruppen hält das Raster Platz für den Regler frei', () {
+    expect(rasterMitZeitstrahl(3), isTrue);
+    expect(rasterMitZeitstrahl(40), isTrue);
   });
 
   testWidgets('so sieht die Leiste bei schieflastigem Bestand aus', (

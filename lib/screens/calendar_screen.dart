@@ -276,7 +276,7 @@ class YearDetailScreen extends StatefulWidget {
   /// Der Unterschied ist nicht nur der Ausschnitt: Über ein Jahr wird
   /// nach Monaten gegliedert, über einen Monat nach **Tagen**. Sonst
   /// gäbe es dort genau eine Gruppe, und der Zeitstrahl daneben fiele
-  /// mangels zweiter Gruppe weg (siehe [rasterMitZeitstrahl]).
+  /// mangels Gruppen weg (siehe [rasterMitZeitstrahl]).
   final int? monat;
 
   const YearDetailScreen({

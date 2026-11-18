@@ -93,8 +93,12 @@ String tagesbeschriftung(
 /// [tagesbeschriftung].
 const double _knappeTagesbreite = 150;
 
-/// Ob neben dem Raster der Zeitstrahl steht – erst ab zwei Gruppen.
-bool rasterMitZeitstrahl(int gruppenAnzahl) => gruppenAnzahl > 1;
+/// Ob neben dem Raster der Zeitstrahl steht – erst ab
+/// [zeitstrahlAbGruppen] Gruppen. Dieselbe Schwelle prüft der Zeitstrahl
+/// selbst; sonst hielte das Raster Platz für eine Leiste frei, die gar
+/// nicht erscheint.
+bool rasterMitZeitstrahl(int gruppenAnzahl) =>
+    gruppenAnzahl >= zeitstrahlAbGruppen;
 
 /// Wie viele Spalten das Raster bei dieser Gesamtbreite verwendet.
 ///

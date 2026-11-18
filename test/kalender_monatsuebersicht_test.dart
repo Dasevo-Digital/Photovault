@@ -160,9 +160,10 @@ void main() {
     testWidgets('und der Zeitstrahl steht daneben', (tester) async {
       // Der eigentliche Grund für die Tagesgliederung: Nach Monaten
       // gegliedert gäbe es hier eine einzige Gruppe, und der Zeitstrahl
-      // erscheint erst ab zweien.
+      // erscheint erst ab dreien.
       await aufnahme('a', DateTime(2026, 3, 5, 10));
       await aufnahme('b', DateTime(2026, 3, 9, 10));
+      await aufnahme('c', DateTime(2026, 3, 14, 10));
       await zeige(
         tester,
         YearDetailScreen(library: library, year: 2026, monat: 3),

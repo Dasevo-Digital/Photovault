@@ -7671,11 +7671,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Schon bei zwei Monaten steht ein Zeitstrahl am Rand –
-  // month_grouped_asset_grid.dart:99 `rasterMitZeitstrahl(n) => n > 1`.
-  // Die Einheitsprüfung (timeline_scrubber_test.dart „bei sehr wenigen
-  // Monaten“) prüft nur einen einzigen Monat.
-  testWidgets('ANS-013 Bei sehr wenigen Monaten kein Zeitstrahl', skip: true, (
+  // Behoben in #410: Der Zeitstrahl steht erst ab drei Gruppen
+  // (zeitstrahlAbGruppen); Raster und Zeitstrahl prüfen dieselbe Schwelle.
+  testWidgets('ANS-013 Bei sehr wenigen Monaten kein Zeitstrahl', (
     tester,
   ) async {
     await startApp(

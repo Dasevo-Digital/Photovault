@@ -8,6 +8,11 @@ import 'package:kern/db/rasterzeile.dart';
 import '../theme/app_theme.dart';
 import 'timeline_grid_layout.dart';
 
+/// Ab so vielen Gruppen (Monaten, Tagen) steht der Zeitstrahl neben dem
+/// Raster. Bei einer oder zwei Gruppen sieht man ohnehin alles auf einen
+/// Blick; ein Schnell-Scroll-Regler wäre dort nur Unruhe am Rand.
+const int zeitstrahlAbGruppen = 3;
+
 /// Vertikaler "Schnell-Scroll"-Regler am rechten Rand der Timeline/des
 /// Kalenders: Jahre als Beschriftung, Monate als Punkte, und an der
 /// aktuellen Position eine Linie quer über die ganze Leiste mit dem Monat
@@ -292,7 +297,9 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
   Widget build(BuildContext context) {
     // Bei sehr wenig Inhalt bringt ein Schnell-Scroll-Regler nichts außer
     // visueller Unruhe.
-    if (widget.orderedKeys.length < 2) return const SizedBox.shrink();
+    if (widget.orderedKeys.length < zeitstrahlAbGruppen) {
+      return const SizedBox.shrink();
+    }
 
     final offsets = _cumulativeOffsets;
     final totalHeight = offsets.last + timelineTrailingHeight;
