@@ -95,7 +95,9 @@
     <p id="totp-hinweis"></p>
     <p id="totp-einrichten" hidden>Richte den Code in deiner Authenticator-App ein:
       <code id="totp-geheimnis"></code> <a id="totp-link" href="#">In der App öffnen</a></p>
-    <label>Code <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" required></label>
+    <!-- Auch ein Wiederherstellungscode (Buchstaben und Striche): kein Muster
+         aus Ziffern und keine Zifferntastatur. -->
+    <label>Code <input name="code" autocomplete="one-time-code" autocapitalize="off" spellcheck="false" required></label>
     <button type="submit">Bestätigen</button>
   </form>
   <p id="fehler" class="fehler" role="alert"></p>

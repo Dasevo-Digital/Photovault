@@ -100,6 +100,24 @@ void main() {
       expect('${breite}x$breite', s['sizes']);
     }
   });
+  test('das Feld „Code“ der Anmeldung nimmt auch Wiederherstellungscodes', () {
+    // Mit pattern="[0-9 ]*" hielt die Formularprüfung des Browsers einen
+    // Wiederherstellungscode (Buchstaben und Striche) an, ehe er zum Server
+    // ging; die Zifferntastatur am Telefon hat keine Buchstaben.
+    final index = File('web/index.html').readAsStringSync();
+    final form = RegExp(
+      r'<form id="form-totp".*?</form>',
+      dotAll: true,
+    ).firstMatch(index)![0]!;
+    final feld = RegExp(r'<input[^>]*name="code"[^>]*>').firstMatch(form)![0]!;
+    const code = 'k7m2-9pqr-x4tz'; // wie _neueWiederherstellungscodes
+    final muster = RegExp(r'pattern="([^"]*)"').firstMatch(feld)?[1];
+    if (muster != null) {
+      expect(RegExp('^(?:$muster)\$').hasMatch(code), isTrue, reason: feld);
+    }
+    expect(feld, isNot(contains('inputmode="numeric"')));
+  });
+
   final proxy = _ip([10, 0, 0, 5]);
   final proxyNetz = '${_ip([10, 0, 0, 0])}/8';
   const fremd = '203.0.113.9';
