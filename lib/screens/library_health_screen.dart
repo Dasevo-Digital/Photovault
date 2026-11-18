@@ -67,6 +67,23 @@ class _LibraryHealthState {
   final int dokumente;
 }
 
+/// Die Aufgabe, deren Lauf mit „Alle“ eine veraltete Verarbeitung
+/// erneuert – die Schlüssel aus `ModelProcessingState.currentFingerprints`
+/// auf die der Aufgabenliste. Bei mehreren die erste in fester Folge;
+/// unbekannte öffnen die Liste ohne Hervorhebung.
+String? aufgabeFuerVeralteteVerarbeitung(Set<String> veraltet) {
+  const aufgaben = {
+    'clip': 'embeddings',
+    'faces': 'gesichter',
+    'ocr': 'ocr',
+    'captions': 'beschreibungen',
+  };
+  for (final MapEntry(key: verarbeitung, value: aufgabe) in aufgaben.entries) {
+    if (veraltet.contains(verarbeitung)) return aufgabe;
+  }
+  return null;
+}
+
 class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
   late Future<_LibraryHealthState> _state = _load();
 
@@ -132,7 +149,7 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
   ///
   /// Nach der Rueckkehr wird neu gezaehlt: Wer den Lauf angestossen hat,
   /// soll die Karte hier nicht unveraendert wiederfinden.
-  Future<void> _zeigeAufgabe(String schluessel) async {
+  Future<void> _zeigeAufgabe(String? schluessel) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => BackgroundTasksScreen(
@@ -463,9 +480,15 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
                   text: t.gesundheitModellwechselText(
                     state.outdatedModelPipelines,
                   ),
+                  // Hierher und nicht über zeigeBereich(werkzeuge): Der
+                  // Bibliothekszustand liegt selbst in „Werkzeuge“, der
+                  // Knopf tat deshalb nichts.
                   action: FilledButton.tonalIcon(
-                    onPressed: () =>
-                        widget.library.zeigeBereich(Hauptbereich.werkzeuge),
+                    onPressed: () => _zeigeAufgabe(
+                      aufgabeFuerVeralteteVerarbeitung(
+                        widget.library.outdatedModelPipelines,
+                      ),
+                    ),
                     icon: const Icon(Icons.arrow_forward),
                     label: Text(t.gesundheitModellwechselAufgaben),
                   ),

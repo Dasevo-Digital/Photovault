@@ -3669,9 +3669,8 @@ void main() {
     },
   );
 
-  // Befund: „Aufgaben öffnen“ ruft zeigeBereich(werkzeuge), man ist aber schon in „Werkzeuge“ – es passiert nichts (library_health_screen.dart:458).
+  // Behoben in #414: „Aufgaben öffnen“ öffnet die Aufgabenliste und hebt die Aufgabe der veralteten Verarbeitung hervor.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-062 Befundpruefung Aufgaben oeffnen fuehrt zu Werkzeuge',
     (tester) async {
