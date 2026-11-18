@@ -325,8 +325,8 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: tools_screen.dart:575 blendet die Zeile bei 0 Serien ganz aus;
-  // „Keine Serien gefunden" (=0-Zweig von werkzStapelGefunden) erscheint nie.
+  // Behoben in #409: Die Zeile steht auch bei 0 Serien, mit „Keine Serien
+  // gefunden“.
   testWidgets('IMP-154 Ohne Serien steht „Keine Serien gefunden"', (
     tester,
   ) async {
@@ -341,7 +341,7 @@ void main() {
     await settle(tester);
     expect(find.text(de.werkzStapelGefunden(0)), findsOneWidget);
     await ende(tester);
-  }, skip: true);
+  });
 
   // ---------------------------------------------------------------------
   // Alte Fotos zeitlich einordnen (mit nachgestelltem CLIP)

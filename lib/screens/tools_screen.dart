@@ -636,8 +636,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       FutureBuilder<int>(
                         future: _serienzahl,
                         builder: (context, schnappschuss) {
-                          final zahl = schnappschuss.data ?? 0;
-                          if (zahl == 0) return const SizedBox.shrink();
+                          // Erst wenn gezählt ist – dann auch bei 0: „Keine
+                          // Serien gefunden“ ist eine Auskunft, eine fehlende
+                          // Zeile nicht (IMP-154).
+                          final zahl = schnappschuss.data;
+                          if (zahl == null) return const SizedBox.shrink();
                           return Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
@@ -698,8 +701,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
                       FutureBuilder<int>(
                         future: _ortsvorschlagszahl,
                         builder: (context, schnappschuss) {
-                          final zahl = schnappschuss.data ?? 0;
-                          if (zahl == 0) return const SizedBox.shrink();
+                          // Erst wenn gezählt ist – dann auch bei 0: „Keine
+                          // Serien gefunden“ ist eine Auskunft, eine fehlende
+                          // Zeile nicht (IMP-154).
+                          final zahl = schnappschuss.data;
+                          if (zahl == null) return const SizedBox.shrink();
                           return Padding(
                             padding: const EdgeInsets.only(top: 2),
                             child: Text(
