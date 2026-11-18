@@ -721,10 +721,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           vonHand: asset.aiCaptionEdited,
                           onSprache: _kiSpracheWechseln,
                         ),
-                        // Bei einem Video ruht alles Erkannte auf einem
+                        // Bei einem Video ruht die Beschreibung auf einem
                         // einzigen Standbild. Das gehört dazugesagt: Wer
                         // „drei Personen" liest, nimmt sonst an, der ganze
-                        // Film sei durchsucht worden.
+                        // Film sei beschrieben worden. Bildsuche,
+                        // Schlagwörter und Gesichter sehen bei längeren
+                        // Videos weitere Standbilder (Stufe Videobilder).
                         if (asset.type == 'VIDEO') ...[
                           const SizedBox(height: 6),
                           Text(

@@ -958,7 +958,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get einstVokabularText =>
-      'Terms the image search model (CLIP) applies automatically to newly imported photos. Changes here only affect future photos – to apply them to the existing library, see Tools → “Compute AI tags” → “All photos”.';
+      'Terms the image search model (CLIP) applies automatically to newly imported photos. Changes here only affect future photos – to apply them to the existing library, see Tools → “Jobs” → “AI tags” → “All”.';
 
   @override
   String get einstBegriffHinzufuegenFeld => 'Add a term …';
@@ -1824,7 +1824,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get werkzAllesNachholenText =>
-      'Starts every expensive step one after another in the background: blur, faces, text recognition, image search, tags and captions. Each step skips what it already has, and the app stays usable throughout.';
+      'Starts every expensive step one after another in the background: image analysis (blur, faces, image search), video stills, text recognition, tags, captions, speech recognition and recognition of named people. Each step skips what it already has, and the app stays usable throughout.';
 
   @override
   String get werkzAbschnittBibliothek => 'Library';
@@ -3919,7 +3919,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get infoVideoStandbild =>
-      'Analysed on a single frame from the first second – not on the whole clip.';
+      'The caption is based on a single frame from the first second. For videos of 10 seconds or longer, image search, tags and faces also use up to five more frames from across the whole clip.';
 
   @override
   String get infoBeschreibungHinzufuegen => 'Add a description';
@@ -6888,7 +6888,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get infoKiVonHandHinweis =>
-      'Survives “All photos”. Clear the field to have it computed again.';
+      'Survives “All”. Clear the field to have it computed again.';
 
   @override
   String get infoSpracheDe => 'DE';
@@ -6943,7 +6943,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get modellOcrText =>
-      'Finds text in photos and reads it – two models, 13.7 MB together. Covers the Latin alphabet including umlauts and ß. Not needed on macOS: Apple\'s Vision framework does it there without a download.';
+      'Finds text in photos and reads it – two models, 12.8 MB together. Covers the Latin alphabet including umlauts and ß. Not needed on macOS: Apple\'s Vision framework does it there without a download.';
 
   @override
   String get modellOcrLizenz => 'Apache 2.0 (PaddleOCR)';

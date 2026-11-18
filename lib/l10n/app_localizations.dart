@@ -1587,7 +1587,7 @@ abstract class AppTexte {
   /// No description provided for @einstVokabularText.
   ///
   /// In de, this message translates to:
-  /// **'Begriffe, die automatisch per KI-Bildsuche-Modell (CLIP) auf neu importierte Fotos angewendet werden. Änderungen hier gelten nur für künftige Fotos – um sie rückwirkend auf die vorhandene Bibliothek anzuwenden, siehe Werkzeuge → \"KI-Tags berechnen\" → \"Alle Fotos\".'**
+  /// **'Begriffe, die automatisch per KI-Bildsuche-Modell (CLIP) auf neu importierte Fotos angewendet werden. Änderungen hier gelten nur für künftige Fotos – um sie rückwirkend auf die vorhandene Bibliothek anzuwenden, siehe Werkzeuge → „Aufgaben“ → „KI-Tags“ → „Alle“.'**
   String get einstVokabularText;
 
   /// No description provided for @einstBegriffHinzufuegenFeld.
@@ -3080,7 +3080,7 @@ abstract class AppTexte {
   /// No description provided for @werkzAllesNachholenText.
   ///
   /// In de, this message translates to:
-  /// **'Startet alle rechenintensiven Schritte nacheinander im Hintergrund: Unschärfe, Gesichter, Texterkennung, Bildsuche, Schlagwörter und Bildbeschreibung. Jeder Schritt überspringt, was er schon hat – die App bleibt bedienbar.'**
+  /// **'Startet alle rechenintensiven Schritte nacheinander im Hintergrund: Bildanalyse (Unschärfe, Gesichter, Bildsuche), Videobilder, Texterkennung, Schlagwörter, Bildbeschreibung, Spracherkennung und Wiedererkennung benannter Personen. Jeder Schritt überspringt, was er schon hat – die App bleibt bedienbar.'**
   String get werkzAllesNachholenText;
 
   /// No description provided for @werkzAbschnittBibliothek.
@@ -6564,7 +6564,7 @@ abstract class AppTexte {
   /// No description provided for @infoVideoStandbild.
   ///
   /// In de, this message translates to:
-  /// **'Ausgewertet auf einem Standbild aus der ersten Sekunde – nicht auf dem ganzen Film.'**
+  /// **'Die Beschreibung beruht auf einem Standbild aus der ersten Sekunde. Bildsuche, Schlagwörter und Gesichter werten bei Videos ab 10 Sekunden zusätzlich bis zu fünf Standbilder aus dem ganzen Film aus.'**
   String get infoVideoStandbild;
 
   /// No description provided for @infoBeschreibungHinzufuegen.
@@ -10738,7 +10738,7 @@ abstract class AppTexte {
   /// No description provided for @infoKiVonHandHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Bleibt bei „Alle Fotos“ erhalten. Zum Neuberechnen das Feld leeren.'**
+  /// **'Bleibt bei „Alle“ erhalten. Zum Neuberechnen das Feld leeren.'**
   String get infoKiVonHandHinweis;
 
   /// No description provided for @infoSpracheDe.
@@ -10828,7 +10828,7 @@ abstract class AppTexte {
   /// No description provided for @modellOcrText.
   ///
   /// In de, this message translates to:
-  /// **'Findet Text in Fotos und liest ihn – zwei Modelle, zusammen 13,7 MB. Deckt das lateinische Alphabet samt Umlauten und ß ab. Unter macOS nicht nötig: Dort erledigt das Apples Vision-Framework ohne Download.'**
+  /// **'Findet Text in Fotos und liest ihn – zwei Modelle, zusammen 12,8 MB. Deckt das lateinische Alphabet samt Umlauten und ß ab. Unter macOS nicht nötig: Dort erledigt das Apples Vision-Framework ohne Download.'**
   String get modellOcrText;
 
   /// No description provided for @modellOcrLizenz.

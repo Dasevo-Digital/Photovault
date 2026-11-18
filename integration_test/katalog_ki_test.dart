@@ -2141,9 +2141,8 @@ void main() {
     },
   );
 
-  // Befund: veraltete Texte app_de.arb:528 (Weg „KI-Tags berechnen“), :970 (nur sechs Schritte), :4287 (13,7 statt 12,8 MB).
+  // Behoben in #414: Vokabular-Hinweis nennt Werkzeuge → Aufgaben → KI-Tags → Alle, „Alle Auswertungen nachholen“ alle sieben Stufen, PaddleOCR 12,8 MB.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-031 KI-083 KI-095 Befundpruefung veraltete Texte',
     (tester) async {
@@ -4033,9 +4032,8 @@ void main() {
     },
   );
 
-  // Befund: Hinweis infoVideoStandbild (app_de.arb:2176) sagt „ein Standbild“, obwohl die Stufe Videobilder bis zu fünf auswertet.
+  // Behoben in #414: infoVideoStandbild sagt, dass nur die Beschreibung auf dem einen Standbild beruht und Videobilder bis zu fünf weitere auswertet.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-094 Befundpruefung Videohinweis unter der Beschreibung',
     (tester) async {

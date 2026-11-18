@@ -968,7 +968,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get einstVokabularText =>
-      'Begriffe, die automatisch per KI-Bildsuche-Modell (CLIP) auf neu importierte Fotos angewendet werden. Änderungen hier gelten nur für künftige Fotos – um sie rückwirkend auf die vorhandene Bibliothek anzuwenden, siehe Werkzeuge → \"KI-Tags berechnen\" → \"Alle Fotos\".';
+      'Begriffe, die automatisch per KI-Bildsuche-Modell (CLIP) auf neu importierte Fotos angewendet werden. Änderungen hier gelten nur für künftige Fotos – um sie rückwirkend auf die vorhandene Bibliothek anzuwenden, siehe Werkzeuge → „Aufgaben“ → „KI-Tags“ → „Alle“.';
 
   @override
   String get einstBegriffHinzufuegenFeld => 'Begriff hinzufügen …';
@@ -1840,7 +1840,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get werkzAllesNachholenText =>
-      'Startet alle rechenintensiven Schritte nacheinander im Hintergrund: Unschärfe, Gesichter, Texterkennung, Bildsuche, Schlagwörter und Bildbeschreibung. Jeder Schritt überspringt, was er schon hat – die App bleibt bedienbar.';
+      'Startet alle rechenintensiven Schritte nacheinander im Hintergrund: Bildanalyse (Unschärfe, Gesichter, Bildsuche), Videobilder, Texterkennung, Schlagwörter, Bildbeschreibung, Spracherkennung und Wiedererkennung benannter Personen. Jeder Schritt überspringt, was er schon hat – die App bleibt bedienbar.';
 
   @override
   String get werkzAbschnittBibliothek => 'Bibliothek';
@@ -3946,7 +3946,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get infoVideoStandbild =>
-      'Ausgewertet auf einem Standbild aus der ersten Sekunde – nicht auf dem ganzen Film.';
+      'Die Beschreibung beruht auf einem Standbild aus der ersten Sekunde. Bildsuche, Schlagwörter und Gesichter werten bei Videos ab 10 Sekunden zusätzlich bis zu fünf Standbilder aus dem ganzen Film aus.';
 
   @override
   String get infoBeschreibungHinzufuegen => 'Beschreibung hinzufügen';
@@ -6925,7 +6925,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get infoKiVonHandHinweis =>
-      'Bleibt bei „Alle Fotos“ erhalten. Zum Neuberechnen das Feld leeren.';
+      'Bleibt bei „Alle“ erhalten. Zum Neuberechnen das Feld leeren.';
 
   @override
   String get infoSpracheDe => 'DE';
@@ -6980,7 +6980,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get modellOcrText =>
-      'Findet Text in Fotos und liest ihn – zwei Modelle, zusammen 13,7 MB. Deckt das lateinische Alphabet samt Umlauten und ß ab. Unter macOS nicht nötig: Dort erledigt das Apples Vision-Framework ohne Download.';
+      'Findet Text in Fotos und liest ihn – zwei Modelle, zusammen 12,8 MB. Deckt das lateinische Alphabet samt Umlauten und ß ab. Unter macOS nicht nötig: Dort erledigt das Apples Vision-Framework ohne Download.';
 
   @override
   String get modellOcrLizenz => 'Apache 2.0 (PaddleOCR)';
