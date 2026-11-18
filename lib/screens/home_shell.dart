@@ -637,7 +637,22 @@ class _HomeShellState extends State<HomeShell> {
   /// Fotos bis ⌘9 Stammbaum. ⌘0 bleibt bei den Einstellungen, wo es seit
   /// jeher lag und wo es die meisten Programme haben. Was dazwischen
   /// liegt, erreicht man über ⌘K – und das steht in der Kürzelübersicht.
-  static const _kuerzelZiele = [0, 1, 2, 3, 4, 5, 6, 7, 8, 15];
+  ///
+  /// Über die Namen und nicht als Zahlen: Als hier noch `15` stand, war
+  /// das nach dem Einschub weiterer Bereiche der Papierkorb – ⌘0 öffnete
+  /// ihn, während die Kürzeltafel „⌘0 Einstellungen“ versprach.
+  static const _kuerzelZiele = [
+    Hauptbereich.zeitleiste,
+    Hauptbereich.suche,
+    Hauptbereich.alben,
+    Hauptbereich.favoriten,
+    Hauptbereich.personen,
+    Hauptbereich.karte,
+    Hauptbereich.orte,
+    Hauptbereich.reisen,
+    Hauptbereich.stammbaum,
+    Hauptbereich.einstellungen,
+  ];
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
@@ -689,6 +704,10 @@ class _HomeShellState extends State<HomeShell> {
         return KeyEventResult.handled;
       }
     }
+    // Wer in ein Textfeld schreibt, will „?“ und „_“ darin sehen und keine
+    // Kürzeltafel. Die Ziffern mit ⌘ oben gelten dagegen auch dort: Sie
+    // schreiben nichts.
+    if (schreibtGerade()) return KeyEventResult.ignored;
     // event.character statt LogicalKeyboardKey.slash, damit es unabhängig
     // vom Tastaturlayout funktioniert ("?" liegt auf deutschen Tastaturen
     // z.B. auf Umschalt+ß, nicht auf Umschalt+/ wie im US-Layout).

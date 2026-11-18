@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:kern/db/database.dart';
 import '../services/rasterauswahl.dart';
 import '../theme/app_spacing.dart';
+import 'tastenkuerzel.dart' show schreibtGerade;
 
 /// Maus mit Zusatztasten und Tastatur für die Fotoraster – an einer Stelle
 /// für alle vier Bildschirme, die eine Mehrfachauswahl kennen (Zeitleiste,
@@ -244,23 +245,13 @@ mixin Rasterbedienung<T extends StatefulWidget, Z extends Object> on State<T> {
     super.dispose();
   }
 
-  /// Ob gerade in ein Textfeld geschrieben wird.
-  ///
-  /// Ohne diese Prüfung wäre die Suche unbenutzbar: Der Mixin sitzt als
-  /// `Focus` über dem ganzen Bildschirm, und Zifferntasten laufen an einem
-  /// Textfeld vorbei nach oben durch. „2026" ins Suchfeld getippt hiesse
-  /// sonst: vier Bewertungen vergeben.
-  bool _schreibtGerade() {
-    final ctx = FocusManager.instance.primaryFocus?.context;
-    return ctx != null &&
-        ctx.findAncestorStateOfType<EditableTextState>() != null;
-  }
-
   KeyEventResult rasterTaste(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
-    if (_schreibtGerade()) return KeyEventResult.ignored;
+    // Der Mixin sitzt als `Focus` über dem ganzen Bildschirm, und
+    // Zifferntasten laufen an einem Textfeld vorbei nach oben durch.
+    if (schreibtGerade()) return KeyEventResult.ignored;
     if (rasterAssets.isEmpty) return KeyEventResult.ignored;
 
     final taste = event.logicalKey;

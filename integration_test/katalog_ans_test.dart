@@ -2252,12 +2252,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: ⌘0 öffnet den Papierkorb (Index 15) statt der Einstellungen
-  // (Hauptbereich.einstellungen = 17) – home_shell.dart:635
-  // `_kuerzelZiele = [0, 1, 2, 3, 4, 5, 6, 7, 8, 15]`.
-  testWidgets('ANS-036 ⌘0 öffnet die Einstellungen', skip: true, (
-    tester,
-  ) async {
+  // Behoben in #408: Die Kürzelziele stehen als Bereichsnamen da, ⌘0 führt
+  // auf Hauptbereich.einstellungen (derselbe Fehler wie GRU-059).
+  testWidgets('ANS-036 ⌘0 öffnet die Einstellungen', (tester) async {
     await startApp(tester, fotos: [testfoto('n.jpg')]);
     await openSection(tester, Hauptbereich.zeitleiste);
     await befehlstaste(tester, LogicalKeyboardKey.digit0);

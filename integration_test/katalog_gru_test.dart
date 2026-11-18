@@ -1956,80 +1956,60 @@ void main() {
     timeout: _frist,
   );
 
-  // Befund: ⌘0 führt auf Nummer 15 („Papierkorb“) statt auf die
-  // Einstellungen (17), die die Kürzeltafel verspricht –
-  // lib/screens/home_shell.dart:635 (_kuerzelZiele endet mit 15).
-  testWidgets(
-    'GRU-059 ⌘0 öffnet die Einstellungen',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      expect(de.kuerzelUebrigeBereiche, contains('⌘0 Einstellungen'));
-      await mitMeta(tester, LogicalKeyboardKey.digit0);
-      expect(gewaehlt(tester), Hauptbereich.einstellungen);
-      expect(find.byType(SettingsScreen), findsOneWidget);
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: Die Kürzelziele stehen als Bereichsnamen da, ⌘0 führt
+  // auf Hauptbereich.einstellungen.
+  testWidgets('GRU-059 ⌘0 öffnet die Einstellungen', (tester) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    expect(de.kuerzelUebrigeBereiche, contains('⌘0 Einstellungen'));
+    await mitMeta(tester, LogicalKeyboardKey.digit0);
+    expect(gewaehlt(tester), Hauptbereich.einstellungen);
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    await ende(tester);
+  }, timeout: _frist);
 
-  // Befund: Die Hülle fängt „?“ und Umschalt+Minus/Schrägstrich auch dann ab,
-  // wenn ein Textfeld den Fokus hat (lib/screens/home_shell.dart:696 prüft –
-  // anders als rasterbedienung.dart:253 – nicht, ob geschrieben wird): Die
-  // Kürzelübersicht öffnet sich, und weil die Taste als erledigt gilt,
-  // erreicht das Zeichen das Feld nicht.
-  testWidgets(
-    'GRU-065 ? und _ in einem Textfeld werden getippt',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      await einstellungen(tester);
-      final feld = find.descendant(
-        of: find.byType(SearchBar),
-        matching: find.byType(TextField),
-      );
+  // Behoben in #408: Die Hülle lässt „?“ und „_“ durch, solange ein
+  // Textfeld den Fokus hat (schreibtGerade, wie im Raster).
+  testWidgets('GRU-065 ? und _ in einem Textfeld werden getippt', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    await einstellungen(tester);
+    final feld = find.descendant(
+      of: find.byType(SearchBar),
+      matching: find.byType(TextField),
+    );
+    await tester.tap(feld);
+    await tester.pump();
+    await tester.enterText(feld, 'a');
+    await tester.pump();
+    final tafel = find.widgetWithText(AlertDialog, de.kuerzelTitel);
+    final frage = await mitUmschalt(tester, LogicalKeyboardKey.slash, '?');
+    final tafelBeiFrage = tafel.evaluate().isNotEmpty;
+    if (tafelBeiFrage) {
+      await tippe(tester, knopfIn(tafel, de.allgSchliessen));
       await tester.tap(feld);
       await tester.pump();
-      await tester.enterText(feld, 'a');
-      await tester.pump();
-      final tafel = find.widgetWithText(AlertDialog, de.kuerzelTitel);
-      final frage = await mitUmschalt(tester, LogicalKeyboardKey.slash, '?');
-      final tafelBeiFrage = tafel.evaluate().isNotEmpty;
-      if (tafelBeiFrage) {
-        await tippe(tester, knopfIn(tafel, de.allgSchliessen));
-        await tester.tap(feld);
-        await tester.pump();
-      }
-      final strich = await mitUmschalt(tester, LogicalKeyboardKey.minus, '_');
-      final tafelBeiStrich = tafel.evaluate().isNotEmpty;
-      print(
-        'GRU-065: „?“ abgefangen: $frage, Tafel: $tafelBeiFrage; '
-        '„_“ abgefangen: $strich, Tafel: $tafelBeiStrich',
-      );
-      expect(
-        tafelBeiFrage,
-        isFalse,
-        reason: '„?“ im Suchfeld öffnet die Tafel',
-      );
-      expect(
-        frage,
-        isFalse,
-        reason: '„?“ gilt als erledigt, erreicht das Feld nicht',
-      );
-      expect(
-        tafelBeiStrich,
-        isFalse,
-        reason: '„_“ im Suchfeld öffnet die Tafel',
-      );
-      expect(strich, isFalse, reason: '„_“ gilt als erledigt');
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+    }
+    final strich = await mitUmschalt(tester, LogicalKeyboardKey.minus, '_');
+    final tafelBeiStrich = tafel.evaluate().isNotEmpty;
+    print(
+      'GRU-065: „?“ abgefangen: $frage, Tafel: $tafelBeiFrage; '
+      '„_“ abgefangen: $strich, Tafel: $tafelBeiStrich',
+    );
+    expect(tafelBeiFrage, isFalse, reason: '„?“ im Suchfeld öffnet die Tafel');
+    expect(
+      frage,
+      isFalse,
+      reason: '„?“ gilt als erledigt, erreicht das Feld nicht',
+    );
+    expect(tafelBeiStrich, isFalse, reason: '„_“ im Suchfeld öffnet die Tafel');
+    expect(strich, isFalse, reason: '„_“ gilt als erledigt');
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets('GRU-044 „Fotos“ erneut anklicken springt nach oben', (
     tester,

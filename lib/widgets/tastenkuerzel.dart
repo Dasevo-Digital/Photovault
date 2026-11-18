@@ -3,6 +3,19 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_spacing.dart';
 
+/// Ob gerade in ein Textfeld geschrieben wird.
+///
+/// Für jede Tastenbehandlung, die über Textfeldern sitzt: Zeichen, die
+/// ein Textfeld nicht selbst als Kürzel verbraucht, laufen an ihm vorbei
+/// nach oben durch. Ohne diese Prüfung öffnete „?“ im Suchfeld der
+/// Einstellungen die Kürzeltafel und kam im Feld nie an, und „2026“ in
+/// der Suche vergab vier Bewertungen.
+bool schreibtGerade() {
+  final ctx = FocusManager.instance.primaryFocus?.context;
+  return ctx != null &&
+      ctx.findAncestorStateOfType<EditableTextState>() != null;
+}
+
 /// Die Tafel aller Tastaturkürzel – an zwei Stellen gezeigt und deshalb
 /// hier zu Hause: im Fenster, das „?" öffnet, und als Gruppe in den
 /// Einstellungen.
