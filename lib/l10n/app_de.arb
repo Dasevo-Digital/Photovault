@@ -1175,7 +1175,7 @@
       }
     }
   },
-  "auswUebertragenText": "Die kopierten Werte für Belichtung, Weissabgleich, Kontrast und Schatten werden übernommen; jedes Foto wird dabei neu gerendert.\n\nMasken werden nicht übertragen. Der bisherige Stand jedes Fotos bleibt in dessen Verlauf erhalten.",
+  "auswUebertragenText": "Übernommen wird alles, was für das ganze Bild gilt: Belichtung, Weissabgleich, Kontrast, Lichter, Schatten, Klarheit, Schärfe, Rauschunterdrückung, Vignettierung, Objektivkorrektur, Farbtabelle, Tonwertkurve und Farbmischer. Jedes Foto wird dabei neu gerendert.\n\nMasken werden nicht übertragen. Der bisherige Stand jedes Fotos bleibt in dessen Verlauf erhalten.",
   "auswUebertragen": "Übertragen",
   "auswUebertrageLaeuft": "Übertrage Entwicklung …",
   "auswKeineGeeigneten": "Keine geeigneten Fotos – gesperrte Fotos und Videos bleiben aussen vor.",

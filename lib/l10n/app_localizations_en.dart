@@ -2163,7 +2163,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get auswUebertragenText =>
-      'The copied values for exposure, white balance, contrast and shadows are applied, and each photo is re-rendered.\n\nMasks are not carried over. Each photo\'s previous state stays in its history.';
+      'Everything that applies to the whole image is carried over: exposure, white balance, contrast, highlights, shadows, clarity, sharpness, noise reduction, vignette, lens correction, colour table, tone curve and colour mixer. Each photo is re-rendered.\n\nMasks are not carried over. Each photo\'s previous state stays in its history.';
 
   @override
   String get auswUebertragen => 'Paste';

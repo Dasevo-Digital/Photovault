@@ -7864,9 +7864,9 @@ void _befundTests() {
     await abschluss(tester);
   });
 
-  // Befund: Der Dialog „Entwicklung auf n Foto(s) übertragen?“ nennt nur
-  // Belichtung, Weissabgleich, Kontrast und Schatten (app_de.arb:1172);
-  // übertragen werden auch Lichter, Klarheit, Farbtabelle und Kurve.
+  // Behoben in #411: Der Dialog „Entwicklung auf n Foto(s) übertragen?“
+  // nennt alle Werte, die übertragen werden, auch Lichter, Klarheit,
+  // Farbtabelle und Kurve.
   testWidgets('BEA-052 Befund: Übertragen-Dialog nennt nicht alle Werkzeuge', (
     tester,
   ) async {
@@ -7874,7 +7874,7 @@ void _befundTests() {
     expect(de.auswUebertragenText, contains('Lichter'));
     expect(de.auswUebertragenText, contains('Farbtabelle'));
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Befund: Scheitert beim Übertragen ein Foto (hier: Original fehlt), zählt
   // der Fortschritt es trotzdem als erledigt, und es gibt keine Meldung

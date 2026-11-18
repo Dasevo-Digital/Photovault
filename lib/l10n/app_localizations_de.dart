@@ -2180,7 +2180,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get auswUebertragenText =>
-      'Die kopierten Werte für Belichtung, Weissabgleich, Kontrast und Schatten werden übernommen; jedes Foto wird dabei neu gerendert.\n\nMasken werden nicht übertragen. Der bisherige Stand jedes Fotos bleibt in dessen Verlauf erhalten.';
+      'Übernommen wird alles, was für das ganze Bild gilt: Belichtung, Weissabgleich, Kontrast, Lichter, Schatten, Klarheit, Schärfe, Rauschunterdrückung, Vignettierung, Objektivkorrektur, Farbtabelle, Tonwertkurve und Farbmischer. Jedes Foto wird dabei neu gerendert.\n\nMasken werden nicht übertragen. Der bisherige Stand jedes Fotos bleibt in dessen Verlauf erhalten.';
 
   @override
   String get auswUebertragen => 'Übertragen';
