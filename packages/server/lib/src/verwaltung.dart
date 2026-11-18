@@ -11,6 +11,18 @@ import 'konten/serverdatenbank.dart';
 import 'konten/totp.dart';
 import 'konten/tresorschluessel.dart';
 
+/// Die Unterbefehle von `konto`, wie sie [hilfe] nennt.
+const _befehle = {
+  'anlegen',
+  'liste',
+  'passwort',
+  'totp-zuruecksetzen',
+  'entsperren',
+  'geraete',
+  'abmelden',
+  'oidc-loesen',
+};
+
 const hilfe = '''
 Photo Vault Server
 
@@ -35,7 +47,12 @@ Unter Docker: docker exec -it CONTAINER photo_vault_server konto …
 /// Konto entstehen muss, bevor sich jemand anmelden kann – und wer auf der
 /// Maschine einen Befehl ausführen darf, darf ohnehin alles.
 Future<int> verwalte(List<String> argumente, Einstellungen e) async {
-  if (argumente.isEmpty || argumente.first != 'konto' || argumente.length < 2) {
+  // Ein unbekannter Unterbefehl bekommt die Hilfe, bevor ein Konto gesucht
+  // wird: „konto loeschen x“ meldete sonst, das Konto gebe es nicht.
+  if (argumente.isEmpty ||
+      argumente.first != 'konto' ||
+      argumente.length < 2 ||
+      !_befehle.contains(argumente[1])) {
     stdout.write(hilfe);
     return argumente.isEmpty || argumente.first == 'hilfe' ? 0 : 64;
   }
