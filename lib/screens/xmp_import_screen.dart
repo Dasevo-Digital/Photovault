@@ -400,12 +400,11 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
         title: Text(AppTexte.of(context).werkzXmpLesenTitel),
         actions: [
           if (_diffs.isNotEmpty)
+            // Ohne eigene Farbe: Fest weiss stand der Text im hellen
+            // Erscheinungsbild weiss auf der hellen Leiste (IMP-107).
             TextButton(
               onPressed: _applyAll,
-              child: Text(
-                AppTexte.of(context).xmpAlleUebernehmen,
-                style: const TextStyle(color: Colors.white),
-              ),
+              child: Text(AppTexte.of(context).xmpAlleUebernehmen),
             ),
           IconButton(
             icon: const Icon(Icons.folder_open_outlined),

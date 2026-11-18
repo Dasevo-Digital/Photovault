@@ -2591,9 +2591,8 @@ void main() {
     },
   );
 
-  // Befund (zweimal reproduziert): Der Text von „Alle übernehmen“ ist fest
-  // weiss gesetzt (lib/screens/xmp_import_screen.dart:407); im hellen
-  // Erscheinungsbild steht er weiss auf der hellen Leiste.
+  // Behoben in #409: „Alle übernehmen“ nimmt die Farbe des Themas statt
+  // fest weiss.
   pruefung(
     'IMP-107 Befund: „Alle übernehmen“ im hellen Erscheinungsbild lesbar',
     (tester) async {
@@ -2635,7 +2634,6 @@ void main() {
       expect(kontrast, greaterThanOrEqualTo(3.0), reason: 'Kontrast $kontrast');
       await finish(tester);
     },
-    skip: true,
   );
 
   pruefung('IMP-108 Abgelehntes Foto kommt in den Papierkorb', (tester) async {
