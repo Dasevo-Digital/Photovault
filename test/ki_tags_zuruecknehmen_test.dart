@@ -106,6 +106,89 @@ void main() {
     ], reason: 'sonst stünde die Suchliste voll leerer Begriffe');
   });
 
+  test('ein von Hand angelegtes Schlagwort ohne Foto bleibt stehen', () async {
+    // KI-081: „Leer“ hängt an keinem Foto, nur an einer Regel. Früher
+    // löschte das Zurücknehmen jedes Schlagwort ohne Foto, und die Regel
+    // verwies danach auf eine Kennung ohne Schlagwort.
+    await aufnahme('a');
+    await db.tagAsset('a', 'Strand', quelle: Tagquelle.ki);
+    final leer = await db.ensureTag('Leer');
+    final ohneAlles = await db.ensureTag('Ohne alles');
+    await db
+        .into(db.automationRules)
+        .insert(
+          AutomationRulesCompanion.insert(
+            id: 'r1',
+            name: 'Regel Leer',
+            triggerType: 'location',
+          ),
+        );
+    await db
+        .into(db.automationRuleTags)
+        .insert(AutomationRuleTagsCompanion.insert(ruleId: 'r1', tagId: leer));
+
+    await db.nimmKiTagsZurueck();
+
+    final ids = [for (final t in await db.select(db.tags).get()) t.id];
+    expect(ids, containsAll([leer, ohneAlles]));
+    expect(await db.select(db.automationRuleTags).get(), hasLength(1));
+  });
+
+  test('ein KI-Schlagwort, das eine Regel setzt, bleibt stehen', () async {
+    await aufnahme('a');
+    await db.tagAsset('a', 'Strand', quelle: Tagquelle.ki);
+    final strand = await db.ensureTag('Strand');
+    await db
+        .into(db.automationRules)
+        .insert(
+          AutomationRulesCompanion.insert(
+            id: 'r1',
+            name: 'Meer',
+            triggerType: 'location',
+          ),
+        );
+    await db
+        .into(db.automationRuleTags)
+        .insert(
+          AutomationRuleTagsCompanion.insert(ruleId: 'r1', tagId: strand),
+        );
+
+    await db.nimmKiTagsZurueck();
+
+    expect([for (final t in await db.select(db.tags).get()) t.id], [strand]);
+  });
+
+  test('Abnehmen löscht ein Schlagwort nicht, das eine Regel nutzt', () async {
+    await aufnahme('a');
+    await db.tagAsset('a', 'Urlaub');
+    final urlaub = await db.ensureTag('Urlaub');
+    await db
+        .into(db.automationRules)
+        .insert(
+          AutomationRulesCompanion.insert(
+            id: 'r1',
+            name: 'Ferien',
+            triggerType: 'location',
+          ),
+        );
+    await db
+        .into(db.automationRuleTags)
+        .insert(
+          AutomationRuleTagsCompanion.insert(ruleId: 'r1', tagId: urlaub),
+        );
+
+    await db.nimmSchlagwortAb(['a'], 'Urlaub');
+
+    expect([for (final t in await db.select(db.tags).get()) t.id], [urlaub]);
+    // Ohne Regel verschwindet es wie bisher.
+    await db.tagAsset('a', 'Einmal');
+    await db.nimmSchlagwortAb(['a'], 'Einmal');
+    expect(
+      [for (final t in await db.select(db.tags).get()) t.name],
+      ['Urlaub'],
+    );
+  });
+
   test('auf einer leeren Bibliothek passiert nichts Schlimmes', () async {
     expect(await db.nimmKiTagsZurueck(), 0);
   });

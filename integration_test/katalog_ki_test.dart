@@ -1834,9 +1834,8 @@ void main() {
     },
   );
 
-  // Befund: „KI-Schlagwörter zurücknehmen“ löscht jedes Schlagwort ohne Foto, auch von Hand angelegte (alben_und_tags.dart:336).
+  // Behoben in #414: Das Zurücknehmen löscht nur Schlagwörter, die dadurch unbenutzt werden (kein Foto, keine Regel, keine Kameravorgabe).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-081 Befundpruefung Zuruecknehmen laesst unbenutzte Schlagwoerter',
     (tester) async {

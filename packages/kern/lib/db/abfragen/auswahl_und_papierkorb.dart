@@ -56,9 +56,10 @@ extension AuswahlAbfragen on AppDatabase {
     };
   }
 
-  /// Nimmt das Schlagwort [tagName] von [assetIds] wieder ab. Hängt es
-  /// danach an keinem Foto mehr, verschwindet es ganz – es war erst eben
-  /// angelegt worden.
+  /// Nimmt das Schlagwort [tagName] von [assetIds] wieder ab. Verwendet
+  /// es danach nichts mehr, verschwindet es ganz – es war erst eben
+  /// angelegt worden. Nutzt es eine Regel oder Kameravorgabe, bleibt es
+  /// (siehe [_loescheUnbenutzteSchlagwoerter]).
   Future<void> nimmSchlagwortAb(List<String> assetIds, String tagName) =>
       transaction(() async {
         final tag = await (select(
@@ -68,14 +69,7 @@ extension AuswahlAbfragen on AppDatabase {
         await (delete(assetTags)
               ..where((t) => t.tagId.equals(tag.id) & t.assetId.isIn(assetIds)))
             .go();
-        final rest =
-            await (select(assetTags)
-                  ..where((t) => t.tagId.equals(tag.id))
-                  ..limit(1))
-                .get();
-        if (rest.isEmpty) {
-          await (delete(tags)..where((t) => t.id.equals(tag.id))).go();
-        }
+        await _loescheUnbenutzteSchlagwoerter([tag.id]);
       });
 
   /// Welche von [assetIds] schon im Album [albumId] liegen.

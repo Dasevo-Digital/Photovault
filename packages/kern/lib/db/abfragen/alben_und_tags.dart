@@ -330,12 +330,20 @@ extension AlbenAbfragen on AppDatabase {
   /// Die Bilderkennung überspringt jede Aufnahme, die den Vermerk trägt,
   /// und würde die Schlagwörter deshalb nie neu vergeben.
   ///
-  /// Verwaiste Schlagwörter, die danach an keiner Aufnahme mehr hängen,
+  /// Schlagwörter, die erst dadurch an keiner Aufnahme mehr hängen,
   /// werden mit entfernt – sonst bliebe die Auswahlliste in der Suche voll
-  /// von Begriffen ohne ein einziges Foto.
+  /// von Begriffen ohne ein einziges Foto. **Nur diese:** Früher fiel
+  /// jedes Schlagwort ohne Foto, auch ein von Hand angelegtes, das nur
+  /// eine Automatisierungsregel als Ziel nutzte; die Regel verwies danach
+  /// auf eine Kennung ohne Schlagwort.
   Future<int> nimmKiTagsZurueck() async {
     return transaction(() async {
       final anzahl = await kiTagAnzahl();
+      final betroffen = await customSelect(
+        'SELECT DISTINCT tag_id FROM asset_tags WHERE quelle = ?',
+        variables: const [Variable<String>(Tagquelle.ki)],
+        readsFrom: {assetTags},
+      ).map((z) => z.read<String>('tag_id')).get();
       await (delete(
         assetTags,
       )..where((t) => t.quelle.equals(Tagquelle.ki))).go();
@@ -344,13 +352,41 @@ extension AlbenAbfragen on AppDatabase {
         updates: {assets},
         updateKind: UpdateKind.update,
       );
-      await customUpdate(
-        'DELETE FROM tags WHERE id NOT IN (SELECT tag_id FROM asset_tags)',
-        updates: {tags},
-        updateKind: UpdateKind.delete,
-      );
+      await _loescheUnbenutzteSchlagwoerter(betroffen);
       return anzahl;
     });
+  }
+
+  /// Löscht von [kandidaten] die Schlagwörter, die nichts mehr verwendet:
+  /// kein Foto, keine Automatisierungsregel, keine Kameravorgabe.
+  ///
+  /// Nur Kandidaten, nie die ganze Tabelle: Ein von Hand angelegtes
+  /// Schlagwort ohne Foto ist ein gültiger Zustand und kein Rest.
+  Future<void> _loescheUnbenutzteSchlagwoerter(
+    Iterable<String> kandidaten,
+  ) async {
+    final alle = kandidaten.toSet().toList();
+    // In Stücken, damit eine lange Liste nicht an der Grenze für
+    // Platzhalter in einer Anweisung scheitert.
+    for (var i = 0; i < alle.length; i += 500) {
+      final stueck = alle.sublist(i, math.min(i + 500, alle.length));
+      await (delete(tags)..where(
+            (t) =>
+                t.id.isIn(stueck) &
+                notExistsQuery(
+                  select(assetTags)..where((a) => a.tagId.equalsExp(t.id)),
+                ) &
+                notExistsQuery(
+                  select(automationRuleTags)
+                    ..where((r) => r.tagId.equalsExp(t.id)),
+                ) &
+                notExistsQuery(
+                  select(cameraPresetTags)
+                    ..where((c) => c.tagId.equalsExp(t.id)),
+                ),
+          ))
+          .go();
+    }
   }
 
   Future<void> untagAsset(String assetId, String tagId) => (delete(
