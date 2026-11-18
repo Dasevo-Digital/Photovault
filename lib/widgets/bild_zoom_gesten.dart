@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:photo_view/photo_view.dart';
@@ -82,27 +83,87 @@ class _BildZoomGestenState extends State<BildZoomGesten> {
   /// dem Beginn, nicht der Weg seit dem letzten Ereignis.
   double? _start;
 
+  void _beginn() => _start = widget.steuerung.scale ?? 1;
+
+  void _weiter(PointerPanZoomUpdateEvent e) {
+    final start = _start;
+    if (start == null) return;
+    widget.steuerung.scale = istWischen(e.scale)
+        ? bildWischZoom(
+            startZoom: start,
+            wischWegY: e.pan.dy,
+            kleinster: widget.kleinster,
+            groesster: widget.groesster,
+          )
+        // Ein Kneifen bei gehaltener Taste: Die Geste gehört jetzt hier
+        // her, PhotoView sieht sie nicht mehr – also selbst mitgehen.
+        : (start * e.scale).clamp(widget.kleinster, widget.groesster);
+  }
+
   @override
-  Widget build(BuildContext context) => Listener(
-    onPointerPanZoomStart: (_) {
-      _start = zoomtaste(HardwareKeyboard.instance.logicalKeysPressed)
-          ? (widget.steuerung.scale ?? 1)
-          : null;
+  Widget build(BuildContext context) => RawGestureDetector(
+    // Ein eigener Erkenner statt eines blossen Listener: PhotoView
+    // bekommt dieselben Trackpad-Ereignisse über seine
+    // Skalierungserkennung (Massstab 1) und setzte den Zoom nach jedem
+    // Ereignis auf den Anfangswert der Geste zurück. Wer die Geste in
+    // der Gestenarena gewinnt, bekommt sie allein.
+    gestures: {
+      _WischZoomErkenner:
+          GestureRecognizerFactoryWithHandlers<_WischZoomErkenner>(
+            _WischZoomErkenner.new,
+            (erkenner) => erkenner
+              ..beiBeginn = _beginn
+              ..beiWisch = _weiter
+              ..beiEnde = () => _start = null,
+          ),
     },
-    onPointerPanZoomUpdate: (e) {
-      final start = _start;
-      if (start == null) return;
-      // Ein echtes Kneifen kann PhotoView selbst – da darf nicht
-      // dazwischengefunkt werden.
-      if (!istWischen(e.scale)) return;
-      widget.steuerung.scale = bildWischZoom(
-        startZoom: start,
-        wischWegY: e.pan.dy,
-        kleinster: widget.kleinster,
-        groesster: widget.groesster,
-      );
-    },
-    onPointerPanZoomEnd: (_) => _start = null,
     child: widget.child,
   );
+}
+
+/// Beansprucht eine Trackpad-Geste, wenn bei ihrem Beginn die Zoomtaste
+/// gehalten wird – sonst nimmt er gar nicht erst teil, und PhotoView
+/// verschiebt und kneift wie gewohnt.
+class _WischZoomErkenner extends OneSequenceGestureRecognizer {
+  VoidCallback? beiBeginn;
+  void Function(PointerPanZoomUpdateEvent)? beiWisch;
+  VoidCallback? beiEnde;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {}
+
+  @override
+  bool isPointerAllowed(PointerDownEvent event) => false;
+
+  @override
+  void addAllowedPointerPanZoom(PointerPanZoomStartEvent event) {
+    if (!zoomtaste(HardwareKeyboard.instance.logicalKeysPressed)) return;
+    startTrackingPointer(event.pointer, event.transform);
+    // Gleich gewinnen: Die Arena schliesst erst nach diesem Ereignis,
+    // dann verlieren PhotoView und die Seitenleiste die Geste.
+    resolve(GestureDisposition.accepted);
+    beiBeginn?.call();
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event is PointerPanZoomUpdateEvent) {
+      beiWisch?.call(event);
+    } else if (event is PointerPanZoomEndEvent || event is PointerCancelEvent) {
+      beiEnde?.call();
+      stopTrackingPointer(event.pointer);
+    }
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    beiEnde?.call();
+    super.rejectGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
+
+  @override
+  String get debugDescription => 'wisch-zoom';
 }

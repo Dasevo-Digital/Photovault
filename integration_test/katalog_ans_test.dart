@@ -2581,14 +2581,10 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: ⌘/Strg + Wischen zoomt in der Einzelansicht nicht. Der
-  // Massstab, den BildZoomGesten (bild_zoom_gesten.dart:92–103) setzt,
-  // überschreibt PhotoView gleich wieder: Dessen Skalierungserkennung
-  // bekommt dieselben Trackpad-Ereignisse (scale 1) und setzt den Massstab
-  // auf den Anfangswert der Geste zurück. Die Einheitsprüfungen
-  // (wisch_zoom_bild_test.dart) prüfen nur die Rechnung, nicht das
-  // Zusammenspiel mit PhotoView.
-  testWidgets('ANS-042 ⌘ + Wischen zoomt innerhalb fester Grenzen', skip: true, (
+  // Behoben in #410: BildZoomGesten beansprucht die Trackpad-Geste bei
+  // gehaltener Zoomtaste in der Gestenarena; PhotoView bekommt sie nicht mehr
+  // und setzt den Massstab nicht zurück.
+  testWidgets('ANS-042 ⌘ + Wischen zoomt innerhalb fester Grenzen', (
     tester,
   ) async {
     await startApp(
