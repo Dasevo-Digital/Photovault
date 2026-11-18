@@ -36,7 +36,7 @@ class _StartState extends State<Start> {
       // Die wartende Abfrage ist im Hintergrund abgerissen: gleich neu
       // fragen, statt bis zu einer Minute „nicht erreichbar“ zu zeigen.
       widget.sitzung.abgleich?.jetzt();
-      widget.sitzung.sicherung?.sichere();
+      widget.sitzung.sicherung?.zurueckInDerApp();
     },
     onHide: () => widget.sitzung.sicherung?.imHintergrund(),
   );

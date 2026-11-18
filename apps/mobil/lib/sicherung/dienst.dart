@@ -70,13 +70,17 @@ class Sicherungsdienst extends ChangeNotifier {
 
   /// Sieht nach, was noch nicht gesichert ist – nach jedem Lauf und wenn
   /// Fotos dazukommen. Ohne Sicherung oder Zugriff: nichts.
+  ///
+  /// Gezählt wird, was ein Lauf sichern würde: bei gewählten Alben nur
+  /// deren Fotos. Sonst stand neben „Jetzt sichern“ die ganze Mediathek
+  /// als „nur auf dem Telefon“, und der Knopf lud sie nie hoch.
   Future<void> zaehleUngesicherte() async {
     if (!einstellungen.an ||
         (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise)) {
       ungesichert = const [];
     } else {
       try {
-        final alle = await _rolle(const []).eintraege(videos: true);
+        final alle = await _rolle(einstellungen.alben).eintraege(videos: true);
         ungesichert = nochNichtGesichert(alle, _stand.bekannt().erledigt);
         await _stapleSerien(alle);
       } on MissingPluginException {
@@ -112,6 +116,26 @@ class Sicherungsdienst extends ChangeNotifier {
 
   /// Der letzte Fehler, der den ganzen Lauf beendete.
   Object? fehler;
+
+  /// Ob der Server dieses Telefon abgemeldet hat – gemeldet vom Abgleich
+  /// (siehe [meldeAbgemeldet]) oder vom letzten Lauf. Die Sicherungsseite
+  /// sagt es auch bei ausgeschalteter Sicherung: Dann gibt es keinen Lauf,
+  /// der scheitern könnte, und sie schwieg.
+  bool get abgemeldet =>
+      _vomServerAbgemeldet ||
+      switch (fehler) {
+        Serverfehler(abgemeldet: true) => true,
+        _ => false,
+      };
+  var _vomServerAbgemeldet = false;
+
+  /// Was der Abgleich über die Anmeldung weiss (die Sitzung reicht es
+  /// weiter).
+  void meldeAbgemeldet(bool ja) {
+    if (ja == _vomServerAbgemeldet) return;
+    _vomServerAbgemeldet = ja;
+    if (!_beendet) notifyListeners();
+  }
 
   /// Siehe [Sicherungsstand.gesichertAls].
   ({String lokal, int geaendert})? gesichertAls(String aufnahme) =>
@@ -181,9 +205,12 @@ class Sicherungsdienst extends ChangeNotifier {
   }
 
   Future<void> setze(Sicherungseinstellungen e) async {
+    final andereAlben = !listEquals(e.alben, _stand.einstellungen.alben);
     _stand.einstellungen = e;
     await _plane(e);
     notifyListeners();
+    // Was „nur auf dem Telefon“ zählt, hängt an den gewählten Alben.
+    if (andereAlben && e.an) unawaited(zaehleUngesicherte());
   }
 
   /// Ob neue Fotos auch ohne offene App gleich zum Server gehen (#308).
@@ -309,6 +336,29 @@ class Sicherungsdienst extends ChangeNotifier {
       null when _stand.letzterLauf?.ende == vorher => Sicherungsantwort.laeuft,
       null => Sicherungsantwort.fertig,
     };
+  }
+
+  /// Zurück in der App: Hat der Nutzer den Zugriff inzwischen in den
+  /// Einstellungen des Telefons geändert, gilt das gleich – auch bei
+  /// ausgeschalteter Sicherung. Sonst blieb „Kein Zugriff auf die Fotos“
+  /// stehen, bis jemand den Schalter noch einmal antippte; [sichere] fragt
+  /// nur bei eingeschalteter Sicherung nach.
+  Future<void> zurueckInDerApp() async {
+    if (!einstellungen.an &&
+        (zugriff == Zugriff.verweigert || zugriff == Zugriff.teilweise)) {
+      try {
+        final neu = _zugriffAus(
+          await PhotoManager.getPermissionState(requestOption: _option),
+        );
+        if (neu != zugriff && !_beendet) {
+          zugriff = neu;
+          notifyListeners();
+        }
+      } on MissingPluginException {
+        return; // in Tests ohne Telefon
+      }
+    }
+    await sichere();
   }
 
   /// Ein Lauf, wenn die Sicherung an ist, der Zugriff erlaubt ist, das Netz

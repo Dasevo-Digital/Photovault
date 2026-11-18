@@ -119,6 +119,11 @@ class Sicherungsseite extends StatelessWidget {
                 onChanged: (an) => _einschalten(context, an),
               ),
               ..._zugriff(t),
+              if (dienst.abgemeldet)
+                ListTile(
+                  leading: const Icon(Icons.error_outline),
+                  title: Text(t.abgemeldetHinweis),
+                ),
               if (e.an) ..._stand(context, t),
               if (e.an && db != null)
                 ListTile(
@@ -306,14 +311,11 @@ class Sicherungsseite extends StatelessWidget {
                   child: Text(t.sicherungSofortAkku),
                 ),
         ),
-      if (fehler != null)
+      // Die Abmeldung steht schon oben, auch bei ausgeschalteter Sicherung.
+      if (fehler != null && !dienst.abgemeldet)
         ListTile(
           leading: const Icon(Icons.error_outline),
-          title: Text(
-            fehler is Serverfehler && fehler.abgemeldet
-                ? t.abgemeldetHinweis
-                : t.sicherungFehler,
-          ),
+          title: Text(t.sicherungFehler),
         ),
       if (probleme > 0)
         ListTile(
