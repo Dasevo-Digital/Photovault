@@ -16347,6 +16347,210 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'im gesperrten Ordner'**
   String get kammerGesperrt;
+
+  /// No description provided for @backupAuswahlTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung durchsuchen'**
+  String get backupAuswahlTitel;
+
+  /// No description provided for @backupAuswahlSuche.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiname, Datum oder Album suchen'**
+  String get backupAuswahlSuche;
+
+  /// No description provided for @backupAuswahlDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum als Jahr, JJJJ-MM oder JJJJ-MM-TT eingeben.'**
+  String get backupAuswahlDatum;
+
+  /// No description provided for @backupAuswahlLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine passenden Aufnahmen mit Sicherungsangaben.'**
+  String get backupAuswahlLeer;
+
+  /// No description provided for @backupAuswahlDateiFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei fehlt im Sicherungsstand'**
+  String get backupAuswahlDateiFehlt;
+
+  /// No description provided for @backupAuswahlTreffer.
+  ///
+  /// In de, this message translates to:
+  /// **'Treffer auswählen'**
+  String get backupAuswahlTreffer;
+
+  /// No description provided for @backupAuswahlLeeren.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl leeren'**
+  String get backupAuswahlLeeren;
+
+  /// No description provided for @backupAuswahlExportieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswahl exportieren ({anzahl})'**
+  String backupAuswahlExportieren(int anzahl);
+
+  /// No description provided for @backupAuswahlExportFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'{neu} Dateien exportiert, {fehler} fehlgeschlagen.\n{ordner}'**
+  String backupAuswahlExportFertig(int neu, int fehler, String ordner);
+
+  /// No description provided for @backupAuswahlExportNull.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Datei konnte geprüft und exportiert werden.'**
+  String get backupAuswahlExportNull;
+
+  /// No description provided for @backupAuswahlExportFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Export konnte nicht ausgeführt werden. Wähle einen erreichbaren Ordner außerhalb der Bibliothek und der Sicherung.'**
+  String get backupAuswahlExportFehler;
+
+  /// No description provided for @backupAuswahlLesefehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Sicherung konnte nicht gelesen werden. Prüfe den Ordner und bei verschlüsselten Sicherungen die Passphrase.'**
+  String get backupAuswahlLesefehler;
+
+  /// No description provided for @importQuittungenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Importquittungen'**
+  String get importQuittungenTitel;
+
+  /// No description provided for @quittungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Importquittung'**
+  String get quittungTitel;
+
+  /// No description provided for @quittungSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Importquittung speichern'**
+  String get quittungSpeichern;
+
+  /// No description provided for @quittungLesefehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Importquittung konnte nicht gelesen werden.'**
+  String get quittungLesefehler;
+
+  /// No description provided for @quittungSchreibfehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Importquittung konnte nicht vollständig gespeichert werden.'**
+  String get quittungSchreibfehler;
+
+  /// No description provided for @quittungLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Rechner gibt es noch keine Importquittungen.'**
+  String get quittungLeer;
+
+  /// No description provided for @quittungDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Dateien'**
+  String quittungDateien(int anzahl);
+
+  /// No description provided for @quittungUnvollstaendig.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Lauf blieb offen. Für offene Dateien gibt es kein bestätigtes Ergebnis.'**
+  String get quittungUnvollstaendig;
+
+  /// No description provided for @quittungPruefdatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopien geprüft am {datum} · {ziel}'**
+  String quittungPruefdatum(String datum, String ziel);
+
+  /// No description provided for @quittungPrueffehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Kopien konnten nicht geprüft werden. Prüfe den Sicherungsordner und bei Bedarf die Passphrase.'**
+  String get quittungPrueffehler;
+
+  /// No description provided for @quittungImportiert.
+  ///
+  /// In de, this message translates to:
+  /// **'Importiert'**
+  String get quittungImportiert;
+
+  /// No description provided for @quittungKammer.
+  ///
+  /// In de, this message translates to:
+  /// **'In die Fotokammer geladen'**
+  String get quittungKammer;
+
+  /// No description provided for @quittungDuplikat.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Dublette übersprungen'**
+  String get quittungDuplikat;
+
+  /// No description provided for @quittungAusgelassen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgelassen'**
+  String get quittungAusgelassen;
+
+  /// No description provided for @quittungDateifehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehlgeschlagen'**
+  String get quittungDateifehler;
+
+  /// No description provided for @quittungOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ergebnis offen'**
+  String get quittungOffen;
+
+  /// No description provided for @quittungKopieGeprueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopie geprüft'**
+  String get quittungKopieGeprueft;
+
+  /// No description provided for @quittungKopieFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopie fehlt'**
+  String get quittungKopieFehlt;
+
+  /// No description provided for @quittungKopieDefekt.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopie nicht lesbar oder beschädigt'**
+  String get quittungKopieDefekt;
+
+  /// No description provided for @quittungKopieUngeprueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopie ungeprüft'**
+  String get quittungKopieUngeprueft;
+
+  /// No description provided for @quittungZielWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Anderen Sicherungsordner prüfen'**
+  String get quittungZielWaehlen;
+
+  /// No description provided for @quittungKopienPruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungskopien prüfen'**
+  String get quittungKopienPruefen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

@@ -39,8 +39,10 @@ class ImportPlan {
     required this.spaetereRegeln,
     this.dateiregeln = false,
     this.kammer = false,
+    this.ausgelassen = const [],
   });
   final List<ImportPlanEintrag> eintraege;
+  final List<ImportPlanEintrag> ausgelassen;
   final String regelstand;
   final DateTime am;
   final int spaetereRegeln;
@@ -57,6 +59,7 @@ class ImportPlan {
     spaetereRegeln: spaetereRegeln,
     dateiregeln: dateiregeln,
     kammer: an,
+    ausgelassen: ausgelassen,
   );
 
   int get originalBytes => eintraege
@@ -67,16 +70,25 @@ class ImportPlan {
       e.pfad: e.angaben!.pruefsumme,
   };
 
-  ImportPlan auswahl(Set<String> pfade) => ImportPlan(
-    eintraege: eintraege
-        .where((e) => pfade.contains(e.pfad) && e.art == ImportPlanArt.neu)
-        .toList(),
-    regelstand: regelstand,
-    am: am,
-    spaetereRegeln: spaetereRegeln,
-    dateiregeln: dateiregeln,
-    kammer: kammer,
-  );
+  ImportPlan auswahl(Set<String> pfade, {bool mitAusgelassenen = false}) =>
+      ImportPlan(
+        eintraege: eintraege
+            .where((e) => pfade.contains(e.pfad) && e.art == ImportPlanArt.neu)
+            .toList(),
+        regelstand: regelstand,
+        am: am,
+        spaetereRegeln: spaetereRegeln,
+        dateiregeln: dateiregeln,
+        kammer: kammer,
+        ausgelassen: mitAusgelassenen
+            ? eintraege
+                  .where(
+                    (e) =>
+                        !pfade.contains(e.pfad) || e.art != ImportPlanArt.neu,
+                  )
+                  .toList()
+            : const [],
+      );
 }
 
 class ImportPlanAbgebrochen implements Exception {

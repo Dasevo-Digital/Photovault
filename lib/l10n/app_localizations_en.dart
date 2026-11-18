@@ -10791,4 +10791,121 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kammerGesperrt => 'in the locked folder';
+
+  @override
+  String get backupAuswahlTitel => 'Browse backup';
+
+  @override
+  String get backupAuswahlSuche => 'Search by file name, date or album';
+
+  @override
+  String get backupAuswahlDatum => 'Enter a year, YYYY-MM or YYYY-MM-DD.';
+
+  @override
+  String get backupAuswahlLeer => 'No matching items with backup metadata.';
+
+  @override
+  String get backupAuswahlDateiFehlt => 'File missing from this backup';
+
+  @override
+  String get backupAuswahlTreffer => 'Select results';
+
+  @override
+  String get backupAuswahlLeeren => 'Clear selection';
+
+  @override
+  String backupAuswahlExportieren(int anzahl) {
+    return 'Export selection ($anzahl)';
+  }
+
+  @override
+  String backupAuswahlExportFertig(int neu, int fehler, String ordner) {
+    return 'Exported $neu files, $fehler failed.\n$ordner';
+  }
+
+  @override
+  String get backupAuswahlExportNull =>
+      'No files passed verification and export.';
+
+  @override
+  String get backupAuswahlExportFehler =>
+      'Export failed. Choose an accessible folder outside the library and backup.';
+
+  @override
+  String get backupAuswahlLesefehler =>
+      'The backup could not be read. Check the folder and the passphrase for encrypted backups.';
+
+  @override
+  String get importQuittungenTitel => 'Import receipts';
+
+  @override
+  String get quittungTitel => 'Import receipt';
+
+  @override
+  String get quittungSpeichern => 'Save import receipt';
+
+  @override
+  String get quittungLesefehler => 'The import receipt could not be read.';
+
+  @override
+  String get quittungSchreibfehler =>
+      'The import receipt could not be saved in full.';
+
+  @override
+  String get quittungLeer =>
+      'There are no import receipts on this computer yet.';
+
+  @override
+  String quittungDateien(int anzahl) {
+    return '$anzahl files';
+  }
+
+  @override
+  String get quittungUnvollstaendig =>
+      'The run is incomplete. Pending files have no confirmed result.';
+
+  @override
+  String quittungPruefdatum(String datum, String ziel) {
+    return 'Backup copies checked on $datum · $ziel';
+  }
+
+  @override
+  String get quittungPrueffehler =>
+      'Copies could not be checked. Verify the backup folder and passphrase if required.';
+
+  @override
+  String get quittungImportiert => 'Imported';
+
+  @override
+  String get quittungKammer => 'Uploaded to the photo inbox';
+
+  @override
+  String get quittungDuplikat => 'Skipped as a duplicate';
+
+  @override
+  String get quittungAusgelassen => 'Omitted';
+
+  @override
+  String get quittungDateifehler => 'Failed';
+
+  @override
+  String get quittungOffen => 'Result pending';
+
+  @override
+  String get quittungKopieGeprueft => 'Backup copy verified';
+
+  @override
+  String get quittungKopieFehlt => 'Backup copy missing';
+
+  @override
+  String get quittungKopieDefekt => 'Backup copy unreadable or damaged';
+
+  @override
+  String get quittungKopieUngeprueft => 'Backup copy unverified';
+
+  @override
+  String get quittungZielWaehlen => 'Check another backup folder';
+
+  @override
+  String get quittungKopienPruefen => 'Verify backup copies';
 }

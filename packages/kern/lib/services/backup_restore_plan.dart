@@ -18,8 +18,8 @@ class RestorePlaner {
   final void Function(String, Object) meldeProblem;
   Future<RestorePlan> erstelle(
     String wurzel,
-    ImportService importe,
     Directory temp, {
+    ImportService? importe,
     String? passphrase,
     String? generation,
     SecretKey? schluessel,
@@ -30,6 +30,7 @@ class RestorePlaner {
     // Die Pfadprüfung geschieht vor Entschlüsselung und vor jedem Import.
     final snapshot = await speicher.waehle(wurzel, generation);
     final keyFile = File(p.join(wurzel, 'vault.key'));
+    if (importe == null) await _pruefeBeilage(wurzel, keyFile);
     if (schluessel == null && await keyFile.exists()) {
       if (passphrase == null) throw const BackupBrauchtPassphrase();
       final j = jsonDecode(await keyFile.readAsString()) as Map;
@@ -42,6 +43,12 @@ class RestorePlaner {
     }
     File? klarerSnapshot;
     Future<File> leseSnapshot() async {
+      if (importe == null) {
+        final echt = await Directory(wurzel).resolveSymbolicLinks();
+        if (!p.isWithin(echt, await snapshot.resolveSymbolicLinks())) {
+          throw const FormatException('pv_restore_schnappschuss');
+        }
+      }
       final ziel = File(p.join(temp.path, 'schnappschuss.sqlite'));
       if (!await ziel.exists()) {
         if (schluessel == null) {
@@ -59,6 +66,7 @@ class RestorePlaner {
         'metadata.json',
       ),
     );
+    if (importe == null) await _pruefeBeilage(wurzel, meta);
     if (generation != null) {
       // Auch ältere Punkte ohne eigene Beilage bestimmen ALLE Metadaten
       // aus ihrem Snapshot. Die aktuelle Root-Beilage kommt nie dazu.
@@ -111,6 +119,7 @@ class RestorePlaner {
     final daten = Directory(p.join(wurzel, VerschluesselteNamen.ordner));
     final originals = Directory(p.join(wurzel, 'originals'));
     final alteOrdnerstruktur =
+        importe != null &&
         generation == null &&
         auswahl == null &&
         (!await daten.exists() || schluessel == null) &&
@@ -118,15 +127,17 @@ class RestorePlaner {
     if (manifest.aufnahmen.isNotEmpty && !alteOrdnerstruktur) {
       final root = p.normalize(p.absolute(wurzel));
       final echt = await Directory(root).resolveSymbolicLinks();
+      final namenslos = schluessel != null && await daten.exists();
       for (final a in manifest.aufnahmen) {
         if (auswahl != null && !auswahl.contains(a.pruefsumme)) continue;
         final String relativ;
-        if (schluessel != null && await daten.exists()) {
+        if (namenslos) {
           relativ = p.join(
             VerschluesselteNamen.ordner,
             await VerschluesselteNamen.fuerPruefsumme(a.pruefsumme, schluessel),
           );
         } else {
+          if (importe == null && a.ablage == null) continue;
           relativ = (a.ablage ?? '').replaceAll(r'\', '/');
         }
         final path = p.normalize(p.join(root, relativ));
@@ -149,7 +160,7 @@ class RestorePlaner {
           RestoreDatei(f, p.extension(a.name), pruefsumme: a.pruefsumme),
         );
       }
-    } else if (generation == null) {
+    } else if (generation == null && importe != null) {
       // Alte Sicherungen ohne lesbare Beilage bleiben über ihre Originale
       // zugänglich. Ein beschädigtes Manifest bleibt in der Bilanz sichtbar.
       final dir = await originals.exists() ? originals.path : wurzel;
@@ -164,5 +175,18 @@ class RestorePlaner {
       schluessel: schluessel,
       schnappschuss: klarerSnapshot,
     );
+  }
+
+  // Bei der Auswahl werden Angaben nur aus dem Sicherungsordner gelesen.
+  // Die reguläre Wiederherstellung behält ihre Kompatibilität unverändert.
+  static Future<void> _pruefeBeilage(String wurzel, File datei) async {
+    if (!await datei.exists()) return;
+    final echt = await Directory(wurzel).resolveSymbolicLinks();
+    if (!p.isWithin(echt, await datei.resolveSymbolicLinks())) {
+      throw const FormatException('pv_probe_pfad');
+    }
+    if (await datei.length() > 64 * 1024 * 1024) {
+      throw const FormatException('pv_probe_manifest_zu_gross');
+    }
   }
 }

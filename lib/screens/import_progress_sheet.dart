@@ -15,6 +15,8 @@ import '../widgets/camera_source_picker_dialog.dart';
 import 'asset_viewer_screen.dart';
 import 'home_shell.dart' show Hauptbereich;
 import 'import_plan_screen.dart';
+import 'importquittungen_screen.dart';
+import '../services/importquittungen.dart';
 import 'package:kern/services/import_plan.dart';
 import '../services/meldungsdienst.dart';
 
@@ -30,6 +32,10 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       title: Text(AppTexte.of(context).importWasTitel),
       content: Text(AppTexte.of(context).importWasText),
       actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, _ImportMode.quittungen),
+          child: Text(AppTexte.of(context).importQuittungenTitel),
+        ),
         TextButton(
           onPressed: () => Navigator.pop(context, _ImportMode.files),
           child: Text(AppTexte.of(context).importEinzelneDateien),
@@ -47,6 +53,10 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     ),
   );
   if (mode == null || !context.mounted) return;
+  if (mode == _ImportMode.quittungen) {
+    await zeigeImportquittungen(context, library);
+    return;
+  }
 
   List<String> paths;
   if (mode == _ImportMode.files) {
@@ -93,7 +103,11 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       builder: (_) => ImportPlanScreen(library: library, dateien: paths),
     ),
   );
-  if (plan == null || !context.mounted || plan.eintraege.isEmpty) return;
+  if (plan == null ||
+      !context.mounted ||
+      (plan.eintraege.isEmpty && plan.ausgelassen.isEmpty)) {
+    return;
+  }
   paths = plan.eintraege.map((e) => e.pfad).toList();
 
   await showModalBottomSheet(
@@ -105,7 +119,7 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
   );
 }
 
-enum _ImportMode { files, folder, camera }
+enum _ImportMode { files, folder, camera, quittungen }
 
 /// Die Bilanz eines Imports als eine Zeile – oder `null`, wenn es nichts
 /// zu sagen gibt.
@@ -190,6 +204,7 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
   int _total = 0;
   String? _currentFile;
   bool _finished = false;
+  String? _quittungId;
 
   /// Asset-IDs aller in diesem Lauf tatsächlich neu importierten Fotos/
   /// Videos (keine Duplikate/Fehler) – für den "Jetzt sichten"-Einstieg in
@@ -219,10 +234,15 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
 
   Future<void> _run(List<String> pfade, ImportPlan plan) async {
     final offen = pfade.toSet();
+    _quittungId = null;
     try {
-      await for (final progress in widget.library.importFiles(
-        pfade,
-        plan: plan,
+      final ablage = await Importquittungen.fuer(widget.library.paths.root);
+      await for (final progress in ablage.protokolliere(
+        plan,
+        pfade.isEmpty
+            ? const Stream.empty()
+            : widget.library.importFiles(pfade, plan: plan),
+        begonnen: (id) => _quittungId = id,
       )) {
         if (!mounted) return;
         setState(() {
@@ -253,7 +273,12 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
           }
           _fehler += offen.isEmpty ? 1 : offen.length;
         });
-        melde.warnung(AppTexte.of(context).importPlanGeaendert);
+        final t = AppTexte.of(context);
+        melde.warnung(
+          e is QuittungSchreibfehler
+              ? t.quittungSchreibfehler
+              : t.importPlanGeaendert,
+        );
       }
     } finally {
       if (mounted) setState(() => _finished = true);
@@ -340,7 +365,7 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = _total == 0 ? 0.0 : _done / _total;
+    final progress = _total == 0 ? (_finished ? 1.0 : 0.0) : _done / _total;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -415,6 +440,13 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
                 ),
                 const SizedBox(height: 8),
               ],
+              if (_quittungId case final id?)
+                TextButton.icon(
+                  onPressed: () =>
+                      zeigeImportquittungen(context, widget.library, id: id),
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: Text(AppTexte.of(context).quittungTitel),
+                ),
               OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(AppTexte.of(context).allgFertig),

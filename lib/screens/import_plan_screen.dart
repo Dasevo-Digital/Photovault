@@ -92,7 +92,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
 
   Future<void> _importiere() async {
     final plan = _plan;
-    if (plan == null || _auswahl.isEmpty || _serverAlt) return;
+    if (plan == null || plan.eintraege.isEmpty || _serverAlt) return;
     setState(() => _bestaetigt = true);
     try {
       if (plan.regelstand != await _dienst.aktuellerRegelstand()) {
@@ -102,7 +102,10 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       final kammer = _kammerMoeglich && _kammer;
       _kammerZuletzt = _kammer;
       if (mounted) {
-        Navigator.pop(context, plan.auswahl(_auswahl).mitKammer(kammer));
+        Navigator.pop(
+          context,
+          plan.auswahl(_auswahl, mitAusgelassenen: true).mitKammer(kammer),
+        );
       }
     } on Object {
       if (mounted) setState(() => _fehlgeschlagen = true);
@@ -269,14 +272,16 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                   FilledButton(
                     onPressed:
                         plan == null ||
-                            _auswahl.isEmpty ||
+                            plan.eintraege.isEmpty ||
                             _fehlgeschlagen ||
                             _bestaetigt ||
                             _serverAlt
                         ? null
                         : _importiere,
                     child: Text(
-                      _kammerMoeglich && _kammer
+                      _auswahl.isEmpty
+                          ? t.quittungSpeichern
+                          : _kammerMoeglich && _kammer
                           ? t.importPlanStartenKammer(_auswahl.length)
                           : t.importPlanStarten(_auswahl.length),
                     ),

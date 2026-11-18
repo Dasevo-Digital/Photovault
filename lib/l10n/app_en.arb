@@ -5289,5 +5289,76 @@
     }
   },
   "kammerUnbekannt": "not in your library or already in the trash",
-  "kammerGesperrt": "in the locked folder"
+  "kammerGesperrt": "in the locked folder",
+  "backupAuswahlTitel": "Browse backup",
+  "backupAuswahlSuche": "Search by file name, date or album",
+  "backupAuswahlDatum": "Enter a year, YYYY-MM or YYYY-MM-DD.",
+  "backupAuswahlLeer": "No matching items with backup metadata.",
+  "backupAuswahlDateiFehlt": "File missing from this backup",
+  "backupAuswahlTreffer": "Select results",
+  "backupAuswahlLeeren": "Clear selection",
+  "backupAuswahlExportieren": "Export selection ({anzahl})",
+  "@backupAuswahlExportieren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "backupAuswahlExportFertig": "Exported {neu} files, {fehler} failed.\n{ordner}",
+  "@backupAuswahlExportFertig": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      },
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
+  "backupAuswahlExportNull": "No files passed verification and export.",
+  "backupAuswahlExportFehler": "Export failed. Choose an accessible folder outside the library and backup.",
+  "backupAuswahlLesefehler": "The backup could not be read. Check the folder and the passphrase for encrypted backups.",
+  "importQuittungenTitel": "Import receipts",
+  "quittungTitel": "Import receipt",
+  "quittungSpeichern": "Save import receipt",
+  "quittungLesefehler": "The import receipt could not be read.",
+  "quittungSchreibfehler": "The import receipt could not be saved in full.",
+  "quittungLeer": "There are no import receipts on this computer yet.",
+  "quittungDateien": "{anzahl} files",
+  "@quittungDateien": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "quittungUnvollstaendig": "The run is incomplete. Pending files have no confirmed result.",
+  "quittungPruefdatum": "Backup copies checked on {datum} · {ziel}",
+  "@quittungPruefdatum": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
+  "quittungPrueffehler": "Copies could not be checked. Verify the backup folder and passphrase if required.",
+  "quittungImportiert": "Imported",
+  "quittungKammer": "Uploaded to the photo inbox",
+  "quittungDuplikat": "Skipped as a duplicate",
+  "quittungAusgelassen": "Omitted",
+  "quittungDateifehler": "Failed",
+  "quittungOffen": "Result pending",
+  "quittungKopieGeprueft": "Backup copy verified",
+  "quittungKopieFehlt": "Backup copy missing",
+  "quittungKopieDefekt": "Backup copy unreadable or damaged",
+  "quittungKopieUngeprueft": "Backup copy unverified",
+  "quittungZielWaehlen": "Check another backup folder",
+  "quittungKopienPruefen": "Verify backup copies"
 }

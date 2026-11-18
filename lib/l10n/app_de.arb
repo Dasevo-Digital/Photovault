@@ -6844,5 +6844,76 @@
     }
   },
   "kammerUnbekannt": "nicht in deiner Bibliothek oder schon im Papierkorb",
-  "kammerGesperrt": "im gesperrten Ordner"
+  "kammerGesperrt": "im gesperrten Ordner",
+  "backupAuswahlTitel": "Sicherung durchsuchen",
+  "backupAuswahlSuche": "Dateiname, Datum oder Album suchen",
+  "backupAuswahlDatum": "Datum als Jahr, JJJJ-MM oder JJJJ-MM-TT eingeben.",
+  "backupAuswahlLeer": "Keine passenden Aufnahmen mit Sicherungsangaben.",
+  "backupAuswahlDateiFehlt": "Datei fehlt im Sicherungsstand",
+  "backupAuswahlTreffer": "Treffer auswählen",
+  "backupAuswahlLeeren": "Auswahl leeren",
+  "backupAuswahlExportieren": "Auswahl exportieren ({anzahl})",
+  "@backupAuswahlExportieren": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "backupAuswahlExportFertig": "{neu} Dateien exportiert, {fehler} fehlgeschlagen.\n{ordner}",
+  "@backupAuswahlExportFertig": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      },
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
+  "backupAuswahlExportNull": "Keine Datei konnte geprüft und exportiert werden.",
+  "backupAuswahlExportFehler": "Der Export konnte nicht ausgeführt werden. Wähle einen erreichbaren Ordner außerhalb der Bibliothek und der Sicherung.",
+  "backupAuswahlLesefehler": "Die Sicherung konnte nicht gelesen werden. Prüfe den Ordner und bei verschlüsselten Sicherungen die Passphrase.",
+  "importQuittungenTitel": "Importquittungen",
+  "quittungTitel": "Importquittung",
+  "quittungSpeichern": "Importquittung speichern",
+  "quittungLesefehler": "Die Importquittung konnte nicht gelesen werden.",
+  "quittungSchreibfehler": "Die Importquittung konnte nicht vollständig gespeichert werden.",
+  "quittungLeer": "Auf diesem Rechner gibt es noch keine Importquittungen.",
+  "quittungDateien": "{anzahl} Dateien",
+  "@quittungDateien": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "quittungUnvollstaendig": "Der Lauf blieb offen. Für offene Dateien gibt es kein bestätigtes Ergebnis.",
+  "quittungPruefdatum": "Sicherungskopien geprüft am {datum} · {ziel}",
+  "@quittungPruefdatum": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "ziel": {
+        "type": "String"
+      }
+    }
+  },
+  "quittungPrueffehler": "Die Kopien konnten nicht geprüft werden. Prüfe den Sicherungsordner und bei Bedarf die Passphrase.",
+  "quittungImportiert": "Importiert",
+  "quittungKammer": "In die Fotokammer geladen",
+  "quittungDuplikat": "Als Dublette übersprungen",
+  "quittungAusgelassen": "Ausgelassen",
+  "quittungDateifehler": "Fehlgeschlagen",
+  "quittungOffen": "Ergebnis offen",
+  "quittungKopieGeprueft": "Sicherungskopie geprüft",
+  "quittungKopieFehlt": "Sicherungskopie fehlt",
+  "quittungKopieDefekt": "Sicherungskopie nicht lesbar oder beschädigt",
+  "quittungKopieUngeprueft": "Sicherungskopie ungeprüft",
+  "quittungZielWaehlen": "Anderen Sicherungsordner prüfen",
+  "quittungKopienPruefen": "Sicherungskopien prüfen"
 }

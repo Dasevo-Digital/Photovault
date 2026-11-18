@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/backup_auswahl.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/backup_service.dart';
 import '../../services/backup_verification_service.dart';
@@ -18,6 +19,8 @@ import '../../theme/app_spacing.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/pin_dialogs.dart';
 import '../../widgets/progress_dialog.dart';
+import '../backup_auswahl_screen.dart';
+import '../importquittungen_screen.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
 import 'backup_probe_status.dart';
@@ -195,6 +198,16 @@ class SicherungVonHandGruppe extends StatelessWidget {
               onPressed: () => _pruefeWiederherstellung(stand),
               icon: const Icon(Icons.restore_outlined),
               label: Text(AppTexte.of(context).backupProbeStarten),
+            ),
+            ListTile(
+              leading: const Icon(Icons.image_search_outlined),
+              title: Text(AppTexte.of(context).backupAuswahlTitel),
+              onTap: () => _durchsucheSicherung(stand),
+            ),
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: Text(AppTexte.of(context).importQuittungenTitel),
+              onTap: () => zeigeImportquittungen(stand.kontext, stand.library),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
@@ -591,6 +604,64 @@ Future<void> _runRestore(Einstellungsstand stand) async {
     },
   );
   stand.refresh();
+}
+
+Future<void> _durchsucheSicherung(Einstellungsstand stand) async {
+  final context = stand.kontext;
+  final t = AppTexte.of(context);
+  try {
+    final quelle = await FilePicker.getDirectoryPath(
+      dialogTitle: t.einstBackupOrdnerWaehlen,
+    );
+    if (quelle == null || !context.mounted) return;
+    final wurzel = await BackupPruefdienst.findeBackupWurzel(quelle);
+    String? passphrase;
+    if (await File(p.join(wurzel, 'vault.key')).exists()) {
+      if (!context.mounted) return;
+      passphrase = await showEnterPassphraseDialog(
+        context,
+        title: t.einstBackupPassphraseEingeben,
+      );
+      if (passphrase == null) return;
+    }
+    final generationen = await stand.library.backupService
+        .autoBackupGenerations(wurzel);
+    if (!context.mounted) return;
+    final auswahl = await _waehleWiederherstellungspunkt(stand, generationen);
+    if (auswahl == null || !context.mounted) return;
+    final katalog = BackupAuswahl.oeffne(
+      wurzel,
+      schemaVersion: stand.library.db.schemaVersion,
+      passphrase: passphrase,
+      generation: auswahl.generation?.snapshotPath,
+    );
+    final bibliothek = stand.library.paths.root.parent;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => FutureBuilder<BackupAuswahl>(
+          future: katalog,
+          builder: (context, snapshot) {
+            if (snapshot.data case final daten?) {
+              return BackupAuswahlScreen(
+                katalog: daten,
+                bibliothek: bibliothek,
+              );
+            }
+            return Scaffold(
+              appBar: AppBar(title: Text(t.backupAuswahlTitel)),
+              body: Center(
+                child: snapshot.hasError
+                    ? Text(t.backupAuswahlLesefehler)
+                    : const CircularProgressIndicator(),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  } on Object {
+    if (context.mounted) melde.fehler(t.backupAuswahlLesefehler);
+  }
 }
 
 /// `null` bedeutet ausschließlich Abbruch. Ohne Generationen wird der

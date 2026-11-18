@@ -10852,4 +10852,125 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kammerGesperrt => 'im gesperrten Ordner';
+
+  @override
+  String get backupAuswahlTitel => 'Sicherung durchsuchen';
+
+  @override
+  String get backupAuswahlSuche => 'Dateiname, Datum oder Album suchen';
+
+  @override
+  String get backupAuswahlDatum =>
+      'Datum als Jahr, JJJJ-MM oder JJJJ-MM-TT eingeben.';
+
+  @override
+  String get backupAuswahlLeer =>
+      'Keine passenden Aufnahmen mit Sicherungsangaben.';
+
+  @override
+  String get backupAuswahlDateiFehlt => 'Datei fehlt im Sicherungsstand';
+
+  @override
+  String get backupAuswahlTreffer => 'Treffer auswählen';
+
+  @override
+  String get backupAuswahlLeeren => 'Auswahl leeren';
+
+  @override
+  String backupAuswahlExportieren(int anzahl) {
+    return 'Auswahl exportieren ($anzahl)';
+  }
+
+  @override
+  String backupAuswahlExportFertig(int neu, int fehler, String ordner) {
+    return '$neu Dateien exportiert, $fehler fehlgeschlagen.\n$ordner';
+  }
+
+  @override
+  String get backupAuswahlExportNull =>
+      'Keine Datei konnte geprüft und exportiert werden.';
+
+  @override
+  String get backupAuswahlExportFehler =>
+      'Der Export konnte nicht ausgeführt werden. Wähle einen erreichbaren Ordner außerhalb der Bibliothek und der Sicherung.';
+
+  @override
+  String get backupAuswahlLesefehler =>
+      'Die Sicherung konnte nicht gelesen werden. Prüfe den Ordner und bei verschlüsselten Sicherungen die Passphrase.';
+
+  @override
+  String get importQuittungenTitel => 'Importquittungen';
+
+  @override
+  String get quittungTitel => 'Importquittung';
+
+  @override
+  String get quittungSpeichern => 'Importquittung speichern';
+
+  @override
+  String get quittungLesefehler =>
+      'Die Importquittung konnte nicht gelesen werden.';
+
+  @override
+  String get quittungSchreibfehler =>
+      'Die Importquittung konnte nicht vollständig gespeichert werden.';
+
+  @override
+  String get quittungLeer =>
+      'Auf diesem Rechner gibt es noch keine Importquittungen.';
+
+  @override
+  String quittungDateien(int anzahl) {
+    return '$anzahl Dateien';
+  }
+
+  @override
+  String get quittungUnvollstaendig =>
+      'Der Lauf blieb offen. Für offene Dateien gibt es kein bestätigtes Ergebnis.';
+
+  @override
+  String quittungPruefdatum(String datum, String ziel) {
+    return 'Sicherungskopien geprüft am $datum · $ziel';
+  }
+
+  @override
+  String get quittungPrueffehler =>
+      'Die Kopien konnten nicht geprüft werden. Prüfe den Sicherungsordner und bei Bedarf die Passphrase.';
+
+  @override
+  String get quittungImportiert => 'Importiert';
+
+  @override
+  String get quittungKammer => 'In die Fotokammer geladen';
+
+  @override
+  String get quittungDuplikat => 'Als Dublette übersprungen';
+
+  @override
+  String get quittungAusgelassen => 'Ausgelassen';
+
+  @override
+  String get quittungDateifehler => 'Fehlgeschlagen';
+
+  @override
+  String get quittungOffen => 'Ergebnis offen';
+
+  @override
+  String get quittungKopieGeprueft => 'Sicherungskopie geprüft';
+
+  @override
+  String get quittungKopieFehlt => 'Sicherungskopie fehlt';
+
+  @override
+  String get quittungKopieDefekt =>
+      'Sicherungskopie nicht lesbar oder beschädigt';
+
+  @override
+  String get quittungKopieUngeprueft => 'Sicherungskopie ungeprüft';
+
+  @override
+  String get quittungZielWaehlen => 'Anderen Sicherungsordner prüfen';
+
+  @override
+  String get quittungKopienPruefen => 'Sicherungskopien prüfen';
 }
