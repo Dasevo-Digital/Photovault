@@ -7811,10 +7811,9 @@ void _befundTests() {
     await abschluss(tester);
   }, skip: true);
 
-  // Befund: „Zurücksetzen“ löscht Einstellungen und Entwicklungsdatei, lässt
-  // aber die Masken samt Dateien stehen; beim nächsten Öffnen wirken sie
-  // wieder (entwickeln/verlauf_und_vorgaben.dart:456–479, anders als
-  // „Original wiederherstellen“).
+  // Behoben in #411: „Zurücksetzen“ löscht mit Einstellungen und
+  // Entwicklungsdatei auch die Masken samt Dateien, wie „Original
+  // wiederherstellen“.
   testWidgets('BEA-048 Befund: Zurücksetzen lässt Masken stehen', (
     tester,
   ) async {
@@ -7846,11 +7845,10 @@ void _befundTests() {
       isEmpty,
     );
     await abschluss(tester);
-  }, skip: true);
+  });
 
-  // Befund: Masken werden bei „Fertig“ bzw. am X sofort angelegt bzw.
-  // gelöscht, auch wenn man danach ohne Speichern zurückgeht
-  // (entwickeln/masken.dart:122–147).
+  // Behoben in #411: Masken gelten wie die Regler erst mit „Speichern“;
+  // wer ohne Speichern zurückgeht, lässt keine angelegte Maske zurück.
   testWidgets('BEA-046 Befund: Maske bleibt ohne Speichern angelegt', (
     tester,
   ) async {
@@ -7864,7 +7862,7 @@ void _befundTests() {
       isEmpty,
     );
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Befund: Der Dialog „Entwicklung auf n Foto(s) übertragen?“ nennt nur
   // Belichtung, Weissabgleich, Kontrast und Schatten (app_de.arb:1172);

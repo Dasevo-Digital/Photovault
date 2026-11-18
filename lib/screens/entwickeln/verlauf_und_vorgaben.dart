@@ -425,6 +425,9 @@ mixin _Verlauf on _EntwickelnBasis {
       }
       return;
     }
+    // Die Maskendateien zuerst: Nimmt der Server sie nicht, bleibt auch die
+    // Entwicklung beim Alten, statt ohne ihre Masken gespeichert zu sein.
+    if (!await _maskendateienAblegen()) return;
 
     // Erst die Datei zum Server, dann der Befehl, der auf sie zeigt –
     // nimmt der Server sie nicht, bleibt alles beim Alten. Ein neuer Name
@@ -445,11 +448,9 @@ mixin _Verlauf on _EntwickelnBasis {
       return;
     }
 
-    // Alle Masken, an denen etwas geändert wurde, nicht nur die gewählte.
-    _merkeMaskenentwurf();
-    for (final MapEntry(key: id, value: werte) in _geaenderteMasken.entries) {
-      await widget.db.fuehreAus(MaskeneinstellungAendern(id, werte));
-    }
+    // Was die Sitzung an Masken angelegt, umgeformt, gelöscht und
+    // eingestellt hat – erst jetzt, mit dem Speichern (BEA-046).
+    await _maskenUebernehmen();
 
     if (mounted) Navigator.of(context).pop(true);
   }
@@ -471,6 +472,9 @@ mixin _Verlauf on _EntwickelnBasis {
     final entwickelt = (await widget.db.assetById(
       widget.asset.id,
     ))?.developedRelativePath;
+    // Die Masken gehören zur Entwicklung: Blieben sie stehen, wirkten sie
+    // beim nächsten Öffnen wieder (BEA-048).
+    await _alleMaskenLoeschen();
     await widget.db.fuehreAus(EntwicklungZuruecksetzen(widget.asset.id));
     if (entwickelt != null &&
         p.isWithin('developed', p.normalize(entwickelt))) {

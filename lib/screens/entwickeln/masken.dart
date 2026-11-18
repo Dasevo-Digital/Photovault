@@ -100,45 +100,136 @@ mixin _Masken on _EntwickelnBasis {
     }
   }
 
-  /// Legt die Maskendatei [relativePath] ab – verbunden zum Server –, und
-  /// `false` mit Meldung, wenn er sie nicht nimmt. Dann geht sie hier weg.
-  Future<bool> _abgelegt(String relativePath) async {
+  /// Nimmt eine neue Maske mit der Datei [relativePath] in die Sitzung auf.
+  ///
+  /// Angelegt wird sie erst beim Speichern (BEA-046): Wie die Regler gilt
+  /// sie bis dahin nur hier. Die Kennung zieht der Befehl schon jetzt, so
+  /// treffen spätere Regleränderungen dieselbe Maske.
+  DevelopMaskData _maskeAnlegen(
+    String relativePath,
+    String name, {
+    String? form,
+  }) {
+    final befehl = MaskeAnlegen(
+      widget.asset.id,
+      relativePath,
+      name,
+      form: form,
+    );
+    _neueMasken[befehl.id] = befehl;
+    return DevelopMaskData(
+      id: befehl.id,
+      assetId: widget.asset.id,
+      maskRelativePath: relativePath,
+      label: name,
+      exposure: 0,
+      contrast: 0,
+      shadows: 0,
+      highlights: 0,
+      sharpness: 0,
+      noiseReduction: 0,
+      lensCorrectionEnabled: true,
+      createdAt: befehl.angelegt,
+      shapeDefinitionJson: form,
+    );
+  }
+
+  /// Die Maskendateien, auf die noch kein gespeicherter Befehl zeigt.
+  Iterable<String> _ungespeicherteMaskendateien() => [
+    for (final b in _neueMasken.values) b.pfad,
+    for (final u in _umgeformteMasken.values) u.befehl.pfad,
+  ];
+
+  /// Legt die Dateien der neuen und neu geformten Masken ab – verbunden
+  /// zum Server (#109) –, bevor ein Befehl auf sie zeigt. `false` mit
+  /// Meldung, wenn er sie nicht nimmt; die Sitzung bleibt dann, wie sie
+  /// ist, und Speichern lässt sich wiederholen.
+  @override
+  Future<bool> _maskendateienAblegen() async {
     try {
-      await widget.paths.abgelegt(relativePath);
+      for (final pfad in _ungespeicherteMaskendateien()) {
+        await widget.paths.abgelegt(pfad);
+      }
       return true;
-    } catch (e) {
-      final datei = widget.paths.absolute(relativePath);
-      if (await datei.exists()) await datei.delete();
+    } catch (_) {
       if (mounted) {
-        setState(() => _computingMask = false);
+        setState(() => _saving = false);
         melde.fehler(AppTexte.of(context).entwMaskeNichtAbgelegt);
       }
       return false;
     }
   }
 
-  /// Erst die Datei (verbunden am Server), dann der Befehl, der auf sie
-  /// zeigt (#109) – wie beim Speichern einer Entwicklung.
-  Future<bool> _maskeAnlegen(
-    String relativePath,
-    String name, {
-    String? form,
-  }) async {
-    if (!await _abgelegt(relativePath)) return false;
-    await widget.db.fuehreAus(
-      MaskeAnlegen(widget.asset.id, relativePath, name, form: form),
-    );
-    return true;
+  /// Übernimmt beim Speichern, was in der Sitzung an Masken geschah:
+  /// gelöschte, neu geformte, neue und geänderte Regler – als Befehle, so
+  /// erfährt verbunden der Server davon (#109).
+  @override
+  Future<void> _maskenUebernehmen() async {
+    for (final maske in _geloeschteMasken) {
+      await widget.db.fuehreAus(MaskeLoeschen(maske.id));
+      await _maskendateiLoeschen(maske.maskRelativePath);
+    }
+    for (final u in _umgeformteMasken.values) {
+      await widget.db.fuehreAus(u.befehl);
+      await _maskendateiLoeschen(u.alt);
+    }
+    for (final befehl in _neueMasken.values) {
+      await widget.db.fuehreAus(befehl);
+    }
+    // Alle Masken, an denen etwas geändert wurde, nicht nur die gewählte.
+    _merkeMaskenentwurf();
+    final weg = {for (final m in _geloeschteMasken) m.id};
+    for (final MapEntry(key: id, value: werte) in _geaenderteMasken.entries) {
+      if (weg.contains(id)) continue;
+      await widget.db.fuehreAus(MaskeneinstellungAendern(id, werte));
+    }
+    _geloeschteMasken.clear();
+    _umgeformteMasken.clear();
+    _neueMasken.clear();
+    _geaenderteMasken.clear();
+  }
+
+  /// Für „Zurücksetzen“: jede gespeicherte Maske samt Datei weg (BEA-048),
+  /// wie bei „Original wiederherstellen“. Was die Sitzung angelegt hat,
+  /// räumt [dispose] weg.
+  @override
+  Future<void> _alleMaskenLoeschen() async {
+    for (final maske in await widget.db.masksForAsset(widget.asset.id)) {
+      await widget.db.fuehreAus(MaskeLoeschen(maske.id));
+      await _maskendateiLoeschen(maske.maskRelativePath);
+    }
+    _geloeschteMasken.clear();
+    _geaenderteMasken.clear();
+  }
+
+  /// Löscht die Datei einer gespeicherten Maske – ausser eine Variante
+  /// verwendet sie noch.
+  Future<void> _maskendateiLoeschen(String relativePath) async {
+    if (await widget.db.varianteVerwendetDatei(relativePath)) return;
+    final datei = widget.paths.absolute(relativePath);
+    if (await datei.exists()) await datei.delete();
   }
 
   @override
   Future<void> _deleteMask(DevelopMaskData mask) async {
-    // Als Befehl – verbunden erfährt so der Server davon (#109).
-    await widget.db.fuehreAus(MaskeLoeschen(mask.id));
-    final file = widget.paths.absolute(mask.maskRelativePath);
-    if (!await widget.db.varianteVerwendetDatei(mask.maskRelativePath) &&
-        await file.exists()) {
-      await file.delete();
+    final neu = _neueMasken.remove(mask.id);
+    final umgeformt = _umgeformteMasken.remove(mask.id);
+    if (neu != null) {
+      // Nie gespeichert: Die Datei gehört zu nichts mehr.
+      final datei = widget.paths.absolute(neu.pfad);
+      if (await datei.exists()) await datei.delete();
+    } else {
+      if (umgeformt != null) {
+        final datei = widget.paths.absolute(umgeformt.befehl.pfad);
+        if (await datei.exists()) await datei.delete();
+      }
+      // Gelöscht wird sie erst beim Speichern (BEA-046), mit der Datei,
+      // auf die die Datenbank zeigt.
+      _geloeschteMasken.add(
+        umgeformt == null
+            ? mask
+            : mask.copyWith(maskRelativePath: umgeformt.alt),
+      );
     }
     if (!mounted) return;
     _geaenderteMasken.remove(mask.id);
@@ -662,13 +753,14 @@ mixin _Masken on _EntwickelnBasis {
     final file = widget.paths.absolute(relativePath);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(pngBytes);
+    if (!mounted) {
+      await file.delete();
+      return;
+    }
 
-    if (!await _maskeAnlegen(relativePath, name)) return;
-    final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
-
-    if (!mounted) return;
+    final neu = _maskeAnlegen(relativePath, name);
     setState(() {
-      _masks = [for (final m in refreshedMasks) _mitEntwurf(m)];
+      _masks = [..._masks, neu];
       _maskEditMode = false;
       _maskPoints.clear();
       _pendingMaskResult = null;
@@ -715,11 +807,13 @@ mixin _Masken on _EntwickelnBasis {
     final datei = widget.paths.absolute(relativePath);
     await datei.parent.create(recursive: true);
     await datei.writeAsBytes(ergebnis.png!);
+    if (!mounted) {
+      await datei.delete();
+      return;
+    }
 
-    if (!await _maskeAnlegen(relativePath, name)) return;
-    final frisch = await widget.db.masksForAsset(widget.asset.id);
-    if (!mounted) return;
-    setState(() => _masks = [for (final m in frisch) _mitEntwurf(m)]);
+    final neu = _maskeAnlegen(relativePath, name);
+    setState(() => _masks = [..._masks, neu]);
     _selectMask(_masks.last);
     _scheduleRerender();
   }
@@ -907,37 +1001,58 @@ mixin _Masken on _EntwickelnBasis {
     final file = widget.paths.absolute(relativePath);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(pngBytes);
-    if (editingId != null && existing != null) {
-      if (!await _abgelegt(relativePath)) return;
-      await widget.db.fuehreAus(
-        MaskenformAendern(editingId, shape.encode(), relativePath),
-      );
-      final alt = widget.paths.absolute(existing.maskRelativePath);
-      if (!await widget.db.varianteVerwendetDatei(existing.maskRelativePath) &&
-          await alt.exists()) {
-        await alt.delete();
-      }
-    } else if (!await _maskeAnlegen(relativePath, name, form: shape.encode())) {
+    if (!mounted) {
+      await file.delete();
       return;
     }
-    final refreshedMasks = await widget.db.masksForAsset(widget.asset.id);
-
+    final form = shape.encode();
+    final DevelopMaskData committedMask;
+    if (editingId != null && existing != null) {
+      // Wie das Anlegen erst beim Speichern (BEA-046). Bis dahin gilt die
+      // neue Datei nur in dieser Sitzung; die alte bleibt, worauf die
+      // Datenbank zeigt.
+      final neu = _neueMasken[editingId];
+      final umgeformt = _umgeformteMasken[editingId];
+      final vorige = neu?.pfad ?? umgeformt?.befehl.pfad;
+      if (vorige != null) {
+        final datei = widget.paths.absolute(vorige);
+        if (await datei.exists()) await datei.delete();
+      }
+      if (neu != null) {
+        _neueMasken[editingId] = MaskeAnlegen(
+          neu.assetId,
+          relativePath,
+          neu.name,
+          form: form,
+          id: neu.id,
+          angelegt: neu.angelegt,
+        );
+      } else {
+        _umgeformteMasken[editingId] = (
+          befehl: MaskenformAendern(editingId, form, relativePath),
+          alt: umgeformt?.alt ?? existing.maskRelativePath,
+        );
+      }
+      committedMask = existing.copyWith(
+        maskRelativePath: relativePath,
+        shapeDefinitionJson: Value(form),
+      );
+    } else {
+      committedMask = _maskeAnlegen(relativePath, name, form: form);
+    }
     if (!mounted) return;
     setState(() {
-      _masks = [for (final m in refreshedMasks) _mitEntwurf(m)];
+      _masks = [
+        for (final m in _masks)
+          if (m.id == committedMask.id) committedMask else m,
+        if (!_masks.any((m) => m.id == committedMask.id)) committedMask,
+      ];
       _maskEditMode = false;
       _computingMask = false;
       _draftShape = null;
     });
-    DevelopMaskData? committedMask;
-    if (editingId != null) {
-      for (final m in refreshedMasks) {
-        if (m.id == editingId) committedMask = m;
-      }
-    }
-    committedMask ??= refreshedMasks.isEmpty ? null : refreshedMasks.last;
     _editingMaskId = null;
-    if (committedMask != null) _selectMask(committedMask);
+    _selectMask(committedMask);
     _scheduleRerender();
   }
 }

@@ -305,6 +305,20 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   /// nächsten verloren, was an der vorigen eingestellt war.
   final _geaenderteMasken = <int, DevelopMasksCompanion>{};
 
+  /// Masken, die in dieser Sitzung entstanden sind, nach Kennung. Wie die
+  /// Regler gelten sie erst mit „Speichern“: Bis dahin liegt nur ihre
+  /// Datei hier, der Befehl wartet. Wer ohne Speichern zurückgeht, lässt
+  /// keine Maske zurück (BEA-046).
+  final _neueMasken = <int, MaskeAnlegen>{};
+
+  /// Gespeicherte Masken, die in dieser Sitzung neu geformt wurden: der
+  /// wartende Befehl und die Datei, die bis zum Speichern gilt.
+  final _umgeformteMasken = <int, ({MaskenformAendern befehl, String alt})>{};
+
+  /// Gespeicherte Masken, die in dieser Sitzung gelöscht wurden. Sie
+  /// verschwinden aus der Anzeige, aus der Datenbank erst beim Speichern.
+  final _geloeschteMasken = <DevelopMaskData>[];
+
   /// `null` = die globalen Regler oben sind aktiv/sichtbar; sonst die
   /// Auto-Increment-`id` der gerade zum Bearbeiten ausgewählten Maske.
   int? _selectedMaskId;
@@ -390,10 +404,13 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   void _scheduleRerender();
   void _selectMask(DevelopMaskData mask);
   void _selectGlobalAdjustments();
-  void _merkeMaskenentwurf();
   Future<File?> _originalOderMeldung();
   DevelopSettingsData _aktuellerDatensatz();
   Future<void> _deleteMask(DevelopMaskData mask);
+  void _merkeMaskenentwurf();
+  Future<bool> _maskendateienAblegen();
+  Future<void> _maskenUebernehmen();
+  Future<void> _alleMaskenLoeschen();
   Future<void> _startMaskCreation({DevelopMaskData? editingMask});
   void _switchMaskFormType(_MaskFormType type);
   void _cancelMaskCreation();
@@ -438,6 +455,15 @@ class _DevelopScreenState extends _EntwickelnBasis
     _shader?.dispose();
     _shaderBasis?.dispose();
     if (_segmentation != null) widget.segmentation?.zurueckgeben();
+    // Ohne Speichern zurück: Die Dateien der nie angelegten Masken und
+    // der nie übernommenen Formen gehören zu nichts mehr.
+    for (final pfad in _ungespeicherteMaskendateien()) {
+      try {
+        widget.paths.absolute(pfad).deleteSync();
+      } on FileSystemException {
+        // Schon weg – nichts zu tun.
+      }
+    }
     super.dispose();
   }
 
