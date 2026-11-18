@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/settings_screen.dart';
+import 'package:photo_vault/services/library_location.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:photo_vault/services/modelltexte.dart';
 import 'package:kern/services/model_download_service.dart';
@@ -204,6 +205,25 @@ void main() {
         findsOneWidget,
       );
       expect(find.byIcon(Icons.radio_button_checked), findsOneWidget);
+      await raeumeAb(tester);
+    });
+  });
+
+  // GRU-077: Der Name stand fest als „Standard“ im Dienst und blieb so
+  // auch in der englischen Oberfläche.
+  testWidgets('Bibliotheken: der Standardordner heisst auf Englisch '
+      '„Default“', (tester) async {
+    await tester.runAsync(() async {
+      LibraryLocation.nutzeFuerTests(anker: wurzel);
+      addTearDown(LibraryLocation.zuruecksetzenFuerTests);
+      await db.setSprache('en');
+      await zeige(tester);
+      await suche(tester, en.einstBibListe);
+      expect(
+        inGruppe(en.einstBibListe, find.text(en.einstBibStandard)),
+        findsOneWidget,
+      );
+      expect(find.text(de.einstBibStandard), findsNothing);
       await raeumeAb(tester);
     });
   });

@@ -873,7 +873,9 @@ class _HomeShellState extends State<HomeShell> {
             navigatorSchluessel: _bereich,
             bauen: _seiteBauen,
           );
-          final bibliothek = widget.library.aktiveBibliothek;
+          final bibliothek = widget.library.aktiveBibliothek?.anzeigename(
+            AppTexte.of(context).einstBibStandard,
+          );
           return Scaffold(
             body: Column(
               children: [

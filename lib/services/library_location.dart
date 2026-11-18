@@ -92,6 +92,15 @@ class BibliothekMitZustand {
   /// Standardordner nicht (es gibt ihn immer), die aktive Bibliothek auch
   /// nicht (der Zeiger zeigte sonst ins Leere).
   bool get entfernbar => !istStandard && !istAktiv;
+
+  /// Der Name, wie ihn die Oberfläche zeigt.
+  ///
+  /// Der Standardordner hat keinen gespeicherten Namen; er heisst in jeder
+  /// Sprache anders, und [standardname] ist der übersetzte. Vorher stand
+  /// er als festes „Standard“ in [LibraryLocation.bekannte] und blieb so
+  /// auch in der englischen Oberfläche.
+  String anzeigename(String standardname) =>
+      istStandard ? standardname : eintrag.name;
 }
 
 /// Verwaltet, WO die eigentlichen Bibliotheksdaten (`library.sqlite` +

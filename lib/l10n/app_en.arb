@@ -285,6 +285,7 @@
   "einstBibEntfernenText": "The library only disappears from this list. Photos, database and folder stay untouched, and you can add it back at any time.",
   "einstBibNichtEntfernbar": "This entry cannot be removed.",
   "einstBibListe": "Libraries",
+  "einstBibStandard": "Default",
   "einstBibHinzufuegen": "Add library…",
   "einstBibAusListeEntfernen": "Remove from the list (deletes no photos)",
   "einstBibNichtGefunden": "Folder not found – is the drive connected?",

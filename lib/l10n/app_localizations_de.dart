@@ -836,6 +836,9 @@ class AppTexteDe extends AppTexte {
   String get einstBibListe => 'Bibliotheken';
 
   @override
+  String get einstBibStandard => 'Standard';
+
+  @override
   String get einstBibHinzufuegen => 'Bibliothek hinzufügen…';
 
   @override

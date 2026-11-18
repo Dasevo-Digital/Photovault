@@ -2624,38 +2624,35 @@ void main() {
     timeout: _frist,
   );
 
-  // Befund: Der Name der Standardbibliothek ist fest „Standard“ und wird
-  // nicht übersetzt (lib/services/library_location.dart:598).
-  testWidgets(
-    'GRU-077 Name „Standard“ in englischer Oberfläche',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester, sprache: 'en');
-      await leiste(tester, en.navEinstellungen);
-      await waitFor(tester, find.byType(SettingsScreen));
-      await gruppe(tester, en.einstBibListe);
-      await waitFor(tester, find.text(en.einstBibAktiv));
-      final aktiv = find.ancestor(
-        of: find.text(en.einstBibAktiv),
-        matching: find.byType(ListTile),
-      );
-      final name = tester
-          .widget<Text>(
-            find.descendant(of: aktiv, matching: find.byType(Text)).first,
-          )
-          .data;
-      print('GRU-077 (en): Name der Standardbibliothek: $name');
-      expect(
-        name,
-        isNot('Standard'),
-        reason: 'unübersetzt in englischer Oberfläche',
-      );
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: Die Oberfläche zeigt den Standardordner über
+  // BibliothekMitZustand.anzeigename mit dem übersetzten Namen.
+  testWidgets('GRU-077 Name „Standard“ in englischer Oberfläche', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester, sprache: 'en');
+    await leiste(tester, en.navEinstellungen);
+    await waitFor(tester, find.byType(SettingsScreen));
+    await gruppe(tester, en.einstBibListe);
+    await waitFor(tester, find.text(en.einstBibAktiv));
+    final aktiv = find.ancestor(
+      of: find.text(en.einstBibAktiv),
+      matching: find.byType(ListTile),
+    );
+    final name = tester
+        .widget<Text>(
+          find.descendant(of: aktiv, matching: find.byType(Text)).first,
+        )
+        .data;
+    print('GRU-077 (en): Name der Standardbibliothek: $name');
+    expect(
+      name,
+      isNot('Standard'),
+      reason: 'unübersetzt in englischer Oberfläche',
+    );
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets(
     'GRU-082 GRU-085 GRU-083 GRU-046 GRU-089 GRU-092 GRU-084 GRU-090 Wechseln zwischen Bibliotheken',

@@ -298,10 +298,12 @@ class LibraryState extends ChangeNotifier {
   /// eigenen Halter und für die ganze App-Laufzeit unverändert nutzbar.
   final AiTaggingService aiTaggingService = AiTaggingService();
 
-  /// Name der geöffneten Bibliothek – nur gesetzt, wenn überhaupt mehr als
-  /// eine bekannt ist. Sonst wäre die Anzeige in der Navigationsleiste ein
-  /// Hinweis ohne Aussage.
-  String? aktiveBibliothek;
+  /// Die geöffnete Bibliothek – nur gesetzt, wenn überhaupt mehr als eine
+  /// bekannt ist. Sonst wäre die Anzeige in der Navigationsleiste ein
+  /// Hinweis ohne Aussage. Den Namen gibt
+  /// [BibliothekMitZustand.anzeigename] (der Standardordner heisst je nach
+  /// Sprache anders).
+  BibliothekMitZustand? aktiveBibliothek;
 
   ReverseGeocoder? geocoder;
 
@@ -980,10 +982,7 @@ class LibraryState extends ChangeNotifier {
     try {
       final bekannt = await LibraryLocation.bekannte();
       if (bekannt.length > 1) {
-        aktiveBibliothek = bekannt
-            .where((b) => b.istAktiv)
-            .map((b) => b.eintrag.name)
-            .firstOrNull;
+        aktiveBibliothek = bekannt.where((b) => b.istAktiv).firstOrNull;
       }
     } catch (e) {
       debugPrint('Bibliotheksliste nicht lesbar: $e');

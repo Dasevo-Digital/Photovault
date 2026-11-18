@@ -80,7 +80,7 @@ class _BibliothekBelegtScreenState extends State<BibliothekBelegtScreen> {
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
                       enabled: b.erreichbar,
-                      title: Text(b.eintrag.name),
+                      title: Text(b.anzeigename(texte.einstBibStandard)),
                       subtitle: Text(
                         b.erreichbar
                             ? b.eintrag.path

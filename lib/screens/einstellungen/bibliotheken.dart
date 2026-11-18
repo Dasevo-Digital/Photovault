@@ -46,7 +46,7 @@ class BibliothekenGruppe extends StatelessWidget {
                           : null,
                     ),
                     title: Text(
-                      b.eintrag.name,
+                      b.anzeigename(AppTexte.of(context).einstBibStandard),
                       style: b.erreichbar
                           ? null
                           : TextStyle(color: Theme.of(context).disabledColor),
@@ -135,7 +135,9 @@ Future<void> _wechsleBibliothek(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(
-        AppTexte.of(context).einstBibWechselnTitel(ziel.eintrag.name),
+        AppTexte.of(context).einstBibWechselnTitel(
+          ziel.anzeigename(AppTexte.of(context).einstBibStandard),
+        ),
       ),
       content: Text(AppTexte.of(context).einstBibWechselnText),
       actions: [
@@ -200,7 +202,11 @@ Future<void> _entferneBibliothek(
   final bestaetigt = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: Text(AppTexte.of(context).einstBibEntfernenTitel(b.eintrag.name)),
+      title: Text(
+        AppTexte.of(context).einstBibEntfernenTitel(
+          b.anzeigename(AppTexte.of(context).einstBibStandard),
+        ),
+      ),
       content: Text(AppTexte.of(context).einstBibEntfernenText),
       actions: [
         TextButton(

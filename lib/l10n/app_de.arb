@@ -473,6 +473,7 @@
   "einstBibEntfernenText": "Die Bibliothek verschwindet nur aus dieser Liste. Fotos, Datenbank und Ordner bleiben unverändert erhalten und lassen sich jederzeit wieder hinzufügen.",
   "einstBibNichtEntfernbar": "Dieser Eintrag lässt sich nicht entfernen.",
   "einstBibListe": "Bibliotheken",
+  "einstBibStandard": "Standard",
   "einstBibHinzufuegen": "Bibliothek hinzufügen…",
   "einstBibAusListeEntfernen": "Aus der Liste entfernen (löscht keine Fotos)",
   "einstBibNichtGefunden": "Ordner nicht gefunden – Laufwerk eingebunden?",

@@ -827,6 +827,9 @@ class AppTexteEn extends AppTexte {
   String get einstBibListe => 'Libraries';
 
   @override
+  String get einstBibStandard => 'Default';
+
+  @override
   String get einstBibHinzufuegen => 'Add library…';
 
   @override

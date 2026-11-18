@@ -1380,6 +1380,12 @@ abstract class AppTexte {
   /// **'Bibliotheken'**
   String get einstBibListe;
 
+  /// No description provided for @einstBibStandard.
+  ///
+  /// In de, this message translates to:
+  /// **'Standard'**
+  String get einstBibStandard;
+
   /// No description provided for @einstBibHinzufuegen.
   ///
   /// In de, this message translates to:
