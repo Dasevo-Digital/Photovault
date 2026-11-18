@@ -153,12 +153,11 @@ extension EinbettungsAbfragen on AppDatabase {
   /// solange sie versteckt sind).
   ///
   /// Bei [onlyUntagged] nur Fotos, die noch nie durch die Verschlagwortung
-  /// gelaufen sind ([Assets.aiTagsScanned]) UND noch keinen Tag tragen.
-  /// Das Flag ist dabei das entscheidende Kriterium: Ein Foto, zu dem CLIP
-  /// keinen passenden Begriff gefunden hat, bleibt für immer ohne Tags und
-  /// wäre ohne das Flag bei jedem Lauf erneut Kandidat – siehe dort.
-  /// Die zusätzliche Tag-Prüfung hält Fotos draussen, die vor Einführung
-  /// des Flags bereits verschlagwortet wurden.
+  /// gelaufen sind ([Assets.aiTagsScanned]) UND noch kein Schlagwort der
+  /// Bilderkennung tragen ([_ohneKiSchlagwort]). Das Flag ist dabei das
+  /// entscheidende Kriterium: Ein Foto, zu dem CLIP keinen passenden
+  /// Begriff gefunden hat, bleibt für immer ohne Tags und wäre ohne das
+  /// Flag bei jedem Lauf erneut Kandidat – siehe dort.
   ///
   /// Wer stattdessen "Alle" wählt, ergänzt passende KI-Tags auch bei
   /// bereits getaggten Fotos, ohne vorhandene (auch manuelle) Tags zu
@@ -175,19 +174,32 @@ extension EinbettungsAbfragen on AppDatabase {
           ))
           .get();
     }
-    final query =
-        select(assets).join([
-          leftOuterJoin(assetTags, assetTags.assetId.equalsExp(assets.id)),
-        ])..where(
-          _auswertbar(assets) &
-              assets.isTrashed.equals(false) &
-              assets.isLocked.equals(false) &
-              assets.aiTagsScanned.equals(false) &
-              assetTags.assetId.isNull(),
-        );
-    final rows = await query.get();
-    return rows.map((r) => r.readTable(assets)).toList();
+    return (select(assets)..where((_) => _offenFuerKiSchlagwoerter())).get();
   }
+
+  /// Muss für [assetsForAiTagging] und [countAiTagging] deckungsgleich
+  /// bleiben, sonst zeigt die Aufgabenübersicht Wartende an, die keine
+  /// sind.
+  Expression<bool> _offenFuerKiSchlagwoerter() =>
+      _auswertbar(assets) &
+      assets.isTrashed.equals(false) &
+      assets.isLocked.equals(false) &
+      assets.aiTagsScanned.equals(false) &
+      _ohneKiSchlagwort();
+
+  /// Trägt das Foto noch kein Schlagwort der Bilderkennung?
+  ///
+  /// Früher hiess die Bedingung „gar kein Schlagwort“. Ein Foto, das vor
+  /// der Auswertung von Hand eines bekam, erhielt damit nie KI-Schlagwörter,
+  /// und nach „KI-Schlagwörter zurücknehmen“ galten Fotos mit einem von
+  /// Hand vergebenen Begriff nicht wieder als offen, obwohl ihr Vermerk
+  /// zurückgesetzt war. Gemeint war nur: Wer schon KI-Schlagwörter hat,
+  /// braucht keinen zweiten Durchgang.
+  Expression<bool> _ohneKiSchlagwort() => notExistsQuery(
+    select(assetTags)..where(
+      (t) => t.assetId.equalsExp(assets.id) & t.quelle.equals(Tagquelle.ki),
+    ),
+  );
 
   /// Vermerkt, dass ein Foto die Verschlagwortung durchlaufen hat –
   /// unabhängig davon, ob dabei Tags heraussprangen.
@@ -205,23 +217,7 @@ extension EinbettungsAbfragen on AppDatabase {
             assets.isLocked.equals(false),
       );
     }
-    final countExpr = assets.id.count();
-    final query =
-        selectOnly(assets).join([
-            leftOuterJoin(assetTags, assetTags.assetId.equalsExp(assets.id)),
-          ])
-          ..addColumns([countExpr])
-          ..where(
-            _auswertbar(assets) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false) &
-                // Muss deckungsgleich mit assetsForAiTagging bleiben, sonst zeigt
-                // die Hintergrundaufgaben-Übersicht Wartende an, die keine sind.
-                assets.aiTagsScanned.equals(false) &
-                assetTags.assetId.isNull(),
-          );
-    final row = await query.getSingle();
-    return row.read<int>(countExpr) ?? 0;
+    return _countWhere(_offenFuerKiSchlagwoerter());
   }
 
   /// Lädt alle gespeicherten Embeddings (assetId -> Vektor) für die

@@ -1802,9 +1802,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: nach „KI-Schlagwörter zurücknehmen“ gilt ein Foto mit Hand-Schlagwort nicht als offen – countAiTagging/assetsForAiTagging verlangen „gar kein Schlagwort“ (einbettungen.dart).
+  // Behoben in #414: assetsForAiTagging/countAiTagging verlangen „kein Schlagwort der Bilderkennung“ statt „gar kein Schlagwort“.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-079 Befundpruefung Fotos mit Handvergabe sind nach dem Zuruecknehmen offen',
     (tester) async {

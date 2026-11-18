@@ -45,15 +45,23 @@ void main() {
   }
 
   test(
-    'assetsForAiTagging(onlyUntagged: true) findet nur Fotos ganz ohne Tags',
+    'assetsForAiTagging(onlyUntagged: true) findet Fotos ohne KI-Schlagwort',
     () async {
       final untaggedId = await importPhoto('a.jpg', [1, 2, 3]);
       final taggedId = await importPhoto('b.jpg', [4, 5, 6]);
-      await db.tagAsset(taggedId, 'Urlaub');
+      final vonHandId = await importPhoto('c.jpg', [7, 8, 9]);
+      await db.tagAsset(taggedId, 'Urlaub', quelle: Tagquelle.ki);
+      // Ein von Hand vergebenes Schlagwort ersetzt die Bilderkennung
+      // nicht – das Foto bleibt offen (KI-079).
+      await db.tagAsset(vonHandId, 'Oma');
 
       final onlyUntagged = await db.assetsForAiTagging(onlyUntagged: true);
-      expect(onlyUntagged.map((a) => a.id), contains(untaggedId));
+      expect(
+        onlyUntagged.map((a) => a.id),
+        containsAll([untaggedId, vonHandId]),
+      );
       expect(onlyUntagged.map((a) => a.id), isNot(contains(taggedId)));
+      expect(await db.countAiTagging(onlyUntagged: true), 2);
 
       final all = await db.assetsForAiTagging(onlyUntagged: false);
       expect(all.map((a) => a.id), containsAll([untaggedId, taggedId]));

@@ -84,15 +84,29 @@ void main() {
   });
 
   test(
-    'ein bereits getaggtes Foto bleibt auch ohne Vermerk draussen',
+    'ein Foto mit KI-Schlagwort bleibt auch ohne Vermerk draussen',
     () async {
-      // Fotos, die vor Einführung des Flags verschlagwortet wurden: Das Flag
-      // steht auf false, sie haben aber Tags.
       final id = await importiere('alt_getaggt.jpg', 3);
-      await db.tagAsset(id, 'Strand');
+      await db.tagAsset(id, 'Strand', quelle: Tagquelle.ki);
 
       final kandidaten = await db.assetsForAiTagging(onlyUntagged: true);
       expect(kandidaten.map((a) => a.id), isNot(contains(id)));
+    },
+  );
+
+  test(
+    'ein Foto mit nur von Hand vergebenem Schlagwort ist Kandidat',
+    () async {
+      // Bis zur Prüfung KI-079 verlangte die Abfrage „gar kein
+      // Schlagwort“: Ein Foto, das vor der Auswertung von Hand eines
+      // bekam, erhielt nie KI-Schlagwörter – und nach dem Zurücknehmen
+      // galt es nicht wieder als offen.
+      final id = await importiere('von_hand.jpg', 3);
+      await db.tagAsset(id, 'Oma');
+
+      final kandidaten = await db.assetsForAiTagging(onlyUntagged: true);
+      expect(kandidaten.map((a) => a.id), contains(id));
+      expect(await db.countAiTagging(onlyUntagged: true), 1);
     },
   );
 

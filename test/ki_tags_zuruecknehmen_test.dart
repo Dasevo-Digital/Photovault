@@ -72,6 +72,29 @@ void main() {
     );
   });
 
+  test(
+    'danach sind auch Fotos mit eigenen Schlagwörtern wieder offen',
+    () async {
+      // KI-079: „KI-Tags“ zählte 1 statt 2 offene Fotos – das Foto mit dem
+      // von Hand vergebenen „Oma“ galt nicht als offen und bekam nie wieder
+      // KI-Schlagwörter.
+      await aufnahme('a');
+      await aufnahme('b');
+      await db.tagAsset('a', 'Strand', quelle: Tagquelle.ki);
+      await db.tagAsset('a', 'Oma');
+      await db.tagAsset('b', 'Wald', quelle: Tagquelle.ki);
+      expect(await db.countAiTagging(onlyUntagged: true), 0);
+
+      await db.nimmKiTagsZurueck();
+
+      expect(await db.countAiTagging(onlyUntagged: true), 2);
+      expect(
+        (await db.assetsForAiTagging(onlyUntagged: true)).map((a) => a.id),
+        unorderedEquals(['a', 'b']),
+      );
+    },
+  );
+
   test('räumt Schlagwörter weg, an denen nichts mehr hängt', () async {
     await aufnahme('a');
     await db.tagAsset('a', 'Geburtstagstorte', quelle: Tagquelle.ki);
