@@ -4624,11 +4624,11 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get einstBeschrModelle =>
-      'Herunterladen und entfernen der lokalen Modelle';
+      'Herunterladen und entfernen der lokalen Modelle; ob nach dem Import automatisch ausgewertet wird';
 
   @override
   String get einstBeschrHintergrund =>
-      'Ob nach dem Import automatisch ausgewertet wird';
+      'Alle Auswertungen mit Anzahl noch offener Fotos';
 
   @override
   String get einstBeschrVokabular =>

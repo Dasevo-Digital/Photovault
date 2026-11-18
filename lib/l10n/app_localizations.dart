@@ -7636,13 +7636,13 @@ abstract class AppTexte {
   /// No description provided for @einstBeschrModelle.
   ///
   /// In de, this message translates to:
-  /// **'Herunterladen und entfernen der lokalen Modelle'**
+  /// **'Herunterladen und entfernen der lokalen Modelle; ob nach dem Import automatisch ausgewertet wird'**
   String get einstBeschrModelle;
 
   /// No description provided for @einstBeschrHintergrund.
   ///
   /// In de, this message translates to:
-  /// **'Ob nach dem Import automatisch ausgewertet wird'**
+  /// **'Alle Auswertungen mit Anzahl noch offener Fotos'**
   String get einstBeschrHintergrund;
 
   /// No description provided for @einstBeschrVokabular.

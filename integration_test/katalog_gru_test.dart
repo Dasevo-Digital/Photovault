@@ -3472,43 +3472,38 @@ void main() {
     timeout: _frist,
   );
 
-  // Befund: „ausgewertet“ findet nur „Hintergrundaufgaben“ (Beschreibung
-  // „Ob nach dem Import automatisch ausgewertet wird“), die Gruppe enthält
-  // aber nur den Weg zu den Aufgaben; der Schalter steht in
-  // „KI-Modelle (lokal & quelloffen)“ (lib/screens/einstellungen/hintergrund.dart,
-  // lib/screens/einstellungen/modelle.dart).
-  testWidgets(
-    'GRU-114 Schalter der automatischen Auswertung über die Suche',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      await einstellungen(tester);
-      await enter(
-        tester,
-        find.descendant(
-          of: find.byType(SearchBar),
-          matching: find.byType(TextField),
-        ),
-        'ausgewertet',
-      );
-      await settle(tester);
-      final gefunden = tester
-          .widgetList<ExpansionTile>(
-            find.descendant(
-              of: find.byType(SettingsScreen),
-              matching: find.byType(ExpansionTile),
-            ),
-          )
-          .map((e) => (e.title as Text).data)
-          .toList();
-      print('GRU-114: gefundene Gruppen: $gefunden');
-      expect(find.text(de.einstAutoAnalyseTitel), findsOneWidget);
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: „Hintergrundaufgaben“ beschreibt jetzt die
+  // Aufgaben-Übersicht; die automatische Auswertung steht in der
+  // Beschreibung von „KI-Modelle“, wo der Schalter liegt.
+  testWidgets('GRU-114 Schalter der automatischen Auswertung über die Suche', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    await einstellungen(tester);
+    await enter(
+      tester,
+      find.descendant(
+        of: find.byType(SearchBar),
+        matching: find.byType(TextField),
+      ),
+      'ausgewertet',
+    );
+    await settle(tester);
+    final gefunden = tester
+        .widgetList<ExpansionTile>(
+          find.descendant(
+            of: find.byType(SettingsScreen),
+            matching: find.byType(ExpansionTile),
+          ),
+        )
+        .map((e) => (e.title as Text).data)
+        .toList();
+    print('GRU-114: gefundene Gruppen: $gefunden');
+    expect(find.text(de.einstAutoAnalyseTitel), findsOneWidget);
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets('GRU-116 GRU-118 GRU-117 Design hell, dunkel, System', (
     tester,

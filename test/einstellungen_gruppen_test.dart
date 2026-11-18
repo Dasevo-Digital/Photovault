@@ -385,6 +385,23 @@ void main() {
     });
   });
 
+  // GRU-114: Die Beschreibung von „Hintergrundaufgaben“ versprach den
+  // Schalter, der in „KI-Modelle“ steht – die Suche führte daran vorbei.
+  testWidgets('Suche: „ausgewertet“ führt zum Schalter der automatischen '
+      'Auswertung', (tester) async {
+    await tester.runAsync(() async {
+      await zeige(tester);
+      await suche(tester, 'ausgewertet');
+      expect(find.text(de.einstAutoAnalyseTitel), findsOneWidget);
+      expect(
+        find.text(de.einstAbschnittHintergrund),
+        findsNothing,
+        reason: 'die Gruppe enthält den Schalter nicht',
+      );
+      await raeumeAb(tester);
+    });
+  });
+
   testWidgets('Hintergrund: der Weg zu den Aufgaben', (tester) async {
     await tester.runAsync(() async {
       await zeige(tester);

@@ -4593,11 +4593,12 @@ class AppTexteEn extends AppTexte {
       'Where the library lives and how much room it takes';
 
   @override
-  String get einstBeschrModelle => 'Download and remove the local models';
+  String get einstBeschrModelle =>
+      'Download and remove the local models; whether analysis starts automatically after an import';
 
   @override
   String get einstBeschrHintergrund =>
-      'Whether analysis starts automatically after an import';
+      'Every analysis with the number of photos still waiting';
 
   @override
   String get einstBeschrVokabular => 'The terms photos are tagged with';
