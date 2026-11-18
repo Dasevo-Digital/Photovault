@@ -269,8 +269,12 @@ String? importBilanz(
   ].join(' · ');
 }
 
-/// Ein Satz dazu, woran eine Datei scheiterte (#335) – aus dem, was
-/// [ImportProgress.grund] mitbringt.
+/// Ein Satz dazu, woran eine Datei oder ein ganzer Lauf scheiterte (#335) –
+/// aus dem, was [ImportProgress.grund] mitbringt.
+///
+/// Eine Kennung kann als Ausnahme kommen oder als Text: als Text etwa vom
+/// Server, der den Grund in einer Kopfzeile weiterreicht. Beides wird
+/// gleich übersetzt (IMP-028).
 String importFehlertext(AppTexte t, Object? grund) => switch (grund) {
   null || '' => t.importFehlerUnbekannt,
   KeineVerbindung() => t.importFehlerKeineVerbindung,
@@ -278,18 +282,28 @@ String importFehlertext(AppTexte t, Object? grund) => switch (grund) {
     status,
     _kurzerServertext(text),
   ),
-  FormatException(:final message)
-      when message == 'pv_import_quelle_geaendert' =>
-    t.importFehlerQuelleGeaendert,
-  FormatException(:final message)
-      when message == 'pv_import_regeln_geaendert' =>
-    t.importPlanGeaendert,
-  FormatException(:final message) => message,
+  FormatException(:final message) => _kennungstext(t, message),
   FileSystemException(:final message, :final osError) =>
     osError == null ? message : '$message (${osError.message})',
-  final String text => text,
+  final String text => _kennungstext(t, text),
   _ => '$grund',
 };
+
+/// Bekannte Kennungen als Satz, alles andere unverändert. Ältere Server
+/// schicken die Kennung noch mit dem Namen der Ausnahme davor.
+String _kennungstext(AppTexte t, String text) {
+  const vorsatz = 'FormatException: ';
+  final kennung = text.startsWith(vorsatz)
+      ? text.substring(vorsatz.length)
+      : text;
+  return switch (kennung) {
+    'pv_import_quelle_geaendert' => t.importFehlerQuelleGeaendert,
+    'pv_import_regeln_geaendert' ||
+    'pv_import_auswahl' => t.importPlanGeaendert,
+    'pv_import_server_zu_alt' => t.importPlanServerAlt,
+    _ => text,
+  };
+}
 
 /// Aus der Antwort eines Servers oder Proxys das Wesentliche: der Titel
 /// einer HTML-Fehlerseite, der Text eines JSON-Fehlers, sonst der Anfang.
@@ -397,11 +411,14 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
           }
           _fehler += offen.isEmpty ? 1 : offen.length;
         });
+        // Der wirkliche Grund: Vorher stand hier für jeden Abbruch „…
+        // haben sich geändert“, auch wenn der Server weg oder zu alt war
+        // (IMP-087).
         final t = AppTexte.of(context);
         melde.warnung(
           e is QuittungSchreibfehler
               ? t.quittungSchreibfehler
-              : t.importPlanGeaendert,
+              : importFehlertext(t, e),
         );
       }
     } finally {

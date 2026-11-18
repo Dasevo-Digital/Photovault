@@ -1674,13 +1674,8 @@ void main() {
     },
   );
 
-  // Befund (zweimal reproduziert): Beim Import ohne Server kommt der Grund als
-  // Text „FormatException: pv_import_quelle_geaendert“ an (ImportResult.error
-  // = e.toString(), packages/kern/lib/services/import_service.dart:467,
-  // weitergereicht in import_koordinator.dart:60). importFehlertext
-  // (lib/screens/import_progress_sheet.dart:143–152) übersetzt nur eine
-  // FormatException, keinen Text – unter „Warum?“ steht deshalb der rohe
-  // Kennungstext statt „Die Datei hat sich seit der Prüfung verändert“.
+  // Behoben in #409: ImportResult trägt die Ausnahme selbst (grund), und
+  // importFehlertext übersetzt Kennungen auch als Text.
   pruefung('IMP-028 Befund: „Warum?“ nennt den Grund als Satz', (tester) async {
     await startApp(tester);
     final a = testfoto('a.jpg', datum: DateTime(2020, 11, 1));
@@ -1693,7 +1688,7 @@ void main() {
     expect(find.text('1 × ${de.importFehlerQuelleGeaendert}'), findsOneWidget);
     await schliesseBlatt(tester);
     await finish(tester);
-  }, skip: true);
+  });
 
   // === Import – Ablauf und Bilanz ==========================================
 
@@ -2962,12 +2957,8 @@ void main() {
     timeout: const Timeout(Duration(minutes: 12)),
   );
 
-  // Befund (zweimal reproduziert): Jeder Abbruch des Laufs meldet „Dateien
-  // oder Regeln konnten nicht zuverlässig geprüft werden oder haben sich
-  // geändert“ (lib/screens/import_progress_sheet.dart:256), auch wenn der
-  // Server nicht erreichbar oder zu alt ist; beim zu alten Server steht unter
-  // „Warum?“ nur die Kennung „pv_import_server_zu_alt“
-  // (lib/state/library_state.dart:1319, import_progress_sheet.dart:149).
+  // Behoben in #409: Der Abbruch meldet den Grund über importFehlertext,
+  // und „pv_import_server_zu_alt“ wird zum Satz.
   pruefung('IMP-087 Befund MitServer: Abbruch nennt den richtigen Grund', (
     tester,
   ) async {
@@ -3025,7 +3016,7 @@ void main() {
     // Die Durchreiche bleibt offen: Was die App nach finish noch
     // holt, soll nicht als Fehler auf diese Prüfung fallen.
     await finish(tester);
-  }, skip: true);
+  }, skip: serverAdresse.isEmpty);
 
   pruefung('IMP-103 MitServer: Überwachter Ordner lädt beim Einrichten hoch', (
     tester,

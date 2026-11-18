@@ -172,6 +172,14 @@ class ImportResult {
   final String filePath;
   final ImportOutcome outcome;
   final String? error;
+
+  /// Die Ausnahme, an der der Import scheiterte, so wie sie kam.
+  ///
+  /// **Warum neben [error].** [error] ist Text für Protokolle und für die
+  /// Antwort des Servers. Die Oberfläche übersetzt aber bekannte Gründe
+  /// anhand der Ausnahme (`importFehlertext`); aus „FormatException:
+  /// pv_import_quelle_geaendert“ als Text wurde dort kein Satz (IMP-028).
+  final Object? grund;
   final String? assetId;
 
   /// Ob derselbe Import später gelingen kann (#316), siehe
@@ -181,6 +189,7 @@ class ImportResult {
     this.filePath,
     this.outcome, {
     this.error,
+    this.grund,
     this.assetId,
     this.voruebergehend = false,
   });
@@ -508,7 +517,10 @@ class ImportService {
       return ImportResult(
         filePath,
         ImportOutcome.failed,
-        error: e.toString(),
+        // Bei einer Kennung (pv_…) nur sie: Der Server reicht diesen Text
+        // an den Rechner weiter, und der übersetzt nur die Kennung selbst.
+        error: e is FormatException ? e.message : e.toString(),
+        grund: e,
         voruebergehend: importFehlerVoruebergehend(e),
       );
     }

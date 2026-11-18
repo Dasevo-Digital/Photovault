@@ -1,8 +1,15 @@
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/db/database.dart';
+import 'package:kern/services/bildwerkzeuge.dart';
+import 'package:kern/services/import_koordinator.dart';
+import 'package:kern/services/import_plan.dart';
+import 'package:kern/services/import_service.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/import_progress_sheet.dart';
 
@@ -115,5 +122,57 @@ void main() {
         'Server not reachable',
       );
     });
+
+    test('Kennungen als Text werden ebenso zu Sätzen (IMP-028, IMP-087)', () {
+      // So reicht sie der Server in der Kopfzeile weiter – ältere Server
+      // noch mit dem Namen der Ausnahme davor.
+      for (final roh in [
+        'pv_import_quelle_geaendert',
+        'FormatException: pv_import_quelle_geaendert',
+      ]) {
+        expect(importFehlertext(de, roh), de.importFehlerQuelleGeaendert);
+      }
+      expect(
+        importFehlertext(de, const FormatException('pv_import_server_zu_alt')),
+        de.importPlanServerAlt,
+      );
+      expect(importFehlertext(de, 'Platte voll'), 'Platte voll');
+    });
+
+    test(
+      'ohne Server: nach der Prüfung veränderte Datei nennt den Grund als Satz (IMP-028)',
+      () async {
+        final temp = await Directory.systemTemp.createTemp('pv_grund_');
+        final db = AppDatabase(NativeDatabase.memory());
+        addTearDown(() async {
+          await db.close();
+          await temp.delete(recursive: true);
+        });
+        final pfade = await StoragePaths.forTesting(
+          Directory('${temp.path}/bibliothek'),
+        );
+        final importe = ImportService(
+          db,
+          pfade,
+          bildwerkzeuge: const KeineBildwerkzeuge(),
+        );
+        final a = File('${temp.path}/a.jpg')..writeAsBytesSync([1, 2, 3]);
+        final plan = await ImportPlanDienst(db, importe).erstelle([a.path]);
+        a.writeAsBytesSync([4], mode: FileMode.append);
+        final lauf = await ImportKoordinator(
+          db: db,
+          importe: importe,
+          nachbearbeiten: (_, {regelnAnwenden = true}) async {},
+          starteAnalyse: () async {},
+        ).importiere([a.path], plan: plan).toList();
+        expect(lauf.last.gescheitert, isTrue);
+        // Die Ausnahme selbst, nicht ihr Text.
+        expect(lauf.last.grund, isA<FormatException>());
+        expect(
+          importFehlertext(de, lauf.last.grund),
+          de.importFehlerQuelleGeaendert,
+        );
+      },
+    );
   });
 }
