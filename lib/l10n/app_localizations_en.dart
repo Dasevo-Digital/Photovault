@@ -3178,7 +3178,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get duplBehaltenRegel =>
-      'Kept in each group: the favourite, otherwise the highest rating, otherwise the sharpest, otherwise the one with the highest resolution.';
+      'Kept in each group: the favourite, otherwise the highest rating, otherwise the full-resolution version (not a downsized copy, RAW before other formats), otherwise the sharpest, otherwise the one with the most pixels.';
 
   @override
   String duplUebersprungen(int anzahl) {

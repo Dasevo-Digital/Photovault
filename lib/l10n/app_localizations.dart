@@ -5486,7 +5486,7 @@ abstract class AppTexte {
   /// No description provided for @duplBehaltenRegel.
   ///
   /// In de, this message translates to:
-  /// **'Behalten wird je Gruppe: Favorit, sonst höchste Bewertung, sonst das schärfste, sonst das mit der höchsten Auflösung.'**
+  /// **'Behalten wird je Gruppe: Favorit, sonst höchste Bewertung, sonst die Fassung in voller Auflösung (keine verkleinerte Kopie, RAW vor anderen Formaten), sonst das schärfste, sonst das mit den meisten Pixeln.'**
   String get duplBehaltenRegel;
 
   /// No description provided for @duplUebersprungen.

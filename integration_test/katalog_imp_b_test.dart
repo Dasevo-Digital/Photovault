@@ -697,11 +697,10 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: app_de.arb:1673 (duplBehaltenRegel) nennt „Favorit, Bewertung,
-  // das schärfste, die höchste Auflösung". duplicate_selection.dart:49-73
-  // stellt die volle Auflösung (und RAW) vor die Schärfe. Bei einer
-  // schärferen, verkleinerten Kopie behält die App das Original – der
-  // Dialog behauptet das Gegenteil.
+  // Behoben in #409: Der Regeltext nennt die volle Auflösung (und RAW) vor
+  // der Schärfe, wie duplicate_selection.dart seit #249 auswählt. Bei einer
+  // schärferen, verkleinerten Kopie bleibt das Original – und so steht es
+  // auch im Dialog.
   testWidgets('IMP-140 Regeltext im Dialog stimmt mit der Auswahl überein', (
     tester,
   ) async {
@@ -719,17 +718,23 @@ void main() {
     await waitFor(tester, find.text(de.duplGefunden(1, 2)));
     await tapFrei(tester, find.text(de.duplKopienInPapierkorb(1)));
     await waitFor(tester, find.text(de.duplBehaltenRegel));
-    // Der Text sagt: ohne Favorit und Bewertung bleibt das schärfste.
+    final regel = de.duplBehaltenRegel;
+    expect(
+      regel.indexOf('voller Auflösung'),
+      allOf(isNonNegative, lessThan(regel.indexOf('schärfste'))),
+      reason: 'der Text nennt die volle Auflösung vor der Schärfe',
+    );
+    // Und so wählt die App auch: das Original, nicht die schärfere Kopie.
     expect(
       find.descendant(
-        of: dupSpalte('klein.jpg'),
+        of: dupSpalte('gross.jpg'),
         matching: find.widgetWithText(FilledButton, de.duplBehalten),
       ),
       findsOneWidget,
-      reason: 'laut Dialog bliebe das schärfste Foto (klein.jpg)',
+      reason: 'laut Dialog bleibt die Fassung in voller Auflösung',
     );
     await ende(tester);
-  }, skip: true);
+  });
 
   testWidgets('IMP-147 Aus der Gruppe in Papierkorb und gesperrten Ordner', (
     tester,

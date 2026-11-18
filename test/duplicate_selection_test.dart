@@ -1,6 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/duplicate_selection.dart';
+import 'package:photo_vault/l10n/app_localizations.dart';
 
 /// Diese Regeln entscheiden, welche Fotos in den Papierkorb wandern –
 /// entsprechend eng geprüft, besonders die Fälle, in denen NICHT gelöscht
@@ -193,6 +195,33 @@ void main() {
     test('Gruppe mit nur einem Foto ergibt nichts zu löschen', () {
       expect(zuLoeschendeDerGruppe([foto('allein')]), isEmpty);
     });
+  });
+
+  // Der Dialog vor dem Papierkorb sagt, nach welcher Regel behalten wird.
+  // Er nannte die Schärfe vor der Auflösung, die Auswahl macht es seit #249
+  // umgekehrt – bei einer schärferen verkleinerten Kopie behauptete der
+  // Dialog das Gegenteil dessen, was geschah (IMP-140).
+  group('der Regeltext im Dialog folgt der Auswahl', () {
+    test('die volle Auflösung geht der Schärfe vor', () {
+      final gewinner = besterDerGruppe([
+        foto('original', schaerfe: 100, breite: 4000, hoehe: 3000),
+        foto('verkleinert', schaerfe: 500, breite: 400, hoehe: 300),
+      ]);
+      expect(gewinner.id, 'original');
+    });
+
+    for (final (sprache, aufloesung, schaerfe) in [
+      ('de', 'voller Auflösung', 'schärfste'),
+      ('en', 'full-resolution', 'sharpest'),
+    ]) {
+      test('der Text nennt die Auflösung vor der Schärfe ($sprache)', () async {
+        final t = await AppTexte.delegate.load(Locale(sprache));
+        final regel = t.duplBehaltenRegel;
+        expect(regel, contains(aufloesung));
+        expect(regel, contains('RAW'));
+        expect(regel.indexOf(aufloesung), lessThan(regel.indexOf(schaerfe)));
+      });
+    }
   });
 
   group('Vorschau über alle Gruppen', () {

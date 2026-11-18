@@ -1041,7 +1041,7 @@
   "duplNichtsZuLoeschen": "Nothing to delete.",
   "duplPapierkorbTitel": "Move the copies to the trash?",
   "duplPapierkorbAnzahl": "{fotos} photo(s) from {gruppen} group(s) will be moved to the trash.",
-  "duplBehaltenRegel": "Kept in each group: the favourite, otherwise the highest rating, otherwise the sharpest, otherwise the one with the highest resolution.",
+  "duplBehaltenRegel": "Kept in each group: the favourite, otherwise the highest rating, otherwise the full-resolution version (not a downsized copy, RAW before other formats), otherwise the sharpest, otherwise the one with the most pixels.",
   "duplUebersprungen": "{anzahl} group(s) are left untouched, because more than one photo there is a favourite or rated.",
   "duplRueckgaengig": "Undo: they can be restored from the trash.",
   "duplInPapierkorb": "Move to trash",

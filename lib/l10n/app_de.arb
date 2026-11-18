@@ -1673,7 +1673,7 @@
       }
     }
   },
-  "duplBehaltenRegel": "Behalten wird je Gruppe: Favorit, sonst höchste Bewertung, sonst das schärfste, sonst das mit der höchsten Auflösung.",
+  "duplBehaltenRegel": "Behalten wird je Gruppe: Favorit, sonst höchste Bewertung, sonst die Fassung in voller Auflösung (keine verkleinerte Kopie, RAW vor anderen Formaten), sonst das schärfste, sonst das mit den meisten Pixeln.",
   "duplUebersprungen": "{anzahl} Gruppe(n) bleiben unangetastet, weil dort mehrere Fotos favorisiert oder bewertet sind.",
   "@duplUebersprungen": {
     "placeholders": {
