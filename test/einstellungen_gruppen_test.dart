@@ -12,6 +12,7 @@ import 'package:photo_vault/screens/einstellungen/einstellungsstand.dart';
 import 'package:photo_vault/screens/einstellungen/gemeinsam.dart';
 import 'package:photo_vault/screens/settings_screen.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
+import 'package:photo_vault/services/backup_service.dart';
 import 'package:photo_vault/services/library_location.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:photo_vault/services/modelltexte.dart';
@@ -520,6 +521,50 @@ void main() {
       await zeige(tester);
       await suche(tester, de.einstBackupVerschluesselungTitel);
       expect(find.text(de.einstPassphraseEinrichten), findsOneWidget);
+      await raeumeAb(tester);
+    });
+  });
+
+  // SIC-005: Nach „Ändern“ mit der richtigen Passphrase (und Abbrechen
+  // im Festlegen-Dialog) blieb „Eingerichtet – wird beim nächsten Backup
+  // abgefragt.“ stehen, obwohl der Schlüssel entsperrt war.
+  testWidgets('Sicherungsschlüssel: Entsperren über „Ändern“ zeigt '
+      '„entsperrt“', (tester) async {
+    await tester.runAsync(() async {
+      // Eingerichtet in einer früheren Sitzung: Diese hier ist gesperrt.
+      final frueher = LibraryState()
+        ..db = db
+        ..paths = library.paths
+        ..backupService = BackupService(db, library.paths);
+      await frueher.setupBackupPassphrase('eine lange passphrase');
+      library.backupService = BackupService(db, library.paths);
+      expect(library.backupKeyAvailableThisSession, isFalse);
+
+      await zeige(tester);
+      await suche(tester, de.einstBackupVerschluesselungTitel);
+      expect(find.text(de.einstBackupGesperrt), findsOneWidget);
+      await tester.tap(find.text(de.einstBackupAendern));
+      await takte(tester);
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        'eine lange passphrase',
+      );
+      await tester.tap(find.text('OK'));
+      await takte(tester, 30);
+      expect(find.text(de.passphraseFestlegenTitel), findsOneWidget);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(de.allgAbbrechen),
+        ),
+      );
+      await takte(tester);
+      expect(library.backupKeyAvailableThisSession, isTrue);
+      expect(find.text(de.einstBackupEntsperrt), findsOneWidget);
+      expect(find.text(de.einstBackupGesperrt), findsNothing);
       await raeumeAb(tester);
     });
   });

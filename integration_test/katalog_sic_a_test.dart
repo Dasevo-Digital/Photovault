@@ -1151,46 +1151,39 @@ void main() {
     await fertig(tester);
   });
 
-  // Befund: Nach „Ändern“ mit richtiger Passphrase und „Abbrechen“ im
-  // Festlegen-Dialog ist der Schlüssel entsperrt, die Anzeige bleibt aber
-  // auf „Eingerichtet – wird beim nächsten Backup abgefragt.“ stehen:
-  // _changeBackupPassphrase lädt den Stand nicht neu
-  // (lib/screens/einstellungen/sicherung.dart:707-714, anders als
-  // _setupBackupPassphrase mit reloadBackupKeyState). Siehe auch die
-  // Ausgabe „SIC-005: Status …“ im Test „SIC-078 …“.
-  testWidgets(
-    'SIC-005 Befund: Status wechselt nach Entsperren über Ändern',
-    skip: true,
-    (tester) async {
-      await starteApp(tester);
-      await importiereDirekt(tester, [testfoto('s.jpg')]);
-      await tester.runAsync(() => bibliothek.setupBackupPassphrase(_p1));
-      await neustart(tester);
-      final schluessel = await schluesselGruppe(tester);
-      expect(
-        find.descendant(
-          of: schluessel,
-          matching: find.text(de.einstBackupGesperrt),
-        ),
-        findsOneWidget,
-      );
-      await tippeIn(tester, schluessel, de.einstBackupAendern);
-      await passphraseEingeben(tester, _p1);
-      await waitFor(tester, find.text(de.passphraseFestlegenTitel));
-      await tap(tester, imDialog(find.text(de.allgAbbrechen)));
-      await waitGone(tester, find.text(de.passphraseFestlegenTitel));
-      expect(bibliothek.backupKeyAvailableThisSession, isTrue);
-      await waitFor(
-        tester,
-        find.descendant(
-          of: schluessel,
-          matching: find.text(de.einstBackupEntsperrt),
-        ),
-        timeout: const Duration(seconds: 5),
-      );
-      await fertig(tester);
-    },
-  );
+  // Behoben in #415: Jedes Entsperren der Einstellungen geht über
+  // _schluesselBereit und lädt den Stand des Schlüssels neu.
+  testWidgets('SIC-005 Befund: Status wechselt nach Entsperren über Ändern', (
+    tester,
+  ) async {
+    await starteApp(tester);
+    await importiereDirekt(tester, [testfoto('s.jpg')]);
+    await tester.runAsync(() => bibliothek.setupBackupPassphrase(_p1));
+    await neustart(tester);
+    final schluessel = await schluesselGruppe(tester);
+    expect(
+      find.descendant(
+        of: schluessel,
+        matching: find.text(de.einstBackupGesperrt),
+      ),
+      findsOneWidget,
+    );
+    await tippeIn(tester, schluessel, de.einstBackupAendern);
+    await passphraseEingeben(tester, _p1);
+    await waitFor(tester, find.text(de.passphraseFestlegenTitel));
+    await tap(tester, imDialog(find.text(de.allgAbbrechen)));
+    await waitGone(tester, find.text(de.passphraseFestlegenTitel));
+    expect(bibliothek.backupKeyAvailableThisSession, isTrue);
+    await waitFor(
+      tester,
+      find.descendant(
+        of: schluessel,
+        matching: find.text(de.einstBackupEntsperrt),
+      ),
+      timeout: const Duration(seconds: 5),
+    );
+    await fertig(tester);
+  });
 
   // =========================================================================
   // Sicherung von Hand ohne Passphrase, prüfen, zurückholen

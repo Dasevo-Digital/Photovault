@@ -407,10 +407,7 @@ class AutomatischeSicherungGruppe extends StatelessWidget {
                     zaehle: stand.library.zaehleSicherung,
                     gemerkt: stand.library.letzterSicherungsstand,
                     entsperren: () async {
-                      final ok = await ensureBackupKeyAvailable(
-                        stand.kontext,
-                        stand.library,
-                      );
+                      final ok = await _schluesselBereit(stand);
                       if (ok && stand.aktiv) stand.reloadBackupSettings();
                     },
                   ),
@@ -535,7 +532,7 @@ String _backupPruefZeile(AppTexte t, BackupPrueffortschritt p) {
 Future<void> _runBackup(Einstellungsstand stand) async {
   final context = stand.kontext;
   if (stand.encryptManualBackup) {
-    final ok = await ensureBackupKeyAvailable(context, stand.library);
+    final ok = await _schluesselBereit(stand);
     if (!ok || !context.mounted) return;
   }
   final destination = await FilePicker.getDirectoryPath(
@@ -772,15 +769,28 @@ Future<void> _pruefeBackup(Einstellungsstand stand) async {
   }
 }
 
-Future<void> _setupBackupPassphrase(Einstellungsstand stand) async {
-  final context = stand.kontext;
-  final ok = await ensureBackupKeyAvailable(context, stand.library);
-  if (ok && context.mounted) stand.reloadBackupKeyState();
+/// Entsperrt den Sicherungsschlüssel, falls nötig – und zeigt den neuen
+/// Stand gleich an.
+///
+/// Die Gruppe liest „entsperrt“ nur beim Aufbau
+/// ([LibraryState.backupKeyAvailableThisSession]). Wer über „Ändern“ mit
+/// der richtigen Passphrase entsperrte und dann abbrach, sah weiter
+/// „Eingerichtet – wird beim nächsten Backup abgefragt.“ mit Schloss
+/// (SIC-005); dasselbe galt für „Verschlüsselung entfernen“ und die
+/// Sicherungen. Deshalb geht jedes Entsperren der Einstellungen hier
+/// durch.
+Future<bool> _schluesselBereit(Einstellungsstand stand) async {
+  final ok = await ensureBackupKeyAvailable(stand.kontext, stand.library);
+  if (ok && stand.aktiv) stand.reloadBackupKeyState();
+  return ok;
 }
+
+Future<void> _setupBackupPassphrase(Einstellungsstand stand) =>
+    _schluesselBereit(stand);
 
 Future<void> _changeBackupPassphrase(Einstellungsstand stand) async {
   final context = stand.kontext;
-  final unlocked = await ensureBackupKeyAvailable(context, stand.library);
+  final unlocked = await _schluesselBereit(stand);
   if (!unlocked || !context.mounted) return;
   final newPass = await showSetPassphraseDialog(context);
   if (newPass == null) return;
@@ -789,7 +799,7 @@ Future<void> _changeBackupPassphrase(Einstellungsstand stand) async {
 
 Future<void> _removeBackupEncryption(Einstellungsstand stand) async {
   final context = stand.kontext;
-  final unlocked = await ensureBackupKeyAvailable(context, stand.library);
+  final unlocked = await _schluesselBereit(stand);
   if (!unlocked || !context.mounted) return;
   final confirm = await showDialog<bool>(
     context: context,
@@ -816,7 +826,7 @@ Future<void> _removeBackupEncryption(Einstellungsstand stand) async {
 
 Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
   final context = stand.kontext;
-  final ok = await ensureBackupKeyAvailable(context, stand.library);
+  final ok = await _schluesselBereit(stand);
   if (!ok || !context.mounted) return;
   final config = await stand.library.db.backupSettingsRow();
   final destination = config?.autoBackupDestination;
