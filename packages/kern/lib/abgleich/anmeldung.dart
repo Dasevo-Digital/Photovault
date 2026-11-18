@@ -63,6 +63,10 @@ class Anmeldung {
 
   /// Ob unter [server] ein Photo Vault Server antwortet – und wie man sich
   /// dort anmeldet (`{protokoll, anmeldung: {totp, oidc}}`).
+  ///
+  /// Antwortet dort etwas anderes – eine Seite mit 404, ein Router, der
+  /// Text schickt –, ist das ein [Serverfehler], keine FormatException:
+  /// Erst Status und Inhalt prüfen, dann deuten.
   Future<Map<String, Object?>> zustand() async {
     final r = await _schicke(() => _http.get(_adresse('api/v1/zustand')));
     // Erst lesen, ob es JSON ist: Ein fremder Webserver antwortet mit HTML,

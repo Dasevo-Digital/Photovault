@@ -184,6 +184,7 @@
   "anmeldenNameUngueltig": "Der Name braucht 2 bis 40 Buchstaben, Ziffern, Punkt, Strich oder Unterstrich.",
   "anmeldenErstesNurHeimnetz": "Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht über den Zugang von außen.",
   "anmeldenSchonEingerichtet": "Der Server hat inzwischen ein Konto. Bitte damit anmelden.",
+  "anmeldenZurueck": "Zurück zur Anmeldung",
   "fehlerAllgemein": "Hat nicht geklappt.",
   "speichern": "Speichern",
   "entfernen": "Entfernen",

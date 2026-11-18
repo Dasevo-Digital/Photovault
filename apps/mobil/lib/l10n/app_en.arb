@@ -138,6 +138,7 @@
   "anmeldenNameUngueltig": "The name needs 2 to 40 letters, digits, dots, hyphens or underscores.",
   "anmeldenErstesNurHeimnetz": "The first account can only be created from the home network, not through access from outside.",
   "anmeldenSchonEingerichtet": "The server already has an account now. Please sign in with it.",
+  "anmeldenZurueck": "Back to sign-in",
   "fehlerAllgemein": "That did not work.",
   "speichern": "Save",
   "entfernen": "Remove",

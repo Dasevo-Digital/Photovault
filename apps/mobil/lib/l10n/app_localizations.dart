@@ -697,6 +697,12 @@ abstract class AppTexte {
   /// **'Der Server hat inzwischen ein Konto. Bitte damit anmelden.'**
   String get anmeldenSchonEingerichtet;
 
+  /// No description provided for @anmeldenZurueck.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurück zur Anmeldung'**
+  String get anmeldenZurueck;
+
   /// No description provided for @fehlerAllgemein.
   ///
   /// In de, this message translates to:

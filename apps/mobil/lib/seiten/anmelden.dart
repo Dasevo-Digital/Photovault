@@ -254,11 +254,26 @@ class _AnmeldenState extends State<Anmelden> {
         token: _token!,
       );
     }).then((_) {
-      if (mounted && _fehler != null) {
+      // Mit Wiederherstellungscodes zurück zu ihnen – „Weiter“ holt noch
+      // einmal, und die Codes sind nicht verloren. Ohne Codes gab es den
+      // Schritt nie; dann bleibt diese Seite mit der Meldung, „Erneut
+      // versuchen“ und dem Weg zurück zur Anmeldung.
+      if (mounted && _fehler != null && _codes != null) {
         setState(() => _schritt = _Schritt.codes);
       }
     });
   }
+
+  /// Zurück zur Eingabe, nachdem das Holen der Bibliothek scheiterte: Das
+  /// Token von eben bleibt ungenutzt, die nächste Anmeldung holt ein neues.
+  void _zurueckZurEingabe() => setState(() {
+    _token = null;
+    _codes = null;
+    _vorgang = null;
+    _einrichten = null;
+    _fehler = null;
+    _schritt = _Schritt.eingabe;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -428,7 +443,17 @@ class _AnmeldenState extends State<Anmelden> {
       const SizedBox(height: 12),
       FilledButton(onPressed: _arbeitet ? null : _hole, child: Text(t.weiter)),
     ],
-    _Schritt.laden => [Text(t.anmeldenLaedt, textAlign: TextAlign.center)],
+    _Schritt.laden => [
+      Text(t.anmeldenLaedt, textAlign: TextAlign.center),
+      if (_fehler != null && !_arbeitet) ...[
+        const SizedBox(height: 20),
+        FilledButton(onPressed: _hole, child: Text(t.startfehlerErneut)),
+        TextButton(
+          onPressed: _zurueckZurEingabe,
+          child: Text(t.anmeldenZurueck),
+        ),
+      ],
+    ],
   };
 
   Widget _codefeld() => TextField(

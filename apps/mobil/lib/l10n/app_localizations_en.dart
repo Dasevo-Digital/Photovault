@@ -382,6 +382,9 @@ class AppTexteEn extends AppTexte {
       'The server already has an account now. Please sign in with it.';
 
   @override
+  String get anmeldenZurueck => 'Back to sign-in';
+
+  @override
   String get fehlerAllgemein => 'That did not work.';
 
   @override

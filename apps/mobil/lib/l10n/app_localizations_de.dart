@@ -385,6 +385,9 @@ class AppTexteDe extends AppTexte {
       'Der Server hat inzwischen ein Konto. Bitte damit anmelden.';
 
   @override
+  String get anmeldenZurueck => 'Zurück zur Anmeldung';
+
+  @override
   String get fehlerAllgemein => 'Hat nicht geklappt.';
 
   @override
