@@ -468,6 +468,11 @@ class Aufgabe {
   /// mit dem Grund da, statt bedienbar zu sein.
   final String? nichtVerfuegbar;
 
+  /// Ob der Server dieselbe Arbeit selbst erledigt, wenn die Bibliothek mit
+  /// ihm verbunden ist. Sonst sagt die Abweisung „geht verbunden noch
+  /// nicht“ statt „dort läuft diese Arbeit“ (IMP-131).
+  final bool amServer;
+
   final List<Aufgabenaktion> aktionen;
 
   const Aufgabe({
@@ -482,6 +487,7 @@ class Aufgabe {
     this.rechenintensiv = false,
     this.stufe,
     this.nichtVerfuegbar,
+    this.amServer = true,
   });
 
   bool get bedienbar => nichtVerfuegbar == null;
@@ -759,6 +765,7 @@ Startabweisung? reiheEin(
   bilanztext: aktion.bilanztext,
   strom: aktion.stream,
   rechenintensiv: aufgabe.rechenintensiv,
+  amServer: aufgabe.amServer,
 );
 
 /// Sonderkarte für [LibraryState.starteHintergrundanalyse]: läuft (anders als
@@ -1321,6 +1328,8 @@ List<Aufgabe> _aufgaben(
   // genau der Fall für diese Karte.
   Aufgabe(
     schluessel: 'ablage',
+    // Der Server ordnet seine Ablage nicht um; verbunden geht das nicht.
+    amServer: false,
     icon: Icons.folder_copy_outlined,
     titel: t.aufgAblageTitel,
     beschreibung: t.aufgAblageText,

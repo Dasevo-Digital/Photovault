@@ -3043,15 +3043,10 @@ void main() {
     skip: serverAdresse.isEmpty,
   );
 
-  // Befund (beide nur mit frischem Wegwerf-Server, einzeln:
-  // PV_E2E_SERVER=1 … --plain-name mitServerBefund):
-  // – IMP-131: Verbunden weist pruefeStart (library_state.dart:1849) jede
-  //   Aufgabe mit aufgAmServer ab („… dort läuft diese Arbeit."). Für die
-  //   Ablage stimmt das nicht: Der Server ordnet die Ablage nie um (kein
-  //   Gegenstück in packages/server); erwartet war nurOhneServer.
-  // – IMP-219: Die Integritätsprüfung (integrity_check_screen.dart:54ff)
-  //   fragt nicht, ob die Bibliothek verbunden ist, und meldet ein nicht
-  //   geholtes Original als „Fehlende Dateien (1)" mit „Aus DB entfernen".
+  // Behoben in #409: Die Ablage meldet verbunden nurOhneServer (eigener
+  // Abweisungsgrund), und die Integritätsprüfung zählt in einer verbundenen
+  // Bibliothek nicht geholte Dateien nicht als fehlend (nur mit frischem
+  // Wegwerf-Server: PV_E2E_SERVER=1 … --plain-name mitServerBefund).
   testWidgets(
     'IMP-131 IMP-219 mitServerBefund Hinweise in verbundener Bibliothek',
     (tester) async {
@@ -3088,7 +3083,7 @@ void main() {
       expect(find.text(de.integFehlendeDateien(1)), findsNothing);
       await ende(tester);
     },
-    skip: true,
+    skip: serverAdresse.isEmpty,
   );
 
   // Befund: asset_info_sheet.dart:367 setzt firstDate fest auf 1990. Steht

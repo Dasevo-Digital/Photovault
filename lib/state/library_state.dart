@@ -1894,8 +1894,14 @@ class LibraryState extends ChangeNotifier {
   /// Ohne die frühere Angabe `rechenintensiv`: Sie entschied, ob abgewiesen
   /// wird, und tut das nicht mehr. Ein Parameter, den niemand liest, ist
   /// eine Behauptung über die Regel, die nicht mehr stimmt.
-  Startabweisung? pruefeStart(String schluessel) => verbunden
-      ? Startabweisung.amServer
+  ///
+  /// [amServer]: ob der Server dieselbe Arbeit selbst erledigt. Ohne
+  /// Gegenstück dort (die Ablage ordnen) heisst die Abweisung
+  /// [Startabweisung.nurOhneServer] – „dort läuft diese Arbeit“ stimmte
+  /// sonst nicht (IMP-131).
+  Startabweisung? pruefeStart(String schluessel, {bool amServer = true}) =>
+      verbunden
+      ? (amServer ? Startabweisung.amServer : Startabweisung.nurOhneServer)
       : (_laeufe[schluessel]?.offen ?? false)
       ? Startabweisung.laeuftBereits
       : null;
@@ -1950,8 +1956,9 @@ class LibraryState extends ChangeNotifier {
     required Stream<ImportProgress> Function() strom,
     String Function(int getan, int gesamt)? bilanztext,
     bool rechenintensiv = false,
+    bool amServer = true,
   }) {
-    final abweisung = pruefeStart(schluessel);
+    final abweisung = pruefeStart(schluessel, amServer: amServer);
     if (abweisung != null) return abweisung;
 
     _laeufe[schluessel] = Hintergrundlauf(

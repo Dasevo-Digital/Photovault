@@ -168,6 +168,12 @@ enum Startabweisung {
   /// Die Bibliothek ist die Kopie einer Bibliothek auf einem Server; dort
   /// läuft diese Arbeit (Stufe 2 von Issue #86).
   amServer,
+
+  /// Die Bibliothek ist mit einem Server verbunden, und diese Arbeit gibt
+  /// es dort nicht – sie ändert Dateien, die beim Server liegen (etwa die
+  /// Ablage nach Datum ordnen). „Dort läuft diese Arbeit“ wäre falsch
+  /// (IMP-131).
+  nurOhneServer,
 }
 
 /// Der Grund als Satz in der Oberflächensprache.
@@ -179,4 +185,5 @@ enum Startabweisung {
 String abweisungstext(AppTexte t, Startabweisung grund) => switch (grund) {
   Startabweisung.laeuftBereits => t.aufgLaeuftSchon,
   Startabweisung.amServer => t.aufgAmServer,
+  Startabweisung.nurOhneServer => t.nurOhneServer,
 };

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/abgleich.dart';
@@ -15,6 +16,8 @@ import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/textstellen.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/l10n/app_localizations.dart';
+import 'package:photo_vault/screens/background_tasks_screen.dart';
 import 'package:photo_vault/services/library_location.dart';
 import 'package:photo_vault/state/hintergrundlauf.dart';
 import 'package:photo_vault/state/library_state.dart';
@@ -207,6 +210,16 @@ void main() {
       throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
     );
     expect(bib.pruefeStart('ocr'), Startabweisung.amServer);
+    // Die Ablage ordnet der Server nicht um: Der Grund ist ein anderer
+    // (IMP-131).
+    final t = await AppTexte.delegate.load(const Locale('de'));
+    final ablage = aufgabenliste(
+      t,
+      bib,
+    ).singleWhere((a) => a.schluessel == 'ablage');
+    final grund = reiheEin(bib, ablage, ablage.aktionen.single);
+    expect(grund, Startabweisung.nurOhneServer);
+    expect(abweisungstext(t, grund!), t.nurOhneServer);
     await expectLater(
       bib.db.setRating(a.id, 1),
       throwsA(predicate((e) => '$e'.contains('pv_nur_ueber_server'))),
