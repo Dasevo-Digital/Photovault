@@ -2458,12 +2458,9 @@ void main() {
   // =========================================================================
   // Zwei Läufe gleichzeitig
   // =========================================================================
-  // Befund: Das Fenster des automatischen Backups hat kein fehlerText; die
-  // Ausnahme BackupLaeuftBereits erscheint als „Instance of
-  // 'BackupLaeuftBereits'“ statt als „Eine automatische Sicherung läuft
-  // bereits.“ (lib/screens/einstellungen/sicherung.dart:756-773, Übersetzung
-  // nur in fehlertext, gemeinsam.dart:47).
-  testWidgets('SIC-041 Zwei Läufe gleichzeitig', skip: true, (tester) async {
+  // Behoben in #415: ProgressDialog übersetzt Fehler ohne eigenes
+  // fehlerText über die gemeinsame Übersetzung fehlertext.
+  testWidgets('SIC-041 Zwei Läufe gleichzeitig', (tester) async {
     await starteApp(tester);
     await importiereDirekt(tester, [
       grossesFoto('gross.jpg', 80, datum: DateTime(2024, 1, 1, 10)),

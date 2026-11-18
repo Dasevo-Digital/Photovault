@@ -592,7 +592,6 @@ Future<void> _runRestore(Einstellungsstand stand) async {
       final t = AppTexte.of(dialogContext);
       return ProgressDialog(
         title: t.einstBackupWiederherstellenLaeuft,
-        fehlerText: (e) => fehlertext(dialogContext, e),
         stream: stand.library
             .restoreFromBackup(
               wurzel,
@@ -746,7 +745,6 @@ Future<void> _pruefeBackup(Einstellungsstand stand) async {
     barrierDismissible: false,
     builder: (dialog) => ProgressDialog(
       title: t.einstBackupPruefungLaeuft,
-      fehlerText: (e) => fehlertext(dialog, e),
       stream: BackupPruefdienst().pruefe(wurzel, passphrase: passphrase).map((
         fortschritt,
       ) {
@@ -886,7 +884,6 @@ Future<void> _pruefeWiederherstellung(Einstellungsstand stand) async {
     barrierDismissible: false,
     builder: (dialog) => ProgressDialog(
       title: t.backupProbeTitel,
-      fehlerText: (e) => fehlertext(dialog, e),
       stream:
           Stream.fromFuture(
             stand.library.backupService.pruefeWiederherstellung(

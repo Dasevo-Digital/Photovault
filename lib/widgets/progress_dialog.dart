@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
+import '../screens/einstellungen/gemeinsam.dart' show fehlertext;
 import '../theme/app_theme.dart';
 
 /// Zeigt den Fortschritt eines Streams (z.B. Backup, Restore, Gesichts-Scan)
@@ -11,9 +12,12 @@ class ProgressDialog extends StatelessWidget {
 
   /// Macht aus einem Stream-Fehler einen lesbaren Satz.
   ///
-  /// Ohne das stünde hier der Name der Ausnahmeklasse: Dienste werfen für
-  /// alles, was der Nutzer lesen soll, einen eigenen Typ (siehe etwa
-  /// [BackupBrauchtPassphrase]) – übersetzen kann ihn erst der Aufrufer.
+  /// Ohne Angabe gilt die gemeinsame Übersetzung [fehlertext]. Vorher
+  /// stand dann der Name der Ausnahmeklasse da – im Fenster des
+  /// automatischen Backups etwa „Instance of 'BackupLaeuftBereits'“ statt
+  /// „Eine automatische Sicherung läuft bereits.“ (SIC-041): Dienste
+  /// werfen für alles, was der Nutzer lesen soll, einen eigenen Typ, und
+  /// nicht jeder Aufrufer dachte daran, ihn übersetzen zu lassen.
   final String Function(Object fehler)? fehlerText;
 
   const ProgressDialog({
@@ -54,8 +58,9 @@ class ProgressDialog extends StatelessWidget {
               Text(
                 failed
                     ? AppTexte.of(context).fortschrittFehlgeschlagen(
-                        fehlerText?.call(snapshot.error!) ??
-                            '${snapshot.error}',
+                        (fehlerText ?? (e) => fehlertext(context, e))(
+                          snapshot.error!,
+                        ),
                       )
                     : (snapshot.data ?? '…'),
               ),
