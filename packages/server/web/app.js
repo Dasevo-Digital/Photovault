@@ -4230,6 +4230,9 @@ async function ladeOrte(zentrieren = false) {
 // --- Verwaltung (nur Verwalter) -------------------------------------------
 
 const gb = (b) => `${(b / 1073741824).toFixed(1)} GB`;
+// Die Stufen der Sicherung (Sicherungsstufe am Server) als Text. t(sv.stufe)
+// zeigte im Deutschen den Namen selbst, etwa „nichtEingerichtet“.
+const sicherungStufen = { aus: 'aus', nichtEingerichtet: 'nicht eingerichtet', zielFehlt: 'Ziel fehlt', fehler: 'gescheitert', veraltet: 'veraltet', ok: 'in Ordnung' };
 async function zeigeVerwaltung() {
   const ul = $('server-stand');
   ul.replaceChildren();
@@ -4240,7 +4243,7 @@ async function zeigeVerwaltung() {
   } catch (_) { /* kein Speicherwächter */ }
   try {
     const sv = await api('/api/v1/sicherung');
-    zeile(t('Sicherung: {stufe}', { stufe: t(sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sv.fehler : ''));
+    zeile(t('Sicherung: {stufe}', { stufe: t(sicherungStufen[sv.stufe] || sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sv.fehler : ''));
     $('sicherung-jetzt').hidden = sv.stufe === 'aus' || sv.stufe === 'nichtEingerichtet';
     zeigeAussen(sv.ausserHaus, sv.stufe);
   } catch (_) { $('sicherung-jetzt').hidden = true; $('aussen').hidden = true; }

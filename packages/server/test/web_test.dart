@@ -141,6 +141,29 @@ void main() {
     }
   });
 
+  test('jede Stufe der Sicherung hat einen Text', () {
+    // Die Verwaltung zeigte t(sv.stufe) – im Deutschen den Namen der Stufe
+    // selbst, etwa „Sicherung: nichtEingerichtet“.
+    final app = File('web/app.js').readAsStringSync();
+    final texte = File('web/texte.js').readAsStringSync();
+    final zeile = RegExp(
+      r'const sicherungStufen = \{([^}]*)\}',
+    ).firstMatch(app)?[1];
+    expect(zeile, isNotNull);
+    final stufen = {
+      for (final m in RegExp(r"(\w+): '([^']+)'").allMatches(zeile!))
+        m[1]!: m[2]!,
+    };
+    expect(
+      stufen.keys,
+      unorderedEquals(Sicherungsstufe.values.map((s) => s.name)),
+    );
+    for (final text in stufen.values) {
+      expect(text, isNot(matches(RegExp('[a-z][A-Z]'))), reason: text);
+      expect(texte, contains("'$text':"), reason: 'Englisch für „$text“');
+    }
+  });
+
   final proxy = _ip([10, 0, 0, 5]);
   final proxyNetz = '${_ip([10, 0, 0, 0])}/8';
   const fremd = '203.0.113.9';

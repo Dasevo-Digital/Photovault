@@ -861,16 +861,14 @@ const EN = {
   'angemeldet als {name}': 'signed in as {name}',
   'nächste {datum}': 'next {datum}',
   'du': 'you',
-  // Stufen von Speicher und Sicherung, wie der Server sie nennt
+  // Stufen des Speichers, wie der Server sie nennt; die der Sicherung als
+  // Text (sicherungStufen in app.js)
   'ausreichend': 'sufficient',
   'knapp': 'low',
   'voll': 'full',
   'aus': 'off',
-  'nichtEingerichtet': 'not set up',
-  'zielFehlt': 'destination missing',
-  'fehler': 'error',
+  'Ziel fehlt': 'destination missing',
   'veraltet': 'out of date',
-  'ok': 'ok',
   // Wie die Handy-App: Auswahl, Teilen, Favoriten, Hochladen
   'Ganzen Tag auswählen': 'Select the whole day',
   'Ganzen Tag abwählen': 'Deselect the whole day',
