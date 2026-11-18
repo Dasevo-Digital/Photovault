@@ -1161,9 +1161,8 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: stack_review_screen.dart:180 ruft confirmDialog ohne
-  // `bestaetigen:` auf – der rote Knopf in „Alle Serien übernehmen?" heisst
-  // deshalb „Löschen", obwohl nichts gelöscht wird.
+  // Behoben in #409: Der Knopf in „Alle Serien übernehmen?“ heisst
+  // „Übernehmen“.
   testWidgets('IMP-157 Bestätigungsknopf heisst nicht „Löschen"', (
     tester,
   ) async {
@@ -1185,7 +1184,7 @@ void main() {
       findsNothing,
     );
     await ende(tester);
-  }, skip: true);
+  });
 
   testWidgets('IMP-165 Hauptversion eines Variantenstapels', (tester) async {
     await startApp(tester);

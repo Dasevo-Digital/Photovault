@@ -4,12 +4,21 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/stack_review_screen.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
+
+/// Eine Bibliothek, die CLIP hat – die Einbettungen stehen in der
+/// Datenbank, das Modell selbst braucht der Bildschirm nicht.
+class _MitClip extends LibraryState {
+  @override
+  bool get clipAvailable => true;
+}
 
 /// **Der Vorrat an Serienvorschlägen.**
 ///
@@ -115,6 +124,58 @@ void main() {
     await db.moveToTrash(['g0_0']);
     expect(await library.serienvorschlaegeGecacht(), isNotEmpty);
   });
+  testWidgets(
+    '„Alle Serien übernehmen?“ bestätigt mit „Übernehmen“, nicht „Löschen“ (IMP-157)',
+    (tester) async {
+      // Ausserhalb der Testuhr angelegt: Die Bibliothek stellt beim Anlegen
+      // eigene Zeitgeber.
+      final mitClip = (await tester.runAsync(
+        () async => _MitClip()
+          ..db = db
+          ..paths = library.paths,
+      ))!;
+      await tester.runAsync(() async {
+        await zweiSerien();
+        // Den Vorrat ebenfalls ausserhalb rechnen: Er stellt einen
+        // Zeitgeber für die Freigabe der Einbettungen.
+        await mitClip.serienvorschlaegeGecacht();
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          home: StackReviewScreen(library: mitClip),
+        ),
+      );
+      final de = AppTexte.of(tester.element(find.byType(StackReviewScreen)));
+      await tester.runAsync(() async {
+        for (var i = 0; i < 100; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          await tester.pump();
+          if (find.text(de.stapelAlleUebernehmen(2)).evaluate().isNotEmpty) {
+            break;
+          }
+        }
+      });
+      await tester.tap(find.text(de.stapelAlleUebernehmen(2)));
+      await tester.pumpAndSettle();
+      expect(find.text(de.stapelAlleFrageTitel), findsOneWidget);
+      final imDialog = find.byType(AlertDialog);
+      expect(
+        find.descendant(
+          of: imDialog,
+          matching: find.widgetWithText(FilledButton, de.allgUebernehmen),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: imDialog, matching: find.text(de.allgLoeschen)),
+        findsNothing,
+      );
+    },
+  );
+
   group('die Titelbild-Wahl zieht mit', () {
     /// Die Karte der Sternwahl war nach **Listenplatz** geordnet, die
     /// Liste aber schrumpft mit jeder uebernommenen Gruppe. Wer Gruppe 1
