@@ -122,6 +122,22 @@ void main() {
     await temp.delete(recursive: true);
   });
 
+  Future<void> warteAuf(WidgetTester tester, bool Function() bereit) async {
+    final uhr = Stopwatch()..start();
+    while (!bereit()) {
+      if (uhr.elapsed > const Duration(seconds: 15)) {
+        fail('Der erwartete Wiederherstellungszustand wurde nicht erreicht.');
+      }
+      // Der simulierte Flutter-Takt allein lässt Datei-I/O nicht fertig
+      // werden. Die Wartezeit wird an der erwarteten UI gemessen.
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 15)),
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await tester.pumpAndSettle();
+  }
+
   /// [fehler] nimmt auf, was der Knopf unbehandelt wirft – in der App
   /// fängt das `richteServersperreEin` und zeigt den Grund.
   Future<void> oeffne(WidgetTester tester, {List<Object>? fehler}) async {
@@ -153,9 +169,12 @@ void main() {
           (e, _) => fehler.add(e),
         );
       }
-      await Future<void>.delayed(const Duration(milliseconds: 80));
     });
-    await tester.pumpAndSettle();
+    await warteAuf(tester, () {
+      if (fehler != null) return fehler.isNotEmpty;
+      if (!backup.generationenVorhanden) return backup.aufrufe == 1;
+      return find.byType(BottomSheet).evaluate().isNotEmpty;
+    });
   }
 
   testWidgets('Zurück aus der Generationenauswahl startet keinen Restore', (
@@ -182,9 +201,8 @@ void main() {
     final t = AppTexte.of(stand.context);
     await tester.runAsync(() async {
       await tester.tap(find.text(t.einstBackupAktuellerStand));
-      await Future<void>.delayed(const Duration(milliseconds: 80));
     });
-    await tester.pumpAndSettle();
+    await warteAuf(tester, () => backup.aufrufe == 1);
     expect(backup.aufrufe, 1);
     expect(backup.letzterSnapshot, isNull);
     await tester.pumpWidget(const SizedBox.shrink());
@@ -200,9 +218,8 @@ void main() {
           matching: find.byIcon(Icons.history),
         ),
       );
-      await Future<void>.delayed(const Duration(milliseconds: 80));
     });
-    await tester.pumpAndSettle();
+    await warteAuf(tester, () => backup.aufrufe == 1);
     expect(backup.aufrufe, 1);
     expect(
       backup.letzterSnapshot,
