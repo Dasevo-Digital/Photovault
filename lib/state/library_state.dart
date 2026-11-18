@@ -873,7 +873,10 @@ class LibraryState extends ChangeNotifier {
   /// auffordern, statt nur den Fehler zu melden (GRU-101).
   Future<void> schliesseDatenbank() async {
     _datenbankGeschlossen = true;
-    _datenbankGeoeffnet = false;
+    // Die Restaurierung wartet auf Leerlauf und fragt danach die
+    // Datenbank – nach dem Schliessen liefe das ins Leere (wie in
+    // [vorDemBeenden]).
+    if (_restoreQueueAngelegt) restoreQueue.beende();
     await db.close();
   }
 
