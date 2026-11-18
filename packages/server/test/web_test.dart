@@ -118,6 +118,29 @@ void main() {
     expect(feld, isNot(contains('inputmode="numeric"')));
   });
 
+  test('Pflichtfelder verdecken nicht die Meldung der Seite', () {
+    // Wo die Seite einen leeren Namen oder Titel selbst meldet („Die Regel
+    // braucht einen Namen.“, „Bitte einen Titel eingeben.“), hielt
+    // `required` das Formular vorher an, und es erschien nur die Meldung
+    // des Browsers.
+    final index = File('web/index.html').readAsStringSync();
+    final app = File('web/app.js').readAsStringSync();
+    for (final (form, feld, meldung) in [
+      ('form-autoregel', 'name', 'Die Regel braucht einen Namen.'),
+      ('form-link', 'titel', 'Bitte einen Titel eingeben.'),
+    ]) {
+      expect(app, contains(meldung));
+      final html = RegExp(
+        '<form[^>]*id="$form".*?</form>',
+        dotAll: true,
+      ).firstMatch(index)![0]!;
+      final input = RegExp(
+        '<input[^>]*name="$feld"[^>]*>',
+      ).firstMatch(html)![0]!;
+      expect(input, isNot(contains('required')), reason: form);
+    }
+  });
+
   final proxy = _ip([10, 0, 0, 5]);
   final proxyNetz = '${_ip([10, 0, 0, 0])}/8';
   const fremd = '203.0.113.9';

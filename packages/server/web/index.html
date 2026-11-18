@@ -545,7 +545,7 @@
   <form method="dialog" id="form-link">
     <h3>Als Link teilen</h3>
     <div id="link-anlegen">
-      <label>Titel <input name="titel" maxlength="200" autocomplete="off" required></label>
+      <label>Titel <input name="titel" maxlength="200" autocomplete="off"></label>
       <label>Gültig
         <select name="tage">
           <option value="1">1 Tag</option>
@@ -691,7 +691,9 @@
 <dialog id="autoregel-dialog">
   <form method="dialog" id="form-autoregel" class="aussen-form">
     <h3 id="autoregel-titel">Neue Regel</h3>
-    <label>Name <input name="name" autocomplete="off" required maxlength="200"></label>
+    <!-- Ohne required: Einen fehlenden Namen meldet autoregelWerte selbst,
+         der Reihe nach mit den anderen Fehlern. -->
+    <label>Name <input name="name" autocomplete="off" maxlength="200"></label>
     <label>Bedingung
       <select name="ausloeser">
         <option value="location">Ort (Umkreis)</option>
