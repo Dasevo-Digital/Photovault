@@ -1554,9 +1554,8 @@ void main() {
     },
   );
 
-  // Befund: Löschen von EN→DE löscht die geteilte translate_vocab.json, DE→EN gilt danach als nicht installiert (model_catalog.dart:396/444/472, model_download_service.dart deleteEntry).
+  // Behoben in #414: deleteEntry lässt Dateien stehen, die ein anderer vorhandener Eintrag mitbenutzt (translate_vocab.json).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-022 Befundpruefung Uebersetzungsrichtung loeschen',
     (tester) async {

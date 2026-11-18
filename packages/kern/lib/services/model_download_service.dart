@@ -309,9 +309,30 @@ class ModelDownloadService {
     return befunde;
   }
 
+  /// Löscht die Dateien eines Eintrags – ausser denen, die ein anderer,
+  /// noch vorhandener Eintrag mitbenutzt.
+  ///
+  /// Beide Übersetzungsrichtungen teilen sich `translate_vocab.json`.
+  /// Früher löschte das Entfernen von „Englisch → Deutsch“ sie mit, und
+  /// „Deutsch → Englisch“ galt danach als nicht installiert: Karte ohne
+  /// Haken, Schalter „Suche und Schlagwörter übersetzen“ gesperrt.
+  /// Vorhanden heisst hier: Von den übrigen Dateien des anderen Eintrags
+  /// liegt mindestens eine da – auch ein halb geladener Eintrag braucht
+  /// die geteilte Datei noch.
   Future<void> deleteEntry(ModelCatalogEntry entry) async {
+    final eigene = {...entry.files.map((f) => f.fileName)};
+    final nochGebraucht = <String>{
+      for (final anderer in ModelCatalog.all)
+        if (anderer.id != entry.id &&
+            anderer.files.any(
+              (f) =>
+                  !eigene.contains(f.fileName) &&
+                  File(p.join(modelsDir, f.fileName)).existsSync(),
+            ))
+          ...anderer.files.map((f) => f.fileName).where(eigene.contains),
+    };
     for (final name in [
-      ...entry.files.map((f) => f.fileName),
+      ...eigene.where((n) => !nochGebraucht.contains(n)),
       // Selbst erzeugte Dateien gehören mit weg. Wer etwas anlegt, muss
       // aufräumen, sonst tut es niemand – siehe [raeumeAbgeloesteModelle].
       ...entry.abgeleiteteDateien,

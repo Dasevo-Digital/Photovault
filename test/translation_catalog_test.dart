@@ -138,6 +138,36 @@ void main() {
       );
     });
 
+    test('Löschen einer Richtung lässt die andere intakt', () async {
+      for (final datei in [
+        ...ModelCatalog.translationEnDe.files,
+        ...ModelCatalog.translationDeEn.files,
+      ]) {
+        lege(datei.fileName);
+      }
+
+      await dienst.deleteEntry(ModelCatalog.translationEnDe);
+
+      expect(dienst.isEntryInstalled(ModelCatalog.translationEnDe), isFalse);
+      expect(
+        dienst.isEntryInstalled(ModelCatalog.translationDeEn),
+        isTrue,
+        reason: 'das geteilte Wörterbuch muss bleiben',
+      );
+      expect(
+        TranslationService.isAvailable(dir.path, Uebersetzungsrichtung.deEn),
+        isTrue,
+      );
+      expect(
+        File('${dir.path}/translate_en_de_encoder.onnx').existsSync(),
+        isFalse,
+      );
+
+      // Geht auch die zweite, verschwindet das Wörterbuch mit.
+      await dienst.deleteEntry(ModelCatalog.translationDeEn);
+      expect(dir.listSync(), isEmpty);
+    });
+
     test('der Katalogeintrag und der Dienst meinen dieselben Dateien', () {
       // Liefen die beiden auseinander, meldete der Katalog "installiert",
       // während der Dienst die Dateien nicht fände – oder umgekehrt.
