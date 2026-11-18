@@ -547,6 +547,25 @@ void main() {
         404,
       );
 
+      // Archiviertes fehlt in der Zeitleiste (#304) – und in der Zahl und
+      // im Titelbild der Karte: Sie zählte es mit.
+      for (final id in [strand, berg]) {
+        await (b.db.update(b.db.assets)..where((t) => t.id.equals(id))).write(
+          const AssetsCompanion(isArchived: Value(true)),
+        );
+      }
+      final ohneArchiv = await jsonAus(
+        await partner('GET', '/von/${erika.id}/aufnahmen', maxToken),
+      );
+      expect(ohneArchiv['aufnahmen'], isEmpty);
+      final karte =
+          ((await jsonAus(await partner('GET', '', maxToken)))['mitMir']!
+                  as List)
+              .cast<Map>()
+              .single;
+      expect(karte['anzahl'], 0);
+      expect(karte.containsKey('titelbild'), isFalse);
+
       // Max verlässt die Freigabe – oder Erika hebt sie auf.
       expect(
         (await partner('DELETE', '/von/${erika.id}', maxToken)).statusCode,

@@ -734,15 +734,17 @@ class Teilungsapi {
       if (k == null) continue;
       final db = (await bibliotheken.fuer(f.besitzer)).bibliothek.db;
       final b = freigabeBedingung(ab: f.ab, personen: f.personen);
+      // Gezählt wird, was die Zeitleiste der Freigabe zeigt (partnerzeilen):
+      // ohne das Archiv des Besitzers.
       final anzahl = await db
           .customSelect(
-            'SELECT count(*) AS n FROM assets WHERE $rasterSichtbar${b.sql}',
+            'SELECT count(*) AS n FROM assets WHERE $zeitleisteSichtbar${b.sql}',
             variables: b.werte,
           )
           .getSingle();
       final titel = await db
           .customSelect(
-            'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql} '
+            'SELECT $rasterSpalten FROM assets WHERE $zeitleisteSichtbar${b.sql} '
             'ORDER BY coalesce(datum_von,file_created_at) DESC, id DESC LIMIT 1',
             variables: b.werte,
           )
