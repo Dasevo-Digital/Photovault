@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:kern/services/backup_auswahl.dart';
 
 import '../l10n/app_localizations.dart';
+import '../widgets/einfuegbares_menue.dart';
 
 /// Durchsucht genau den geöffneten Sicherungsstand.
 class BackupAuswahlScreen extends StatefulWidget {
@@ -70,6 +71,7 @@ class _BackupAuswahlScreenState extends State<BackupAuswahlScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
+              contextMenuBuilder: einfuegbaresMenue,
               onChanged: (text) => setState(
                 () => _treffer = widget.katalog.aufnahmen
                     .where((a) => a.passtZu(text))
