@@ -72,7 +72,15 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
     final ids = _ids;
-    final alle = (await _db.assetsByIds(ids)).every((a) => a.isArchived);
+    final vorher = await _db.assetsByIds(ids);
+    final alle = vorher.every((a) => a.isArchived);
+    // „Rückgängig“ stellt nur zurück, was sich geändert hat: In einer
+    // gemischten Auswahl blieben die schon archivierten sonst nicht im
+    // Archiv.
+    final geaendert = [
+      for (final a in vorher)
+        if (a.isArchived == alle) a.id,
+    ];
     await _db.fuehreAus(ArchivSetzen(ids, !alle));
     aufheben();
     bote.showSnackBar(
@@ -82,9 +90,12 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
               ? t.auswahlAusArchiv(ids.length)
               : t.auswahlArchiviert(ids.length),
         ),
+        // Mit einer Aktion bliebe sie sonst stehen, bis jemand tippt, und
+        // hielte jede spätere Meldung zurück.
+        persist: false,
         action: SnackBarAction(
           label: t.variantenRueckgaengig,
-          onPressed: () => _db.fuehreAus(ArchivSetzen(ids, alle)),
+          onPressed: () => _db.fuehreAus(ArchivSetzen(geaendert, alle)),
         ),
       ),
     );

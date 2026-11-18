@@ -413,6 +413,7 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
           ..showSnackBar(
             SnackBar(
               content: Text(t.gesichterAlleIgnoriertMeldung(ids.length)),
+              persist: false,
               action: SnackBarAction(
                 label: t.variantenRueckgaengig,
                 onPressed: () =>

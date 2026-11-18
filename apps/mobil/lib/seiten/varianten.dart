@@ -36,6 +36,7 @@ Future<bool> variantenBilden(
   bote.showSnackBar(
     SnackBar(
       content: Text(t.variantenGebildet(zeilen.length)),
+      persist: false,
       action: SnackBarAction(
         label: t.variantenRueckgaengig,
         onPressed: () => sitzung.db.fuehreAus(
