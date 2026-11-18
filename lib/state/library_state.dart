@@ -863,6 +863,25 @@ class LibraryState extends ChangeNotifier {
 
   var _beendet = false;
 
+  /// Schliesst die Datenbank vor einem Vorgang, nach dem die App neu
+  /// starten muss: Verlegen, Zurücksetzen, Wechseln der Bibliothek,
+  /// Verbinden mit dem Server oder Trennen.
+  ///
+  /// Über diesen Weg und nicht über `db.close()`, damit
+  /// [datenbankGeschlossen] stimmt: Scheitert der Vorgang danach, ist die
+  /// App ohne Datenbank unbedienbar, und die Oberfläche muss zum Neustart
+  /// auffordern, statt nur den Fehler zu melden (GRU-101).
+  Future<void> schliesseDatenbank() async {
+    _datenbankGeschlossen = true;
+    _datenbankGeoeffnet = false;
+    await db.close();
+  }
+
+  /// Ob [schliesseDatenbank] gelaufen ist – dann geht bis zum Neustart
+  /// nichts mehr, was die Datenbank braucht.
+  bool get datenbankGeschlossen => _datenbankGeschlossen;
+  bool _datenbankGeschlossen = false;
+
   /// Für Prüfstände, die [db] selbst setzen: Die Datenbank gilt dann als
   /// geöffnet, und [vorDemBeenden] schliesst sie.
   @visibleForTesting
@@ -3676,7 +3695,10 @@ class LibraryState extends ChangeNotifier {
     // Vor dem Schliessen: Sonst stünde die App ohne Datenbank da.
     final hindernis = await LibraryLocation.hindernisBeimZuruecksetzen();
     if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
-    await db.close();
+    // Liegt die Bibliothek schon im Standardordner, gibt es nichts zu
+    // verschieben – und keinen Grund, die Datenbank zu schliessen (GRU-104).
+    if (!await LibraryLocation.isCustom) return;
+    await schliesseDatenbank();
     await LibraryLocation.resetToDefault(onProgress: onProgress);
   }
 
@@ -3692,7 +3714,7 @@ class LibraryState extends ChangeNotifier {
   /// Inhalt wird geleert. Schließt dafür die aktuelle Datenbankverbindung –
   /// die App muss danach neu gestartet werden (siehe SettingsScreen).
   Future<void> eraseLibraryCompletely() async {
-    await db.close();
+    await schliesseDatenbank();
     final root = await LibraryLocation.currentRoot();
     await eraseLibraryDataAt(root);
   }

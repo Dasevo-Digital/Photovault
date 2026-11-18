@@ -101,6 +101,34 @@ void main() {
     );
   });
 
+  // GRU-104: location.json hält auch die Liste und bleibt nach dem
+  // Zurückwechseln liegen. „Zurücksetzen“ stand dann bei aktiver
+  // Standardbibliothek da und verlangte einen Neustart für nichts.
+  test('zurückzusetzen gibt es nur, wenn die aktive Bibliothek woanders '
+      'liegt', () async {
+    expect(await LibraryLocation.isCustom, isFalse);
+    final a = bibliothek('bibliothek_a', 'A');
+    final eintrag = await LibraryLocation.fuegeHinzu(
+      PickedFolder(a.path, ''),
+      name: 'A',
+    );
+    expect(
+      await LibraryLocation.isCustom,
+      isFalse,
+      reason: 'nur hinzugefügt, der Standard ist weiter aktiv',
+    );
+    await LibraryLocation.wechsleZu(eintrag);
+    expect(await LibraryLocation.isCustom, isTrue);
+    await LibraryLocation.wechsleZu(
+      (await LibraryLocation.bekannte())
+          .firstWhere((b) => b.istStandard)
+          .eintrag,
+    );
+    await LibraryLocation.entferneAusListe(a.path);
+    expect(File(p.join(anker.path, 'location.json')).existsSync(), isTrue);
+    expect(await LibraryLocation.isCustom, isFalse);
+  });
+
   test('VERSCHIEBEN bewegt weiterhin – die Gegenprobe', () async {
     File(p.join(anker.path, 'library.sqlite')).writeAsStringSync('DB Standard');
     final original =

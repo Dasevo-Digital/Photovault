@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
@@ -111,9 +112,14 @@ Future<void> verlegeBibliothek(
   final context = stand.kontext;
   restartMessage ??= AppTexte.of(context).einstSpeicherortGeaendert;
   errorPrefix ??= AppTexte.of(context).einstVerschiebenFehlgeschlagen;
-  showDialog<void>(
+  // Als eigene Route statt über showDialog: Beim Scheitern wartet der
+  // Ablauf, bis das Fenster wirklich weg ist (siehe unten).
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final ladeanzeige = DialogRoute<void>(
     context: context,
     barrierDismissible: false,
+    barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+    themes: InheritedTheme.capture(from: context, to: navigator.context),
     builder: (context) {
       Widget inhalt(BibliotheksVerschiebefortschritt? wert) => Semantics(
         label: loadingText,
@@ -156,31 +162,48 @@ Future<void> verlegeBibliothek(
       );
     },
   );
+  unawaited(navigator.push(ladeanzeige));
+  // Obenauf mit dem üblichen Ausblenden, sonst genau dieses Fenster.
+  void ladeanzeigeSchliessen() => ladeanzeige.isCurrent
+      ? navigator.pop()
+      : navigator.removeRoute(ladeanzeige);
+
+  Future<void> neustart(String text) => showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AlertDialog(
+      title: Text(AppTexte.of(context).einstNeustartTitel),
+      content: Text(text),
+      actions: [
+        FilledButton(
+          onPressed: () => exit(0),
+          child: Text(AppTexte.of(context).allgSchliessen),
+        ),
+      ],
+    ),
+  );
 
   try {
     await action();
     if (!context.mounted) return;
-    // Das Fenster liegt auf dem Wurzel-Navigator (showDialog); der nächste
-    // Navigator über [context] wäre der des Arbeitsbereichs (#406).
-    Navigator.of(context, rootNavigator: true).pop(); // Ladeanzeige
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(AppTexte.of(context).einstNeustartTitel),
-        content: Text(restartMessage!),
-        actions: [
-          FilledButton(
-            onPressed: () => exit(0),
-            child: Text(AppTexte.of(context).allgSchliessen),
-          ),
-        ],
-      ),
-    );
+    // Das Fenster liegt auf dem Wurzel-Navigator; der nächste Navigator
+    // über [context] wäre der des Arbeitsbereichs (#406).
+    ladeanzeigeSchliessen();
+    await neustart(restartMessage);
   } catch (e) {
-    if (context.mounted) {
-      Navigator.of(context, rootNavigator: true).pop(); // Ladeanzeige
-      melde.fehler('$errorPrefix: ${fehlertext(context, e)}');
+    if (!context.mounted) return;
+    ladeanzeigeSchliessen();
+    melde.fehler('$errorPrefix: ${fehlertext(context, e)}');
+    // Erst zurückkehren, wenn das Fenster abgebaut ist: Der Aufrufer
+    // entsorgt danach [progress], und ein Fenster, das im Ausblenden noch
+    // mit dem Notifier baut, warf „A ValueNotifier … was used after being
+    // disposed“.
+    await ladeanzeige.completed;
+    // War die Datenbank schon zu, als es scheiterte, geht bis zum Neustart
+    // nichts mehr – das muss die App sagen, statt mit einer Fehlermeldung
+    // unbedienbar weiterzulaufen (GRU-101).
+    if (stand.library.datenbankGeschlossen && context.mounted) {
+      await neustart(AppTexte.of(context).einstNeustartNachFehler);
     }
   }
 }

@@ -8,7 +8,10 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
+import 'package:photo_vault/screens/einstellungen/einstellungsstand.dart';
+import 'package:photo_vault/screens/einstellungen/gemeinsam.dart';
 import 'package:photo_vault/screens/settings_screen.dart';
+import 'package:photo_vault/services/meldungsdienst.dart';
 import 'package:photo_vault/services/library_location.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:photo_vault/services/modelltexte.dart';
@@ -224,6 +227,121 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(de.einstBibStandard), findsNothing);
+      await raeumeAb(tester);
+    });
+  });
+
+  /// Ob das Fortschrittsfenster noch stand, als der Aufrufer seinen
+  /// Notifier entsorgte (siehe [verlegeMit]).
+  bool? fensterBeimEntsorgen;
+
+  /// Startet [verlegeBibliothek] wie die Gruppe „Speicherort“: mit einem
+  /// Fortschritts-Notifier, den der Aufrufer danach entsorgt.
+  Future<void> verlegeMit(
+    WidgetTester tester,
+    Future<void> Function(ValueNotifier<BibliotheksVerschiebefortschritt?>)
+    aktion,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                final stand = Einstellungsstand(
+                  library,
+                  kontext: () => context,
+                  aktiv: () => context.mounted,
+                );
+                final fortschritt =
+                    ValueNotifier<BibliotheksVerschiebefortschritt?>(null);
+                try {
+                  await verlegeBibliothek(
+                    stand,
+                    loadingText: 'Verschiebe …',
+                    progress: fortschritt,
+                    action: () => aktion(fortschritt),
+                  );
+                } finally {
+                  // Baut das Fenster noch (etwa im Ausblenden), darf der
+                  // Notifier nicht weg.
+                  fensterBeimEntsorgen = find
+                      .text('Verschiebe …', skipOffstage: false)
+                      .evaluate()
+                      .isNotEmpty;
+                  fortschritt.dispose();
+                }
+              },
+              child: const Text('los'),
+            ),
+          ),
+        ),
+      ),
+    );
+    melde.verlaufLeeren();
+    await tester.tap(find.text('los'));
+    await takte(tester, 16);
+  }
+
+  const teilweise = BibliotheksVerschiebefortschritt(
+    kopierteBytes: 1,
+    gesamtBytes: 2,
+    kopierteDateien: 1,
+    gesamtDateien: 2,
+  );
+
+  // GRU-101: Der Notifier wurde entsorgt, während das ausblendende
+  // Fenster noch mit ihm baute.
+  testWidgets('Verlegen scheitert: das Fenster ist weg, bevor der '
+      'Fortschritt entsorgt wird', (tester) async {
+    await tester.runAsync(() async {
+      await verlegeMit(tester, (fortschritt) async {
+        fortschritt.value = teilweise;
+        // Das Fenster steht schon, wie bei einem echten Kopiervorgang.
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        throw const FileSystemException('kein Schreibrecht');
+      });
+      expect(tester.takeException(), isNull);
+      expect(
+        melde.verlauf.first.text,
+        startsWith('${de.einstVerschiebenFehlgeschlagen}:'),
+      );
+      expect(fensterBeimEntsorgen, isFalse);
+      expect(find.text('Verschiebe …'), findsNothing);
+      expect(
+        find.text(de.einstNeustartTitel),
+        findsNothing,
+        reason: 'die Datenbank ist noch offen, die App bedienbar',
+      );
+      await raeumeAb(tester);
+    });
+  });
+
+  // GRU-101: War die Datenbank schon zu, lief die App mit einer
+  // Fehlermeldung unbedienbar weiter.
+  testWidgets('Verlegen scheitert nach dem Schliessen der Datenbank: '
+      'Neustart verlangt', (tester) async {
+    await tester.runAsync(() async {
+      // Wie in der App: Die Datenbank ist offen, und was der Stand der
+      // Einstellungen beim Aufbau fragt, ist beantwortet, bevor das
+      // Verlegen sie schliesst.
+      await db.customSelect('SELECT 1').get();
+      await verlegeMit(tester, (fortschritt) async {
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await library.schliesseDatenbank();
+        fortschritt.value = teilweise;
+        throw const FileSystemException('kein Schreibrecht');
+      });
+      expect(tester.takeException(), isNull);
+      expect(
+        melde.verlauf.first.text,
+        startsWith('${de.einstVerschiebenFehlgeschlagen}:'),
+      );
+      expect(find.text(de.einstNeustartTitel), findsOneWidget);
+      expect(find.text(de.einstNeustartNachFehler), findsOneWidget);
       await raeumeAb(tester);
     });
   });

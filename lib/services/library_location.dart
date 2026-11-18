@@ -727,8 +727,16 @@ class LibraryLocation {
     return true;
   }
 
-  /// Ob aktuell ein vom Standard abweichender Speicherort konfiguriert ist.
-  static Future<bool> get isCustom async => (await _configFile()).exists();
+  /// Ob die aktive Bibliothek woanders liegt als im Standardordner – nur
+  /// dann gibt es etwas zurückzusetzen.
+  ///
+  /// Nicht mehr „ob location.json existiert“: Die Datei hält auch die Liste
+  /// der Bibliotheken und bleibt deshalb nach dem Zurückwechseln auf den
+  /// Standard liegen. „Zurücksetzen“ stand dann bei aktiver
+  /// Standardbibliothek da, schloss die Datenbank und verlangte einen
+  /// Neustart, ohne etwas zu verschieben (GRU-104).
+  static Future<bool> get isCustom async =>
+      !p.equals((await currentRoot()).path, (await _anchorDir()).path);
 
   /// Zeigt einen Ordnerauswahl-Dialog. Unter macOS entsteht dabei atomar im
   /// selben nativen Aufruf ein dauerhaftes Security-Scoped-Bookmark, unter

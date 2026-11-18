@@ -3206,28 +3206,25 @@ void main() {
     await ende(tester);
   }, timeout: _frist);
 
-  // Befund: Scheitert das Verlegen, ist die Datenbank schon geschlossen
-  // (beforeMove, lib/screens/einstellungen/speicherort.dart:182), es kommt
-  // aber keine Neustart-Aufforderung – die App läuft unbedienbar weiter.
-  testWidgets(
-    'GRU-101 Nach gescheitertem Verlegen bleibt die App bedienbar',
-    (tester) async {
-      final r = await verlegenScheitert(tester);
-      final offen = await datenbankOffen();
-      final neustartVerlangt = find
-          .text(de.einstNeustartTitel)
-          .evaluate()
-          .isNotEmpty;
-      print(
-        'GRU-101: Datenbank offen: $offen, Neustart verlangt: $neustartVerlangt',
-      );
-      expect(offen || neustartVerlangt, isTrue);
-      await Process.run('chmod', ['755', r.gesperrt.path]);
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: Scheitert ein Vorgang, nachdem die Datenbank
+  // geschlossen wurde (LibraryState.datenbankGeschlossen), verlangt
+  // verlegeBibliothek den Neustart.
+  testWidgets('GRU-101 Nach gescheitertem Verlegen bleibt die App bedienbar', (
+    tester,
+  ) async {
+    final r = await verlegenScheitert(tester);
+    final offen = await datenbankOffen();
+    final neustartVerlangt = find
+        .text(de.einstNeustartTitel)
+        .evaluate()
+        .isNotEmpty;
+    print(
+      'GRU-101: Datenbank offen: $offen, Neustart verlangt: $neustartVerlangt',
+    );
+    expect(offen || neustartVerlangt, isTrue);
+    await Process.run('chmod', ['755', r.gesperrt.path]);
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets(
     'GRU-103 GRU-104 Zurücksetzen auf belegten Standard, bei aktiver Standardbibliothek',
@@ -3304,37 +3301,32 @@ void main() {
     timeout: _frist,
   );
 
-  // Befund: „Zurücksetzen“ erscheint, sobald location.json existiert
-  // (LibraryLocation.isCustom, lib/services/library_location.dart:686;
-  // lib/screens/einstellungen/speicherort.dart:56) – auch bei aktiver
-  // Standardbibliothek. Der Klick schliesst die Datenbank und verlangt einen
-  // Neustart, ohne etwas zu verlegen.
-  testWidgets(
-    'GRU-104 „Zurücksetzen“ fehlt bei aktiver Standardbibliothek',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      final neu = Directory(p.join(anker.path, 'Neu'))..createSync();
-      await LibraryLocation.fuegeHinzu(PickedFolder(neu.path, ''), name: 'Neu');
-      await LibraryLocation.wechsleZu(
-        (await LibraryLocation.bekannte())
-            .firstWhere((b) => b.istStandard)
-            .eintrag,
-      );
-      // Auch ohne weitere Bibliothek in der Liste (GRU-094).
-      await LibraryLocation.entferneAusListe(neu.path);
-      expect(File(p.join(anker.path, 'location.json')).existsSync(), isTrue);
-      await neustart(tester);
-      await einstellungen(tester);
-      await gruppe(tester, de.einstSpeicherortTitel);
-      await settle(tester);
-      expect(knopf(de.einstZuruecksetzen), findsNothing);
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: LibraryLocation.isCustom fragt, ob die aktive
+  // Bibliothek ausserhalb des Standardordners liegt, nicht mehr, ob
+  // location.json existiert.
+  testWidgets('GRU-104 „Zurücksetzen“ fehlt bei aktiver Standardbibliothek', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    final neu = Directory(p.join(anker.path, 'Neu'))..createSync();
+    await LibraryLocation.fuegeHinzu(PickedFolder(neu.path, ''), name: 'Neu');
+    await LibraryLocation.wechsleZu(
+      (await LibraryLocation.bekannte())
+          .firstWhere((b) => b.istStandard)
+          .eintrag,
+    );
+    // Auch ohne weitere Bibliothek in der Liste (GRU-094).
+    await LibraryLocation.entferneAusListe(neu.path);
+    expect(File(p.join(anker.path, 'location.json')).existsSync(), isTrue);
+    await neustart(tester);
+    await einstellungen(tester);
+    await gruppe(tester, de.einstSpeicherortTitel);
+    await settle(tester);
+    expect(knopf(de.einstZuruecksetzen), findsNothing);
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets(
     'GRU-106 GRU-107 GRU-108 GRU-109 GRU-110 GRU-111 GRU-112 GRU-113 Einstellungen allgemein',

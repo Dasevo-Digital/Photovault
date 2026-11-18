@@ -167,7 +167,7 @@ Future<void> _wechsleBibliothek(
       // hier ohnehin nur Höflichkeit vor dem Beenden (WAL sauber
       // abschliessen) – der Wechsel selbst rührt die Bibliothek nicht an.
       await LibraryLocation.wechsleZu(ziel.eintrag);
-      await stand.library.db.close();
+      await stand.library.schliesseDatenbank();
     },
   );
 }

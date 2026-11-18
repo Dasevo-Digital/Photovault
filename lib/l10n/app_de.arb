@@ -622,6 +622,7 @@
   "einstVerschiebenFehlgeschlagen": "Verschieben fehlgeschlagen",
   "einstWechselnFehlgeschlagen": "Wechseln fehlgeschlagen",
   "einstNeustartTitel": "Neustart erforderlich",
+  "einstNeustartNachFehler": "Die Datenbank der Bibliothek war für diesen Vorgang schon geschlossen. Photo Vault muss deshalb neu gestartet werden – die App wird jetzt geschlossen, bitte danach manuell neu öffnen.",
   "einstUebersetzeBeschreibungTitel": "Bildbeschreibungen in die Oberflächensprache übersetzen",
   "einstUebersetzeBeschreibungText": "Das Beschreibungsmodell liefert nur Englisch – es gibt kein vergleichbar kleines deutsches. Ist das Modell „Übersetzung Englisch → Deutsch“ geladen, wird jede neue Beschreibung zusätzlich übersetzt. Das englische Original bleibt erhalten, die Suche findet beide.",
   "einstUebersetzeSucheTitel": "Suche und Schlagwörter übersetzen",

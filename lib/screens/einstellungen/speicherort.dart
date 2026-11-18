@@ -179,7 +179,7 @@ Future<void> _changeLibraryLocation(Einstellungsstand stand) async {
       progress: fortschritt,
       action: () => LibraryLocation.applyRoot(
         picked,
-        beforeMove: () => stand.library.db.close(),
+        beforeMove: stand.library.schliesseDatenbank,
         onProgress: (wert) => fortschritt.value = wert,
       ),
     );

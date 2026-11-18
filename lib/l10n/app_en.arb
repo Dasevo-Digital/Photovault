@@ -382,6 +382,7 @@
   "einstVerschiebenFehlgeschlagen": "Moving failed",
   "einstWechselnFehlgeschlagen": "Switching failed",
   "einstNeustartTitel": "Restart required",
+  "einstNeustartNachFehler": "The library database had already been closed for this operation, so Photo Vault needs to restart. The app will now close – please reopen it manually afterwards.",
   "einstUebersetzeBeschreibungTitel": "Translate image descriptions into the interface language",
   "einstUebersetzeBeschreibungText": "The description model only produces English, and there is no comparably small German one. With the “Translation English → German” model downloaded, every new description is translated as well. The English original is kept, and search finds both.",
   "einstUebersetzeSucheTitel": "Translate search terms and tags",

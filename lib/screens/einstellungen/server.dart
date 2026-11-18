@@ -374,7 +374,7 @@ Future<void> _trenne(Einstellungsstand stand, Verbindungsdatei v) async {
         s.schliesse();
       }
       await Verbindungsdatei.loesche(await LibraryLocation.currentRoot());
-      await stand.library.db.close();
+      await stand.library.schliesseDatenbank();
     },
   );
 }

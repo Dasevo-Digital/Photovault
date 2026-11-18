@@ -308,7 +308,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
           name: '${_name.text.trim()} @ ${_server!.host}',
         );
         await LibraryLocation.wechsleZu(eintrag);
-        await widget.stand.library.db.close();
+        await widget.stand.library.schliesseDatenbank();
       },
     );
   }
@@ -347,7 +347,7 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
           v.schliesse();
         }
         await _verbindungsdatei().schreibe(await LibraryLocation.currentRoot());
-        await library.db.close();
+        await library.schliesseDatenbank();
       },
     );
     fortschritt.dispose();

@@ -1962,6 +1962,12 @@ abstract class AppTexte {
   /// **'Neustart erforderlich'**
   String get einstNeustartTitel;
 
+  /// No description provided for @einstNeustartNachFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datenbank der Bibliothek war für diesen Vorgang schon geschlossen. Photo Vault muss deshalb neu gestartet werden – die App wird jetzt geschlossen, bitte danach manuell neu öffnen.'**
+  String get einstNeustartNachFehler;
+
   /// No description provided for @einstUebersetzeBeschreibungTitel.
   ///
   /// In de, this message translates to:

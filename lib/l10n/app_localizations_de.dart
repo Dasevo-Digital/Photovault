@@ -1191,6 +1191,10 @@ class AppTexteDe extends AppTexte {
   String get einstNeustartTitel => 'Neustart erforderlich';
 
   @override
+  String get einstNeustartNachFehler =>
+      'Die Datenbank der Bibliothek war für diesen Vorgang schon geschlossen. Photo Vault muss deshalb neu gestartet werden – die App wird jetzt geschlossen, bitte danach manuell neu öffnen.';
+
+  @override
   String get einstUebersetzeBeschreibungTitel =>
       'Bildbeschreibungen in die Oberflächensprache übersetzen';
 
