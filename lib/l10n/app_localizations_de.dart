@@ -3416,7 +3416,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get integPfadEntfernt =>
-      'Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich über \"Werkzeuge → Vorschaubilder neu erstellen\" wieder herstellen.';
+      'Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich unter Werkzeuge → Aufgaben („Vorschaubilder erzeugen“) wieder herstellen.';
 
   @override
   String get integDateiLoeschenTitel => 'Datei löschen?';
@@ -3663,7 +3663,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get aehnlKeineTreffer =>
-      'Für dieses Foto liegt noch kein KI-Embedding vor (siehe Werkzeuge → KI-Bildsuche → CLIP-Embeddings berechnen) oder es gibt keine ähnlichen Fotos in der Bibliothek.';
+      'Für dieses Foto liegt noch kein KI-Embedding vor (der Durchgang steht unter Werkzeuge → Aufgaben („CLIP-Embeddings“)), oder es gibt keine ähnlichen Fotos in der Bibliothek.';
 
   @override
   String get stapelErklaerung =>

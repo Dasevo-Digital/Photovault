@@ -903,33 +903,38 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: Zwei Texte weisen auf Wege, die es nicht mehr gibt.
-  // app_de.arb:1997 (aehnlKeineTreffer) nennt „Werkzeuge → KI-Bildsuche →
-  // CLIP-Embeddings berechnen", app_de.arb:1805 (integPfadEntfernt)
-  // „Werkzeuge → Vorschaubilder neu erstellen". Beides liegt heute unter
-  // „Werkzeuge" → „Aufgaben" („CLIP-Einbettungen…"/„Vorschaubilder erzeugen").
+  // Behoben in #409: Beide Texte nennen Werkzeuge → Aufgaben und den Namen
+  // der Aufgabe; geprüft wird, dass es diese Einträge dort gibt.
   testWidgets('IMP-152 IMP-211 Wegweiser in Texten führen zum Ziel', (
     tester,
   ) async {
     await startApp(tester);
     await importiereDirekt(tester, [testfoto('x.jpg')]);
+    final weg = '${de.navWerkzeuge} → ${de.aufgTitel}';
+    final ziele = {
+      de.aehnlKeineTreffer: de.aufgEmbeddingsTitel,
+      de.integPfadEntfernt: de.aufgVorschauTitel,
+    };
     final fehlt = <String>[];
-    await openSection(tester, Hauptbereich.werkzeuge);
-    for (final ziel in ['KI-Bildsuche', 'Vorschaubilder neu erstellen']) {
+    for (final MapEntry(key: text, value: aufgabe) in ziele.entries) {
+      if (!text.contains(weg) || !text.contains(aufgabe)) fehlt.add(text);
+    }
+    await oeffneAufgaben(tester);
+    for (final aufgabe in ziele.values) {
       final f = find.descendant(
-        of: find.byType(ToolsScreen),
-        matching: find.textContaining(ziel),
+        of: find.byType(BackgroundTasksScreen),
+        matching: find.text(aufgabe),
       );
       try {
-        await sichtbar(tester, f, ToolsScreen);
+        await sichtbar(tester, f, BackgroundTasksScreen);
       } catch (_) {
-        fehlt.add(ziel);
+        fehlt.add(aufgabe);
       }
     }
     print('Wegweiser ohne Ziel: $fehlt');
     expect(fehlt, isEmpty);
     await ende(tester);
-  }, skip: true);
+  });
 
   // ---------------------------------------------------------------------
   // Serien

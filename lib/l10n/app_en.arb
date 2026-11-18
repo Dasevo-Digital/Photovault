@@ -1138,7 +1138,7 @@
   "integOriginalFehlt": "The original is missing from disk – the whole photo or video is removed from the library.",
   "integMaskeFehlt": "The mask file is missing – the mask entry is removed.",
   "integCropFehlt": "The face crop is missing – only the preview is removed; the person it belongs to is kept.",
-  "integPfadEntfernt": "The file path is removed from the database – the file can be recreated through \"Tools → Rebuild previews\".",
+  "integPfadEntfernt": "The file path is removed from the database – the file can be recreated under Tools → Jobs (“Generate thumbnails”).",
   "integDateiLoeschenTitel": "Delete the file?",
   "integDateiLoeschenText": "{pfad} will be deleted from disk for good.",
   "integErneutPruefen": "Check again",
@@ -1257,7 +1257,7 @@
   "zweitBibliothek": "second library",
   "aehnlTitel": "Similar photos",
   "aehnlClipFehlt": "AI image search is unavailable – the CLIP model is missing (see Settings → AI models).",
-  "aehnlKeineTreffer": "There is no AI embedding for this photo yet (see Tools → AI image search → Compute CLIP embeddings), or there are no similar photos in the library.",
+  "aehnlKeineTreffer": "There is no AI embedding for this photo yet (the run is under Tools → Jobs (“CLIP embeddings”)), or there are no similar photos in the library.",
   "stapelErklaerung": "Photos that look alike AND were taken within a few seconds of each other are suggested here as a series. \"Apply\" collapses a group into one stack – only the cover image stays visible in the overview, and nothing is deleted.",
   "stapelAlleUebernehmen": "Accept all {anzahl}",
   "@stapelAlleUebernehmen": {

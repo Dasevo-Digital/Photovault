@@ -5798,7 +5798,7 @@ abstract class AppTexte {
   /// No description provided for @integPfadEntfernt.
   ///
   /// In de, this message translates to:
-  /// **'Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich über \"Werkzeuge → Vorschaubilder neu erstellen\" wieder herstellen.'**
+  /// **'Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich unter Werkzeuge → Aufgaben („Vorschaubilder erzeugen“) wieder herstellen.'**
   String get integPfadEntfernt;
 
   /// No description provided for @integDateiLoeschenTitel.
@@ -6164,7 +6164,7 @@ abstract class AppTexte {
   /// No description provided for @aehnlKeineTreffer.
   ///
   /// In de, this message translates to:
-  /// **'Für dieses Foto liegt noch kein KI-Embedding vor (siehe Werkzeuge → KI-Bildsuche → CLIP-Embeddings berechnen) oder es gibt keine ähnlichen Fotos in der Bibliothek.'**
+  /// **'Für dieses Foto liegt noch kein KI-Embedding vor (der Durchgang steht unter Werkzeuge → Aufgaben („CLIP-Embeddings“)), oder es gibt keine ähnlichen Fotos in der Bibliothek.'**
   String get aehnlKeineTreffer;
 
   /// No description provided for @stapelErklaerung.

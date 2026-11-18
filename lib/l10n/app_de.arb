@@ -1805,7 +1805,7 @@
   "integOriginalFehlt": "Das Original fehlt auf der Platte – das gesamte Foto/Video wird aus der Bibliothek entfernt.",
   "integMaskeFehlt": "Die Maskendatei fehlt – der Maskeneintrag wird entfernt.",
   "integCropFehlt": "Der Gesichts-Crop fehlt – nur die Vorschau wird entfernt, die Zuordnung zur Person bleibt erhalten.",
-  "integPfadEntfernt": "Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich über \"Werkzeuge → Vorschaubilder neu erstellen\" wieder herstellen.",
+  "integPfadEntfernt": "Der Datei-Pfad wird aus der Datenbank entfernt – die Datei lässt sich unter Werkzeuge → Aufgaben („Vorschaubilder erzeugen“) wieder herstellen.",
   "integDateiLoeschenTitel": "Datei löschen?",
   "integDateiLoeschenText": "{pfad} wird unwiderruflich von der Platte gelöscht.",
   "@integDateiLoeschenText": {
@@ -1997,7 +1997,7 @@
   "zweitBibliothek": "zweite Bibliothek",
   "aehnlTitel": "Ähnliche Fotos",
   "aehnlClipFehlt": "KI-Bildsuche nicht verfügbar – CLIP-Modell fehlt (siehe Einstellungen → KI-Modelle).",
-  "aehnlKeineTreffer": "Für dieses Foto liegt noch kein KI-Embedding vor (siehe Werkzeuge → KI-Bildsuche → CLIP-Embeddings berechnen) oder es gibt keine ähnlichen Fotos in der Bibliothek.",
+  "aehnlKeineTreffer": "Für dieses Foto liegt noch kein KI-Embedding vor (der Durchgang steht unter Werkzeuge → Aufgaben („CLIP-Embeddings“)), oder es gibt keine ähnlichen Fotos in der Bibliothek.",
   "stapelErklaerung": "Fotos, die sich ähneln UND innerhalb weniger Sekunden aufgenommen wurden, werden hier als Serie vorgeschlagen. \"Übernehmen\" fasst eine Gruppe zu einem Stapel zusammen – nur das Titelbild bleibt danach in der Übersicht sichtbar, nichts wird gelöscht.",
   "stapelAlleUebernehmen": "Alle {anzahl} übernehmen",
   "@stapelAlleUebernehmen": {

@@ -3392,7 +3392,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get integPfadEntfernt =>
-      'The file path is removed from the database – the file can be recreated through \"Tools → Rebuild previews\".';
+      'The file path is removed from the database – the file can be recreated under Tools → Jobs (“Generate thumbnails”).';
 
   @override
   String get integDateiLoeschenTitel => 'Delete the file?';
@@ -3637,7 +3637,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get aehnlKeineTreffer =>
-      'There is no AI embedding for this photo yet (see Tools → AI image search → Compute CLIP embeddings), or there are no similar photos in the library.';
+      'There is no AI embedding for this photo yet (the run is under Tools → Jobs (“CLIP embeddings”)), or there are no similar photos in the library.';
 
   @override
   String get stapelErklaerung =>
