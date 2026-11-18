@@ -299,6 +299,18 @@ void main() {
             ))['aufnahmen']!
             as List;
     expect(eigen.cast<Map>().singleWhere((z) => z['id'] == neu)['von'], 'max');
+    // Ebenso in ihrer Zeitleiste; was sie selbst hat, trägt kein „von“.
+    final zeitleiste =
+        ((await jsonAus(
+                  await frag('GET', '/api/v1/aufnahmen', token: erikaToken),
+                ))['aufnahmen']!
+                as List)
+            .cast<Map>();
+    expect(zeitleiste.singleWhere((z) => z['id'] == neu)['von'], 'max');
+    expect(
+      zeitleiste.where((z) => z['id'] != neu).any((z) => z.containsKey('von')),
+      isFalse,
+    );
     // In Max' eigener Bibliothek landet nichts.
     final maxB = (await bibliotheken.fuer(max.id)).bibliothek;
     expect(await maxB.db.assetById(neu), isNull);

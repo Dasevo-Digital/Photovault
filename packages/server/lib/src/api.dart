@@ -970,13 +970,17 @@ class _Api {
     // Für die Liste (#195) die Angaben, die die Kachel nicht braucht.
     final voll = q['voll'] == '1';
     Future<List<Map<String, Object?>>> alsJson(List<Rasterzeile> zeilen) async {
+      final ids = [for (final z in zeilen) z.id];
       final mehr = voll
-          ? await db.listenangaben([for (final z in zeilen) z.id])
+          ? await db.listenangaben(ids)
           : const <String, Listenangaben>{};
+      // Wer es in ein geteiltes Album gelegt hat (#105) – wie im Album.
+      final von = teilungen?.beitragende(kontoVon(anfrage).id, ids) ?? const {};
       return [
         for (final z in zeilen)
           {
             ...zeileAlsJson(z),
+            'von': ?von[z.id]?.name,
             if (mehr[z.id] case final l?) ...listenangabenAlsJson(l),
           },
       ];
