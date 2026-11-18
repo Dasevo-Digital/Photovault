@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
 import 'bart_tokenizer.dart';
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 /// Bildvorverarbeitung laut `preprocessor_config.json` des Exports:
@@ -114,7 +114,7 @@ class FlorenceCaptioningService {
   ];
 
   static bool isAvailable(String modelsDir) =>
-      dateien.every((n) => File('$modelsDir/$n').existsSync());
+      dateien.every((n) => ModelCatalog.dateiVollstaendig(modelsDir, n));
 
   static Future<FlorenceCaptioningService> load(String modelsDir) async {
     final ort = OnnxRuntime();

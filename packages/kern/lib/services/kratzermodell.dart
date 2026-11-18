@@ -20,7 +20,6 @@
 /// [kratzerKurzeSeite]. Beides begründet bei den Konstanten.
 library;
 
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -28,6 +27,7 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
 import 'kratzersuche.dart' show Kratzerfund;
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 /// Ab dieser Wahrscheinlichkeit gilt ein Punkt als Kratzer.
@@ -65,7 +65,7 @@ class KratzerModellService {
   static const datei = 'kratzererkennung_fp16.onnx';
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/$datei').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, datei);
 
   static Future<KratzerModellService> load(String modelsDir) async {
     final session = await OnnxRuntime().createSession(

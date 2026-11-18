@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import 'marian_tokenizer.dart';
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 /// Welche Richtung ein [TranslationService] übersetzt.
@@ -69,7 +69,7 @@ class TranslationService {
       richtung.decoderDatei,
       _vokabularDatei,
     ]) {
-      if (!File('$modelsDir/$name').existsSync()) return false;
+      if (!ModelCatalog.dateiVollstaendig(modelsDir, name)) return false;
     }
     return true;
   }

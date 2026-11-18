@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
 import 'clip_tokenizer.dart';
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 /// Mittelwert/Standardabweichung, mit denen CLIP-Modelle trainiert wurden
@@ -100,7 +101,7 @@ class ClipService {
       'vocab.json',
       'merges.txt',
     ]) {
-      if (!File('$modelsDir/$name').existsSync()) return false;
+      if (!ModelCatalog.dateiVollstaendig(modelsDir, name)) return false;
     }
     return true;
   }

@@ -11,6 +11,7 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 import '../berechne.dart';
 import '../protokoll.dart';
 import 'bildwerkzeuge.dart';
+import 'model_catalog.dart';
 import 'model_processing_state.dart';
 import 'onnx_hardswish.dart';
 import 'textstellen.dart';
@@ -89,7 +90,7 @@ class OcrService {
     erkennungsDatei,
     lesungsDatei,
     zeichenDatei,
-  ].every((n) => File('$modelsDir/$n').existsSync());
+  ].every((n) => ModelCatalog.dateiVollstaendig(modelsDir, n));
 
   /// Ablage der umgebauten Fassung des Lesemodells – siehe
   /// [lesemodellPfad].

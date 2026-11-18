@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
+import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
 
 /// **Alte Schwarzweiss-Fotos einfärben** (DDColor, siehe
@@ -33,7 +33,7 @@ class KolorierService {
   static const modellGroesse = 512;
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/$datei').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, datei);
 
   static Future<KolorierService> load(String modelsDir) async {
     final session = await OnnxRuntime().createSession(

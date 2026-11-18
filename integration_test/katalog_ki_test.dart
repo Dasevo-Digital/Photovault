@@ -1393,9 +1393,8 @@ void main() {
     },
   );
 
-  // Befund: abgeschnittenes YuNet gilt in „Gesichtserkennung aktiv“ weiter als aktiv – FaceEngineService.isDetectionAvailable prüft nur, ob die Datei da ist (face_engine_service.dart:53).
+  // Behoben in #414: Die Dienste prüfen die Länge ihrer Modelldateien wie die Modellkarte (ModelCatalog.dateiVollstaendig).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-014 Befundpruefung abgeschnittene Modelldatei',
     (tester) async {

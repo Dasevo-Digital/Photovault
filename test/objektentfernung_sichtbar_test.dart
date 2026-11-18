@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/model_catalog.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/image_editor_screen.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
@@ -75,13 +76,18 @@ void main() {
     return (db.select(db.assets)..where((t) => t.id.equals('a1'))).getSingle();
   }
 
-  /// Legt eine leere Datei an, die aussieht wie das Modell – mehr fragt
-  /// `InpaintingService.isAvailable` nicht ab, und mehr braucht dieser
-  /// Test auch nicht: Gerechnet wird hier nichts.
+  /// Legt eine Attrappe in der Länge an, die der Katalog nennt – mehr
+  /// fragt `InpaintingService.isAvailable` nicht ab, und mehr braucht
+  /// dieser Test auch nicht: Gerechnet wird hier nichts. Als Loch-Datei,
+  /// geschrieben werden müssen die 200 MB nicht.
   String modellordner() {
     final ordner = Directory(p.join(wurzel.path, 'models'))
       ..createSync(recursive: true);
-    File(p.join(ordner.path, 'lama_fp32.onnx')).writeAsStringSync('');
+    final datei = File(
+      p.join(ordner.path, 'lama_fp32.onnx'),
+    ).openSync(mode: FileMode.write);
+    datei.truncateSync(ModelCatalog.inpainting.files.single.bytes);
+    datei.closeSync();
     return ordner.path;
   }
 

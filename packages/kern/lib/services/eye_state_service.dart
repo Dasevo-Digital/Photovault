@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -6,6 +5,7 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 import 'package:image/image.dart' as img;
 
 import 'face_postprocess.dart';
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 const int _eyeStateInputWidth = 40;
@@ -81,7 +81,7 @@ class EyeStateService {
   final OrtSession _session;
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/eye_state_ocec_n.onnx').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, 'eye_state_ocec_n.onnx');
 
   static Future<EyeStateService?> load(String modelsDir) async {
     if (!isAvailable(modelsDir)) return null;

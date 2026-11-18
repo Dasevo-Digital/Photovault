@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' show Offset;
 
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
 
 /// SAMs Standard-Vorverarbeitung (ImageNet-Mittel/Standardabweichung,
@@ -76,7 +76,7 @@ class SegmentationService {
       'sam_vision_encoder.onnx',
       'sam_prompt_mask_decoder.onnx',
     ]) {
-      if (!File('$modelsDir/$name').existsSync()) return false;
+      if (!ModelCatalog.dateiVollstaendig(modelsDir, name)) return false;
     }
     return true;
   }

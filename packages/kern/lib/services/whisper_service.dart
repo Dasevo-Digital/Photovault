@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 import 'whisper_mel.dart';
 
@@ -156,7 +157,7 @@ class WhisperService {
   ];
 
   static bool isAvailable(String modelsDir) =>
-      dateien.every((n) => File('$modelsDir/$n').existsSync());
+      dateien.every((n) => ModelCatalog.dateiVollstaendig(modelsDir, n));
 
   static Future<WhisperService> load(String modelsDir) async {
     final ort = OnnxRuntime();

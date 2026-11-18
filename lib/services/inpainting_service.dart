@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
 
 /// Entfernt Objekte aus einem Foto, indem es die markierte Stelle aus der
@@ -31,7 +31,7 @@ class InpaintingService {
   static const modellGroesse = 512;
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/lama_fp32.onnx').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, 'lama_fp32.onnx');
 
   static Future<InpaintingService> load(String modelsDir) async {
     final ort = OnnxRuntime();

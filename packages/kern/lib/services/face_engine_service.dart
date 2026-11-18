@@ -7,6 +7,7 @@ import 'package:image/image.dart' as img;
 
 import 'face_postprocess.dart';
 import 'jpeg_ohne_angaben.dart';
+import 'model_catalog.dart';
 import 'modellthreads.dart';
 
 export 'face_postprocess.dart' show DetectedFace;
@@ -51,10 +52,10 @@ class FaceEngineService {
   final OrtSession? _recognizer;
 
   static bool isDetectionAvailable(String modelsDir) =>
-      File('$modelsDir/face_detection_yunet.onnx').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, 'face_detection_yunet.onnx');
 
   static bool isRecognitionAvailable(String modelsDir) =>
-      File('$modelsDir/face_recognition_sface.onnx').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, 'face_recognition_sface.onnx');
 
   static Future<FaceEngineService?> load(String modelsDir) async {
     if (!isDetectionAvailable(modelsDir)) return null;

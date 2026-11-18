@@ -10,6 +10,7 @@ import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
 import 'tile_processor.dart';
+import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
 
 /// Kapselt On-Device-Inferenz mit Real-ESRGAN x4 (siehe model_catalog.dart:
@@ -52,7 +53,7 @@ class RestoreService {
   static const scaleFactor = 4;
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/real_esrgan_x4.onnx').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, 'real_esrgan_x4.onnx');
 
   static Future<RestoreService> load(String modelsDir) async {
     final ort = OnnxRuntime();
@@ -155,7 +156,7 @@ class Entrauschdienst {
   static const overlap = 32;
 
   static bool isAvailable(String modelsDir) =>
-      File('$modelsDir/$datei').existsSync();
+      ModelCatalog.dateiVollstaendig(modelsDir, datei);
 
   static Future<Entrauschdienst> load(String modelsDir) async {
     final session = await OnnxRuntime().createSession(

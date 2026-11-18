@@ -16,6 +16,10 @@
 /// die URLs in dieser Datei anzupassen.
 library;
 
+import 'dart:io';
+
+import 'package:path/path.dart' as p;
+
 import 'ocr_service.dart';
 
 class ModelFile {
@@ -642,6 +646,28 @@ class ModelCatalog {
       ),
     ],
   );
+
+  /// Liegt die Datei [dateiname] vollständig in [ordner]?
+  ///
+  /// Dieselbe Frage, die `ModelDownloadService.isEntryInstalled` für die
+  /// Modellkarten stellt, für die Dienste, die vor dem Laden wissen
+  /// wollen, ob ihr Modell da ist. Die fragten früher nur, ob die Datei
+  /// *existiert*: Mit einer abgeschnittenen YuNet-Datei bot die Karte
+  /// richtig „Herunterladen“ an, „Gesichtserkennung aktiv“ und die
+  /// Analyse hielten das Modell aber weiter für einsatzbereit, und der
+  /// Fehler kam erst beim Laden heraus. Kennt der Katalog die Datei
+  /// nicht (selbst erzeugte), genügt wie bisher, dass sie da ist.
+  static bool dateiVollstaendig(String ordner, String dateiname) {
+    final datei = File(p.join(ordner, dateiname));
+    if (!datei.existsSync()) return false;
+    final erwartet = _laengen[dateiname];
+    return erwartet == null || datei.lengthSync() == erwartet;
+  }
+
+  static final Map<String, int> _laengen = {
+    for (final e in all)
+      for (final f in e.files) f.fileName: f.bytes,
+  };
 
   static const all = [
     faceDetection,
