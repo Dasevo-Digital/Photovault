@@ -1137,6 +1137,19 @@ function t(deutsch, werte) {
   return s;
 }
 
+// fetch für alle Seiten der Oberfläche: Erreicht die Anfrage den Server
+// nicht, heisst der Fehler „Keine Verbindung zum Server.“ – nicht wie im
+// Browser „NetworkError when attempting to fetch resource.“, „Failed to
+// fetch“ oder „Load failed“. Ein Abbruch (AbortController) bleibt einer.
+async function holen(adresse, optionen) {
+  try {
+    return await fetch(adresse, optionen);
+  } catch (x) {
+    if (x && x.name === 'AbortError') throw x;
+    throw new Error(t('Keine Verbindung zum Server.'));
+  }
+}
+
 // Die festen Texte im HTML: Textknoten und die Merkmale, die man liest.
 function uebersetzeSeite(wurzel = document.body) {
   document.documentElement.lang = SPRACHE;

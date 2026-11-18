@@ -425,7 +425,7 @@ async function hoehengitter(kasten, signal) {
   const auftraege = [];
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      auftraege.push(fetch(HOEHEN_URL.replace('{z}', z).replace('{x}', x).replace('{y}', y), { signal })
+      auftraege.push(holen(HOEHEN_URL.replace('{z}', z).replace('{x}', x).replace('{y}', y), { signal })
         .then((r) => (r.ok ? r.blob() : null))
         .then((b) => (b ? createImageBitmap(b) : null))
         .then((bild) => { if (bild) ctx.drawImage(bild, (x - x0) * 256, (y - y0) * 256); })
@@ -1311,7 +1311,7 @@ async function bildFertig(karte) {
 
 async function ladeBild(url) {
   try {
-    const r = await fetch(url, { credentials: 'same-origin' });
+    const r = await holen(url, { credentials: 'same-origin' });
     if (!r.ok) return null;
     return await createImageBitmap(await r.blob());
   } catch (_) {

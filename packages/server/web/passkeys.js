@@ -71,7 +71,7 @@ function passkeyAbgebrochen(x) {
 }
 
 async function passkeyPost(pfad, json) {
-  const r = await fetch(pfad, {
+  const r = await holen(pfad, {
     method: 'POST',
     credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', 'X-PV-Web': '1' },

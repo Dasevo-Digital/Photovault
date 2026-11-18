@@ -29,7 +29,7 @@ function hinweis(text) {
 
 async function lade() {
   let r;
-  try { r = await fetch(basis, { credentials: 'same-origin' }); } catch (_) { hinweis(t('Keine Verbindung zum Server.')); return; }
+  try { r = await holen(basis, { credentials: 'same-origin' }); } catch (_) { hinweis(t('Keine Verbindung zum Server.')); return; }
   if (r.status === 404) { hinweis(t('Diese Freigabe gibt es nicht oder nicht mehr.')); return; }
   if (r.status === 401) { $('teilen-passwort').hidden = false; return; }
   if (!r.ok) { hinweis(t('Die Freigabe ließ sich nicht laden.')); return; }
@@ -72,7 +72,7 @@ $('teilen-passwort').addEventListener('submit', async (e) => {
   $('teilen-fehler').textContent = '';
   let r;
   try {
-    r = await fetch(`${basis}/passwort`, {
+    r = await holen(`${basis}/passwort`, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'content-type': 'application/json' },
@@ -175,7 +175,7 @@ async function spieleVideo(a, meinLauf) {
   videoHinweis(t('Das Video wird vorbereitet …'));
   for (let i = 0; i < 900 && meinLauf === lauf; i++) {
     let r;
-    try { r = await fetch(datei(a.id, 'video', true), { credentials: 'same-origin' }); } catch (_) { break; }
+    try { r = await holen(datei(a.id, 'video', true), { credentials: 'same-origin' }); } catch (_) { break; }
     if (r.status === 200) {
       if (meinLauf !== lauf) return;
       videoHinweis('');

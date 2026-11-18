@@ -433,7 +433,7 @@ async function zeigeEntwickeln(id) {
   if (d.kurve) entw.kurve = entwTextur(gl, 256, 1, ausBase64(d.kurve));
   if (d.wuerfel) { entw.wuerfelKante = d.wuerfelKante; entw.wuerfel = entwTextur(gl, d.wuerfelKante * d.wuerfelKante, d.wuerfelKante, ausBase64(d.wuerfel)); }
 
-  const antwort = await fetch(`/api/v1/aufnahmen/${encodeURIComponent(id)}/${d.quelle}`, { credentials: 'same-origin' });
+  const antwort = await holen(`/api/v1/aufnahmen/${encodeURIComponent(id)}/${d.quelle}`, { credentials: 'same-origin' });
   if (!antwort.ok) { entwFehler(t('Das Bild liess sich nicht laden ({n}).', { n: antwort.status })); return; }
   const blob = await antwort.blob();
   let quelle = await createImageBitmap(blob, { imageOrientation: 'from-image', premultiplyAlpha: 'none' });
@@ -487,7 +487,7 @@ async function entwSpeichern() {
     meldung.textContent = t('Lade hoch …');
     // Ein neuer Name je Speichern: Geräte halten Dateien unter ihrem Namen vor.
     const pfad = `developed/${entw.id}-${Date.now()}.jpg`;
-    const hoch = await fetch(`/api/v1/dateien/${pfad.split('/').map(encodeURIComponent).join('/')}`, {
+    const hoch = await holen(`/api/v1/dateien/${pfad.split('/').map(encodeURIComponent).join('/')}`, {
       method: 'PUT',
       credentials: 'same-origin',
       headers: { 'X-PV-Web': '1', 'Content-Type': 'image/jpeg' },

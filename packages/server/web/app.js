@@ -16,7 +16,7 @@ let wegSignal = null;
 let stillerLauf = false;
 const live = { stand: null, abbruch: null, laeuft: false, faellig: false, nochmal: false, uhr: null, zuletzt: 0, abstand: 5000 };
 const api = async (pfad, { methode = 'GET', json } = {}) => {
-  const antwort = await fetch(pfad, {
+  const antwort = await holen(pfad, {
     method: methode,
     credentials: 'same-origin',
     signal: methode === 'GET' && wegSignal ? wegSignal : undefined,
@@ -762,7 +762,7 @@ async function schwebeStart(k, a) {
   const fassung = async () => {
     for (let i = 0; i < 120 && lauf === schwebe.lauf; i++) {
       let r;
-      try { r = await fetch(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { return; }
+      try { r = await holen(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { return; }
       if (r.status === 200) {
         if (lauf === schwebe.lauf) { v.src = fassungUrl(id, false); v.play().catch(() => {}); }
         return;
@@ -1496,7 +1496,7 @@ function collageZeichnen() {
     const nummer = ++collage.nummer;
     $('collage-bild').classList.add('laedt');
     try {
-      const r = await fetch('/api/v1/collage', { method: 'POST', credentials: 'same-origin', headers: { 'X-PV-Web': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(collageWahl(true)) });
+      const r = await holen('/api/v1/collage', { method: 'POST', credentials: 'same-origin', headers: { 'X-PV-Web': '1', 'Content-Type': 'application/json' }, body: JSON.stringify(collageWahl(true)) });
       if (!r.ok) { let f = null; try { f = (await r.json()).fehler; } catch (_) { /* leer */ } throw new Error(f ? t(f) : t('Fehler {n}', { n: r.status })); }
       const blob = await r.blob();
       if (nummer !== collage.nummer) return;
@@ -5092,7 +5092,7 @@ async function teile(aufnahmen) {
   const dateien = [];
   try {
     for (const a of aufnahmen) {
-      const r = await fetch(aufnahmeUrl(a.id, 'original'), { credentials: 'same-origin' });
+      const r = await holen(aufnahmeUrl(a.id, 'original'), { credentials: 'same-origin' });
       if (!r.ok) throw new Error(t('Fehler {n}', { n: r.status }));
       const b = await r.blob();
       dateien.push(new File([b], a.name || a.id, { type: b.type || 'application/octet-stream', lastModified: Date.parse(a.aufgenommen) || Date.now() }));
@@ -5616,7 +5616,7 @@ function oeffne(i) {
   $('live').hidden = !(a.art !== 'video' && a.partner);
   // Spielt dieser Browser kein HEVC, die Fassung des Bewegungsteils schon
   // jetzt anstossen – dann ist sie da, wenn man auf LIVE zeigt.
-  if (a.art !== 'video' && a.partner && !kannHevc) fetch(fassungUrl(a.partner, true), { credentials: 'same-origin' }).catch(() => {});
+  if (a.art !== 'video' && a.partner && !kannHevc) holen(fassungUrl(a.partner, true), { credentials: 'same-origin' }).catch(() => {});
   zeigeAktivitaetKnoepfe();
   ordneKnoepfe();
   blickZurueck(false);
@@ -5857,7 +5857,7 @@ async function holeFassung(id, lauf, live) {
   if (!live) videoHinweis(t('Das Video wird für diesen Browser umgewandelt …'));
   for (let i = 0; i < 900 && lauf === videoLauf; i++) {
     let r;
-    try { r = await fetch(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { break; }
+    try { r = await holen(fassungUrl(id, true), { credentials: 'same-origin' }); } catch (_) { break; }
     if (r.status === 200) {
       if (lauf !== videoLauf) return;
       videoHinweis('');
@@ -6473,7 +6473,7 @@ function maleDiavideoTitel(c, titel, untertitel) {
 // So gross, dass es das Video füllt – nicht grösser, wie am Rechner.
 async function ladeDiavideoBild(a) {
   try {
-    const blob = await (await fetch(aufnahmeUrl(a.id, 'ansicht', a.stand), { credentials: 'same-origin' })).blob();
+    const blob = await (await holen(aufnahmeUrl(a.id, 'ansicht', a.stand), { credentials: 'same-origin' })).blob();
     const roh = await createImageBitmap(blob);
     const m = Math.max(DIAVIDEO.breite / roh.width, DIAVIDEO.hoehe / roh.height) * 1.1;
     if (m >= 1) return roh;
@@ -7125,7 +7125,7 @@ async function lausche() {
     try {
       const q = new URLSearchParams({ warten: '25' });
       if (live.stand !== null) q.set('bisher', live.stand);
-      const antwort = await fetch(`/api/v1/ansicht/stand?${q}`, { credentials: 'same-origin', signal: abbruch.signal, headers: { 'X-PV-Web': '1' } });
+      const antwort = await holen(`/api/v1/ansicht/stand?${q}`, { credentials: 'same-origin', signal: abbruch.signal, headers: { 'X-PV-Web': '1' } });
       if (antwort.status === 401) { zeigeAnmeldung(); break; }
       if (!antwort.ok) throw new Error(String(antwort.status));
       const d = await antwort.json();

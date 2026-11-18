@@ -36,7 +36,7 @@ function hlMeta(werte) {
 }
 
 async function hlFrage(pfad, methode, kopf, inhalt) {
-  const r = await fetch(pfad, { method: methode, credentials: 'same-origin', headers: { ...HL_TUS, ...kopf }, body: inhalt });
+  const r = await holen(pfad, { method: methode, credentials: 'same-origin', headers: { ...HL_TUS, ...kopf }, body: inhalt });
   if (r.status === 401) { zeigeAnmeldung(); throw new Error('nicht angemeldet'); }
   return r;
 }

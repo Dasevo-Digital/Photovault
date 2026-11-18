@@ -74,6 +74,35 @@ void main() {
     expect(funde, isEmpty);
   });
 
+  test('ein Netzfehler heisst „Keine Verbindung zum Server.“', () {
+    // Bei gestopptem Server stand „NetworkError when attempting to fetch
+    // resource.“ unten auf der Seite: api() reichte den Fehler von fetch
+    // durch. Anfragen gehen deshalb über holen() aus texte.js, das jede
+    // Seite der Oberfläche lädt.
+    final texte = File('web/texte.js').readAsStringSync();
+    expect(texte, contains('async function holen('));
+    expect(texte, contains("t('Keine Verbindung zum Server.')"));
+    final funde = <String>[];
+    for (final f in Directory('web').listSync().whereType<File>()) {
+      final name = f.uri.pathSegments.last;
+      if (!name.endsWith('.js') || name == 'texte.js') continue;
+      final zeilen = f.readAsLinesSync();
+      for (var i = 0; i < zeilen.length; i++) {
+        if (RegExp(r'(^|[^\w.$])fetch\(').hasMatch(zeilen[i])) {
+          funde.add('$name:${i + 1}: ${zeilen[i].trim()}');
+        }
+      }
+    }
+    expect(funde, isEmpty);
+    for (final seite in ['index.html', 'passkey.html', 'teilen.html']) {
+      expect(
+        File('web/$seite').readAsStringSync(),
+        contains('texte.js"></script>'),
+        reason: seite,
+      );
+    }
+  });
+
   test('installierbar: Manifest mit Symbolen, die es gibt', () {
     // Die echte Oberfläche, nicht die des Prüfstands.
     final web = Directory('web');
