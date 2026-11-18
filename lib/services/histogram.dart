@@ -154,10 +154,17 @@ const automatikRandanteil = 0.005;
 
 /// Leitet aus [daten] ab, wie Belichtung und Kontrast stehen sollten.
 ///
-/// Das Verfahren, kurz: Schwarz- und Weisspunkt als Perzentile bestimmen,
-/// die Bildmitte auf mittleres Grau ziehen (das ergibt die Belichtung) und
-/// den genutzten Tonwertumfang auf den vollen strecken (das ergibt den
-/// Kontrast). Reine Rechnung – prüfbar ohne Bild.
+/// Das Verfahren, kurz: Schwarz- und Weisspunkt als Perzentile bestimmen
+/// und so Belichtung und Kontrast wählen, dass der Schwarzpunkt auf Schwarz
+/// und der Weisspunkt auf Weiss fällt – gerechnet so, wie die Regler
+/// tatsächlich wirken (siehe [automatikAusgabe]). Reine Rechnung – prüfbar
+/// ohne Bild.
+///
+/// Bis BEA-008 nahm die Rechnung an, beide Regler wirkten auf den
+/// kodierten Tonwerten, mit dem Kontrast um mittleres Grau. Im Renderer
+/// wirken sie auf dem linearen Licht, der Kontrast um linear 0,5 (das ist
+/// kodiert hellgrau). Ein dunkles Foto mit wenig Umfang bekam so Kontrast
+/// +1 – und fiel ganz auf Schwarz.
 ///
 /// Bei einem leeren Histogramm kommt [Automatikwerte.neutral] zurück:
 /// „nichts gemessen" ist kein Grund, an den Reglern zu drehen.
@@ -188,19 +195,48 @@ Automatikwerte automatikAus(
   // strecken. Dann bleibt der Kontrast, wie er ist.
   if (umfang <= 1) return Automatikwerte.neutral;
 
-  // Kontrast: Wie weit reicht der genutzte Umfang am vollen vorbei?
-  // Nutzt ein Bild nur die Hälfte, verdoppelt ein Kontrast von +1 sie.
-  final streckung = (histogramBinCount - 1) / umfang;
-  final kontrast = (streckung - 1).clamp(0.0, 1.0);
+  final hoechste = (histogramBinCount - 1).toDouble();
+  final lSchwarz = srgbLinear(schwarz / hoechste);
+  final lWeiss = srgbLinear(weiss / hoechste);
 
-  // Belichtung: Die Mitte des genutzten Umfangs soll auf mittleres Grau.
-  // In EV gerechnet, weil der Regler EV ist – ein Faktor 2 ist ein EV.
-  final mitte = (schwarz + weiss) / 2;
-  final faktor = mitte <= 0 ? 1.0 : 127.5 / mitte;
-  final belichtung = (math.log(faktor) / math.ln2).clamp(-3.0, 3.0);
+  // Schwarzpunkt auf 0 und Weisspunkt auf 1 legt der Kontrast
+  // k = 2 · schwarz / (weiss − schwarz) fest (beides linear). Mehr als
+  // +1 kann der Regler nicht; bei einem flauen hellen Bild bleibt der
+  // Schwarzpunkt dann etwas über 0.
+  var kontrast = (2 * lSchwarz / (lWeiss - lSchwarz)).clamp(0.0, 1.0);
+
+  // Die Belichtung, die mit diesem Kontrast den Weisspunkt auf 1 bringt.
+  final belichtung =
+      (math.log((1 + kontrast / 2) / ((1 + kontrast) * lWeiss)) / math.ln2)
+          .clamp(-3.0, 3.0);
+
+  // Steht die Belichtung am Anschlag (sehr dunkles Bild), darf der
+  // Kontrast den Schwarzpunkt nicht unter 0 drücken – sonst verschwinden
+  // genau die Schatten, die die Automatik heben sollte.
+  final schwarzBelichtet = math.pow(2, belichtung) * lSchwarz;
+  if (schwarzBelichtet < 0.5) {
+    kontrast = math.min(kontrast, schwarzBelichtet / (0.5 - schwarzBelichtet));
+  }
 
   return Automatikwerte(belichtung: belichtung, kontrast: kontrast);
 }
+
+/// sRGB-kodierter Tonwert (0 … 1) als lineares Licht.
+double srgbLinear(double t) =>
+    t <= 0.04045 ? t / 12.92 : math.pow((t + 0.055) / 1.055, 2.4).toDouble();
+
+/// Wohin Belichtung [belichtung] und Kontrast [kontrast] einen Tonwert
+/// [tonwert] (sRGB-kodiert, 0 … 1) legen – linear, vor dem Beschneiden
+/// auf 0 … 1. Dieselbe Rechnung wie im Renderer (develop_adjustments.frag,
+/// ImageConverter.swift, entwickeln.js): erst der Faktor 2^EV auf das
+/// lineare Licht, dann um 0,5 gespreizt.
+double automatikAusgabe(
+  double tonwert, {
+  required double belichtung,
+  required double kontrast,
+}) =>
+    (srgbLinear(tonwert) * math.pow(2, belichtung) - 0.5) * (1 + kontrast) +
+    0.5;
 
 /// Zielgröße der längsten Kante vor der Auswertung. Ein Histogramm ist eine
 /// Verteilung – eine gleichmäßige Stichprobe liefert praktisch dieselbe Form

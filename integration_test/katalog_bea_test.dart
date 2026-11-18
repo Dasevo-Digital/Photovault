@@ -7978,12 +7978,9 @@ void _befundTests() {
     await abschluss(tester);
   }, skip: true);
 
-  // Befund: „Belichtung und Kontrast automatisch“ macht ein dunkles Foto
-  // mit wenig Umfang ganz schwarz. Die Automatik setzt Kontrast +1
-  // (services/histogram.dart:189-194), und der Kontrast wirkt über
-  // CIColorControls im linearen Arbeitsfarbraum um 0,5 als Drehpunkt
-  // (macos/Runner/ImageConverter.swift:1054-1057): Dunkle Werte liegen
-  // dort weit unter 0,5 und landen bei 0.
+  // Behoben in #411: Die Automatik rechnet Belichtung und Kontrast so, wie
+  // der Renderer sie anwendet (lineares Licht, Kontrast um linear 0,5);
+  // ein dunkles Foto mit wenig Umfang wird heller statt schwarz.
   testWidgets('BEA-008 Befund: Automatik macht ein dunkles Foto schwarz', (
     tester,
   ) async {
@@ -8004,7 +8001,7 @@ void _befundTests() {
     await renderAbwarten(tester);
     expect(mittel(vorschau(tester)), greaterThan(h0 + 15));
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Befund: Videos kommen mit ihrem Vorschaubild auf das Kontaktblatt
   // (services/contact_sheet_service.dart:85-90 nimmt jedes vorhandene

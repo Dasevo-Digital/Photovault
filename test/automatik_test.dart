@@ -41,15 +41,49 @@ void main() {
     );
   });
 
-  test('ein flaues Bild bekommt Kontrast', () {
+  /// Wohin die vorgeschlagenen Werte den Tonwert [stufe] (0 … 255) legen,
+  /// so gerechnet wie im Renderer.
+  double aus(Automatikwerte w, int stufe) => automatikAusgabe(
+    stufe / 255,
+    belichtung: w.belichtung,
+    kontrast: w.kontrast,
+  );
+
+  test('ein flaues Bild wird auf den vollen Umfang gestreckt', () {
     // Nutzt nur die Hälfte des Umfangs – das lässt sich strecken.
     final w = automatikAus(spanne(64, 191));
-    expect(w.kontrast, greaterThan(0.5));
+    expect(w.kontrast, greaterThan(0));
+    expect(aus(w, 64), closeTo(0, 0.02), reason: 'Schwarzpunkt auf Schwarz');
+    expect(aus(w, 191), closeTo(1, 0.02), reason: 'Weisspunkt auf Weiss');
+  });
+
+  test('ein dunkles Foto mit wenig Umfang wird heller, nicht schwarz '
+      '(BEA-008)', () {
+    // Der Fall aus dem Katalog: ein Verlauf von 8 bis 78. Die alte
+    // Rechnung setzte Kontrast +1, und alles fiel auf Schwarz.
+    final w = automatikAus(spanne(8, 78));
+    expect(w.belichtung, inInclusiveRange(-3, 3));
+    expect(w.kontrast, inInclusiveRange(0, 1));
+    for (final stufe in [20, 43, 60, 78]) {
+      expect(
+        aus(w, stufe),
+        greaterThan(srgbLinear(stufe / 255)),
+        reason: 'Tonwert $stufe muss heller werden',
+      );
+    }
     expect(
-      w.belichtung,
-      closeTo(0, 0.1),
-      reason: 'die Mitte liegt bereits bei mittlerem Grau',
+      aus(w, 8),
+      greaterThanOrEqualTo(-1e-9),
+      reason: 'der Schwarzpunkt fällt nicht unter Schwarz',
     );
+    expect(aus(w, 9), greaterThan(0), reason: 'darüber bleibt Zeichnung');
+  });
+
+  test('ein zweiter Druck ändert kaum noch etwas', () {
+    // Was der erste Druck ergibt, nutzt den vollen Umfang.
+    final w = automatikAus(spanne(0, 255));
+    expect(w.belichtung.abs(), lessThan(0.05));
+    expect(w.kontrast.abs(), lessThan(0.05));
   });
 
   test('ein zu dunkles Bild wird aufgehellt', () {
