@@ -7,6 +7,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/backup_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/services/vault_crypto.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -315,6 +316,175 @@ void main() {
     });
 
     String gleich(int i) => '00000000-0000-4000-8000-00000000000$i';
+
+    void beschaedigeBild(String id) {
+      final datei = File('${kopie(id).path}/datei.enc');
+      final bytes = datei.readAsBytesSync();
+      bytes[bytes.length ~/ 2] ^= 0xff;
+      datei.writeAsBytesSync(bytes);
+    }
+
+    Future<(RestoreErgebnis, int)> wiederherstellen() async {
+      final ziel = await Directory('${ordner.path}/zurueck').create();
+      final db = await AppDatabase.open(ziel);
+      try {
+        final pfade = await StoragePaths.oeffne(
+          Directory('${ziel.path}/library'),
+        );
+        final lauf = await BackupService(db, pfade)
+            .restoreFromBackup(
+              sicherungVon(erika).path,
+              ImportService(db, pfade),
+              passphrase: passphrase,
+            )
+            .toList();
+        return (
+          lauf.last.wiederherstellung!,
+          (await db.select(db.assets).get()).length,
+        );
+      } finally {
+        await db.close();
+      }
+    }
+
+    test(
+      'gleich lange beschädigte Kopie wird aus der heilen Quelle repariert',
+      () async {
+        final id = eintrag(gleich(1), 'kammer.jpg', 48);
+        await sicherung.jetzt();
+        beschaedigeBild(id);
+        await sicherung.jetzt();
+        final stand = await sicherung.stand();
+        final konto = (stand['konten'] as List).single as Map;
+        expect(stand['ok'], isTrue);
+        expect(konto['kammerGeprueft'], 1);
+        expect(konto['kammerNeu'], 1);
+        final (restore, anzahl) = await wiederherstellen();
+        expect(restore.erfolgreich, isTrue);
+        expect(anzahl, 3);
+      },
+    );
+
+    test(
+      'Stichprobe wechselt und ein bekannter Schaden bleibt ohne Quelle gemeldet',
+      () async {
+        for (var i = 0; i < 10; i++) {
+          eintrag(gleich(i), 'kammer$i.jpg', 50 + i);
+        }
+        await sicherung.jetzt();
+        final id = gleich(9);
+        beschaedigeBild(id);
+        Directory('${kammer.path}/$id').deleteSync(recursive: true);
+        await sicherung.jetzt();
+        final stand = await sicherung.stand();
+        final konto = (stand['konten'] as List).single as Map;
+        expect(konto['kammerGeprueft'], 8);
+        expect(konto['kammerFehler'], 1);
+        expect(stand['ok'], isFalse);
+        // Andere Einträge werden weiter geprüft. Der zuvor erkannte Schaden
+        // bleibt im Stand, auch in Läufen, deren Stichprobe ihn überspringt.
+        for (var i = 0; i < 4; i++) {
+          await sicherung.jetzt();
+          expect((await sicherung.stand())['ok'], isFalse);
+        }
+      },
+    );
+
+    test(
+      'eine geänderte Quelle ersetzt keine beschädigte Sicherungskopie',
+      () async {
+        final id = eintrag(gleich(1), 'kammer.jpg', 48);
+        await sicherung.jetzt();
+        beschaedigeBild(id);
+        final datei = File('${kopie(id).path}/datei.enc');
+        final vorher = datei.readAsBytesSync();
+        final quelle = File('${kammer.path}/$id/kammer.jpg');
+        final bytes = quelle.readAsBytesSync();
+        bytes[10] ^= 0xff;
+        quelle.writeAsBytesSync(bytes);
+        await sicherung.jetzt();
+        expect((await sicherung.stand())['ok'], isFalse);
+        expect(datei.readAsBytesSync(), vorher);
+        expect(File('${kopie(id).path}/angaben.enc').existsSync(), isTrue);
+      },
+    );
+
+    test(
+      'Wiederherstellung meldet fehlende Angaben einer fertigen Kopie',
+      () async {
+        final id = eintrag(gleich(1), 'kammer.jpg', 48);
+        await sicherung.jetzt();
+        File('${kopie(id).path}/angaben.enc').deleteSync();
+        final (restore, anzahl) = await wiederherstellen();
+        expect(anzahl, 2);
+        expect(restore.erfolgreich, isFalse);
+        expect(restore.fehler, 1);
+        await sicherung.jetzt();
+        expect((await sicherung.stand())['ok'], isTrue);
+      },
+    );
+
+    test(
+      'abgebrochene Kopie ohne Abschlussvermerk ist bei der Wiederherstellung kein Fehler',
+      () async {
+        final id = eintrag(gleich(1), 'kammer.jpg', 48);
+        await sicherung.jetzt();
+        File('${kopie(id).path}/gesichert').deleteSync();
+        File('${kopie(id).path}/angaben.enc').deleteSync();
+        final (restore, anzahl) = await wiederherstellen();
+        expect(anzahl, 2);
+        expect(restore.erfolgreich, isTrue);
+      },
+    );
+
+    test('Wiederherstellung meldet abgewiesenen Kammerimport', () async {
+      final id = eintrag(gleich(1), 'kammer.jpg', 48);
+      await sicherung.jetzt();
+      final wurzel = sicherungVon(erika).path;
+      final h = jsonDecode(File('$wurzel/vault.key').readAsStringSync()) as Map;
+      final key = await VaultCrypto.unwrapMasterKey(
+        passphrase,
+        kdfSalt: base64Decode(h['kdfSalt'] as String),
+        nonce: base64Decode(h['nonce'] as String),
+        wrapped: base64Decode(h['wrapped'] as String),
+      );
+      final angaben = File('${kammer.path}/$id/angaben.json');
+      final falsch = jsonDecode(angaben.readAsStringSync()) as Map;
+      falsch['sha256'] = List.filled(64, '0').join();
+      final kopieMitFalscherSumme = File('${ordner.path}/angaben.json')
+        ..writeAsStringSync(jsonEncode(falsch));
+      await VaultCrypto.encryptFile(
+        kopieMitFalscherSumme,
+        File('${kopie(id).path}/angaben.enc'),
+        key,
+      );
+      final (restore, anzahl) = await wiederherstellen();
+      expect(anzahl, 2);
+      expect(restore.erfolgreich, isFalse);
+      expect(restore.fehler, 1);
+    });
+
+    test(
+      'Kontostand behält Erfolgszeit bei gescheiterter Kammersicherung',
+      () async {
+        await sicherung.jetzt();
+        final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+        final vorher = (await db.backupSettingsRow())!.lastAutoBackupAt;
+        expect(vorher, isNotNull);
+        jetzt = jetzt.add(const Duration(days: 1));
+        final id = eintrag(gleich(1), 'kammer.jpg', 48);
+        final quelle = File('${kammer.path}/$id/kammer.jpg');
+        final bytes = quelle.readAsBytesSync();
+        quelle.deleteSync();
+        await sicherung.jetzt();
+        expect((await sicherung.stand())['ok'], isFalse);
+        expect((await db.backupSettingsRow())!.lastAutoBackupAt, vorher);
+        quelle.writeAsBytesSync(bytes);
+        await sicherung.jetzt();
+        expect((await sicherung.stand())['ok'], isTrue);
+        expect((await db.backupSettingsRow())!.lastAutoBackupAt, jetzt);
+      },
+    );
 
     test('verschlüsselt, ohne Namen, und nur einmal', () async {
       eintrag(gleich(1), 'IMG_GEHEIM.jpg', 40);

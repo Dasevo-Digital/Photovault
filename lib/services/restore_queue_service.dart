@@ -107,6 +107,7 @@ class RestoreQueueService {
   String? _activeJobId;
   final Set<String> _cancelRequested = {};
   Timer? _idleTimer;
+  Future<void>? _ablage;
 
   /// Der gerade rechnende Lauf – zum Anhalten, Fortsetzen und Abbrechen.
   Restaurierungslauf? _lauf;
@@ -135,11 +136,12 @@ class RestoreQueueService {
   /// Screens) denselben mehrminütigen Auftrag mehrfach redundant laufen
   /// lassen.
   Future<String> enqueue(String assetId) async {
-    if (restoreHalter?.installiert != true) {
+    if (_beendet || restoreHalter?.installiert != true) {
       throw const RestaurierungNichtVerfuegbar();
     }
     final existing = await _db.activeRestoreJobForAsset(assetId);
     if (existing != null) return existing.id;
+    if (_beendet) throw const RestaurierungNichtVerfuegbar();
 
     final id = const Uuid().v4();
     await _db.createRestoreJob(
@@ -164,6 +166,7 @@ class RestoreQueueService {
   /// `isCancelled`) und dann als `cancelled` markiert, OHNE ein
   /// unvollständiges Ergebnis zu speichern.
   Future<void> cancel(String jobId) async {
+    if (_beendet) return;
     if (jobId == _activeJobId) {
       _cancelRequested.add(jobId);
       _lauf?.abbrechen();
@@ -179,6 +182,7 @@ class RestoreQueueService {
   /// Foto mit sechzig Kacheln wurde so nie fertig, solange jemand mit der
   /// App arbeitete.
   void noteUserInteraction() {
+    if (_beendet) return;
     _idle = false;
     _idleTimer?.cancel();
     _lauf?.pausieren();
@@ -198,6 +202,7 @@ class RestoreQueueService {
   /// Beenden unterbrochene Restaurierung nicht gleich beim nächsten Öffnen
   /// wieder die Bedienung belegt.
   Future<void> resume() {
+    if (_beendet) return Future<void>.value();
     _idle = true;
     return _maybeStartNext();
   }
@@ -208,6 +213,7 @@ class RestoreQueueService {
   }
 
   void _warteAufLeerlauf() {
+    if (_beendet) return;
     // Ein neu angelegter Auftrag muss nicht zwingend eine weitere Eingabe
     // abwarten, wenn die App schon lange still ist. Beim Start gilt die
     // gleiche Regel trotzdem: Erst nach [idleDelay] darf Rechenarbeit los.
@@ -222,15 +228,20 @@ class RestoreQueueService {
     });
   }
 
-  /// Hält die Warteschlange für immer an, bevor die Datenbank geschlossen
-  /// wird (LibraryState.vorDemBeenden): Der Leerlauf-Wecker feuert sonst
-  /// bis zu [idleDelay] später und fragt eine geschlossene Datenbank.
-  void beende() {
+  /// Hält die Warteschlange an und bricht die laufende Inferenz ab.
+  /// Die Aufträge bleiben beim Beenden offen und werden beim Neustart
+  /// wieder eingereiht. Eine bereits begonnene Ablage darf fertig werden.
+  Future<void> beende() async {
     _beendet = true;
     _idle = false;
     _idleTimer?.cancel();
     _idleTimer = null;
-    _lauf?.pausieren();
+    _lauf?.abbrechen();
+    try {
+      await _ablage?.timeout(const Duration(seconds: 3));
+    } finally {
+      _ablagefristAbgelaufen = true;
+    }
   }
 
   bool _beendet = false;
@@ -247,7 +258,7 @@ class RestoreQueueService {
     _processing = true;
     try {
       final next = await _db.nextQueuedRestoreJob();
-      if (next == null) return;
+      if (_beendet || next == null) return;
       _activeJobId = next.id;
       try {
         await _process(next);
@@ -278,7 +289,7 @@ class RestoreQueueService {
       // für immer auf "queued" stehen UND das nachfolgende
       // unawaited(_maybeStartNext()) in _maybeStartNext() wurde nie erreicht,
       // wodurch die gesamte Warteschlange dauerhaft blockierte (Audit-Fund).
-      await _db.markRestoreJobStatus(
+      await _status(
         job.id,
         'failed',
         // Kennung UND Ursache: Die Kennung wird übersetzt, die Ursache
@@ -288,19 +299,21 @@ class RestoreQueueService {
       return;
     }
     if (service == null) {
-      await _db.markRestoreJobStatus(
+      await _status(
         job.id,
         'failed',
         errorMessage: RestaurierungsGrund.modellWeg.name,
       );
       return;
     }
-    await _db.markRestoreJobStatus(job.id, 'running');
-
     try {
+      if (_beendet) return;
+      await _status(job.id, 'running');
+      if (_beendet) return;
       final asset = await _db.assetById(job.assetId);
+      if (_beendet) return;
       if (asset == null) {
-        await _db.markRestoreJobStatus(
+        await _status(
           job.id,
           'failed',
           errorMessage: RestaurierungsGrund.fotoWeg.name,
@@ -308,7 +321,7 @@ class RestoreQueueService {
         return;
       }
       if (asset.isLocked) {
-        await _db.markRestoreJobStatus(
+        await _status(
           job.id,
           'failed',
           errorMessage: RestaurierungsGrund.gesperrt.name,
@@ -318,7 +331,7 @@ class RestoreQueueService {
       final targetWidth = asset.widthPx;
       final targetHeight = asset.heightPx;
       if (targetWidth == null || targetHeight == null) {
-        await _db.markRestoreJobStatus(
+        await _status(
           job.id,
           'failed',
           errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name,
@@ -327,8 +340,9 @@ class RestoreQueueService {
       }
 
       final jpegBytes = await entwickeltesJpeg(asset);
+      if (_beendet) return;
       if (jpegBytes == null) {
-        await _db.markRestoreJobStatus(
+        await _status(
           job.id,
           'failed',
           errorMessage: RestaurierungsGrund.nichtGerendert.name,
@@ -344,22 +358,29 @@ class RestoreQueueService {
         // nicht ausbremsen) – catchError statt eines unbehandelten
         // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
         // fehlschlägt.
-        onProgress: (done, total) => unawaited(
-          _db.updateRestoreJobProgress(job.id, done, total).catchError((_) {}),
-        ),
+        onProgress: (done, total) {
+          if (!_beendet) {
+            unawaited(
+              _db
+                  .updateRestoreJobProgress(job.id, done, total)
+                  .catchError((_) {}),
+            );
+          }
+        },
       );
       _lauf = lauf;
       // Kam in der Zwischenzeit eine Eingabe, wartet er von Anfang an.
       if (!_idle) lauf.pausieren();
       if (_cancelRequested.contains(job.id)) lauf.abbrechen();
       final ergebnis = await lauf.ergebnis;
+      if (_beendet) return;
 
       if (_cancelRequested.contains(job.id)) {
-        await _db.markRestoreJobStatus(job.id, 'cancelled');
+        await _status(job.id, 'cancelled');
         return;
       }
       if (ergebnis == null) {
-        await _db.markRestoreJobStatus(
+        await _status(
           job.id,
           'failed',
           errorMessage: RestaurierungsGrund.nichtDekodiert.name,
@@ -367,23 +388,43 @@ class RestoreQueueService {
         return;
       }
 
-      await legeRestaurierungAb(
-        db: _db,
-        paths: _paths,
-        assetId: job.assetId,
-        jpeg: ergebnis,
-      );
-      await _db.markRestoreJobStatus(job.id, 'done');
+      final ablage = _speichereErgebnis(job, ergebnis);
+      _ablage = ablage;
+      try {
+        await ablage;
+      } finally {
+        _ablage = null;
+      }
     } catch (e) {
-      await _db.markRestoreJobStatus(
-        job.id,
-        'failed',
-        errorMessage: e.toString(),
-      );
+      await _status(job.id, 'failed', errorMessage: e.toString());
     } finally {
       halter!.zurueckgeben();
+      if (_beendet) await halter.freigebenWennUnbenutzt();
     }
   }
+
+  Future<void> _status(String id, String status, {String? errorMessage}) async {
+    if (_beendet) return;
+    await _db.markRestoreJobStatus(id, status, errorMessage: errorMessage);
+  }
+
+  Future<void> _speichereErgebnis(RestoreJobData job, Uint8List jpeg) async {
+    await legeRestaurierungAb(
+      db: _db,
+      paths: _paths,
+      assetId: job.assetId,
+      jpeg: jpeg,
+      abgebrochen: () => _ablagefristAbgelaufen,
+    );
+    if (!_ablagefristAbgelaufen) {
+      await _db.markRestoreJobStatus(job.id, 'done');
+    }
+  }
+
+  // LibraryState schließt die DB auch dann, wenn die Ablage festhängt.
+  // In diesem Fall darf ein später fortgesetzter Schreibweg die DB nicht
+  // mehr verwenden. Der Auftrag bleibt beim nächsten Start wiederholbar.
+  bool _ablagefristAbgelaufen = false;
 
   /// Das Foto so, wie es entwickelt ist (Regler und Masken), in voller
   /// Auflösung als JPEG – die Vorlage für die Restaurierung und für das
@@ -394,7 +435,9 @@ class RestoreQueueService {
     // Eingabe: das bereits entwickelte Bild (aktuelle Regler/Masken) in
     // voller Auflösung über den nativen Kanal – das `image`-Dart-Paket
     // kann RAW-Originale nicht selbst dekodieren (siehe DevelopScreen).
+    if (_beendet) return null;
     final settings = await _db.developSettingsForAsset(asset.id);
+    if (_beendet) return null;
     // Alle Regler, auch Kurve, Mischer und Farbtabelle – bis 3.51 nur die
     // acht Grundregler, und die Vorlage wich vom entwickelten Bild ab (#283).
     final adjustments = settings == null
@@ -403,7 +446,9 @@ class RestoreQueueService {
             settings,
             lut: await ladeFarbtabelle(_paths, settings.lutPath),
           );
+    if (_beendet) return null;
     final masks = await _db.masksForAsset(asset.id);
+    if (_beendet) return null;
     final maskLayers = [
       for (final m in masks)
         MaskAdjustmentLayer(

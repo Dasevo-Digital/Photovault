@@ -258,6 +258,34 @@ class Serversicherung {
         try {
           final b = (await bibliotheken.fuer(k.id)).bibliothek;
           await _verpackterSchluesselIn(b.db, verpackt);
+          // Die Fotokammer gehört nicht zur Bibliothek, liegt aber oft nur
+          // hier: Die Karte ist womöglich schon formatiert (#341).
+          // Die Kammer vor der Bibliotheksprobe reparieren. Die Probe
+          // liest ihre Angaben und kann so die gerade reparierte Kopie sehen.
+          final kammer =
+              await FotokammerSicherung.sichere(
+                kammer: Fotokammer(b).ordner,
+                sicherung: Directory(
+                  p.join(
+                    ziel!.path,
+                    ordnerFuer(k),
+                    BackupService.autoBackupFolderName,
+                  ),
+                ),
+                schluessel: schluessel,
+                jetzt: _uhr(),
+              ).onError<Object>((e, _) {
+                // Eine nicht lesbare Kammer soll die Bibliothek weiter sichern.
+                protokoll('Sicherung der Fotokammer von ${k.name}: $e');
+                fehler ??= 'Fotokammer von „${k.name}“ nicht gesichert';
+                return const KammerSicherungsbilanz(
+                  eintraege: 0,
+                  neu: 0,
+                  geprueft: 0,
+                  gescheitert: 1,
+                  entfernt: 0,
+                );
+              });
           final dienst = BackupService(b.db, b.pfade);
           var gesamt = 0, fehlgeschlagen = 0;
           BackupProbeErgebnis? probe;
@@ -270,28 +298,18 @@ class Serversicherung {
             fehlgeschlagen += f.fehlgeschlagen ?? 0;
             probe = f.wiederherstellungsprobe ?? probe;
           }
-          await b.db.setLastAutoBackupAt(_uhr());
-          // Die Fotokammer gehört nicht zur Bibliothek, liegt aber oft nur
-          // hier: Die Karte ist womöglich schon formatiert (#341).
-          final kammer = await FotokammerSicherung.sichere(
-            kammer: Fotokammer(b).ordner,
-            sicherung: Directory(
-              p.join(
-                ziel!.path,
-                ordnerFuer(k),
-                BackupService.autoBackupFolderName,
-              ),
-            ),
-            schluessel: schluessel,
-            jetzt: _uhr(),
-          );
           fehlgeschlagen += kammer.gescheitert;
+          if (fehlgeschlagen == 0 && probe?.erfolgreich == true) {
+            await b.db.setLastAutoBackupAt(_uhr());
+          }
           ergebnis.add({
             'konto': k.name,
             'dateien': gesamt,
             'neu': dienst.letzterLaufNeu,
             'kammer': kammer.eintraege,
             'kammerNeu': kammer.neu,
+            'kammerGeprueft': kammer.geprueft,
+            'kammerFehler': kammer.gescheitert,
             'fehlgeschlagen': fehlgeschlagen,
             'wiederherstellungsprobe': probe?.alsJson(),
           });

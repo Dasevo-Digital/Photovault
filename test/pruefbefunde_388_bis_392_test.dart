@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -323,12 +324,14 @@ void main() {
       final kammer = Directory('${temp.path}/kammer');
       final eintrag = Directory('${kammer.path}/$name')
         ..createSync(recursive: true);
-      File(
-        '${eintrag.path}/$name.jpg',
-      ).writeAsBytesSync(jpeg(name.length * 20));
-      File(
-        '${eintrag.path}/angaben.json',
-      ).writeAsStringSync(jsonEncode({'name': '$name.jpg'}));
+      final bytes = jpeg(name.length * 20);
+      File('${eintrag.path}/$name.jpg').writeAsBytesSync(bytes);
+      File('${eintrag.path}/angaben.json').writeAsStringSync(
+        jsonEncode({
+          'name': '$name.jpg',
+          'sha256': sha256.convert(bytes).toString(),
+        }),
+      );
       final r = await FotokammerSicherung.sichere(
         kammer: kammer,
         sicherung: Directory(root),
@@ -361,17 +364,51 @@ void main() {
       final stufen = await service.autoBackupGenerations(root);
       expect(stufen, hasLength(2));
 
-      await ziel
+      final restore = await ziel
           .restoreFromBackup(
             root,
             zielImport,
             entschluesselungsschluessel: key,
             generationSnapshotPath: alt.snapshotPath,
           )
-          .drain<void>();
+          .toList();
 
+      expect(restore.last.wiederherstellung!.erfolgreich, isTrue);
       expect(await namen(), ['bibliothek.jpg']);
     });
+
+    test(
+      'fehlende Angaben einer späteren Kammerkopie betreffen keine ältere Stufe',
+      () async {
+        final (:root, :key) = await sicherung();
+        final service = BackupService(db, paths);
+        final alt = (await service.autoBackupGenerations(root)).single;
+        await kammerfoto(
+          root,
+          key,
+          'spaeter',
+          alt.createdAt.add(const Duration(days: 2)),
+        );
+        await foto('zweite.jpg', 140);
+        await Future<void>.delayed(const Duration(seconds: 1));
+        await service
+            .performAutoBackup('${temp.path}/backup', key)
+            .drain<void>();
+        expect(await service.autoBackupGenerations(root), hasLength(2));
+        File('$root/fotokammer/spaeter/angaben.enc').deleteSync();
+
+        final wiederherstellung = await ziel
+            .restoreFromBackup(
+              root,
+              zielImport,
+              entschluesselungsschluessel: key,
+              generationSnapshotPath: alt.snapshotPath,
+            )
+            .toList();
+        expect(wiederherstellung.last.wiederherstellung!.erfolgreich, isTrue);
+        expect(await namen(), ['bibliothek.jpg']);
+      },
+    );
 
     test('die neueste Stufe holt auch spätere Kammerfotos', () async {
       final (:root, :key) = await sicherung();

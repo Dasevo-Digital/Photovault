@@ -50,6 +50,7 @@ Future<String> legeRestaurierungAb({
   required StoragePaths paths,
   required String assetId,
   required Uint8List jpeg,
+  bool Function()? abgebrochen,
 }) async => _lege(
   db: db,
   paths: paths,
@@ -58,6 +59,7 @@ Future<String> legeRestaurierungAb({
   neu: paths.neuerRestaurierungspfad(assetId),
   jpeg: jpeg,
   befehl: (neu) => RestaurierungSpeichern(assetId, neu),
+  abgebrochen: abgebrochen,
 );
 
 Future<String> _lege({
@@ -68,7 +70,15 @@ Future<String> _lege({
   required String neu,
   required Uint8List jpeg,
   required Befehl<void> Function(String neu) befehl,
+  bool Function()? abgebrochen,
 }) async {
+  void pruefeAbbruch() {
+    if (abgebrochen?.call() == true) {
+      throw StateError('Das Speichern wurde beim Beenden abgebrochen.');
+    }
+  }
+
+  pruefeAbbruch();
   final datei = paths.absolute(neu);
   await datei.parent.create(recursive: true);
   await datei.writeAsBytes(jpeg, flush: true);
@@ -78,6 +88,7 @@ Future<String> _lege({
     } catch (e) {
       throw EntwicklungNichtAbgelegt(e);
     }
+    pruefeAbbruch();
     await db.fuehreAus(befehl(neu));
   } catch (_) {
     if (await datei.exists()) await datei.delete();

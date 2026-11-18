@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart' as crypto;
 import 'package:cryptography/cryptography.dart';
 
 /// Größe der Klartext-Chunks beim Ver-/Entschlüsseln einer Datei – erlaubt
@@ -254,9 +256,18 @@ class VaultCrypto {
   static Future<void> encryptFile(
     File source,
     File destination,
-    SecretKey masterKey,
-  ) async {
+    SecretKey masterKey, {
+    String? erwartetePruefsumme,
+  }) async {
     final input = await source.open(mode: FileMode.read);
+    String? pruefsumme;
+    final hash = erwartetePruefsumme == null
+        ? null
+        : crypto.sha256.startChunkedConversion(
+            ChunkedConversionSink<crypto.Digest>.withCallback(
+              (werte) => pruefsumme = werte.single.toString(),
+            ),
+          );
     RandomAccessFile? ausgabe;
     try {
       // Eine Datei mit Schreibzugriff statt eines IOSink, siehe
@@ -298,9 +309,15 @@ class VaultCrypto {
           gelesen += n;
         }
         if (gelesen == 0) break;
-        await schreibe(Uint8List.sublistView(puffer, 0, gelesen), nummer);
+        final block = Uint8List.sublistView(puffer, 0, gelesen);
+        hash?.add(block);
+        await schreibe(block, nummer);
         nummer++;
         if (gelesen < _chunkSize) break;
+      }
+      hash?.close();
+      if (pruefsumme != erwartetePruefsumme) {
+        throw const FormatException('pv_vault_quellpruefsumme');
       }
       await schreibe(const <int>[], nummer);
       await ausgabe.flush();
@@ -381,8 +398,39 @@ class VaultCrypto {
     return aus.takeBytes();
   }
 
+  /// Authentifiziert die ganze Datei und vergleicht gegebenenfalls die
+  /// Klartext-Prüfsumme. Hält nur einen Block im Speicher und schreibt nichts.
+  static Future<void> pruefeDatei(
+    File source,
+    SecretKey masterKey, {
+    String? erwartetePruefsumme,
+  }) async {
+    final input = await source.open(mode: FileMode.read);
+    String? pruefsumme;
+    final hash = erwartetePruefsumme == null
+        ? null
+        : crypto.sha256.startChunkedConversion(
+            ChunkedConversionSink<crypto.Digest>.withCallback(
+              (werte) => pruefsumme = werte.single.toString(),
+            ),
+          );
+    try {
+      await _entschluessele(
+        input,
+        masterKey,
+        (block) async => hash?.add(block),
+      );
+      hash?.close();
+      if (pruefsumme != erwartetePruefsumme) {
+        throw const FormatException('pv_vault_dateipruefsumme');
+      }
+    } finally {
+      await input.close();
+    }
+  }
+
   /// Liest [input] Block für Block, prüft jeden und gibt den Klartext an
-  /// [schreibe] – für [decryptFile] und [decryptFileToBytes].
+  /// [schreibe].
   static Future<void> _entschluessele(
     RandomAccessFile input,
     SecretKey masterKey,

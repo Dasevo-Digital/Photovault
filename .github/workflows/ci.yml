@@ -98,7 +98,7 @@ jobs:
       - if: matrix.target == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev xvfb xauth
       - if: matrix.target == 'android'
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
@@ -134,6 +134,30 @@ jobs:
               exit "$status"
             fi
           done
+      # Kleine Katalogläufe ohne Server oder Medien aus einer Bibliothek.
+      # Die vollständigen Läufe brauchen die getrennte Katalogumgebung.
+      - name: Desktop-Katalog (Start, Import und Zeitleiste)
+        if: matrix.target == 'linux'
+        timeout-minutes: 12
+        run: xvfb-run -a -s '-screen 0 1600x1000x24' flutter test -d linux integration_test/katalog_grundgeruest_test.dart --reporter expanded
+      - name: Handy-Katalog (Start und Anmeldung)
+        if: matrix.target == 'apple'
+        timeout-minutes: 18
+        working-directory: apps/mobil
+        shell: bash
+        run: |
+          simulator=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          geraete = json.load(sys.stdin)["devices"]
+          runtimes = sorted(
+              (r for r in geraete if r.startswith("com.apple.CoreSimulator.SimRuntime.iOS-")),
+              key=lambda r: tuple(map(int, r.partition("iOS-")[2].split("-"))),
+              reverse=True,
+          )
+          print(next(g["udid"] for r in runtimes for g in geraete[r] if g["name"].startswith("iPhone")))
+          ')
+          xcrun simctl bootstatus "$simulator" -b
+          flutter test -d "$simulator" integration_test/katalog_mob_kurz_test.dart --reporter expanded
       # Nach dem Bauen: Scheitern die Installationsabläufe, ist der Bau
       # trotzdem geprüft – vorher übersprang ein roter Test ihn wochenlang
       # (#257). Ihre Ausgabe steht wie beim Bauen als Anmerkung am Lauf.

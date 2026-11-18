@@ -12,7 +12,8 @@
 //
 // Laufen lassen nur über die Warteschlange des Prüfkatalogs (eigene
 // Plätze mit eigener Kennung `de.dasevo.photovault.e2e<n>`), nie direkt
-// mit `flutter test -d macos` im Hauptordner.
+// mit `flutter test -d macos` im Hauptordner. Der kurze Gerüsttest läuft
+// zusätzlich in der CI auf einem frischen Linux-Läufer.
 //
 // Was die Warteschlange über `--dart-define` hereingibt:
 //   PV_KATALOG_FIXTURES  Ordner mit vorbereiteten Testdateien (Videos …)

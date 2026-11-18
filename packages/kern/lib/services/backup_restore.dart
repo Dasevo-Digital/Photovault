@@ -183,14 +183,12 @@ class BackupWiederhersteller {
           _problem('pv_restore_kammer', e);
         }
       }
-      // Die Probe holt die Kammer nicht, liest aber ihre Angaben (#388):
-      // Eine beschädigte Kammer-Sicherung soll auffallen, bevor man sie
-      // braucht. Nur die kleinen Angaben – die Fotos prüft das Zurückholen.
+      // Die Bibliotheksprobe prüft den Aufbau der Kammer. Der Server
+      // authentifiziert zusätzlich den Bildinhalt einer eigenen Stichprobe.
       if (plan.schluessel case final key? when streng) {
         await FotokammerSicherung.eintraege(
           wurzel,
           key,
-          temp,
           beiFehler: (_, _) =>
               throw const FormatException('pv_probe_kammer_beschaedigt'),
         );
@@ -226,12 +224,7 @@ class BackupWiederhersteller {
     Directory temp, {
     String? generation,
   }) async {
-    var eintraege = await FotokammerSicherung.eintraege(
-      wurzel,
-      schluessel,
-      temp,
-      beiFehler: (id, x) => _problem('pv_restore_kammer', '$id: $x'),
-    );
+    bool Function(DateTime?)? auswahl;
     if (generation != null) {
       final stufen = await BackupSchnappschussSpeicher().generationen(wurzel);
       final i = stufen.indexWhere(
@@ -245,17 +238,19 @@ class BackupWiederhersteller {
                 .where((t) => t.isAfter(stufe))
                 .toList()
               ..sort();
-        eintraege = [
-          for (final e in eintraege)
-            if (FotokammerSicherung.gehoertZuStufe(
-              e.gesichertAm,
-              stufe: stufe,
-              naechste: spaetere.firstOrNull,
-            ))
-              e,
-        ];
+        auswahl = (am) => FotokammerSicherung.gehoertZuStufe(
+          am,
+          stufe: stufe,
+          naechste: spaetere.firstOrNull,
+        );
       }
     }
+    final eintraege = await FotokammerSicherung.eintraege(
+      wurzel,
+      schluessel,
+      auswahl: auswahl,
+      beiFehler: (id, x) => _problem('pv_restore_kammer', '$id: $x'),
+    );
     final neue = <String>[];
     for (final e in eintraege) {
       final ordner = await Directory(
@@ -273,6 +268,9 @@ class BackupWiederhersteller {
           klar.path,
           erwartetePruefsumme: e.angaben['sha256'] as String?,
         );
+        if (r.outcome == ImportOutcome.failed) {
+          _problem('pv_restore_kammer', r.error ?? 'pv_restore_kammer_import');
+        }
         if (r.outcome == ImportOutcome.imported && r.assetId != null) {
           neue.add(r.assetId!);
           await Beilagenangaben.aus(

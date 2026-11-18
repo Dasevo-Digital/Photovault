@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,15 +126,21 @@ void main() {
     late Directory kammer;
     late Directory sicherung;
     late SecretKey schluessel;
+    late Map<String, String> quellAngaben;
 
     setUp(() async {
       kammer = Directory('${temp.path}/kammer');
       final eintrag = Directory('${kammer.path}/e1')
         ..createSync(recursive: true);
-      File('${eintrag.path}/e1.jpg').writeAsBytesSync(jpeg(40));
+      final bytes = jpeg(40);
+      File('${eintrag.path}/e1.jpg').writeAsBytesSync(bytes);
+      quellAngaben = {
+        'name': 'e1.jpg',
+        'sha256': sha256.convert(bytes).toString(),
+      };
       File(
         '${eintrag.path}/angaben.json',
-      ).writeAsStringSync(jsonEncode({'name': 'e1.jpg'}));
+      ).writeAsStringSync(jsonEncode(quellAngaben));
       sicherung = Directory('${temp.path}/sicherung')..createSync();
       schluessel = (await VaultCrypto.createMasterKey('kammer')).masterKey;
     });
@@ -175,7 +182,7 @@ void main() {
 
       expect((await sichere(DateTime.utc(2026, 11, 15))).neu, 1);
       final klar = await VaultCrypto.decryptFileToBytes(angaben, schluessel);
-      expect(jsonDecode(utf8.decode(klar)), {'name': 'e1.jpg'});
+      expect(jsonDecode(utf8.decode(klar)), quellAngaben);
     });
 
     test('ein Eintrag ohne Vermerk bekommt die Zeit seiner Angaben', () async {
