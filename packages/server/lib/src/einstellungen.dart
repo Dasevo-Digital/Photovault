@@ -65,14 +65,13 @@ class Einstellungen {
   factory Einstellungen.ausUmgebung([Map<String, String>? umgebung]) {
     final u = umgebung ?? Platform.environment;
     final daten = Directory(p.absolute(u['PV_DATEN'] ?? 'daten'));
-    final port = int.tryParse(u['PV_PORT'] ?? '');
     final oeffentlich = u['PV_OEFFENTLICH'] == null
         ? null
-        : Uri.parse(u['PV_OEFFENTLICH']!);
+        : _adresse('PV_OEFFENTLICH', u['PV_OEFFENTLICH']!);
     return Einstellungen(
       daten: daten,
       adresse: u['PV_ADRESSE'] ?? '127.0.0.1',
-      port: port ?? 8790,
+      port: _port(u['PV_PORT']),
       modelle: u['PV_MODELLE'] == null
           ? null
           : Directory(p.absolute(u['PV_MODELLE']!)),
@@ -97,7 +96,11 @@ class Einstellungen {
         'nein',
         'no',
       }.contains((u['PV_KARTEN'] ?? '').trim().toLowerCase()),
-      speicherMindestGb: _zahl(u['PV_SPEICHER_MINDEST'], 2),
+      speicherMindestGb: _zahl(
+        'PV_SPEICHER_MINDEST',
+        u['PV_SPEICHER_MINDEST'],
+        2,
+      ),
       sicherung: (u['PV_SICHERUNG'] ?? '').trim().isEmpty
           ? null
           : Directory(p.absolute(u['PV_SICHERUNG']!.trim())),
@@ -138,7 +141,7 @@ class Einstellungen {
       geheimnis = File(datei).readAsStringSync().trim();
     }
     return OidcEinstellungen(
-      aussteller: Uri.parse(aussteller),
+      aussteller: _adresse('PV_OIDC_AUSSTELLER', aussteller),
       client: client,
       geheimnis: geheimnis == null || geheimnis.isEmpty ? null : geheimnis,
       oeffentlich: oeffentlich,
@@ -218,19 +221,36 @@ class Einstellungen {
   }
 
   static int _prozent(String? text, int vorgabe) {
-    final w = _zahl(text, vorgabe);
+    final w = _zahl('PV_SPEICHER_WARNUNG', text, vorgabe);
     if (w < 1 || w > 99) {
       throw ArgumentError('PV_SPEICHER_WARNUNG: „$text“ – 1 bis 99 Prozent');
     }
     return w;
   }
 
-  static int _zahl(String? text, int vorgabe) {
+  // Ein falscher Wert hält den Start an (Rückgabewert 78), statt still die
+  // Vorgabe zu nehmen: Mit PV_PORT=abc lauschte der Server sonst auf 8790,
+  // und wer ihn auf dem eingestellten Port suchte, fand nichts.
+  static int _zahl(String name, String? text, int vorgabe) {
     final t = (text ?? '').trim();
     if (t.isEmpty) return vorgabe;
     return int.tryParse(t) ??
-        (throw ArgumentError('„$t“ ist keine ganze Zahl'));
+        (throw ArgumentError('$name: „$t“ ist keine ganze Zahl'));
   }
+
+  static int _port(String? text) {
+    final port = _zahl('PV_PORT', text, 8790);
+    if (port < 1 || port > 65535) {
+      throw ArgumentError('PV_PORT: „${text!.trim()}“ – 1 bis 65535');
+    }
+    return port;
+  }
+
+  /// Eine Adresse wie `https://fotos.example.org`. Uri.parse würfe eine
+  /// FormatException, die der Start nicht als falsche Einstellung erkennt.
+  static Uri _adresse(String name, String text) =>
+      Uri.tryParse(text) ??
+      (throw ArgumentError('$name: „$text“ ist keine Adresse'));
 
   /// Liest `PV_SELBST_RECHNEN`.
   static Set<Analysestufe> selbstRechnenAus(String? text) {

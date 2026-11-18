@@ -41,7 +41,9 @@ class Beschleuniger {
     _ => 'CPU',
   };
 
-  /// Liest `PV_BESCHLEUNIGER`; `null` oder leer heisst CPU.
+  /// Liest `PV_BESCHLEUNIGER`; `null` oder leer heisst CPU. Ein unbekannter
+  /// Wert wirft einen [ArgumentError] wie jede andere falsche Einstellung:
+  /// Den fängt der Start und meldet ihn ohne Stacktrace (Rückgabewert 78).
   static Beschleuniger aus(String? text) {
     final t = (text ?? '').trim();
     if (t.isEmpty) return cpu;
@@ -55,10 +57,10 @@ class Beschleuniger {
         'cuda',
         geraet: int.tryParse(geraet ?? '0') != null
             ? geraet ?? '0'
-            : throw FormatException('cuda:$geraet – erwartet eine Zahl'),
+            : throw ArgumentError('PV_BESCHLEUNIGER=$t – nach cuda: eine Zahl'),
       ),
       'coreml' => const Beschleuniger._('coreml'),
-      _ => throw FormatException(
+      _ => throw ArgumentError(
         'PV_BESCHLEUNIGER=$t – bekannt sind cpu, openvino, cuda, coreml',
       ),
     };

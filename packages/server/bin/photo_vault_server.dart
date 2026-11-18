@@ -19,9 +19,8 @@ Future<void> main(List<String> argumente) async {
     gastProzessEinrichten();
     exit(await gastPruefen(argumente.sublist(1)));
   }
-  if (argumente.contains('--lebenszeichen')) {
-    exit(await _lebenszeichen(Einstellungen.ausUmgebung()));
-  }
+  // Eine falsche Einstellung: eine Zeile und 78 (EX_CONFIG), kein
+  // Stacktrace – auch für das Lebenszeichen.
   final Einstellungen e;
   try {
     e = Einstellungen.ausUmgebung();
@@ -29,6 +28,7 @@ Future<void> main(List<String> argumente) async {
     stderr.writeln(f.message);
     exit(78);
   }
+  if (argumente.contains('--lebenszeichen')) exit(await _lebenszeichen(e));
   if (argumente.isNotEmpty) exit(await verwalte(argumente, e));
 
   protokollZiel = (meldung) =>

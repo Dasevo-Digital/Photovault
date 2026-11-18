@@ -29,8 +29,8 @@ void main() {
       expect(Beschleuniger.aus('CUDA').name, 'CUDA:0');
       expect(Beschleuniger.aus('cuda:1').name, 'CUDA:1');
       expect(Beschleuniger.aus('coreml').name, 'CoreML');
-      expect(() => Beschleuniger.aus('rocm'), throwsFormatException);
-      expect(() => Beschleuniger.aus('cuda:zwei'), throwsFormatException);
+      expect(() => Beschleuniger.aus('rocm'), throwsArgumentError);
+      expect(() => Beschleuniger.aus('cuda:zwei'), throwsArgumentError);
     });
 
     test('OpenVINO rechnet in der Genauigkeit des Modells', () {
