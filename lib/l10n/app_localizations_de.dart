@@ -260,6 +260,12 @@ class AppTexteDe extends AppTexte {
       'Ins Bild hinein- und herauszoomen (auch mit einer Magic Mouse)';
 
   @override
+  String get kuerzelDrittelRaster => 'Drittel-Raster ein- oder ausblenden';
+
+  @override
+  String get kuerzelFokusPeaking => 'Fokus-Peaking ein- oder ausschalten';
+
+  @override
   String get timelineLeer => 'Noch keine Fotos in der Bibliothek.';
 
   @override

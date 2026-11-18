@@ -92,6 +92,72 @@ void main() {
     expect(gezeigt, contains('Strg-/⌘-Klick'));
   });
 
+  testWidgets('der Abschnitt Vollbildansicht nennt jede Taste der '
+      'Einzelansicht', (tester) async {
+    // Drittel-Raster (R) und Fokus-Peaking (P) wertete die Einzelansicht
+    // aus, die Tafel nannte sie nicht.
+    final quelle = File(
+      'lib/screens/asset_viewer_screen.dart',
+    ).readAsStringSync();
+    final start = quelle.indexOf('KeyEventResult _handleKeyEvent');
+    final rumpf = quelle.substring(start, quelle.indexOf('\n  }\n', start));
+    final behandelt = <String>{
+      for (final m in RegExp(r'LogicalKeyboardKey\.(\w+)').allMatches(rumpf))
+        m.group(1)!,
+      if (rumpf.contains('bewertungFuerZiffer')) '_ziffern0bis5',
+      if (rumpf.contains('farbmarkeFuerZiffer')) '_ziffern6bis9',
+    };
+    final de = lookupAppTexte(const Locale('de'));
+    final zeichen = <String, String>{
+      'arrowLeft': '←',
+      'arrowRight': '→',
+      'space': de.kuerzelLeertaste,
+      'escape': 'Esc',
+      'backspace': '⌫',
+      'delete': 'Delete',
+      'keyF': 'F',
+      'keyR': 'R',
+      'keyP': 'P',
+      '_ziffern0bis5': '0 – 5',
+      '_ziffern6bis9': '6 – 9',
+    };
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        locale: Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(child: Tastenkuerzeltafel()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final abschnitt = find
+        .ancestor(
+          of: find.text(de.kuerzelVollbild),
+          matching: find.byType(Column),
+        )
+        .first;
+    final tasten = {
+      for (final w in tester.widgetList<Text>(
+        find.descendant(of: abschnitt, matching: find.byType(Text)),
+      ))
+        w.data ?? '',
+    };
+
+    final fehlen = <String>[];
+    for (final taste in behandelt) {
+      final z = zeichen[taste];
+      if (z == null) {
+        fehlen.add('$taste (in diesem Prüfstand nicht eingetragen)');
+      } else if (!tasten.any((t) => t.split(' / ').contains(z))) {
+        fehlen.add('$taste -> „$z"');
+      }
+    }
+    expect(fehlen, isEmpty, reason: fehlen.join('\n'));
+  });
+
   test('die Tafel ist nicht nur über „?" erreichbar', () {
     // Der eigentliche Befund: Eine Übersicht der Tastenkürzel hinter einem
     // Tastenkürzel, das nirgends genannt wird, ist keine Übersicht.

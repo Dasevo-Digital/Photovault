@@ -2176,12 +2176,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Die Tafel nennt in „Vollbildansicht“ weder R (Drittel-Raster)
-  // noch P (Fokus-Peaking), obwohl die Einzelansicht beide auswertet
-  // (asset_viewer_screen.dart:368–375, tastenkuerzel.dart:57–72).
-  testWidgets('ANS-035 R und P stehen in der Tafel', skip: true, (
-    tester,
-  ) async {
+  // Behoben in #410: Die Tafel nennt im Abschnitt „Vollbildansicht“ jetzt auch
+  // R (Drittel-Raster) und P (Fokus-Peaking).
+  testWidgets('ANS-035 R und P stehen in der Tafel', (tester) async {
     await startApp(tester, fotos: [testfoto('k.jpg')]);
     await fragezeichen(tester);
     await waitFor(tester, find.text(de.kuerzelTitel));

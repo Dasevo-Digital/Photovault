@@ -522,6 +522,18 @@ abstract class AppTexte {
   /// **'Ins Bild hinein- und herauszoomen (auch mit einer Magic Mouse)'**
   String get kuerzelZoomImBild;
 
+  /// No description provided for @kuerzelDrittelRaster.
+  ///
+  /// In de, this message translates to:
+  /// **'Drittel-Raster ein- oder ausblenden'**
+  String get kuerzelDrittelRaster;
+
+  /// No description provided for @kuerzelFokusPeaking.
+  ///
+  /// In de, this message translates to:
+  /// **'Fokus-Peaking ein- oder ausschalten'**
+  String get kuerzelFokusPeaking;
+
   /// No description provided for @timelineLeer.
   ///
   /// In de, this message translates to:

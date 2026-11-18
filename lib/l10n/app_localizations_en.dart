@@ -257,6 +257,12 @@ class AppTexteEn extends AppTexte {
       'Zoom into and out of the photo (works with a Magic Mouse too)';
 
   @override
+  String get kuerzelDrittelRaster => 'Show or hide the rule-of-thirds grid';
+
+  @override
+  String get kuerzelFokusPeaking => 'Turn focus peaking on or off';
+
+  @override
   String get timelineLeer => 'No photos in this library yet.';
 
   @override

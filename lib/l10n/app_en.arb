@@ -70,6 +70,8 @@
   "kuerzelSofortAblehnen": "Reject and move on (no confirmation)",
   "kuerzelZoomWischen": "⌘/Ctrl + swipe",
   "kuerzelZoomImBild": "Zoom into and out of the photo (works with a Magic Mouse too)",
+  "kuerzelDrittelRaster": "Show or hide the rule-of-thirds grid",
+  "kuerzelFokusPeaking": "Turn focus peaking on or off",
   "timelineLeer": "No photos in this library yet.",
   "timelineJahre": "Years",
   "timelineDetails": "Details",

@@ -119,6 +119,8 @@
   "kuerzelSofortAblehnen": "Sofort ablehnen und weiter (ohne Bestätigung)",
   "kuerzelZoomWischen": "⌘/Strg + Wischen",
   "kuerzelZoomImBild": "Ins Bild hinein- und herauszoomen (auch mit einer Magic Mouse)",
+  "kuerzelDrittelRaster": "Drittel-Raster ein- oder ausblenden",
+  "kuerzelFokusPeaking": "Fokus-Peaking ein- oder ausschalten",
   "timelineLeer": "Noch keine Fotos in der Bibliothek.",
   "timelineJahre": "Jahre",
   "timelineDetails": "Details",

@@ -76,6 +76,11 @@ class Tastenkuerzeltafel extends StatelessWidget {
             ('0 – 5', t.kuerzelBewertungSetzen),
             ('6 – 9', t.kuerzelFarbmarkeSetzen),
             ('F', t.kuerzelFavoritUmschalten),
+            // Die Sichthilfen werten nur Tasten aus (siehe
+            // _AssetViewerScreenState._handleKeyEvent); ohne diese Zeilen
+            // stünden sie in keiner Übersicht.
+            ('R', t.kuerzelDrittelRaster),
+            ('P', t.kuerzelFokusPeaking),
             ('⌫ / Delete', t.kuerzelPapierkorbMitBestaetigung),
             // Eine Magic Mouse kann nicht kneifen - siehe
             // [BildZoomGesten]. Ohne diese Zeile waere der Zoom dort eine
