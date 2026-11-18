@@ -2694,54 +2694,48 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Solange es ungelesene Meldungen
-  // gibt, steht oben rechts die Glocke des Meldungsfensters
-  // (meldungsfenster.dart:131–141, Abstand oben kToolbarHeight + 12,
-  // rechts 16) – genau über den Knöpfen oben rechts im Bild der
-  // Einzelansicht (asset_viewer_screen.dart: 360°-Knöpfe `top: 8, right:
-  // 8`, „Dieses Bild als Foto sichern“ `top/right: AppSpacing.sm`). Der
-  // Klick öffnet dann den Meldungsverlauf statt der flachen Vorschau.
-  testWidgets(
-    'ANS-043 Knöpfe oben rechts trotz ungelesener Meldung',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [
-          testfoto(
-            'kugel.jpg',
-            datum: DateTime(2025, 1, 1),
-            breite: 2000,
-            hoehe: 1000,
-          ),
-        ],
-      );
-      await openSection(tester, Hauptbereich.zeitleiste);
-      await oeffne(tester, 'kugel.jpg');
-      final kugel = find.descendant(
-        of: betrachter,
-        matching: find.byType(Panorama360View),
-      );
-      await waitFor(tester, kugel);
-      // Irgendeine Meldung der App, z. B. nach einer Sammeländerung.
-      melde.hinweis('Probemeldung');
-      await settle(tester);
-      melde.alleSchliessen();
-      await settle(tester);
-      expect(melde.ungelesen, greaterThan(0), reason: 'Glocke steht');
-      final knopfRect = tester.getRect(knopf(de.viewerFlacheVorschau));
-      print('ANS-043: Knopf „Flache Vorschau“ bei $knopfRect');
-      await tester.tapAt(knopfRect.center);
-      await settle(tester);
-      final verlaufOffen = find
-          .text(de.meldungenVerlaufLeeren)
-          .evaluate()
-          .isNotEmpty;
-      print('ANS-043: Klick öffnete den Meldungsverlauf: $verlaufOffen');
-      expect(kugel, findsNothing, reason: 'flache Vorschau statt Kugel');
-      await finish(tester);
-    },
-  );
+  // Behoben in #410: Die Knöpfe der 360°-Ansicht und „Dieses Bild als Foto
+  // sichern“ stehen jetzt oben links; oben rechts unter der Titelleiste bleibt
+  // der Glocke des Meldungsfensters.
+  testWidgets('ANS-043 Knöpfe oben rechts trotz ungelesener Meldung', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [
+        testfoto(
+          'kugel.jpg',
+          datum: DateTime(2025, 1, 1),
+          breite: 2000,
+          hoehe: 1000,
+        ),
+      ],
+    );
+    await openSection(tester, Hauptbereich.zeitleiste);
+    await oeffne(tester, 'kugel.jpg');
+    final kugel = find.descendant(
+      of: betrachter,
+      matching: find.byType(Panorama360View),
+    );
+    await waitFor(tester, kugel);
+    // Irgendeine Meldung der App, z. B. nach einer Sammeländerung.
+    melde.hinweis('Probemeldung');
+    await settle(tester);
+    melde.alleSchliessen();
+    await settle(tester);
+    expect(melde.ungelesen, greaterThan(0), reason: 'Glocke steht');
+    final knopfRect = tester.getRect(knopf(de.viewerFlacheVorschau));
+    print('ANS-043: Knopf „Flache Vorschau“ bei $knopfRect');
+    await tester.tapAt(knopfRect.center);
+    await settle(tester);
+    final verlaufOffen = find
+        .text(de.meldungenVerlaufLeeren)
+        .evaluate()
+        .isNotEmpty;
+    print('ANS-043: Klick öffnete den Meldungsverlauf: $verlaufOffen');
+    expect(kugel, findsNothing, reason: 'flache Vorschau statt Kugel');
+    await finish(tester);
+  });
 
   testWidgets('ANS-044 Info-Seitenleiste ein- und ausblenden', (tester) async {
     await startApp(

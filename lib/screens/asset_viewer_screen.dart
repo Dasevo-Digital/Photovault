@@ -2013,9 +2013,13 @@ class _AssetPageState extends State<_AssetPage> {
           return Stack(
             children: [
               Panorama360View(imageFile: file, mode: _panoramaMode),
+              // Oben links, nicht rechts: Oben rechts unter der Titelleiste
+              // steht die Glocke des Meldungsfensters, solange es
+              // ungelesene Meldungen gibt (siehe meldungsfenster.dart) – ein
+              // Klick dort öffnete den Verlauf statt dieses Knopfs.
               Positioned(
                 top: 8,
-                right: 8,
+                left: 8,
                 child: Row(
                   children: [
                     _NavArrowButton(
@@ -2110,10 +2114,11 @@ class _AssetPageState extends State<_AssetPage> {
                     ),
                   ),
                 ),
+              // Oben links wie die Knöpfe der Kugel – siehe dort.
               if (isEquirectangular360(asset))
                 Positioned(
                   top: 8,
-                  right: 8,
+                  left: 8,
                   child: _NavArrowButton(
                     icon: Icons.public,
                     tooltip: AppTexte.of(context).ansicht360,
@@ -2556,9 +2561,11 @@ class _VideoPageState extends State<_VideoPage> {
             if (!controller.isPlaying)
               const Icon(Icons.play_arrow, color: Colors.white70, size: 72),
             if (widget.onBildSichern case final sichern?)
+              // Oben links: Oben rechts steht die Glocke des
+              // Meldungsfensters (siehe die Knöpfe der 360°-Ansicht).
               Positioned(
                 top: AppSpacing.sm,
-                right: AppSpacing.sm,
+                left: AppSpacing.sm,
                 child: IconButton.filledTonal(
                   tooltip: AppTexte.of(context).viewerVideobildSichern,
                   icon: _sichert

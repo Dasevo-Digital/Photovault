@@ -11,6 +11,12 @@
 /// eine Titelleistenhöhe tiefer – auf Bildschirmen ohne AppBar kostet das
 /// etwas Platz, auf allen anderen verhindert es einen unbedienbaren Knopf.
 ///
+/// **Die Ecke gehört ihm.** Solange es ungelesene Meldungen gibt, bleibt
+/// die Glocke dort stehen, auch ohne Karte. Ein Bildschirm legt deshalb
+/// keine eigenen Knöpfe oben rechts direkt unter die Titelleiste – sie
+/// lägen unter der Glocke, und ein Klick öffnete den Verlauf (gesehen bei
+/// den Knöpfen der 360°-Ansicht).
+///
 /// **Im schmalen Fenster weicht er nach unten.** Bei wenig Breite wäre
 /// eine Karte oben rechts entweder winzig oder über die ganze Breite –
 /// und über die ganze Breite verdeckt sie oben mehr als unten.
