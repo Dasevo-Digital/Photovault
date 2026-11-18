@@ -2291,42 +2291,37 @@ void main() {
     timeout: _frist,
   );
 
-  // Befund: In einer verbundenen Bibliothek kehrt starteHintergrundanalyse
-  // sofort zurück (lib/state/library_state.dart:1678), die Karte meldet
-  // trotzdem „Auswertung läuft im Hintergrund.“
-  // (lib/screens/background_tasks_screen.dart:809).
-  testWidgets(
-    'GRU-171 Verbunden: „Jetzt starten“ behauptet keine Auswertung',
-    (tester) async {
-      filtereSemantik();
-      schritt = 'startApp';
-      await starte(tester);
-      await importiere(tester, fotos(1));
-      await neustart(tester, dazwischen: () => schreibeVerbindung(anker));
-      expect(bibliothek.verbunden, isTrue);
-      melde.verlaufLeeren();
-      await aufgabenOeffnen(tester);
-      final sammel = await karte(tester, de.werkzAllesNachholenTitel);
-      await aktion(tester, sammel, de.aufgJetztStarten);
-      await tester.pump(const Duration(milliseconds: 300));
-      final sofort = find.text(de.aufgLaeuft).evaluate().isNotEmpty;
-      await settle(tester, max: const Duration(seconds: 1));
-      expect(bibliothek.analyseLaeuft, isFalse);
-      expect(zahl(tester, sammel, de.aufgStatus), de.aufgBereit);
-      expect(find.textContaining(bandAnfang()), findsNothing);
-      final behauptet =
-          sofort || melde.verlauf.any((m) => m.text == de.aufgLaeuft);
-      print('GRU-171: Meldung „${de.aufgLaeuft}“ erschienen: $behauptet');
-      expect(
-        behauptet,
-        isFalse,
-        reason: 'App behauptet eine laufende Auswertung',
-      );
-      await ende(tester);
-    },
-    skip: true,
-    timeout: _frist,
-  );
+  // Behoben in #408: Verbunden meldet die Sammelkarte, dass der Server
+  // auswertet, statt eine laufende Auswertung zu behaupten.
+  testWidgets('GRU-171 Verbunden: „Jetzt starten“ behauptet keine Auswertung', (
+    tester,
+  ) async {
+    filtereSemantik();
+    schritt = 'startApp';
+    await starte(tester);
+    await importiere(tester, fotos(1));
+    await neustart(tester, dazwischen: () => schreibeVerbindung(anker));
+    expect(bibliothek.verbunden, isTrue);
+    melde.verlaufLeeren();
+    await aufgabenOeffnen(tester);
+    final sammel = await karte(tester, de.werkzAllesNachholenTitel);
+    await aktion(tester, sammel, de.aufgJetztStarten);
+    await tester.pump(const Duration(milliseconds: 300));
+    final sofort = find.text(de.aufgLaeuft).evaluate().isNotEmpty;
+    await settle(tester, max: const Duration(seconds: 1));
+    expect(bibliothek.analyseLaeuft, isFalse);
+    expect(zahl(tester, sammel, de.aufgStatus), de.aufgBereit);
+    expect(find.textContaining(bandAnfang()), findsNothing);
+    final behauptet =
+        sofort || melde.verlauf.any((m) => m.text == de.aufgLaeuft);
+    print('GRU-171: Meldung „${de.aufgLaeuft}“ erschienen: $behauptet');
+    expect(
+      behauptet,
+      isFalse,
+      reason: 'App behauptet eine laufende Auswertung',
+    );
+    await ende(tester);
+  }, timeout: _frist);
 
   testWidgets('GRU-068 GRU-069 GRU-070 GRU-071 Beenden über den Kanal', (
     tester,

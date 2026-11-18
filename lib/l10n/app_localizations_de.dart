@@ -1915,6 +1915,10 @@ class AppTexteDe extends AppTexte {
   String get aufgLaeuft => 'Auswertung läuft im Hintergrund.';
 
   @override
+  String get aufgServerWertetAus =>
+      'Diese Bibliothek ist mit dem Server verbunden – ausgewertet wird dort. Die Ergebnisse kommen mit dem Abgleich.';
+
+  @override
   String get aufgJetztStarten => 'Jetzt starten';
 
   @override

@@ -656,6 +656,7 @@
   "aufgStatus": "Status",
   "aufgBereit": "Ready",
   "aufgLaeuft": "Analysis is running in the background.",
+  "aufgServerWertetAus": "This library is connected to the server – analysis runs there. The results arrive with the sync.",
   "aufgJetztStarten": "Start now",
   "aufgWartend": "Waiting",
   "aufgWenigerGleichzeitig": "One fewer",

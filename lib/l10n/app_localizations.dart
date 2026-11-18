@@ -3209,6 +3209,12 @@ abstract class AppTexte {
   /// **'Auswertung läuft im Hintergrund.'**
   String get aufgLaeuft;
 
+  /// No description provided for @aufgServerWertetAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist mit dem Server verbunden – ausgewertet wird dort. Die Ergebnisse kommen mit dem Abgleich.'**
+  String get aufgServerWertetAus;
+
   /// No description provided for @aufgJetztStarten.
   ///
   /// In de, this message translates to:

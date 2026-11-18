@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/background_tasks_screen.dart';
@@ -530,4 +531,30 @@ void main() {
       expect(zustand, greaterThan(nachBeginn), reason: 'das Ende geht an alle');
     },
   );
+  // GRU-171: Verbunden kehrt starteHintergrundanalyse sofort zurück; die
+  // Karte meldete trotzdem „Auswertung läuft im Hintergrund.“.
+  testWidgets('verbunden behauptet „Jetzt starten“ keine Auswertung', (
+    tester,
+  ) async {
+    library.verbindung = Verbindungsdatei(
+      server: Uri.parse('http://127.0.0.1:9'),
+      konto: 'erika',
+      geraet: 'Rechner',
+      token: 'probe',
+    );
+    await zeige(tester);
+    final de = lookupAppTexte(const Locale('de'));
+    final karte = find.ancestor(
+      of: find.text(de.werkzAllesNachholenTitel),
+      matching: find.byType(Card),
+    );
+    await tester.tap(
+      find.descendant(of: karte, matching: find.text(de.aufgJetztStarten)),
+    );
+    await einigeBilder(tester);
+    expect(library.analyseLaeuft, isFalse);
+    expect(melde.verlauf.map((m) => m.text), isNot(contains(de.aufgLaeuft)));
+    expect(melde.verlauf.first.text, de.aufgServerWertetAus);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

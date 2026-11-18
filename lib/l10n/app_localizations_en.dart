@@ -1899,6 +1899,10 @@ class AppTexteEn extends AppTexte {
   String get aufgLaeuft => 'Analysis is running in the background.';
 
   @override
+  String get aufgServerWertetAus =>
+      'This library is connected to the server – analysis runs there. The results arrive with the sync.';
+
+  @override
   String get aufgJetztStarten => 'Start now';
 
   @override

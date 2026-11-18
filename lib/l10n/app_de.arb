@@ -1010,6 +1010,7 @@
   "aufgStatus": "Status",
   "aufgBereit": "Bereit",
   "aufgLaeuft": "Auswertung läuft im Hintergrund.",
+  "aufgServerWertetAus": "Diese Bibliothek ist mit dem Server verbunden – ausgewertet wird dort. Die Ergebnisse kommen mit dem Abgleich.",
   "aufgJetztStarten": "Jetzt starten",
   "aufgWartend": "Wartend",
   "aufgWenigerGleichzeitig": "Eine weniger",

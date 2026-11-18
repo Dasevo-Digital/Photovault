@@ -812,6 +812,13 @@ class _CombinedAnalysisCard extends StatelessWidget {
                 label: t.aufgJetztStarten,
                 icon: Icons.play_arrow,
                 onTap: () {
+                  // Verbunden wertet der Server aus, und
+                  // starteHintergrundanalyse kehrt sofort zurück – hier
+                  // stand trotzdem „Auswertung läuft im Hintergrund.“.
+                  if (library.verbunden) {
+                    melde.hinweis(t.aufgServerWertetAus);
+                    return;
+                  }
                   library.starteHintergrundanalyse();
                   melde.hinweis(t.aufgLaeuft);
                 },
