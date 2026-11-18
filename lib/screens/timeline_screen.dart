@@ -62,6 +62,16 @@ class _TimelineScreenState extends State<TimelineScreen>
   int _windowSize = _initialWindowSize;
   bool _resolvingHighlight = false;
 
+  /// Das Foto, zu dem gerade gesprungen wird – aus
+  /// [TimelineScreen.highlightAssetId] übernommen und hier gehalten.
+  ///
+  /// Der Wunsch kommt nur in **einem** Aufbau an: Die Hülle verbraucht
+  /// ihn und schaltet erst danach auf die Zeitleiste um, der nächste
+  /// Aufbau bringt `null`. Läse das Raster den Wert direkt vom Widget,
+  /// käme er nach dem Auflösen des Ladefensters nie an – der Sprung aus
+  /// der Suche oder dem Archiv blieb so ohne Ziel und ohne Meldung.
+  String? _hervorheben;
+
   /// Die Timeline startet als Jahreslandkarte. Die bisherige, detaillierte
   /// Monatsansicht bleibt mit einem Klick erreichbar und wird für einen
   /// direkten Sprung zu einem Foto automatisch gewählt.
@@ -245,6 +255,7 @@ class _TimelineScreenState extends State<TimelineScreen>
     final id = widget.highlightAssetId;
     if (id != null) {
       _jahresuebersicht = false;
+      _hervorheben = id;
       _resolveHighlight(id);
     }
   }
@@ -318,7 +329,11 @@ class _TimelineScreenState extends State<TimelineScreen>
   void didUpdateWidget(covariant TimelineScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     final id = widget.highlightAssetId;
-    if (id != null && id != oldWidget.highlightAssetId) _resolveHighlight(id);
+    if (id != null && id != oldWidget.highlightAssetId) {
+      _jahresuebersicht = false;
+      _hervorheben = id;
+      _resolveHighlight(id);
+    }
   }
 
   /// Öffnet das Ladefenster VORAB weit genug, um das Ziel-Foto zu enthalten
@@ -336,6 +351,25 @@ class _TimelineScreenState extends State<TimelineScreen>
         _windowSize = math.max(_windowSize, rank + 1 + _windowGrowth);
       }
       _resolvingHighlight = false;
+    });
+  }
+
+  /// Ob für [_hervorheben] das Abklingen schon geplant ist.
+  String? _abklingenGeplant;
+
+  /// Das Raster springt einmal und blinkt kurz; danach ist der Wunsch
+  /// erledigt. Liegen bliebe er sonst als Dauerrahmen in der Liste und
+  /// sperrte die Jahresübersicht (siehe [_inhalt]). Geplant erst, wenn
+  /// Raster oder Liste mit dem Ziel gebaut sind – vorher hätten sie es
+  /// womöglich noch gar nicht gesehen.
+  void _hervorhebenAbklingen(String assetId) {
+    if (_abklingenGeplant == assetId) return;
+    _abklingenGeplant = assetId;
+    Future.delayed(const Duration(seconds: 3), () {
+      if (_abklingenGeplant == assetId) _abklingenGeplant = null;
+      if (mounted && _hervorheben == assetId && !_resolvingHighlight) {
+        setState(() => _hervorheben = null);
+      }
     });
   }
 
@@ -616,7 +650,11 @@ class _TimelineScreenState extends State<TimelineScreen>
           );
         }
 
-        if (_jahresuebersicht && widget.highlightAssetId == null) {
+        // Ab hier bauen Raster oder Liste mit dem Ziel.
+        final ziel = _hervorheben;
+        if (ziel != null) _hervorhebenAbklingen(ziel);
+
+        if (_jahresuebersicht && _hervorheben == null) {
           return Column(
             children: [
               Padding(
@@ -685,7 +723,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                                 gruppierung: _wirksameGruppierung,
                                 absteigend: sortierungAbsteigend(_sortierung),
                                 selectedIds: _selected,
-                                highlightAssetId: widget.highlightAssetId,
+                                highlightAssetId: _hervorheben,
                                 nachObenSignal: widget.nachObenSignal,
                                 spalten: _listenspalten,
                                 onSpalten: _setzeSpalten,
@@ -699,7 +737,7 @@ class _TimelineScreenState extends State<TimelineScreen>
                             : MonthGroupedAssetGrid(
                                 assets: assets,
                                 paths: widget.library.paths,
-                                highlightAssetId: widget.highlightAssetId,
+                                highlightAssetId: _hervorheben,
                                 aktiveKachelId: aktiveKachel,
                                 nachObenSignal: widget.nachObenSignal,
                                 selectedIds: _selected,

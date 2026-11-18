@@ -1490,50 +1490,42 @@ void main() {
     },
   );
 
-  // Befund: „Foto in der Timeline anzeigen“ springt nicht zum Foto, wenn
-  // die Einzelansicht aus einem anderen Bereich kam (Suche, Archiv). Die
-  // Hülle verbraucht den Wunsch beim ersten Aufbau (home_shell.dart:771–781,
-  // clearTimelineHighlightRequest) und schaltet erst danach per
-  // `_seite.value = 0` um; dieser zweite Aufbau gibt der Zeitleiste
-  // `highlightAssetId: null` (home_shell.dart:786–790) – derselbe
-  // Schlüssel, derselbe Zustand, aber das Raster bekommt keine Kennung mehr
-  // (timeline_screen.dart:702). Kein Sprung, kein Hervorheben, und beim
-  // archivierten Foto auch keine Meldung „nicht gefunden“ (ANS-016).
-  testWidgets(
-    'ANS-015 „Foto in der Timeline anzeigen“ springt zum Foto',
-    skip: true,
-    (tester) async {
-      await startApp(tester);
-      await zeilenAnlegen(tester, 1200, ab: DateTime(2026, 6, 1, 12));
-      // ANS-015: altes Foto über die Suche finden, öffnen, „in der
-      // Timeline anzeigen“.
-      await openSection(tester, Hauptbereich.suche);
-      await sucheNachTyp(tester, de.suchoptTypDateiname, 'zeile_1100');
-      await waitFor(tester, kachel('zeile_1100.jpg'));
-      await oeffne(tester, 'zeile_1100.jpg');
-      await rechtsklick(tester, find.byType(PageView));
-      await tap(tester, find.text(de.viewerInTimelineZeigen));
-      await waitGone(tester, betrachter);
-      await waitFor(tester, kachel('zeile_1100.jpg'));
-      await eventually(
-        tester,
-        () async => sichtbar(tester, kachel('zeile_1100.jpg')),
-        was: 'Foto im Blick',
-      );
-      expect(
-        find.ancestor(
-          of: kachel('zeile_1100.jpg'),
-          matching: find.byWidgetPredicate(
-            (w) => w.runtimeType.toString() == '_FlashHighlight',
-          ),
+  // Behoben in #410: Die Zeitleiste hält das Sprungziel im eigenen Zustand,
+  // bis Raster oder Liste es gezeigt haben; der zweite Aufbau der Hülle ohne
+  // Ziel verliert es nicht mehr.
+  testWidgets('ANS-015 „Foto in der Timeline anzeigen“ springt zum Foto', (
+    tester,
+  ) async {
+    await startApp(tester);
+    await zeilenAnlegen(tester, 1200, ab: DateTime(2026, 6, 1, 12));
+    // ANS-015: altes Foto über die Suche finden, öffnen, „in der
+    // Timeline anzeigen“.
+    await openSection(tester, Hauptbereich.suche);
+    await sucheNachTyp(tester, de.suchoptTypDateiname, 'zeile_1100');
+    await waitFor(tester, kachel('zeile_1100.jpg'));
+    await oeffne(tester, 'zeile_1100.jpg');
+    await rechtsklick(tester, find.byType(PageView));
+    await tap(tester, find.text(de.viewerInTimelineZeigen));
+    await waitGone(tester, betrachter);
+    await waitFor(tester, kachel('zeile_1100.jpg'));
+    await eventually(
+      tester,
+      () async => sichtbar(tester, kachel('zeile_1100.jpg')),
+      was: 'Foto im Blick',
+    );
+    expect(
+      find.ancestor(
+        of: kachel('zeile_1100.jpg'),
+        matching: find.byWidgetPredicate(
+          (w) => w.runtimeType.toString() == '_FlashHighlight',
         ),
-        findsOneWidget,
-        reason: 'kurz hervorgehoben',
-      );
-      print('ANS-015: Monat ${find.text('März 2017').evaluate().length}');
-      await finish(tester);
-    },
-  );
+      ),
+      findsOneWidget,
+      reason: 'kurz hervorgehoben',
+    );
+    print('ANS-015: Monat ${find.text('März 2017').evaluate().length}');
+    await finish(tester);
+  });
 
   // === Auswahl und Sammeländerungen ========================================
 
@@ -7693,13 +7685,10 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Wie bei ANS-015 kommt der Wunsch nicht im Raster an
-  // (home_shell.dart:771–790): Die Zeitleiste öffnet sich, aber die
-  // Meldung „Foto nicht in der Timeline gefunden.“ erscheint nie
-  // (month_grouped_asset_grid.dart:349–351 wird nicht erreicht).
+  // Behoben in #410: Das Sprungziel bleibt in der Zeitleiste erhalten (siehe
+  // ANS-015), das Raster meldet „Foto nicht in der Timeline gefunden.“.
   testWidgets(
     'ANS-016 „In der Timeline anzeigen“ bei einem archivierten Foto',
-    skip: true,
     (tester) async {
       await startApp(
         tester,
