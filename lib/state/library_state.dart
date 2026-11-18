@@ -145,6 +145,22 @@ class LibraryState extends ChangeNotifier {
   late GeoDataDownloadService geoDataDownloadService;
   late RestoreQueueService restoreQueue;
 
+  /// Ob [restoreQueue] schon angelegt ist. Das geschieht erst mitten in
+  /// [initialize] – auf den Startbildschirmen davor (Bibliothek belegt,
+  /// nicht erreichbar, Startfehler) gibt es noch keine Warteschlange.
+  bool _restoreQueueAngelegt = false;
+
+  /// Meldet eine Bedienung – die Restaurierung wartet, bis die App eine
+  /// Weile unbenutzt ist.
+  ///
+  /// Darf jederzeit aufgerufen werden: Der Listener in main.dart liegt über
+  /// jedem Bildschirm, auch über denen vor dem Öffnen der Bibliothek. Dort
+  /// warf jeder Klick vorher „LateInitializationError: Field 'restoreQueue'
+  /// has not been initialized“.
+  void benutzungMelden() {
+    if (_restoreQueueAngelegt) restoreQueue.noteUserInteraction();
+  }
+
   Set<String> _outdatedModelPipelines = const {};
 
   /// KI-Ergebnisse, die zu einer anderen Modellfassung gehören. Die
@@ -271,8 +287,10 @@ class LibraryState extends ChangeNotifier {
   List<ModellHalter> get _alleHalter => [
     ...modelle.alle,
     segmentationHalter,
-    if (restoreQueue.restoreHalter != null) restoreQueue.restoreHalter!,
-    if (restoreQueue.entrauschHalter != null) restoreQueue.entrauschHalter!,
+    if (_restoreQueueAngelegt) ...[
+      ?restoreQueue.restoreHalter,
+      ?restoreQueue.entrauschHalter,
+    ],
   ];
 
   /// Kein eigenes ONNX-Modell (siehe ai_tagging_service.dart) – braucht nur
@@ -828,8 +846,11 @@ class LibraryState extends ChangeNotifier {
     await mitFrist('Rechenhilfe', beendeRechenhilfe);
     if (_datenbankGeoeffnet) {
       // Das Ende einer begonnenen Restaurierung kann noch auf die
-      // Datenbank zugreifen. Erst ihre Warteschlange anhalten.
-      await mitFrist('Restaurierung', () async => restoreQueue.beende());
+      // Datenbank zugreifen. Erst ihre Warteschlange anhalten – sofern es
+      // sie schon gibt (die Startbildschirme schliessen auch vorher).
+      if (_restoreQueueAngelegt) {
+        await mitFrist('Restaurierung', () async => restoreQueue.beende());
+      }
       // Geladene Modelle freigeben, solange ihre Halter noch leben; sonst
       // bleiben sie bis zum Prozessende im Speicher.
       await mitFrist('Modelle', _sweepIdleModels);
@@ -932,6 +953,7 @@ class LibraryState extends ChangeNotifier {
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
     restoreQueue = RestoreQueueService(db, paths, waitForIdle: true);
+    _restoreQueueAngelegt = true;
 
     // Nicht mehr selbst aus dem App-Support-Ordner gebaut: Unter Windows
     // liegt der Datenordner im MSIX-Paket woanders als in der

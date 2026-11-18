@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/l10n/app_localizations.dart';
+import 'package:photo_vault/main.dart' show Benutzungsmelder;
 import 'package:photo_vault/screens/bibliothek_belegt_screen.dart';
 import 'package:photo_vault/services/bibliothekssperre.dart';
 import 'package:photo_vault/services/library_location.dart';
@@ -289,6 +290,37 @@ void main(List<String> a) async {
       expect(Bibliothekssperre.haeltEtwas, isFalse);
     },
   );
+
+  // Die Startbildschirme (belegt, nicht erreichbar, Startfehler) stehen
+  // vor dem Öffnen der Bibliothek – die Restaurierungswarteschlange gibt
+  // es da noch nicht. Jeder Klick warf vorher einen LateInitializationError
+  // aus dem Listener in main.dart.
+  testWidgets('ein Klick vor dem Öffnen der Bibliothek wirft nichts', (
+    tester,
+  ) async {
+    final bib = LibraryState();
+    var gedrueckt = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Benutzungsmelder(
+          library: bib,
+          child: Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => gedrueckt++,
+                child: const Text('Erneut versuchen'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Erneut versuchen'));
+    await tester.drag(find.text('Erneut versuchen'), const Offset(0, 20));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(gedrueckt, 1);
+  });
 
   testWidgets('der Bildschirm nennt den Ort und bietet drei Wege', (
     tester,

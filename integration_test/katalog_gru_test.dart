@@ -927,11 +927,9 @@ void main() {
     await ende(tester);
   }, timeout: _frist);
 
-  // Befund: Auf den Startbildschirmen (belegt, nicht erreichbar,
-  // Startfehler) wirft jeder Klick „LateInitializationError: Field
-  // 'restoreQueue' has not been initialized“ – der Listener in
-  // lib/main.dart:206 ruft library.restoreQueue.noteUserInteraction() auf,
-  // bevor LibraryState.initialize die Warteschlange angelegt hat.
+  // Behoben in #408: Der Listener in main.dart meldet über
+  // LibraryState.benutzungMelden, das vor dem Anlegen der
+  // Restaurierungswarteschlange nichts tut.
   testWidgets(
     'GRU-015 GRU-024 GRU-031 Klick auf einem Startbildschirm wirft keinen Fehler',
     (tester) async {
@@ -954,7 +952,6 @@ void main() {
       expect(tester.takeException(), isNull);
       await ende(tester);
     },
-    skip: true,
     timeout: _frist,
   );
 

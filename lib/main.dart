@@ -80,6 +80,33 @@ Future<void> main() async {
   runApp(const PhotoVaultApp());
 }
 
+/// Meldet jede Bedienung an die Bibliothek (siehe
+/// [LibraryState.benutzungMelden]): Die Restaurierungswarteschlange läuft
+/// nur, wenn die App wirklich unbenutzt ist. Pointer-Signale decken das
+/// Mausrad/Trackpad ab; Bewegung deckt Ziehen und Scrollen ab, ohne für
+/// jede Geste eigene Spezialwege zu brauchen.
+///
+/// Liegt über jedem Bildschirm – auch über denen, die vor dem Öffnen der
+/// Bibliothek stehen.
+class Benutzungsmelder extends StatelessWidget {
+  const Benutzungsmelder({
+    super.key,
+    required this.library,
+    required this.child,
+  });
+
+  final LibraryState library;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Listener(
+    onPointerDown: (_) => library.benutzungMelden(),
+    onPointerMove: (_) => library.benutzungMelden(),
+    onPointerSignal: (_) => library.benutzungMelden(),
+    child: child,
+  );
+}
+
 class PhotoVaultApp extends StatefulWidget {
   const PhotoVaultApp({super.key});
 
@@ -200,17 +227,8 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                       melde.hinweis(AppTexte.of(context).syncAuswahlZuGross);
                   meldeServersperre = () =>
                       melde.hinweis(AppTexte.of(context).nurOhneServer);
-                  return Listener(
-                    // Die Restaurierungswarteschlange läuft nur, wenn die
-                    // App wirklich unbenutzt ist. Pointer-Signale decken das
-                    // Mausrad/Trackpad ab; Bewegung deckt Ziehen und Scrollen
-                    // ab, ohne für jede Geste eigene Spezialwege zu brauchen.
-                    onPointerDown: (_) =>
-                        library.restoreQueue.noteUserInteraction(),
-                    onPointerMove: (_) =>
-                        library.restoreQueue.noteUserInteraction(),
-                    onPointerSignal: (_) =>
-                        library.restoreQueue.noteUserInteraction(),
+                  return Benutzungsmelder(
+                    library: library,
                     child: mitMeldungen(kind),
                   );
                 },
