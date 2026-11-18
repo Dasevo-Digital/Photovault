@@ -236,6 +236,23 @@ void main() {
     expect(find.text('Ansehen'), findsNothing);
   });
 
+  testWidgets(
+    'verbunden: ein nicht geholtes Original gilt nicht als fehlend (IMP-219)',
+    (tester) async {
+      // In einer mit dem Server verbundenen Bibliothek ist der Ordner hier
+      // ein Zwischenspeicher: Was fehlt, holt die App bei Bedarf. „Fehlende
+      // Dateien“ mit „Aus DB entfernen“ wäre irreführend – und das
+      // Austragen scheiterte ohnehin am Schutz der Kopie.
+      library.paths.beschaffe = (_) async {};
+      await aufnahme('a1', original: 'originals/nicht_geholt.jpg');
+      await zeige(tester);
+      final t = AppTexte.of(tester.element(find.byType(IntegrityCheckScreen)));
+      expect(find.text('originals/nicht_geholt.jpg'), findsNothing);
+      expect(find.text(t.integAusDbEntfernen), findsNothing);
+      expect(find.text(t.integVerbundenHinweis), findsOneWidget);
+    },
+  );
+
   testWidgets('ein Format, das Flutter nicht dekodiert, bekommt keinen Knopf', (
     tester,
   ) async {

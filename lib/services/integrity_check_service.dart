@@ -85,6 +85,12 @@ class IntegrityCheckParams {
   final Map<String, String> referenzPfade;
   final List<VariantenDateiSnapshot> varianten;
 
+  /// Ob eine fehlende Datei nur noch nicht geholt ist – in einer mit dem
+  /// Server verbundenen Bibliothek, deren Ordner hier ein Zwischenspeicher
+  /// ist (siehe `StoragePaths.beschaffe`). Dann ist „fehlt“ kein Befund:
+  /// Die App holt die Datei, sobald jemand sie braucht (IMP-219).
+  final bool fehlendeWerdenGeholt;
+
   const IntegrityCheckParams({
     required this.libraryRootPath,
     required this.assets,
@@ -93,6 +99,7 @@ class IntegrityCheckParams {
     required this.verifyChecksums,
     this.referenzPfade = const {},
     this.varianten = const [],
+    this.fehlendeWerdenGeholt = false,
   });
 }
 
@@ -203,6 +210,7 @@ Future<IntegrityCheckReport> runIntegrityCheck(
   ) async {
     if (relativePath == null) return;
     knownRelativePaths.add(p.normalize(relativePath));
+    if (params.fehlendeWerdenGeholt) return;
     final file = File(
       params.referenzPfade[relativePath] ?? p.join(root.path, relativePath),
     );

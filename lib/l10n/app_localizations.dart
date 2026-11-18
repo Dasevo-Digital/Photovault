@@ -5843,6 +5843,12 @@ abstract class AppTexte {
   /// **'Aus DB entfernen'**
   String get integAusDbEntfernen;
 
+  /// No description provided for @integVerbundenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist mit einem Server verbunden. Originale und Vorschauen liegen dort; was hier fehlt, holt die App bei Bedarf. Geprüft wird deshalb nur, was hier liegt.'**
+  String get integVerbundenHinweis;
+
   /// No description provided for @integDateiLoeschen.
   ///
   /// In de, this message translates to:

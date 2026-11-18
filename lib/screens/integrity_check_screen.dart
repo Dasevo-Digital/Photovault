@@ -42,6 +42,11 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
   /// vollstaendig ein (siehe [_load]).
   Map<String, ({String? vorschau, bool gesperrt})> _zurAufnahme = const {};
 
+  /// Ob die Bibliothek mit einem Server verbunden ist und Dateien von dort
+  /// holt. Dann ist der Ordner hier ein Zwischenspeicher, und ein nicht
+  /// geholtes Original ist keine „fehlende Datei“ (IMP-219).
+  bool get _verbunden => widget.library.paths.beschaffe != null;
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +112,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
               isLocked: gesperrt.contains(v.assetId),
             ),
         ],
+        fehlendeWerdenGeholt: _verbunden,
       );
 
       final report = await compute(runIntegrityCheck, params);
@@ -444,6 +450,11 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                     },
             ),
           ),
+          if (_verbunden)
+            ListTile(
+              leading: const Icon(Icons.cloud_outlined),
+              title: Text(AppTexte.of(context).integVerbundenHinweis),
+            ),
           const Divider(height: 1),
           Expanded(child: _buildBody()),
         ],

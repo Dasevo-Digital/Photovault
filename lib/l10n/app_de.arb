@@ -1827,6 +1827,7 @@
     }
   },
   "integAusDbEntfernen": "Aus DB entfernen",
+  "integVerbundenHinweis": "Diese Bibliothek ist mit einem Server verbunden. Originale und Vorschauen liegen dort; was hier fehlt, holt die App bei Bedarf. Geprüft wird deshalb nur, was hier liegt.",
   "integDateiLoeschen": "Datei löschen",
   "integAbweichungen": "Prüfsummen-Abweichungen ({anzahl})",
   "@integAbweichungen": {

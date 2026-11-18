@@ -1146,6 +1146,7 @@
   "integPruefsummenHinweis": "Reads every original file in full and compares it against the checksum stored at import – noticeably slower on a large library than checking only for missing and orphaned files.",
   "integKeineProbleme": "No problems found ({anzahl} files checked).",
   "integAusDbEntfernen": "Remove from the database",
+  "integVerbundenHinweis": "This library is connected to a server. Originals and previews are kept there; whatever is missing here is fetched when needed. Only the files stored here are checked.",
   "integDateiLoeschen": "Delete the file",
   "integAbweichungen": "Checksum mismatches ({anzahl})",
   "integInhaltGeaendert": "The contents have changed since import",

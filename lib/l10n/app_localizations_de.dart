@@ -3445,6 +3445,10 @@ class AppTexteDe extends AppTexte {
   String get integAusDbEntfernen => 'Aus DB entfernen';
 
   @override
+  String get integVerbundenHinweis =>
+      'Diese Bibliothek ist mit einem Server verbunden. Originale und Vorschauen liegen dort; was hier fehlt, holt die App bei Bedarf. Geprüft wird deshalb nur, was hier liegt.';
+
+  @override
   String get integDateiLoeschen => 'Datei löschen';
 
   @override

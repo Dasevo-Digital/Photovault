@@ -3421,6 +3421,10 @@ class AppTexteEn extends AppTexte {
   String get integAusDbEntfernen => 'Remove from the database';
 
   @override
+  String get integVerbundenHinweis =>
+      'This library is connected to a server. Originals and previews are kept there; whatever is missing here is fetched when needed. Only the files stored here are checked.';
+
+  @override
   String get integDateiLoeschen => 'Delete the file';
 
   @override
