@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.10" date="2026-11-19">
+      <description>
+        <p>Import exported photo libraries from Google Takeout JSON and Lightroom XMP sidecars, reviewing metadata and preserving album assignments in the import receipt.</p>
+        <p>Exclude people, albums and date ranges from automatic memories and annual reviews. Review caption suggestions from shared-album recipients before applying them.</p>
+        <p>Bound archive extraction and total sidecar metadata, retain suggestion history through encrypted metadata and backups, and add regression coverage.</p>
+      </description>
+    </release>
     <release version="3.67.9" date="2026-11-18">
       <description>
         <p>Export individual originals from a Fotokammer backup and review or export the receipt for completed and interrupted imports.</p>
