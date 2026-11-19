@@ -75,6 +75,16 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.11" date="2026-11-19">
+      <description>
+        <p>Protect locked target metadata during full and selective restore. Validate ZIP headers before decompression and enforce request buffer budgets after authentication.</p>
+        <p>Preserve complete supported album assignments, report oversized merges and store stable UTC boundaries for memory exclusions. Existing date ranges require explicit confirmation.</p>
+        <p>Batch caption queries, page matching people and allow large migration scans to be cancelled. Extend desktop regressions and separate Gitea publication from manual GitHub releases.</p>
+        <p xml:lang="de">Geschützte Zielangaben bei der Wiederherstellung bewahren. ZIP-Köpfe vor der Dekompression und Anfragebudgets nach der Anmeldung prüfen.</p>
+        <p xml:lang="de">Albumzuordnungen vollständig prüfen und Erinnerungsfilter mit eindeutigen UTC-Grenzen speichern. Bestehende Zeiträume ausdrücklich bestätigen.</p>
+        <p xml:lang="de">Vorschlagslisten und Personenkandidaten begrenzen, große Umzugsquellen abbrechen und zusätzliche Desktop-Regressionen ausführen.</p>
+      </description>
+    </release>
     <release version="3.67.10" date="2026-11-19">
       <description>
         <p>Import exported photo libraries from Google Takeout JSON and Lightroom XMP sidecars, reviewing metadata and preserving album assignments in the import receipt.</p>
