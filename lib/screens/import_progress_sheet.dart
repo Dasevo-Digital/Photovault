@@ -170,8 +170,16 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       builder: (context) =>
           _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
     );
-  } on Object {
-    if (context.mounted) melde.warnung(AppTexte.of(context).umzugQuellenFehler);
+  } on Object catch (fehler) {
+    if (context.mounted) {
+      final t = AppTexte.of(context);
+      melde.warnung(
+        fehler is FormatException &&
+                fehler.message == 'pv_umzug_metadaten_budget'
+            ? t.umzugBudgetFehler
+            : t.umzugQuellenFehler,
+      );
+    }
   } finally {
     await quelle?.schliesse();
   }

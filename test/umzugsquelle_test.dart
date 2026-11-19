@@ -61,6 +61,38 @@ void main() {
   );
 
   test(
+    'Die Gesamtgrenze zählt JSON und XMP, schützt Originale und erlaubt einen erneuten gültigen Versuch',
+    () async {
+      final foto = await datei('bild.jpg', [1, 2, 3]);
+      final j = utf8.encode('{"title":"bild.jpg"}');
+      await datei('bild.jpg.json', j);
+      await datei('bild.xmp', xmp);
+      final bytes = j.length + xmp.length;
+      final root = p.join(temp.path, 'quelle');
+      await expectLater(
+        Umzugsquelle.ordner(root, hoechstensBeilagenBytes: bytes - 1),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'Gesamtgrenze',
+            'pv_umzug_metadaten_budget',
+          ),
+        ),
+      );
+      expect(await db.select(db.assets).get(), isEmpty);
+      expect(await File(foto).readAsBytes(), [1, 2, 3]);
+      final quelle = await Umzugsquelle.ordner(
+        root,
+        hoechstensBeilagenBytes: bytes,
+      );
+      expect(quelle.fehler, isEmpty);
+      expect(quelle.beilagen[foto]!.sterne, 4);
+      await quelle.schliesse();
+      expect(await File(foto).exists(), isTrue);
+    },
+  );
+
+  test(
     'Takeout und XMP werden vor dem Import geprüft, gewählte Angaben wirken lokal',
     () async {
       final foto = await datei('Album/bild.jpg', [1, 2, 3]);

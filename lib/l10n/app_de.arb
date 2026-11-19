@@ -1,4 +1,5 @@
 {
+  "umzugBudgetFehler": "Der Export enthält mehr als 200.000 Dateien oder insgesamt mehr als 128 MiB JSON-/XMP-Beilagen. Teile ihn bitte in kleinere Ordner oder Exporte auf.",
   "umzugQuelleLesen": "Export wird entpackt und geprüft …",
   "umzugKonflikt": "Die Beschreibungen widersprechen sich. Vorgeschlagen wird Takeout; ohne Übernahme bleiben die Datei-Angaben erhalten.",
   "@@locale": "de",

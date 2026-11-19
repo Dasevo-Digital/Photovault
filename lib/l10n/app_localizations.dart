@@ -97,6 +97,12 @@ abstract class AppTexte {
     Locale('en'),
   ];
 
+  /// No description provided for @umzugBudgetFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Export enthält mehr als 200.000 Dateien oder insgesamt mehr als 128 MiB JSON-/XMP-Beilagen. Teile ihn bitte in kleinere Ordner oder Exporte auf.'**
+  String get umzugBudgetFehler;
+
   /// No description provided for @umzugQuelleLesen.
   ///
   /// In de, this message translates to:

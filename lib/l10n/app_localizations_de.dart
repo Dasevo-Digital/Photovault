@@ -9,6 +9,10 @@ class AppTexteDe extends AppTexte {
   AppTexteDe([String locale = 'de']) : super(locale);
 
   @override
+  String get umzugBudgetFehler =>
+      'Der Export enthält mehr als 200.000 Dateien oder insgesamt mehr als 128 MiB JSON-/XMP-Beilagen. Teile ihn bitte in kleinere Ordner oder Exporte auf.';
+
+  @override
   String get umzugQuelleLesen => 'Export wird entpackt und geprüft …';
 
   @override

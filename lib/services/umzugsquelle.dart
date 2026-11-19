@@ -75,8 +75,21 @@ class Umzugsquelle {
     }
   }
 
-  static Future<Umzugsquelle> ordner(String pfad) =>
-      Isolate.run(() => _lies(pfad, null));
+  static const _beilagenBudget = 128 * 1024 * 1024;
+
+  static Future<Umzugsquelle> ordner(
+    String pfad, {
+    int hoechstensBeilagenBytes = _beilagenBudget,
+  }) async {
+    if (hoechstensBeilagenBytes < 1 ||
+        hoechstensBeilagenBytes > _beilagenBudget) {
+      throw ArgumentError.value(
+        hoechstensBeilagenBytes,
+        'hoechstensBeilagenBytes',
+      );
+    }
+    return Isolate.run(() => _lies(pfad, null, hoechstensBeilagenBytes));
+  }
 
   static Future<Umzugsquelle> archive(List<String> pfade) async {
     if (pfade.isEmpty) throw const FormatException('pv_umzug_quelle');
@@ -97,8 +110,33 @@ class Umzugsquelle {
     }
   }
 
-  static Future<Umzugsquelle> _lies(String root, Directory? temp) async {
+  static Future<Umzugsquelle> _lies(
+    String root,
+    Directory? temp, [
+    int budget = _beilagenBudget,
+  ]) async {
     final alle = await ImportPlanDienst.dateienImOrdner(root);
+    if (alle.length > 200000) {
+      throw const FormatException('pv_umzug_metadaten_budget');
+    }
+    final groessen = <String, int>{};
+    var belegt = 0;
+    // Vor dem Parsen: Viele einzeln gültige Beilagen dürfen gemeinsam
+    // nicht beliebig viele dekodierte Objekte im Speicher halten.
+    for (final pfad in alle.where(
+      (s) => {'.json', '.xmp'}.contains(p.extension(s).toLowerCase()),
+    )) {
+      try {
+        final n = await File(pfad).length();
+        belegt += n;
+        if (belegt > budget) {
+          throw const FormatException('pv_umzug_metadaten_budget');
+        }
+        groessen[pfad] = n;
+      } on FileSystemException {
+        // Eine inzwischen verschwundene Beilage wird unten als defekt markiert.
+      }
+    }
     final medien = alle.where(unterstuetztesFormat).toList();
     final medienNamen = medien.map((s) => s.toLowerCase()).toSet();
     final json = <String, List<Map>>{};
@@ -110,7 +148,9 @@ class Umzugsquelle {
     )) {
       final file = File(pfad);
       try {
-        if (await file.length() > 1024 * 1024) throw const FormatException();
+        if ((groessen[pfad] ?? await file.length()) > 1024 * 1024) {
+          throw const FormatException();
+        }
         final wert = jsonDecode(await file.readAsString());
         if (wert is! Map) continue;
         final titel = wert['title'];

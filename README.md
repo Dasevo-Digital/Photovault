@@ -203,6 +203,8 @@ echter Hardware.
   anderen Ergebnisse in der Importquittung. Lightroom-Sammlungen und
   Entwicklungsschritte werden nicht aus einer Katalogdatei übernommen;
   dafür vorher die gewünschten Metadaten als XMP exportieren.
+  Pro Umzug sind höchstens 200.000 Dateien und insgesamt 128 MiB
+  JSON-/XMP-Beilagen vorgesehen. Größere Exporte vorher aufteilen.
 - **Erinnerungen steuern** – in den Rückblicken Personen, Alben und
   einschließlich ihrer Grenzen ganze Datumszeiträume ausschließen. Das
   gilt auch für gemerkte Erinnerungen, Familientage, schönste Reisen und
