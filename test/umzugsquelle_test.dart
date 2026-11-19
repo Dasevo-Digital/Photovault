@@ -30,7 +30,7 @@ void main() {
   });
 
   Future<String> datei(String name, List<int> bytes) async {
-    final f = File(p.join(temp.path, 'quelle', name));
+    final f = File(p.normalize(p.join(temp.path, 'quelle', name)));
     await f.parent.create(recursive: true);
     await f.writeAsBytes(bytes);
     return f.path;
