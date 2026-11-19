@@ -9,6 +9,13 @@ class AppTexteEn extends AppTexte {
   AppTexteEn([String locale = 'en']) : super(locale);
 
   @override
+  String get umzugQuelleLesen => 'Extracting and checking the export …';
+
+  @override
+  String get umzugKonflikt =>
+      'The descriptions conflict. Takeout is proposed; deselecting metadata keeps the file\'s embedded metadata.';
+
+  @override
   String get allgAbbrechen => 'Cancel';
 
   @override
@@ -10908,4 +10915,47 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get quittungKopienPruefen => 'Verify backup copies';
+
+  @override
+  String get umzugTitel => 'Migrate photo collection';
+
+  @override
+  String get umzugQuellenHinweis =>
+      'Choose Takeout ZIP archives or an exported folder with photos and JSON/XMP sidecars. Lightroom metadata is read from XMP.';
+
+  @override
+  String get umzugOrdner => 'Choose export folder';
+
+  @override
+  String get umzugArchive => 'Choose ZIP archives';
+
+  @override
+  String get umzugQuellenFehler =>
+      'The export could not be read safely. Check the archives or choose an extracted export folder.';
+
+  @override
+  String get umzugPlanHinweis =>
+      'Review the file date and proposed sidecar metadata. You can disable sidecars for each photo. Existing photos are recorded as duplicates.';
+
+  @override
+  String umzugDatum(String wert) {
+    return 'Sidecar date $wert';
+  }
+
+  @override
+  String umzugSterne(int anzahl) {
+    return 'Sidecar rating $anzahl';
+  }
+
+  @override
+  String umzugOrt(String wert) {
+    return 'Sidecar location $wert';
+  }
+
+  @override
+  String get umzugBeilageFehler =>
+      'Sidecar damaged, too large or ambiguous. Check the export before importing.';
+
+  @override
+  String get umzugAngabenUebernehmen => 'Apply this sidecar metadata';
 }

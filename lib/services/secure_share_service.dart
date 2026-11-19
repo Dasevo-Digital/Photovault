@@ -1,6 +1,6 @@
+import 'begrenzter_ausgabestrom.dart';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:crypto/crypto.dart';
@@ -27,61 +27,6 @@ class SharePackageExpired implements Exception {
 /// manipuliertes Archiv könnte eine kleine Größe behaupten und beim
 /// Dekomprimieren weit mehr liefern. Der Zähler bricht dann *während* des
 /// Entpackens ab, bevor Platte oder Arbeitsspeicher unkontrolliert wachsen.
-class _BegrenzterDateiAusgabestrom extends OutputStream {
-  _BegrenzterDateiAusgabestrom(String path, this.maxBytes)
-    : _delegate = OutputFileStream(path),
-      super(byteOrder: ByteOrder.littleEndian);
-
-  final OutputFileStream _delegate;
-  final int maxBytes;
-
-  void _pruefe(int bytes) {
-    if (bytes < 0 || length + bytes > maxBytes) {
-      throw const FormatException('Unplausible Paketgröße.');
-    }
-  }
-
-  @override
-  int get length => _delegate.length;
-
-  @override
-  bool get isOpen => _delegate.isOpen;
-
-  @override
-  Future<void> close() => _delegate.close();
-
-  @override
-  void closeSync() => _delegate.closeSync();
-
-  @override
-  void clear() => _delegate.clear();
-
-  @override
-  void flush() => _delegate.flush();
-
-  @override
-  Uint8List subset(int start, [int? end]) => _delegate.subset(start, end);
-
-  @override
-  void writeByte(int value) {
-    _pruefe(1);
-    _delegate.writeByte(value);
-  }
-
-  @override
-  void writeBytes(List<int> bytes, {int? length}) {
-    final count = length ?? bytes.length;
-    _pruefe(count);
-    _delegate.writeBytes(bytes, length: count);
-  }
-
-  @override
-  void writeStream(InputStream stream) {
-    _pruefe(stream.length);
-    _delegate.writeStream(stream);
-  }
-}
-
 /// Erstellt ein einzelnes, portables und passwortgeschütztes Austauschpaket.
 /// Dateinamen und Manifest sind ebenso verschlüsselt wie die Medien selbst.
 class SecureShareService {
@@ -249,7 +194,7 @@ class SecureShareService {
         if (entry.isDirectory && name == 'data/') continue;
         final target = File(p.joinAll([temp.path, ...name.split('/')]));
         await target.parent.create(recursive: true);
-        final output = _BegrenzterDateiAusgabestrom(target.path, entry.size);
+        final output = BegrenzterDateiAusgabestrom(target.path, entry.size);
         try {
           entry.writeContent(output);
           if (output.length != entry.size) {

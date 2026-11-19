@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:kern/services/beschriftungsvorschlaege.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -191,6 +192,17 @@ void main() {
         ),
       );
       await db.addAssetsToAlbum('album-privat', [asset.id]);
+      final dienst = Beschriftungsdienst(db);
+      final vorschlag = await dienst.vorschlagen(
+        id: asset.id,
+        album: 'album-privat',
+        von: 'gast',
+        name: 'Testgast',
+        art: 'ort',
+        wert: 'Privater Vorschlagsort',
+      );
+      final vorher =
+          (await db.select(db.beschriftungsvorschlaege).get()).single;
       final vorDemSperren = (await db.assetById(asset.id))!;
 
       await library.setupVaultPin('1234');
@@ -202,12 +214,17 @@ void main() {
       expect(gesperrt.latitude, isNull);
       expect(await db.tagsForAsset(asset.id), isEmpty);
       expect((await db.privateRelationsForAsset(asset.id))['albums'], isEmpty);
+      expect(await db.select(db.beschriftungsvorschlaege).get(), isEmpty);
       final metadata = paths.absolute(
         paths.vaultMetadataRelativePath(asset.id),
       );
       final chiffriert = await metadata.readAsBytes();
       expect(String.fromCharCodes(chiffriert), isNot(contains('Geburtstag')));
       expect(String.fromCharCodes(chiffriert), isNot(contains('Anna')));
+      expect(
+        String.fromCharCodes(chiffriert),
+        isNot(contains('Privater Vorschlagsort')),
+      );
 
       await library.unlockAsset(gesperrt);
 
@@ -221,6 +238,10 @@ void main() {
         contains('album-privat'),
       );
       expect(await metadata.exists(), isFalse);
+      final nachher =
+          (await db.select(db.beschriftungsvorschlaege).get()).single;
+      expect(nachher.id, vorschlag);
+      expect(nachher.toJson(), vorher.toJson());
     },
   );
 

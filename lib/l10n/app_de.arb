@@ -1,4 +1,6 @@
 {
+  "umzugQuelleLesen": "Export wird entpackt und geprüft …",
+  "umzugKonflikt": "Die Beschreibungen widersprechen sich. Vorgeschlagen wird Takeout; ohne Übernahme bleiben die Datei-Angaben erhalten.",
   "@@locale": "de",
   "allgAbbrechen": "Abbrechen",
   "@allgAbbrechen": {
@@ -2217,9 +2219,21 @@
     }
   },
   "infoFormate": "Formate: {liste} – nur das Titelbild ist in der Übersicht sichtbar",
-  "@infoFormate": {"placeholders": {"liste": {"type": "String"}}},
+  "@infoFormate": {
+    "placeholders": {
+      "liste": {
+        "type": "String"
+      }
+    }
+  },
   "infoFassungExportieren": "{name} exportieren",
-  "@infoFassungExportieren": {"placeholders": {"name": {"type": "String"}}},
+  "@infoFassungExportieren": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "infoNurTitelbild": "Nur das Titelbild ist in der Übersicht sichtbar",
   "infoSerieAufloesen": "Serie auflösen",
   "infoVarianten": "Varianten: {anzahl} Fassungen",
@@ -2236,7 +2250,13 @@
   "infoTagUmbenennenFeld": "Neuer Name – gilt für alle Fotos mit diesem Tag",
   "infoTagUmbenennenHinweis": "Antippen zum Umbenennen",
   "infoTagVorhanden": "Einen Tag „{name}“ gibt es schon.",
-  "@infoTagVorhanden": {"placeholders": {"name": {"type": "String"}}},
+  "@infoTagVorhanden": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "stufeBildanalyse": "Bildanalyse",
   "stufeTexterkennung": "Texterkennung",
   "stufeSchlagwoerter": "Schlagwörter",
@@ -2590,7 +2610,9 @@
   "darktableFehler": "darktable: {fehler}",
   "@darktableFehler": {
     "placeholders": {
-      "fehler": {"type": "String"}
+      "fehler": {
+        "type": "String"
+      }
     }
   },
   "xmpOrdnerWaehlen": "Aus Ordner einlesen",
@@ -2919,13 +2941,17 @@
   "gesichtAlleUnbenanntenLoeschen": "{anzahl, plural, =0{Keine unbenannten Erkennungen} =1{Unbenannte Erkennung löschen} other{{anzahl} unbenannte Erkennungen löschen}}",
   "@gesichtAlleUnbenanntenLoeschen": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "gesichtUnbenannteLoeschenFrage": "{anzahl, plural, =1{Die unbenannte Erkennung auf diesem Foto löschen? Benannte Gesichter bleiben.} other{Die {anzahl} unbenannten Erkennungen auf diesem Foto löschen? Benannte Gesichter bleiben.}}",
   "@gesichtUnbenannteLoeschenFrage": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "personWeitereFotosSuchen": "Weitere Fotos suchen",
@@ -6291,10 +6317,22 @@
   "serverGeraeteTitel": "Geräte",
   "serverDiesesGeraet": "dieser Rechner",
   "serverGeraetZuletzt": "zuletzt {zeit}",
-  "@serverGeraetZuletzt": {"placeholders": {"zeit": {"type": "String"}}},
+  "@serverGeraetZuletzt": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
   "serverGeraetAbmelden": "Abmelden",
   "serverGeraetAbmeldenFrage": "„{name}“ abmelden? Das Gerät muss sich danach neu anmelden.",
-  "@serverGeraetAbmeldenFrage": {"placeholders": {"name": {"type": "String"}}},
+  "@serverGeraetAbmeldenFrage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "serverPasswortAendern": "Passwort ändern",
   "serverPasswortAlt": "Bisheriges Passwort",
   "serverPasswortNeu": "Neues Passwort",
@@ -6304,7 +6342,13 @@
   "serverAendern": "Ändern",
   "serverOidcTitel": "Anmeldung über den Anbieter",
   "serverOidcVerknuepft": "Verknüpft mit {anbieter}",
-  "@serverOidcVerknuepft": {"placeholders": {"anbieter": {"type": "String"}}},
+  "@serverOidcVerknuepft": {
+    "placeholders": {
+      "anbieter": {
+        "type": "String"
+      }
+    }
+  },
   "serverOidcNicht": "Nicht verknüpft – die Anmeldung geht dann nur mit Passwort.",
   "serverOidcVerknuepfen": "Verknüpfen …",
   "serverOidcLaeuft": "Im Browser beim Anbieter anmelden – Photo Vault wartet …",
@@ -6438,13 +6482,17 @@
   "scanErkannt": "{anzahl, plural, =1{1 Foto erkannt} other{{anzahl} Fotos erkannt}}",
   "@scanErkannt": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "scanFotoNummer": "Foto {nummer}",
   "@scanFotoNummer": {
     "placeholders": {
-      "nummer": {"type": "int"}
+      "nummer": {
+        "type": "int"
+      }
     }
   },
   "scanLinksDrehen": "Nach links drehen",
@@ -6458,25 +6506,41 @@
   "scanImportieren": "{anzahl} Ausschnitte importieren",
   "@scanImportieren": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "scanKeineAuswahl": "Wähle mindestens einen erkannten Ausschnitt aus.",
   "scanUngerade": "Für Vorder- und Rückseiten muss eine gerade Anzahl ausgewählt sein.",
   "scanPaarNichtGestapelt": "{anzahl, plural, =1{Bei einem Paar fehlte eine Seite (Duplikat oder Fehler); das andere Foto wurde importiert, aber nicht gestapelt.} other{Bei {anzahl} Paaren fehlte eine Seite (Duplikat oder Fehler); die übrigen Fotos wurden importiert, aber nicht gestapelt.}}",
-  "@scanPaarNichtGestapelt": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@scanPaarNichtGestapelt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "scanFertig": "Scan-Import: {neu} neu, {duplikate} Duplikate, {fehler} Fehler.",
   "@scanFertig": {
     "placeholders": {
-      "neu": {"type": "int"},
-      "duplikate": {"type": "int"},
-      "fehler": {"type": "int"}
+      "neu": {
+        "type": "int"
+      },
+      "duplikate": {
+        "type": "int"
+      },
+      "fehler": {
+        "type": "int"
+      }
     }
   },
   "scanFehler": "Der Scan-Arbeitsbereich konnte den Vorgang nicht abschließen: {fehler}",
   "@scanFehler": {
     "placeholders": {
-      "fehler": {"type": "String"}
+      "fehler": {
+        "type": "String"
+      }
     }
   },
   "serverRechenzeit": "Wann rechnen",
@@ -6622,18 +6686,50 @@
   "kammerAusduennenNichts": "In den Serien gibt es nichts mehr abzulehnen.",
   "kammerSchaerfstes": "Schärfstes der Serie",
   "kammerAusduennenText": "{fotos, plural, =1{1 Foto wird} other{{fotos} Fotos werden}} in {serien, plural, =1{1 Serie} other{{serien} Serien}} als abgelehnt markiert. Das schärfste jeder Serie bleibt, Fotos mit Sternen auch. Weg ist noch nichts.",
-  "@kammerAusduennenText": {"placeholders": {"fotos": {"type": "int"}, "serien": {"type": "int"}}},
+  "@kammerAusduennenText": {
+    "placeholders": {
+      "fotos": {
+        "type": "int"
+      },
+      "serien": {
+        "type": "int"
+      }
+    }
+  },
   "kammerSerie": "Serie mit {anzahl} Fotos",
-  "@kammerSerie": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@kammerSerie": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "kammerVergleichTitel": "{anzahl} Fotos im Vergleich",
-  "@kammerVergleichTitel": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@kammerVergleichTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "kammerWartet": "{anzahl, plural, =1{1 Foto wartet} other{{anzahl} Fotos warten}} seit {tage, plural, =1{einem Tag} other{{tage} Tagen}} in der Fotokammer.",
-  "@kammerWartet": {"placeholders": {"anzahl": {"type": "int"}, "tage": {"type": "int"}}},
+  "@kammerWartet": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "tage": {
+        "type": "int"
+      }
+    }
+  },
   "syncAnsehen": "Ansehen",
   "syncNichtUebernommen": "{anzahl, plural, =1{Eine Änderung wurde nicht übernommen, weil sich das Foto am Server inzwischen geändert hat.} other{{anzahl} Änderungen wurden nicht übernommen, weil sich die Fotos am Server inzwischen geändert haben.}}",
   "@syncNichtUebernommen": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "backupProbeLetzterErfolg": "Letzte erfolgreiche Probe: {wann} (damaliger Stand).",
@@ -6680,21 +6776,76 @@
   "entwMaskeNichtAbgelegt": "Der Server hat die Maske nicht angenommen – sie ist nicht gespeichert.",
   "backupStandTitel": "Stand im Zielordner",
   "backupStandGesichert": "Gesichert: {anzahl} von {gesamt} Dateien ({menge} von {mengeGesamt})",
-  "@backupStandGesichert": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "gesamt": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}, "mengeGesamt": {"type": "String"}}},
+  "@backupStandGesichert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "gesamt": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "menge": {
+        "type": "String"
+      },
+      "mengeGesamt": {
+        "type": "String"
+      }
+    }
+  },
   "backupStandOffen": "{anzahl, plural, =1{Ausstehend: 1 Datei ({menge})} other{Ausstehend: {anzahl} Dateien ({menge})}}",
-  "@backupStandOffen": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}}},
+  "@backupStandOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "menge": {
+        "type": "String"
+      }
+    }
+  },
   "backupStandAlles": "Alles gesichert: {anzahl} Dateien ({menge})",
-  "@backupStandAlles": {"placeholders": {"anzahl": {"type": "int", "format": "decimalPattern"}, "menge": {"type": "String"}}},
+  "@backupStandAlles": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "menge": {
+        "type": "String"
+      }
+    }
+  },
   "backupStandLeer": "Noch nichts zu sichern.",
   "backupStandZaehlt": "Wird gezählt …",
   "backupStandNichtErreichbar": "Der Zielordner ist gerade nicht erreichbar.",
   "backupStandVom": "Stand vom {datum}. Für den aktuellen Stand die Passphrase entsperren.",
-  "@backupStandVom": {"placeholders": {"datum": {"type": "String"}}},
+  "@backupStandVom": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
   "backupStandGesperrt": "Zum Zählen die Passphrase entsperren – die Dateien im Zielordner tragen verschlüsselte Namen.",
   "backupStandHinweis": "Originale im Zielordner, ohne Gesperrtes und Papierkorb.",
   "backupStandNeuZaehlen": "Neu zählen",
   "backupLaufMenge": "{gesichert} von {gesamt} gesichert, {offen} ausstehend",
-  "@backupLaufMenge": {"placeholders": {"gesichert": {"type": "String"}, "gesamt": {"type": "String"}, "offen": {"type": "String"}}},
+  "@backupLaufMenge": {
+    "placeholders": {
+      "gesichert": {
+        "type": "String"
+      },
+      "gesamt": {
+        "type": "String"
+      },
+      "offen": {
+        "type": "String"
+      }
+    }
+  },
   "einstSpeicherortInBibliothek": "Dieser Ordner liegt in der Bibliothek selbst. Wähle einen Ordner ausserhalb.",
   "einstSpeicherortBelegt": "In diesem Ordner liegt schon eine Bibliothek. Wähle einen leeren Ordner.",
   "viewerImPapierkorb": "In den Papierkorb gelegt.",
@@ -6704,7 +6855,13 @@
   "videoVorschauAbspielen": "Ausschnitt abspielen",
   "videoVorschauAnhalten": "Anhalten",
   "videoSchnittLaenge": "Länge {dauer}",
-  "@videoSchnittLaenge": {"placeholders": {"dauer": {"type": "String"}}},
+  "@videoSchnittLaenge": {
+    "placeholders": {
+      "dauer": {
+        "type": "String"
+      }
+    }
+  },
   "navFotokammer": "Fotokammer",
   "importKammerSchalter": "Erst in die Fotokammer",
   "importKammerHinweis": "Die Fotos liegen dann schon auf dem Server, erscheinen aber nirgends, bis du sie unter „Fotokammer“ freigibst. Regeln und Alben greifen beim Freigeben. Die nächtliche Sicherung nimmt sie schon vorher mit.",
@@ -6801,7 +6958,9 @@
   "kammerZielAnzeige": "Ziel: {text}",
   "@kammerZielAnzeige": {
     "placeholders": {
-      "text": {"type": "String"}
+      "text": {
+        "type": "String"
+      }
     }
   },
   "kammerAbschliessen": "Sichtung abschliessen",
@@ -6810,8 +6969,12 @@
   "kammerAbschliessenText": "{weg, plural, =1{1 abgelehntes Foto wird} other{{weg} abgelehnte Fotos werden}} endgültig verworfen. {rest, plural, =1{1 Foto kommt} other{{rest} Fotos kommen}} in die Bibliothek.",
   "@kammerAbschliessenText": {
     "placeholders": {
-      "weg": {"type": "int"},
-      "rest": {"type": "int"}
+      "weg": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "int"
+      }
     }
   },
   "auswInDieKammer": "In die Fotokammer",
@@ -6915,5 +7078,37 @@
   "quittungKopieDefekt": "Sicherungskopie nicht lesbar oder beschädigt",
   "quittungKopieUngeprueft": "Sicherungskopie ungeprüft",
   "quittungZielWaehlen": "Anderen Sicherungsordner prüfen",
-  "quittungKopienPruefen": "Sicherungskopien prüfen"
+  "quittungKopienPruefen": "Sicherungskopien prüfen",
+  "umzugTitel": "Fotosammlung übernehmen",
+  "umzugQuellenHinweis": "Takeout-ZIP-Archive oder einen exportierten Ordner mit Fotos und JSON-/XMP-Beilagen wählen. Lightroom-Metadaten werden aus XMP übernommen.",
+  "umzugOrdner": "Exportordner wählen",
+  "umzugArchive": "ZIP-Archive wählen",
+  "umzugQuellenFehler": "Der Export konnte nicht sicher gelesen werden. Prüfe die Archive oder wähle einen entpackten Exportordner.",
+  "umzugPlanHinweis": "Prüfe Dateidatum und vorgeschlagene Beilagenangaben. Je Aufnahme kannst du die Beilagen ausschalten. Bereits vorhandene Aufnahmen werden als Dubletten quittiert.",
+  "umzugDatum": "Datum aus Beilage {wert}",
+  "@umzugDatum": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "umzugSterne": "Sterne aus Beilage {anzahl}",
+  "@umzugSterne": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "umzugOrt": "Ort aus Beilage {wert}",
+  "@umzugOrt": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "umzugBeilageFehler": "Beilage beschädigt, zu groß oder mehrdeutig. Prüfe den Export vor dem Import.",
+  "umzugAngabenUebernehmen": "Diese Beilagenangaben übernehmen"
 }

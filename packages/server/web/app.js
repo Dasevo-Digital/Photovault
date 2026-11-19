@@ -1953,6 +1953,10 @@ function neueAktivitaet(basis, kopf) {
   knopf.type = 'button';
   knopf.addEventListener('click', () => oeffneAlbumkommentare());
   kopf.append(knopf);
+  const beschriften = el('button', 'knopf', t('Beschriftungsvorschläge'));
+  beschriften.type = 'button';
+  beschriften.addEventListener('click', () => oeffneBeschriftungen(basis).catch((x) => meldung(x.message)));
+  kopf.append(beschriften);
   return { basis, daten: { kommentare: [], gefaellt: {} }, knopf };
 }
 
@@ -3266,6 +3270,10 @@ async function zeigeEinstellungen() {
     zeile('Suche und Schlagwörter übersetzen', 'Sucht auf Deutsch und Englisch gleichzeitig und führt Schlagwörter in beiden Sprachen.', e.sucheUebersetzen, (an) => sende('sucheUebersetzenSetzen', { an })),
     zeile('Private Metadaten schützen', 'Neu gesperrte Aufnahmen legen auch Ort, Beschreibung und Text verschlüsselt ab.', e.angabenSchuetzen, (an) => sende('angabenSchuetzenSetzen', { an })),
   );
+  const ausschluesse = el('button', 'knopf', t('Erinnerungen steuern'));
+  ausschluesse.type = 'button';
+  ausschluesse.addEventListener('click', () => oeffneErinnerungsfilter().catch((x) => melde(x.message)));
+  ziel.append(ausschluesse);
   const schwelle = el('div', 'einst');
   const sInhalt = el('div', 'inhalt');
   sInhalt.append(el('div', 'titel', t('Schwelle der Gesichtserkennung')), el('div', 'text', t('Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.')), regler(0.2, 0.8, 0.01, e.gesichtsschwelle, (v) => Number(v).toFixed(2), (v) => sende('gesichtsschwelleSetzen', { schwelle: v })));
@@ -5933,6 +5941,13 @@ async function zeigeAngaben() {
   if (!a || !angabenOffen) return;
   // Kommentare zu diesem Foto, wenn das Album geteilt ist (#297).
   const kommentare = liste.aktivitaet ? [el('h3', null, t('Kommentare')), kommentarBereich(a.id)] : [];
+  if (liste.aktivitaet) {
+    const b = el('button', 'knopf', t('Beschriftungsvorschläge'));
+    b.type = 'button';
+    const basis = liste.aktivitaet.basis;
+    b.addEventListener('click', () => oeffneBeschriftungen(basis, a.id).catch((x) => meldung(x.message)));
+    kommentare.push(b);
+  }
   if (fremdeAufnahme(a)) {
     // Ein geteiltes Album: nur, was die Liste weiss – die Angaben der
     // Bibliothek gehören dem Besitzer.

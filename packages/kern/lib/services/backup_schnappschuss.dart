@@ -281,7 +281,13 @@ class BackupSchnappschussSpeicher {
         }
         for (final a in db.select('SELECT id,name FROM albums')) {
           final ids = inhalte[a['id']] ?? const <String>[];
-          alben.add(BackupAlbum(name: a['name'] as String, aufnahmen: ids));
+          alben.add(
+            BackupAlbum(
+              id: a['id'] as String,
+              name: a['name'] as String,
+              aufnahmen: ids,
+            ),
+          );
         }
       }
       return BackupManifest(

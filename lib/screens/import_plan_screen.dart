@@ -1,3 +1,5 @@
+import '../services/umzugsquelle.dart';
+import 'package:kern/services/beilagenangaben.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/services/import_plan.dart';
@@ -13,9 +15,11 @@ class ImportPlanScreen extends StatefulWidget {
     super.key,
     required this.library,
     required this.dateien,
+    this.umzug,
   });
   final LibraryState library;
   final List<String> dateien;
+  final Umzugsquelle? umzug;
 
   @override
   State<ImportPlanScreen> createState() => _ImportPlanScreenState();
@@ -28,6 +32,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   );
   ImportPlan? _plan;
   final _auswahl = <String>{};
+  final _mitAngaben = <String>{};
   var _erledigt = 0;
   var _lauf = 0;
   var _bestaetigt = false;
@@ -63,7 +68,9 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
       if (widget.library.abgleich case final a?) {
         final z = await a.verbindung.hole('api/v1/zustand');
         _serverAlt =
-            ((z['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2;
+            ((z['funktionen'] as Map?)?['importplan'] as int? ?? 0) < 2 ||
+            (widget.umzug != null &&
+                ((z['funktionen'] as Map?)?['umzug'] as int? ?? 0) < 1);
         _kammerMoeglich =
             ((z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0) >= 1;
       }
@@ -74,9 +81,13 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
           if (mounted && lauf == _lauf) setState(() => _erledigt = n);
         },
       );
+      widget.umzug?.verbindeDubletten(plan);
       if (!mounted || lauf != _lauf) return;
       setState(() {
         _plan = plan;
+        _mitAngaben
+          ..clear()
+          ..addAll(widget.umzug?.beilagen.keys ?? const <String>[]);
         _auswahl
           ..clear()
           ..addAll(
@@ -91,13 +102,31 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
   }
 
   Future<void> _importiere() async {
-    final plan = _plan;
+    var plan = _plan;
     if (plan == null || plan.eintraege.isEmpty || _serverAlt) return;
     setState(() => _bestaetigt = true);
     try {
       if (plan.regelstand != await _dienst.aktuellerRegelstand()) {
         if (mounted) setState(() => _fehlgeschlagen = true);
         return;
+      }
+      if (widget.umzug case final quelle?) {
+        plan = ImportPlan(
+          eintraege: [
+            for (final e in plan.eintraege)
+              e.mitBeilage(
+                (_mitAngaben.contains(e.pfad)
+                        ? quelle.beilagen[e.pfad]
+                        : null) ??
+                    const Beilagenangaben(),
+              ),
+          ],
+          regelstand: plan.regelstand,
+          am: plan.am,
+          spaetereRegeln: plan.spaetereRegeln,
+          dateiregeln: plan.dateiregeln,
+          umzug: true,
+        );
       }
       final kammer = _kammerMoeglich && _kammer;
       _kammerZuletzt = _kammer;
@@ -152,7 +181,11 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(t.importPlanHinweis),
+                Text(
+                  widget.umzug == null
+                      ? t.importPlanHinweis
+                      : t.umzugPlanHinweis,
+                ),
                 if (plan != null) ...[
                   const SizedBox(height: 8),
                   Text(
@@ -223,36 +256,82 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                         ImportPlanArt.format => t.importPlanFormat,
                         ImportPlanArt.fehler => t.importPlanFehler,
                       };
-                      return CheckboxListTile(
-                        value: _auswahl.contains(e.pfad),
-                        onChanged:
-                            e.art != ImportPlanArt.neu ||
-                                e.ungueltigeZiele ||
-                                _bestaetigt
-                            ? null
-                            : (v) => setState(() {
-                                if (v ?? false) {
-                                  _auswahl.add(e.pfad);
-                                } else {
-                                  _auswahl.remove(e.pfad);
-                                }
-                              }),
-                        title: Text(p.basename(e.pfad)),
-                        subtitle: Text(
-                          [
-                            status,
-                            if (e.angaben case final a?)
-                              '${DateFormat.yMd(Localizations.localeOf(context).toString()).format(a.datum)}${a.datumGeschaetzt ? ' · ${t.importPlanDatumGeschaetzt}' : ''}',
-                            if (e.alben.isNotEmpty)
-                              t.importPlanAlben(e.alben.join(', ')),
-                            if (e.tags.isNotEmpty)
-                              t.importPlanTags(e.tags.join(', ')),
-                            if (e.favorit) t.importPlanFavorit,
-                            if (e.regeln.isNotEmpty)
-                              t.importPlanTreffer(e.regeln.join(', ')),
-                            if (e.ungueltigeZiele) t.importPlanUngueltigeZiele,
-                          ].join('\n'),
-                        ),
+                      final metadata = widget.umzug?.beilagen[e.pfad];
+                      return Column(
+                        children: [
+                          CheckboxListTile(
+                            value: _auswahl.contains(e.pfad),
+                            onChanged:
+                                e.art != ImportPlanArt.neu ||
+                                    e.ungueltigeZiele ||
+                                    _bestaetigt
+                                ? null
+                                : (v) => setState(() {
+                                    if (v ?? false) {
+                                      _auswahl.add(e.pfad);
+                                    } else {
+                                      _auswahl.remove(e.pfad);
+                                    }
+                                  }),
+                            title: Text(p.basename(e.pfad)),
+                            subtitle: Text(
+                              [
+                                status,
+                                if (e.angaben case final a?)
+                                  '${DateFormat.yMd(Localizations.localeOf(context).toString()).format(a.datum)}${a.datumGeschaetzt ? ' · ${t.importPlanDatumGeschaetzt}' : ''}',
+                                if (e.alben.isNotEmpty)
+                                  t.importPlanAlben(e.alben.join(', ')),
+                                if (e.tags.isNotEmpty)
+                                  t.importPlanTags(e.tags.join(', ')),
+                                if (e.favorit) t.importPlanFavorit,
+                                if (e.regeln.isNotEmpty)
+                                  t.importPlanTreffer(e.regeln.join(', ')),
+                                if (metadata != null) ...[
+                                  if (metadata.aufgenommenAm case final d?)
+                                    t.umzugDatum(d.toLocal().toIso8601String()),
+                                  if (metadata.sterne case final n?)
+                                    t.umzugSterne(n),
+                                  ?metadata.beschreibung,
+                                  if (metadata.alben.isNotEmpty)
+                                    t.importPlanAlben(
+                                      metadata.alben.join(', '),
+                                    ),
+                                  if (metadata.schlagwoerter.isNotEmpty)
+                                    t.importPlanTags(
+                                      metadata.schlagwoerter.join(', '),
+                                    ),
+                                  if (metadata.breite != null)
+                                    t.umzugOrt(
+                                      '${metadata.breite}, ${metadata.laenge}',
+                                    ),
+                                ],
+                                if (widget.umzug?.fehler.contains(e.pfad) ??
+                                    false)
+                                  t.umzugBeilageFehler,
+                                if (widget.umzug?.konflikte[e.pfad]
+                                    case final werte?) ...[
+                                  t.umzugKonflikt,
+                                  ...werte,
+                                ],
+                                if (e.ungueltigeZiele)
+                                  t.importPlanUngueltigeZiele,
+                              ].join('\n'),
+                            ),
+                          ),
+                          if (metadata != null && e.art == ImportPlanArt.neu)
+                            CheckboxListTile(
+                              dense: true,
+                              title: Text(t.umzugAngabenUebernehmen),
+                              value: _mitAngaben.contains(e.pfad),
+                              onChanged: _bestaetigt
+                                  ? null
+                                  : (an) => setState(() {
+                                      an == true
+                                          ? _mitAngaben.add(e.pfad)
+                                          : _mitAngaben.remove(e.pfad);
+                                    }),
+                            ),
+                        ],
                       );
                     },
                   ),

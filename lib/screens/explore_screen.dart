@@ -1018,7 +1018,9 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
   /// hat (siehe [waehleRueckblick]). Der Monat kostet dieselbe Abfrage
   /// noch einmal – gemessen 31 ms – und erspart dem Abschnitt an 104
   /// Tagen im Jahr das wortlose Verschwinden.
-  late final Future<Rueckblick<AssetData>> _rueckblick = _laden();
+  late final Stream<Rueckblick<AssetData>> _rueckblick = widget.library.db
+      .erinnerungsAenderungen()
+      .asyncMap((_) => _laden());
 
   Future<Rueckblick<AssetData>> _laden() async {
     final db = widget.library.db;
@@ -1072,11 +1074,13 @@ class _MemoriesSectionState extends State<_MemoriesSection> {
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    return FutureBuilder<Rueckblick<AssetData>>(
-      future: _rueckblick,
+    return StreamBuilder<Rueckblick<AssetData>>(
+      stream: _rueckblick,
       builder: (context, snapshot) {
         final rueckblick = snapshot.data;
-        if (rueckblick == null || rueckblick.art == Rueckblickart.keiner) {
+        if (snapshot.hasError ||
+            rueckblick == null ||
+            rueckblick.art == Rueckblickart.keiner) {
           return const SizedBox.shrink();
         }
         final letzte = rueckblick.gruppen.last.jahreHer;

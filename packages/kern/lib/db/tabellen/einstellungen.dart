@@ -139,6 +139,8 @@ class AppSettings extends Table {
   /// Hintergrundaufgabe nachlaufen. Standard an – sonst blieben frisch
   /// importierte Fotos ohne Suche und ohne Personenzuordnung, bis jemand
   /// die Werkzeuge von Hand anstößt.
+  TextColumn get erinnerungsfilter => text().nullable()();
+
   BoolColumn get autoAnalyzeAfterImport =>
       boolean().withDefault(const Constant(true))();
 

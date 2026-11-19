@@ -1,3 +1,6 @@
+import 'package:teilen_ui/erinnerungen_beobachten.dart';
+import 'package:teilen_ui/erinnerungsfilter.dart';
+import 'package:teilen_ui/geteilte_alben.dart' show teilenTexte;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/db/database.dart';
@@ -36,7 +39,12 @@ typedef _Stand = ({
   Erinnerungsstand erinnerungen,
 });
 
-class _RueckblickState extends State<Rueckblick> {
+class _RueckblickState extends State<Rueckblick>
+    with ErinnerungenBeobachten<Rueckblick> {
+  @override
+  AppDatabase get erinnerungsDb => widget.sitzung.db;
+  @override
+  void erinnerungenNeuLaden() => _neu();
   DateTime get _heute {
     final h = widget.heute ?? DateTime.now();
     return DateTime(h.year, h.month, h.day);
@@ -81,8 +89,26 @@ class _RueckblickState extends State<Rueckblick> {
     final sprache = Localizations.localeOf(context).toLanguageTag();
     final datum = DateFormat.yMMMMd(sprache);
     return FutureBuilder<_Stand>(
+      key: ObjectKey(_stand),
       future: _stand,
       builder: (context, s) {
+        if (s.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(teilenTexte(context).erinnerungenLadeFehler),
+                TextButton(
+                  onPressed: () async {
+                    await zeigeErinnerungsfilter(context, widget.sitzung.db);
+                    if (mounted) erinnerungenNeuLaden();
+                  },
+                  child: Text(teilenTexte(context).erinnerungsfilterTitel),
+                ),
+              ],
+            ),
+          );
+        }
         final d = s.data;
         if (d == null) return const Center(child: CircularProgressIndicator());
         final e = d.erinnerungen;
@@ -91,6 +117,22 @@ class _RueckblickState extends State<Rueckblick> {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                icon: const Icon(Icons.filter_alt_outlined),
+                label: Text(teilenTexte(context).erinnerungsfilterTitel),
+                onPressed: () async {
+                  if (await zeigeErinnerungsfilter(
+                        context,
+                        widget.sitzung.db,
+                      ) &&
+                      mounted) {
+                    _neu();
+                  }
+                },
+              ),
+            ),
             _Jahreskarte(
               titel: t.rbJahr(jahr),
               untertitel: t.rbJahrUntertitel,
@@ -361,7 +403,12 @@ class Jahresrueckblick extends StatefulWidget {
   State<Jahresrueckblick> createState() => _JahresrueckblickState();
 }
 
-class _JahresrueckblickState extends State<Jahresrueckblick> {
+class _JahresrueckblickState extends State<Jahresrueckblick>
+    with ErinnerungenBeobachten<Jahresrueckblick> {
+  @override
+  AppDatabase get erinnerungsDb => widget.sitzung.db;
+  @override
+  void erinnerungenNeuLaden() => _wechsle(_jahr);
   late int _jahr = widget.jahr;
   late Future<Jahresinhalt> _inhalt = jahresinhalt(widget.sitzung.db, _jahr);
 
@@ -394,8 +441,14 @@ class _JahresrueckblickState extends State<Jahresrueckblick> {
         ],
       ),
       body: FutureBuilder<Jahresinhalt>(
+        key: ObjectKey(_inhalt),
         future: _inhalt,
         builder: (context, s) {
+          if (s.hasError) {
+            return Center(
+              child: Text(teilenTexte(context).erinnerungenLadeFehler),
+            );
+          }
           final i = s.data;
           if (i == null) {
             return const Center(child: CircularProgressIndicator());

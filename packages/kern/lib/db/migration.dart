@@ -132,6 +132,18 @@ extension Migrationsschritte on AppDatabase {
   /// je Stapel in einer Schleife. Teilindizes: Die meisten Aufnahmen
   /// gehören zu keinem Stapel und keinem Partner.
   Future<void> indizesOhneStufe() async {
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beschriftungen_album_zeit '
+      'ON beschriftungsvorschlaege (album_id, angelegt DESC, id DESC)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beschriftungen_offen '
+      'ON beschriftungsvorschlaege (album_id, zustand)',
+    );
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_beschriftungen_asset '
+      'ON beschriftungsvorschlaege (asset_id)',
+    );
     // Der Index der Zeitleiste trägt alles, was Zählungen und Monate lesen:
     // Kalt las eine Monatsliste sonst 84 MB statt 6 MB. Erst der neue, dann
     // weg mit dem alten.
@@ -1471,6 +1483,16 @@ extension Migrationsschritte on AppDatabase {
         assets.papierkorbAktion,
         'assets',
         'papierkorb_aktion',
+      );
+    }
+    if (from < 99) {
+      await m.createTable(beschriftungsvorschlaege);
+      await _addColumnIfMissing(
+        m,
+        appSettings,
+        appSettings.erinnerungsfilter,
+        'app_settings',
+        'erinnerungsfilter',
       );
     }
   }

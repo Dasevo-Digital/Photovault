@@ -184,6 +184,7 @@ extension AktivitaetenAbfragen on AppDatabase {
     DateTime von,
     DateTime bis, {
     int hoechstens = 8,
+    bool erinnerung = false,
   }) async {
     final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
     final anfang = DateTime(von.year, von.month, von.day);
@@ -203,6 +204,7 @@ extension AktivitaetenAbfragen on AppDatabase {
           ..groupBy([faces.personId])
           ..orderBy([OrderingTerm.desc(anzahl)])
           ..limit(hoechstens);
+    if (erinnerung) query.where(await erinnerungsBedingung());
     final zeilen = await query.get();
     final ids = [for (final z in zeilen) z.read(faces.personId)!];
     if (ids.isEmpty) return const [];
@@ -219,12 +221,20 @@ extension AktivitaetenAbfragen on AppDatabase {
     ];
   }
 
-  Future<List<AssetData>> aufnahmenImZeitraum(DateTime von, DateTime bis) {
+  Future<List<AssetData>> aufnahmenImZeitraum(
+    DateTime von,
+    DateTime bis, {
+    bool erinnerung = false,
+  }) async {
     final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
     final anfang = DateTime(von.year, von.month, von.day);
+    final filter = erinnerung
+        ? await erinnerungsBedingung()
+        : const Constant(true);
     return (select(assets)
           ..where(
             (t) =>
+                filter &
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
                 t.fileCreatedAt.isBiggerOrEqualValue(anfang) &

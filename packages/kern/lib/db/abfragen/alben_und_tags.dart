@@ -57,6 +57,18 @@ extension AlbenAbfragen on AppDatabase {
           .map((r) => r.readTable(assets))
           .get();
 
+  /// Dieselbe Sichtbarkeit für begrenzte Abfragen, ohne alle Albumfotos
+  /// oder deren Kennungen erst in den Arbeitsspeicher zu laden.
+  Expression<bool> sichtbareAufnahmeImAlbum(String albumId) =>
+      assets.id.isInQuery(
+        selectOnly(albumAssets)
+          ..addColumns([albumAssets.assetId])
+          ..where(albumAssets.albumId.equals(albumId)),
+      ) &
+      assets.isTrashed.equals(false) &
+      assets.isLocked.equals(false) &
+      _isPrimaryGridEntry(assets);
+
   /// Wie viele sichtbare Aufnahmen jedes Album hat, nach Kennung.
   ///
   /// CROSS JOIN legt die Reihenfolge fest: von den Einträgen der Alben zu den

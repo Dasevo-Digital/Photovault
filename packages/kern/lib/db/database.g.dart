@@ -13931,6 +13931,18 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('system'),
   );
+  static const VerificationMeta _erinnerungsfilterMeta = const VerificationMeta(
+    'erinnerungsfilter',
+  );
+  @override
+  late final GeneratedColumn<String> erinnerungsfilter =
+      GeneratedColumn<String>(
+        'erinnerungsfilter',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _autoAnalyzeAfterImportMeta =
       const VerificationMeta('autoAnalyzeAfterImport');
   @override
@@ -14423,6 +14435,7 @@ class $AppSettingsTable extends AppSettings
     id,
     themeMode,
     sprache,
+    erinnerungsfilter,
     autoAnalyzeAfterImport,
     watchedFolderPath,
     watchedFolderToken,
@@ -14489,6 +14502,15 @@ class $AppSettingsTable extends AppSettings
       context.handle(
         _spracheMeta,
         sprache.isAcceptableOrUnknown(data['sprache']!, _spracheMeta),
+      );
+    }
+    if (data.containsKey('erinnerungsfilter')) {
+      context.handle(
+        _erinnerungsfilterMeta,
+        erinnerungsfilter.isAcceptableOrUnknown(
+          data['erinnerungsfilter']!,
+          _erinnerungsfilterMeta,
+        ),
       );
     }
     if (data.containsKey('auto_analyze_after_import')) {
@@ -14872,6 +14894,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}sprache'],
       )!,
+      erinnerungsfilter: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}erinnerungsfilter'],
+      ),
       autoAnalyzeAfterImport: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}auto_analyze_after_import'],
@@ -15058,6 +15084,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
   /// Hintergrundaufgabe nachlaufen. Standard an – sonst blieben frisch
   /// importierte Fotos ohne Suche und ohne Personenzuordnung, bis jemand
   /// die Werkzeuge von Hand anstößt.
+  final String? erinnerungsfilter;
   final bool autoAnalyzeAfterImport;
 
   /// Ordner, der laufend auf neue Dateien geprüft wird (siehe
@@ -15363,6 +15390,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     required this.id,
     required this.themeMode,
     required this.sprache,
+    this.erinnerungsfilter,
     required this.autoAnalyzeAfterImport,
     this.watchedFolderPath,
     this.watchedFolderToken,
@@ -15410,6 +15438,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     map['id'] = Variable<int>(id);
     map['theme_mode'] = Variable<String>(themeMode);
     map['sprache'] = Variable<String>(sprache);
+    if (!nullToAbsent || erinnerungsfilter != null) {
+      map['erinnerungsfilter'] = Variable<String>(erinnerungsfilter);
+    }
     map['auto_analyze_after_import'] = Variable<bool>(autoAnalyzeAfterImport);
     if (!nullToAbsent || watchedFolderPath != null) {
       map['watched_folder_path'] = Variable<String>(watchedFolderPath);
@@ -15504,6 +15535,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       id: Value(id),
       themeMode: Value(themeMode),
       sprache: Value(sprache),
+      erinnerungsfilter: erinnerungsfilter == null && nullToAbsent
+          ? const Value.absent()
+          : Value(erinnerungsfilter),
       autoAnalyzeAfterImport: Value(autoAnalyzeAfterImport),
       watchedFolderPath: watchedFolderPath == null && nullToAbsent
           ? const Value.absent()
@@ -15596,6 +15630,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       id: serializer.fromJson<int>(json['id']),
       themeMode: serializer.fromJson<String>(json['themeMode']),
       sprache: serializer.fromJson<String>(json['sprache']),
+      erinnerungsfilter: serializer.fromJson<String?>(
+        json['erinnerungsfilter'],
+      ),
       autoAnalyzeAfterImport: serializer.fromJson<bool>(
         json['autoAnalyzeAfterImport'],
       ),
@@ -15683,6 +15720,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       'id': serializer.toJson<int>(id),
       'themeMode': serializer.toJson<String>(themeMode),
       'sprache': serializer.toJson<String>(sprache),
+      'erinnerungsfilter': serializer.toJson<String?>(erinnerungsfilter),
       'autoAnalyzeAfterImport': serializer.toJson<bool>(autoAnalyzeAfterImport),
       'watchedFolderPath': serializer.toJson<String?>(watchedFolderPath),
       'watchedFolderToken': serializer.toJson<String?>(watchedFolderToken),
@@ -15736,6 +15774,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     int? id,
     String? themeMode,
     String? sprache,
+    Value<String?> erinnerungsfilter = const Value.absent(),
     bool? autoAnalyzeAfterImport,
     Value<String?> watchedFolderPath = const Value.absent(),
     Value<String?> watchedFolderToken = const Value.absent(),
@@ -15780,6 +15819,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     id: id ?? this.id,
     themeMode: themeMode ?? this.themeMode,
     sprache: sprache ?? this.sprache,
+    erinnerungsfilter: erinnerungsfilter.present
+        ? erinnerungsfilter.value
+        : this.erinnerungsfilter,
     autoAnalyzeAfterImport:
         autoAnalyzeAfterImport ?? this.autoAnalyzeAfterImport,
     watchedFolderPath: watchedFolderPath.present
@@ -15870,6 +15912,9 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
       id: data.id.present ? data.id.value : this.id,
       themeMode: data.themeMode.present ? data.themeMode.value : this.themeMode,
       sprache: data.sprache.present ? data.sprache.value : this.sprache,
+      erinnerungsfilter: data.erinnerungsfilter.present
+          ? data.erinnerungsfilter.value
+          : this.erinnerungsfilter,
       autoAnalyzeAfterImport: data.autoAnalyzeAfterImport.present
           ? data.autoAnalyzeAfterImport.value
           : this.autoAnalyzeAfterImport,
@@ -15999,6 +16044,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           ..write('id: $id, ')
           ..write('themeMode: $themeMode, ')
           ..write('sprache: $sprache, ')
+          ..write('erinnerungsfilter: $erinnerungsfilter, ')
           ..write('autoAnalyzeAfterImport: $autoAnalyzeAfterImport, ')
           ..write('watchedFolderPath: $watchedFolderPath, ')
           ..write('watchedFolderToken: $watchedFolderToken, ')
@@ -16048,6 +16094,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
     id,
     themeMode,
     sprache,
+    erinnerungsfilter,
     autoAnalyzeAfterImport,
     watchedFolderPath,
     watchedFolderToken,
@@ -16096,6 +16143,7 @@ class AppSettingsData extends DataClass implements Insertable<AppSettingsData> {
           other.id == this.id &&
           other.themeMode == this.themeMode &&
           other.sprache == this.sprache &&
+          other.erinnerungsfilter == this.erinnerungsfilter &&
           other.autoAnalyzeAfterImport == this.autoAnalyzeAfterImport &&
           other.watchedFolderPath == this.watchedFolderPath &&
           other.watchedFolderToken == this.watchedFolderToken &&
@@ -16142,6 +16190,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
   final Value<int> id;
   final Value<String> themeMode;
   final Value<String> sprache;
+  final Value<String?> erinnerungsfilter;
   final Value<bool> autoAnalyzeAfterImport;
   final Value<String?> watchedFolderPath;
   final Value<String?> watchedFolderToken;
@@ -16186,6 +16235,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.sprache = const Value.absent(),
+    this.erinnerungsfilter = const Value.absent(),
     this.autoAnalyzeAfterImport = const Value.absent(),
     this.watchedFolderPath = const Value.absent(),
     this.watchedFolderToken = const Value.absent(),
@@ -16231,6 +16281,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     this.id = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.sprache = const Value.absent(),
+    this.erinnerungsfilter = const Value.absent(),
     this.autoAnalyzeAfterImport = const Value.absent(),
     this.watchedFolderPath = const Value.absent(),
     this.watchedFolderToken = const Value.absent(),
@@ -16276,6 +16327,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Expression<int>? id,
     Expression<String>? themeMode,
     Expression<String>? sprache,
+    Expression<String>? erinnerungsfilter,
     Expression<bool>? autoAnalyzeAfterImport,
     Expression<String>? watchedFolderPath,
     Expression<String>? watchedFolderToken,
@@ -16321,6 +16373,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       if (id != null) 'id': id,
       if (themeMode != null) 'theme_mode': themeMode,
       if (sprache != null) 'sprache': sprache,
+      if (erinnerungsfilter != null) 'erinnerungsfilter': erinnerungsfilter,
       if (autoAnalyzeAfterImport != null)
         'auto_analyze_after_import': autoAnalyzeAfterImport,
       if (watchedFolderPath != null) 'watched_folder_path': watchedFolderPath,
@@ -16387,6 +16440,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     Value<int>? id,
     Value<String>? themeMode,
     Value<String>? sprache,
+    Value<String?>? erinnerungsfilter,
     Value<bool>? autoAnalyzeAfterImport,
     Value<String?>? watchedFolderPath,
     Value<String?>? watchedFolderToken,
@@ -16432,6 +16486,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
       id: id ?? this.id,
       themeMode: themeMode ?? this.themeMode,
       sprache: sprache ?? this.sprache,
+      erinnerungsfilter: erinnerungsfilter ?? this.erinnerungsfilter,
       autoAnalyzeAfterImport:
           autoAnalyzeAfterImport ?? this.autoAnalyzeAfterImport,
       watchedFolderPath: watchedFolderPath ?? this.watchedFolderPath,
@@ -16498,6 +16553,9 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
     }
     if (sprache.present) {
       map['sprache'] = Variable<String>(sprache.value);
+    }
+    if (erinnerungsfilter.present) {
+      map['erinnerungsfilter'] = Variable<String>(erinnerungsfilter.value);
     }
     if (autoAnalyzeAfterImport.present) {
       map['auto_analyze_after_import'] = Variable<bool>(
@@ -16652,6 +16710,7 @@ class AppSettingsCompanion extends UpdateCompanion<AppSettingsData> {
           ..write('id: $id, ')
           ..write('themeMode: $themeMode, ')
           ..write('sprache: $sprache, ')
+          ..write('erinnerungsfilter: $erinnerungsfilter, ')
           ..write('autoAnalyzeAfterImport: $autoAnalyzeAfterImport, ')
           ..write('watchedFolderPath: $watchedFolderPath, ')
           ..write('watchedFolderToken: $watchedFolderToken, ')
@@ -26632,6 +26691,675 @@ class AufgabenlaeufeCompanion extends UpdateCompanion<AufgabenlaeufeData> {
   }
 }
 
+class $BeschriftungsvorschlaegeTable extends Beschriftungsvorschlaege
+    with
+        TableInfo<
+          $BeschriftungsvorschlaegeTable,
+          BeschriftungsvorschlaegeData
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BeschriftungsvorschlaegeTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assetIdMeta = const VerificationMeta(
+    'assetId',
+  );
+  @override
+  late final GeneratedColumn<String> assetId = GeneratedColumn<String>(
+    'asset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES assets (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _albumIdMeta = const VerificationMeta(
+    'albumId',
+  );
+  @override
+  late final GeneratedColumn<String> albumId = GeneratedColumn<String>(
+    'album_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vonMeta = const VerificationMeta('von');
+  @override
+  late final GeneratedColumn<String> von = GeneratedColumn<String>(
+    'von',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _vonNameMeta = const VerificationMeta(
+    'vonName',
+  );
+  @override
+  late final GeneratedColumn<String> vonName = GeneratedColumn<String>(
+    'von_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _artMeta = const VerificationMeta('art');
+  @override
+  late final GeneratedColumn<String> art = GeneratedColumn<String>(
+    'art',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _wertMeta = const VerificationMeta('wert');
+  @override
+  late final GeneratedColumn<String> wert = GeneratedColumn<String>(
+    'wert',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _gesichtIdMeta = const VerificationMeta(
+    'gesichtId',
+  );
+  @override
+  late final GeneratedColumn<String> gesichtId = GeneratedColumn<String>(
+    'gesicht_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _angelegtMeta = const VerificationMeta(
+    'angelegt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> angelegt = GeneratedColumn<DateTime>(
+    'angelegt',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _zustandMeta = const VerificationMeta(
+    'zustand',
+  );
+  @override
+  late final GeneratedColumn<String> zustand = GeneratedColumn<String>(
+    'zustand',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('offen'),
+  );
+  static const VerificationMeta _entschiedenMeta = const VerificationMeta(
+    'entschieden',
+  );
+  @override
+  late final GeneratedColumn<DateTime> entschieden = GeneratedColumn<DateTime>(
+    'entschieden',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    assetId,
+    albumId,
+    von,
+    vonName,
+    art,
+    wert,
+    gesichtId,
+    angelegt,
+    zustand,
+    entschieden,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'beschriftungsvorschlaege';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<BeschriftungsvorschlaegeData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('asset_id')) {
+      context.handle(
+        _assetIdMeta,
+        assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('album_id')) {
+      context.handle(
+        _albumIdMeta,
+        albumId.isAcceptableOrUnknown(data['album_id']!, _albumIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_albumIdMeta);
+    }
+    if (data.containsKey('von')) {
+      context.handle(
+        _vonMeta,
+        von.isAcceptableOrUnknown(data['von']!, _vonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vonMeta);
+    }
+    if (data.containsKey('von_name')) {
+      context.handle(
+        _vonNameMeta,
+        vonName.isAcceptableOrUnknown(data['von_name']!, _vonNameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vonNameMeta);
+    }
+    if (data.containsKey('art')) {
+      context.handle(
+        _artMeta,
+        art.isAcceptableOrUnknown(data['art']!, _artMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_artMeta);
+    }
+    if (data.containsKey('wert')) {
+      context.handle(
+        _wertMeta,
+        wert.isAcceptableOrUnknown(data['wert']!, _wertMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_wertMeta);
+    }
+    if (data.containsKey('gesicht_id')) {
+      context.handle(
+        _gesichtIdMeta,
+        gesichtId.isAcceptableOrUnknown(data['gesicht_id']!, _gesichtIdMeta),
+      );
+    }
+    if (data.containsKey('angelegt')) {
+      context.handle(
+        _angelegtMeta,
+        angelegt.isAcceptableOrUnknown(data['angelegt']!, _angelegtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_angelegtMeta);
+    }
+    if (data.containsKey('zustand')) {
+      context.handle(
+        _zustandMeta,
+        zustand.isAcceptableOrUnknown(data['zustand']!, _zustandMeta),
+      );
+    }
+    if (data.containsKey('entschieden')) {
+      context.handle(
+        _entschiedenMeta,
+        entschieden.isAcceptableOrUnknown(
+          data['entschieden']!,
+          _entschiedenMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  BeschriftungsvorschlaegeData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BeschriftungsvorschlaegeData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      albumId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}album_id'],
+      )!,
+      von: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}von'],
+      )!,
+      vonName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}von_name'],
+      )!,
+      art: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}art'],
+      )!,
+      wert: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wert'],
+      )!,
+      gesichtId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}gesicht_id'],
+      ),
+      angelegt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}angelegt'],
+      )!,
+      zustand: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}zustand'],
+      )!,
+      entschieden: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}entschieden'],
+      ),
+    );
+  }
+
+  @override
+  $BeschriftungsvorschlaegeTable createAlias(String alias) {
+    return $BeschriftungsvorschlaegeTable(attachedDatabase, alias);
+  }
+}
+
+class BeschriftungsvorschlaegeData extends DataClass
+    implements Insertable<BeschriftungsvorschlaegeData> {
+  final String id;
+  final String assetId;
+  final String albumId;
+  final String von;
+  final String vonName;
+  final String art;
+  final String wert;
+  final String? gesichtId;
+  final DateTime angelegt;
+  final String zustand;
+  final DateTime? entschieden;
+  const BeschriftungsvorschlaegeData({
+    required this.id,
+    required this.assetId,
+    required this.albumId,
+    required this.von,
+    required this.vonName,
+    required this.art,
+    required this.wert,
+    this.gesichtId,
+    required this.angelegt,
+    required this.zustand,
+    this.entschieden,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['asset_id'] = Variable<String>(assetId);
+    map['album_id'] = Variable<String>(albumId);
+    map['von'] = Variable<String>(von);
+    map['von_name'] = Variable<String>(vonName);
+    map['art'] = Variable<String>(art);
+    map['wert'] = Variable<String>(wert);
+    if (!nullToAbsent || gesichtId != null) {
+      map['gesicht_id'] = Variable<String>(gesichtId);
+    }
+    map['angelegt'] = Variable<DateTime>(angelegt);
+    map['zustand'] = Variable<String>(zustand);
+    if (!nullToAbsent || entschieden != null) {
+      map['entschieden'] = Variable<DateTime>(entschieden);
+    }
+    return map;
+  }
+
+  BeschriftungsvorschlaegeCompanion toCompanion(bool nullToAbsent) {
+    return BeschriftungsvorschlaegeCompanion(
+      id: Value(id),
+      assetId: Value(assetId),
+      albumId: Value(albumId),
+      von: Value(von),
+      vonName: Value(vonName),
+      art: Value(art),
+      wert: Value(wert),
+      gesichtId: gesichtId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(gesichtId),
+      angelegt: Value(angelegt),
+      zustand: Value(zustand),
+      entschieden: entschieden == null && nullToAbsent
+          ? const Value.absent()
+          : Value(entschieden),
+    );
+  }
+
+  factory BeschriftungsvorschlaegeData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BeschriftungsvorschlaegeData(
+      id: serializer.fromJson<String>(json['id']),
+      assetId: serializer.fromJson<String>(json['assetId']),
+      albumId: serializer.fromJson<String>(json['albumId']),
+      von: serializer.fromJson<String>(json['von']),
+      vonName: serializer.fromJson<String>(json['vonName']),
+      art: serializer.fromJson<String>(json['art']),
+      wert: serializer.fromJson<String>(json['wert']),
+      gesichtId: serializer.fromJson<String?>(json['gesichtId']),
+      angelegt: serializer.fromJson<DateTime>(json['angelegt']),
+      zustand: serializer.fromJson<String>(json['zustand']),
+      entschieden: serializer.fromJson<DateTime?>(json['entschieden']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'assetId': serializer.toJson<String>(assetId),
+      'albumId': serializer.toJson<String>(albumId),
+      'von': serializer.toJson<String>(von),
+      'vonName': serializer.toJson<String>(vonName),
+      'art': serializer.toJson<String>(art),
+      'wert': serializer.toJson<String>(wert),
+      'gesichtId': serializer.toJson<String?>(gesichtId),
+      'angelegt': serializer.toJson<DateTime>(angelegt),
+      'zustand': serializer.toJson<String>(zustand),
+      'entschieden': serializer.toJson<DateTime?>(entschieden),
+    };
+  }
+
+  BeschriftungsvorschlaegeData copyWith({
+    String? id,
+    String? assetId,
+    String? albumId,
+    String? von,
+    String? vonName,
+    String? art,
+    String? wert,
+    Value<String?> gesichtId = const Value.absent(),
+    DateTime? angelegt,
+    String? zustand,
+    Value<DateTime?> entschieden = const Value.absent(),
+  }) => BeschriftungsvorschlaegeData(
+    id: id ?? this.id,
+    assetId: assetId ?? this.assetId,
+    albumId: albumId ?? this.albumId,
+    von: von ?? this.von,
+    vonName: vonName ?? this.vonName,
+    art: art ?? this.art,
+    wert: wert ?? this.wert,
+    gesichtId: gesichtId.present ? gesichtId.value : this.gesichtId,
+    angelegt: angelegt ?? this.angelegt,
+    zustand: zustand ?? this.zustand,
+    entschieden: entschieden.present ? entschieden.value : this.entschieden,
+  );
+  BeschriftungsvorschlaegeData copyWithCompanion(
+    BeschriftungsvorschlaegeCompanion data,
+  ) {
+    return BeschriftungsvorschlaegeData(
+      id: data.id.present ? data.id.value : this.id,
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      albumId: data.albumId.present ? data.albumId.value : this.albumId,
+      von: data.von.present ? data.von.value : this.von,
+      vonName: data.vonName.present ? data.vonName.value : this.vonName,
+      art: data.art.present ? data.art.value : this.art,
+      wert: data.wert.present ? data.wert.value : this.wert,
+      gesichtId: data.gesichtId.present ? data.gesichtId.value : this.gesichtId,
+      angelegt: data.angelegt.present ? data.angelegt.value : this.angelegt,
+      zustand: data.zustand.present ? data.zustand.value : this.zustand,
+      entschieden: data.entschieden.present
+          ? data.entschieden.value
+          : this.entschieden,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BeschriftungsvorschlaegeData(')
+          ..write('id: $id, ')
+          ..write('assetId: $assetId, ')
+          ..write('albumId: $albumId, ')
+          ..write('von: $von, ')
+          ..write('vonName: $vonName, ')
+          ..write('art: $art, ')
+          ..write('wert: $wert, ')
+          ..write('gesichtId: $gesichtId, ')
+          ..write('angelegt: $angelegt, ')
+          ..write('zustand: $zustand, ')
+          ..write('entschieden: $entschieden')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    assetId,
+    albumId,
+    von,
+    vonName,
+    art,
+    wert,
+    gesichtId,
+    angelegt,
+    zustand,
+    entschieden,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BeschriftungsvorschlaegeData &&
+          other.id == this.id &&
+          other.assetId == this.assetId &&
+          other.albumId == this.albumId &&
+          other.von == this.von &&
+          other.vonName == this.vonName &&
+          other.art == this.art &&
+          other.wert == this.wert &&
+          other.gesichtId == this.gesichtId &&
+          other.angelegt == this.angelegt &&
+          other.zustand == this.zustand &&
+          other.entschieden == this.entschieden);
+}
+
+class BeschriftungsvorschlaegeCompanion
+    extends UpdateCompanion<BeschriftungsvorschlaegeData> {
+  final Value<String> id;
+  final Value<String> assetId;
+  final Value<String> albumId;
+  final Value<String> von;
+  final Value<String> vonName;
+  final Value<String> art;
+  final Value<String> wert;
+  final Value<String?> gesichtId;
+  final Value<DateTime> angelegt;
+  final Value<String> zustand;
+  final Value<DateTime?> entschieden;
+  final Value<int> rowid;
+  const BeschriftungsvorschlaegeCompanion({
+    this.id = const Value.absent(),
+    this.assetId = const Value.absent(),
+    this.albumId = const Value.absent(),
+    this.von = const Value.absent(),
+    this.vonName = const Value.absent(),
+    this.art = const Value.absent(),
+    this.wert = const Value.absent(),
+    this.gesichtId = const Value.absent(),
+    this.angelegt = const Value.absent(),
+    this.zustand = const Value.absent(),
+    this.entschieden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BeschriftungsvorschlaegeCompanion.insert({
+    required String id,
+    required String assetId,
+    required String albumId,
+    required String von,
+    required String vonName,
+    required String art,
+    required String wert,
+    this.gesichtId = const Value.absent(),
+    required DateTime angelegt,
+    this.zustand = const Value.absent(),
+    this.entschieden = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       assetId = Value(assetId),
+       albumId = Value(albumId),
+       von = Value(von),
+       vonName = Value(vonName),
+       art = Value(art),
+       wert = Value(wert),
+       angelegt = Value(angelegt);
+  static Insertable<BeschriftungsvorschlaegeData> custom({
+    Expression<String>? id,
+    Expression<String>? assetId,
+    Expression<String>? albumId,
+    Expression<String>? von,
+    Expression<String>? vonName,
+    Expression<String>? art,
+    Expression<String>? wert,
+    Expression<String>? gesichtId,
+    Expression<DateTime>? angelegt,
+    Expression<String>? zustand,
+    Expression<DateTime>? entschieden,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assetId != null) 'asset_id': assetId,
+      if (albumId != null) 'album_id': albumId,
+      if (von != null) 'von': von,
+      if (vonName != null) 'von_name': vonName,
+      if (art != null) 'art': art,
+      if (wert != null) 'wert': wert,
+      if (gesichtId != null) 'gesicht_id': gesichtId,
+      if (angelegt != null) 'angelegt': angelegt,
+      if (zustand != null) 'zustand': zustand,
+      if (entschieden != null) 'entschieden': entschieden,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BeschriftungsvorschlaegeCompanion copyWith({
+    Value<String>? id,
+    Value<String>? assetId,
+    Value<String>? albumId,
+    Value<String>? von,
+    Value<String>? vonName,
+    Value<String>? art,
+    Value<String>? wert,
+    Value<String?>? gesichtId,
+    Value<DateTime>? angelegt,
+    Value<String>? zustand,
+    Value<DateTime?>? entschieden,
+    Value<int>? rowid,
+  }) {
+    return BeschriftungsvorschlaegeCompanion(
+      id: id ?? this.id,
+      assetId: assetId ?? this.assetId,
+      albumId: albumId ?? this.albumId,
+      von: von ?? this.von,
+      vonName: vonName ?? this.vonName,
+      art: art ?? this.art,
+      wert: wert ?? this.wert,
+      gesichtId: gesichtId ?? this.gesichtId,
+      angelegt: angelegt ?? this.angelegt,
+      zustand: zustand ?? this.zustand,
+      entschieden: entschieden ?? this.entschieden,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (assetId.present) {
+      map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (albumId.present) {
+      map['album_id'] = Variable<String>(albumId.value);
+    }
+    if (von.present) {
+      map['von'] = Variable<String>(von.value);
+    }
+    if (vonName.present) {
+      map['von_name'] = Variable<String>(vonName.value);
+    }
+    if (art.present) {
+      map['art'] = Variable<String>(art.value);
+    }
+    if (wert.present) {
+      map['wert'] = Variable<String>(wert.value);
+    }
+    if (gesichtId.present) {
+      map['gesicht_id'] = Variable<String>(gesichtId.value);
+    }
+    if (angelegt.present) {
+      map['angelegt'] = Variable<DateTime>(angelegt.value);
+    }
+    if (zustand.present) {
+      map['zustand'] = Variable<String>(zustand.value);
+    }
+    if (entschieden.present) {
+      map['entschieden'] = Variable<DateTime>(entschieden.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BeschriftungsvorschlaegeCompanion(')
+          ..write('id: $id, ')
+          ..write('assetId: $assetId, ')
+          ..write('albumId: $albumId, ')
+          ..write('von: $von, ')
+          ..write('vonName: $vonName, ')
+          ..write('art: $art, ')
+          ..write('wert: $wert, ')
+          ..write('gesichtId: $gesichtId, ')
+          ..write('angelegt: $angelegt, ')
+          ..write('zustand: $zustand, ')
+          ..write('entschieden: $entschieden, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -26716,6 +27444,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $GemerkteErinnerungenTable gemerkteErinnerungen =
       $GemerkteErinnerungenTable(this);
   late final $AufgabenlaeufeTable aufgabenlaeufe = $AufgabenlaeufeTable(this);
+  late final $BeschriftungsvorschlaegeTable beschriftungsvorschlaege =
+      $BeschriftungsvorschlaegeTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -26770,7 +27500,20 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     verworfeneDokumente,
     gemerkteErinnerungen,
     aufgabenlaeufe,
+    beschriftungsvorschlaege,
   ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'assets',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [
+        TableUpdate('beschriftungsvorschlaege', kind: UpdateKind.delete),
+      ],
+    ),
+  ]);
 }
 
 typedef $$AssetsTableCreateCompanionBuilder =
@@ -26913,6 +27656,36 @@ typedef $$AssetsTableUpdateCompanionBuilder =
       Value<int?> stackSize,
       Value<int> rowid,
     });
+
+final class $$AssetsTableReferences
+    extends BaseReferences<_$AppDatabase, $AssetsTable, AssetData> {
+  $$AssetsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<
+    $BeschriftungsvorschlaegeTable,
+    List<BeschriftungsvorschlaegeData>
+  >
+  _beschriftungsvorschlaegeRefsTable(_$AppDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.beschriftungsvorschlaege,
+        aliasName: 'assets__id__beschriftungsvorschlaege__asset_id',
+      );
+
+  $$BeschriftungsvorschlaegeTableProcessedTableManager
+  get beschriftungsvorschlaegeRefs {
+    final manager = $$BeschriftungsvorschlaegeTableTableManager(
+      $_db,
+      $_db.beschriftungsvorschlaege,
+    ).filter((f) => f.assetId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _beschriftungsvorschlaegeRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$AssetsTableFilterComposer
     extends Composer<_$AppDatabase, $AssetsTable> {
@@ -27252,6 +28025,33 @@ class $$AssetsTableFilterComposer
     column: $table.stackSize,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> beschriftungsvorschlaegeRefs(
+    Expression<bool> Function($$BeschriftungsvorschlaegeTableFilterComposer f)
+    f,
+  ) {
+    final $$BeschriftungsvorschlaegeTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.beschriftungsvorschlaege,
+          getReferencedColumn: (t) => t.assetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BeschriftungsvorschlaegeTableFilterComposer(
+                $db: $db,
+                $table: $db.beschriftungsvorschlaege,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AssetsTableOrderingComposer
@@ -27890,6 +28690,33 @@ class $$AssetsTableAnnotationComposer
 
   GeneratedColumn<int> get stackSize =>
       $composableBuilder(column: $table.stackSize, builder: (column) => column);
+
+  Expression<T> beschriftungsvorschlaegeRefs<T extends Object>(
+    Expression<T> Function($$BeschriftungsvorschlaegeTableAnnotationComposer a)
+    f,
+  ) {
+    final $$BeschriftungsvorschlaegeTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.beschriftungsvorschlaege,
+          getReferencedColumn: (t) => t.assetId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$BeschriftungsvorschlaegeTableAnnotationComposer(
+                $db: $db,
+                $table: $db.beschriftungsvorschlaege,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$AssetsTableTableManager
@@ -27903,9 +28730,9 @@ class $$AssetsTableTableManager
           $$AssetsTableAnnotationComposer,
           $$AssetsTableCreateCompanionBuilder,
           $$AssetsTableUpdateCompanionBuilder,
-          (AssetData, BaseReferences<_$AppDatabase, $AssetsTable, AssetData>),
+          (AssetData, $$AssetsTableReferences),
           AssetData,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool beschriftungsvorschlaegeRefs})
         > {
   $$AssetsTableTableManager(_$AppDatabase db, $AssetsTable table)
     : super(
@@ -28198,15 +29025,42 @@ class $$AssetsTableTableManager
               .map(
                 (e) => (
                   e.readTable<$AssetsTable, AssetData>(table),
-                  BaseReferences<_$AppDatabase, $AssetsTable, AssetData>(
-                    db,
-                    table,
-                    e,
-                  ),
+                  $$AssetsTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({beschriftungsvorschlaegeRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (beschriftungsvorschlaegeRefs) db.beschriftungsvorschlaege,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (beschriftungsvorschlaegeRefs)
+                    await $_getPrefetchedDataByColumns<
+                      AssetData,
+                      $AssetsTable,
+                      BeschriftungsvorschlaegeData,
+                      $BeschriftungsvorschlaegeTable
+                    >(
+                      currentTable: table,
+                      referencedTable: $$AssetsTableReferences
+                          ._beschriftungsvorschlaegeRefsTable(db),
+                      managerFromTypedResult: (p0) => $$AssetsTableReferences(
+                        db,
+                        table,
+                        p0,
+                      ).beschriftungsvorschlaegeRefs,
+                      currentColumn: 'id',
+                      referencedColumn: 'asset_id',
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -28221,9 +29075,9 @@ typedef $$AssetsTableProcessedTableManager =
       $$AssetsTableAnnotationComposer,
       $$AssetsTableCreateCompanionBuilder,
       $$AssetsTableUpdateCompanionBuilder,
-      (AssetData, BaseReferences<_$AppDatabase, $AssetsTable, AssetData>),
+      (AssetData, $$AssetsTableReferences),
       AssetData,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool beschriftungsvorschlaegeRefs})
     >;
 typedef $$AlbumsTableCreateCompanionBuilder =
     AlbumsCompanion Function({
@@ -33493,6 +34347,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<int> id,
       Value<String> themeMode,
       Value<String> sprache,
+      Value<String?> erinnerungsfilter,
       Value<bool> autoAnalyzeAfterImport,
       Value<String?> watchedFolderPath,
       Value<String?> watchedFolderToken,
@@ -33539,6 +34394,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<int> id,
       Value<String> themeMode,
       Value<String> sprache,
+      Value<String?> erinnerungsfilter,
       Value<bool> autoAnalyzeAfterImport,
       Value<String?> watchedFolderPath,
       Value<String?> watchedFolderToken,
@@ -33602,6 +34458,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get sprache => $composableBuilder(
     column: $table.sprache,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get erinnerungsfilter => $composableBuilder(
+    column: $table.erinnerungsfilter,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33830,6 +34691,11 @@ class $$AppSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get erinnerungsfilter => $composableBuilder(
+    column: $table.erinnerungsfilter,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get autoAnalyzeAfterImport => $composableBuilder(
     column: $table.autoAnalyzeAfterImport,
     builder: (column) => ColumnOrderings(column),
@@ -34048,6 +34914,11 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get sprache =>
       $composableBuilder(column: $table.sprache, builder: (column) => column);
+
+  GeneratedColumn<String> get erinnerungsfilter => $composableBuilder(
+    column: $table.erinnerungsfilter,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<bool> get autoAnalyzeAfterImport => $composableBuilder(
     column: $table.autoAnalyzeAfterImport,
@@ -34284,6 +35155,7 @@ class $$AppSettingsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> themeMode = const Value.absent(),
                 Value<String> sprache = const Value.absent(),
+                Value<String?> erinnerungsfilter = const Value.absent(),
                 Value<bool> autoAnalyzeAfterImport = const Value.absent(),
                 Value<String?> watchedFolderPath = const Value.absent(),
                 Value<String?> watchedFolderToken = const Value.absent(),
@@ -34328,6 +35200,7 @@ class $$AppSettingsTableTableManager
                 id: id,
                 themeMode: themeMode,
                 sprache: sprache,
+                erinnerungsfilter: erinnerungsfilter,
                 autoAnalyzeAfterImport: autoAnalyzeAfterImport,
                 watchedFolderPath: watchedFolderPath,
                 watchedFolderToken: watchedFolderToken,
@@ -34374,6 +35247,7 @@ class $$AppSettingsTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<String> themeMode = const Value.absent(),
                 Value<String> sprache = const Value.absent(),
+                Value<String?> erinnerungsfilter = const Value.absent(),
                 Value<bool> autoAnalyzeAfterImport = const Value.absent(),
                 Value<String?> watchedFolderPath = const Value.absent(),
                 Value<String?> watchedFolderToken = const Value.absent(),
@@ -34418,6 +35292,7 @@ class $$AppSettingsTableTableManager
                 id: id,
                 themeMode: themeMode,
                 sprache: sprache,
+                erinnerungsfilter: erinnerungsfilter,
                 autoAnalyzeAfterImport: autoAnalyzeAfterImport,
                 watchedFolderPath: watchedFolderPath,
                 watchedFolderToken: watchedFolderToken,
@@ -40321,6 +41196,467 @@ typedef $$AufgabenlaeufeTableProcessedTableManager =
       AufgabenlaeufeData,
       PrefetchHooks Function()
     >;
+typedef $$BeschriftungsvorschlaegeTableCreateCompanionBuilder =
+    BeschriftungsvorschlaegeCompanion Function({
+      required String id,
+      required String assetId,
+      required String albumId,
+      required String von,
+      required String vonName,
+      required String art,
+      required String wert,
+      Value<String?> gesichtId,
+      required DateTime angelegt,
+      Value<String> zustand,
+      Value<DateTime?> entschieden,
+      Value<int> rowid,
+    });
+typedef $$BeschriftungsvorschlaegeTableUpdateCompanionBuilder =
+    BeschriftungsvorschlaegeCompanion Function({
+      Value<String> id,
+      Value<String> assetId,
+      Value<String> albumId,
+      Value<String> von,
+      Value<String> vonName,
+      Value<String> art,
+      Value<String> wert,
+      Value<String?> gesichtId,
+      Value<DateTime> angelegt,
+      Value<String> zustand,
+      Value<DateTime?> entschieden,
+      Value<int> rowid,
+    });
+
+final class $$BeschriftungsvorschlaegeTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $BeschriftungsvorschlaegeTable,
+          BeschriftungsvorschlaegeData
+        > {
+  $$BeschriftungsvorschlaegeTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $AssetsTable _assetIdTable(_$AppDatabase db) =>
+      db.assets.createAlias('beschriftungsvorschlaege__asset_id__assets__id');
+
+  $$AssetsTableProcessedTableManager get assetId {
+    final $_column = $_itemColumn<String>('asset_id')!;
+
+    final manager = $$AssetsTableTableManager(
+      $_db,
+      $_db.assets,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_assetIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$BeschriftungsvorschlaegeTableFilterComposer
+    extends Composer<_$AppDatabase, $BeschriftungsvorschlaegeTable> {
+  $$BeschriftungsvorschlaegeTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get albumId => $composableBuilder(
+    column: $table.albumId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get von => $composableBuilder(
+    column: $table.von,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vonName => $composableBuilder(
+    column: $table.vonName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get art => $composableBuilder(
+    column: $table.art,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wert => $composableBuilder(
+    column: $table.wert,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get gesichtId => $composableBuilder(
+    column: $table.gesichtId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get angelegt => $composableBuilder(
+    column: $table.angelegt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get zustand => $composableBuilder(
+    column: $table.zustand,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get entschieden => $composableBuilder(
+    column: $table.entschieden,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$AssetsTableFilterComposer get assetId {
+    final $$AssetsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.assetId,
+      referencedTable: $db.assets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetsTableFilterComposer(
+            $db: $db,
+            $table: $db.assets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BeschriftungsvorschlaegeTableOrderingComposer
+    extends Composer<_$AppDatabase, $BeschriftungsvorschlaegeTable> {
+  $$BeschriftungsvorschlaegeTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get albumId => $composableBuilder(
+    column: $table.albumId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get von => $composableBuilder(
+    column: $table.von,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vonName => $composableBuilder(
+    column: $table.vonName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get art => $composableBuilder(
+    column: $table.art,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get wert => $composableBuilder(
+    column: $table.wert,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get gesichtId => $composableBuilder(
+    column: $table.gesichtId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get angelegt => $composableBuilder(
+    column: $table.angelegt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get zustand => $composableBuilder(
+    column: $table.zustand,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get entschieden => $composableBuilder(
+    column: $table.entschieden,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$AssetsTableOrderingComposer get assetId {
+    final $$AssetsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.assetId,
+      referencedTable: $db.assets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetsTableOrderingComposer(
+            $db: $db,
+            $table: $db.assets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BeschriftungsvorschlaegeTableAnnotationComposer
+    extends Composer<_$AppDatabase, $BeschriftungsvorschlaegeTable> {
+  $$BeschriftungsvorschlaegeTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get albumId =>
+      $composableBuilder(column: $table.albumId, builder: (column) => column);
+
+  GeneratedColumn<String> get von =>
+      $composableBuilder(column: $table.von, builder: (column) => column);
+
+  GeneratedColumn<String> get vonName =>
+      $composableBuilder(column: $table.vonName, builder: (column) => column);
+
+  GeneratedColumn<String> get art =>
+      $composableBuilder(column: $table.art, builder: (column) => column);
+
+  GeneratedColumn<String> get wert =>
+      $composableBuilder(column: $table.wert, builder: (column) => column);
+
+  GeneratedColumn<String> get gesichtId =>
+      $composableBuilder(column: $table.gesichtId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get angelegt =>
+      $composableBuilder(column: $table.angelegt, builder: (column) => column);
+
+  GeneratedColumn<String> get zustand =>
+      $composableBuilder(column: $table.zustand, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get entschieden => $composableBuilder(
+    column: $table.entschieden,
+    builder: (column) => column,
+  );
+
+  $$AssetsTableAnnotationComposer get assetId {
+    final $$AssetsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.assetId,
+      referencedTable: $db.assets,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$AssetsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.assets,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$BeschriftungsvorschlaegeTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $BeschriftungsvorschlaegeTable,
+          BeschriftungsvorschlaegeData,
+          $$BeschriftungsvorschlaegeTableFilterComposer,
+          $$BeschriftungsvorschlaegeTableOrderingComposer,
+          $$BeschriftungsvorschlaegeTableAnnotationComposer,
+          $$BeschriftungsvorschlaegeTableCreateCompanionBuilder,
+          $$BeschriftungsvorschlaegeTableUpdateCompanionBuilder,
+          (
+            BeschriftungsvorschlaegeData,
+            $$BeschriftungsvorschlaegeTableReferences,
+          ),
+          BeschriftungsvorschlaegeData,
+          PrefetchHooks Function({bool assetId})
+        > {
+  $$BeschriftungsvorschlaegeTableTableManager(
+    _$AppDatabase db,
+    $BeschriftungsvorschlaegeTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$BeschriftungsvorschlaegeTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$BeschriftungsvorschlaegeTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$BeschriftungsvorschlaegeTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> assetId = const Value.absent(),
+                Value<String> albumId = const Value.absent(),
+                Value<String> von = const Value.absent(),
+                Value<String> vonName = const Value.absent(),
+                Value<String> art = const Value.absent(),
+                Value<String> wert = const Value.absent(),
+                Value<String?> gesichtId = const Value.absent(),
+                Value<DateTime> angelegt = const Value.absent(),
+                Value<String> zustand = const Value.absent(),
+                Value<DateTime?> entschieden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BeschriftungsvorschlaegeCompanion(
+                id: id,
+                assetId: assetId,
+                albumId: albumId,
+                von: von,
+                vonName: vonName,
+                art: art,
+                wert: wert,
+                gesichtId: gesichtId,
+                angelegt: angelegt,
+                zustand: zustand,
+                entschieden: entschieden,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String assetId,
+                required String albumId,
+                required String von,
+                required String vonName,
+                required String art,
+                required String wert,
+                Value<String?> gesichtId = const Value.absent(),
+                required DateTime angelegt,
+                Value<String> zustand = const Value.absent(),
+                Value<DateTime?> entschieden = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => BeschriftungsvorschlaegeCompanion.insert(
+                id: id,
+                assetId: assetId,
+                albumId: albumId,
+                von: von,
+                vonName: vonName,
+                art: art,
+                wert: wert,
+                gesichtId: gesichtId,
+                angelegt: angelegt,
+                zustand: zustand,
+                entschieden: entschieden,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $BeschriftungsvorschlaegeTable,
+                    BeschriftungsvorschlaegeData
+                  >(table),
+                  $$BeschriftungsvorschlaegeTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({assetId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (assetId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.assetId,
+                                referencedTable:
+                                    $$BeschriftungsvorschlaegeTableReferences
+                                        ._assetIdTable(db),
+                                referencedColumn:
+                                    $$BeschriftungsvorschlaegeTableReferences
+                                        ._assetIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$BeschriftungsvorschlaegeTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $BeschriftungsvorschlaegeTable,
+      BeschriftungsvorschlaegeData,
+      $$BeschriftungsvorschlaegeTableFilterComposer,
+      $$BeschriftungsvorschlaegeTableOrderingComposer,
+      $$BeschriftungsvorschlaegeTableAnnotationComposer,
+      $$BeschriftungsvorschlaegeTableCreateCompanionBuilder,
+      $$BeschriftungsvorschlaegeTableUpdateCompanionBuilder,
+      (BeschriftungsvorschlaegeData, $$BeschriftungsvorschlaegeTableReferences),
+      BeschriftungsvorschlaegeData,
+      PrefetchHooks Function({bool assetId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -40428,4 +41764,9 @@ class $AppDatabaseManager {
       $$GemerkteErinnerungenTableTableManager(_db, _db.gemerkteErinnerungen);
   $$AufgabenlaeufeTableTableManager get aufgabenlaeufe =>
       $$AufgabenlaeufeTableTableManager(_db, _db.aufgabenlaeufe);
+  $$BeschriftungsvorschlaegeTableTableManager get beschriftungsvorschlaege =>
+      $$BeschriftungsvorschlaegeTableTableManager(
+        _db,
+        _db.beschriftungsvorschlaege,
+      );
 }

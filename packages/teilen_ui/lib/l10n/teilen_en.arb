@@ -1,4 +1,8 @@
 {
+  "erinnerungenLadeFehler": "Memories could not be loaded. Please check memory controls and try again.",
+  "erinnerungsfilterDefekt": "The saved exclusions cannot be read. Automatic memories remain blocked. Saving replaces the exclusions with the selection shown here.",
+  "beschriftungZurueck": "Previous suggestions",
+  "beschriftungWeiter": "More suggestions",
   "@@locale": "en",
   "geteiltMitMir": "Shared with me",
   "geteiltVon": "by {name}",
@@ -111,5 +115,47 @@
   "collageHoch": "2:3",
   "collageStory": "9:16",
   "collageGespeichert": "Collage saved – it is in the timeline next to its photos.",
-  "collageZweiBisNeun": "A collage needs 2 to 9 photos."
+  "collageZweiBisNeun": "A collage needs 2 to 9 photos.",
+  "erinnerungsfilterTitel": "Filter memories",
+  "erinnerungsfilterHinweis": "Exclude selected people, albums and dates from automatic memories. This selection applies to all connected devices.",
+  "erinnerungPersonen": "People",
+  "erinnerungAlben": "Albums",
+  "erinnerungZeiten": "Dates",
+  "erinnerungEintragFehlt": "No longer available",
+  "erinnerungZeitraumEntfernen": "Remove date range",
+  "erinnerungZeitraumHinzufuegen": "Add date range",
+  "erinnerungsfilterFehler": "The filters could not be saved.",
+  "erinnerungsfilterSpeichern": "Save",
+  "beschriftungTitel": "Caption suggestions",
+  "beschriftungHinweis": "Suggest people, places or an approximate capture year. The owner reviews and applies the details.",
+  "beschriftungFehler": "The action could not be completed. Refresh the list and check for changed details or ambiguous people.",
+  "beschriftungPerson": "Person",
+  "beschriftungOrt": "Place",
+  "beschriftungJahr": "Approximate capture year",
+  "beschriftungGesichtWaehlen": "Choose a face in the photo",
+  "beschriftungGesicht": "Face {anzahl}",
+  "@beschriftungGesicht": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "beschriftungVorschlagen": "Send suggestion",
+  "beschriftungAktuell": "Current value {wert}",
+  "@beschriftungAktuell": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "beschriftungAngenommen": "Accepted",
+  "beschriftungAbgelehnt": "Rejected",
+  "beschriftungOffen": "Pending",
+  "beschriftungAblehnen": "Reject",
+  "beschriftungAnnehmen": "Accept",
+  "beschriftungFoto": "Review photo",
+  "beschriftungAktualisieren": "Refresh",
+  "beschriftungPersonAutomatisch": "Matching or new person"
 }

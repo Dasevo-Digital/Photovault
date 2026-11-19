@@ -392,6 +392,14 @@ Handler baueApi({
     ..get('/api/v1/alben/<id>/regel', teilung.regel)
     ..put('/api/v1/alben/<id>/regel', teilung.regelSetzen)
     ..delete('/api/v1/alben/<id>/regel', teilung.regelEntfernen)
+    ..get('/api/v1/alben/<id>/beschriftungen', teilung.beschriftungEigen)
+    ..post('/api/v1/alben/<id>/beschriftungen', teilung.beschriftungEigen)
+    ..post(
+      '/api/v1/alben/<id>/beschriftungen/<v>',
+      teilung.beschriftungEntscheiden,
+    )
+    ..get('/api/v1/geteilt/<id>/beschriftungen', teilung.beschriftungGeteilt)
+    ..post('/api/v1/geteilt/<id>/beschriftungen', teilung.beschriftungGeteilt)
     // Kommentare und „Gefällt mir“ (#297), für den Besitzer …
     ..get('/api/v1/alben/<id>/aktivitaet', teilung.aktivitaetEigen)
     ..post('/api/v1/alben/<id>/kommentare', teilung.kommentierenEigen)
@@ -869,6 +877,8 @@ class _Api {
           'papierkorb': 1,
           // Kommentare und „Gefällt mir“ in geteilten Alben (#297).
           'kommentare': 1,
+          'umzug': 1,
+          'beschriftungen': 1,
           // Alben, die sich selbst füllen (#298).
           'albumregeln': 1,
           // Partnerfreigabe eingeschränkt und in der Zeitleiste (#299).
@@ -1845,6 +1855,18 @@ class _Api {
   Future<Response> einstellungen(Request anfrage) async {
     final db = (await _bereich(anfrage)).bibliothek.db;
     final e = await bibliothekseinstellungen(db);
+    Map<String, Object?> filter;
+    try {
+      filter = (await db.erinnerungsfilter()).alsJson();
+    } on Object {
+      filter = {
+        'fassung': 1,
+        'personen': <String>[],
+        'alben': <String>[],
+        'zeitraeume': <Object>[],
+        'beschaedigt': true,
+      };
+    }
     return _json({
       'papierkorbLeeren': e.papierkorbLeeren,
       'papierkorbTage': e.papierkorbTage,
@@ -1854,6 +1876,7 @@ class _Api {
       'sucheUebersetzen': e.sucheUebersetzen,
       'angabenSchuetzen': e.angabenSchuetzen,
       'formateStapeln': e.formateStapeln,
+      'erinnerungsfilter': filter,
     });
   }
 

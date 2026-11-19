@@ -1,3 +1,4 @@
+import 'beschriftungen.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -941,6 +942,7 @@ class _GeteilterBetrachterState extends State<GeteilterBetrachter> {
         ),
         actions: [
           if (_ort case final o? when _aktivitaet != null) ...[
+            Beschriftungsknopf(ort: o, aufnahme: a.id),
             Builder(
               builder: (context) {
                 final g = _aktivitaet!.gefallenVon(a.id);

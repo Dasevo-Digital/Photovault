@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' show Variable;
@@ -13,6 +14,7 @@ import 'asset_display_path.dart';
 import 'aufnahmedatum.dart';
 import 'backup_fotokammer.dart';
 import 'beilagenangaben.dart';
+import 'erinnerungsfilter.dart';
 import 'backup_manifest.dart';
 import 'backup_modelle.dart';
 import 'backup_restore_plan.dart';
@@ -28,6 +30,7 @@ class BackupWiederhersteller {
   final AppDatabase _db;
   final StoragePaths _paths;
   final _uuid = const Uuid();
+  final _albumZuordnung = <String, String>{};
   final _probleme = <RestoreProblem>[];
   void _problem(String code, Object fehler) {
     _probleme.add(RestoreProblem(code));
@@ -320,6 +323,7 @@ class BackupWiederhersteller {
   static const uebernommeneTabellen = <String>[
     'people',
     'faces',
+    'beschriftungsvorschlaege',
     'face_match_feedback',
     'person_beziehungen',
     'lebensereignisse',
@@ -431,6 +435,61 @@ class BackupWiederhersteller {
       // nimmt eine gescheiterte Anweisung für sich zurück, die Klammer
       // steht danach unverändert offen.
       await _db.transaction(() async {
+        final tabellen = {
+          for (final z in quelle.select(
+            "SELECT name FROM sqlite_master WHERE type='table'",
+          ))
+            z['name'],
+        };
+        final einstellungen = quelle.select('PRAGMA table_info(app_settings)');
+        Erinnerungsfilter? filter;
+        if (nurPruefsummen == null &&
+            einstellungen.any((s) => s['name'] == 'erinnerungsfilter')) {
+          final row = quelle.select(
+            'SELECT erinnerungsfilter FROM app_settings WHERE id=0',
+          );
+          final text = row.firstOrNull?['erinnerungsfilter'];
+          if (text is String) {
+            filter = Erinnerungsfilter.ausJson(jsonDecode(text));
+          }
+        }
+        final benoetigteAlben = <String>{...filter?.alben ?? const []};
+        if (tabellen.contains('beschriftungsvorschlaege')) {
+          for (final z in quelle.select(
+            'SELECT album_id, asset_id FROM beschriftungsvorschlaege',
+          )) {
+            if (assetZuordnung.containsKey(z['asset_id'])) {
+              benoetigteAlben.add(z['album_id'] as String);
+            }
+          }
+        }
+        // Das Manifest stellt Alben mit neuen Kennungen wieder her. Die
+        // Ausschlüsse und die Herkunft der Vorschläge müssen ihnen folgen.
+        for (final id in benoetigteAlben) {
+          if (_albumZuordnung.containsKey(id)) continue;
+          final alben = quelle.select('SELECT name FROM albums WHERE id=?', [
+            id,
+          ]);
+          if (alben.isEmpty) continue;
+          final vorhanden = await (_db.select(
+            _db.albums,
+          )..where((t) => t.id.equals(id))).getSingleOrNull();
+          final neu = vorhanden?.name == alben.single['name'] ? id : _uuid.v4();
+          if (neu != id || vorhanden == null) {
+            await _db.fuehreAus(
+              AlbumAnlegen(neu, alben.single['name'] as String, DateTime.now()),
+            );
+          }
+          final fotos = [
+            for (final z in quelle.select(
+              'SELECT asset_id FROM album_assets WHERE album_id=?',
+              [id],
+            ))
+              ?assetZuordnung[z['asset_id']],
+          ];
+          if (fotos.isNotEmpty) await _db.fuehreAus(AlbumFuellen(neu, fotos));
+          _albumZuordnung[id] = neu;
+        }
         for (final tabelle in uebernommeneTabellen) {
           final erlaubt = zielSpalten[tabelle];
           if (erlaubt == null) continue;
@@ -466,6 +525,14 @@ class BackupWiederhersteller {
                   break;
                 }
               }
+              if (tabelle == 'beschriftungsvorschlaege' &&
+                  spalte == 'album_id') {
+                wert = _albumZuordnung[wert];
+                if (wert == null) {
+                  ueberspringen = true;
+                  break;
+                }
+              }
               werte.add(wert);
             }
             if (ueberspringen) continue;
@@ -483,6 +550,21 @@ class BackupWiederhersteller {
               _problem('pv_restore_zeile', e);
             }
           }
+        }
+        if (filter != null) {
+          final bisher = await _db.erinnerungsfilter();
+          await _db.fuehreAus(
+            ErinnerungsfilterSetzen(
+              Erinnerungsfilter(
+                personen: {...bisher.personen, ...filter.personen},
+                alben: {
+                  ...bisher.alben,
+                  for (final id in filter.alben) _albumZuordnung[id] ?? id,
+                },
+                zeitraeume: {...bisher.zeitraeume, ...filter.zeitraeume},
+              ),
+            ),
+          );
         }
         // Und die Marke „schon nach Gesichtern durchsucht" mit.
         //
@@ -818,6 +900,9 @@ class BackupWiederhersteller {
         final albumId = const Uuid().v4();
         await _db.fuehreAus(AlbumAnlegen(albumId, name, DateTime.now()));
         await _db.fuehreAus(AlbumFuellen(albumId, assetIds));
+        if (albumEntry['id'] case final String id) {
+          _albumZuordnung[id] = albumId;
+        }
       } catch (e) {
         if (streng) rethrow;
         _problem('pv_restore_album', e);

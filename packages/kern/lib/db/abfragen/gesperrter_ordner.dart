@@ -57,6 +57,12 @@ extension GesperrteAbfragen on AppDatabase {
     return {
       'tags': [for (final row in tagRows) '${row.tagId}\u0000${row.quelle}'],
       'albums': [for (final row in albumRows) row.albumId],
+      'beschriftungen': [
+        for (final row in await (select(
+          beschriftungsvorschlaege,
+        )..where((t) => t.assetId.equals(assetId))).get())
+          jsonEncode(row.toJson()),
+      ],
     };
   }
 
@@ -95,6 +101,9 @@ extension GesperrteAbfragen on AppDatabase {
         transkriptSprache: const Value(null),
       ),
     );
+    await (delete(
+      beschriftungsvorschlaege,
+    )..where((t) => t.assetId.equals(assetId))).go();
     await (delete(assetTags)..where((t) => t.assetId.equals(assetId))).go();
     await (delete(albumAssets)..where((a) => a.assetId.equals(assetId))).go();
   });
@@ -104,8 +113,18 @@ extension GesperrteAbfragen on AppDatabase {
     AssetsCompanion metadata, {
     required List<(String, String)> tags,
     required List<String> albumIds,
+    List<String> beschriftungen = const [],
   }) => transaction(() async {
     await (update(assets)..where((a) => a.id.equals(assetId))).write(metadata);
+    for (final text in beschriftungen) {
+      final row = BeschriftungsvorschlaegeData.fromJson(
+        (jsonDecode(text) as Map).cast<String, dynamic>(),
+      );
+      if (row.assetId != assetId) {
+        throw const FormatException('pv_beschriftung_aufnahme');
+      }
+      await into(beschriftungsvorschlaege).insertOnConflictUpdate(row);
+    }
     await batch((b) {
       for (final (tagId, source) in tags) {
         b.insert(

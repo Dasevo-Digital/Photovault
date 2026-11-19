@@ -1,3 +1,6 @@
+import 'package:teilen_ui/erinnerungen_beobachten.dart';
+import 'package:teilen_ui/erinnerungsfilter.dart';
+import 'package:teilen_ui/geteilte_alben.dart' show teilenTexte;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -31,7 +34,12 @@ class ErinnerungenScreen extends StatefulWidget {
 
 typedef _Stand = Erinnerungsstand;
 
-class _ErinnerungenScreenState extends State<ErinnerungenScreen> {
+class _ErinnerungenScreenState extends State<ErinnerungenScreen>
+    with ErinnerungenBeobachten<ErinnerungenScreen> {
+  @override
+  AppDatabase get erinnerungsDb => widget.library.db;
+  @override
+  void erinnerungenNeuLaden() => _neuLaden();
   final _heute = DateUtils.dateOnly(DateTime.now());
   late Future<_Stand> _stand = _laden();
 
@@ -81,10 +89,30 @@ class _ErinnerungenScreenState extends State<ErinnerungenScreen> {
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(t.erinnerungenTitel)),
+      appBar: AppBar(
+        title: Text(t.erinnerungenTitel),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_alt_outlined),
+            tooltip: teilenTexte(context).erinnerungsfilterTitel,
+            onPressed: () async {
+              if (await zeigeErinnerungsfilter(context, widget.library.db) &&
+                  mounted) {
+                _neuLaden();
+              }
+            },
+          ),
+        ],
+      ),
       body: FutureBuilder<_Stand>(
+        key: ObjectKey(_stand),
         future: _stand,
         builder: (context, schnappschuss) {
+          if (schnappschuss.hasError) {
+            return Center(
+              child: Text(teilenTexte(context).erinnerungenLadeFehler),
+            );
+          }
           final s = schnappschuss.data;
           if (s == null) {
             return const Center(child: CircularProgressIndicator());

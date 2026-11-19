@@ -1,3 +1,4 @@
+import 'package:teilen_ui/beschriftungen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
@@ -279,6 +280,9 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
               // einer verbundenen Bibliothek; das Album liegt dort.
               if (widget.library.abgleich?.verbindung case final v?) ...[
                 // Was die anderen dazu sagen (#297) – sobald es geteilt ist.
+                Beschriftungsknopf(
+                  ort: Aktivitaetsort.besitzer(v, widget.albumId),
+                ),
                 Kommentarknopf(
                   ort: Aktivitaetsort.besitzer(v, widget.albumId),
                   nurWennGeteilt: true,

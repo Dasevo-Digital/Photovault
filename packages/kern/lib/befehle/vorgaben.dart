@@ -352,3 +352,17 @@ final class AngabenSchuetzenSetzen extends Befehl<void> {
   @override
   Future<void> anwenden(AppDatabase db) => db.setProtectPrivateMetadata(an);
 }
+
+final class ErinnerungsfilterSetzen extends Befehl<void> {
+  ErinnerungsfilterSetzen(Erinnerungsfilter filter) : filter = filter.kodiert();
+  final String filter;
+  static ErinnerungsfilterSetzen aus(Map<String, Object?> w) =>
+      ErinnerungsfilterSetzen(Erinnerungsfilter.ausJson(w['filter']));
+  @override
+  String get art => 'erinnerungsfilterSetzen';
+  @override
+  Map<String, Object?> get werte => {'filter': jsonDecode(filter)};
+  @override
+  Future<void> anwenden(AppDatabase db) =>
+      db.setzeErinnerungsfilter(Erinnerungsfilter.ausJson(jsonDecode(filter)));
+}

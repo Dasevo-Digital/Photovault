@@ -15,6 +15,7 @@ import 'package:uuid/uuid.dart';
 import '../befehle/befehl.dart';
 
 export '../befehle/befehl.dart';
+import '../services/erinnerungsfilter.dart';
 import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
 import '../services/aktivitaeten.dart' show istBekannteArt;
 import '../services/embedding_codec.dart';
@@ -268,6 +269,7 @@ Iterable<List<T>> inStuecken<T>(Iterable<T> alle, {int groesse = 10000}) sync* {
     VerworfeneDokumente,
     GemerkteErinnerungen,
     Aufgabenlaeufe,
+    Beschriftungsvorschlaege,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -384,7 +386,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 98;
+  int get schemaVersion => 99;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

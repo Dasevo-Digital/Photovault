@@ -190,6 +190,40 @@ echter Hardware.
 
 ### Bibliothek & Organisation
 
+- **Umzugsassistent** – unter „Importieren → Umzug“ einen entpackten
+  Google-Takeout-Export oder dessen ZIP-Teile wählen. JSON- und XMP-Beilagen
+  ergänzen Datum, Beschreibung, Sterne, Farbmarke, Schlagwörter, Favoriten,
+  GPS und Albumzuordnungen. Vor dem Import zeigt der Plan die Dateiangaben
+  und die vorgeschlagenen Ergänzungen; je Aufnahme lassen sie sich abwählen.
+  Bei unterschiedlichen Beschreibungen sind beide Quellen sichtbar.
+  Kamerakoordinaten bleiben erhalten. Identische Dateien aus mehreren
+  Takeout-Alben werden einmal importiert und allen zugehörigen Alben
+  zugeordnet. Widersprüchliche oder beschädigte Beilagen werden markiert.
+  Bereits vorhandene Fotos bleiben unverändert und erscheinen wie alle
+  anderen Ergebnisse in der Importquittung. Lightroom-Sammlungen und
+  Entwicklungsschritte werden nicht aus einer Katalogdatei übernommen;
+  dafür vorher die gewünschten Metadaten als XMP exportieren.
+- **Erinnerungen steuern** – in den Rückblicken Personen, Alben und
+  einschließlich ihrer Grenzen ganze Datumszeiträume ausschließen. Das
+  gilt auch für gemerkte Erinnerungen, Familientage, schönste Reisen und
+  Jahresrückblicke einschließlich ihrer Zahlen. Die Fotos bleiben in der
+  Bibliothek. Ausschlüsse werden mit verbundenen Geräten abgeglichen;
+  geöffnete Rückblicke laden bei Änderungen neu. Die Weboberfläche bietet
+  dieselbe Auswahl unter „Einstellungen“. Unlesbare Ausschlüsse geben
+  Rückblicke nicht frei und lassen sich nach einem Hinweis neu speichern.
+- **Beschriftungsvorschläge** – Empfänger eines mit Konten geteilten Albums
+  schlagen pro Foto einen Ort, ein ungefähres Aufnahmejahr oder den Namen
+  eines markierten Gesichts vor. Der Besitzer sieht die bisherigen Angaben
+  und entscheidet über jeden Vorschlag. Hat sich das Foto während der
+  Prüfung geändert, muss es erneut geprüft werden; gleichnamige Personen
+  erfordern eine eindeutige Auswahl. Vorschläge, Verfasser, Zeitpunkte und
+  Entscheidungen bleiben im Verlauf erhalten. Empfänger sehen ihren
+  eigenen Verlauf. Entfernte oder gesperrte Fotos und entzogene Freigaben
+  gewähren keinen Zugriff. Die Funktion benötigt einen aktuellen eigenen
+  Server und steht in Desktop-, Mobil- und Weboberfläche zur Verfügung.
+  Gesperrte Metadaten nehmen den Verlauf verschlüsselt mit; Sicherung und
+  Wiederherstellung erhalten Verlauf und Erinnerungsfilter.
+
 - **Timeline** – alle Fotos/Videos chronologisch nach Monat gruppiert, mit
   Scrubber zum schnellen Springen
 - **Entdecken** – Einstiegsseite mit Personen, Orten, zuletzt hinzugefügten

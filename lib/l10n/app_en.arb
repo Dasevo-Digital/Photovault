@@ -1,4 +1,6 @@
 {
+  "umzugQuelleLesen": "Extracting and checking the export …",
+  "umzugKonflikt": "The descriptions conflict. Takeout is proposed; deselecting metadata keeps the file's embedded metadata.",
   "@@locale": "en",
   "allgAbbrechen": "Cancel",
   "allgSpeichern": "Save",
@@ -1408,9 +1410,21 @@
   "infoOriginalHergestellt": "Original restored.",
   "infoSerie": "Series: {anzahl} photos",
   "infoFormate": "Formats: {liste} – only the cover image is visible in the overview",
-  "@infoFormate": {"placeholders": {"liste": {"type": "String"}}},
+  "@infoFormate": {
+    "placeholders": {
+      "liste": {
+        "type": "String"
+      }
+    }
+  },
   "infoFassungExportieren": "Export {name}",
-  "@infoFassungExportieren": {"placeholders": {"name": {"type": "String"}}},
+  "@infoFassungExportieren": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "infoNurTitelbild": "Only the cover image is visible in the overview",
   "infoSerieAufloesen": "Break up the series",
   "infoVarianten": "Versions: {anzahl}",
@@ -1561,7 +1575,9 @@
   "darktableFehler": "darktable: {fehler}",
   "@darktableFehler": {
     "placeholders": {
-      "fehler": {"type": "String"}
+      "fehler": {
+        "type": "String"
+      }
     }
   },
   "xmpOrdnerWaehlen": "Read from folder",
@@ -1848,13 +1864,17 @@
   "gesichtAlleUnbenanntenLoeschen": "{anzahl, plural, =0{No unnamed detections} =1{Delete unnamed detection} other{Delete {anzahl} unnamed detections}}",
   "@gesichtAlleUnbenanntenLoeschen": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "gesichtUnbenannteLoeschenFrage": "{anzahl, plural, =1{Delete the unnamed detection on this photo? Named faces remain.} other{Delete the {anzahl} unnamed detections on this photo? Named faces remain.}}",
   "@gesichtUnbenannteLoeschenFrage": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "personWeitereFotosSuchen": "Find more photos",
@@ -5073,18 +5093,50 @@
   "kammerAusduennenNichts": "Nothing left to reject in the series.",
   "kammerSchaerfstes": "Sharpest of the series",
   "kammerAusduennenText": "{fotos, plural, =1{1 photo is} other{{fotos} photos are}} marked as rejected in {serien, plural, =1{1 series} other{{serien} series}}. The sharpest of each series stays, and so do photos with stars. Nothing is deleted yet.",
-  "@kammerAusduennenText": {"placeholders": {"fotos": {"type": "int"}, "serien": {"type": "int"}}},
+  "@kammerAusduennenText": {
+    "placeholders": {
+      "fotos": {
+        "type": "int"
+      },
+      "serien": {
+        "type": "int"
+      }
+    }
+  },
   "kammerSerie": "Series of {anzahl} photos",
-  "@kammerSerie": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@kammerSerie": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "kammerVergleichTitel": "Comparing {anzahl} photos",
-  "@kammerVergleichTitel": {"placeholders": {"anzahl": {"type": "int"}}},
+  "@kammerVergleichTitel": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "kammerWartet": "{anzahl, plural, =1{1 photo has} other{{anzahl} photos have}} been waiting in staging for {tage, plural, =1{a day} other{{tage} days}}.",
-  "@kammerWartet": {"placeholders": {"anzahl": {"type": "int"}, "tage": {"type": "int"}}},
+  "@kammerWartet": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "tage": {
+        "type": "int"
+      }
+    }
+  },
   "syncAnsehen": "View",
   "syncNichtUebernommen": "{anzahl, plural, =1{One change was not applied because the photo has changed on the server in the meantime.} other{{anzahl} changes were not applied because the photos have changed on the server in the meantime.}}",
   "@syncNichtUebernommen": {
     "placeholders": {
-      "anzahl": {"type": "int"}
+      "anzahl": {
+        "type": "int"
+      }
     }
   },
   "backupProbeLetzterErfolg": "Last successful drill: {wann} (at that time).",
@@ -5246,7 +5298,9 @@
   "kammerZielAnzeige": "Destination: {text}",
   "@kammerZielAnzeige": {
     "placeholders": {
-      "text": {"type": "String"}
+      "text": {
+        "type": "String"
+      }
     }
   },
   "kammerAbschliessen": "Finish review",
@@ -5255,8 +5309,12 @@
   "kammerAbschliessenText": "{weg, plural, =1{1 rejected photo is} other{{weg} rejected photos are}} permanently discarded. {rest, plural, =1{1 photo goes} other{{rest} photos go}} to the library.",
   "@kammerAbschliessenText": {
     "placeholders": {
-      "weg": {"type": "int"},
-      "rest": {"type": "int"}
+      "weg": {
+        "type": "int"
+      },
+      "rest": {
+        "type": "int"
+      }
     }
   },
   "auswInDieKammer": "Move to staging",
@@ -5360,5 +5418,37 @@
   "quittungKopieDefekt": "Backup copy unreadable or damaged",
   "quittungKopieUngeprueft": "Backup copy unverified",
   "quittungZielWaehlen": "Check another backup folder",
-  "quittungKopienPruefen": "Verify backup copies"
+  "quittungKopienPruefen": "Verify backup copies",
+  "umzugTitel": "Migrate photo collection",
+  "umzugQuellenHinweis": "Choose Takeout ZIP archives or an exported folder with photos and JSON/XMP sidecars. Lightroom metadata is read from XMP.",
+  "umzugOrdner": "Choose export folder",
+  "umzugArchive": "Choose ZIP archives",
+  "umzugQuellenFehler": "The export could not be read safely. Check the archives or choose an extracted export folder.",
+  "umzugPlanHinweis": "Review the file date and proposed sidecar metadata. You can disable sidecars for each photo. Existing photos are recorded as duplicates.",
+  "umzugDatum": "Sidecar date {wert}",
+  "@umzugDatum": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "umzugSterne": "Sidecar rating {anzahl}",
+  "@umzugSterne": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "umzugOrt": "Sidecar location {wert}",
+  "@umzugOrt": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "umzugBeilageFehler": "Sidecar damaged, too large or ambiguous. Check the export before importing.",
+  "umzugAngabenUebernehmen": "Apply this sidecar metadata"
 }

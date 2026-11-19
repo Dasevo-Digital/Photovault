@@ -9,6 +9,13 @@ class AppTexteDe extends AppTexte {
   AppTexteDe([String locale = 'de']) : super(locale);
 
   @override
+  String get umzugQuelleLesen => 'Export wird entpackt und geprüft …';
+
+  @override
+  String get umzugKonflikt =>
+      'Die Beschreibungen widersprechen sich. Vorgeschlagen wird Takeout; ohne Übernahme bleiben die Datei-Angaben erhalten.';
+
+  @override
   String get allgAbbrechen => 'Abbrechen';
 
   @override
@@ -10973,4 +10980,47 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get quittungKopienPruefen => 'Sicherungskopien prüfen';
+
+  @override
+  String get umzugTitel => 'Fotosammlung übernehmen';
+
+  @override
+  String get umzugQuellenHinweis =>
+      'Takeout-ZIP-Archive oder einen exportierten Ordner mit Fotos und JSON-/XMP-Beilagen wählen. Lightroom-Metadaten werden aus XMP übernommen.';
+
+  @override
+  String get umzugOrdner => 'Exportordner wählen';
+
+  @override
+  String get umzugArchive => 'ZIP-Archive wählen';
+
+  @override
+  String get umzugQuellenFehler =>
+      'Der Export konnte nicht sicher gelesen werden. Prüfe die Archive oder wähle einen entpackten Exportordner.';
+
+  @override
+  String get umzugPlanHinweis =>
+      'Prüfe Dateidatum und vorgeschlagene Beilagenangaben. Je Aufnahme kannst du die Beilagen ausschalten. Bereits vorhandene Aufnahmen werden als Dubletten quittiert.';
+
+  @override
+  String umzugDatum(String wert) {
+    return 'Datum aus Beilage $wert';
+  }
+
+  @override
+  String umzugSterne(int anzahl) {
+    return 'Sterne aus Beilage $anzahl';
+  }
+
+  @override
+  String umzugOrt(String wert) {
+    return 'Ort aus Beilage $wert';
+  }
+
+  @override
+  String get umzugBeilageFehler =>
+      'Beilage beschädigt, zu groß oder mehrdeutig. Prüfe den Export vor dem Import.';
+
+  @override
+  String get umzugAngabenUebernehmen => 'Diese Beilagenangaben übernehmen';
 }

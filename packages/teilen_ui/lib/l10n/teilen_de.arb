@@ -1,4 +1,8 @@
 {
+  "erinnerungenLadeFehler": "Rückblicke konnten nicht geladen werden. Prüfe die Erinnerungsfilter und versuche es erneut.",
+  "erinnerungsfilterDefekt": "Die gespeicherten Ausschlüsse sind nicht lesbar. Automatische Rückblicke bleiben gesperrt. Mit Speichern ersetzt du die Ausschlüsse durch die hier gewählte Auswahl.",
+  "beschriftungZurueck": "Vorherige Vorschläge",
+  "beschriftungWeiter": "Weitere Vorschläge",
   "@@locale": "de",
   "geteiltMitMir": "Geteilt mit mir",
   "geteiltVon": "von {name}",
@@ -322,5 +326,47 @@
   "collageHoch": "2:3",
   "collageStory": "9:16",
   "collageGespeichert": "Collage gespeichert – sie steht in der Zeitleiste bei ihren Fotos.",
-  "collageZweiBisNeun": "Eine Collage braucht 2 bis 9 Fotos."
+  "collageZweiBisNeun": "Eine Collage braucht 2 bis 9 Fotos.",
+  "erinnerungsfilterTitel": "Erinnerungen filtern",
+  "erinnerungsfilterHinweis": "Ausgewählte Personen, Alben und Zeiträume aus automatischen Rückblicken ausschließen. Diese Auswahl gilt auf allen verbundenen Geräten.",
+  "erinnerungPersonen": "Personen",
+  "erinnerungAlben": "Alben",
+  "erinnerungZeiten": "Zeiträume",
+  "erinnerungEintragFehlt": "Nicht mehr vorhanden",
+  "erinnerungZeitraumEntfernen": "Zeitraum entfernen",
+  "erinnerungZeitraumHinzufuegen": "Zeitraum hinzufügen",
+  "erinnerungsfilterFehler": "Die Filter konnten nicht gespeichert werden.",
+  "erinnerungsfilterSpeichern": "Speichern",
+  "beschriftungTitel": "Beschriftungsvorschläge",
+  "beschriftungHinweis": "Schlage Personen, Orte oder ein ungefähres Aufnahmejahr vor. Der Besitzer prüft und übernimmt die Angaben.",
+  "beschriftungFehler": "Die Aktion konnte nicht abgeschlossen werden. Aktualisiere die Liste und prüfe geänderte Angaben oder mehrdeutige Personen.",
+  "beschriftungPerson": "Person",
+  "beschriftungOrt": "Ort",
+  "beschriftungJahr": "Ungefähres Aufnahmejahr",
+  "beschriftungGesichtWaehlen": "Gesicht im Foto wählen",
+  "beschriftungGesicht": "Gesicht {anzahl}",
+  "@beschriftungGesicht": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "beschriftungVorschlagen": "Vorschlag senden",
+  "beschriftungAktuell": "Aktuell {wert}",
+  "@beschriftungAktuell": {
+    "placeholders": {
+      "wert": {
+        "type": "String"
+      }
+    }
+  },
+  "beschriftungAngenommen": "Angenommen",
+  "beschriftungAbgelehnt": "Abgelehnt",
+  "beschriftungOffen": "Offen",
+  "beschriftungAblehnen": "Ablehnen",
+  "beschriftungAnnehmen": "Übernehmen",
+  "beschriftungFoto": "Foto prüfen",
+  "beschriftungAktualisieren": "Aktualisieren",
+  "beschriftungPersonAutomatisch": "Passende oder neue Person"
 }

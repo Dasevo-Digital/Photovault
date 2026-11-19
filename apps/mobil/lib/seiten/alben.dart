@@ -1,3 +1,4 @@
+import 'package:teilen_ui/beschriftungen.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
@@ -399,6 +400,7 @@ class AlbumSeite extends StatelessWidget {
             ort: Aktivitaetsort.besitzer(v, album.id),
             nurWennGeteilt: true,
           ),
+          Beschriftungsknopf(ort: Aktivitaetsort.besitzer(v, album.id)),
           // Füllt sich selbst mit Fotos bestimmter Personen (#298).
           Albumregelknopf(verbindung: v, albumId: album.id, titel: album.name),
           IconButton(

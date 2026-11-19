@@ -9,6 +9,20 @@ class TeilenTexteEn extends TeilenTexte {
   TeilenTexteEn([String locale = 'en']) : super(locale);
 
   @override
+  String get erinnerungenLadeFehler =>
+      'Memories could not be loaded. Please check memory controls and try again.';
+
+  @override
+  String get erinnerungsfilterDefekt =>
+      'The saved exclusions cannot be read. Automatic memories remain blocked. Saving replaces the exclusions with the selection shown here.';
+
+  @override
+  String get beschriftungZurueck => 'Previous suggestions';
+
+  @override
+  String get beschriftungWeiter => 'More suggestions';
+
+  @override
   String get geteiltMitMir => 'Shared with me';
 
   @override
@@ -434,4 +448,95 @@ class TeilenTexteEn extends TeilenTexte {
 
   @override
   String get collageZweiBisNeun => 'A collage needs 2 to 9 photos.';
+
+  @override
+  String get erinnerungsfilterTitel => 'Filter memories';
+
+  @override
+  String get erinnerungsfilterHinweis =>
+      'Exclude selected people, albums and dates from automatic memories. This selection applies to all connected devices.';
+
+  @override
+  String get erinnerungPersonen => 'People';
+
+  @override
+  String get erinnerungAlben => 'Albums';
+
+  @override
+  String get erinnerungZeiten => 'Dates';
+
+  @override
+  String get erinnerungEintragFehlt => 'No longer available';
+
+  @override
+  String get erinnerungZeitraumEntfernen => 'Remove date range';
+
+  @override
+  String get erinnerungZeitraumHinzufuegen => 'Add date range';
+
+  @override
+  String get erinnerungsfilterFehler => 'The filters could not be saved.';
+
+  @override
+  String get erinnerungsfilterSpeichern => 'Save';
+
+  @override
+  String get beschriftungTitel => 'Caption suggestions';
+
+  @override
+  String get beschriftungHinweis =>
+      'Suggest people, places or an approximate capture year. The owner reviews and applies the details.';
+
+  @override
+  String get beschriftungFehler =>
+      'The action could not be completed. Refresh the list and check for changed details or ambiguous people.';
+
+  @override
+  String get beschriftungPerson => 'Person';
+
+  @override
+  String get beschriftungOrt => 'Place';
+
+  @override
+  String get beschriftungJahr => 'Approximate capture year';
+
+  @override
+  String get beschriftungGesichtWaehlen => 'Choose a face in the photo';
+
+  @override
+  String beschriftungGesicht(int anzahl) {
+    return 'Face $anzahl';
+  }
+
+  @override
+  String get beschriftungVorschlagen => 'Send suggestion';
+
+  @override
+  String beschriftungAktuell(String wert) {
+    return 'Current value $wert';
+  }
+
+  @override
+  String get beschriftungAngenommen => 'Accepted';
+
+  @override
+  String get beschriftungAbgelehnt => 'Rejected';
+
+  @override
+  String get beschriftungOffen => 'Pending';
+
+  @override
+  String get beschriftungAblehnen => 'Reject';
+
+  @override
+  String get beschriftungAnnehmen => 'Accept';
+
+  @override
+  String get beschriftungFoto => 'Review photo';
+
+  @override
+  String get beschriftungAktualisieren => 'Refresh';
+
+  @override
+  String get beschriftungPersonAutomatisch => 'Matching or new person';
 }

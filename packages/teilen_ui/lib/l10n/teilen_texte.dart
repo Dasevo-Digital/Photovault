@@ -98,6 +98,30 @@ abstract class TeilenTexte {
     Locale('en'),
   ];
 
+  /// No description provided for @erinnerungenLadeFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Rückblicke konnten nicht geladen werden. Prüfe die Erinnerungsfilter und versuche es erneut.'**
+  String get erinnerungenLadeFehler;
+
+  /// No description provided for @erinnerungsfilterDefekt.
+  ///
+  /// In de, this message translates to:
+  /// **'Die gespeicherten Ausschlüsse sind nicht lesbar. Automatische Rückblicke bleiben gesperrt. Mit Speichern ersetzt du die Ausschlüsse durch die hier gewählte Auswahl.'**
+  String get erinnerungsfilterDefekt;
+
+  /// No description provided for @beschriftungZurueck.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorherige Vorschläge'**
+  String get beschriftungZurueck;
+
+  /// No description provided for @beschriftungWeiter.
+  ///
+  /// In de, this message translates to:
+  /// **'Weitere Vorschläge'**
+  String get beschriftungWeiter;
+
   /// No description provided for @geteiltMitMir.
   ///
   /// In de, this message translates to:
@@ -769,6 +793,174 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Eine Collage braucht 2 bis 9 Fotos.'**
   String get collageZweiBisNeun;
+
+  /// No description provided for @erinnerungsfilterTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Erinnerungen filtern'**
+  String get erinnerungsfilterTitel;
+
+  /// No description provided for @erinnerungsfilterHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgewählte Personen, Alben und Zeiträume aus automatischen Rückblicken ausschließen. Diese Auswahl gilt auf allen verbundenen Geräten.'**
+  String get erinnerungsfilterHinweis;
+
+  /// No description provided for @erinnerungPersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Personen'**
+  String get erinnerungPersonen;
+
+  /// No description provided for @erinnerungAlben.
+  ///
+  /// In de, this message translates to:
+  /// **'Alben'**
+  String get erinnerungAlben;
+
+  /// No description provided for @erinnerungZeiten.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeiträume'**
+  String get erinnerungZeiten;
+
+  /// No description provided for @erinnerungEintragFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht mehr vorhanden'**
+  String get erinnerungEintragFehlt;
+
+  /// No description provided for @erinnerungZeitraumEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitraum entfernen'**
+  String get erinnerungZeitraumEntfernen;
+
+  /// No description provided for @erinnerungZeitraumHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitraum hinzufügen'**
+  String get erinnerungZeitraumHinzufuegen;
+
+  /// No description provided for @erinnerungsfilterFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Filter konnten nicht gespeichert werden.'**
+  String get erinnerungsfilterFehler;
+
+  /// No description provided for @erinnerungsfilterSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get erinnerungsfilterSpeichern;
+
+  /// No description provided for @beschriftungTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Beschriftungsvorschläge'**
+  String get beschriftungTitel;
+
+  /// No description provided for @beschriftungHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Schlage Personen, Orte oder ein ungefähres Aufnahmejahr vor. Der Besitzer prüft und übernimmt die Angaben.'**
+  String get beschriftungHinweis;
+
+  /// No description provided for @beschriftungFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aktion konnte nicht abgeschlossen werden. Aktualisiere die Liste und prüfe geänderte Angaben oder mehrdeutige Personen.'**
+  String get beschriftungFehler;
+
+  /// No description provided for @beschriftungPerson.
+  ///
+  /// In de, this message translates to:
+  /// **'Person'**
+  String get beschriftungPerson;
+
+  /// No description provided for @beschriftungOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort'**
+  String get beschriftungOrt;
+
+  /// No description provided for @beschriftungJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Ungefähres Aufnahmejahr'**
+  String get beschriftungJahr;
+
+  /// No description provided for @beschriftungGesichtWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesicht im Foto wählen'**
+  String get beschriftungGesichtWaehlen;
+
+  /// No description provided for @beschriftungGesicht.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesicht {anzahl}'**
+  String beschriftungGesicht(int anzahl);
+
+  /// No description provided for @beschriftungVorschlagen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschlag senden'**
+  String get beschriftungVorschlagen;
+
+  /// No description provided for @beschriftungAktuell.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktuell {wert}'**
+  String beschriftungAktuell(String wert);
+
+  /// No description provided for @beschriftungAngenommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Angenommen'**
+  String get beschriftungAngenommen;
+
+  /// No description provided for @beschriftungAbgelehnt.
+  ///
+  /// In de, this message translates to:
+  /// **'Abgelehnt'**
+  String get beschriftungAbgelehnt;
+
+  /// No description provided for @beschriftungOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Offen'**
+  String get beschriftungOffen;
+
+  /// No description provided for @beschriftungAblehnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ablehnen'**
+  String get beschriftungAblehnen;
+
+  /// No description provided for @beschriftungAnnehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernehmen'**
+  String get beschriftungAnnehmen;
+
+  /// No description provided for @beschriftungFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Foto prüfen'**
+  String get beschriftungFoto;
+
+  /// No description provided for @beschriftungAktualisieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktualisieren'**
+  String get beschriftungAktualisieren;
+
+  /// No description provided for @beschriftungPersonAutomatisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Passende oder neue Person'**
+  String get beschriftungPersonAutomatisch;
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

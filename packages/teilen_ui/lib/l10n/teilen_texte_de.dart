@@ -9,6 +9,20 @@ class TeilenTexteDe extends TeilenTexte {
   TeilenTexteDe([String locale = 'de']) : super(locale);
 
   @override
+  String get erinnerungenLadeFehler =>
+      'Rückblicke konnten nicht geladen werden. Prüfe die Erinnerungsfilter und versuche es erneut.';
+
+  @override
+  String get erinnerungsfilterDefekt =>
+      'Die gespeicherten Ausschlüsse sind nicht lesbar. Automatische Rückblicke bleiben gesperrt. Mit Speichern ersetzt du die Ausschlüsse durch die hier gewählte Auswahl.';
+
+  @override
+  String get beschriftungZurueck => 'Vorherige Vorschläge';
+
+  @override
+  String get beschriftungWeiter => 'Weitere Vorschläge';
+
+  @override
   String get geteiltMitMir => 'Geteilt mit mir';
 
   @override
@@ -438,4 +452,96 @@ class TeilenTexteDe extends TeilenTexte {
 
   @override
   String get collageZweiBisNeun => 'Eine Collage braucht 2 bis 9 Fotos.';
+
+  @override
+  String get erinnerungsfilterTitel => 'Erinnerungen filtern';
+
+  @override
+  String get erinnerungsfilterHinweis =>
+      'Ausgewählte Personen, Alben und Zeiträume aus automatischen Rückblicken ausschließen. Diese Auswahl gilt auf allen verbundenen Geräten.';
+
+  @override
+  String get erinnerungPersonen => 'Personen';
+
+  @override
+  String get erinnerungAlben => 'Alben';
+
+  @override
+  String get erinnerungZeiten => 'Zeiträume';
+
+  @override
+  String get erinnerungEintragFehlt => 'Nicht mehr vorhanden';
+
+  @override
+  String get erinnerungZeitraumEntfernen => 'Zeitraum entfernen';
+
+  @override
+  String get erinnerungZeitraumHinzufuegen => 'Zeitraum hinzufügen';
+
+  @override
+  String get erinnerungsfilterFehler =>
+      'Die Filter konnten nicht gespeichert werden.';
+
+  @override
+  String get erinnerungsfilterSpeichern => 'Speichern';
+
+  @override
+  String get beschriftungTitel => 'Beschriftungsvorschläge';
+
+  @override
+  String get beschriftungHinweis =>
+      'Schlage Personen, Orte oder ein ungefähres Aufnahmejahr vor. Der Besitzer prüft und übernimmt die Angaben.';
+
+  @override
+  String get beschriftungFehler =>
+      'Die Aktion konnte nicht abgeschlossen werden. Aktualisiere die Liste und prüfe geänderte Angaben oder mehrdeutige Personen.';
+
+  @override
+  String get beschriftungPerson => 'Person';
+
+  @override
+  String get beschriftungOrt => 'Ort';
+
+  @override
+  String get beschriftungJahr => 'Ungefähres Aufnahmejahr';
+
+  @override
+  String get beschriftungGesichtWaehlen => 'Gesicht im Foto wählen';
+
+  @override
+  String beschriftungGesicht(int anzahl) {
+    return 'Gesicht $anzahl';
+  }
+
+  @override
+  String get beschriftungVorschlagen => 'Vorschlag senden';
+
+  @override
+  String beschriftungAktuell(String wert) {
+    return 'Aktuell $wert';
+  }
+
+  @override
+  String get beschriftungAngenommen => 'Angenommen';
+
+  @override
+  String get beschriftungAbgelehnt => 'Abgelehnt';
+
+  @override
+  String get beschriftungOffen => 'Offen';
+
+  @override
+  String get beschriftungAblehnen => 'Ablehnen';
+
+  @override
+  String get beschriftungAnnehmen => 'Übernehmen';
+
+  @override
+  String get beschriftungFoto => 'Foto prüfen';
+
+  @override
+  String get beschriftungAktualisieren => 'Aktualisieren';
+
+  @override
+  String get beschriftungPersonAutomatisch => 'Passende oder neue Person';
 }

@@ -37,6 +37,7 @@ import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 import '../services/exif_camera.dart';
+import '../services/erinnerungsfilter.dart';
 import '../services/search_filters.dart';
 import '../services/stammbaum.dart';
 import '../services/verwandtschaftsgrad.dart';
@@ -156,6 +157,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'gesichtsschwelleSetzen': GesichtsschwelleSetzen.aus,
   'vorschlaegeAutomatischSetzen': VorschlaegeAutomatischSetzen.aus,
   'auswertenNachImportSetzen': AuswertenNachImportSetzen.aus,
+  'erinnerungsfilterSetzen': ErinnerungsfilterSetzen.aus,
   'formateStapelnSetzen': FormateStapelnSetzen.aus,
   'sucheUebersetzenSetzen': SucheUebersetzenSetzen.aus,
   'angabenSchuetzenSetzen': AngabenSchuetzenSetzen.aus,

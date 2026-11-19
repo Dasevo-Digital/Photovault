@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/abgleich/abgleichsplan.dart';
 import 'package:kern/abgleich/protokoll.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/erinnerungsfilter.dart';
+import 'package:kern/services/beschriftungsvorschlaege.dart';
 
 /// Der Abgleich zwischen Server und verbundener App (Issue #86, Stufe 2).
 void main() {
@@ -116,6 +118,38 @@ void main() {
         if (!s.mehr) return stand;
       }
     }
+
+    test(
+      'Ausschlüsse und Beschriftungshistorie werden abgeglichen und beim Sperren entfernt',
+      () async {
+        await aufnahme(server, 'a1');
+        await server.fuehreAus(AlbumAnlegen('al', 'Familie', DateTime(2026)));
+        await server.fuehreAus(const AlbumFuellen('al', ['a1']));
+        await server.fuehreAus(
+          ErinnerungsfilterSetzen(Erinnerungsfilter(alben: ['al'])),
+        );
+        final dienst = Beschriftungsdienst(server);
+        final id = await dienst.vorschlagen(
+          id: 'a1',
+          album: 'al',
+          von: 'gast',
+          name: 'Testgast',
+          art: 'ort',
+          wert: 'Testort',
+        );
+        final stand = await gleicheAb(0);
+        expect((await geraet.erinnerungsfilter()).alben, ['al']);
+        final v =
+            (await geraet.select(geraet.beschriftungsvorschlaege).get()).single;
+        expect((v.id, v.vonName, v.wert), (id, 'Testgast', 'Testort'));
+        await server.hidePrivateMetadata('a1');
+        await gleicheAb(stand);
+        expect(
+          await geraet.select(geraet.beschriftungsvorschlaege).get(),
+          isEmpty,
+        );
+      },
+    );
 
     test(
       'Änderungen kommen an – samt Bytes, Löschungen und Befehlen',

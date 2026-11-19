@@ -745,6 +745,7 @@ class BackupService {
     for (final album in albums) {
       final albumAssets = await _db.assetsInAlbumOnce(album.id);
       albumsJson.add({
+        'id': album.id,
         'name': album.name,
         'assetChecksums': albumAssets.map((a) => a.checksum).toList(),
       });

@@ -38,12 +38,16 @@ class FamilientageAbschnitt extends StatefulWidget {
 typedef _Eintrag = FamilientagMitFotos;
 
 class _FamilientageAbschnittState extends State<FamilientageAbschnitt> {
-  late final Future<List<_Eintrag>> _eintraege = familientageMitFotos(
-    widget.library.db,
-    heute: widget.heute ?? DateTime.now(),
-    hoechstensTage: _hoechstensTage,
-    hoechstensFotos: _hoechstensFotos,
-  );
+  late final Stream<List<_Eintrag>> _eintraege = widget.library.db
+      .erinnerungsAenderungen()
+      .asyncMap(
+        (_) => familientageMitFotos(
+          widget.library.db,
+          heute: widget.heute ?? DateTime.now(),
+          hoechstensTage: _hoechstensTage,
+          hoechstensFotos: _hoechstensFotos,
+        ),
+      );
 
   String _wann(AppTexte t, int inTagen) => switch (inTagen) {
     0 => t.familientagHeute,
@@ -85,11 +89,11 @@ class _FamilientageAbschnittState extends State<FamilientageAbschnitt> {
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    return FutureBuilder<List<_Eintrag>>(
-      future: _eintraege,
+    return StreamBuilder<List<_Eintrag>>(
+      stream: _eintraege,
       builder: (context, schnappschuss) {
         final eintraege = schnappschuss.data;
-        if (eintraege == null || eintraege.isEmpty) {
+        if (schnappschuss.hasError || eintraege == null || eintraege.isEmpty) {
           return const SizedBox.shrink();
         }
         final thema = Theme.of(context);

@@ -30,7 +30,11 @@ Future<List<FamilientagMitFotos>> familientageMitFotos(
   int hoechstensTage = 4,
   int hoechstensFotos = 12,
 }) async {
-  final personen = await db.allePersonen();
+  if (hoechstensTage <= 0) return const [];
+  final filter = await db.erinnerungsfilter();
+  final personen = (await db.allePersonen())
+      .where((p) => !filter.personen.contains(p.id))
+      .toList();
   if (personen.isEmpty) return const [];
   final nachId = {for (final p in personen) p.id: p};
   final netz = Verwandtschaftsnetz([
@@ -40,7 +44,8 @@ Future<List<FamilientagMitFotos>> familientageMitFotos(
   final hochzeiten = <Hochzeit>[
     for (final e in await db.alleEreignisse())
       if (e.datum case final datum?)
-        if (ereignisartAusText(e.art) == Ereignisart.hochzeit)
+        if (ereignisartAusText(e.art) == Ereignisart.hochzeit &&
+            !filter.schliesstTagAus(datum))
           (
             datum: datum,
             personId: e.personId,
@@ -58,12 +63,19 @@ Future<List<FamilientagMitFotos>> familientageMitFotos(
     ],
     hochzeiten: hochzeiten,
     heute: heute,
-  ).take(hoechstensTage);
+  );
 
   final ergebnis = <FamilientagMitFotos>[];
   for (final tag in tage) {
+    if (tag.personen.any(filter.personen.contains)) continue;
     final ids = tag.personen.where(nachId.containsKey).toList();
     if (ids.isEmpty) continue;
+    final datum = switch (tag.art) {
+      Familientagart.geburtstag => nachId[ids.first]!.geburtsdatum,
+      Familientagart.todestag => nachId[ids.first]!.sterbedatum,
+      _ => null,
+    };
+    if (datum != null && filter.schliesstTagAus(datum)) continue;
     final geburtstag = tag.art == Familientagart.geburtstag && ids.length == 1
         ? nachId[ids.single]!.geburtsdatum
         : null;
@@ -74,6 +86,7 @@ Future<List<FamilientagMitFotos>> familientageMitFotos(
           ? await _fotosVon(db, ids, hoechstensFotos)
           : await _vonGeburtstagen(db, ids.single, geburtstag, hoechstensFotos),
     ));
+    if (ergebnis.length >= hoechstensTage) break;
   }
   return ergebnis;
 }
@@ -93,7 +106,9 @@ Future<List<AssetData>> _vonGeburtstagen(
   DateTime geburtsdatum,
   int hoechstens,
 ) async {
-  final alle = await db.assetsFuerPersonen([personId]);
+  final alle = await db.filtereErinnerungsaufnahmen(
+    await db.assetsFuerPersonen([personId]),
+  );
   bool amGeburtstag(DateTime d) {
     if (d.month != geburtsdatum.month) return false;
     if (d.day == geburtsdatum.day) return true;
@@ -121,7 +136,9 @@ Future<List<AssetData>> _fotosVon(
   int hoechstens,
 ) async {
   if (ids.length == 1) {
-    return (await db.assetsFuerPersonen(ids)).take(hoechstens).toList();
+    return (await db.filtereErinnerungsaufnahmen(
+      await db.assetsFuerPersonen(ids),
+    )).take(hoechstens).toList();
   }
   final je = [
     for (final id in ids) await db.assetsFuerPersonen([id]),
@@ -129,7 +146,9 @@ Future<List<AssetData>> _fotosVon(
   final beiAllen = je.skip(1).fold({
     for (final a in je.first) a.id,
   }, (s, liste) => s.intersection({for (final a in liste) a.id}));
-  final alle = await db.assetsFuerPersonen(ids);
+  final alle = await db.filtereErinnerungsaufnahmen(
+    await db.assetsFuerPersonen(ids),
+  );
   final gemeinsam = [
     for (final a in alle)
       if (beiAllen.contains(a.id)) a,
@@ -220,7 +239,7 @@ typedef Jahresinhalt = ({
 
 Future<Jahresinhalt> jahresinhalt(AppDatabase db, int jahr) async {
   final von = DateTime(jahr), bis = DateTime(jahr, 12, 31);
-  final aufnahmen = await db.aufnahmenImZeitraum(von, bis);
+  final aufnahmen = await db.aufnahmenImZeitraum(von, bis, erinnerung: true);
   final daten = [
     for (final a in aufnahmen)
       (
@@ -236,13 +255,21 @@ Future<Jahresinhalt> jahresinhalt(AppDatabase db, int jahr) async {
       ),
   ];
   final nachId = {for (final a in aufnahmen) a.id: a};
+  final filter = await db.erinnerungsfilter();
+  final reiseIds = {
+    for (final a in await db.select(db.reiseAufnahmen).get())
+      if (nachId.containsKey(a.assetId)) a.reiseId,
+  };
   return (
     zahlen: jahreszahlen(daten),
     auswahl: [for (final id in jahresauswahl(daten)) nachId[id]!],
-    personen: await db.personenImZeitraum(von, bis),
+    personen: await db.personenImZeitraum(von, bis, erinnerung: true),
     reisen: [
       for (final r in await db.alleReisen())
-        if (r.von.year <= jahr && r.bis.year >= jahr) r,
+        if (r.von.year <= jahr &&
+            r.bis.year >= jahr &&
+            (filter.leer || reiseIds.contains(r.id)))
+          r,
     ]..sort((a, b) => a.von.compareTo(b.von)),
   );
 }

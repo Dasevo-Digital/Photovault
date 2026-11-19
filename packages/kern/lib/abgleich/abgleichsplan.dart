@@ -33,6 +33,7 @@ class Abgleichsplan {
       'translate_captions',
       'translate_search_and_tags',
       'formate_stapeln',
+      'erinnerungsfilter',
     },
     // PIN und Tresorschlüssel bleiben auf dem Gerät: Der Tresor ist Ende zu
     // Ende verschlüsselt, der Schlüssel kommt nie zum Server.

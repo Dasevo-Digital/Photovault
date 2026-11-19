@@ -97,6 +97,18 @@ abstract class AppTexte {
     Locale('en'),
   ];
 
+  /// No description provided for @umzugQuelleLesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Export wird entpackt und geprüft …'**
+  String get umzugQuelleLesen;
+
+  /// No description provided for @umzugKonflikt.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Beschreibungen widersprechen sich. Vorgeschlagen wird Takeout; ohne Übernahme bleiben die Datei-Angaben erhalten.'**
+  String get umzugKonflikt;
+
   /// Verwirft einen Dialog, ohne etwas zu ändern.
   ///
   /// In de, this message translates to:
@@ -16551,6 +16563,72 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Sicherungskopien prüfen'**
   String get quittungKopienPruefen;
+
+  /// No description provided for @umzugTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotosammlung übernehmen'**
+  String get umzugTitel;
+
+  /// No description provided for @umzugQuellenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Takeout-ZIP-Archive oder einen exportierten Ordner mit Fotos und JSON-/XMP-Beilagen wählen. Lightroom-Metadaten werden aus XMP übernommen.'**
+  String get umzugQuellenHinweis;
+
+  /// No description provided for @umzugOrdner.
+  ///
+  /// In de, this message translates to:
+  /// **'Exportordner wählen'**
+  String get umzugOrdner;
+
+  /// No description provided for @umzugArchive.
+  ///
+  /// In de, this message translates to:
+  /// **'ZIP-Archive wählen'**
+  String get umzugArchive;
+
+  /// No description provided for @umzugQuellenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Export konnte nicht sicher gelesen werden. Prüfe die Archive oder wähle einen entpackten Exportordner.'**
+  String get umzugQuellenFehler;
+
+  /// No description provided for @umzugPlanHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfe Dateidatum und vorgeschlagene Beilagenangaben. Je Aufnahme kannst du die Beilagen ausschalten. Bereits vorhandene Aufnahmen werden als Dubletten quittiert.'**
+  String get umzugPlanHinweis;
+
+  /// No description provided for @umzugDatum.
+  ///
+  /// In de, this message translates to:
+  /// **'Datum aus Beilage {wert}'**
+  String umzugDatum(String wert);
+
+  /// No description provided for @umzugSterne.
+  ///
+  /// In de, this message translates to:
+  /// **'Sterne aus Beilage {anzahl}'**
+  String umzugSterne(int anzahl);
+
+  /// No description provided for @umzugOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort aus Beilage {wert}'**
+  String umzugOrt(String wert);
+
+  /// No description provided for @umzugBeilageFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Beilage beschädigt, zu groß oder mehrdeutig. Prüfe den Export vor dem Import.'**
+  String get umzugBeilageFehler;
+
+  /// No description provided for @umzugAngabenUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Beilagenangaben übernehmen'**
+  String get umzugAngabenUebernehmen;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

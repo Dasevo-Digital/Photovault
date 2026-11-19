@@ -1,3 +1,4 @@
+import 'beschriftung_api.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -209,6 +210,35 @@ class Teilungsapi {
   Future<Response> beitraegeGesehen(Request r, String album) async {
     _dienst.beitraegeGesehen(kontoVon(r).id, album);
     return Response(204);
+  }
+
+  Future<Response> beschriftungEigen(Request r, String album) =>
+      _beschriftung(r, album: album);
+  Future<Response> beschriftungGeteilt(Request r, String teilung) =>
+      _beschriftung(r, teilung: teilung);
+  Future<Response> beschriftungEntscheiden(
+    Request r,
+    String album,
+    String id,
+  ) => _beschriftung(r, album: album, entscheidung: id);
+  Future<Response> _beschriftung(
+    Request r, {
+    String? album,
+    String? teilung,
+    String? entscheidung,
+  }) async {
+    final ort = await _ort(r, album: album, teilung: teilung);
+    if (ort == null) return _json({'fehler': 'unbekannt'}, status: 404);
+    final konto = kontoVon(r);
+    return beschriftungsAnfrage(
+      r,
+      ort.db,
+      ort.album.id,
+      konto: konto.id,
+      name: konto.name,
+      besitzer: konto.id == ort.besitzer,
+      entscheidung: entscheidung,
+    );
   }
 
   // --- Kommentare und „Gefällt mir“ (#297) ----------------------------------

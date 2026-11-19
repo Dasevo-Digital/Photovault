@@ -6,6 +6,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/exif_camera.dart';
+import 'package:kern/services/erinnerungsfilter.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/verwandtschaftsgrad.dart';
@@ -215,6 +216,13 @@ void main() {
       const FormateStapelnSetzen(true),
       const SucheUebersetzenSetzen(true),
       const AngabenSchuetzenSetzen(true),
+      ErinnerungsfilterSetzen(
+        Erinnerungsfilter(
+          personen: ['p1'],
+          alben: ['al1'],
+          zeitraeume: [(von: '2020-01-01', bis: '2020-01-02')],
+        ),
+      ),
       const OrtSetzen(['a1', 'a2'], 54.1, 10.9),
       const OrtSetzen(
         ['a1'],
@@ -320,6 +328,7 @@ void main() {
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
+      ErinnerungsfilterSetzen() => 'erinnerungsfilterSetzen',
       FavoritSetzen() => 'favoritSetzen',
       BewertungSetzen() => 'bewertungSetzen',
       FarbmarkeSetzen() => 'farbmarkeSetzen',
@@ -923,6 +932,7 @@ enum _Art {
 
 /// Die Einordnung aller Schreibmethoden in packages/kern/lib/db/abfragen.
 const _einordnung = <String, _Art>{
+  'setzeErinnerungsfilter': _Art.befehl,
   // Aufnahmen
   'setFavorite': _Art.befehl,
   'setFavoriteBulk': _Art.befehl,

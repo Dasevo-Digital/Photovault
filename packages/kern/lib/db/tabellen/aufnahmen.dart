@@ -497,3 +497,21 @@ class Ergebnisherkunft extends Table {
   @override
   Set<Column> get primaryKey => {assetId, art};
 }
+
+/// Vorschläge aus einem geteilten Album und ihre Entscheidung.
+class Beschriftungsvorschlaege extends Table {
+  TextColumn get id => text()();
+  TextColumn get assetId =>
+      text().references(Assets, #id, onDelete: KeyAction.cascade)();
+  TextColumn get albumId => text()();
+  TextColumn get von => text()();
+  TextColumn get vonName => text()();
+  TextColumn get art => text()();
+  TextColumn get wert => text()();
+  TextColumn get gesichtId => text().nullable()();
+  DateTimeColumn get angelegt => dateTime()();
+  TextColumn get zustand => text().withDefault(const Constant('offen'))();
+  DateTimeColumn get entschieden => dateTime().nullable()();
+  @override
+  Set<Column> get primaryKey => {id};
+}

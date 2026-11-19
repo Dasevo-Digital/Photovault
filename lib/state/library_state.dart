@@ -1320,7 +1320,8 @@ class LibraryState extends ChangeNotifier {
     if (plan != null) {
       final zustand = await a.verbindung.hole('api/v1/zustand');
       final funktionen = zustand['funktionen'] as Map?;
-      if ((funktionen?['importplan'] as int? ?? 0) < 2 ||
+      if ((plan.umzug && (funktionen?['umzug'] as int? ?? 0) < 1) ||
+          (funktionen?['importplan'] as int? ?? 0) < 2 ||
           (plan.kammer && (funktionen?['fotokammer'] as int? ?? 0) < 1)) {
         throw const FormatException('pv_import_server_zu_alt');
       }
@@ -1345,7 +1346,7 @@ class LibraryState extends ChangeNotifier {
                 await datei.lastModified() != eintrag.angaben!.geaendert)) {
           throw const FormatException('pv_import_quelle_geaendert');
         }
-        final beilage = beilageNeben(filePath);
+        final beilage = eintrag?.beilage ?? beilageNeben(filePath);
         final kopf = await tus.ladeBeharrlich(datei, 'api/v1/hochladen', {
           'filename': p.basename(filePath),
           if (beilage != null) 'xmp': beilage.alsText(),
@@ -1602,7 +1603,10 @@ class LibraryState extends ChangeNotifier {
       if ((f.assetId, f.pfad) case (final id?, final pfad?)) {
         // Scheitert das, ist das Foto trotzdem da.
         try {
-          await beilageNeben(pfad)?.wendeAn(db, id);
+          if (plan?.eintraege.singleWhere((e) => e.pfad == pfad).beilage ==
+              null) {
+            await beilageNeben(pfad)?.wendeAn(db, id);
+          }
         } on Object catch (e) {
           debugPrint('Beilage von $pfad nicht übernommen: $e');
         }
@@ -3747,6 +3751,7 @@ class LibraryState extends ChangeNotifier {
       'transkriptGeprueft': asset.transkriptGeprueft,
       'tags': relations['tags'] ?? const <String>[],
       'albums': relations['albums'] ?? const <String>[],
+      'beschriftungen': relations['beschriftungen'] ?? const <String>[],
     };
     final cipher = AesGcm.with256bits();
     final nonce = cipher.newNonce();
@@ -3790,6 +3795,8 @@ class LibraryState extends ChangeNotifier {
     }
     await db.restorePrivateMetadata(
       assetId,
+      beschriftungen: (json['beschriftungen'] as List? ?? const [])
+          .cast<String>(),
       AssetsCompanion(
         originalFileName: Value(json['originalFileName'] as String),
         fileCreatedAt: Value(DateTime.parse(json['fileCreatedAt'] as String)),

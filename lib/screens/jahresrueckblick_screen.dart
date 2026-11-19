@@ -1,3 +1,6 @@
+import 'package:teilen_ui/erinnerungen_beobachten.dart';
+import 'package:teilen_ui/erinnerungsfilter.dart';
+import 'package:teilen_ui/geteilte_alben.dart' show teilenTexte;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -33,7 +36,12 @@ class JahresrueckblickScreen extends StatefulWidget {
   State<JahresrueckblickScreen> createState() => _JahresrueckblickScreenState();
 }
 
-class _JahresrueckblickScreenState extends State<JahresrueckblickScreen> {
+class _JahresrueckblickScreenState extends State<JahresrueckblickScreen>
+    with ErinnerungenBeobachten<JahresrueckblickScreen> {
+  @override
+  AppDatabase get erinnerungsDb => widget.library.db;
+  @override
+  void erinnerungenNeuLaden() => _wechsle(_jahr);
   late int _jahr = widget.jahr;
   late Future<_Inhalt> _inhalt = _laden(_jahr);
 
@@ -53,6 +61,17 @@ class _JahresrueckblickScreenState extends State<JahresrueckblickScreen> {
         title: Text(t.jahresrueckblickTitel(_jahr)),
         actions: [
           IconButton(
+            icon: const Icon(Icons.filter_alt_outlined),
+            tooltip: teilenTexte(context).erinnerungsfilterTitel,
+            onPressed: () async {
+              if (await zeigeErinnerungsfilter(context, widget.library.db) &&
+                  mounted) {
+                _wechsle(_jahr);
+              }
+            },
+          ),
+
+          IconButton(
             tooltip: t.jahresrueckblickVorjahr,
             icon: const Icon(Icons.chevron_left),
             onPressed: () => _wechsle(_jahr - 1),
@@ -65,8 +84,14 @@ class _JahresrueckblickScreenState extends State<JahresrueckblickScreen> {
         ],
       ),
       body: FutureBuilder<_Inhalt>(
+        key: ObjectKey(_inhalt),
         future: _inhalt,
         builder: (context, schnappschuss) {
+          if (schnappschuss.hasError) {
+            return Center(
+              child: Text(teilenTexte(context).erinnerungenLadeFehler),
+            );
+          }
           final inhalt = schnappschuss.data;
           if (inhalt == null) {
             return const Center(child: CircularProgressIndicator());

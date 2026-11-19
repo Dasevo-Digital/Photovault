@@ -975,3 +975,12 @@ body.landschaft-offen { overflow: hidden; }
 #kammer-gross > button { height: 100%; border: 0; background: transparent; color: #aaa; font-size: 2.2em; cursor: pointer; }
 #kammer-gross-bild { max-width: 100%; max-height: calc(100vh - 56px); margin: auto; object-fit: contain; }
 
+/* Vorschläge und Rückblickausschlüsse passen auch auf schmale Bildschirme. */
+.sammlungs-dialog { width: min(90vw, 42rem); max-height: 85vh; overflow: auto; }
+.sammlungs-wahl { max-height: 12rem; overflow: auto; display: grid; gap: .4rem; }
+.sammlungs-wahl label { display: flex; gap: .5rem; }
+.sammlungs-zeit { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: .5rem; }
+.beschriftung { border-bottom: 1px solid var(--rand, #888); padding-block: .8rem; }
+.beschriftung-bild { position: relative; width: 100%; max-width: 24rem; }
+.beschriftung-bild img { display: block; width: 100%; }
+.beschriftung-bild span { position: absolute; border: 2px solid #f5b400; color: #fff; background: #0005; box-sizing: border-box; }

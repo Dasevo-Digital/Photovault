@@ -2,6 +2,101 @@ part of '../database.dart';
 
 /// Verortete Aufnahmen, „An diesem Tag“, gemerkte Erinnerungen, bearbeitete Dateien.
 extension ErinnerungsAbfragen on AppDatabase {
+  Stream<void> erinnerungsAenderungen() {
+    final tabellen = <ResultSetImplementation>{
+      appSettings,
+      assets,
+      faces,
+      albumAssets,
+      people,
+      lebensereignisse,
+      personBeziehungen,
+      reiseAufnahmen,
+      reisen,
+      gemerkteErinnerungen,
+    };
+    return _gedrosselt(
+      () => customSelect(
+        'SELECT id FROM app_settings WHERE id=0',
+        readsFrom: tabellen,
+      ),
+      TableUpdateQuery.onAllTables(tabellen),
+    ).map((_) {});
+  }
+
+  Future<Erinnerungsfilter> erinnerungsfilter() async {
+    final row = await (select(
+      appSettings,
+    )..where((t) => t.id.equals(0))).getSingleOrNull();
+    final text = row?.erinnerungsfilter;
+    return text == null
+        ? Erinnerungsfilter()
+        : Erinnerungsfilter.ausJson(jsonDecode(text));
+  }
+
+  Future<void> setzeErinnerungsfilter(Erinnerungsfilter filter) =>
+      into(appSettings).insertOnConflictUpdate(
+        AppSettingsCompanion(
+          id: const Value(0),
+          erinnerungsfilter: Value(filter.kodiert()),
+        ),
+      );
+
+  Future<Expression<bool>> erinnerungsBedingung() async {
+    final filter = await erinnerungsfilter();
+    Expression<bool> bedingung = const Constant(true);
+    if (filter.personen.isNotEmpty) {
+      bedingung &= assets.id.isNotInQuery(
+        selectOnly(faces)
+          ..addColumns([faces.assetId])
+          ..where(faces.personId.isIn(filter.personen)),
+      );
+    }
+    if (filter.alben.isNotEmpty) {
+      bedingung &= assets.id.isNotInQuery(
+        selectOnly(albumAssets)
+          ..addColumns([albumAssets.assetId])
+          ..where(albumAssets.albumId.isIn(filter.alben)),
+      );
+    }
+    for (final z in filter.zeitraeume) {
+      final von = Erinnerungsfilter.tag(z.von),
+          bis = Erinnerungsfilter.tag(z.bis);
+      final danach = DateTime(bis.year, bis.month, bis.day + 1);
+      bedingung &=
+          assets.fileCreatedAt.isSmallerThanValue(von) |
+          assets.fileCreatedAt.isBiggerOrEqualValue(danach);
+    }
+    return bedingung;
+  }
+
+  Future<List<AssetData>> filtereErinnerungsaufnahmen(
+    List<AssetData> liste,
+  ) async {
+    if (liste.isEmpty) return [];
+    final erlaubt = <String>{};
+    final bedingung = await erinnerungsBedingung();
+    for (var i = 0; i < liste.length; i += 400) {
+      final ids = liste.skip(i).take(400).map((a) => a.id);
+      erlaubt.addAll(
+        (await (selectOnly(assets)
+                  ..addColumns([assets.id])
+                  ..where(
+                    bedingung &
+                        assets.id.isIn(ids) &
+                        assets.isLocked.equals(false) &
+                        assets.isTrashed.equals(false),
+                  ))
+                .get())
+            .map((r) => r.read(assets.id)!),
+      );
+    }
+    return [
+      for (final a in liste)
+        if (erlaubt.contains(a.id)) a,
+    ];
+  }
+
   /// Alle nicht gelöschten Assets mit aufgelöstem Orts-Namen (Land/
   /// Bundesland/Stadt), neueste zuerst – für die "Erkannte Orte"-Sektion im
   /// Erkunden-Tab. Die Gruppierung zu einem repräsentativen Foto je Ort
@@ -161,7 +256,8 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _inZeitleiste(assets),
+            _inZeitleiste(assets) &
+            await erinnerungsBedingung(),
       );
     final treffer = <String>[];
     for (final zeile in await schlank.get()) {
@@ -206,7 +302,8 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _inZeitleiste(assets),
+            _inZeitleiste(assets) &
+            await erinnerungsBedingung(),
       );
     final jeTag = <DateTime, List<String>>{};
     for (final zeile in await schlank.get()) {
@@ -238,28 +335,36 @@ extension ErinnerungsAbfragen on AppDatabase {
   Future<List<({ReisenData reise, int lieblinge})>> schoensteReisen({
     int hoechstens = 8,
   }) async {
-    final zeilen = await customSelect(
-      '''SELECT ra.reise_id AS id, COUNT(*) AS n
-         FROM reise_aufnahmen ra JOIN assets a ON a.id = ra.asset_id
-         WHERE a.is_trashed = 0 AND a.is_locked = 0
-           AND (a.is_favorite = 1 OR a.rating >= 4)
-         GROUP BY ra.reise_id ORDER BY n DESC LIMIT ?''',
-      variables: [Variable.withInt(hoechstens)],
-      readsFrom: {reiseAufnahmen, assets},
-    ).get();
+    final n = reiseAufnahmen.assetId.count();
+    final query =
+        selectOnly(reiseAufnahmen).join([
+            innerJoin(assets, assets.id.equalsExp(reiseAufnahmen.assetId)),
+          ])
+          ..addColumns([reiseAufnahmen.reiseId, n])
+          ..where(
+            assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false) &
+                (assets.isFavorite.equals(true) |
+                    assets.rating.isBiggerOrEqualValue(4)) &
+                await erinnerungsBedingung(),
+          )
+          ..groupBy([reiseAufnahmen.reiseId])
+          ..orderBy([OrderingTerm.desc(n)])
+          ..limit(hoechstens);
+    final zeilen = [
+      for (final r in await query.get())
+        (id: r.read(reiseAufnahmen.reiseId)!, anzahl: r.read(n)!),
+    ];
     final gefunden = {
-      for (final r
-          in await (select(reisen)..where(
-                (t) =>
-                    t.id.isIn([for (final z in zeilen) z.read<String>('id')]),
-              ))
-              .get())
+      for (final r in await (select(
+        reisen,
+      )..where((t) => t.id.isIn([for (final z in zeilen) z.id]))).get())
         r.id: r,
     };
     return [
       for (final z in zeilen)
-        if (gefunden[z.read<String>('id')] case final reise?)
-          (reise: reise, lieblinge: z.read<int>('n')),
+        if (gefunden[z.id] case final reise?)
+          (reise: reise, lieblinge: z.anzahl),
     ];
   }
 
@@ -292,7 +397,7 @@ extension ErinnerungsAbfragen on AppDatabase {
   ) async {
     final ids = (jsonDecode(e.assetIds) as List).cast<String>();
     return [
-      for (final a in await assetsByIds(ids))
+      for (final a in await filtereErinnerungsaufnahmen(await assetsByIds(ids)))
         if (!a.isTrashed && !a.isLocked) a,
     ];
   }
@@ -322,7 +427,8 @@ extension ErinnerungsAbfragen on AppDatabase {
             assets.isLocked.equals(false) &
             assets.datumGeschaetzt.equals(false) &
             _nichtAufVollerStunde() &
-            _inZeitleiste(assets),
+            _inZeitleiste(assets) &
+            await erinnerungsBedingung(),
       );
     final jeJahr = <int, List<String>>{};
     for (final zeile in await schlank.get()) {

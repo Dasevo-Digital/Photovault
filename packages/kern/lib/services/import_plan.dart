@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
 import 'import_service.dart';
+import 'beilagenangaben.dart';
 import 'regelpruefung.dart';
 
 enum ImportPlanArt { neu, vorhanden, doppelt, format, fehler }
@@ -22,6 +23,7 @@ class ImportPlanEintrag {
     this.regeln = const [],
     this.favorit = false,
     this.ungueltigeZiele = false,
+    this.beilage,
   });
   final String pfad;
   final ImportPlanArt art;
@@ -29,6 +31,20 @@ class ImportPlanEintrag {
   final List<String> alben, tags, regeln;
   final List<String> albumIds, tagIds;
   final bool favorit, ungueltigeZiele;
+  final Beilagenangaben? beilage;
+  ImportPlanEintrag mitBeilage(Beilagenangaben? wert) => ImportPlanEintrag(
+    pfad: pfad,
+    art: art,
+    angaben: angaben,
+    albumIds: albumIds,
+    tagIds: tagIds,
+    alben: alben,
+    tags: tags,
+    regeln: regeln,
+    favorit: favorit,
+    ungueltigeZiele: ungueltigeZiele,
+    beilage: wert,
+  );
 }
 
 class ImportPlan {
@@ -38,6 +54,7 @@ class ImportPlan {
     required this.am,
     required this.spaetereRegeln,
     this.dateiregeln = false,
+    this.umzug = false,
     this.kammer = false,
     this.ausgelassen = const [],
   });
@@ -47,6 +64,7 @@ class ImportPlan {
   final DateTime am;
   final int spaetereRegeln;
   final bool dateiregeln;
+  final bool umzug;
 
   /// Erst in die Fotokammer des Servers statt gleich in die Bibliothek
   /// (#336). Regeln, Vorgaben und Alben greifen dann beim Freigeben.
@@ -58,6 +76,7 @@ class ImportPlan {
     am: am,
     spaetereRegeln: spaetereRegeln,
     dateiregeln: dateiregeln,
+    umzug: umzug,
     kammer: an,
     ausgelassen: ausgelassen,
   );
@@ -79,6 +98,7 @@ class ImportPlan {
         am: am,
         spaetereRegeln: spaetereRegeln,
         dateiregeln: dateiregeln,
+        umzug: umzug,
         kammer: kammer,
         ausgelassen: mitAusgelassenen
             ? eintraege
@@ -164,6 +184,7 @@ class ImportPlanDienst {
         plan.regelstand != await aktuellerRegelstand()) {
       throw const FormatException('pv_import_regeln_geaendert');
     }
+    await eintrag.beilage?.wendeAn(db, id);
     for (final album in eintrag.albumIds) {
       await db.fuehreAus(AlbumFuellen(album, [id]));
     }

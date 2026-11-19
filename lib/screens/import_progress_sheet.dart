@@ -1,4 +1,6 @@
+import '../services/umzugsquelle.dart';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +35,10 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       content: Text(AppTexte.of(context).importWasText),
       actions: [
         TextButton(
+          onPressed: () => Navigator.pop(context, _ImportMode.umzug),
+          child: Text(AppTexte.of(context).umzugTitel),
+        ),
+        TextButton(
           onPressed: () => Navigator.pop(context, _ImportMode.quittungen),
           child: Text(AppTexte.of(context).importQuittungenTitel),
         ),
@@ -58,68 +64,149 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
     return;
   }
 
-  List<String> paths;
-  if (mode == _ImportMode.files) {
-    final result = await FilePicker.pickFiles(
-      type: FileType.custom,
-      // Dieselbe Liste wie der Import selbst: Hier fehlten Photoshop und
-      // alle Videoformate ausser den fünf ältesten (#232).
-      allowedExtensions: [
-        for (final ext in unterstuetzteEndungen) ext.substring(1),
-      ],
-    );
-    paths = result.map((f) => f.path).whereType<String>().toList();
-    if (paths.isEmpty) return;
-  } else if (mode == _ImportMode.folder) {
-    final folder = await FilePicker.getDirectoryPath(
-      dialogTitle: AppTexte.of(context).importOrdnerWaehlen,
-    );
-    if (folder == null) return;
-    if (!context.mounted) return;
-    paths = await ImportPlanDienst.dateienImOrdner(folder);
-    if (paths.isEmpty) {
-      if (context.mounted) {
-        melde.hinweis(AppTexte.of(context).importNichtsImOrdner);
+  Umzugsquelle? quelle;
+  try {
+    List<String> paths;
+    if (mode == _ImportMode.umzug) {
+      final t = AppTexte.of(context);
+      final zip = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text(t.umzugTitel),
+          content: Text(t.umzugQuellenHinweis),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: Text(t.umzugOrdner),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: Text(t.umzugArchive),
+            ),
+          ],
+        ),
+      );
+      if (zip == null || !context.mounted) return;
+      if (zip) {
+        final dateien = await FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: ['zip'],
+        );
+        final pfade = dateien.map((f) => f.path).whereType<String>().toList();
+        if (pfade.isEmpty) return;
+        if (!context.mounted) return;
+        quelle = await _leseUmzugsquelle(
+          context,
+          () => Umzugsquelle.archive(pfade),
+        );
+      } else {
+        final pfad = await FilePicker.getDirectoryPath(
+          dialogTitle: t.umzugOrdner,
+        );
+        if (pfad == null) return;
+        if (!context.mounted) return;
+        quelle = await _leseUmzugsquelle(
+          context,
+          () => Umzugsquelle.ordner(pfad),
+        );
       }
+      paths = quelle.dateien;
+    } else if (mode == _ImportMode.files) {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        // Dieselbe Liste wie der Import selbst: Hier fehlten Photoshop und
+        // alle Videoformate ausser den fünf ältesten (#232).
+        allowedExtensions: [
+          for (final ext in unterstuetzteEndungen) ext.substring(1),
+        ],
+      );
+      paths = result.map((f) => f.path).whereType<String>().toList();
+      if (paths.isEmpty) return;
+    } else if (mode == _ImportMode.folder) {
+      final folder = await FilePicker.getDirectoryPath(
+        dialogTitle: AppTexte.of(context).importOrdnerWaehlen,
+      );
+      if (folder == null) return;
+      if (!context.mounted) return;
+      paths = await ImportPlanDienst.dateienImOrdner(folder);
+      if (paths.isEmpty) {
+        if (context.mounted) {
+          melde.hinweis(AppTexte.of(context).importNichtsImOrdner);
+        }
+        return;
+      }
+    } else {
+      final dcimPath = await showCameraSourcePickerDialog(context);
+      if (dcimPath == null) return;
+      if (!context.mounted) return;
+      paths = await ImportPlanDienst.dateienImOrdner(dcimPath);
+      if (paths.isEmpty) {
+        if (context.mounted) {
+          melde.hinweis(AppTexte.of(context).importNichtsAufDatentraeger);
+        }
+        return;
+      }
+    }
+
+    if (paths.isEmpty || !context.mounted) return;
+
+    final plan = await Navigator.of(context).push<ImportPlan>(
+      MaterialPageRoute(
+        builder: (_) =>
+            ImportPlanScreen(library: library, dateien: paths, umzug: quelle),
+      ),
+    );
+    if (plan == null ||
+        !context.mounted ||
+        (plan.eintraege.isEmpty && plan.ausgelassen.isEmpty)) {
       return;
     }
-  } else {
-    final dcimPath = await showCameraSourcePickerDialog(context);
-    if (dcimPath == null) return;
-    if (!context.mounted) return;
-    paths = await ImportPlanDienst.dateienImOrdner(dcimPath);
-    if (paths.isEmpty) {
-      if (context.mounted) {
-        melde.hinweis(AppTexte.of(context).importNichtsAufDatentraeger);
-      }
-      return;
-    }
+    paths = plan.eintraege.map((e) => e.pfad).toList();
+
+    await showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) =>
+          _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
+    );
+  } on Object {
+    if (context.mounted) melde.warnung(AppTexte.of(context).umzugQuellenFehler);
+  } finally {
+    await quelle?.schliesse();
   }
-
-  if (paths.isEmpty || !context.mounted) return;
-
-  final plan = await Navigator.of(context).push<ImportPlan>(
-    MaterialPageRoute(
-      builder: (_) => ImportPlanScreen(library: library, dateien: paths),
-    ),
-  );
-  if (plan == null ||
-      !context.mounted ||
-      (plan.eintraege.isEmpty && plan.ausgelassen.isEmpty)) {
-    return;
-  }
-  paths = plan.eintraege.map((e) => e.pfad).toList();
-
-  await showModalBottomSheet(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    builder: (context) =>
-        _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
-  );
 }
 
-enum _ImportMode { files, folder, camera, quittungen }
+enum _ImportMode { files, folder, camera, quittungen, umzug }
+
+Future<Umzugsquelle> _leseUmzugsquelle(
+  BuildContext context,
+  Future<Umzugsquelle> Function() lesen,
+) async {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  final route = DialogRoute<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (c) => PopScope(
+      canPop: false,
+      child: AlertDialog(
+        content: Row(
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(width: 20),
+            Expanded(child: Text(AppTexte.of(c).umzugQuelleLesen)),
+          ],
+        ),
+      ),
+    ),
+  );
+  unawaited(navigator.push(route));
+  try {
+    return await lesen();
+  } finally {
+    if (route.isActive) navigator.removeRoute(route);
+  }
+}
 
 /// Die Bilanz eines Imports als eine Zeile – oder `null`, wenn es nichts
 /// zu sagen gibt.

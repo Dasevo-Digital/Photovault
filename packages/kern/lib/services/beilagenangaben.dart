@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 
@@ -18,6 +19,9 @@ class Beilagenangaben {
     this.schlagwoerter = const [],
     this.breite,
     this.laenge,
+    this.aufgenommenAm,
+    this.alben = const [],
+    this.favorit = false,
   });
 
   /// 1 bis 5; `null`, wenn keine vergeben sind.
@@ -28,6 +32,9 @@ class Beilagenangaben {
   final List<String> schlagwoerter;
   final double? breite;
   final double? laenge;
+  final DateTime? aufgenommenAm;
+  final List<String> alben;
+  final bool favorit;
 
   /// So viel darf als Text in die Metadaten eines Uploads: Sie gehen als
   /// Kopfzeile über die Leitung.
@@ -41,6 +48,9 @@ class Beilagenangaben {
     if (schlagwoerter.isNotEmpty) 'schlagwoerter': schlagwoerter,
     'breite': ?breite,
     'laenge': ?laenge,
+    'aufgenommenAm': ?aufgenommenAm?.toUtc().toIso8601String(),
+    if (alben.isNotEmpty) 'alben': alben,
+    if (favorit) 'favorit': true,
   };
 
   /// Als Text für den Upload. Passt er nicht, fehlen Beschreibung und
@@ -48,15 +58,22 @@ class Beilagenangaben {
   String alsText() {
     final ganz = jsonEncode(alsMap());
     if (utf8.encode(ganz).length <= hoechstensBytes) return ganz;
-    return jsonEncode(
+    final gekuerzt = jsonEncode(
       Beilagenangaben(
         sterne: sterne,
         abgelehnt: abgelehnt,
         farbe: farbe,
         breite: breite,
         laenge: laenge,
+        aufgenommenAm: aufgenommenAm,
+        alben: alben,
+        favorit: favorit,
       ).alsMap(),
     );
+    if (utf8.encode(gekuerzt).length > hoechstensBytes) {
+      throw const FormatException('pv_umzug_angaben_zu_gross');
+    }
+    return gekuerzt;
   }
 
   /// Aus [alsMap]; was nicht passt, fällt weg, statt den Upload scheitern
@@ -81,13 +98,26 @@ class Beilagenangaben {
           : const [],
       breite: zahl(j['breite'], 90),
       laenge: zahl(j['laenge'], 180),
+      aufgenommenAm: j['aufgenommenAm'] is String
+          ? DateTime.tryParse(j['aufgenommenAm'] as String)
+          : null,
+      alben: j['alben'] is List
+          ? [
+              for (final a in j['alben'] as List)
+                if (a is String && a.trim().isNotEmpty && a.length <= 200)
+                  a.trim(),
+            ].take(100).toList()
+          : const [],
+      favorit: j['favorit'] == true,
     );
     return a.alsMap().isEmpty ? null : a;
   }
 
   /// Aus [alsText]; `null` bei allem, was keiner ist.
   static Beilagenangaben? ausText(Object? text) {
-    if (text is! String) return null;
+    if (text is! String || utf8.encode(text).length > hoechstensBytes) {
+      return null;
+    }
     try {
       return aus(jsonDecode(text));
     } on FormatException {
@@ -123,6 +153,27 @@ class Beilagenangaben {
     }
     for (final t in schlagwoerter) {
       await db.fuehreAus(SchlagwortAnheften([id], t));
+    }
+    if (aufgenommenAm case final datum?) {
+      await db.fuehreAus(
+        AufnahmedatenSetzen([(id: id, zeitpunkt: datum, geschaetzt: false)]),
+      );
+    }
+    if (favorit) await db.fuehreAus(FavoritSetzen([id], true));
+    for (final name in alben.toSet()) {
+      final vorhanden = await (db.select(
+        db.albums,
+      )..where((t) => t.name.equals(name))).get();
+      final albumId = vorhanden.isNotEmpty
+          ? vorhanden.first.id
+          : const Uuid().v5(
+              Namespace.url.value,
+              'photovault-umzugsalbum/$name',
+            );
+      if (vorhanden.isEmpty) {
+        await db.fuehreAus(AlbumAnlegen(albumId, name, DateTime.now()));
+      }
+      await db.fuehreAus(AlbumFuellen(albumId, [id]));
     }
     // Der Ort aus der Kamera bleibt: Er ist die genauere Angabe.
     if (breite != null && laenge != null) {

@@ -43,11 +43,16 @@ Map<String, Object?> handarbeitAnDerAufnahme({
 };
 
 class BackupAlbum {
-  BackupAlbum({required this.name, required List<String> aufnahmen})
+  BackupAlbum({required this.name, required List<String> aufnahmen, this.id})
     : aufnahmen = List.unmodifiable(aufnahmen);
   final String name;
+  final String? id;
   final List<String> aufnahmen;
-  Map<String, Object?> alsJson() => {'name': name, 'assetChecksums': aufnahmen};
+  Map<String, Object?> alsJson() => {
+    'id': ?id,
+    'name': name,
+    'assetChecksums': aufnahmen,
+  };
 }
 
 /// Gemeinsamer Vertrag von Manifest-Parser, Snapshot und Wiederherstellung.
@@ -101,6 +106,7 @@ class BackupManifest {
         final a = row as Map;
         alben.add(
           BackupAlbum(
+            id: a['id'] as String?,
             name: a['name'] as String? ?? 'Wiederhergestelltes Album',
             aufnahmen: (a['assetChecksums'] as List? ?? const [])
                 .cast<String>(),
