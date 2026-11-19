@@ -10962,4 +10962,9 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get umzugAngabenUebernehmen => 'Apply this sidecar metadata';
+
+  @override
+  String umzugQuelleDateien(int n) {
+    return '$n files found …';
+  }
 }

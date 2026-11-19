@@ -717,7 +717,6 @@ Handler baueApi({
   return const Pipeline()
       .addMiddleware(packen)
       .addMiddleware(_sicherheitskoepfe)
-      .addMiddleware(anfragegrenzen(absender: von.von))
       .addMiddleware(
         anmeldungNoetig(
           konten,
@@ -744,6 +743,7 @@ Handler baueApi({
           offenPraefixe: {'app/', 'teilen/', 'api/v1/teilen/'},
         ),
       )
+      .addMiddleware(anfragegrenzen(absender: von.von))
       .addHandler(r.call);
 }
 

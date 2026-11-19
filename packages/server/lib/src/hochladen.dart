@@ -141,6 +141,18 @@ class Hochladen {
     }
     if (laenge > hoechstens) return Response(413, headers: _tus);
     final meta = _metadaten(anfrage.headers['upload-metadata']);
+    if (meta['xmp'] case final text?) {
+      try {
+        if (utf8.encode(text).length > Beilagenangaben.hoechstensBytes) {
+          throw const FormatException('umfang');
+        }
+        final j = jsonDecode(text);
+        if (j is! Map) throw const FormatException('format');
+        Beilagenangaben.aus(j);
+      } on FormatException {
+        return Response(400, body: 'pv_umzug_angaben_zu_gross', headers: _tus);
+      }
+    }
     final zielpfad = meta['pfad'];
     for (final schluessel in ['sha256', 'bearbeitungVon']) {
       if (meta[schluessel] != null &&

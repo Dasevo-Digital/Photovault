@@ -25,6 +25,57 @@ void main() {
     jsonBytes: 64,
     anmeldungBytes: 16,
   )((r) async => Response.ok(await r.readAsString()));
+
+  test(
+    'Gemeinsames Bytebudget gilt während der Verarbeitung und wird freigegeben',
+    () async {
+      final halten = Completer<void>();
+      final angekommen = Completer<void>();
+      var blockieren = true;
+      final h = anfragegrenzen(insgesamtBytes: 6, jsonBytes: 10)((r) async {
+        final text = await r.readAsString();
+        if (blockieren) {
+          angekommen.complete();
+          await halten.future;
+        }
+        return Response.ok(text);
+      });
+      final erste = h(anfrage('1234', pfad: 'api/v1/befehle'));
+      await angekommen.future;
+      expect((await h(anfrage('123', pfad: 'api/v1/befehle'))).statusCode, 503);
+      halten.complete();
+      expect((await erste).statusCode, 200);
+      blockieren = false;
+      expect(
+        (await h(anfrage('123456', pfad: 'api/v1/befehle'))).statusCode,
+        200,
+      );
+      expect(
+        (await h(anfrage('1234567', pfad: 'api/v1/befehle'))).statusCode,
+        503,
+      );
+      expect(
+        (await h(anfrage('123456', pfad: 'api/v1/befehle'))).statusCode,
+        200,
+      );
+    },
+  );
+
+  test(
+    'Bytebudget wird auch nach Lesefehlern vollständig freigegeben',
+    () async {
+      final h = anfragegrenzen(insgesamtBytes: 4)(
+        (r) async => Response.ok(await r.readAsString()),
+      );
+      Stream<List<int>> kaputt() async* {
+        yield [1, 2, 3, 4];
+        throw StateError('synthetischer Lesefehler');
+      }
+
+      await expectLater(h(anfrage(kaputt())), throwsStateError);
+      expect((await h(anfrage('1234'))).statusCode, 200);
+    },
+  );
   test(
     'deklarierte Übergröße wird vor dem ersten Lesezugriff abgewiesen',
     () async {

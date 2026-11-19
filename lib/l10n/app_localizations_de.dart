@@ -11027,4 +11027,9 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get umzugAngabenUebernehmen => 'Diese Beilagenangaben übernehmen';
+
+  @override
+  String umzugQuelleDateien(int n) {
+    return '$n Dateien gefunden …';
+  }
 }

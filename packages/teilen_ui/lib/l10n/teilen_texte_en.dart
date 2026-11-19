@@ -539,4 +539,11 @@ class TeilenTexteEn extends TeilenTexte {
 
   @override
   String get beschriftungPersonAutomatisch => 'Matching or new person';
+
+  @override
+  String get erinnerungsfilterZeitbezug =>
+      'The saved date ranges need an explicit time reference. Saving confirms them using this device’s time zone. Automatic memories remain blocked until then.';
+
+  @override
+  String get beschriftungWeiterePersonen => 'More people with the same name';
 }

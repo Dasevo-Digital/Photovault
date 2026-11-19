@@ -119,6 +119,42 @@ void main() {
         inhalt: jsonEncode({'art': art, 'werte': w}),
       );
 
+  test(
+    'Albumgrenze wird vor dem Upload geprüft und zulässige Zuordnungen bleiben vollständig',
+    () async {
+      final alben = List.generate(100, (i) => 'Album $i');
+      final foto = await ladeHoch(
+        erikaToken,
+        'alben.jpg',
+        10,
+        beilage: {'alben': alben},
+      );
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      expect((await db.select(db.albums).get()).length, 100);
+      final zuordnungen = await (db.select(
+        db.albumAssets,
+      )..where((t) => t.assetId.equals(foto))).get();
+      expect(zuordnungen.length, 100);
+      final antwort = await frag(
+        'POST',
+        '/api/v1/hochladen',
+        token: erikaToken,
+        kopf: {
+          'tus-resumable': '1.0.0',
+          'upload-length': '3',
+          'upload-metadata':
+              'filename ${base64.encode(utf8.encode('zu-viele.jpg'))},xmp ${base64.encode(utf8.encode(jsonEncode({
+                'alben': [...alben, 'Album 100'],
+              })))}',
+        },
+      );
+      expect(antwort.statusCode, 400);
+      expect(await antwort.readAsString(), 'pv_umzug_angaben_zu_gross');
+      expect((await db.select(db.assets).get()).length, 1);
+      expect((await db.select(db.albums).get()).length, 100);
+    },
+  );
+
   Future<Response> teile(String konto, {bool beitragen = false}) => frag(
     'PUT',
     '/api/v1/alben/urlaub/teilungen/$konto',
@@ -435,7 +471,7 @@ void main() {
       final e = await jsonAus(
         await frag('GET', '/api/v1/einstellungen', token: erikaToken),
       );
-      expect((e['erinnerungsfilter'] as Map)['fassung'], 1);
+      expect((e['erinnerungsfilter'] as Map)['fassung'], 2);
       expect(
         (await befehl(erikaToken, 'erinnerungsfilterSetzen', {
           'filter': {

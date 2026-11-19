@@ -1,4 +1,5 @@
 import pathlib
+import os
 import shutil
 import subprocess
 import unittest
@@ -14,12 +15,15 @@ class WebBeschriftungenTest(unittest.TestCase):
                 runtime = str(jsc)
         if not runtime:
             self.skipTest("JavaScript-Laufzeit fehlt")
-        result = subprocess.run(
-            [runtime, str(root / "tool/tests/web_beschriftungen_test.js")],
-            cwd=root, capture_output=True, text=True, timeout=30,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("Dialogregressionen bestanden", result.stdout)
+        for zone in ("UTC", "Europe/Berlin"):
+            with self.subTest(zone=zone):
+                result = subprocess.run(
+                    [runtime, str(root / "tool/tests/web_beschriftungen_test.js")],
+                    cwd=root, capture_output=True, text=True, timeout=30,
+                    env={**os.environ, "TZ": zone},
+                )
+                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("Dialogregressionen bestanden", result.stdout)
 
 
 if __name__ == "__main__":

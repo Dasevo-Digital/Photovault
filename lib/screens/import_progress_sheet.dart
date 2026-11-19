@@ -97,7 +97,11 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
         if (!context.mounted) return;
         quelle = await _leseUmzugsquelle(
           context,
-          () => Umzugsquelle.archive(pfade),
+          (abbruch, fortschritt) => Umzugsquelle.archive(
+            pfade,
+            abbruch: abbruch,
+            fortschritt: fortschritt,
+          ),
         );
       } else {
         final pfad = await FilePicker.getDirectoryPath(
@@ -107,7 +111,11 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
         if (!context.mounted) return;
         quelle = await _leseUmzugsquelle(
           context,
-          () => Umzugsquelle.ordner(pfad),
+          (abbruch, fortschritt) => Umzugsquelle.ordner(
+            pfad,
+            abbruch: abbruch,
+            fortschritt: fortschritt,
+          ),
         );
       }
       paths = quelle.dateien;
@@ -170,6 +178,8 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
       builder: (context) =>
           _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
     );
+  } on UmzugAbgebrochen {
+    return;
   } on Object catch (fehler) {
     if (context.mounted) {
       final t = AppTexte.of(context);
@@ -189,8 +199,10 @@ enum _ImportMode { files, folder, camera, quittungen, umzug }
 
 Future<Umzugsquelle> _leseUmzugsquelle(
   BuildContext context,
-  Future<Umzugsquelle> Function() lesen,
+  Future<Umzugsquelle> Function(Umzugsabbruch, void Function(int)) lesen,
 ) async {
+  final abbruch = Umzugsabbruch();
+  final fortschritt = ValueNotifier<int>(0);
   final navigator = Navigator.of(context, rootNavigator: true);
   final route = DialogRoute<void>(
     context: context,
@@ -202,17 +214,34 @@ Future<Umzugsquelle> _leseUmzugsquelle(
           children: [
             const CircularProgressIndicator(),
             const SizedBox(width: 20),
-            Expanded(child: Text(AppTexte.of(c).umzugQuelleLesen)),
+            Expanded(
+              child: ValueListenableBuilder<int>(
+                valueListenable: fortschritt,
+                builder: (c, n, _) => Text(
+                  n == 0
+                      ? AppTexte.of(c).umzugQuelleLesen
+                      : AppTexte.of(c).umzugQuelleDateien(n),
+                ),
+              ),
+            ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: abbruch.abbrechen,
+            child: Text(AppTexte.of(c).allgAbbrechen),
+          ),
+        ],
       ),
     ),
   );
   unawaited(navigator.push(route));
   try {
-    return await lesen();
+    return await lesen(abbruch, (n) => fortschritt.value = n);
   } finally {
     if (route.isActive) navigator.removeRoute(route);
+    // Die Route kann noch ausblenden und auf den Zähler zugreifen.
+    unawaited(route.completed.then((_) => fortschritt.dispose()));
   }
 }
 

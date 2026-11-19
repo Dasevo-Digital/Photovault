@@ -544,4 +544,11 @@ class TeilenTexteDe extends TeilenTexte {
 
   @override
   String get beschriftungPersonAutomatisch => 'Passende oder neue Person';
+
+  @override
+  String get erinnerungsfilterZeitbezug =>
+      'Die gespeicherten Zeiträume brauchen einen eindeutigen Zeitbezug. Speichern bestätigt sie nach der Zeitzone dieses Geräts. Bis dahin bleiben automatische Rückblicke gesperrt.';
+
+  @override
+  String get beschriftungWeiterePersonen => 'Weitere gleichnamige Personen';
 }

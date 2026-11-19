@@ -31,7 +31,8 @@ einspielen    Desktop-Apps installieren; laufende Apps zuvor geordnet beenden.
               getrennt ausgeführt, bei Fehlern wird die Vorversion geprüft
               zurückgesetzt. Der Server nur
               mit --server und nach ausdrücklichem „ja“ – er ist produktiv.
-veroeffentlichen  Entwurf freigeben und sync.py für GitHub laufen lassen.
+veroeffentlichen  Entwurf ausschließlich auf Gitea freigeben.
+                 Das GitHub-Release wird anschließend von Hand angelegt.
 
 Wohin es geht, steht nicht hier, sondern in
 ~/.config/photovault-release/ziele.json (nicht im Repo – es ist
@@ -46,9 +47,7 @@ Wohin es geht, steht nicht hier, sondern in
       "windows_flutter": "C:\\\\src\\\\flutter\\\\bin",
       "server_ssh": "root@<adresse>",
       "server_schluessel": "<pfad zum Schlüssel>",
-      "server_known_hosts": "<pfad>",
-      "sync_py": "~/Library/Application Support/gitea-github-sync/sync.py",
-      "github_repo": "Photovault"
+      "server_known_hosts": "<pfad>"
     }
 
 Das Gitea-Token kommt aus dem Schlüsselbund (git credential-osxkeychain)
@@ -825,8 +824,7 @@ def entwurf(args):
     _, rel = gitea(z, f'/releases/{rid}', tok=tok)
     print('Freigabe', rel['id'], 'Entwurf' if rel.get('draft') else 'veröffentlicht', len(rel['assets']), 'Dateien')
     if veroeffentlicht:
-        print('Achtung: Der Abgleich nach GitHub lädt die neuen Pakete nach, ersetzt aber '
-              'SHA256SUMS.txt dort nicht – die dort von Hand ersetzen.')
+        print('Pakete und SHA256SUMS.txt des GitHub-Releases bei Bedarf von Hand aktualisieren.')
 
 
 # --- einspielen -------------------------------------------------------------------
@@ -925,8 +923,7 @@ def veroeffentlichen(args):
         sys.exit('Nicht veröffentlicht:\n' + '\n'.join(fehler))
     st, r = gitea(z, f'/releases/{rel["id"]}', json.dumps({'draft': False}).encode(), 'PATCH', {'Content-Type': 'application/json'}, tok)
     print('Freigabe', r['id'], 'Entwurf' if r['draft'] else 'veröffentlicht', len(r['assets']), 'Dateien')
-    sync = os.path.expanduser(z.get('sync_py', '~/Library/Application Support/gitea-github-sync/sync.py'))
-    lauf(['python3', sync, z.get('github_repo', 'Photovault')])
+    print(f'GitHub-Release v{fassung} für Photovault anschließend von Hand anlegen.')
 
 
 def main():

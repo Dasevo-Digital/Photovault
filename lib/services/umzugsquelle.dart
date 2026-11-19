@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
@@ -11,6 +12,57 @@ import 'package:path/path.dart' as p;
 
 import 'begrenzter_ausgabestrom.dart';
 import 'xmp_reader.dart';
+
+class UmzugAbgebrochen implements Exception {
+  const UmzugAbgebrochen();
+}
+
+/// Beendet auch laufende Archiv-Decodierung; der Aufrufer wartet auf das
+/// Ende des Workers, bevor dessen temporäre Dateien entfernt werden.
+class Umzugsabbruch {
+  bool _abgebrochen = false;
+  final Set<void Function()> _zuhoerer = {};
+  void abbrechen() {
+    _abgebrochen = true;
+    for (final f in _zuhoerer.toList()) {
+      f();
+    }
+  }
+}
+
+class _Umzugsauftrag {
+  const _Umzugsauftrag(
+    this.root,
+    this.archive,
+    this.budget,
+    this.dateigrenze,
+    this.ordnergrenze,
+    this.port,
+  );
+  final String root;
+  final List<String>? archive;
+  final int budget, dateigrenze, ordnergrenze;
+  final SendPort port;
+}
+
+Future<void> _umzugsworker(_Umzugsauftrag a) async {
+  try {
+    if (a.archive case final pfade?) {
+      await _entpacke(pfade, a.root, a.dateigrenze);
+    }
+    final quelle = await Umzugsquelle._lies(
+      a.root,
+      a.archive == null ? null : Directory(a.root),
+      a.budget,
+      a.dateigrenze,
+      a.ordnergrenze,
+      (n) => a.port.send(['fortschritt', n]),
+    );
+    Isolate.exit(a.port, ['fertig', quelle]);
+  } on Object catch (e, st) {
+    Isolate.exit(a.port, ['fehler', e, st.toString()]);
+  }
+}
 
 class Umzugsquelle {
   Umzugsquelle._(this.dateien, this.beilagen, this.fehler, this._temp);
@@ -47,12 +99,17 @@ class Umzugsquelle {
           scalar[e.key] = e.value;
         }
       }
-      final wert = Beilagenangaben.aus({
-        ...scalar,
-        'alben': alben.toList(),
-        'schlagwoerter': tags.toList(),
-        'favorit': favorit,
-      });
+      Beilagenangaben? wert;
+      try {
+        wert = Beilagenangaben.aus({
+          ...scalar,
+          'alben': alben.toList(),
+          'schlagwoerter': tags.toList(),
+          'favorit': favorit,
+        });
+      } on FormatException {
+        konflikt = true;
+      }
       if (wert != null &&
           utf8.encode(jsonEncode(wert.alsMap())).length >
               Beilagenangaben.hoechstensBytes) {
@@ -80,6 +137,10 @@ class Umzugsquelle {
   static Future<Umzugsquelle> ordner(
     String pfad, {
     int hoechstensBeilagenBytes = _beilagenBudget,
+    int hoechstensDateien = 200000,
+    int hoechstensOrdner = 200000,
+    Umzugsabbruch? abbruch,
+    void Function(int)? fortschritt,
   }) async {
     if (hoechstensBeilagenBytes < 1 ||
         hoechstensBeilagenBytes > _beilagenBudget) {
@@ -88,10 +149,23 @@ class Umzugsquelle {
         'hoechstensBeilagenBytes',
       );
     }
-    return Isolate.run(() => _lies(pfad, null, hoechstensBeilagenBytes));
+    return _worker(
+      pfad,
+      null,
+      hoechstensBeilagenBytes,
+      hoechstensDateien,
+      hoechstensOrdner,
+      abbruch,
+      fortschritt,
+    );
   }
 
-  static Future<Umzugsquelle> archive(List<String> pfade) async {
+  static Future<Umzugsquelle> archive(
+    List<String> pfade, {
+    Umzugsabbruch? abbruch,
+    void Function(int)? fortschritt,
+    int hoechstensDateien = 200000,
+  }) async {
     if (pfade.isEmpty) throw const FormatException('pv_umzug_quelle');
     final temp = await Directory.systemTemp.createTemp('pv_umzug_');
     try {
@@ -102,11 +176,89 @@ class Umzugsquelle {
         }
       }
       final ziel = temp.path;
-      await Isolate.run(() => _entpacke(pfade, ziel));
-      return await Isolate.run(() => _lies(ziel, temp));
+      return await _worker(
+        ziel,
+        pfade,
+        _beilagenBudget,
+        hoechstensDateien,
+        200000,
+        abbruch,
+        fortschritt,
+      );
     } on Object {
       await temp.delete(recursive: true);
       rethrow;
+    }
+  }
+
+  static Future<Umzugsquelle> _worker(
+    String root,
+    List<String>? archive,
+    int budget,
+    int dateigrenze,
+    int ordnergrenze,
+    Umzugsabbruch? abbruch,
+    void Function(int)? fortschritt,
+  ) async {
+    if (dateigrenze < 1 ||
+        dateigrenze > 200000 ||
+        ordnergrenze < 1 ||
+        ordnergrenze > 200000) {
+      throw ArgumentError('pv_umzug_grenze');
+    }
+    if (abbruch?._abgebrochen ?? false) throw const UmzugAbgebrochen();
+    final port = ReceivePort();
+    final fertig = Completer<Umzugsquelle>();
+    final beendet = Completer<void>();
+    Isolate? worker;
+    void stoppen() => worker?.kill(priority: Isolate.immediate);
+    final abo = port.listen((dynamic msg) {
+      if (msg == null) {
+        if (!fertig.isCompleted) {
+          fertig.completeError(
+            (abbruch?._abgebrochen ?? false)
+                ? const UmzugAbgebrochen()
+                : StateError('pv_umzug_worker'),
+          );
+        }
+        if (!beendet.isCompleted) beendet.complete();
+      } else if (msg is List && msg.first == 'fortschritt') {
+        if (!(abbruch?._abgebrochen ?? false)) fortschritt?.call(msg[1] as int);
+      } else if (!fertig.isCompleted && msg is List) {
+        if (abbruch?._abgebrochen ?? false) {
+          fertig.completeError(const UmzugAbgebrochen());
+        } else if (msg.first == 'fertig') {
+          fertig.complete(msg[1] as Umzugsquelle);
+        } else {
+          fertig.completeError(
+            msg[1] as Object,
+            StackTrace.fromString(msg[2] as String),
+          );
+        }
+      }
+    });
+    // An Exit-Nachrichten desselben Ports bleibt die Reihenfolge gewahrt.
+    abbruch?._zuhoerer.add(stoppen);
+    try {
+      worker = await Isolate.spawn(
+        _umzugsworker,
+        _Umzugsauftrag(
+          root,
+          archive,
+          budget,
+          dateigrenze,
+          ordnergrenze,
+          port.sendPort,
+        ),
+        onExit: port.sendPort,
+      );
+      if (abbruch?._abgebrochen ?? false) stoppen();
+      return await fertig.future;
+    } finally {
+      abbruch?._zuhoerer.remove(stoppen);
+      if (worker != null) await beendet.future;
+      await abo.cancel();
+      port.close();
     }
   }
 
@@ -114,11 +266,16 @@ class Umzugsquelle {
     String root,
     Directory? temp, [
     int budget = _beilagenBudget,
+    int dateigrenze = 200000,
+    int ordnergrenze = 200000,
+    void Function(int)? fortschritt,
   ]) async {
-    final alle = await ImportPlanDienst.dateienImOrdner(root);
-    if (alle.length > 200000) {
-      throw const FormatException('pv_umzug_metadaten_budget');
-    }
+    final alle = await ImportPlanDienst.dateienImOrdner(
+      root,
+      hoechstensDateien: dateigrenze,
+      hoechstensOrdner: ordnergrenze,
+      fortschritt: fortschritt,
+    );
     final groessen = <String, int>{};
     var belegt = 0;
     // Vor dem Parsen: Viele einzeln gültige Beilagen dürfen gemeinsam
@@ -261,44 +418,55 @@ class Umzugsquelle {
   }
 }
 
-Future<void> _entpacke(List<String> pfade, String ziel) async {
-  var total = 0, anzahl = 0;
+Future<void> _entpacke(List<String> pfade, String ziel, int dateigrenze) async {
+  var total = 0, anzahl = 0, kopfBytes = 0;
   final globaleNamen = <String, String>{};
   for (final pfad in pfade) {
     final input = InputFileStream(pfad);
     final namen = <String>{};
     try {
+      // Nur Zentralverzeichnis lesen. Der Decoder materialisiert Linkziele
+      // bereits vor seinem Callback; dort wäre die Ablehnung zu spät.
+      final zipBytes = File(pfad).lengthSync();
+      final kopfnamen = <String>{};
+      for (final h in ZipDirectory().headers(
+        input,
+        verify: true,
+        files: false,
+      )) {
+        kopfBytes +=
+            46 +
+            utf8.encode(h.filename).length +
+            utf8.encode(h.fileComment).length +
+            (h.extraField?.length ?? 0);
+        if (kopfBytes > 32 * 1024 * 1024) {
+          throw const FormatException('pv_umzug_metadaten_budget');
+        }
+        _pruefeZipName(h.filename.replaceAll('\\', '/'), kopfnamen);
+        final typ = (h.externalFileAttributes >> 16) & 0xf000;
+        if (!{0, 0x4000, 0x8000}.contains(typ) || h.diskNumberStart != 0) {
+          throw const FormatException('pv_umzug_zip_pfad');
+        }
+        if (++anzahl > dateigrenze) {
+          throw const FormatException('pv_umzug_zip_pfad');
+        }
+        total += h.uncompressedSize;
+        if (h.uncompressedSize < 0 ||
+            total > 512 * 1024 * 1024 * 1024 ||
+            h.uncompressedSize > zipBytes * 100 + 64 * 1024 * 1024) {
+          throw const FormatException('pv_umzug_zip_groesse');
+        }
+      }
       final archive = ZipDecoder().decodeStream(
         input,
         verify: true,
         callback: (entry) {
           final name = entry.name.replaceAll('\\', '/');
-          final teile = name.split('/').where((s) => s.isNotEmpty);
-          if (entry.isSymbolicLink ||
-              name.isEmpty ||
-              name.contains('//') ||
-              name.startsWith('/') ||
-              teile.any(
-                (s) =>
-                    s == '..' ||
-                    s == '.' ||
-                    s.contains(':') ||
-                    RegExp(r'[\x00-\x1f]').hasMatch(s) ||
-                    RegExp(
-                      r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)',
-                      caseSensitive: false,
-                    ).hasMatch(s) ||
-                    s.endsWith('.') ||
-                    s.endsWith(' '),
-              ) ||
-              !namen.add(name.toLowerCase()) ||
-              entry.size < 0 ||
-              ++anzahl > 200000) {
+          if (entry.isSymbolicLink || entry.size < 0) {
             throw const FormatException('pv_umzug_zip_pfad');
           }
-          total += entry.size;
-          if (total > 512 * 1024 * 1024 * 1024 ||
-              entry.size > File(pfad).lengthSync() * 100 + 64 * 1024 * 1024) {
+          _pruefeZipName(name, namen);
+          if (entry.size > zipBytes * 100 + 64 * 1024 * 1024) {
             throw const FormatException('pv_umzug_zip_groesse');
           }
         },
@@ -346,5 +514,29 @@ Future<void> _entpacke(List<String> pfade, String ziel) async {
     } finally {
       input.closeSync();
     }
+  }
+}
+
+void _pruefeZipName(String name, Set<String> namen) {
+  final teile = name.split('/').where((s) => s.isNotEmpty);
+  if (name.isEmpty ||
+      utf8.encode(name).length > 4096 ||
+      name.contains('//') ||
+      name.startsWith('/') ||
+      teile.any(
+        (s) =>
+            s == '..' ||
+            s == '.' ||
+            s.contains(':') ||
+            RegExp(r'[\x00-\x1f]').hasMatch(s) ||
+            RegExp(
+              r'^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)',
+              caseSensitive: false,
+            ).hasMatch(s) ||
+            s.endsWith('.') ||
+            s.endsWith(' '),
+      ) ||
+      !namen.add(name.toLowerCase())) {
+    throw const FormatException('pv_umzug_zip_pfad');
   }
 }

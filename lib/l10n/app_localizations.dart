@@ -16635,6 +16635,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Diese Beilagenangaben übernehmen'**
   String get umzugAngabenUebernehmen;
+
+  /// No description provided for @umzugQuelleDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'{n} Dateien gefunden …'**
+  String umzugQuelleDateien(int n);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

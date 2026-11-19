@@ -33,17 +33,19 @@ const button = (text) => { const b = document.body.querySelectorAll('button').fi
 const quelle = typeof require === 'function' ? require('fs').readFileSync('packages/server/web/beschriftungen.js', 'utf8') : readFile('packages/server/web/beschriftungen.js');
 const Parameter = typeof URLSearchParams === 'function' ? URLSearchParams : class {
   constructor(werte) { this.werte = werte; }
+  set(k, v) { this.werte[k] = v; }
   toString() { return Object.entries(this.werte).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&'); }
 };
 const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', 'miniaturUrl', 'URLSearchParams', quelle + '\nreturn {oeffneErinnerungsfilter,oeffneBeschriftungen};');
 
 (async () => {
-  let filter, besitzer = true, konflikt = false;
+  let filter, besitzer = true, konflikt = false, personenMehr = false, personenAbfrage = false;
+  let gespeicherterFilter = { fassung: 1, personen: [], alben: [], zeitraeume: [] };
   let v = { id: 'v', aufnahme: 'foto', von: '<img src=x>', angelegt: '2026-11-19T10:00:00Z', art: 'ort', wert: '<script>Testort</script>', aktuell: 'Alt', stand: 'geprueft', zustand: 'offen' };
   const anfragen = [];
   const api = async (pfad, o = {}) => {
     anfragen.push([pfad, o]);
-    if (pfad.endsWith('/einstellungen')) return { erinnerungsfilter: { fassung: 1, personen: [], alben: [], zeitraeume: [] } };
+    if (pfad.endsWith('/einstellungen')) return { erinnerungsfilter: gespeicherterFilter };
     if (pfad.endsWith('/personen')) return { personen: [{ id: 'p', name: '<img src=x>' }] };
     if (pfad.endsWith('/alben')) return { alben: [{ id: 'al', name: 'Album' }] };
     if (o.methode === 'POST') {
@@ -51,7 +53,11 @@ const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', '
       if (pfad.endsWith('/v')) { assert(o.json.stand === 'geprueft', 'Stand fehlt'); v = { ...v, zustand: o.json.annehmen ? 'angenommen' : 'abgelehnt' }; }
       return {};
     }
-    return { besitzer, personen: [], gesichter: [], vorschlaege: [v], mehr: false };
+    if (pfad.includes('personenname=')) {
+      personenAbfrage = true;
+      return { personen: [{ id: 'p-spaet', name: 'Gleicher Name' }], personenMehr: false };
+    }
+    return { besitzer, personen: [], personenMehr, gesichter: [], vorschlaege: [v], mehr: false };
   };
   const dialoge = lade(el, api, async (_, j) => { filter = j.filter; }, document, (s) => s, new Intl.DateTimeFormat('de'), () => 'bild', Parameter);
   await dialoge.oeffneErinnerungsfilter();
@@ -62,7 +68,18 @@ const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', '
   document.body.querySelector('[name=von]').value = '2020-01-01'; document.body.querySelector('[name=bis]').value = '2020-01-31';
   await button('Speichern').fire('click');
   assert(filter.personen[0] === 'p' && filter.zeitraeume[0].bis === '2020-01-31', 'Auswahl verloren');
+  assert(filter.fassung === 2 && filter.zeitraeume[0].vonUtc.endsWith('Z') && filter.zeitraeume[0].bisUtc.endsWith('Z'), 'Eindeutige Zeitgrenzen fehlen');
   assert(!document.body.querySelector('dialog'), 'Gespeicherter Dialog bleibt offen');
+
+  gespeicherterFilter = { fassung: 1, personen: ['p'], alben: ['al'], zeitraeume: [{ von: '2020-01-02', bis: '2020-01-02' }] };
+  await dialoge.oeffneErinnerungsfilter();
+  assert(document.body.textContent.includes('Speichern bestätigt ältere Zeiträume'), 'Bestätigung alter Zeiträume fehlt');
+  await button('Schließen').fire('click');
+  assert(gespeicherterFilter.fassung === 1, 'Abbrechen hat ältere Filter verändert');
+  gespeicherterFilter = { ...gespeicherterFilter, fassung: 2, zeitraeume: [{ von: '2020-01-02', bis: '2020-01-02', vonUtc: '2020-01-01T23:00:00.000Z', bisUtc: '2020-01-02T23:00:00.000Z' }] };
+  await dialoge.oeffneErinnerungsfilter();
+  await button('Speichern').fire('click');
+  assert(JSON.stringify(filter.zeitraeume) === JSON.stringify(gespeicherterFilter.zeitraeume), 'Bearbeiten verschiebt gespeicherte UTC-Grenzen');
 
   await dialoge.oeffneBeschriftungen('/api/v1/alben/al');
   assert(document.body.textContent.includes('<script>Testort</script>'), 'Vorschlag nicht als Text dargestellt');
@@ -75,6 +92,19 @@ const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', '
   assert(v.zustand === 'angenommen', 'Annahme fehlt');
   assert(!document.body.querySelectorAll('button').some((b) => b.textContent === 'Annehmen'), 'Erledigte Vorschläge bleiben entscheidbar');
   await button('Schließen').fire('click');
+
+  v = { ...v, zustand: 'offen', art: 'person', wert: 'Gleicher Name' };
+  personenMehr = true;
+  await dialoge.oeffneBeschriftungen('/api/v1/alben/al');
+  await button('Weitere gleichnamige Personen').fire('click');
+  assert(personenAbfrage, 'Getrennte Personenabfrage fehlt');
+  const auswahl = document.body.querySelector('select');
+  assert(auswahl.children.some((o) => o.value === 'p-spaet'), 'Später Kandidat ist nicht auswählbar');
+  auswahl.value = 'p-spaet';
+  await button('Annehmen').fire('click');
+  assert(anfragen.some((a) => a[1].json?.person === 'p-spaet'), 'Ausgewählte Person fehlt in Entscheidung');
+  await button('Schließen').fire('click');
+  personenMehr = false;
 
   besitzer = false;
   await dialoge.oeffneBeschriftungen('/api/v1/geteilt/g', 'foto');

@@ -51,6 +51,8 @@ class _BeschriftungenState extends State<_Beschriftungen> {
   int _seite = 0;
   int _ladeStand = 0;
   final _personen = <String, String?>{};
+  final _personenseiten = <String, int>{};
+  final _personenMehr = <String, bool>{};
   String get _route => '${widget.ort.basis}/beschriftungen';
 
   @override
@@ -83,6 +85,8 @@ class _BeschriftungenState extends State<_Beschriftungen> {
           if (!gesichter.any((f) => f['id'] == _gesicht)) _gesicht = null;
           if (_art == 'person' && gesichter.isEmpty) _art = 'ort';
           _personen.clear();
+          _personenseiten.clear();
+          _personenMehr.clear();
         });
       }
     } on Object {
@@ -91,6 +95,41 @@ class _BeschriftungenState extends State<_Beschriftungen> {
           _fehler = true;
         });
       }
+    }
+  }
+
+  Future<void> _weiterePersonen(String name) async {
+    if (_busy) return;
+    final lauf = _ladeStand;
+    final seite = (_personenseiten[name] ?? -1) + 1;
+    setState(() => _busy = true);
+    try {
+      final daten = await widget.ort.verbindung.hole(
+        _route,
+        parameter: {
+          'seite': '$_seite',
+          'personenname': name,
+          'personenseite': '$seite',
+          if (widget.aufnahme != null) 'aufnahme': widget.aufnahme!,
+        },
+      );
+      if (mounted && lauf == _ladeStand) {
+        setState(() {
+          final personen = {
+            for (final p in (_daten?['personen'] as List? ?? []).cast<Map>())
+              p['id']: p,
+            for (final p in (daten['personen'] as List).cast<Map>()) p['id']: p,
+          };
+          _daten!['personen'] = personen.values.toList();
+          _personenseiten[name] = seite;
+          _personenMehr[name] = daten['personenMehr'] == true;
+          _fehler = false;
+        });
+      }
+    } on Object {
+      if (mounted) setState(() => _fehler = true);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -358,6 +397,17 @@ class _BeschriftungenState extends State<_Beschriftungen> {
                                       : (id) => setState(() {
                                           _personen[v['id'] as String] = id;
                                         }),
+                                ),
+                              if (v['art'] == 'person' &&
+                                  (_personenMehr[v['wert']] ??
+                                      daten?['personenMehr'] == true))
+                                TextButton(
+                                  onPressed: _busy
+                                      ? null
+                                      : () => _weiterePersonen(
+                                          v['wert'] as String,
+                                        ),
+                                  child: Text(t.beschriftungWeiterePersonen),
                                 ),
                               Wrap(
                                 spacing: 8,

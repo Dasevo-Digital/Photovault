@@ -67,10 +67,44 @@ Future<Response> beschriftungsAnfrage(
         ..limit(101, offset: seite * 100);
       final rows = await q.get();
       final result = <Map<String, Object?>>[];
-      final staende = <String, String>{};
+      final staende = await dienst.staende(
+        rows.take(100).map((v) => v.assetId).toSet().toList(),
+      );
+      final namen = rows
+          .take(100)
+          .where((v) => v.art == 'person')
+          .map((v) => v.wert)
+          .toSet();
+      final personenname = request.url.queryParameters['personenname'];
+      final personenseite = int.tryParse(
+        request.url.queryParameters['personenseite'] ?? '0',
+      );
+      if (personenseite == null ||
+          personenseite < 0 ||
+          personenseite > 100000 ||
+          (personenname != null &&
+              (!besitzer || !namen.contains(personenname)))) {
+        return _json({'fehler': 'seite'}, 400);
+      }
+      final kandidaten = !besitzer || namen.isEmpty
+          ? <PersonData>[]
+          : await (db.select(db.people)
+                  ..where(
+                    (t) => personenname == null
+                        ? t.name.isIn(namen)
+                        : t.name.equals(personenname),
+                  )
+                  ..orderBy([
+                    (t) => OrderingTerm.asc(t.name),
+                    (t) => OrderingTerm.asc(t.id),
+                  ])
+                  ..limit(101, offset: personenseite * 100))
+                .get();
       for (final v in rows.take(100)) {
         if (!besitzer && v.von != konto) continue;
-        final a = (await db.assetById(v.assetId))!;
+        final stand = staende[v.assetId];
+        if (stand == null) continue;
+        final a = stand.aufnahme;
         result.add({
           'id': v.id,
           'aufnahme': v.assetId,
@@ -81,15 +115,12 @@ Future<Response> beschriftungsAnfrage(
           'angelegt': v.angelegt.toUtc().toIso8601String(),
           'zustand': v.zustand,
           'entschieden': ?v.entschieden?.toUtc().toIso8601String(),
-          if (besitzer)
-            'stand': staende[v.assetId] ??= await dienst.stand(v.assetId),
+          if (besitzer) 'stand': stand.stand,
           if (besitzer)
             'aktuell': switch (v.art) {
               'jahr' => '${a.fileCreatedAt.year}',
               'ort' => a.locationCity ?? '',
-              _ => (await db.peopleForAsset(
-                a.id,
-              )).map((p) => p.name).join(', '),
+              _ => stand.personen.map((p) => p.name).join(', '),
             },
         });
       }
@@ -113,9 +144,10 @@ Future<Response> beschriftungsAnfrage(
         ],
         if (besitzer)
           'personen': [
-            for (final p in await db.allePersonen())
+            for (final p in kandidaten.take(100))
               {'id': p.id, 'name': p.name, 'bild': p.coverFaceCropPath},
           ],
+        if (besitzer) 'personenMehr': kandidaten.length > 100,
       });
     }
     final bytes = <int>[];

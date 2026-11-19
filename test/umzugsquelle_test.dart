@@ -60,6 +60,75 @@ void main() {
     '</rdf:Description></rdf:RDF></x:xmpmeta>',
   );
 
+  for (final anzahl in [100, 101]) {
+    test('Albumvereinigung prüft $anzahl Zuordnungen vor dem Kürzen', () async {
+      for (var i = 0; i < anzahl; i++) {
+        await datei('a$i/foto.jpg', [1, 2, 3]);
+        await json('a$i/metadata.json', {'title': 'Album $i'});
+      }
+      final q = await Umzugsquelle.ordner(p.join(temp.path, 'quelle'));
+      addTearDown(q.schliesse);
+      final plan = await ImportPlanDienst(db, importe).erstelle(q.dateien);
+      q.verbindeDubletten(plan);
+      if (anzahl == 100) {
+        expect(q.fehler, isEmpty);
+        final b = q.beilagen[q.dateien.first]!;
+        expect(b.alben.length, 100);
+        expect(Beilagenangaben.ausText(b.alsText())!.alben.length, 100);
+        final e = plan.eintraege.firstWhere((e) => e.art == ImportPlanArt.neu);
+        final dienst = ImportPlanDienst(db, importe);
+        await importe.importFile(
+          e.pfad,
+          erwarteteAngaben: e.angaben,
+          beiEintrag: (id) => dienst.uebernehme(plan, e.mitBeilage(b), id),
+        );
+        expect((await db.select(db.albums).get()).length, 100);
+      } else {
+        expect(q.fehler, q.dateien.toSet());
+        expect(q.beilagen, isEmpty);
+        expect(await db.select(db.assets).get(), isEmpty);
+        expect(
+          () => Beilagenangaben.aus({
+            'alben': List.generate(101, (i) => 'Album $i'),
+          }),
+          throwsFormatException,
+        );
+        expect(
+          () => Beilagenangaben(
+            alben: List.generate(101, (i) => 'Album $i'),
+          ).alsText(),
+          throwsFormatException,
+        );
+      }
+    });
+  }
+
+  test(
+    'Verbotene Linkköpfe werden vor dem Lesen defekter Linkdaten abgelehnt',
+    () async {
+      final f = await zip('link-vorpruefung.zip', [
+        ArchiveFile.symlink('link.jpg', 'x' * (1024 * 1024)),
+      ]);
+      final bytes = await File(f).readAsBytes();
+      // Lokalen Nutzinhalt beschädigen, Zentralverzeichnis erhalten. Ein
+      // Decoder müsste jetzt scheitern; die Vorprüfung braucht ihn nicht.
+      final offset =
+          30 + bytes[26] + (bytes[27] << 8) + bytes[28] + (bytes[29] << 8);
+      bytes[offset] ^= 0xff;
+      await File(f).writeAsBytes(bytes);
+      await expectLater(
+        Umzugsquelle.archive([f]),
+        throwsA(
+          isA<FormatException>().having(
+            (e) => e.message,
+            'Ablehnungsgrund',
+            'pv_umzug_zip_pfad',
+          ),
+        ),
+      );
+    },
+  );
+
   test(
     'Die Gesamtgrenze zählt JSON und XMP, schützt Originale und erlaubt einen erneuten gültigen Versuch',
     () async {

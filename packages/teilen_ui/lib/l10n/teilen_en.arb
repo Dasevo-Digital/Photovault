@@ -157,5 +157,7 @@
   "beschriftungAnnehmen": "Accept",
   "beschriftungFoto": "Review photo",
   "beschriftungAktualisieren": "Refresh",
-  "beschriftungPersonAutomatisch": "Matching or new person"
+  "beschriftungPersonAutomatisch": "Matching or new person",
+  "erinnerungsfilterZeitbezug": "The saved date ranges need an explicit time reference. Saving confirms them using this device’s time zone. Automatic memories remain blocked until then.",
+  "beschriftungWeiterePersonen": "More people with the same name"
 }

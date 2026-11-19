@@ -6,6 +6,18 @@ import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
 
+class Beschriftungsstand {
+  Beschriftungsstand(this.aufnahme, this.gesichter, this.personen);
+  final AssetData aufnahme;
+  final List<FaceData> gesichter;
+  final List<PersonData> personen;
+  late final String stand = Beschriftungsdienst.berechneStand(
+    aufnahme,
+    gesichter,
+    personen,
+  );
+}
+
 /// Speichern und Entscheiden erfolgen in derselben Bibliotheksdatenbank.
 class Beschriftungsdienst {
   const Beschriftungsdienst(this.db);
@@ -22,14 +34,53 @@ class Beschriftungsdienst {
   }
 
   Future<String> stand(String id) async {
-    final a = await db.assetById(id);
-    if (a == null || a.isLocked || a.isTrashed) {
+    final daten = await staende([id]);
+    if (!daten.containsKey(id)) {
       throw const FormatException('pv_beschriftung_aufnahme');
     }
-    final gesichter = await db.facesForAsset(id);
-    gesichter.sort((a, b) => a.id.compareTo(b.id));
-    final personen = await db.peopleForAsset(id);
-    personen.sort((a, b) => a.id.compareTo(b.id));
+    return daten[id]!.stand;
+  }
+
+  /// Eine begrenzte Vorschlagsseite benötigt je eine Abfrage für Fotos,
+  /// Gesichter und zugeordnete Personen, statt Abfragen pro Vorschlag.
+  Future<Map<String, Beschriftungsstand>> staende(List<String> ids) async {
+    if (ids.isEmpty) return {};
+    if (ids.length > 100) throw ArgumentError('pv_beschriftung_umfang');
+    final assets = await db.assetsByIds(ids);
+    final faces =
+        await (db.select(db.faces)
+              ..where((t) => t.assetId.isIn(ids))
+              ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+            .get();
+    final people = await (db.select(db.people).join([
+      innerJoin(db.faces, db.faces.personId.equalsExp(db.people.id)),
+    ])..where(db.faces.assetId.isIn(ids))).get();
+    final nachAufnahme = <String, List<FaceData>>{};
+    for (final f in faces) {
+      nachAufnahme.putIfAbsent(f.assetId, () => []).add(f);
+    }
+    final personenNachAufnahme = <String, Map<String, PersonData>>{};
+    for (final row in people) {
+      final f = row.readTable(db.faces), person = row.readTable(db.people);
+      personenNachAufnahme.putIfAbsent(f.assetId, () => {})[person.id] = person;
+    }
+    return {
+      for (final a in assets)
+        if (!a.isLocked && !a.isTrashed)
+          a.id: Beschriftungsstand(
+            a,
+            nachAufnahme[a.id] ?? [],
+            (personenNachAufnahme[a.id]?.values.toList() ?? [])
+              ..sort((a, b) => a.id.compareTo(b.id)),
+          ),
+    };
+  }
+
+  static String berechneStand(
+    AssetData a,
+    List<FaceData> gesichter,
+    List<PersonData> personen,
+  ) {
     return sha256
         .convert(
           utf8.encode(
@@ -140,11 +191,19 @@ class Beschriftungsdienst {
           if (!gesichter.any((f) => f.id == v.gesichtId && !f.isIgnored)) {
             throw const FormatException('pv_beschriftung_gesicht');
           }
-          final personen = await db.allePersonen();
-          final namensgleich = personen.where((p) => p.name == v.wert).toList();
+          final namensgleich =
+              await (db.select(db.people)
+                    ..where(
+                      (p) =>
+                          p.name.equals(v.wert) &
+                          (personId == null
+                              ? const Constant(true)
+                              : p.id.equals(personId)),
+                    )
+                    ..limit(personId == null ? 2 : 1))
+                  .get();
           var zielId = personId;
-          if (zielId != null &&
-              !personen.any((p) => p.id == zielId && p.name == v.wert)) {
+          if (zielId != null && namensgleich.isEmpty) {
             throw const FormatException('pv_beschriftung_person');
           }
           if (zielId == null) {

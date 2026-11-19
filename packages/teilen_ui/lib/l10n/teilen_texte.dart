@@ -961,6 +961,18 @@ abstract class TeilenTexte {
   /// In de, this message translates to:
   /// **'Passende oder neue Person'**
   String get beschriftungPersonAutomatisch;
+
+  /// No description provided for @erinnerungsfilterZeitbezug.
+  ///
+  /// In de, this message translates to:
+  /// **'Die gespeicherten Zeiträume brauchen einen eindeutigen Zeitbezug. Speichern bestätigt sie nach der Zeitzone dieses Geräts. Bis dahin bleiben automatische Rückblicke gesperrt.'**
+  String get erinnerungsfilterZeitbezug;
+
+  /// No description provided for @beschriftungWeiterePersonen.
+  ///
+  /// In de, this message translates to:
+  /// **'Weitere gleichnamige Personen'**
+  String get beschriftungWeiterePersonen;
 }
 
 class _TeilenTexteDelegate extends LocalizationsDelegate<TeilenTexte> {

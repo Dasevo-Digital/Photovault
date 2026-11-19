@@ -134,6 +134,11 @@ jobs:
               exit "$status"
             fi
           done
+      - name: Kurze Desktop-Regressionen
+        if: matrix.target == 'apple' || matrix.target == 'windows'
+        timeout-minutes: 12
+        shell: bash
+        run: bash tool/desktop_regressionen.sh
       # Kleine Katalogläufe ohne Server oder Medien aus einer Bibliothek.
       # Die vollständigen Läufe brauchen die getrennte Katalogumgebung.
       - name: Desktop-Katalog (Start, Import und Zeitleiste)

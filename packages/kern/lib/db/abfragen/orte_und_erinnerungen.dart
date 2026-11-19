@@ -59,13 +59,10 @@ extension ErinnerungsAbfragen on AppDatabase {
           ..where(albumAssets.albumId.isIn(filter.alben)),
       );
     }
-    for (final z in filter.zeitraeume) {
-      final von = Erinnerungsfilter.tag(z.von),
-          bis = Erinnerungsfilter.tag(z.bis);
-      final danach = DateTime(bis.year, bis.month, bis.day + 1);
+    for (final z in filter.zeitgrenzen) {
       bedingung &=
-          assets.fileCreatedAt.isSmallerThanValue(von) |
-          assets.fileCreatedAt.isBiggerOrEqualValue(danach);
+          assets.fileCreatedAt.isSmallerThanValue(z.von) |
+          assets.fileCreatedAt.isBiggerOrEqualValue(z.bis);
     }
     return bedingung;
   }

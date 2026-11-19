@@ -382,7 +382,8 @@ class BackupWiederhersteller {
       // Prüfsumme -> Kennung in dieser Bibliothek.
       final nachPruefsumme = <String, String>{
         for (final a in await _db.select(_db.assets).get())
-          if (nurPruefsummen == null || nurPruefsummen.contains(a.checksum))
+          if (!a.isLocked &&
+              (nurPruefsummen == null || nurPruefsummen.contains(a.checksum)))
             a.checksum: a.id,
       };
       // Kennung im Schnappschuss -> Kennung hier.
@@ -555,14 +556,7 @@ class BackupWiederhersteller {
           final bisher = await _db.erinnerungsfilter();
           await _db.fuehreAus(
             ErinnerungsfilterSetzen(
-              Erinnerungsfilter(
-                personen: {...bisher.personen, ...filter.personen},
-                alben: {
-                  ...bisher.alben,
-                  for (final id in filter.alben) _albumZuordnung[id] ?? id,
-                },
-                zeitraeume: {...bisher.zeitraeume, ...filter.zeitraeume},
-              ),
+              bisher.vereinigtMit(filter, albenZuordnung: _albumZuordnung),
             ),
           );
         }

@@ -122,21 +122,35 @@ class ImportPlanDienst {
 
   /// Auch nicht unterstützte Dateien erscheinen im Bericht. Versteckte
   /// Ordner und Verzeichnisverweise werden nicht verfolgt.
-  static Future<List<String>> dateienImOrdner(String ordner) async {
+  static Future<List<String>> dateienImOrdner(
+    String ordner, {
+    int? hoechstensDateien,
+    int? hoechstensOrdner,
+    void Function(int)? fortschritt,
+  }) async {
     final r = <String>[];
+    var ordnerzahl = 1;
     final offen = <Directory>[Directory(ordner)];
     while (offen.isNotEmpty) {
       await for (final f in offen.removeLast().list(followLinks: false)) {
         if (p.basename(f.path).startsWith('.')) continue;
         if (f is Directory) {
+          if (hoechstensOrdner != null && ++ordnerzahl > hoechstensOrdner) {
+            throw const FormatException('pv_umzug_metadaten_budget');
+          }
           offen.add(f);
         }
         if (f is File) {
+          if (hoechstensDateien != null && r.length >= hoechstensDateien) {
+            throw const FormatException('pv_umzug_metadaten_budget');
+          }
           r.add(f.path);
+          if (r.length % 100 == 0) fortschritt?.call(r.length);
         }
       }
     }
     r.sort();
+    fortschritt?.call(r.length);
     return r;
   }
 

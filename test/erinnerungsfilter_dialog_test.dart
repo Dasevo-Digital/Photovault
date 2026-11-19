@@ -102,6 +102,39 @@ void main() {
   });
 
   testWidgets(
+    'Ältere Zeiträume bleiben beim Abbrechen erhalten und werden beim Speichern bestätigt',
+    (tester) async {
+      const alt =
+          '{"fassung":1,"personen":["p"],"alben":["a"],"zeitraeume":[{"von":"2020-01-02","bis":"2020-01-02"}]}';
+      await db
+          .into(db.appSettings)
+          .insertOnConflictUpdate(
+            const AppSettingsCompanion(
+              id: Value(0),
+              erinnerungsfilter: Value(alt),
+            ),
+          );
+      await oeffne(tester);
+      expect(find.textContaining('eindeutigen Zeitbezug'), findsOneWidget);
+      await tester.tap(find.text('Abbrechen'));
+      await tester.pumpAndSettle();
+      expect(
+        (await db.select(db.appSettings).getSingle()).erinnerungsfilter,
+        alt,
+      );
+      await tester.tap(find.text('Öffnen'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final filter = await db.erinnerungsfilter();
+      expect(filter.zeitbezugFehlt, isFalse);
+      expect(filter.personen, ['p']);
+      expect(filter.alben, ['a']);
+      expect(filter.zeitraeume, [(von: '2020-01-02', bis: '2020-01-02')]);
+    },
+  );
+
+  testWidgets(
     'Beschädigte Filter werden erst nach ausdrücklichem Speichern ersetzt',
     (tester) async {
       const kaputt = '{ "fassung": 8 }';

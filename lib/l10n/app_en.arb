@@ -5451,5 +5451,13 @@
     }
   },
   "umzugBeilageFehler": "Sidecar damaged, too large or ambiguous. Check the export before importing.",
-  "umzugAngabenUebernehmen": "Apply this sidecar metadata"
+  "umzugAngabenUebernehmen": "Apply this sidecar metadata",
+  "umzugQuelleDateien": "{n} files found …",
+  "@umzugQuelleDateien": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

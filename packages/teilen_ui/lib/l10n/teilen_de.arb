@@ -368,5 +368,7 @@
   "beschriftungAnnehmen": "Übernehmen",
   "beschriftungFoto": "Foto prüfen",
   "beschriftungAktualisieren": "Aktualisieren",
-  "beschriftungPersonAutomatisch": "Passende oder neue Person"
+  "beschriftungPersonAutomatisch": "Passende oder neue Person",
+  "erinnerungsfilterZeitbezug": "Die gespeicherten Zeiträume brauchen einen eindeutigen Zeitbezug. Speichern bestätigt sie nach der Zeitzone dieses Geräts. Bis dahin bleiben automatische Rückblicke gesperrt.",
+  "beschriftungWeiterePersonen": "Weitere gleichnamige Personen"
 }

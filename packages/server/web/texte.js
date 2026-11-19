@@ -42,6 +42,8 @@ const EN = {
   'Die gespeicherten Ausschlüsse sind nicht lesbar. Rückblicke bleiben gesperrt. Speichern ersetzt die Ausschlüsse durch die gewählte Auswahl.': 'The saved exclusions cannot be read. Memories remain blocked. Saving replaces the exclusions with the current selection.',
   'Vorherige Vorschläge': 'Previous suggestions',
   'Weitere Vorschläge': 'More suggestions',
+  'Weitere gleichnamige Personen': 'More people with the same name',
+  'Speichern bestätigt ältere Zeiträume nach der Zeitzone dieses Geräts. Bis dahin bleiben automatische Rückblicke gesperrt.': 'Saving confirms older date ranges using this device’s time zone. Automatic memories remain blocked until then.',
   'Beschriftungsvorschläge': 'Caption suggestions',
   'Erinnerungen steuern': 'Memory controls',
   'Erinnerungsfilter kann nicht geladen werden.': 'Memory controls could not be loaded.',

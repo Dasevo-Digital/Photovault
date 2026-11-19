@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:kern/abgleich/grenzen.dart';
 import 'package:shelf/shelf.dart';
 
-/// Ein Budget vor Anmeldung und JSON-Decodierung. Dateiströme behalten ihre
+/// Ein Budget nach Anmeldung und vor JSON-Decodierung. Dateiströme behalten ihre
 /// eigenen Uploadgrenzen und werden nicht gepuffert.
 ///
 /// **Je Absender (#316).** Mit einer Grenze für alle konnte ein einziges
@@ -23,9 +23,11 @@ Middleware anfragegrenzen({
   Duration gesamtfrist = const Duration(minutes: 2),
   int jsonBytes = Abgleichsgrenzen.stapelBytes,
   int anmeldungBytes = 16 * 1024,
+  int insgesamtBytes = 32 * 1024 * 1024,
   String Function(Request)? absender,
 }) {
   var aktiv = 0;
+  var belegt = 0;
   final jeAbsender = <String, int>{};
   Response abweisung(int status) => Response(
     status,
@@ -47,8 +49,12 @@ Middleware anfragegrenzen({
     final klein =
         pfad.startsWith('api/v1/anmelden') ||
         pfad.startsWith('api/v1/web/anmelden') ||
+        pfad.startsWith('api/v1/passkeys/ticket') ||
         pfad == 'api/v1/einrichten';
-    final grenze = klein ? anmeldungBytes : jsonBytes;
+    final beschriftung = RegExp(
+      r'^api/v1/(alben|geteilt)/[^/]+/beschriftungen(?:/[^/]+)?$',
+    ).hasMatch(pfad);
+    final grenze = beschriftung ? 8192 : (klein ? anmeldungBytes : jsonBytes);
     if ((r.contentLength ?? 0) > grenze) return abweisung(413);
     final wer = absender?.call(r) ?? '';
     if (aktiv >= insgesamt || (jeAbsender[wer] ?? 0) >= gleichzeitig) {
@@ -58,6 +64,7 @@ Middleware anfragegrenzen({
     jeAbsender[wer] = (jeAbsender[wer] ?? 0) + 1;
     StreamSubscription<List<int>>? abo;
     Timer? timer, ganz;
+    var reserviert = 0;
     try {
       final fertig = Completer<Uint8List>();
       final bytes = BytesBuilder(copy: false);
@@ -78,6 +85,12 @@ Middleware anfragegrenzen({
             fehler(413);
             return;
           }
+          if (belegt + teil.length > insgesamtBytes) {
+            fehler(503);
+            return;
+          }
+          belegt += teil.length;
+          reserviert += teil.length;
           bytes.add(teil);
         },
         onError: (Object e, StackTrace st) {
@@ -99,6 +112,7 @@ Middleware anfragegrenzen({
       // Ein bösartiger Stream darf auch das Beenden nicht offenhalten.
       if (abo != null) unawaited(abo.cancel());
       aktiv--;
+      belegt -= reserviert;
       final rest = (jeAbsender[wer] ?? 1) - 1;
       if (rest <= 0) {
         jeAbsender.remove(wer);

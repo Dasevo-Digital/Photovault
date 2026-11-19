@@ -31,10 +31,11 @@ async function oeffneErinnerungsfilter() {
     api('/api/v1/einstellungen'), api('/api/v1/personen'), api('/api/v1/alben'),
   ]);
   const filter = e.erinnerungsfilter;
-  if (!filter || filter.fassung !== 1) throw new Error(t('Erinnerungsfilter kann nicht geladen werden.'));
+  if (!filter || ![1, 2].includes(filter.fassung)) throw new Error(t('Erinnerungsfilter kann nicht geladen werden.'));
   const { dialog, inhalt, fehler } = sammlungsDialog('Erinnerungen steuern');
   inhalt.append(el('p', null, t('Ausgewählte Personen, Alben und Zeiträume erscheinen nicht in automatischen Erinnerungen. Die Fotos bleiben in der Bibliothek.')));
   if (filter.beschaedigt) inhalt.append(el('p', 'meldung', t('Die gespeicherten Ausschlüsse sind nicht lesbar. Rückblicke bleiben gesperrt. Speichern ersetzt die Ausschlüsse durch die gewählte Auswahl.')));
+  if (filter.zeitraeume.some((z) => !z.vonUtc || !z.bisUtc)) inhalt.append(el('p', 'meldung', t('Speichern bestätigt ältere Zeiträume nach der Zeitzone dieses Geräts. Bis dahin bleiben automatische Rückblicke gesperrt.')));
   const wahl = (titel, daten, gespeichert) => {
     inhalt.append(el('h3', null, t(titel)));
     const namen = new Map(daten.map((d) => [d.id, d.name || t('Ohne Namen')]));
@@ -73,7 +74,19 @@ async function oeffneErinnerungsfilter() {
     if (zeitraeume.some((z) => !z.von || !z.bis || z.von > z.bis)) { fehler.textContent = t('Bitte gültige Zeiträume auswählen.'); return; }
     speichern.disabled = true;
     try {
-      await befehl('erinnerungsfilterSetzen', { filter: { fassung: 1, personen: [...personen], alben: [...alben], zeitraeume } });
+      const grenze = (s, folgetag = false) => {
+        const [y, m, d] = s.split('-').map(Number);
+        const zeit = new Date(0);
+        zeit.setHours(0, 0, 0, 0); zeit.setFullYear(y, m - 1, d + (folgetag ? 1 : 0));
+        return zeit.toISOString();
+      };
+      const benutzt = new Set();
+      const grenzen = zeitraeume.map((z) => {
+        const i = filter.zeitraeume.findIndex((a, index) => !benutzt.has(index) && a.von === z.von && a.bis === z.bis && a.vonUtc && a.bisUtc);
+        if (i >= 0) { benutzt.add(i); return filter.zeitraeume[i]; }
+        return { ...z, vonUtc: grenze(z.von), bisUtc: grenze(z.bis, true) };
+      });
+      await befehl('erinnerungsfilterSetzen', { filter: { fassung: 2, personen: [...personen], alben: [...alben], zeitraeume: grenzen } });
       dialog.close();
     } catch (x) { fehler.textContent = sammlungsFehler(x); speichern.disabled = false; }
   });
@@ -102,11 +115,32 @@ async function oeffneBeschriftungen(basis, aufnahme) {
       }
       if (d.besitzer && v.zustand === 'offen') {
         const person = el('select');
-        const gleiche = (d.personen || []).filter((p) => p.name === v.wert);
-        if (v.art === 'person' && gleiche.length > 1) {
+        let gleiche = (d.personen || []).filter((p) => p.name === v.wert);
+        if (v.art === 'person') {
           const leer = el('option', null, t('Person auswählen')); leer.value = ''; person.append(leer);
           for (const p of gleiche) { const o = el('option', null, `${p.name} (${p.id.slice(0, 8)})`); o.value = p.id; person.append(o); }
           person.setAttribute('aria-label', t('Person auswählen')); zeile.append(person);
+          if (d.personenMehr) {
+            let personenseite = 0;
+            const weitere = el('button', 'knopf', t('Weitere gleichnamige Personen')); weitere.type = 'button';
+            weitere.addEventListener('click', async () => {
+              weitere.disabled = true;
+              try {
+                const params = new URLSearchParams({ seite, personenname: v.wert, personenseite });
+                if (aufnahme) params.set('aufnahme', aufnahme);
+                const neu = await api(`${route}?${params}`);
+                const bekannt = new Set(gleiche.map((p) => p.id));
+                for (const p of neu.personen) {
+                  if (bekannt.has(p.id)) continue;
+                  gleiche.push(p); bekannt.add(p.id);
+                  const o = el('option', null, `${p.name} (${p.id.slice(0, 8)})`); o.value = p.id; person.append(o);
+                }
+                personenseite++; weitere.hidden = !neu.personenMehr;
+              } catch (x) { fehler.textContent = sammlungsFehler(x); }
+              finally { weitere.disabled = false; }
+            });
+            zeile.append(weitere);
+          }
         }
         for (const annehmen of [true, false]) {
           const b = el('button', 'knopf', t(annehmen ? 'Annehmen' : 'Ablehnen')); b.type = 'button';

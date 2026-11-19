@@ -39,6 +39,7 @@ class Beilagenangaben {
   /// So viel darf als Text in die Metadaten eines Uploads: Sie gehen als
   /// Kopfzeile über die Leitung.
   static const hoechstensBytes = 4096;
+  static const hoechstensAlben = 100;
 
   Map<String, Object?> alsMap() => {
     'sterne': ?sterne,
@@ -56,6 +57,9 @@ class Beilagenangaben {
   /// Als Text für den Upload. Passt er nicht, fehlen Beschreibung und
   /// Schlagwörter: Das Urteil ist der Teil, den niemand neu vergeben will.
   String alsText() {
+    if (alben.toSet().length > hoechstensAlben) {
+      throw const FormatException('pv_umzug_angaben_zu_gross');
+    }
     final ganz = jsonEncode(alsMap());
     if (utf8.encode(ganz).length <= hoechstensBytes) return ganz;
     final gekuerzt = jsonEncode(
@@ -82,6 +86,16 @@ class Beilagenangaben {
     if (j is! Map) return null;
     final s = j['sterne'];
     final tags = j['schlagwoerter'];
+    final alben = j['alben'] is List
+        ? {
+            for (final a in j['alben'] as List)
+              if (a is String && a.trim().isNotEmpty && a.length <= 200)
+                a.trim(),
+          }.toList()
+        : <String>[];
+    if (alben.length > hoechstensAlben) {
+      throw const FormatException('pv_umzug_angaben_zu_gross');
+    }
     double? zahl(Object? v, double grenze) =>
         v is num && v.abs() <= grenze ? v.toDouble() : null;
     String? text(Object? v) => v is String && v.isNotEmpty ? v : null;
@@ -101,13 +115,7 @@ class Beilagenangaben {
       aufgenommenAm: j['aufgenommenAm'] is String
           ? DateTime.tryParse(j['aufgenommenAm'] as String)
           : null,
-      alben: j['alben'] is List
-          ? [
-              for (final a in j['alben'] as List)
-                if (a is String && a.trim().isNotEmpty && a.length <= 200)
-                  a.trim(),
-            ].take(100).toList()
-          : const [],
+      alben: alben,
       favorit: j['favorit'] == true,
     );
     return a.alsMap().isEmpty ? null : a;

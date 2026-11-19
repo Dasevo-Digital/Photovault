@@ -7111,5 +7111,13 @@
     }
   },
   "umzugBeilageFehler": "Beilage beschädigt, zu groß oder mehrdeutig. Prüfe den Export vor dem Import.",
-  "umzugAngabenUebernehmen": "Diese Beilagenangaben übernehmen"
+  "umzugAngabenUebernehmen": "Diese Beilagenangaben übernehmen",
+  "umzugQuelleDateien": "{n} Dateien gefunden …",
+  "@umzugQuelleDateien": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

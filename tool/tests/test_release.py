@@ -488,11 +488,12 @@ class Veroeffentlichen(unittest.TestCase):
                 unittest.mock.patch('release.token', return_value='t'), \
                 unittest.mock.patch('release.upload_ordner', return_value=self.u), \
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
-                unittest.mock.patch('release.lauf'), \
+                unittest.mock.patch('release.lauf') as lauf, \
                 unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'), \
                 unittest.mock.patch('release._sha256_anhang', **anhang_summe):
             try:
                 release.veroeffentlichen(unittest.mock.Mock(fassung='9.9.9'))
+                lauf.assert_not_called()
             except SystemExit as e:
                 return anfragen, e
         return anfragen, None

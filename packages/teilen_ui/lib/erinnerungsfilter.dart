@@ -64,7 +64,7 @@ class _FilterState extends State<_Filter> {
     try {
       await widget.db.fuehreAus(
         ErinnerungsfilterSetzen(
-          Erinnerungsfilter(
+          widget.filter.mitAuswahl(
             personen: _personen,
             alben: _alben,
             zeitraeume: _zeiten,
@@ -122,6 +122,8 @@ class _FilterState extends State<_Filter> {
                     children: [
                       Text(t.erinnerungsfilterHinweis),
                       if (widget.beschaedigt) Text(t.erinnerungsfilterDefekt),
+                      if (widget.filter.zeitbezugFehlt)
+                        Text(t.erinnerungsfilterZeitbezug),
                     ],
                   ),
                 ),

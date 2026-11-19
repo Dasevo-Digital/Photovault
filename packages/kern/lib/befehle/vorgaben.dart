@@ -356,8 +356,14 @@ final class AngabenSchuetzenSetzen extends Befehl<void> {
 final class ErinnerungsfilterSetzen extends Befehl<void> {
   ErinnerungsfilterSetzen(Erinnerungsfilter filter) : filter = filter.kodiert();
   final String filter;
-  static ErinnerungsfilterSetzen aus(Map<String, Object?> w) =>
-      ErinnerungsfilterSetzen(Erinnerungsfilter.ausJson(w['filter']));
+  static ErinnerungsfilterSetzen aus(Map<String, Object?> w) {
+    final filter = Erinnerungsfilter.ausJson(w['filter']);
+    if (filter.zeitbezugFehlt) {
+      throw const FormatException('pv_erinnerungsfilter_zeitbezug');
+    }
+    return ErinnerungsfilterSetzen(filter);
+  }
+
   @override
   String get art => 'erinnerungsfilterSetzen';
   @override
