@@ -368,6 +368,7 @@ class Entwurf(unittest.TestCase):
         summe = lokal if oben_summe == 'gleich' else 'f' * 64
         with unittest.mock.patch('release.ziele', return_value={}), \
                 unittest.mock.patch('release.pruefe_releasepakete'), \
+                unittest.mock.patch('release.release_dateien',return_value=[self.mac]), \
                 unittest.mock.patch('release.lauf'), \
                 unittest.mock.patch('release.token', return_value='t'), \
                 unittest.mock.patch('release.upload_ordner', return_value=self.u), \
@@ -491,6 +492,8 @@ class Veroeffentlichen(unittest.TestCase):
                 unittest.mock.patch('release.upload_ordner', return_value=self.u), \
                 unittest.mock.patch('release.gitea', side_effect=gitea), \
                 unittest.mock.patch('release.lauf') as lauf, \
+                unittest.mock.patch('release.pruefe_releasepakete'), \
+                unittest.mock.patch('release.release_dateien',return_value=[self.mac]), \
                 unittest.mock.patch('release._lade_anhang', return_value=f'{h}  {self.mac}\n'), \
                 unittest.mock.patch('release._sha256_anhang', **anhang_summe):
             try:

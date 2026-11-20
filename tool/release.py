@@ -327,7 +327,7 @@ def linux_bau(kennung, commit):
 def bauen(args):
     z = ziele()
     fassung = args.fassung
-    nur = set(args.nur or ['linux', 'windows', 'mac', 'server'])
+    nur = set(args.nur or ['linux', 'windows', 'mac'])
     marke = f'v{fassung}'
     # Mac und Server bauen aus diesem Verzeichnis, Linux und Windows holen
     # sich die Marke selbst.
@@ -773,17 +773,31 @@ def _lade_hoch(z, rid, name, daten, kopf, tok, groesse, versuche=3, pause=10):
     return st, a
 
 
+def release_dateien(fassung, ordner):
+    """Drei Desktoppakete, wahlweise mit beiden vollständig gebauten Serverpaketen."""
+    try:
+        stand=json.loads((ordner/'BUILD-STAND.json').read_text())
+        pakete=stand['pakete']
+        if not isinstance(pakete,dict):
+            raise ValueError('pakete')
+    except (OSError,ValueError,KeyError,TypeError):
+        sys.exit('Geprüfter Buildstand fehlt – Pakete vor Veröffentlichung neu bauen.')
+    alle=dateien(fassung)
+    if set(pakete) not in (set(alle[:3]),set(alle)):
+        sys.exit('Unvollständiger Releaseumfang: alle Desktoppakete und gegebenenfalls beide Serverpakete erforderlich.')
+    return [name for name in alle if name in pakete]
+
+
 def pruefe_releasepakete(fassung, ordner):
-    erwartet = dateien(fassung)
+    erwartet = release_dateien(fassung,ordner)
     summen = summen_lesen((ordner / 'SHA256SUMS.txt').read_text())
+    if set(summen)!=set(erwartet):
+        sys.exit('Prüfsummen und geplanter Releaseumfang stimmen nicht überein.')
     for name in erwartet:
         datei = ordner / name
         if not datei.is_file() or summen.get(name) != _sha256(datei):
             sys.exit(f'Releasepaket fehlt oder Prüfsumme weicht ab: {name}')
-    try:
-        stand=json.loads((ordner/'BUILD-STAND.json').read_text())
-    except (OSError,ValueError):
-        sys.exit('Geprüfter Buildstand fehlt – Pakete vor Veröffentlichung neu bauen.')
+    stand=json.loads((ordner/'BUILD-STAND.json').read_text())
     commit=lauf(['git','rev-parse',f'v{fassung}^{{commit}}'],ausgabe=True).strip()
     if stand.get('fassung')!=fassung or stand.get('commit')!=commit or stand.get('pakete')!={n:summen[n] for n in erwartet}:
         sys.exit('Buildstand, Tag und Pakete stimmen nicht überein.')
@@ -830,7 +844,7 @@ def entwurf(args):
     rid = rel['id']
     vorhanden = {x['name']: x for x in rel.get('assets', [])}
     # Nur, was gebaut wurde: 3.41 bis 3.44.1 gingen nur an Mac und Server.
-    vorhanden_hier = [n for n in dateien(fassung) if (u / n).exists()]
+    vorhanden_hier = release_dateien(fassung,u)
     # Was oben schon liegt, bleibt nur, wenn es dasselbe ist – nach der
     # Prüfsumme in der SHA256SUMS.txt dort, nicht nach der Grösse: Ein neu
     # gebautes Paket kann gleich gross sein. Blieb die alte Datei stehen,
@@ -938,6 +952,8 @@ def einspielen(args):
 def veroeffentlichen(args):
     z = ziele()
     fassung = args.fassung
+    u = upload_ordner(z, fassung, anlegen=False)
+    pruefe_releasepakete(fassung,u)
     tok = token(z)
     _, alle = gitea(z, '/releases?draft=true&limit=30', tok=tok)
     rel = next((r for r in (alle if isinstance(alle, list) else []) if r.get('tag_name') == f'v{fassung}'), None)
@@ -948,7 +964,7 @@ def veroeffentlichen(args):
     # nach der Prüfsumme, nicht nur nach der Grösse.
     u = upload_ordner(z, fassung, anlegen=False)
     anhaenge = {x['name']: x for x in rel.get('assets', [])}
-    lokal = {n: _sha256(u / n) for n in dateien(fassung) if (u / n).exists()}
+    lokal = {n: _sha256(u / n) for n in release_dateien(fassung,u)}
     oben = summen_lesen(_lade_anhang(anhaenge['SHA256SUMS.txt'], tok)) if 'SHA256SUMS.txt' in anhaenge else {}
     fehler = []
     if not oben:
