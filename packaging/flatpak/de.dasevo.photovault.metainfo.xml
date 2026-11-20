@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.13" date="2026-11-20">
+      <description>
+        <p>This release adds verified storage protection, scheduled external-folder checks and device compatibility information.</p>
+        <p>Capture dates can retain year, month or range precision and provenance across search, sidecars and backup restore.</p>
+        <p>Tiled processing uses less peak memory. A separate neutral linear 16-bit TIFF export starts from RAW originals; an exact search index remains optional.</p>
+        <p>Library schema 101 requires matching clients and server. Release builds and maintenance use isolated working copies and verified rollback data.</p>
+      </description>
+    </release>
     <release version="3.67.12" date="2026-11-20">
       <description>
         <p>Named editing variants preserve adjustments, masks and crops independently of the original.</p>
