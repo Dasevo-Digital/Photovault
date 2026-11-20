@@ -494,6 +494,9 @@ String _wiederherstellZeile(AppTexte t, BackupProgress p) {
 /// gegriffen hat, steht als Zahl in [BackupProgress.grenzeOffen] und wird
 /// erst hier zu einem Satz.
 String _backupZeile(AppTexte t, BackupProgress p) {
+  if (p.zusatzdateienOffen != null) {
+    return '${t.backupVariantenOffen}: ${p.zusatzdateienOffen} (${groessentext(p.zusatzdateienBytes ?? 0)})';
+  }
   if (p.wiederherstellungsprobe case final probe?) {
     return backupProbeTextMit(
       t,

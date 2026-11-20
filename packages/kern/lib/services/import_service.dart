@@ -294,6 +294,29 @@ class ImportService {
     String? erwartetePruefsumme,
     ImportDateiangaben? erwarteteAngaben,
     Future<void> Function(String assetId)? beiEintrag,
+  }) => _importFile(
+    filePath,
+    erwartetePruefsumme: erwartetePruefsumme,
+    erwarteteAngaben: erwarteteAngaben,
+    beiEintrag: beiEintrag,
+  );
+
+  Future<ImportResult> importReferenz(
+    String filePath, {
+    required String referenzPfad,
+    String? erwartetePruefsumme,
+  }) => _importFile(
+    filePath,
+    referenzPfad: referenzPfad,
+    erwartetePruefsumme: erwartetePruefsumme,
+  );
+
+  Future<ImportResult> _importFile(
+    String filePath, {
+    String? referenzPfad,
+    String? erwartetePruefsumme,
+    ImportDateiangaben? erwarteteAngaben,
+    Future<void> Function(String assetId)? beiEintrag,
   }) async {
     String? pruefsumme;
     String? unvollstaendigeAssetId;
@@ -365,16 +388,34 @@ class ImportService {
       final fileCreatedAt = erwarteteAngaben?.datum ?? vorab!.datum;
       final geschaetzt = erwarteteAngaben?.datumGeschaetzt ?? vorab!.geschaetzt;
 
-      final relativePath = _paths.originalRelativePath(
-        fileCreatedAt,
-        assetId,
-        ext,
-      );
-      final targetFile = _paths.absolute(relativePath);
-      unvollstaendigesOriginal = targetFile;
-      await targetFile.parent.create(recursive: true);
+      if (referenzPfad != null) {
+        if (_paths.beschaffe != null || !_paths.istReferenziert(referenzPfad)) {
+          throw const FormatException('pv_referenzen_nur_lokal');
+        }
+        final eingetragen = await _paths.referenzen?.lesen(
+          referenzPfad,
+          inhaltPruefen: true,
+        );
+        if (eingetragen == null ||
+            !p.equals(
+              await eingetragen.resolveSymbolicLinks(),
+              await sourceFile.resolveSymbolicLinks(),
+            )) {
+          throw const FormatException('pv_referenzen_zuordnung');
+        }
+      }
+      final relativePath =
+          referenzPfad ??
+          _paths.originalRelativePath(fileCreatedAt, assetId, ext);
+      final targetFile = referenzPfad == null
+          ? _paths.absolute(relativePath)
+          : sourceFile;
+      if (referenzPfad == null) {
+        unvollstaendigesOriginal = targetFile;
+        await targetFile.parent.create(recursive: true);
+        await sourceFile.copy(targetFile.path);
+      }
       final int fileSizeBytes;
-      await sourceFile.copy(targetFile.path);
       fileSizeBytes = await targetFile.length();
       if ((await sha256.bind(targetFile.openRead()).first).toString() !=
           checksum) {
@@ -397,6 +438,9 @@ class ImportService {
           : await generateVideoThumbnail(targetFile, assetId);
 
       await pruefeQuelle();
+      if (referenzPfad != null) {
+        await _paths.referenzen!.lesen(referenzPfad, inhaltPruefen: true);
+      }
       await _db.transaction(() async {
         await _db.insertAsset(
           AssetsCompanion.insert(

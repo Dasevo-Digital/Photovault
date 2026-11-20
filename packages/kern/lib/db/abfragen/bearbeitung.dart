@@ -2,6 +2,146 @@ part of '../database.dart';
 
 /// Entwickeln, KI-Masken, Restaurierung, Video-Zuschnitt.
 extension BearbeitungsAbfragen on AppDatabase {
+  Future<List<({String assetId, String pfad, String sha256})>>
+  variantenDateienZurPruefung() async => [
+    for (final v in await customSelect(
+      'SELECT DISTINCT asset_id, relative_path, sha256 FROM develop_variant_files LIMIT 200001',
+    ).get())
+      (
+        assetId: v.read<String>('asset_id'),
+        pfad: v.read<String>('relative_path'),
+        sha256: v.read<String>('sha256'),
+      ),
+  ];
+  Future<List<DevelopVariantData>> variantenFuer(String assetId) =>
+      (select(developVariants)
+            ..where((t) => t.assetId.equals(assetId))
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.updatedAt),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .get();
+
+  Future<void> varianteSpeichern(DevelopVariantData variante) =>
+      transaction(() async {
+        final a = await assetById(variante.assetId);
+        final stand = Entwicklungsstand.decode(variante.stateJson);
+        final name = variante.name.trim();
+        if (a == null ||
+            a.isLocked ||
+            a.isTrashed ||
+            a.checksum != stand.originalSha256) {
+          throw StateError('pv_variante_aufnahme');
+        }
+        if (name.isEmpty ||
+            name.length > 80 ||
+            !RegExp(r'^[a-zA-Z0-9-]{1,80}$').hasMatch(variante.id) ||
+            !erlaubterVariantenpfad(variante.previewRelativePath) ||
+            !stand.dateien.containsKey(variante.previewRelativePath)) {
+          throw const FormatException('pv_variante_format');
+        }
+        final vorhandene = await variantenFuer(variante.assetId);
+        if (vorhandene.length >= 100 &&
+            !vorhandene.any((v) => v.id == variante.id)) {
+          throw StateError('pv_variante_umfang');
+        }
+        final alt = await (select(
+          developVariants,
+        )..where((t) => t.id.equals(variante.id))).getSingleOrNull();
+        if (alt != null && alt.assetId != variante.assetId) {
+          throw const FormatException('pv_variante_aufnahme');
+        }
+        if (alt != null &&
+            (alt.stateJson != variante.stateJson ||
+                alt.previewRelativePath != variante.previewRelativePath)) {
+          throw StateError('pv_variante_unveraenderlich');
+        }
+        await into(
+          developVariants,
+        ).insertOnConflictUpdate(variante.copyWith(name: name));
+        for (final e in stand.dateien.entries) {
+          await into(developVariantFiles).insertOnConflictUpdate(
+            DevelopVariantFilesCompanion.insert(
+              variantId: variante.id,
+              assetId: variante.assetId,
+              relativePath: e.key,
+              sha256: e.value,
+            ),
+          );
+        }
+      });
+
+  Future<void> varianteEntfernen(String assetId, String id) => transaction(
+    () async {
+      final a = await assetById(assetId);
+      if (a == null || a.isLocked) throw StateError('pv_variante_aufnahme');
+      await (delete(
+        developVariants,
+      )..where((t) => t.id.equals(id) & t.assetId.equals(assetId))).go();
+      await (delete(
+        developVariantFiles,
+      )..where((t) => t.variantId.equals(id) & t.assetId.equals(assetId))).go();
+    },
+  );
+
+  Future<bool> varianteVerwendetDatei(String pfad) async {
+    return (await (select(developVariantFiles)
+              ..where((t) => t.relativePath.equals(pfad))
+              ..limit(1))
+            .get())
+        .isNotEmpty;
+  }
+
+  Future<String> entwicklungsBasis(String assetId) async {
+    final a = await assetById(assetId);
+    return sha256
+        .convert(
+          utf8.encode(
+            jsonEncode({
+              'original': a?.checksum,
+              'einstellungen': (await developSettingsForAsset(
+                assetId,
+              ))?.toJson(),
+              'masken': [
+                for (final m in await masksForAsset(assetId)) m.toJson(),
+              ],
+            }),
+          ),
+        )
+        .toString();
+  }
+
+  Future<void> varianteAktivieren(
+    String assetId,
+    String id, {
+    String? erwarteterStand,
+  }) => transaction(() async {
+    final a = await assetById(assetId);
+    final v =
+        await (select(developVariants)
+              ..where((t) => t.id.equals(id) & t.assetId.equals(assetId)))
+            .getSingleOrNull();
+    if (a == null || a.isLocked || a.isTrashed || v == null) {
+      throw StateError('pv_variante_aufnahme');
+    }
+    if (erwarteterStand != null &&
+        await entwicklungsBasis(assetId) != erwarteterStand) {
+      throw StateError('pv_offline_konflikt');
+    }
+    final stand = Entwicklungsstand.decode(v.stateJson);
+    if (stand.originalSha256 != a.checksum) {
+      throw StateError('pv_variante_original_geaendert');
+    }
+    await saveDevelopResult(
+      assetId,
+      settings: stand.einstellungen.copyWith(assetId: assetId),
+      developedRelativePath: v.previewRelativePath,
+    );
+    await (delete(developMasks)..where((t) => t.assetId.equals(assetId))).go();
+    for (final maske in stand.masken) {
+      await into(developMasks).insert(maske.copyWith(assetId: assetId));
+    }
+  });
   // -----------------------------------------------------------------------
   // Nicht-destruktive Entwicklung (DevelopScreen)
   // -----------------------------------------------------------------------
@@ -52,6 +192,7 @@ extension BearbeitungsAbfragen on AppDatabase {
     await into(developHistory).insert(
       DevelopHistoryCompanion.insert(
         assetId: assetId,
+        cropJson: Value(previous.cropJson),
         exposure: previous.exposure,
         temperature: Value(previous.temperature),
         tint: Value(previous.tint),

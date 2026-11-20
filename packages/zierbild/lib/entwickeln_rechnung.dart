@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/entwicklungswerte.dart';
 
+import 'package:kern/services/bildzuschnitt.dart';
 import 'entwickeln_nachbarn.dart';
 import 'entwickeln_shader.dart';
 
@@ -63,7 +64,7 @@ class Entwicklungsrechnung {
       // Das Kodieren in einem Isolate: Bei 2048 px sind das gut 16 MB, die
       // sonst den Haupt-Isolate für einen Moment blockieren – dasselbe
       // Muster wie beim Thumbnail-Pfad in import_service.dart.
-      return await compute(
+      final jpeg = await compute(
         _kodiereJpeg,
         _KodierAuftrag(
           roh.buffer.asUint8List(),
@@ -72,6 +73,7 @@ class Entwicklungsrechnung {
           quality,
         ),
       );
+      return await schneideEntwicklung(jpeg, adjustments.zuschnitt);
     } catch (e) {
       debugPrint('Entwickeln über den Shader fehlgeschlagen: $e');
       return null;

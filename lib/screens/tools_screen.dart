@@ -1,3 +1,5 @@
+import 'farbverwaltung_screen.dart';
+import '../services/farbverwaltung.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -20,6 +22,9 @@ import 'staubsuche_screen.dart';
 import 'duplicates_screen.dart';
 import 'integrity_check_screen.dart';
 import 'library_health_screen.dart';
+import 'referenz_katalog_screen.dart';
+import 'arbeitsvorschauen_screen.dart';
+import 'speicherkarte_screen.dart';
 import 'ortsvorschlaege_screen.dart';
 import 'stack_review_screen.dart';
 import 'gpx_verortung_screen.dart';
@@ -197,6 +202,66 @@ class _ToolsScreenState extends State<ToolsScreen> {
                 MaterialPageRoute(
                   builder: (_) =>
                       BackgroundTasksScreen(library: widget.library),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.palette_outlined),
+              title: Text(t.farbraumTitel),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () async {
+                final dienst = await Farbverwaltung.fuer(widget.library.paths);
+                if (context.mounted) {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => FarbverwaltungScreen(dienst: dienst),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.account_tree_outlined),
+              title: Text(t.speicherkarteTitel),
+              subtitle: Text(t.speicherkarteText),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SpeicherkarteScreen(library: widget.library),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.cloud_off_outlined),
+              title: Text(t.arbeitskopienTitel),
+              subtitle: Text(t.arbeitskopienText),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ArbeitsvorschauenScreen(
+                    db: widget.library.db,
+                    paths: widget.library.paths,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.folder_open_outlined),
+              title: Text(t.katalogTitel),
+              subtitle: Text(t.katalogText),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      ReferenzKatalogScreen(library: widget.library),
                 ),
               ),
             ),

@@ -1495,5 +1495,29 @@ extension Migrationsschritte on AppDatabase {
         'erinnerungsfilter',
       );
     }
+    if (from < 100) {
+      await m.createTable(developVariants);
+      await m.createTable(developVariantFiles);
+      await _addColumnIfMissing(
+        m,
+        developSettings,
+        developSettings.cropJson,
+        'develop_settings',
+        'crop_json',
+      );
+      await _addColumnIfMissing(
+        m,
+        developHistory,
+        developHistory.cropJson,
+        'develop_history',
+        'crop_json',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS develop_variants_asset ON develop_variants(asset_id)',
+      );
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS develop_variant_files_path ON develop_variant_files(relative_path)',
+      );
+    }
   }
 }

@@ -10091,6 +10091,17 @@ class $DevelopSettingsTable extends DevelopSettings
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _cropJsonMeta = const VerificationMeta(
+    'cropJson',
+  );
+  @override
+  late final GeneratedColumn<String> cropJson = GeneratedColumn<String>(
+    'crop_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _exposureMeta = const VerificationMeta(
     'exposure',
   );
@@ -10281,6 +10292,7 @@ class $DevelopSettingsTable extends DevelopSettings
   @override
   List<GeneratedColumn> get $columns => [
     assetId,
+    cropJson,
     exposure,
     temperature,
     tint,
@@ -10317,6 +10329,12 @@ class $DevelopSettingsTable extends DevelopSettings
       );
     } else if (isInserting) {
       context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('crop_json')) {
+      context.handle(
+        _cropJsonMeta,
+        cropJson.isAcceptableOrUnknown(data['crop_json']!, _cropJsonMeta),
+      );
     }
     if (data.containsKey('exposure')) {
       context.handle(
@@ -10447,6 +10465,10 @@ class $DevelopSettingsTable extends DevelopSettings
         DriftSqlType.string,
         data['${effectivePrefix}asset_id'],
       )!,
+      cropJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}crop_json'],
+      ),
       exposure: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}exposure'],
@@ -10523,6 +10545,7 @@ class $DevelopSettingsTable extends DevelopSettings
 class DevelopSettingsData extends DataClass
     implements Insertable<DevelopSettingsData> {
   final String assetId;
+  final String? cropJson;
   final double exposure;
   final double? temperature;
   final double? tint;
@@ -10569,6 +10592,7 @@ class DevelopSettingsData extends DataClass
   final DateTime updatedAt;
   const DevelopSettingsData({
     required this.assetId,
+    this.cropJson,
     required this.exposure,
     this.temperature,
     this.tint,
@@ -10590,6 +10614,9 @@ class DevelopSettingsData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['asset_id'] = Variable<String>(assetId);
+    if (!nullToAbsent || cropJson != null) {
+      map['crop_json'] = Variable<String>(cropJson);
+    }
     map['exposure'] = Variable<double>(exposure);
     if (!nullToAbsent || temperature != null) {
       map['temperature'] = Variable<double>(temperature);
@@ -10622,6 +10649,9 @@ class DevelopSettingsData extends DataClass
   DevelopSettingsCompanion toCompanion(bool nullToAbsent) {
     return DevelopSettingsCompanion(
       assetId: Value(assetId),
+      cropJson: cropJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropJson),
       exposure: Value(exposure),
       temperature: temperature == null && nullToAbsent
           ? const Value.absent()
@@ -10656,6 +10686,7 @@ class DevelopSettingsData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DevelopSettingsData(
       assetId: serializer.fromJson<String>(json['assetId']),
+      cropJson: serializer.fromJson<String?>(json['cropJson']),
       exposure: serializer.fromJson<double>(json['exposure']),
       temperature: serializer.fromJson<double?>(json['temperature']),
       tint: serializer.fromJson<double?>(json['tint']),
@@ -10681,6 +10712,7 @@ class DevelopSettingsData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'assetId': serializer.toJson<String>(assetId),
+      'cropJson': serializer.toJson<String?>(cropJson),
       'exposure': serializer.toJson<double>(exposure),
       'temperature': serializer.toJson<double?>(temperature),
       'tint': serializer.toJson<double?>(tint),
@@ -10702,6 +10734,7 @@ class DevelopSettingsData extends DataClass
 
   DevelopSettingsData copyWith({
     String? assetId,
+    Value<String?> cropJson = const Value.absent(),
     double? exposure,
     Value<double?> temperature = const Value.absent(),
     Value<double?> tint = const Value.absent(),
@@ -10720,6 +10753,7 @@ class DevelopSettingsData extends DataClass
     DateTime? updatedAt,
   }) => DevelopSettingsData(
     assetId: assetId ?? this.assetId,
+    cropJson: cropJson.present ? cropJson.value : this.cropJson,
     exposure: exposure ?? this.exposure,
     temperature: temperature.present ? temperature.value : this.temperature,
     tint: tint.present ? tint.value : this.tint,
@@ -10744,6 +10778,7 @@ class DevelopSettingsData extends DataClass
   DevelopSettingsData copyWithCompanion(DevelopSettingsCompanion data) {
     return DevelopSettingsData(
       assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      cropJson: data.cropJson.present ? data.cropJson.value : this.cropJson,
       exposure: data.exposure.present ? data.exposure.value : this.exposure,
       temperature: data.temperature.present
           ? data.temperature.value
@@ -10781,6 +10816,7 @@ class DevelopSettingsData extends DataClass
   String toString() {
     return (StringBuffer('DevelopSettingsData(')
           ..write('assetId: $assetId, ')
+          ..write('cropJson: $cropJson, ')
           ..write('exposure: $exposure, ')
           ..write('temperature: $temperature, ')
           ..write('tint: $tint, ')
@@ -10804,6 +10840,7 @@ class DevelopSettingsData extends DataClass
   @override
   int get hashCode => Object.hash(
     assetId,
+    cropJson,
     exposure,
     temperature,
     tint,
@@ -10826,6 +10863,7 @@ class DevelopSettingsData extends DataClass
       identical(this, other) ||
       (other is DevelopSettingsData &&
           other.assetId == this.assetId &&
+          other.cropJson == this.cropJson &&
           other.exposure == this.exposure &&
           other.temperature == this.temperature &&
           other.tint == this.tint &&
@@ -10846,6 +10884,7 @@ class DevelopSettingsData extends DataClass
 
 class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   final Value<String> assetId;
+  final Value<String?> cropJson;
   final Value<double> exposure;
   final Value<double?> temperature;
   final Value<double?> tint;
@@ -10865,6 +10904,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   final Value<int> rowid;
   const DevelopSettingsCompanion({
     this.assetId = const Value.absent(),
+    this.cropJson = const Value.absent(),
     this.exposure = const Value.absent(),
     this.temperature = const Value.absent(),
     this.tint = const Value.absent(),
@@ -10885,6 +10925,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   });
   DevelopSettingsCompanion.insert({
     required String assetId,
+    this.cropJson = const Value.absent(),
     this.exposure = const Value.absent(),
     this.temperature = const Value.absent(),
     this.tint = const Value.absent(),
@@ -10906,6 +10947,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
        updatedAt = Value(updatedAt);
   static Insertable<DevelopSettingsData> custom({
     Expression<String>? assetId,
+    Expression<String>? cropJson,
     Expression<double>? exposure,
     Expression<double>? temperature,
     Expression<double>? tint,
@@ -10926,6 +10968,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   }) {
     return RawValuesInsertable({
       if (assetId != null) 'asset_id': assetId,
+      if (cropJson != null) 'crop_json': cropJson,
       if (exposure != null) 'exposure': exposure,
       if (temperature != null) 'temperature': temperature,
       if (tint != null) 'tint': tint,
@@ -10949,6 +10992,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
 
   DevelopSettingsCompanion copyWith({
     Value<String>? assetId,
+    Value<String?>? cropJson,
     Value<double>? exposure,
     Value<double?>? temperature,
     Value<double?>? tint,
@@ -10969,6 +11013,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   }) {
     return DevelopSettingsCompanion(
       assetId: assetId ?? this.assetId,
+      cropJson: cropJson ?? this.cropJson,
       exposure: exposure ?? this.exposure,
       temperature: temperature ?? this.temperature,
       tint: tint ?? this.tint,
@@ -10995,6 +11040,9 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
     final map = <String, Expression>{};
     if (assetId.present) {
       map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (cropJson.present) {
+      map['crop_json'] = Variable<String>(cropJson.value);
     }
     if (exposure.present) {
       map['exposure'] = Variable<double>(exposure.value);
@@ -11056,6 +11104,7 @@ class DevelopSettingsCompanion extends UpdateCompanion<DevelopSettingsData> {
   String toString() {
     return (StringBuffer('DevelopSettingsCompanion(')
           ..write('assetId: $assetId, ')
+          ..write('cropJson: $cropJson, ')
           ..write('exposure: $exposure, ')
           ..write('temperature: $temperature, ')
           ..write('tint: $tint, ')
@@ -11084,6 +11133,17 @@ class $DevelopHistoryTable extends DevelopHistory
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $DevelopHistoryTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _cropJsonMeta = const VerificationMeta(
+    'cropJson',
+  );
+  @override
+  late final GeneratedColumn<String> cropJson = GeneratedColumn<String>(
+    'crop_json',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<int> id = GeneratedColumn<int>(
@@ -11291,6 +11351,7 @@ class $DevelopHistoryTable extends DevelopHistory
   );
   @override
   List<GeneratedColumn> get $columns => [
+    cropJson,
     id,
     assetId,
     exposure,
@@ -11322,6 +11383,12 @@ class $DevelopHistoryTable extends DevelopHistory
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('crop_json')) {
+      context.handle(
+        _cropJsonMeta,
+        cropJson.isAcceptableOrUnknown(data['crop_json']!, _cropJsonMeta),
+      );
+    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
@@ -11470,6 +11537,10 @@ class $DevelopHistoryTable extends DevelopHistory
   DevelopHistoryData map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return DevelopHistoryData(
+      cropJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}crop_json'],
+      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -11553,6 +11624,7 @@ class $DevelopHistoryTable extends DevelopHistory
 
 class DevelopHistoryData extends DataClass
     implements Insertable<DevelopHistoryData> {
+  final String? cropJson;
   final int id;
   final String assetId;
   final double exposure;
@@ -11585,6 +11657,7 @@ class DevelopHistoryData extends DataClass
   final String? colorMixerJson;
   final DateTime createdAt;
   const DevelopHistoryData({
+    this.cropJson,
     required this.id,
     required this.assetId,
     required this.exposure,
@@ -11607,6 +11680,9 @@ class DevelopHistoryData extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || cropJson != null) {
+      map['crop_json'] = Variable<String>(cropJson);
+    }
     map['id'] = Variable<int>(id);
     map['asset_id'] = Variable<String>(assetId);
     map['exposure'] = Variable<double>(exposure);
@@ -11640,6 +11716,9 @@ class DevelopHistoryData extends DataClass
 
   DevelopHistoryCompanion toCompanion(bool nullToAbsent) {
     return DevelopHistoryCompanion(
+      cropJson: cropJson == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cropJson),
       id: Value(id),
       assetId: Value(assetId),
       exposure: Value(exposure),
@@ -11675,6 +11754,7 @@ class DevelopHistoryData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return DevelopHistoryData(
+      cropJson: serializer.fromJson<String?>(json['cropJson']),
       id: serializer.fromJson<int>(json['id']),
       assetId: serializer.fromJson<String>(json['assetId']),
       exposure: serializer.fromJson<double>(json['exposure']),
@@ -11701,6 +11781,7 @@ class DevelopHistoryData extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'cropJson': serializer.toJson<String?>(cropJson),
       'id': serializer.toJson<int>(id),
       'assetId': serializer.toJson<String>(assetId),
       'exposure': serializer.toJson<double>(exposure),
@@ -11723,6 +11804,7 @@ class DevelopHistoryData extends DataClass
   }
 
   DevelopHistoryData copyWith({
+    Value<String?> cropJson = const Value.absent(),
     int? id,
     String? assetId,
     double? exposure,
@@ -11742,6 +11824,7 @@ class DevelopHistoryData extends DataClass
     Value<String?> colorMixerJson = const Value.absent(),
     DateTime? createdAt,
   }) => DevelopHistoryData(
+    cropJson: cropJson.present ? cropJson.value : this.cropJson,
     id: id ?? this.id,
     assetId: assetId ?? this.assetId,
     exposure: exposure ?? this.exposure,
@@ -11767,6 +11850,7 @@ class DevelopHistoryData extends DataClass
   );
   DevelopHistoryData copyWithCompanion(DevelopHistoryCompanion data) {
     return DevelopHistoryData(
+      cropJson: data.cropJson.present ? data.cropJson.value : this.cropJson,
       id: data.id.present ? data.id.value : this.id,
       assetId: data.assetId.present ? data.assetId.value : this.assetId,
       exposure: data.exposure.present ? data.exposure.value : this.exposure,
@@ -11805,6 +11889,7 @@ class DevelopHistoryData extends DataClass
   @override
   String toString() {
     return (StringBuffer('DevelopHistoryData(')
+          ..write('cropJson: $cropJson, ')
           ..write('id: $id, ')
           ..write('assetId: $assetId, ')
           ..write('exposure: $exposure, ')
@@ -11829,6 +11914,7 @@ class DevelopHistoryData extends DataClass
 
   @override
   int get hashCode => Object.hash(
+    cropJson,
     id,
     assetId,
     exposure,
@@ -11852,6 +11938,7 @@ class DevelopHistoryData extends DataClass
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is DevelopHistoryData &&
+          other.cropJson == this.cropJson &&
           other.id == this.id &&
           other.assetId == this.assetId &&
           other.exposure == this.exposure &&
@@ -11873,6 +11960,7 @@ class DevelopHistoryData extends DataClass
 }
 
 class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
+  final Value<String?> cropJson;
   final Value<int> id;
   final Value<String> assetId;
   final Value<double> exposure;
@@ -11892,6 +11980,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
   final Value<String?> colorMixerJson;
   final Value<DateTime> createdAt;
   const DevelopHistoryCompanion({
+    this.cropJson = const Value.absent(),
     this.id = const Value.absent(),
     this.assetId = const Value.absent(),
     this.exposure = const Value.absent(),
@@ -11912,6 +12001,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
     this.createdAt = const Value.absent(),
   });
   DevelopHistoryCompanion.insert({
+    this.cropJson = const Value.absent(),
     this.id = const Value.absent(),
     required String assetId,
     required double exposure,
@@ -11939,6 +12029,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
        lensCorrectionEnabled = Value(lensCorrectionEnabled),
        createdAt = Value(createdAt);
   static Insertable<DevelopHistoryData> custom({
+    Expression<String>? cropJson,
     Expression<int>? id,
     Expression<String>? assetId,
     Expression<double>? exposure,
@@ -11959,6 +12050,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
+      if (cropJson != null) 'crop_json': cropJson,
       if (id != null) 'id': id,
       if (assetId != null) 'asset_id': assetId,
       if (exposure != null) 'exposure': exposure,
@@ -11982,6 +12074,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
   }
 
   DevelopHistoryCompanion copyWith({
+    Value<String?>? cropJson,
     Value<int>? id,
     Value<String>? assetId,
     Value<double>? exposure,
@@ -12002,6 +12095,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
     Value<DateTime>? createdAt,
   }) {
     return DevelopHistoryCompanion(
+      cropJson: cropJson ?? this.cropJson,
       id: id ?? this.id,
       assetId: assetId ?? this.assetId,
       exposure: exposure ?? this.exposure,
@@ -12027,6 +12121,9 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (cropJson.present) {
+      map['crop_json'] = Variable<String>(cropJson.value);
+    }
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
@@ -12089,6 +12186,7 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
   @override
   String toString() {
     return (StringBuffer('DevelopHistoryCompanion(')
+          ..write('cropJson: $cropJson, ')
           ..write('id: $id, ')
           ..write('assetId: $assetId, ')
           ..write('exposure: $exposure, ')
@@ -12107,6 +12205,750 @@ class DevelopHistoryCompanion extends UpdateCompanion<DevelopHistoryData> {
           ..write('toneCurveJson: $toneCurveJson, ')
           ..write('colorMixerJson: $colorMixerJson, ')
           ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DevelopVariantsTable extends DevelopVariants
+    with TableInfo<$DevelopVariantsTable, DevelopVariantData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DevelopVariantsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assetIdMeta = const VerificationMeta(
+    'assetId',
+  );
+  @override
+  late final GeneratedColumn<String> assetId = GeneratedColumn<String>(
+    'asset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stateJsonMeta = const VerificationMeta(
+    'stateJson',
+  );
+  @override
+  late final GeneratedColumn<String> stateJson = GeneratedColumn<String>(
+    'state_json',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _previewRelativePathMeta =
+      const VerificationMeta('previewRelativePath');
+  @override
+  late final GeneratedColumn<String> previewRelativePath =
+      GeneratedColumn<String>(
+        'preview_relative_path',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    assetId,
+    name,
+    stateJson,
+    previewRelativePath,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'develop_variants';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DevelopVariantData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('asset_id')) {
+      context.handle(
+        _assetIdMeta,
+        assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('state_json')) {
+      context.handle(
+        _stateJsonMeta,
+        stateJson.isAcceptableOrUnknown(data['state_json']!, _stateJsonMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stateJsonMeta);
+    }
+    if (data.containsKey('preview_relative_path')) {
+      context.handle(
+        _previewRelativePathMeta,
+        previewRelativePath.isAcceptableOrUnknown(
+          data['preview_relative_path']!,
+          _previewRelativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_previewRelativePathMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  DevelopVariantData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DevelopVariantData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+      stateJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}state_json'],
+      )!,
+      previewRelativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}preview_relative_path'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $DevelopVariantsTable createAlias(String alias) {
+    return $DevelopVariantsTable(attachedDatabase, alias);
+  }
+}
+
+class DevelopVariantData extends DataClass
+    implements Insertable<DevelopVariantData> {
+  final String id;
+  final String assetId;
+  final String name;
+  final String stateJson;
+  final String previewRelativePath;
+  final DateTime updatedAt;
+  const DevelopVariantData({
+    required this.id,
+    required this.assetId,
+    required this.name,
+    required this.stateJson,
+    required this.previewRelativePath,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['asset_id'] = Variable<String>(assetId);
+    map['name'] = Variable<String>(name);
+    map['state_json'] = Variable<String>(stateJson);
+    map['preview_relative_path'] = Variable<String>(previewRelativePath);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  DevelopVariantsCompanion toCompanion(bool nullToAbsent) {
+    return DevelopVariantsCompanion(
+      id: Value(id),
+      assetId: Value(assetId),
+      name: Value(name),
+      stateJson: Value(stateJson),
+      previewRelativePath: Value(previewRelativePath),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory DevelopVariantData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DevelopVariantData(
+      id: serializer.fromJson<String>(json['id']),
+      assetId: serializer.fromJson<String>(json['assetId']),
+      name: serializer.fromJson<String>(json['name']),
+      stateJson: serializer.fromJson<String>(json['stateJson']),
+      previewRelativePath: serializer.fromJson<String>(
+        json['previewRelativePath'],
+      ),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'assetId': serializer.toJson<String>(assetId),
+      'name': serializer.toJson<String>(name),
+      'stateJson': serializer.toJson<String>(stateJson),
+      'previewRelativePath': serializer.toJson<String>(previewRelativePath),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  DevelopVariantData copyWith({
+    String? id,
+    String? assetId,
+    String? name,
+    String? stateJson,
+    String? previewRelativePath,
+    DateTime? updatedAt,
+  }) => DevelopVariantData(
+    id: id ?? this.id,
+    assetId: assetId ?? this.assetId,
+    name: name ?? this.name,
+    stateJson: stateJson ?? this.stateJson,
+    previewRelativePath: previewRelativePath ?? this.previewRelativePath,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  DevelopVariantData copyWithCompanion(DevelopVariantsCompanion data) {
+    return DevelopVariantData(
+      id: data.id.present ? data.id.value : this.id,
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      name: data.name.present ? data.name.value : this.name,
+      stateJson: data.stateJson.present ? data.stateJson.value : this.stateJson,
+      previewRelativePath: data.previewRelativePath.present
+          ? data.previewRelativePath.value
+          : this.previewRelativePath,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DevelopVariantData(')
+          ..write('id: $id, ')
+          ..write('assetId: $assetId, ')
+          ..write('name: $name, ')
+          ..write('stateJson: $stateJson, ')
+          ..write('previewRelativePath: $previewRelativePath, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, assetId, name, stateJson, previewRelativePath, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DevelopVariantData &&
+          other.id == this.id &&
+          other.assetId == this.assetId &&
+          other.name == this.name &&
+          other.stateJson == this.stateJson &&
+          other.previewRelativePath == this.previewRelativePath &&
+          other.updatedAt == this.updatedAt);
+}
+
+class DevelopVariantsCompanion extends UpdateCompanion<DevelopVariantData> {
+  final Value<String> id;
+  final Value<String> assetId;
+  final Value<String> name;
+  final Value<String> stateJson;
+  final Value<String> previewRelativePath;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const DevelopVariantsCompanion({
+    this.id = const Value.absent(),
+    this.assetId = const Value.absent(),
+    this.name = const Value.absent(),
+    this.stateJson = const Value.absent(),
+    this.previewRelativePath = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DevelopVariantsCompanion.insert({
+    required String id,
+    required String assetId,
+    required String name,
+    required String stateJson,
+    required String previewRelativePath,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       assetId = Value(assetId),
+       name = Value(name),
+       stateJson = Value(stateJson),
+       previewRelativePath = Value(previewRelativePath),
+       updatedAt = Value(updatedAt);
+  static Insertable<DevelopVariantData> custom({
+    Expression<String>? id,
+    Expression<String>? assetId,
+    Expression<String>? name,
+    Expression<String>? stateJson,
+    Expression<String>? previewRelativePath,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (assetId != null) 'asset_id': assetId,
+      if (name != null) 'name': name,
+      if (stateJson != null) 'state_json': stateJson,
+      if (previewRelativePath != null)
+        'preview_relative_path': previewRelativePath,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DevelopVariantsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? assetId,
+    Value<String>? name,
+    Value<String>? stateJson,
+    Value<String>? previewRelativePath,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return DevelopVariantsCompanion(
+      id: id ?? this.id,
+      assetId: assetId ?? this.assetId,
+      name: name ?? this.name,
+      stateJson: stateJson ?? this.stateJson,
+      previewRelativePath: previewRelativePath ?? this.previewRelativePath,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (assetId.present) {
+      map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (stateJson.present) {
+      map['state_json'] = Variable<String>(stateJson.value);
+    }
+    if (previewRelativePath.present) {
+      map['preview_relative_path'] = Variable<String>(
+        previewRelativePath.value,
+      );
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DevelopVariantsCompanion(')
+          ..write('id: $id, ')
+          ..write('assetId: $assetId, ')
+          ..write('name: $name, ')
+          ..write('stateJson: $stateJson, ')
+          ..write('previewRelativePath: $previewRelativePath, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $DevelopVariantFilesTable extends DevelopVariantFiles
+    with TableInfo<$DevelopVariantFilesTable, DevelopVariantFileData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $DevelopVariantFilesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _variantIdMeta = const VerificationMeta(
+    'variantId',
+  );
+  @override
+  late final GeneratedColumn<String> variantId = GeneratedColumn<String>(
+    'variant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assetIdMeta = const VerificationMeta(
+    'assetId',
+  );
+  @override
+  late final GeneratedColumn<String> assetId = GeneratedColumn<String>(
+    'asset_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _relativePathMeta = const VerificationMeta(
+    'relativePath',
+  );
+  @override
+  late final GeneratedColumn<String> relativePath = GeneratedColumn<String>(
+    'relative_path',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sha256Meta = const VerificationMeta('sha256');
+  @override
+  late final GeneratedColumn<String> sha256 = GeneratedColumn<String>(
+    'sha256',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    variantId,
+    assetId,
+    relativePath,
+    sha256,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'develop_variant_files';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<DevelopVariantFileData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('variant_id')) {
+      context.handle(
+        _variantIdMeta,
+        variantId.isAcceptableOrUnknown(data['variant_id']!, _variantIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_variantIdMeta);
+    }
+    if (data.containsKey('asset_id')) {
+      context.handle(
+        _assetIdMeta,
+        assetId.isAcceptableOrUnknown(data['asset_id']!, _assetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_assetIdMeta);
+    }
+    if (data.containsKey('relative_path')) {
+      context.handle(
+        _relativePathMeta,
+        relativePath.isAcceptableOrUnknown(
+          data['relative_path']!,
+          _relativePathMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_relativePathMeta);
+    }
+    if (data.containsKey('sha256')) {
+      context.handle(
+        _sha256Meta,
+        sha256.isAcceptableOrUnknown(data['sha256']!, _sha256Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_sha256Meta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {variantId, relativePath};
+  @override
+  DevelopVariantFileData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return DevelopVariantFileData(
+      variantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}variant_id'],
+      )!,
+      assetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}asset_id'],
+      )!,
+      relativePath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}relative_path'],
+      )!,
+      sha256: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sha256'],
+      )!,
+    );
+  }
+
+  @override
+  $DevelopVariantFilesTable createAlias(String alias) {
+    return $DevelopVariantFilesTable(attachedDatabase, alias);
+  }
+}
+
+class DevelopVariantFileData extends DataClass
+    implements Insertable<DevelopVariantFileData> {
+  final String variantId;
+  final String assetId;
+  final String relativePath;
+  final String sha256;
+  const DevelopVariantFileData({
+    required this.variantId,
+    required this.assetId,
+    required this.relativePath,
+    required this.sha256,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['variant_id'] = Variable<String>(variantId);
+    map['asset_id'] = Variable<String>(assetId);
+    map['relative_path'] = Variable<String>(relativePath);
+    map['sha256'] = Variable<String>(sha256);
+    return map;
+  }
+
+  DevelopVariantFilesCompanion toCompanion(bool nullToAbsent) {
+    return DevelopVariantFilesCompanion(
+      variantId: Value(variantId),
+      assetId: Value(assetId),
+      relativePath: Value(relativePath),
+      sha256: Value(sha256),
+    );
+  }
+
+  factory DevelopVariantFileData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return DevelopVariantFileData(
+      variantId: serializer.fromJson<String>(json['variantId']),
+      assetId: serializer.fromJson<String>(json['assetId']),
+      relativePath: serializer.fromJson<String>(json['relativePath']),
+      sha256: serializer.fromJson<String>(json['sha256']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'variantId': serializer.toJson<String>(variantId),
+      'assetId': serializer.toJson<String>(assetId),
+      'relativePath': serializer.toJson<String>(relativePath),
+      'sha256': serializer.toJson<String>(sha256),
+    };
+  }
+
+  DevelopVariantFileData copyWith({
+    String? variantId,
+    String? assetId,
+    String? relativePath,
+    String? sha256,
+  }) => DevelopVariantFileData(
+    variantId: variantId ?? this.variantId,
+    assetId: assetId ?? this.assetId,
+    relativePath: relativePath ?? this.relativePath,
+    sha256: sha256 ?? this.sha256,
+  );
+  DevelopVariantFileData copyWithCompanion(DevelopVariantFilesCompanion data) {
+    return DevelopVariantFileData(
+      variantId: data.variantId.present ? data.variantId.value : this.variantId,
+      assetId: data.assetId.present ? data.assetId.value : this.assetId,
+      relativePath: data.relativePath.present
+          ? data.relativePath.value
+          : this.relativePath,
+      sha256: data.sha256.present ? data.sha256.value : this.sha256,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DevelopVariantFileData(')
+          ..write('variantId: $variantId, ')
+          ..write('assetId: $assetId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('sha256: $sha256')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(variantId, assetId, relativePath, sha256);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is DevelopVariantFileData &&
+          other.variantId == this.variantId &&
+          other.assetId == this.assetId &&
+          other.relativePath == this.relativePath &&
+          other.sha256 == this.sha256);
+}
+
+class DevelopVariantFilesCompanion
+    extends UpdateCompanion<DevelopVariantFileData> {
+  final Value<String> variantId;
+  final Value<String> assetId;
+  final Value<String> relativePath;
+  final Value<String> sha256;
+  final Value<int> rowid;
+  const DevelopVariantFilesCompanion({
+    this.variantId = const Value.absent(),
+    this.assetId = const Value.absent(),
+    this.relativePath = const Value.absent(),
+    this.sha256 = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  DevelopVariantFilesCompanion.insert({
+    required String variantId,
+    required String assetId,
+    required String relativePath,
+    required String sha256,
+    this.rowid = const Value.absent(),
+  }) : variantId = Value(variantId),
+       assetId = Value(assetId),
+       relativePath = Value(relativePath),
+       sha256 = Value(sha256);
+  static Insertable<DevelopVariantFileData> custom({
+    Expression<String>? variantId,
+    Expression<String>? assetId,
+    Expression<String>? relativePath,
+    Expression<String>? sha256,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (variantId != null) 'variant_id': variantId,
+      if (assetId != null) 'asset_id': assetId,
+      if (relativePath != null) 'relative_path': relativePath,
+      if (sha256 != null) 'sha256': sha256,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  DevelopVariantFilesCompanion copyWith({
+    Value<String>? variantId,
+    Value<String>? assetId,
+    Value<String>? relativePath,
+    Value<String>? sha256,
+    Value<int>? rowid,
+  }) {
+    return DevelopVariantFilesCompanion(
+      variantId: variantId ?? this.variantId,
+      assetId: assetId ?? this.assetId,
+      relativePath: relativePath ?? this.relativePath,
+      sha256: sha256 ?? this.sha256,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (variantId.present) {
+      map['variant_id'] = Variable<String>(variantId.value);
+    }
+    if (assetId.present) {
+      map['asset_id'] = Variable<String>(assetId.value);
+    }
+    if (relativePath.present) {
+      map['relative_path'] = Variable<String>(relativePath.value);
+    }
+    if (sha256.present) {
+      map['sha256'] = Variable<String>(sha256.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('DevelopVariantFilesCompanion(')
+          ..write('variantId: $variantId, ')
+          ..write('assetId: $assetId, ')
+          ..write('relativePath: $relativePath, ')
+          ..write('sha256: $sha256, ')
+          ..write('rowid: $rowid')
           ..write(')'))
         .toString();
   }
@@ -27392,6 +28234,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $DevelopHistoryTable developHistory = $DevelopHistoryTable(this);
+  late final $DevelopVariantsTable developVariants = $DevelopVariantsTable(
+    this,
+  );
+  late final $DevelopVariantFilesTable developVariantFiles =
+      $DevelopVariantFilesTable(this);
   late final $VideoTrimsTable videoTrims = $VideoTrimsTable(this);
   late final $DevelopMasksTable developMasks = $DevelopMasksTable(this);
   late final $RestoreJobsTable restoreJobs = $RestoreJobsTable(this);
@@ -27446,6 +28293,14 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AufgabenlaeufeTable aufgabenlaeufe = $AufgabenlaeufeTable(this);
   late final $BeschriftungsvorschlaegeTable beschriftungsvorschlaege =
       $BeschriftungsvorschlaegeTable(this);
+  late final Index developVariantsAsset = Index(
+    'develop_variants_asset',
+    'CREATE INDEX develop_variants_asset ON develop_variants (asset_id)',
+  );
+  late final Index developVariantFilesPath = Index(
+    'develop_variant_files_path',
+    'CREATE INDEX develop_variant_files_path ON develop_variant_files (relative_path)',
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -27470,6 +28325,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cameraPresetTags,
     developSettings,
     developHistory,
+    developVariants,
+    developVariantFiles,
     videoTrims,
     developMasks,
     restoreJobs,
@@ -27501,6 +28358,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     gemerkteErinnerungen,
     aufgabenlaeufe,
     beschriftungsvorschlaege,
+    developVariantsAsset,
+    developVariantFilesPath,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -32522,6 +33381,7 @@ typedef $$CameraPresetTagsTableProcessedTableManager =
 typedef $$DevelopSettingsTableCreateCompanionBuilder =
     DevelopSettingsCompanion Function({
       required String assetId,
+      Value<String?> cropJson,
       Value<double> exposure,
       Value<double?> temperature,
       Value<double?> tint,
@@ -32543,6 +33403,7 @@ typedef $$DevelopSettingsTableCreateCompanionBuilder =
 typedef $$DevelopSettingsTableUpdateCompanionBuilder =
     DevelopSettingsCompanion Function({
       Value<String> assetId,
+      Value<String?> cropJson,
       Value<double> exposure,
       Value<double?> temperature,
       Value<double?> tint,
@@ -32573,6 +33434,11 @@ class $$DevelopSettingsTableFilterComposer
   });
   ColumnFilters<String> get assetId => $composableBuilder(
     column: $table.assetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -32671,6 +33537,11 @@ class $$DevelopSettingsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<double> get exposure => $composableBuilder(
     column: $table.exposure,
     builder: (column) => ColumnOrderings(column),
@@ -32763,6 +33634,9 @@ class $$DevelopSettingsTableAnnotationComposer
   });
   GeneratedColumn<String> get assetId =>
       $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<String> get cropJson =>
+      $composableBuilder(column: $table.cropJson, builder: (column) => column);
 
   GeneratedColumn<double> get exposure =>
       $composableBuilder(column: $table.exposure, builder: (column) => column);
@@ -32865,6 +33739,7 @@ class $$DevelopSettingsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> assetId = const Value.absent(),
+                Value<String?> cropJson = const Value.absent(),
                 Value<double> exposure = const Value.absent(),
                 Value<double?> temperature = const Value.absent(),
                 Value<double?> tint = const Value.absent(),
@@ -32884,6 +33759,7 @@ class $$DevelopSettingsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => DevelopSettingsCompanion(
                 assetId: assetId,
+                cropJson: cropJson,
                 exposure: exposure,
                 temperature: temperature,
                 tint: tint,
@@ -32905,6 +33781,7 @@ class $$DevelopSettingsTableTableManager
           createCompanionCallback:
               ({
                 required String assetId,
+                Value<String?> cropJson = const Value.absent(),
                 Value<double> exposure = const Value.absent(),
                 Value<double?> temperature = const Value.absent(),
                 Value<double?> tint = const Value.absent(),
@@ -32924,6 +33801,7 @@ class $$DevelopSettingsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => DevelopSettingsCompanion.insert(
                 assetId: assetId,
+                cropJson: cropJson,
                 exposure: exposure,
                 temperature: temperature,
                 tint: tint,
@@ -32984,6 +33862,7 @@ typedef $$DevelopSettingsTableProcessedTableManager =
     >;
 typedef $$DevelopHistoryTableCreateCompanionBuilder =
     DevelopHistoryCompanion Function({
+      Value<String?> cropJson,
       Value<int> id,
       required String assetId,
       required double exposure,
@@ -33005,6 +33884,7 @@ typedef $$DevelopHistoryTableCreateCompanionBuilder =
     });
 typedef $$DevelopHistoryTableUpdateCompanionBuilder =
     DevelopHistoryCompanion Function({
+      Value<String?> cropJson,
       Value<int> id,
       Value<String> assetId,
       Value<double> exposure,
@@ -33034,6 +33914,11 @@ class $$DevelopHistoryTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -33134,6 +34019,11 @@ class $$DevelopHistoryTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get cropJson => $composableBuilder(
+    column: $table.cropJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -33234,6 +34124,9 @@ class $$DevelopHistoryTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get cropJson =>
+      $composableBuilder(column: $table.cropJson, builder: (column) => column);
+
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -33340,6 +34233,7 @@ class $$DevelopHistoryTableTableManager
               $$DevelopHistoryTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String?> cropJson = const Value.absent(),
                 Value<int> id = const Value.absent(),
                 Value<String> assetId = const Value.absent(),
                 Value<double> exposure = const Value.absent(),
@@ -33359,6 +34253,7 @@ class $$DevelopHistoryTableTableManager
                 Value<String?> colorMixerJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => DevelopHistoryCompanion(
+                cropJson: cropJson,
                 id: id,
                 assetId: assetId,
                 exposure: exposure,
@@ -33380,6 +34275,7 @@ class $$DevelopHistoryTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> cropJson = const Value.absent(),
                 Value<int> id = const Value.absent(),
                 required String assetId,
                 required double exposure,
@@ -33399,6 +34295,7 @@ class $$DevelopHistoryTableTableManager
                 Value<String?> colorMixerJson = const Value.absent(),
                 required DateTime createdAt,
               }) => DevelopHistoryCompanion.insert(
+                cropJson: cropJson,
                 id: id,
                 assetId: assetId,
                 exposure: exposure,
@@ -33450,6 +34347,457 @@ typedef $$DevelopHistoryTableProcessedTableManager =
         BaseReferences<_$AppDatabase, $DevelopHistoryTable, DevelopHistoryData>,
       ),
       DevelopHistoryData,
+      PrefetchHooks Function()
+    >;
+typedef $$DevelopVariantsTableCreateCompanionBuilder =
+    DevelopVariantsCompanion Function({
+      required String id,
+      required String assetId,
+      required String name,
+      required String stateJson,
+      required String previewRelativePath,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$DevelopVariantsTableUpdateCompanionBuilder =
+    DevelopVariantsCompanion Function({
+      Value<String> id,
+      Value<String> assetId,
+      Value<String> name,
+      Value<String> stateJson,
+      Value<String> previewRelativePath,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$DevelopVariantsTableFilterComposer
+    extends Composer<_$AppDatabase, $DevelopVariantsTable> {
+  $$DevelopVariantsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get stateJson => $composableBuilder(
+    column: $table.stateJson,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get previewRelativePath => $composableBuilder(
+    column: $table.previewRelativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DevelopVariantsTableOrderingComposer
+    extends Composer<_$AppDatabase, $DevelopVariantsTable> {
+  $$DevelopVariantsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get stateJson => $composableBuilder(
+    column: $table.stateJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get previewRelativePath => $composableBuilder(
+    column: $table.previewRelativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DevelopVariantsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DevelopVariantsTable> {
+  $$DevelopVariantsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get stateJson =>
+      $composableBuilder(column: $table.stateJson, builder: (column) => column);
+
+  GeneratedColumn<String> get previewRelativePath => $composableBuilder(
+    column: $table.previewRelativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$DevelopVariantsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DevelopVariantsTable,
+          DevelopVariantData,
+          $$DevelopVariantsTableFilterComposer,
+          $$DevelopVariantsTableOrderingComposer,
+          $$DevelopVariantsTableAnnotationComposer,
+          $$DevelopVariantsTableCreateCompanionBuilder,
+          $$DevelopVariantsTableUpdateCompanionBuilder,
+          (
+            DevelopVariantData,
+            BaseReferences<
+              _$AppDatabase,
+              $DevelopVariantsTable,
+              DevelopVariantData
+            >,
+          ),
+          DevelopVariantData,
+          PrefetchHooks Function()
+        > {
+  $$DevelopVariantsTableTableManager(
+    _$AppDatabase db,
+    $DevelopVariantsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DevelopVariantsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DevelopVariantsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$DevelopVariantsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> assetId = const Value.absent(),
+                Value<String> name = const Value.absent(),
+                Value<String> stateJson = const Value.absent(),
+                Value<String> previewRelativePath = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DevelopVariantsCompanion(
+                id: id,
+                assetId: assetId,
+                name: name,
+                stateJson: stateJson,
+                previewRelativePath: previewRelativePath,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String assetId,
+                required String name,
+                required String stateJson,
+                required String previewRelativePath,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => DevelopVariantsCompanion.insert(
+                id: id,
+                assetId: assetId,
+                name: name,
+                stateJson: stateJson,
+                previewRelativePath: previewRelativePath,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$DevelopVariantsTable, DevelopVariantData>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $DevelopVariantsTable,
+                    DevelopVariantData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DevelopVariantsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DevelopVariantsTable,
+      DevelopVariantData,
+      $$DevelopVariantsTableFilterComposer,
+      $$DevelopVariantsTableOrderingComposer,
+      $$DevelopVariantsTableAnnotationComposer,
+      $$DevelopVariantsTableCreateCompanionBuilder,
+      $$DevelopVariantsTableUpdateCompanionBuilder,
+      (
+        DevelopVariantData,
+        BaseReferences<
+          _$AppDatabase,
+          $DevelopVariantsTable,
+          DevelopVariantData
+        >,
+      ),
+      DevelopVariantData,
+      PrefetchHooks Function()
+    >;
+typedef $$DevelopVariantFilesTableCreateCompanionBuilder =
+    DevelopVariantFilesCompanion Function({
+      required String variantId,
+      required String assetId,
+      required String relativePath,
+      required String sha256,
+      Value<int> rowid,
+    });
+typedef $$DevelopVariantFilesTableUpdateCompanionBuilder =
+    DevelopVariantFilesCompanion Function({
+      Value<String> variantId,
+      Value<String> assetId,
+      Value<String> relativePath,
+      Value<String> sha256,
+      Value<int> rowid,
+    });
+
+class $$DevelopVariantFilesTableFilterComposer
+    extends Composer<_$AppDatabase, $DevelopVariantFilesTable> {
+  $$DevelopVariantFilesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$DevelopVariantFilesTableOrderingComposer
+    extends Composer<_$AppDatabase, $DevelopVariantFilesTable> {
+  $$DevelopVariantFilesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get variantId => $composableBuilder(
+    column: $table.variantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get assetId => $composableBuilder(
+    column: $table.assetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sha256 => $composableBuilder(
+    column: $table.sha256,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$DevelopVariantFilesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $DevelopVariantFilesTable> {
+  $$DevelopVariantFilesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get variantId =>
+      $composableBuilder(column: $table.variantId, builder: (column) => column);
+
+  GeneratedColumn<String> get assetId =>
+      $composableBuilder(column: $table.assetId, builder: (column) => column);
+
+  GeneratedColumn<String> get relativePath => $composableBuilder(
+    column: $table.relativePath,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get sha256 =>
+      $composableBuilder(column: $table.sha256, builder: (column) => column);
+}
+
+class $$DevelopVariantFilesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $DevelopVariantFilesTable,
+          DevelopVariantFileData,
+          $$DevelopVariantFilesTableFilterComposer,
+          $$DevelopVariantFilesTableOrderingComposer,
+          $$DevelopVariantFilesTableAnnotationComposer,
+          $$DevelopVariantFilesTableCreateCompanionBuilder,
+          $$DevelopVariantFilesTableUpdateCompanionBuilder,
+          (
+            DevelopVariantFileData,
+            BaseReferences<
+              _$AppDatabase,
+              $DevelopVariantFilesTable,
+              DevelopVariantFileData
+            >,
+          ),
+          DevelopVariantFileData,
+          PrefetchHooks Function()
+        > {
+  $$DevelopVariantFilesTableTableManager(
+    _$AppDatabase db,
+    $DevelopVariantFilesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$DevelopVariantFilesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$DevelopVariantFilesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$DevelopVariantFilesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> variantId = const Value.absent(),
+                Value<String> assetId = const Value.absent(),
+                Value<String> relativePath = const Value.absent(),
+                Value<String> sha256 = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => DevelopVariantFilesCompanion(
+                variantId: variantId,
+                assetId: assetId,
+                relativePath: relativePath,
+                sha256: sha256,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String variantId,
+                required String assetId,
+                required String relativePath,
+                required String sha256,
+                Value<int> rowid = const Value.absent(),
+              }) => DevelopVariantFilesCompanion.insert(
+                variantId: variantId,
+                assetId: assetId,
+                relativePath: relativePath,
+                sha256: sha256,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $DevelopVariantFilesTable,
+                    DevelopVariantFileData
+                  >(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $DevelopVariantFilesTable,
+                    DevelopVariantFileData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$DevelopVariantFilesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $DevelopVariantFilesTable,
+      DevelopVariantFileData,
+      $$DevelopVariantFilesTableFilterComposer,
+      $$DevelopVariantFilesTableOrderingComposer,
+      $$DevelopVariantFilesTableAnnotationComposer,
+      $$DevelopVariantFilesTableCreateCompanionBuilder,
+      $$DevelopVariantFilesTableUpdateCompanionBuilder,
+      (
+        DevelopVariantFileData,
+        BaseReferences<
+          _$AppDatabase,
+          $DevelopVariantFilesTable,
+          DevelopVariantFileData
+        >,
+      ),
+      DevelopVariantFileData,
       PrefetchHooks Function()
     >;
 typedef $$VideoTrimsTableCreateCompanionBuilder =
@@ -41698,6 +43046,10 @@ class $AppDatabaseManager {
       $$DevelopSettingsTableTableManager(_db, _db.developSettings);
   $$DevelopHistoryTableTableManager get developHistory =>
       $$DevelopHistoryTableTableManager(_db, _db.developHistory);
+  $$DevelopVariantsTableTableManager get developVariants =>
+      $$DevelopVariantsTableTableManager(_db, _db.developVariants);
+  $$DevelopVariantFilesTableTableManager get developVariantFiles =>
+      $$DevelopVariantFilesTableTableManager(_db, _db.developVariantFiles);
   $$VideoTrimsTableTableManager get videoTrims =>
       $$VideoTrimsTableTableManager(_db, _db.videoTrims);
   $$DevelopMasksTableTableManager get developMasks =>

@@ -36,6 +36,8 @@ class BackupProgress {
 
   /// Wie viele Bytes dieser [grenzeOffen] Dateien noch fehlen.
   final int? grenzeOffenBytes;
+  final int? zusatzdateienOffen;
+  final int? zusatzdateienBytes;
 
   /// Wie viel von [gesamtBytes] schon im Ziel liegt (#303) – nur beim
   /// automatischen Backup, sonst null.
@@ -71,6 +73,8 @@ class BackupProgress {
     this.currentFile,
     this.grenzeOffen,
     this.grenzeOffenBytes,
+    this.zusatzdateienOffen,
+    this.zusatzdateienBytes,
     this.gesichertBytes,
     this.gesamtBytes,
     this.fehlgeschlagen,

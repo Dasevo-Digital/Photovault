@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
+import 'original_referenzen.dart';
+
 /// Kapselt sämtliche Pfade der lokalen Bibliothek. Layout (Wurzelverzeichnis
 /// standardmäßig im App-Support-Ordner, siehe [LibraryLocation] – kann in
 /// den Einstellungen auf einen beliebigen anderen Ordner verlegt werden):
@@ -27,6 +29,12 @@ class StoragePaths {
   StoragePaths._(this.root);
 
   final Directory root;
+
+  OriginalReferenzen? referenzen;
+  bool referenzenLadefehler = false;
+  final Set<String> offeneArbeitsvorschauen = {};
+
+  bool istReferenziert(String pfad) => OriginalReferenzen.istReferenz(pfad);
 
   /// Legt die Unterordner unter [root] an (falls nötig) und gibt die
   /// Pfade zurück. Wo die Bibliothek liegt, weiss die App
@@ -243,6 +251,13 @@ class StoragePaths {
   /// vorher vom Server geholt, sonst wie [absolute]. Für alles, was eine
   /// Datei ganz liest (Betrachter, Video, Export, Bearbeiten).
   Future<File> bereit(String relativePath) async {
+    if (istReferenziert(relativePath)) {
+      final katalog = referenzen;
+      if (katalog == null) {
+        throw const FormatException('pv_referenzen_unbekannt');
+      }
+      return katalog.lesen(relativePath);
+    }
     final f = absolute(relativePath);
     final holen = beschaffe;
     if (holen == null) return f;
@@ -264,6 +279,7 @@ class StoragePaths {
   /// beim "Papierkorb leeren" endgültig gelöscht). Gibt den neuen relativen
   /// Pfad zurück.
   Future<String> moveToPhysicalTrash(String currentRelativePath) async {
+    if (istReferenziert(currentRelativePath)) return currentRelativePath;
     final source = absolute(currentRelativePath);
     final target = File(p.join(trashDir.path, p.basename(currentRelativePath)));
     if (await source.exists()) {
@@ -273,6 +289,11 @@ class StoragePaths {
   }
 
   Future<void> deletePermanently(String relativePath) async {
+    // Der Katalogeintrag darf verschwinden, eine fremd verwaltete Quelle nie.
+    if (istReferenziert(relativePath)) {
+      await referenzen?.entfernen(relativePath);
+      return;
+    }
     final file = absolute(relativePath);
     // Kein „gibt es sie?“ vorab: Zwischen Prüfen und Löschen kann ein
     // anderer dieselbe Datei wegräumen. Am Server tat das der Befehl

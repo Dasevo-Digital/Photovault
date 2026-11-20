@@ -97,6 +97,7 @@ Future<String> _lege({
   // Nur, was wirklich ein Ergebnis dieser Art war – nie ein Original.
   if (vorher != null &&
       vorher != neu &&
+      !await db.varianteVerwendetDatei(vorher) &&
       p.isWithin(ordner, p.normalize(vorher))) {
     final alt = paths.absolute(vorher);
     if (await alt.exists()) await alt.delete();

@@ -15,11 +15,19 @@ import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
-import '../widgets/namens_dialog.dart' show MitTextsteuerung;
+import '../widgets/zuschnitt_auswahl.dart';
+import '../widgets/namens_dialog.dart' show MitTextsteuerung, frageNamen;
+import '../widgets/bibliotheksbild.dart';
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
+import 'package:kern/services/bildzuschnitt.dart';
+import '../services/entwicklungsvarianten_dienst.dart';
+import '../services/arbeitsvorschauen.dart';
+import '../services/farbverwaltung.dart';
+import 'farbverwaltung_screen.dart';
+import 'arbeitsvorschauen_screen.dart';
 import 'package:kern/services/weissabgleich.dart';
 import '../services/develop_render.dart';
 import '../services/entwicklung_ablegen.dart';
@@ -50,6 +58,7 @@ part 'entwickeln/vorschau.dart';
 part 'entwickeln/verlauf_und_vorgaben.dart';
 part 'entwickeln/masken.dart';
 part 'entwickeln/bedienfelder.dart';
+part 'entwickeln/varianten.dart';
 
 /// Welche Art von Maske gerade erstellt/bearbeitet wird – KI-Auswahl (SAM-
 /// Punkt-Prompts, siehe SegmentationService) oder eine der drei editierbaren
@@ -95,6 +104,10 @@ class DevelopScreen extends StatefulWidget {
   final StoragePaths paths;
   final ModellHalter<SegmentationService>? segmentation;
   final RestoreQueueService? restoreQueue;
+  final bool arbeitsvorschau;
+
+  /// Arbeitsbibliotheken verwenden die Profile ihrer Hauptbibliothek.
+  final StoragePaths? farbpfade;
 
   /// Legt die gespeicherten Einstellungen dieses Fotos in die
   /// Zwischenablage, um sie danach auf andere Fotos zu übertragen (siehe
@@ -121,6 +134,8 @@ class DevelopScreen extends StatefulWidget {
     this.onEinstellungenKopieren,
     this.kopierteEinstellungen,
     this.restoreQueue,
+    this.arbeitsvorschau = false,
+    this.farbpfade,
   });
 
   @override
@@ -144,6 +159,26 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   bool _loading = true;
   bool _rendering = false;
   bool _saving = false;
+  Farbverwaltung? _farbverwaltung;
+  bool _druckvorschau = false,
+      _gamutwarnung = false,
+      _papierfarbe = false,
+      _monitorprofil = false;
+  bool get _farbeAktiv => _monitorprofil || _druckvorschau || _gamutwarnung;
+  Future<void> _initShaderVorschau({required bool unbearbeitet});
+  Future<Uint8List> _farbanzeigen(Uint8List bytes) async {
+    _farbverwaltung ??= await Farbverwaltung.fuer(
+      widget.farbpfade ?? widget.paths,
+    );
+    return _farbverwaltung!.anzeige(
+      bytes,
+      druckvorschau: _druckvorschau,
+      gamutwarnung: _gamutwarnung,
+      papierfarbe: _papierfarbe,
+    );
+  }
+
+  Bildzuschnitt _zuschnitt = Bildzuschnitt.ganz;
   String? _error;
   Uint8List? _previewBytes;
 
@@ -357,6 +392,7 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   void _selectGlobalAdjustments();
   void _merkeMaskenentwurf();
   Future<File?> _originalOderMeldung();
+  DevelopSettingsData _aktuellerDatensatz();
   Future<void> _deleteMask(DevelopMaskData mask);
   Future<void> _startMaskCreation({DevelopMaskData? editingMask});
   void _switchMaskFormType(_MaskFormType type);
@@ -382,7 +418,7 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
 /// Der Bildschirm selbst: Lebenszyklus und Aufbau. Felder stehen in
 /// [_EntwickelnBasis], die Abläufe nach Themen in den Mixins unter entwickeln/.
 class _DevelopScreenState extends _EntwickelnBasis
-    with _Vorschau, _Verlauf, _Masken, _Bedienfelder {
+    with _Vorschau, _Verlauf, _Masken, _Bedienfelder, _Varianten {
   @override
   void initState() {
     super.initState();
@@ -413,7 +449,80 @@ class _DevelopScreenState extends _EntwickelnBasis
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         title: Text(AppTexte.of(context).entwTitel),
+        bottom: (widget.arbeitsvorschau || _druckvorschau || _gamutwarnung)
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(40),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                    widget.arbeitsvorschau
+                        ? AppTexte.of(context).arbeitskopienStatus
+                        : AppTexte.of(context).farbraumVorschau,
+                    style: const TextStyle(color: Colors.amber),
+                  ),
+                ),
+              )
+            : null,
         actions: [
+          PopupMenuButton<String>(
+            tooltip: AppTexte.of(context).entwWerkzeugeTitel,
+            enabled: !_saving && !_loading && !_maskEditMode,
+            onSelected: (wert) async {
+              if (wert == 'varianten') await _variantenOeffnen();
+              if (wert == 'variante') await _varianteSpeichern();
+              if (wert == 'zuschnitt') await _zuschnittAendern();
+              if (wert == 'vorbereiten') await _arbeitsVorbereiten();
+              if (wert == 'farben') await _farbenKonfigurieren();
+              if (wert == 'proof' || wert == 'gamut' || wert == 'papier') {
+                await _farboption(wert);
+              }
+              if (wert == 'offline') await _arbeitsOeffnen();
+            },
+            itemBuilder: (context) => [
+              if (!widget.arbeitsvorschau) ...[
+                PopupMenuItem(
+                  value: 'varianten',
+                  child: Text(AppTexte.of(context).variantenTitel),
+                ),
+                PopupMenuItem(
+                  value: 'variante',
+                  child: Text(AppTexte.of(context).variantenSichern),
+                ),
+                PopupMenuItem(
+                  value: 'vorbereiten',
+                  child: Text(AppTexte.of(context).arbeitskopienVorbereiten),
+                ),
+                PopupMenuItem(
+                  value: 'offline',
+                  child: Text(AppTexte.of(context).arbeitskopienTitel),
+                ),
+              ],
+              PopupMenuItem(
+                value: 'farben',
+                child: Text(AppTexte.of(context).farbraumTitel),
+              ),
+              CheckedPopupMenuItem(
+                value: 'proof',
+                checked: _druckvorschau,
+                child: Text(AppTexte.of(context).farbraumVorschau),
+              ),
+              CheckedPopupMenuItem(
+                value: 'gamut',
+                checked: _gamutwarnung,
+                child: Text(AppTexte.of(context).farbraumWarnung),
+              ),
+              CheckedPopupMenuItem(
+                value: 'papier',
+                checked: _papierfarbe,
+                child: Text(AppTexte.of(context).farbraumPapier),
+              ),
+              PopupMenuItem(
+                value: 'zuschnitt',
+                child: Text(AppTexte.of(context).zuschnittTitel),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert),
+          ),
           if (widget.asset.restoredRelativePath != null)
             IconButton(
               icon: const Icon(Icons.remove_circle_outline),
@@ -547,7 +656,9 @@ class _DevelopScreenState extends _EntwickelnBasis
           else
             IconButton(
               icon: const Icon(Icons.check),
-              tooltip: AppTexte.of(context).allgSpeichern,
+              tooltip: widget.arbeitsvorschau
+                  ? AppTexte.of(context).arbeitskopienEntwurf
+                  : AppTexte.of(context).allgSpeichern,
               onPressed: _save,
             ),
         ],
@@ -756,6 +867,7 @@ String werkzeugName(AppTexte t, Entwicklungswerkzeug w) => switch (w) {
   Entwicklungswerkzeug.vignettierung => t.entwWerkzVignettierung,
   Entwicklungswerkzeug.tonwertkurve => t.entwWerkzKurve,
   Entwicklungswerkzeug.farbmischer => t.entwWerkzFarbmischer,
+  Entwicklungswerkzeug.zuschnitt => t.zuschnittTitel,
   Entwicklungswerkzeug.farbtabelle => t.entwWerkzFarbtabelle,
   Entwicklungswerkzeug.objektivkorrektur => t.entwWerkzObjektiv,
 };

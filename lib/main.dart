@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'services/farbverwaltung.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,7 @@ import 'widgets/stromhalter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  Farbverwaltung.registriereLizenz();
   // Meldungen aus dem Kern (package:kern) wie die der App: über
   // debugPrint, das lange Ausgaben nicht verschluckt.
   protokollZiel = debugPrint;

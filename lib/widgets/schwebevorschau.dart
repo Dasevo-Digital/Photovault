@@ -196,7 +196,7 @@ class _Videovorschau extends Schwebevorschau {
     // Die zweite Hälfte eines Live Photos kann für sich gesperrt sein;
     // [schwebeVideoId] sieht nur die erste.
     if (video == null || video.isLocked) return null;
-    final datei = paths.absolute(video.relativePath);
+    final datei = (await paths.bereit(video.relativePath));
     return await datei.exists() ? datei : null;
   }
 

@@ -51,6 +51,14 @@ class Umzug {
   final TusHochladen tus;
 
   Stream<Umzugsstand> laufe() async* {
+    final referenzen = await db
+        .customSelect(
+          "SELECT 1 FROM assets WHERE relative_path LIKE 'referenzen/%' LIMIT 1",
+        )
+        .get();
+    if (referenzen.isNotEmpty) {
+      throw StateError('pv_referenzen_vor_umzug_uebernehmen');
+    }
     await verbindung.schicke('api/v1/umzug/beginnen', const {});
     final stand = await verbindung.hole('api/v1/umzug/stand');
     final vorhanden = (stand['dateien']! as Map).cast<String, int>();
@@ -61,6 +69,7 @@ class Umzug {
       final rel = p.posix.joinAll(
         p.split(p.relative(e.path, from: wurzel.path)),
       );
+      if (rel.startsWith('arbeitsvorschauen/')) continue;
       // Versteckte Dateien (Sperren, Systemdateien) und halbe Downloads
       // gehören nicht zur Bibliothek.
       if (p.split(rel).any((t) => t.startsWith('.')) || rel.endsWith('.teil')) {

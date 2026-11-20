@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+import 'dart:io';
+import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
 import 'storage_paths.dart';
@@ -34,7 +36,32 @@ Future<List<String>> dateienDerAufnahme(
   for (final face in await db.facesForAsset(asset.id))
     if (face.cropRelativePath != null) face.cropRelativePath!,
   for (final mask in await db.masksForAsset(asset.id)) mask.maskRelativePath,
+  for (final f in await (db.select(
+    db.developVariantFiles,
+  )..where((t) => t.assetId.equals(asset.id))).get())
+    f.relativePath,
+  for (final f in await _arbeitsdateien(paths, asset.id)) f,
 ];
+
+Future<List<String>> _arbeitsdateien(StoragePaths paths, String id) async {
+  if (!RegExp(r'^[a-zA-Z0-9-]{1,80}$').hasMatch(id)) return const [];
+  final ordner = paths.absolute('arbeitsvorschauen/$id/basis.jpg').parent;
+  if (!await ordner.exists()) return const [];
+  final basis = await paths.root.resolveSymbolicLinks();
+  if (await FileSystemEntity.type(ordner.path, followLinks: false) !=
+          FileSystemEntityType.directory ||
+      await FileSystemEntity.type(ordner.parent.path, followLinks: false) !=
+          FileSystemEntityType.directory ||
+      !p.isWithin(basis, await ordner.resolveSymbolicLinks())) {
+    throw const FormatException('pv_arbeitsvorschau_pfad');
+  }
+  return [
+    for (final f
+        in await ordner.list(recursive: true, followLinks: false).toList())
+      if (f is File)
+        p.posix.joinAll(p.split(p.relative(f.path, from: paths.root.path))),
+  ];
+}
 
 /// Löscht Aufnahmen aus dem Papierkorb endgültig (#296): erst die Zeilen,
 /// dann die Dateien. Gibt die Kennungen zurück, die gingen.

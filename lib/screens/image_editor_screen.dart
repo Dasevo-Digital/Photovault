@@ -256,6 +256,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   }
 
   Future<void> _load() async {
+    if (widget.paths.istReferenziert(widget.asset.relativePath)) {
+      setState(() {
+        _loading = false;
+        _error = AppTexte.of(context).katalogGrenzen;
+      });
+      return;
+    }
     try {
       final bytes = await _vollesBild();
       // Nur zum Ermitteln der Abmessungen, einmal beim Öffnen – im

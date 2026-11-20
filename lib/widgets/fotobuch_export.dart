@@ -223,7 +223,7 @@ Future<({int seiten, int bilder})?> erstelleFotobuch(
     try {
       datei = await library.paths.bereit(abgeleitet ?? a.relativePath);
     } catch (_) {
-      datei = library.paths.absolute(a.relativePath);
+      datei = (await library.paths.bereit(a.relativePath));
     }
     if (!await datei.exists()) {
       datei = await library.paths.bereit(a.relativePath);

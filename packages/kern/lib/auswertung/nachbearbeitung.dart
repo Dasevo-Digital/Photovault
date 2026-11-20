@@ -248,7 +248,7 @@ class Nachbearbeitung {
   /// Gelesen wird erst Anfang und Ende; ganz nur, was danach aussieht.
   /// Sonst läse die Aufgabe „Live Photos“ jedes JPEG der Bibliothek ganz.
   Future<void> motionPhotoAbtrennen(AssetData foto) async {
-    final datei = paths.absolute(foto.relativePath);
+    final datei = (await paths.bereit(foto.relativePath));
     Directory? ordner;
     try {
       final groesse = await datei.length();

@@ -486,6 +486,81 @@ final class EntwicklungZuruecksetzen extends Befehl<void> {
 /// liegt. Die Datei selbst geht vorher ihren eigenen Weg (in einer
 /// verbundenen Bibliothek zum Server, siehe `StoragePaths.abgelegt`);
 /// der Befehl trägt nur ihren Pfad – wie bei jeder anderen Aufnahme auch.
+final class EntwicklungsvarianteSpeichern extends Befehl<void> {
+  const EntwicklungsvarianteSpeichern(this.variante, {this.aktivierenBeiStand});
+  final DevelopVariantData variante;
+  final String? aktivierenBeiStand;
+  static EntwicklungsvarianteSpeichern aus(Map<String, Object?> w) =>
+      EntwicklungsvarianteSpeichern(
+        DevelopVariantData.fromJson(
+          _abbildung(w['variante']).cast<String, dynamic>(),
+        ),
+        aktivierenBeiStand: w['aktivierenBeiStand'] as String?,
+      );
+  @override
+  String get art => 'entwicklungsvarianteSpeichern';
+  @override
+  Map<String, Object?> get werte => {
+    'variante': variante.toJson(),
+    if (aktivierenBeiStand != null) 'aktivierenBeiStand': aktivierenBeiStand,
+  };
+  @override
+  Future<void> anwenden(AppDatabase db) => db.transaction(() async {
+    if (aktivierenBeiStand != null &&
+        await db.entwicklungsBasis(variante.assetId) != aktivierenBeiStand) {
+      throw StateError('pv_offline_konflikt');
+    }
+    await db.varianteSpeichern(variante);
+    if (aktivierenBeiStand != null) {
+      await db.varianteAktivieren(
+        variante.assetId,
+        variante.id,
+        erwarteterStand: aktivierenBeiStand,
+      );
+    }
+  });
+}
+
+final class EntwicklungsvarianteAktivieren extends Befehl<void> {
+  const EntwicklungsvarianteAktivieren(
+    this.assetId,
+    this.id, {
+    this.erwarteterStand,
+  });
+  final String assetId, id;
+  final String? erwarteterStand;
+  static EntwicklungsvarianteAktivieren aus(Map<String, Object?> w) =>
+      EntwicklungsvarianteAktivieren(
+        w['assetId'] as String,
+        w['id'] as String,
+        erwarteterStand: w['erwarteterStand'] as String?,
+      );
+  @override
+  String get art => 'entwicklungsvarianteAktivieren';
+  @override
+  Map<String, Object?> get werte => {
+    'assetId': assetId,
+    'id': id,
+    if (erwarteterStand != null) 'erwarteterStand': erwarteterStand,
+  };
+  @override
+  Future<void> anwenden(AppDatabase db) =>
+      db.varianteAktivieren(assetId, id, erwarteterStand: erwarteterStand);
+}
+
+final class EntwicklungsvarianteEntfernen extends Befehl<void> {
+  const EntwicklungsvarianteEntfernen(this.assetId, this.id);
+  final String assetId, id;
+  static EntwicklungsvarianteEntfernen aus(Map<String, Object?> w) =>
+      EntwicklungsvarianteEntfernen(w['assetId'] as String, w['id'] as String);
+  @override
+  String get art => 'entwicklungsvarianteEntfernen';
+  @override
+  Map<String, Object?> get werte => {'assetId': assetId, 'id': id};
+  @override
+  Future<void> anwenden(AppDatabase db) => db.varianteEntfernen(assetId, id);
+}
+
 final class EntwicklungSpeichern extends Befehl<void> {
   EntwicklungSpeichern(
     this.id,

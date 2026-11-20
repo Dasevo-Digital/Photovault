@@ -2,11 +2,14 @@ part of '../develop_screen.dart';
 
 /// Die Vorschau: Shader und Live-Bild, LUT, Histogramm, Vorher/Nachher.
 mixin _Vorschau on _EntwickelnBasis {
-  bool get _shaderMoeglich => beschneidungBedienbar(
-    maskenVorhanden: _masks.isNotEmpty,
-    shaderGeladen: _shader != null,
-    basisGeladen: _shaderBasis != null,
-  );
+  bool get _shaderMoeglich =>
+      !_farbeAktiv &&
+      _zuschnitt.istGanz &&
+      beschneidungBedienbar(
+        maskenVorhanden: _masks.isNotEmpty,
+        shaderGeladen: _shader != null,
+        basisGeladen: _shaderBasis != null,
+      );
 
   /// Ob sie auch gezeigt wird. Zwei Anlässe, und der zweite ist der
   /// Grund für die Trennung von [_shaderMoeglich]:
@@ -38,7 +41,9 @@ mixin _Vorschau on _EntwickelnBasis {
   /// geprüft und die Vorschau geladen ist. Beides ist optional: Schlägt es
   /// fehl (Plattform ohne Shader, Foto nicht renderbar), bleibt schlicht
   /// das bisherige Verhalten – nach jedem Reglerstopp ein nativer Render.
+  @override
   Future<void> _initShaderVorschau({required bool unbearbeitet}) async {
+    if (_farbeAktiv || _shaderBasis != null) return;
     final shader = await ladeDevelopShader();
     if (!mounted) return;
     if (shader != null) setState(() => _shader = shader);
@@ -86,8 +91,24 @@ mixin _Vorschau on _EntwickelnBasis {
       return;
     }
 
+    try {
+      _farbverwaltung = await Farbverwaltung.fuer(
+        widget.farbpfade ?? widget.paths,
+      );
+      _monitorprofil = (await _farbverwaltung!.laden()).bildschirm != 'system';
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _previewBytes = null;
+          _error = AppTexte.of(context).farbraumFehler;
+        });
+      }
+      return;
+    }
     final settings = await widget.db.developSettingsForAsset(widget.asset.id);
     if (settings != null) {
+      _zuschnitt = Bildzuschnitt.aus(settings.cropJson);
       _exposure = settings.exposure;
       _contrast = settings.contrast;
       _shadows = settings.shadows;
@@ -145,11 +166,18 @@ mixin _Vorschau on _EntwickelnBasis {
   }
 
   Future<void> _showExistingPreview() async {
+    if (_farbeAktiv) {
+      // RAW, HEIC, PNG und CMYK-Quellen gehen zuerst durch den normalen
+      // RGB-Renderweg; die ICC-Stufe verarbeitet dessen neutrale Ausgabe.
+      await _requestPreview();
+      return;
+    }
     try {
       // Am Rechner das Original, nicht das Ansichtsbild (#333).
-      final bytes = await widget.paths
-          .absolute(displayRelativePath(widget.asset, mitAnsichtsbild: false))
-          .readAsBytes();
+      final datei = await widget.paths.bereit(
+        displayRelativePath(widget.asset, mitAnsichtsbild: false),
+      );
+      final bytes = await _farbanzeigen(await datei.readAsBytes());
       if (!mounted) return;
       setState(() => _previewBytes = bytes);
       unawaited(_recomputeHistogram());
@@ -258,6 +286,7 @@ mixin _Vorschau on _EntwickelnBasis {
     colorMixer: _colorMixer,
     lut: _lut,
     lutStrength: _lutStaerke,
+    zuschnitt: _zuschnitt,
   );
 
   /// Baut die Masken-Ebenen für den nativen Renderaufruf: für die gerade
@@ -307,13 +336,27 @@ mixin _Vorschau on _EntwickelnBasis {
     setState(() => _rendering = true);
     final sourceFile = await _originalOderMeldung();
     if (sourceFile == null) return;
-    final bytes = await NativeImageConverter.developImage(
-      sourceFile,
-      adjustments: _currentAdjustments(),
-      masks: _currentMaskLayers(),
-      maxDimension: 1600,
-      quality: 0.85,
-    );
+    Uint8List? bytes;
+    try {
+      final roh = await NativeImageConverter.developImage(
+        sourceFile,
+        adjustments: _currentAdjustments(),
+        masks: _currentMaskLayers(),
+        maxDimension: 1600,
+        quality: 0.85,
+      );
+      bytes = roh == null ? null : await _farbanzeigen(roh);
+    } on Object {
+      if (token == _requestToken && mounted) {
+        setState(() {
+          _rendering = false;
+          _dragging = false;
+          _previewBytes = null;
+          _error = AppTexte.of(context).farbraumFehler;
+        });
+      }
+      return;
+    }
     if (token != _requestToken || !mounted) return;
     setState(() {
       _rendering = false;
@@ -434,7 +477,13 @@ mixin _Vorschau on _EntwickelnBasis {
       quality: 0.85,
     );
     _loadingOriginalPreview = false;
-    if (mounted && bytes != null) setState(() => _originalPreviewBytes = bytes);
+    if (bytes == null) return;
+    try {
+      final farbig = await _farbanzeigen(bytes);
+      if (mounted) setState(() => _originalPreviewBytes = farbig);
+    } on Object {
+      if (mounted) setState(() => _error = AppTexte.of(context).farbraumFehler);
+    }
   }
 
   /// Schaltet den Vorher/Nachher-Trennstrich um.

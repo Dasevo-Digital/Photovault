@@ -22,6 +22,7 @@ import 'backup_manifest.dart';
 import 'backup_schnappschuss.dart';
 import 'backup_restore.dart';
 import 'backup_dateinamen.dart';
+import 'varianten_sicherung.dart';
 export 'backup_dateinamen.dart';
 export 'backup_modelle.dart';
 export 'backup_manifest.dart' show RestorePlan, RestoreDatei;
@@ -143,7 +144,8 @@ class BackupService {
     Map<String, String> frueher,
   ) async {
     if (!await _liegtImZiel(ziel)) return false;
-    final genannt = frueher[asset.relativePath];
+    final genannt =
+        frueher['originals/${pfadInDerSicherung(asset.relativePath).replaceAll(r'\', '/')}'];
     if (genannt != null && genannt != asset.checksum) return false;
     final hier = _paths.absolute(asset.relativePath);
     final groesse = await hier.exists()
@@ -340,10 +342,21 @@ class BackupService {
     // anlegt, bekommt deshalb weiterhin Fotos plus Beilagen – und der
     // Einstellungstext sagt das inzwischen auch.
     BackupManifest? manifest;
+    VariantenSicherungsstand zusatz;
     if (encryptionKey != null) {
-      manifest = await _writeEncryptedDatabaseSnapshot(
+      final snapshot = await _writeEncryptedDatabaseSnapshot(
         backupRoot,
         encryptionKey,
+        maxBytes: maxBytesPerRun,
+      );
+      manifest = snapshot.manifest;
+      zusatz = snapshot.zusatz;
+    } else {
+      zusatz = await VariantenSicherung.ohneSchnappschuss(
+        _db,
+        _paths,
+        backupRoot,
+        maxBytes: maxBytesPerRun,
       );
     }
 
@@ -381,8 +394,8 @@ class BackupService {
         ? _stimmtImZiel(asset, ziel, frueher)
         : _verschluesseltImZiel(asset, ziel);
     var done = 0;
-    var totalBytes = 0;
-    var geschriebeneBytes = 0;
+    var totalBytes = zusatz.geschriebenBytes;
+    var geschriebeneBytes = zusatz.geschriebenBytes;
     var abgebrochenWegenLimit = false;
     final backedUpIds = <String>[];
     var neu = 0;
@@ -553,7 +566,7 @@ class BackupService {
     // sonst wirkt ein begrenzter Lauf wie ein vollständiges Backup.
     // Eine begrenzte oder unvollständige Sicherung ist noch keine
     // vollständig wiederherstellbare Generation.
-    if (!abgebrochenWegenLimit && fehlgeschlagen == 0) {
+    if (!abgebrochenWegenLimit && fehlgeschlagen == 0 && zusatz.offen == 0) {
       final probe = await pruefeWiederherstellung(
         backupRoot.path,
         schluessel: encryptionKey,
@@ -562,6 +575,15 @@ class BackupService {
         done,
         pending.length,
         wiederherstellungsprobe: probe,
+      );
+    }
+
+    if (zusatz.offen > 0) {
+      yield BackupProgress(
+        done,
+        pending.length,
+        zusatzdateienOffen: zusatz.offen,
+        zusatzdateienBytes: zusatz.offenBytes,
       );
     }
 
@@ -705,7 +727,8 @@ class BackupService {
         // ohne den ganzen Zielordner nach jedem möglichen Hash absuchen zu
         // müssen. Bei verschlüsselten Backups liegt das Feld selbst wieder
         // in der verschlüsselten metadata.json.
-        'backupRelativePath': a.relativePath.replaceAll(r'\', '/'),
+        'backupRelativePath':
+            'originals/${pfadInDerSicherung(a.relativePath).replaceAll(r'\', '/')}',
         'isFavorite': a.isFavorite,
         'isArchived': a.isArchived,
         'description': a.description,
@@ -880,10 +903,13 @@ class BackupService {
     final originalsOut = Directory(p.join(backupRoot.path, 'originals'));
     await originalsOut.create(recursive: true);
 
-    final manifest = await _writeEncryptedDatabaseSnapshot(
+    final snapshot = await _writeEncryptedDatabaseSnapshot(
       backupRoot,
       encryptionKey,
+      maxBytes: maxBytesPerRun,
     );
+    final manifest = snapshot.manifest;
+    final zusatz = snapshot.zusatz;
     await _writeKeyEnvelope(backupRoot);
 
     final staging =
@@ -903,7 +929,7 @@ class BackupService {
       ),
     );
     var done = 0;
-    var geschriebeneBytes = 0;
+    var geschriebeneBytes = zusatz.geschriebenBytes;
     var abgebrochenWegenLimit = false;
     final autoBackedUpIds = <String>[];
     var fehlgeschlagen = 0;
@@ -1034,7 +1060,7 @@ class BackupService {
       stand: manifest,
     );
 
-    if (!abgebrochenWegenLimit && fehlgeschlagen == 0) {
+    if (!abgebrochenWegenLimit && fehlgeschlagen == 0 && zusatz.offen == 0) {
       final probe = await pruefeWiederherstellung(
         backupRoot.path,
         schluessel: encryptionKey,
@@ -1044,6 +1070,15 @@ class BackupService {
         done,
         pending.length,
         wiederherstellungsprobe: probe,
+      );
+    }
+
+    if (zusatz.offen > 0) {
+      yield BackupProgress(
+        done,
+        pending.length,
+        zusatzdateienOffen: zusatz.offen,
+        zusatzdateienBytes: zusatz.offenBytes,
       );
     }
 
@@ -1069,10 +1104,12 @@ class BackupService {
   /// gleichzeitig weiterschreibt, anders als ein simples Kopieren der
   /// `.sqlite`-Datei, das einen halbgeschriebenen Zustand einfangen könnte)
   /// und verschlüsselt ihn anschließend.
-  Future<BackupManifest> _writeEncryptedDatabaseSnapshot(
+  Future<({BackupManifest manifest, VariantenSicherungsstand zusatz})>
+  _writeEncryptedDatabaseSnapshot(
     Directory backupRoot,
-    SecretKey encryptionKey,
-  ) async {
+    SecretKey encryptionKey, {
+    int maxBytes = 0,
+  }) async {
     final snapshotPath = p.join(
       Directory.systemTemp.path,
       'photovault_db_snapshot_${_uuid.v4()}.sqlite',
@@ -1081,11 +1118,21 @@ class BackupService {
     try {
       await _db.customStatement('VACUUM INTO ?', [snapshotPath]);
       entferneGesperrteAus(snapshotPath);
+      final zusatz = await VariantenSicherung.ausSchnappschuss(
+        snapshotFile,
+        _paths,
+        backupRoot,
+        encryptionKey,
+        maxBytes: maxBytes,
+      );
       final target = File(p.join(backupRoot.path, 'library.sqlite.enc'));
       final teil = File('${target.path}.pv-teil');
       await VaultCrypto.encryptFile(snapshotFile, teil, encryptionKey);
       await teil.rename(target.path);
-      return BackupSchnappschussSpeicher().manifestAusDatei(snapshotFile);
+      return (
+        manifest: BackupSchnappschussSpeicher().manifestAusDatei(snapshotFile),
+        zusatz: zusatz,
+      );
     } finally {
       if (await snapshotFile.exists()) await snapshotFile.delete();
     }

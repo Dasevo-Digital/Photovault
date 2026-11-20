@@ -73,6 +73,8 @@ dependencies:
   # (packages/kern/README.md).
   kern:
     path: packages/kern
+  farbverwaltung:
+    path: packages/farbverwaltung
   abgleich_ui:
     path: packages/abgleich_ui
   teilen_ui:

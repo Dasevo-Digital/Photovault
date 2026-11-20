@@ -8,6 +8,7 @@ import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import 'background_tasks_screen.dart';
+import 'speicherkarte_screen.dart';
 import 'dokumente_screen.dart';
 import 'home_shell.dart' show Hauptbereich;
 import 'integrity_check_screen.dart';
@@ -188,6 +189,15 @@ class _LibraryHealthScreenState extends State<LibraryHealthScreen> {
       appBar: AppBar(
         title: Text(t.gesundheitTitel),
         actions: [
+          IconButton(
+            tooltip: t.speicherkarteTitel,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SpeicherkarteScreen(library: widget.library),
+              ),
+            ),
+            icon: const Icon(Icons.account_tree_outlined),
+          ),
           IconButton(
             tooltip: t.gesundheitAktualisieren,
             onPressed: _refresh,

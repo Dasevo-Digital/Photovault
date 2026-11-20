@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:kern/db/database.dart';
+import 'package:crypto/crypto.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -67,6 +68,29 @@ void main() {
       (await bibliotheken.fuer(erika.id)).bibliothek.pfade.root;
 
   test(
+    'eine verwendete Variantendatei lässt nur identische Inhalte zu',
+    () async {
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      const pfad = 'masks/var-probe.png';
+      final bytes = [1, 2, 3];
+      expect((await lege(pfad, bytes)).statusCode, 204);
+      await db
+          .into(db.developVariantFiles)
+          .insert(
+            DevelopVariantFilesCompanion.insert(
+              variantId: 'v',
+              assetId: 'a',
+              relativePath: pfad,
+              sha256: sha256.convert(bytes).toString(),
+            ),
+          );
+      expect((await lege(pfad, [4, 5, 6])).statusCode, 400);
+      expect(await File('${(await wurzel()).path}/$pfad').readAsBytes(), bytes);
+      expect((await lege(pfad, bytes)).statusCode, 204);
+    },
+  );
+
+  test(
     'ein entwickeltes Bild landet im Ordner developed und ist abrufbar',
     () async {
       final bytes = utf8.encode('ein JPEG, sagen wir');
@@ -90,6 +114,21 @@ void main() {
       );
       expect(zurueck.statusCode, 200);
       expect(await zurueck.read().expand((b) => b).toList(), neu);
+    },
+  );
+
+  test(
+    'Farbtabellen dürfen abgelegt werden, Arbeitskataloge bleiben lokal',
+    () async {
+      expect((await lege('luts/var-probe.cube', [1, 2, 3])).statusCode, 204);
+      expect(
+        (await lege('arbeitsvorschauen/entwurf.sqlite', [1, 2, 3])).statusCode,
+        403,
+      );
+      expect(
+        (await lege('farbprofile/monitor.icc', [1, 2, 3])).statusCode,
+        403,
+      );
     },
   );
 

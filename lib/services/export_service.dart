@@ -15,6 +15,8 @@ import 'package:kern/services/textstellen.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/xmp_regionen.dart';
 import 'xmp_writer.dart';
+import 'farbverwaltung.dart';
+import 'package:kern/services/jpeg_icc.dart';
 
 /// Größe und Format, in denen exportiert wird.
 ///
@@ -216,13 +218,6 @@ class ExportService {
         // Die bearbeitete Fassung ist schon entzerrt.
         objektivkorrektur: bearbeitet == null,
       );
-      // Gewandelt trägt kein Foto mehr Aufnahmeangaben: Der Wandler streift
-      // sie ab, auch beim unbearbeiteten Original. Ohne sie stünde das Foto
-      // im nächsten Programm am Tag des Exports. Bis #403 galt das nur für
-      // bearbeitete Fotos. Der Ort kommt – wie beim Server – nicht mit.
-      if (gerendert != null && !v.metadatenEntfernen) {
-        gerendert = mitAufnahmeangaben(gerendert, asset);
-      }
       if (gerendert != null && v.gesichterVerdecken && _library != null) {
         final faces = await _library.db.facesForAsset(asset.id);
         final plateBoxes = kennzeichenBoxen(asset.ocrBoxen);
@@ -237,6 +232,15 @@ class ExportService {
             boxen: boxes,
           ));
         }
+      }
+    }
+
+    if (gerendert != null) {
+      gerendert = await (await Farbverwaltung.fuer(
+        _paths,
+      )).exportiere(gerendert, datenschutz: v.metadatenEntfernen);
+      if (!v.metadatenEntfernen) {
+        gerendert = mitAufnahmeangaben(gerendert, asset);
       }
     }
 
@@ -344,6 +348,8 @@ List<(double, double, double, double)> kennzeichenBoxen(String? ocrBoxen) {
 Uint8List verdeckeGesichter(
   ({Uint8List bytes, List<(double, double, double, double)> boxen}) args,
 ) {
+  JpegIcc.masse(args.bytes);
+  final profil = JpegIcc.lesen(args.bytes);
   final image = img.decodeImage(args.bytes);
   if (image == null) return args.bytes;
   for (final (bx, by, bw, bh) in args.boxen) {
@@ -372,5 +378,9 @@ Uint8List verdeckeGesichter(
     img.gaussianBlur(crop, radius: (crop.width ~/ 10).clamp(8, 40));
     img.compositeImage(image, crop, dstX: x, dstY: y);
   }
-  return Uint8List.fromList(img.encodeJpg(image, quality: 90));
+  image.iccProfile = null;
+  return JpegIcc.schreiben(
+    Uint8List.fromList(img.encodeJpg(image, quality: 90)),
+    profil,
+  );
 }

@@ -72,7 +72,7 @@ Widget bibliotheksbild(
   int? cacheWidth,
   int? cacheHeight,
   ImageErrorWidgetBuilder? errorBuilder,
-}) => paths.beschaffe == null
+}) => paths.beschaffe == null && !paths.istReferenziert(relativ)
     ? Image.file(
         paths.absolute(relativ),
         fit: fit,

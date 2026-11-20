@@ -3,6 +3,7 @@ import '../protokoll.dart';
 import 'cube_lut.dart';
 import 'develop_color.dart';
 import 'storage_paths.dart';
+import 'bildzuschnitt.dart';
 
 /// Regler-Werte des DevelopScreen für [NativeImageConverter.developImage] –
 /// unveränderlich, damit sich ein Satz Einstellungen einfach speichern/
@@ -52,6 +53,7 @@ class DevelopAdjustments {
   /// Beide Renderpfade bekommen dadurch weiterhin genau einen Würfel.
   final CubeLut? lut;
   final double lutStrength;
+  final Bildzuschnitt zuschnitt;
 
   const DevelopAdjustments({
     this.exposure = 0,
@@ -69,6 +71,7 @@ class DevelopAdjustments {
     this.colorMixer = ColorMixer.neutral,
     this.lut,
     this.lutStrength = 1,
+    this.zuschnitt = Bildzuschnitt.ganz,
   });
 
   /// Ob überhaupt ein Farbwürfel gebraucht wird.
@@ -198,6 +201,7 @@ DevelopAdjustments reglerAusEinstellungen(
   colorMixer: colorMixerAus(d.colorMixerJson),
   lut: lut,
   lutStrength: d.lutStrength,
+  zuschnitt: Bildzuschnitt.aus(d.cropJson),
 );
 
 /// Lädt die Farbtabelle unter [relativerPfad], wenn eine hinterlegt ist.

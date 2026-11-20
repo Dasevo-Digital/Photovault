@@ -176,6 +176,7 @@ class AutomationRuleTags extends Table {
 @DataClassName('DevelopSettingsData')
 class DevelopSettings extends Table {
   TextColumn get assetId => text()();
+  TextColumn get cropJson => text().nullable()();
   RealColumn get exposure =>
       real().withDefault(const Constant(0))(); // EV, -3..3
   RealColumn get temperature =>
@@ -257,6 +258,7 @@ class VideoTrims extends Table {
 /// bleibt (wie bei [Faces]/[ImageEmbeddings] als Pro-Asset-Zusatztabelle).
 @DataClassName('DevelopHistoryData')
 class DevelopHistory extends Table {
+  TextColumn get cropJson => text().nullable()();
   IntColumn get id => integer().autoIncrement()();
   TextColumn get assetId => text()();
   RealColumn get exposure => real()();
@@ -289,6 +291,30 @@ class DevelopHistory extends Table {
   TextColumn get colorMixerJson => text().nullable()();
 
   DateTimeColumn get createdAt => dateTime()();
+}
+
+@DataClassName('DevelopVariantData')
+@TableIndex(name: 'develop_variants_asset', columns: {#assetId})
+class DevelopVariants extends Table {
+  TextColumn get id => text()();
+  TextColumn get assetId => text()();
+  TextColumn get name => text()();
+  TextColumn get stateJson => text()();
+  TextColumn get previewRelativePath => text()();
+  DateTimeColumn get updatedAt => dateTime()();
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('DevelopVariantFileData')
+@TableIndex(name: 'develop_variant_files_path', columns: {#relativePath})
+class DevelopVariantFiles extends Table {
+  TextColumn get variantId => text()();
+  TextColumn get assetId => text()();
+  TextColumn get relativePath => text()();
+  TextColumn get sha256 => text()();
+  @override
+  Set<Column> get primaryKey => {variantId, relativePath};
 }
 
 /// KI-Objektmaske (siehe MaskEditor, SegmentationService): eine per SAM

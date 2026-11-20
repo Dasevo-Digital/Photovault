@@ -1,4 +1,5 @@
 import 'package:kern/abgleich/grenzen.dart';
+import 'package:crypto/crypto.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -46,13 +47,30 @@ class Abgleichsapi {
 
   final _dateiwechsel = <String, Future<void>>{};
 
-  Future<void> _uebernehme(File teil, File ziel) {
+  Future<void> _uebernehme(
+    File teil,
+    File ziel,
+    AppDatabase db,
+    String relativ,
+  ) {
     final pfad = ziel.path;
     final vorher = _dateiwechsel[pfad] ?? Future<void>.value();
     final fertig = Completer<void>();
     _dateiwechsel[pfad] = fertig.future;
     return vorher
         .then((_) async {
+          final verwender = await db
+              .customSelect(
+                'SELECT DISTINCT sha256 FROM develop_variant_files WHERE relative_path=? LIMIT 2',
+                variables: [Variable.withString(relativ)],
+              )
+              .get();
+          if (verwender.isNotEmpty &&
+              (verwender.length != 1 ||
+                  (await sha256.bind(teil.openRead()).first).toString() !=
+                      verwender.single.read<String>('sha256'))) {
+            throw const FormatException('pv_variante_unveraenderlich');
+          }
           await teil.rename(pfad);
         })
         .whenComplete(() {
@@ -380,7 +398,7 @@ class Abgleichsapi {
       if (bytes != laenge) {
         throw const FormatException('weniger als angekündigt');
       }
-      await _uebernehme(teil, ziel);
+      await _uebernehme(teil, ziel, b.db, relativ);
     } catch (e) {
       await aus.close().catchError((_) {});
       if (await teil.exists()) await teil.delete();
@@ -396,7 +414,7 @@ const hoechstensAbgeleitet = 2 * 1024 * 1024 * 1024;
 
 /// Wohin ein Gerät Dateien legen darf: nur Abgeleitetes. Originale kommen
 /// über den Import, Miniaturen und Vorschauen rechnet der Server selbst.
-const abgeleiteteOrdner = {'developed', 'masks', 'trimmed', 'restored'};
+const abgeleiteteOrdner = {'developed', 'masks', 'luts', 'trimmed', 'restored'};
 
 /// Was ein Befehl zurückgibt, als JSON.
 Object? ergebnisAlsJson(Object? e) => switch (e) {

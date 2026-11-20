@@ -16,6 +16,8 @@ import '../befehle/befehl.dart';
 
 export '../befehle/befehl.dart';
 import '../services/erinnerungsfilter.dart';
+import '../services/entwicklungsvariante.dart';
+import 'package:crypto/crypto.dart' show sha256;
 import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
 import '../services/aktivitaeten.dart' show istBekannteArt;
 import '../services/embedding_codec.dart';
@@ -239,6 +241,8 @@ Iterable<List<T>> inStuecken<T>(Iterable<T> alle, {int groesse = 10000}) sync* {
     CameraPresetTags,
     DevelopSettings,
     DevelopHistory,
+    DevelopVariants,
+    DevelopVariantFiles,
     VideoTrims,
     DevelopMasks,
     RestoreJobs,
@@ -386,7 +390,7 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 99;
+  int get schemaVersion => 100;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

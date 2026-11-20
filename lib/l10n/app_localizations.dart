@@ -16641,6 +16641,660 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'{n} Dateien gefunden …'**
   String umzugQuelleDateien(int n);
+
+  /// No description provided for @katalogTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorhandene Fotoordner'**
+  String get katalogTitel;
+
+  /// No description provided for @katalogText.
+  ///
+  /// In de, this message translates to:
+  /// **'Originale bleiben an ihrem bisherigen Ort. Photo Vault verwaltet den Katalog und Vorschauen.'**
+  String get katalogText;
+
+  /// No description provided for @katalogOrdnerHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner katalogisieren'**
+  String get katalogOrdnerHinzufuegen;
+
+  /// No description provided for @katalogAusschluesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausschlüsse, ein Muster je Zeile (z. B. privat/**)'**
+  String get katalogAusschluesse;
+
+  /// No description provided for @katalogNeuZuordnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner wiederfinden'**
+  String get katalogNeuZuordnen;
+
+  /// No description provided for @katalogOriginalZuordnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Original wiederfinden'**
+  String get katalogOriginalZuordnen;
+
+  /// No description provided for @katalogVerwaltet.
+  ///
+  /// In de, this message translates to:
+  /// **'Original in Bibliothek übernehmen'**
+  String get katalogVerwaltet;
+
+  /// No description provided for @katalogOrdnerWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner mit den Originalen auswählen'**
+  String get katalogOrdnerWaehlen;
+
+  /// No description provided for @katalogNurLokal.
+  ///
+  /// In de, this message translates to:
+  /// **'Direkte Ordnerverwaltung ist in einer lokalen Bibliothek möglich. Vor einem Umzug zum Server müssen die Originale in die Bibliothek übernommen werden.'**
+  String get katalogNurLokal;
+
+  /// No description provided for @katalogNichtLesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Die lokale Zuordnung ist nicht lesbar. Die Originale bleiben unverändert.'**
+  String get katalogNichtLesbar;
+
+  /// No description provided for @katalogFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Vorgang konnte nicht abgeschlossen werden. Prüfe den Zugriff und ob die Originale unverändert sind.'**
+  String get katalogFehler;
+
+  /// No description provided for @katalogDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'Zugeordnete Originale'**
+  String get katalogDateien;
+
+  /// No description provided for @katalogGelesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Gelesen'**
+  String get katalogGelesen;
+
+  /// No description provided for @katalogNeu.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu'**
+  String get katalogNeu;
+
+  /// No description provided for @katalogDoppelt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bereits vorhanden'**
+  String get katalogDoppelt;
+
+  /// No description provided for @katalogFehlerzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'Fehler'**
+  String get katalogFehlerzahl;
+
+  /// No description provided for @katalogAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Scan abgebrochen; abgeschlossene Einträge bleiben erhalten.'**
+  String get katalogAbgebrochen;
+
+  /// No description provided for @katalogGeprueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuordnung nach Inhaltsprüfung übernommen.'**
+  String get katalogGeprueft;
+
+  /// No description provided for @katalogLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine externen Originalordner katalogisiert.'**
+  String get katalogLeer;
+
+  /// No description provided for @ausbauAbbrechen.
+  ///
+  /// In de, this message translates to:
+  /// **'Abbrechen'**
+  String get ausbauAbbrechen;
+
+  /// No description provided for @ausbauSchliessen.
+  ///
+  /// In de, this message translates to:
+  /// **'Schließen'**
+  String get ausbauSchliessen;
+
+  /// No description provided for @ausbauSpeichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Speichern'**
+  String get ausbauSpeichern;
+
+  /// No description provided for @ausbauZurueck.
+  ///
+  /// In de, this message translates to:
+  /// **'Zurück'**
+  String get ausbauZurueck;
+
+  /// No description provided for @ausbauName.
+  ///
+  /// In de, this message translates to:
+  /// **'Name'**
+  String get ausbauName;
+
+  /// No description provided for @ausbauUmbenennen.
+  ///
+  /// In de, this message translates to:
+  /// **'Umbenennen'**
+  String get ausbauUmbenennen;
+
+  /// No description provided for @ausbauLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Löschen'**
+  String get ausbauLoeschen;
+
+  /// No description provided for @ausbauNeuLaden.
+  ///
+  /// In de, this message translates to:
+  /// **'Neu prüfen'**
+  String get ausbauNeuLaden;
+
+  /// No description provided for @variantenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Bearbeitungsvarianten'**
+  String get variantenTitel;
+
+  /// No description provided for @variantenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Mehrere Entwicklungen desselben Originals mit eigenen Masken und Zuschnitten.'**
+  String get variantenText;
+
+  /// No description provided for @variantenSichern.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Variante speichern'**
+  String get variantenSichern;
+
+  /// No description provided for @variantenAktivieren.
+  ///
+  /// In de, this message translates to:
+  /// **'Variante aktivieren'**
+  String get variantenAktivieren;
+
+  /// No description provided for @variantenVergleichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Varianten vergleichen'**
+  String get variantenVergleichen;
+
+  /// No description provided for @variantenLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Bearbeitungsvariante gespeichert.'**
+  String get variantenLeer;
+
+  /// No description provided for @variantenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Variante konnte nicht übernommen werden. Der bisherige Stand bleibt erhalten.'**
+  String get variantenFehler;
+
+  /// No description provided for @variantenLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur diese Bearbeitungsvariante löschen? Das Original bleibt erhalten.'**
+  String get variantenLoeschenFrage;
+
+  /// No description provided for @zuschnittTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuschnitt'**
+  String get zuschnittTitel;
+
+  /// No description provided for @zuschnittLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Links (%)'**
+  String get zuschnittLinks;
+
+  /// No description provided for @zuschnittOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben (%)'**
+  String get zuschnittOben;
+
+  /// No description provided for @zuschnittBreite.
+  ///
+  /// In de, this message translates to:
+  /// **'Breite (%)'**
+  String get zuschnittBreite;
+
+  /// No description provided for @zuschnittHoehe.
+  ///
+  /// In de, this message translates to:
+  /// **'Höhe (%)'**
+  String get zuschnittHoehe;
+
+  /// No description provided for @zuschnittDrehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Um 90° drehen'**
+  String get zuschnittDrehen;
+
+  /// No description provided for @arbeitskopienTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Offline-Arbeitsvorschauen'**
+  String get arbeitskopienTitel;
+
+  /// No description provided for @arbeitskopienVorbereiten.
+  ///
+  /// In de, this message translates to:
+  /// **'Für Offline-Bearbeitung vorbereiten'**
+  String get arbeitskopienVorbereiten;
+
+  /// No description provided for @arbeitskopienText.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine kleine neutrale Vorschau speichert Bearbeitungsschritte. Das Original wird später für die endgültige Ausgabe benötigt. Arbeitsvorschauen und noch nicht übernommene Entwürfe liegen nur auf diesem Gerät.'**
+  String get arbeitskopienText;
+
+  /// No description provided for @arbeitskopienEntwurf.
+  ///
+  /// In de, this message translates to:
+  /// **'Offline-Entwurf speichern'**
+  String get arbeitskopienEntwurf;
+
+  /// No description provided for @arbeitskopienAnwenden.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Original ausführen'**
+  String get arbeitskopienAnwenden;
+
+  /// No description provided for @arbeitskopienKonflikt.
+  ///
+  /// In de, this message translates to:
+  /// **'Original oder Bearbeitung wurde seit dem Vorbereiten geändert. Der Entwurf bleibt erhalten.'**
+  String get arbeitskopienKonflikt;
+
+  /// No description provided for @arbeitskopienAlsVariante.
+  ///
+  /// In de, this message translates to:
+  /// **'Entwurf als neue Variante übernehmen'**
+  String get arbeitskopienAlsVariante;
+
+  /// No description provided for @arbeitskopienLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch keine Arbeitsvorschauen vorbereitet.'**
+  String get arbeitskopienLeer;
+
+  /// No description provided for @arbeitskopienFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Arbeitsvorschau ist nicht verfügbar oder kann nicht geprüft werden.'**
+  String get arbeitskopienFehler;
+
+  /// No description provided for @arbeitskopienStatus.
+  ///
+  /// In de, this message translates to:
+  /// **'Bearbeitung mit Arbeitsvorschau · endgültige Ausgabe ausstehend'**
+  String get arbeitskopienStatus;
+
+  /// No description provided for @farbraumTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Farbmanagement und Druckvorschau'**
+  String get farbraumTitel;
+
+  /// No description provided for @farbraumBildschirm.
+  ///
+  /// In de, this message translates to:
+  /// **'Bildschirmprofil'**
+  String get farbraumBildschirm;
+
+  /// No description provided for @farbraumDruck.
+  ///
+  /// In de, this message translates to:
+  /// **'Drucker- und Papierprofil'**
+  String get farbraumDruck;
+
+  /// No description provided for @farbraumAusgabe.
+  ///
+  /// In de, this message translates to:
+  /// **'Ausgabeprofil'**
+  String get farbraumAusgabe;
+
+  /// No description provided for @farbraumProfilWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'ICC-Profil auswählen'**
+  String get farbraumProfilWaehlen;
+
+  /// No description provided for @farbraumStandard.
+  ///
+  /// In de, this message translates to:
+  /// **'sRGB'**
+  String get farbraumStandard;
+
+  /// No description provided for @farbraumVorschau.
+  ///
+  /// In de, this message translates to:
+  /// **'Druckvorschau'**
+  String get farbraumVorschau;
+
+  /// No description provided for @farbraumWarnung.
+  ///
+  /// In de, this message translates to:
+  /// **'Farben außerhalb des Druckfarbraums markieren'**
+  String get farbraumWarnung;
+
+  /// No description provided for @farbraumFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Profil oder die Farbtransformation ist nicht verfügbar. Es wird keine bestätigte Druckvorschau angezeigt.'**
+  String get farbraumFehler;
+
+  /// No description provided for @farbraumHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Vorschau verwendet das gewählte Druckprofil. Verlässliche Farben setzen ein passendes, kalibriertes Bildschirmprofil voraus.'**
+  String get farbraumHinweis;
+
+  /// No description provided for @speicherkarteTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Speicherorte und Sicherungen'**
+  String get speicherkarteTitel;
+
+  /// No description provided for @speicherkarteText.
+  ///
+  /// In de, this message translates to:
+  /// **'Wo Originale und Kopien liegen und was zuletzt tatsächlich geprüft wurde.'**
+  String get speicherkarteText;
+
+  /// No description provided for @speicherkarteLokal.
+  ///
+  /// In de, this message translates to:
+  /// **'In dieser Bibliothek'**
+  String get speicherkarteLokal;
+
+  /// No description provided for @speicherkarteExtern.
+  ///
+  /// In de, this message translates to:
+  /// **'In eigenen Fotoordnern'**
+  String get speicherkarteExtern;
+
+  /// No description provided for @speicherkarteServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf dem verbundenen Server'**
+  String get speicherkarteServer;
+
+  /// No description provided for @speicherkarteKopie.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf diesem Gerät verfügbar'**
+  String get speicherkarteKopie;
+
+  /// No description provided for @speicherkarteSicherung.
+  ///
+  /// In de, this message translates to:
+  /// **'Geprüfte Sicherungskopie'**
+  String get speicherkarteSicherung;
+
+  /// No description provided for @speicherkarteUngeprueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsstand unbekannt'**
+  String get speicherkarteUngeprueft;
+
+  /// No description provided for @speicherkarteFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht verfügbar oder verändert'**
+  String get speicherkarteFehlt;
+
+  /// No description provided for @speicherkartePruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsziel prüfen'**
+  String get speicherkartePruefen;
+
+  /// No description provided for @speicherkarteHistorisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bestätigung gilt für den Zeitpunkt der Inhaltsprüfung. Abgezogene oder später veränderte Ziele sind damit nicht erneut geprüft.'**
+  String get speicherkarteHistorisch;
+
+  /// No description provided for @speicherkartePruefungLaeuft.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiinhalte werden geprüft …'**
+  String get speicherkartePruefungLaeuft;
+
+  /// No description provided for @speicherkarteKeinZiel.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch kein Sicherungsziel geprüft.'**
+  String get speicherkarteKeinZiel;
+
+  /// No description provided for @speicherkarteDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'Aufnahmen anzeigen'**
+  String get speicherkarteDateien;
+
+  /// No description provided for @speicherkarteGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesperrte Aufnahmen werden nur als Anzahl angezeigt.'**
+  String get speicherkarteGesperrt;
+
+  /// No description provided for @speicherkarteSicherungFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine bestätigte Kopie gefunden'**
+  String get speicherkarteSicherungFehlt;
+
+  /// No description provided for @backupVariantenOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch zu sichernde Variantendateien'**
+  String get backupVariantenOffen;
+
+  /// No description provided for @entwWerkzeugeTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Bearbeitungswerkzeuge'**
+  String get entwWerkzeugeTitel;
+
+  /// No description provided for @arbeitskopienBereit.
+  ///
+  /// In de, this message translates to:
+  /// **'Arbeitsvorschau ist vorbereitet.'**
+  String get arbeitskopienBereit;
+
+  /// No description provided for @arbeitskopienBearbeiten.
+  ///
+  /// In de, this message translates to:
+  /// **'Offline bearbeiten'**
+  String get arbeitskopienBearbeiten;
+
+  /// No description provided for @arbeitskopienLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'Arbeitsvorschau und ihren lokalen Entwurf löschen? Das Original und übernommene Varianten bleiben erhalten.'**
+  String get arbeitskopienLoeschenFrage;
+
+  /// No description provided for @speicherkartePapierkorb.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Papierkorb'**
+  String get speicherkartePapierkorb;
+
+  /// No description provided for @speicherkarteBestand.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos und Videos'**
+  String get speicherkarteBestand;
+
+  /// No description provided for @speicherkarteOrte.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktuelle Originalorte'**
+  String get speicherkarteOrte;
+
+  /// No description provided for @speicherkarteNachweise.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsnachweise'**
+  String get speicherkarteNachweise;
+
+  /// No description provided for @speicherkarteLetztePruefung.
+  ///
+  /// In de, this message translates to:
+  /// **'Inhalt geprüft am'**
+  String get speicherkarteLetztePruefung;
+
+  /// No description provided for @speicherkarteNichtVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Ziel derzeit nicht erreichbar'**
+  String get speicherkarteNichtVerbunden;
+
+  /// No description provided for @speicherkarteTeilpruefung.
+  ///
+  /// In de, this message translates to:
+  /// **'Teilprüfung'**
+  String get speicherkarteTeilpruefung;
+
+  /// No description provided for @speicherkartePruefziel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsordner direkt auswählen: PhotoVault-Backup oder PhotoVault-AutoBackup'**
+  String get speicherkartePruefziel;
+
+  /// No description provided for @speicherkarteKeineAktuellenOriginale.
+  ///
+  /// In de, this message translates to:
+  /// **'Es gibt keine ungesperrten Originale für diese Prüfung.'**
+  String get speicherkarteKeineAktuellenOriginale;
+
+  /// No description provided for @speicherkarteStandNurDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'Lokale Verfügbarkeit wird ohne Inhaltsprüfung angezeigt. Für Sicherungskopien gilt der jeweils angegebene Prüfzeitpunkt. Arbeitsvorschauen ersetzen keine Originale. Mehrere Orte können dieselbe Aufnahme enthalten.'**
+  String get speicherkarteStandNurDateien;
+
+  /// No description provided for @speicherkarteNachweisUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Gespeicherte Sicherungsnachweise sind nicht lesbar. Der Sicherungsstand wird deshalb als unbekannt angezeigt.'**
+  String get speicherkarteNachweisUnlesbar;
+
+  /// No description provided for @speicherkarteAbbruchNachDatei.
+  ///
+  /// In de, this message translates to:
+  /// **'Abbruch nach aktueller Datei'**
+  String get speicherkarteAbbruchNachDatei;
+
+  /// No description provided for @speicherkarteFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Übersicht oder Prüfung konnte nicht vollständig geladen werden. Prüfe den gewählten Sicherungsordner und den Zugriff auf die Speicherorte.'**
+  String get speicherkarteFehler;
+
+  /// No description provided for @farbraumSystem.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch über das Betriebssystem'**
+  String get farbraumSystem;
+
+  /// No description provided for @farbraumBeibehalten.
+  ///
+  /// In de, this message translates to:
+  /// **'Eingebetteten Farbraum beibehalten'**
+  String get farbraumBeibehalten;
+
+  /// No description provided for @farbraumKeinProfil.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Druckprofil gewählt'**
+  String get farbraumKeinProfil;
+
+  /// No description provided for @farbraumEigenesProfil.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigenes ICC-Profil'**
+  String get farbraumEigenesProfil;
+
+  /// No description provided for @farbraumVerwendung.
+  ///
+  /// In de, this message translates to:
+  /// **'Profile gelten auf diesem Gerät für diese Bibliothek. Das Ausgabeprofil gilt für gerenderte JPEG-Exporte. Originaldateien bleiben unverändert; Datenschutzexporte erhalten sRGB.'**
+  String get farbraumVerwendung;
+
+  /// No description provided for @farbraumPapier.
+  ///
+  /// In de, this message translates to:
+  /// **'Papierfarbe simulieren'**
+  String get farbraumPapier;
+
+  /// No description provided for @farbraumIntentWahrnehmung.
+  ///
+  /// In de, this message translates to:
+  /// **'Wahrnehmungsgetreu'**
+  String get farbraumIntentWahrnehmung;
+
+  /// No description provided for @farbraumIntentRelativ.
+  ///
+  /// In de, this message translates to:
+  /// **'Relativ farbmetrisch'**
+  String get farbraumIntentRelativ;
+
+  /// No description provided for @farbraumIntentSaettigung.
+  ///
+  /// In de, this message translates to:
+  /// **'Sättigungserhaltend'**
+  String get farbraumIntentSaettigung;
+
+  /// No description provided for @farbraumIntentAbsolut.
+  ///
+  /// In de, this message translates to:
+  /// **'Absolut farbmetrisch'**
+  String get farbraumIntentAbsolut;
+
+  /// No description provided for @zuschnittZiehen.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Bild ziehen, um einen Ausschnitt zu wählen. Ein Tippen setzt ihn zurück.'**
+  String get zuschnittZiehen;
+
+  /// No description provided for @katalogGrenzen.
+  ///
+  /// In de, this message translates to:
+  /// **'Externe Originale und ihre Beilagen bleiben unverändert. Für Retusche oder den gesperrten Ordner zuerst eine Kopie in die Bibliothek übernehmen. Die externe Quelldatei bleibt dabei außerhalb des Schutzes.'**
+  String get katalogGrenzen;
+
+  /// No description provided for @farbraumP3.
+  ///
+  /// In de, this message translates to:
+  /// **'Display P3'**
+  String get farbraumP3;
+
+  /// No description provided for @integVarianteFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht.'**
+  String get integVarianteFehlt;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

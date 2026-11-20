@@ -10,6 +10,7 @@ mixin _Verlauf on _EntwickelnBasis {
   /// fest, nicht die Datei. Ein Unterschied allein in der Tabelle bliebe
   /// deshalb unbenannt – lieber das, als eine erfundene Auskunft.
   DevelopAdjustments _standAus(DevelopHistoryData e) => DevelopAdjustments(
+    zuschnitt: Bildzuschnitt.aus(e.cropJson),
     exposure: e.exposure,
     temperature: e.temperature,
     tint: e.tint,
@@ -30,6 +31,7 @@ mixin _Verlauf on _EntwickelnBasis {
   void _ladeSchritt(DevelopAdjustments stand) {
     setState(() {
       _exposure = stand.exposure;
+      _zuschnitt = stand.zuschnitt;
       _contrast = stand.contrast;
       _shadows = stand.shadows;
       _highlights = stand.highlights;
@@ -376,6 +378,31 @@ mixin _Verlauf on _EntwickelnBasis {
     melde.erfolg(AppTexte.of(context).entwEingesetzt);
   }
 
+  @override
+  DevelopSettingsData _aktuellerDatensatz() {
+    final a = _currentAdjustments();
+    return DevelopSettingsData(
+      assetId: widget.asset.id,
+      cropJson: _zuschnitt.json,
+      exposure: a.exposure,
+      temperature: a.temperature,
+      tint: a.tint,
+      contrast: a.contrast,
+      shadows: a.shadows,
+      highlights: a.highlights,
+      sharpness: a.sharpness,
+      noiseReduction: a.noiseReduction,
+      clarity: a.clarity,
+      vignette: a.vignette,
+      lutPath: _lutPfad,
+      lutStrength: a.lutStrength,
+      lensCorrectionEnabled: a.lensCorrectionEnabled,
+      toneCurveJson: a.toneCurve.istNeutral ? null : a.toneCurve.encode(),
+      colorMixerJson: a.colorMixer.istNeutral ? null : a.colorMixer.encode(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
   Future<void> _save() async {
     setState(() => _saving = true);
     final adjustments = _currentAdjustments();
@@ -408,33 +435,7 @@ mixin _Verlauf on _EntwickelnBasis {
         paths: widget.paths,
         assetId: widget.asset.id,
         jpeg: bytes,
-        einstellungen: DevelopSettingsCompanion.insert(
-          assetId: widget.asset.id,
-          exposure: Value(adjustments.exposure),
-          temperature: Value(adjustments.temperature),
-          tint: Value(adjustments.tint),
-          contrast: Value(adjustments.contrast),
-          shadows: Value(adjustments.shadows),
-          highlights: Value(adjustments.highlights),
-          sharpness: Value(adjustments.sharpness),
-          noiseReduction: Value(adjustments.noiseReduction),
-          clarity: Value(adjustments.clarity),
-          vignette: Value(adjustments.vignette),
-          lutPath: Value(_lutPfad),
-          lutStrength: Value(adjustments.lutStrength),
-          lensCorrectionEnabled: Value(adjustments.lensCorrectionEnabled),
-          toneCurveJson: Value(
-            adjustments.toneCurve.istNeutral
-                ? null
-                : adjustments.toneCurve.encode(),
-          ),
-          colorMixerJson: Value(
-            adjustments.colorMixer.istNeutral
-                ? null
-                : adjustments.colorMixer.encode(),
-          ),
-          updatedAt: DateTime.now(),
-        ),
+        einstellungen: _aktuellerDatensatz(),
       );
     } on EntwicklungNichtAbgelegt {
       if (mounted) {

@@ -11032,4 +11032,359 @@ class AppTexteDe extends AppTexte {
   String umzugQuelleDateien(int n) {
     return '$n Dateien gefunden …';
   }
+
+  @override
+  String get katalogTitel => 'Vorhandene Fotoordner';
+
+  @override
+  String get katalogText =>
+      'Originale bleiben an ihrem bisherigen Ort. Photo Vault verwaltet den Katalog und Vorschauen.';
+
+  @override
+  String get katalogOrdnerHinzufuegen => 'Ordner katalogisieren';
+
+  @override
+  String get katalogAusschluesse =>
+      'Ausschlüsse, ein Muster je Zeile (z. B. privat/**)';
+
+  @override
+  String get katalogNeuZuordnen => 'Ordner wiederfinden';
+
+  @override
+  String get katalogOriginalZuordnen => 'Original wiederfinden';
+
+  @override
+  String get katalogVerwaltet => 'Original in Bibliothek übernehmen';
+
+  @override
+  String get katalogOrdnerWaehlen => 'Ordner mit den Originalen auswählen';
+
+  @override
+  String get katalogNurLokal =>
+      'Direkte Ordnerverwaltung ist in einer lokalen Bibliothek möglich. Vor einem Umzug zum Server müssen die Originale in die Bibliothek übernommen werden.';
+
+  @override
+  String get katalogNichtLesbar =>
+      'Die lokale Zuordnung ist nicht lesbar. Die Originale bleiben unverändert.';
+
+  @override
+  String get katalogFehler =>
+      'Der Vorgang konnte nicht abgeschlossen werden. Prüfe den Zugriff und ob die Originale unverändert sind.';
+
+  @override
+  String get katalogDateien => 'Zugeordnete Originale';
+
+  @override
+  String get katalogGelesen => 'Gelesen';
+
+  @override
+  String get katalogNeu => 'Neu';
+
+  @override
+  String get katalogDoppelt => 'Bereits vorhanden';
+
+  @override
+  String get katalogFehlerzahl => 'Fehler';
+
+  @override
+  String get katalogAbgebrochen =>
+      'Scan abgebrochen; abgeschlossene Einträge bleiben erhalten.';
+
+  @override
+  String get katalogGeprueft => 'Zuordnung nach Inhaltsprüfung übernommen.';
+
+  @override
+  String get katalogLeer => 'Noch keine externen Originalordner katalogisiert.';
+
+  @override
+  String get ausbauAbbrechen => 'Abbrechen';
+
+  @override
+  String get ausbauSchliessen => 'Schließen';
+
+  @override
+  String get ausbauSpeichern => 'Speichern';
+
+  @override
+  String get ausbauZurueck => 'Zurück';
+
+  @override
+  String get ausbauName => 'Name';
+
+  @override
+  String get ausbauUmbenennen => 'Umbenennen';
+
+  @override
+  String get ausbauLoeschen => 'Löschen';
+
+  @override
+  String get ausbauNeuLaden => 'Neu prüfen';
+
+  @override
+  String get variantenTitel => 'Bearbeitungsvarianten';
+
+  @override
+  String get variantenText =>
+      'Mehrere Entwicklungen desselben Originals mit eigenen Masken und Zuschnitten.';
+
+  @override
+  String get variantenSichern => 'Als Variante speichern';
+
+  @override
+  String get variantenAktivieren => 'Variante aktivieren';
+
+  @override
+  String get variantenVergleichen => 'Varianten vergleichen';
+
+  @override
+  String get variantenLeer => 'Noch keine Bearbeitungsvariante gespeichert.';
+
+  @override
+  String get variantenFehler =>
+      'Die Variante konnte nicht übernommen werden. Der bisherige Stand bleibt erhalten.';
+
+  @override
+  String get variantenLoeschenFrage =>
+      'Nur diese Bearbeitungsvariante löschen? Das Original bleibt erhalten.';
+
+  @override
+  String get zuschnittTitel => 'Zuschnitt';
+
+  @override
+  String get zuschnittLinks => 'Links (%)';
+
+  @override
+  String get zuschnittOben => 'Oben (%)';
+
+  @override
+  String get zuschnittBreite => 'Breite (%)';
+
+  @override
+  String get zuschnittHoehe => 'Höhe (%)';
+
+  @override
+  String get zuschnittDrehen => 'Um 90° drehen';
+
+  @override
+  String get arbeitskopienTitel => 'Offline-Arbeitsvorschauen';
+
+  @override
+  String get arbeitskopienVorbereiten => 'Für Offline-Bearbeitung vorbereiten';
+
+  @override
+  String get arbeitskopienText =>
+      'Eine kleine neutrale Vorschau speichert Bearbeitungsschritte. Das Original wird später für die endgültige Ausgabe benötigt. Arbeitsvorschauen und noch nicht übernommene Entwürfe liegen nur auf diesem Gerät.';
+
+  @override
+  String get arbeitskopienEntwurf => 'Offline-Entwurf speichern';
+
+  @override
+  String get arbeitskopienAnwenden => 'Am Original ausführen';
+
+  @override
+  String get arbeitskopienKonflikt =>
+      'Original oder Bearbeitung wurde seit dem Vorbereiten geändert. Der Entwurf bleibt erhalten.';
+
+  @override
+  String get arbeitskopienAlsVariante => 'Entwurf als neue Variante übernehmen';
+
+  @override
+  String get arbeitskopienLeer => 'Noch keine Arbeitsvorschauen vorbereitet.';
+
+  @override
+  String get arbeitskopienFehler =>
+      'Die Arbeitsvorschau ist nicht verfügbar oder kann nicht geprüft werden.';
+
+  @override
+  String get arbeitskopienStatus =>
+      'Bearbeitung mit Arbeitsvorschau · endgültige Ausgabe ausstehend';
+
+  @override
+  String get farbraumTitel => 'Farbmanagement und Druckvorschau';
+
+  @override
+  String get farbraumBildschirm => 'Bildschirmprofil';
+
+  @override
+  String get farbraumDruck => 'Drucker- und Papierprofil';
+
+  @override
+  String get farbraumAusgabe => 'Ausgabeprofil';
+
+  @override
+  String get farbraumProfilWaehlen => 'ICC-Profil auswählen';
+
+  @override
+  String get farbraumStandard => 'sRGB';
+
+  @override
+  String get farbraumVorschau => 'Druckvorschau';
+
+  @override
+  String get farbraumWarnung => 'Farben außerhalb des Druckfarbraums markieren';
+
+  @override
+  String get farbraumFehler =>
+      'Das Profil oder die Farbtransformation ist nicht verfügbar. Es wird keine bestätigte Druckvorschau angezeigt.';
+
+  @override
+  String get farbraumHinweis =>
+      'Die Vorschau verwendet das gewählte Druckprofil. Verlässliche Farben setzen ein passendes, kalibriertes Bildschirmprofil voraus.';
+
+  @override
+  String get speicherkarteTitel => 'Speicherorte und Sicherungen';
+
+  @override
+  String get speicherkarteText =>
+      'Wo Originale und Kopien liegen und was zuletzt tatsächlich geprüft wurde.';
+
+  @override
+  String get speicherkarteLokal => 'In dieser Bibliothek';
+
+  @override
+  String get speicherkarteExtern => 'In eigenen Fotoordnern';
+
+  @override
+  String get speicherkarteServer => 'Auf dem verbundenen Server';
+
+  @override
+  String get speicherkarteKopie => 'Auf diesem Gerät verfügbar';
+
+  @override
+  String get speicherkarteSicherung => 'Geprüfte Sicherungskopie';
+
+  @override
+  String get speicherkarteUngeprueft => 'Sicherungsstand unbekannt';
+
+  @override
+  String get speicherkarteFehlt => 'Nicht verfügbar oder verändert';
+
+  @override
+  String get speicherkartePruefen => 'Sicherungsziel prüfen';
+
+  @override
+  String get speicherkarteHistorisch =>
+      'Die Bestätigung gilt für den Zeitpunkt der Inhaltsprüfung. Abgezogene oder später veränderte Ziele sind damit nicht erneut geprüft.';
+
+  @override
+  String get speicherkartePruefungLaeuft => 'Dateiinhalte werden geprüft …';
+
+  @override
+  String get speicherkarteKeinZiel => 'Noch kein Sicherungsziel geprüft.';
+
+  @override
+  String get speicherkarteDateien => 'Aufnahmen anzeigen';
+
+  @override
+  String get speicherkarteGesperrt =>
+      'Gesperrte Aufnahmen werden nur als Anzahl angezeigt.';
+
+  @override
+  String get speicherkarteSicherungFehlt => 'Keine bestätigte Kopie gefunden';
+
+  @override
+  String get backupVariantenOffen => 'Noch zu sichernde Variantendateien';
+
+  @override
+  String get entwWerkzeugeTitel => 'Bearbeitungswerkzeuge';
+
+  @override
+  String get arbeitskopienBereit => 'Arbeitsvorschau ist vorbereitet.';
+
+  @override
+  String get arbeitskopienBearbeiten => 'Offline bearbeiten';
+
+  @override
+  String get arbeitskopienLoeschenFrage =>
+      'Arbeitsvorschau und ihren lokalen Entwurf löschen? Das Original und übernommene Varianten bleiben erhalten.';
+
+  @override
+  String get speicherkartePapierkorb => 'Im Papierkorb';
+
+  @override
+  String get speicherkarteBestand => 'Fotos und Videos';
+
+  @override
+  String get speicherkarteOrte => 'Aktuelle Originalorte';
+
+  @override
+  String get speicherkarteNachweise => 'Sicherungsnachweise';
+
+  @override
+  String get speicherkarteLetztePruefung => 'Inhalt geprüft am';
+
+  @override
+  String get speicherkarteNichtVerbunden => 'Ziel derzeit nicht erreichbar';
+
+  @override
+  String get speicherkarteTeilpruefung => 'Teilprüfung';
+
+  @override
+  String get speicherkartePruefziel =>
+      'Sicherungsordner direkt auswählen: PhotoVault-Backup oder PhotoVault-AutoBackup';
+
+  @override
+  String get speicherkarteKeineAktuellenOriginale =>
+      'Es gibt keine ungesperrten Originale für diese Prüfung.';
+
+  @override
+  String get speicherkarteStandNurDateien =>
+      'Lokale Verfügbarkeit wird ohne Inhaltsprüfung angezeigt. Für Sicherungskopien gilt der jeweils angegebene Prüfzeitpunkt. Arbeitsvorschauen ersetzen keine Originale. Mehrere Orte können dieselbe Aufnahme enthalten.';
+
+  @override
+  String get speicherkarteNachweisUnlesbar =>
+      'Gespeicherte Sicherungsnachweise sind nicht lesbar. Der Sicherungsstand wird deshalb als unbekannt angezeigt.';
+
+  @override
+  String get speicherkarteAbbruchNachDatei => 'Abbruch nach aktueller Datei';
+
+  @override
+  String get speicherkarteFehler =>
+      'Die Übersicht oder Prüfung konnte nicht vollständig geladen werden. Prüfe den gewählten Sicherungsordner und den Zugriff auf die Speicherorte.';
+
+  @override
+  String get farbraumSystem => 'Automatisch über das Betriebssystem';
+
+  @override
+  String get farbraumBeibehalten => 'Eingebetteten Farbraum beibehalten';
+
+  @override
+  String get farbraumKeinProfil => 'Kein Druckprofil gewählt';
+
+  @override
+  String get farbraumEigenesProfil => 'Eigenes ICC-Profil';
+
+  @override
+  String get farbraumVerwendung =>
+      'Profile gelten auf diesem Gerät für diese Bibliothek. Das Ausgabeprofil gilt für gerenderte JPEG-Exporte. Originaldateien bleiben unverändert; Datenschutzexporte erhalten sRGB.';
+
+  @override
+  String get farbraumPapier => 'Papierfarbe simulieren';
+
+  @override
+  String get farbraumIntentWahrnehmung => 'Wahrnehmungsgetreu';
+
+  @override
+  String get farbraumIntentRelativ => 'Relativ farbmetrisch';
+
+  @override
+  String get farbraumIntentSaettigung => 'Sättigungserhaltend';
+
+  @override
+  String get farbraumIntentAbsolut => 'Absolut farbmetrisch';
+
+  @override
+  String get zuschnittZiehen =>
+      'Im Bild ziehen, um einen Ausschnitt zu wählen. Ein Tippen setzt ihn zurück.';
+
+  @override
+  String get katalogGrenzen =>
+      'Externe Originale und ihre Beilagen bleiben unverändert. Für Retusche oder den gesperrten Ordner zuerst eine Kopie in die Bibliothek übernehmen. Die externe Quelldatei bleibt dabei außerhalb des Schutzes.';
+
+  @override
+  String get farbraumP3 => 'Display P3';
+
+  @override
+  String get integVarianteFehlt =>
+      'Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht.';
 }

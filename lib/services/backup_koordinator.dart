@@ -234,6 +234,7 @@ class BackupKoordinator {
 
     try {
       var ausfaelle = 0;
+      var zusatzAusfaelle = 0;
       await for (final f in backupService.performAutoBackup(
         // Unter macOS über das gemerkte Merkmal (#211).
         await oeffneZiel(destination),
@@ -245,6 +246,7 @@ class BackupKoordinator {
         markieren: !verbunden,
       )) {
         ausfaelle = f.fehlgeschlagen ?? ausfaelle;
+        zusatzAusfaelle = f.zusatzdateienOffen ?? zusatzAusfaelle;
         if (f.wiederherstellungsprobe case final probe?) {
           meldeProbe(probe);
           if (!probe.erfolgreich) {
@@ -257,12 +259,12 @@ class BackupKoordinator {
       // weg), kommen beim nächsten Lauf wieder dran – gesagt wird es
       // trotzdem.
       meldeWarnung(
-        ausfaelle == 0
+        ausfaelle + zusatzAusfaelle == 0
             ? null
             : (
                 grund: Backuphindernis.dateienFehlen,
                 letzterLauf: _jetzt(),
-                fehler: '$ausfaelle',
+                fehler: '${ausfaelle + zusatzAusfaelle}',
               ),
       );
     } catch (e) {

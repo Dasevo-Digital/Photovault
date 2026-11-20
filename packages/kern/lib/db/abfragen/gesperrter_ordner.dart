@@ -57,6 +57,9 @@ extension GesperrteAbfragen on AppDatabase {
     return {
       'tags': [for (final row in tagRows) '${row.tagId}\u0000${row.quelle}'],
       'albums': [for (final row in albumRows) row.albumId],
+      'entwicklungsvarianten': [
+        for (final v in await variantenFuer(assetId)) jsonEncode(v.toJson()),
+      ],
       'beschriftungen': [
         for (final row in await (select(
           beschriftungsvorschlaege,
@@ -69,6 +72,14 @@ extension GesperrteAbfragen on AppDatabase {
   /// Ersetzt die unmittelbar lesbaren privaten Angaben durch neutrale
   /// Werte. Der Aufrufer muss die Originalwerte zuvor verschlüsselt haben.
   Future<void> hidePrivateMetadata(String assetId) => transaction(() async {
+    // Nur die neutrale Dateizuordnung bleibt erhalten: Entsperren und
+    // endgültiges Löschen müssen auch inaktive Variantendateien finden.
+    // Namen, Einstellungen und Inhaltswerte liegen im verschlüsselten Paket.
+    await (update(developVariantFiles)..where((t) => t.assetId.equals(assetId)))
+        .write(const DevelopVariantFilesCompanion(sha256: Value('')));
+    await (delete(
+      developVariants,
+    )..where((t) => t.assetId.equals(assetId))).go();
     await (update(assets)..where((a) => a.id.equals(assetId))).write(
       AssetsCompanion(
         originalFileName: const Value('Private Aufnahme'),
@@ -114,8 +125,35 @@ extension GesperrteAbfragen on AppDatabase {
     required List<(String, String)> tags,
     required List<String> albumIds,
     List<String> beschriftungen = const [],
+    List<String> entwicklungsvarianten = const [],
   }) => transaction(() async {
     await (update(assets)..where((a) => a.id.equals(assetId))).write(metadata);
+    for (final text in entwicklungsvarianten) {
+      final v = DevelopVariantData.fromJson(
+        (jsonDecode(text) as Map).cast<String, dynamic>(),
+      );
+      final stand = Entwicklungsstand.decode(v.stateJson);
+      final alt = await (select(
+        developVariants,
+      )..where((t) => t.id.equals(v.id))).getSingleOrNull();
+      if (v.assetId != assetId ||
+          (alt != null && alt.assetId != assetId) ||
+          !erlaubterVariantenpfad(v.previewRelativePath) ||
+          !stand.dateien.containsKey(v.previewRelativePath)) {
+        throw const FormatException('pv_variante_aufnahme');
+      }
+      await into(developVariants).insertOnConflictUpdate(v);
+      for (final e in stand.dateien.entries) {
+        await into(developVariantFiles).insertOnConflictUpdate(
+          DevelopVariantFilesCompanion.insert(
+            variantId: v.id,
+            assetId: assetId,
+            relativePath: e.key,
+            sha256: e.value,
+          ),
+        );
+      }
+    }
     for (final text in beschriftungen) {
       final row = BeschriftungsvorschlaegeData.fromJson(
         (jsonDecode(text) as Map).cast<String, dynamic>(),

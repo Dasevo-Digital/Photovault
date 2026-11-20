@@ -24,6 +24,7 @@ import 'face_engine_service.dart';
 import 'import_service.dart';
 import 'storage_paths.dart';
 import 'vault_crypto.dart';
+import 'varianten_sicherung.dart';
 
 class BackupWiederhersteller {
   BackupWiederhersteller(this._db, this._paths);
@@ -159,6 +160,20 @@ class BackupWiederhersteller {
           if (streng) rethrow;
           _problem('pv_restore_schnappschuss', e);
         }
+      }
+      try {
+        await VariantenSicherung.stelleWiederHer(
+          _db,
+          _paths,
+          Directory(wurzel),
+          plan.schluessel,
+          schnappschuss: plan.schnappschuss,
+          ausSnapshot: plan.schnappschuss != null,
+          auswahl: auswahlPruefsummen,
+        );
+      } on Object catch (e) {
+        if (streng) rethrow;
+        _problem('pv_restore_varianten', e);
       }
       try {
         await _verknuepfeLivePhotos([
@@ -346,6 +361,8 @@ class BackupWiederhersteller {
     'export_presets',
     'develop_settings',
     'develop_history',
+    'develop_variants',
+    'develop_variant_files',
     'ai_tag_vocabulary',
   ];
 

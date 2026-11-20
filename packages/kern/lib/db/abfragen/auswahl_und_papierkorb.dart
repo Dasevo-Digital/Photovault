@@ -572,6 +572,12 @@ extension AuswahlAbfragen on AppDatabase {
   /// auf der Festplatte übernimmt StoragePaths.
   Future<void> deleteAssetRows(List<String> assetIds) => transaction(() async {
     for (final stueck in inStuecken(assetIds)) {
+      await (delete(
+        developVariantFiles,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        developVariants,
+      )..where((t) => t.assetId.isIn(stueck))).go();
       await (delete(assets)..where((t) => t.id.isIn(stueck))).go();
       // Ausnahmen der Duplikatsuche mit wegräumen. Sie würden sonst als
       // Zeilen ohne Foto liegen bleiben und niemandem mehr auffallen – ein

@@ -323,11 +323,26 @@ void main() {
         'masks/m2.png',
       ),
       const MaskeLoeschen(1099511627777),
+      EntwicklungsvarianteSpeichern(
+        DevelopVariantData(
+          id: 'var-1',
+          assetId: 'a1',
+          name: 'Farbe',
+          stateJson: '{}',
+          previewRelativePath: 'developed/var-1.jpg',
+          updatedAt: DateTime.utc(2026, 11, 20),
+        ),
+      ),
+      const EntwicklungsvarianteAktivieren('a1', 'var-1'),
+      const EntwicklungsvarianteEntfernen('a1', 'var-1'),
       const SchnittSpeichern('v1', 1.5, 7.25, 'trimmed/v1-1.mp4'),
       const SchnittZuruecksetzen('v1'),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
+      EntwicklungsvarianteSpeichern() => 'entwicklungsvarianteSpeichern',
+      EntwicklungsvarianteAktivieren() => 'entwicklungsvarianteAktivieren',
+      EntwicklungsvarianteEntfernen() => 'entwicklungsvarianteEntfernen',
       ErinnerungsfilterSetzen() => 'erinnerungsfilterSetzen',
       FavoritSetzen() => 'favoritSetzen',
       BewertungSetzen() => 'bewertungSetzen',
@@ -932,6 +947,9 @@ enum _Art {
 
 /// Die Einordnung aller Schreibmethoden in packages/kern/lib/db/abfragen.
 const _einordnung = <String, _Art>{
+  'varianteSpeichern': _Art.befehl,
+  'varianteAktivieren': _Art.befehl,
+  'varianteEntfernen': _Art.befehl,
   'setzeErinnerungsfilter': _Art.befehl,
   // Aufnahmen
   'setFavorite': _Art.befehl,

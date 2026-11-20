@@ -83,7 +83,8 @@ void main() {
     expect(
       {for (final c in db.developSettings.$columns) c.name},
       {
-        'asset_id', 'updated_at', //
+        'asset_id',
+        'crop_json', 'updated_at', //
         'exposure', 'temperature', 'tint', 'contrast', 'shadows',
         'highlights', 'sharpness', 'noise_reduction',
         'lens_correction_enabled', 'clarity', 'vignette', 'lut_path',

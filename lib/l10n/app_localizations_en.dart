@@ -10967,4 +10967,359 @@ class AppTexteEn extends AppTexte {
   String umzugQuelleDateien(int n) {
     return '$n files found …';
   }
+
+  @override
+  String get katalogTitel => 'Existing photo folders';
+
+  @override
+  String get katalogText =>
+      'Originals stay where they are. Photo Vault manages the catalog and previews.';
+
+  @override
+  String get katalogOrdnerHinzufuegen => 'Catalog folder';
+
+  @override
+  String get katalogAusschluesse =>
+      'Exclusions, one pattern per line (e.g. private/**)';
+
+  @override
+  String get katalogNeuZuordnen => 'Locate folder';
+
+  @override
+  String get katalogOriginalZuordnen => 'Locate original';
+
+  @override
+  String get katalogVerwaltet => 'Copy original into library';
+
+  @override
+  String get katalogOrdnerWaehlen => 'Choose folder containing the originals';
+
+  @override
+  String get katalogNurLokal =>
+      'Direct folder management is available in a local library. Copy originals into the library before moving it to a server.';
+
+  @override
+  String get katalogNichtLesbar =>
+      'The local mapping cannot be read. Originals remain unchanged.';
+
+  @override
+  String get katalogFehler =>
+      'The operation could not be completed. Check access and whether the originals are unchanged.';
+
+  @override
+  String get katalogDateien => 'Referenced originals';
+
+  @override
+  String get katalogGelesen => 'Read';
+
+  @override
+  String get katalogNeu => 'New';
+
+  @override
+  String get katalogDoppelt => 'Already present';
+
+  @override
+  String get katalogFehlerzahl => 'Errors';
+
+  @override
+  String get katalogAbgebrochen =>
+      'Scan cancelled; completed entries are kept.';
+
+  @override
+  String get katalogGeprueft => 'Mapping accepted after content verification.';
+
+  @override
+  String get katalogLeer => 'No external original folders cataloged yet.';
+
+  @override
+  String get ausbauAbbrechen => 'Cancel';
+
+  @override
+  String get ausbauSchliessen => 'Close';
+
+  @override
+  String get ausbauSpeichern => 'Save';
+
+  @override
+  String get ausbauZurueck => 'Back';
+
+  @override
+  String get ausbauName => 'Name';
+
+  @override
+  String get ausbauUmbenennen => 'Rename';
+
+  @override
+  String get ausbauLoeschen => 'Delete';
+
+  @override
+  String get ausbauNeuLaden => 'Check again';
+
+  @override
+  String get variantenTitel => 'Editing variants';
+
+  @override
+  String get variantenText =>
+      'Multiple developments of the same original with independent masks and crops.';
+
+  @override
+  String get variantenSichern => 'Save as variant';
+
+  @override
+  String get variantenAktivieren => 'Activate variant';
+
+  @override
+  String get variantenVergleichen => 'Compare variants';
+
+  @override
+  String get variantenLeer => 'No editing variants saved yet.';
+
+  @override
+  String get variantenFehler =>
+      'The variant could not be applied. The previous state is preserved.';
+
+  @override
+  String get variantenLoeschenFrage =>
+      'Delete only this editing variant? The original is kept.';
+
+  @override
+  String get zuschnittTitel => 'Crop';
+
+  @override
+  String get zuschnittLinks => 'Left (%)';
+
+  @override
+  String get zuschnittOben => 'Top (%)';
+
+  @override
+  String get zuschnittBreite => 'Width (%)';
+
+  @override
+  String get zuschnittHoehe => 'Height (%)';
+
+  @override
+  String get zuschnittDrehen => 'Rotate 90°';
+
+  @override
+  String get arbeitskopienTitel => 'Offline working previews';
+
+  @override
+  String get arbeitskopienVorbereiten => 'Prepare for offline editing';
+
+  @override
+  String get arbeitskopienText =>
+      'A small neutral preview stores editing steps. The original is required later for final output.Working previews and unapplied drafts are stored only on this device.';
+
+  @override
+  String get arbeitskopienEntwurf => 'Save offline draft';
+
+  @override
+  String get arbeitskopienAnwenden => 'Apply to original';
+
+  @override
+  String get arbeitskopienKonflikt =>
+      'The original or editing state has changed since preparation. The draft is preserved.';
+
+  @override
+  String get arbeitskopienAlsVariante => 'Apply draft as a new variant';
+
+  @override
+  String get arbeitskopienLeer => 'No working previews prepared yet.';
+
+  @override
+  String get arbeitskopienFehler =>
+      'The working preview is unavailable or cannot be verified.';
+
+  @override
+  String get arbeitskopienStatus =>
+      'Editing with working preview · final output pending';
+
+  @override
+  String get farbraumTitel => 'Color management and soft proof';
+
+  @override
+  String get farbraumBildschirm => 'Display profile';
+
+  @override
+  String get farbraumDruck => 'Printer and paper profile';
+
+  @override
+  String get farbraumAusgabe => 'Output profile';
+
+  @override
+  String get farbraumProfilWaehlen => 'Choose ICC profile';
+
+  @override
+  String get farbraumStandard => 'sRGB';
+
+  @override
+  String get farbraumVorschau => 'Soft proof';
+
+  @override
+  String get farbraumWarnung => 'Mark colors outside the printer gamut';
+
+  @override
+  String get farbraumFehler =>
+      'The profile or color transform is unavailable. No verified soft proof is displayed.';
+
+  @override
+  String get farbraumHinweis =>
+      'The proof uses the selected printer profile. Reliable colors require a matching calibrated display profile.';
+
+  @override
+  String get speicherkarteTitel => 'Storage locations and backups';
+
+  @override
+  String get speicherkarteText =>
+      'Where originals and copies are stored and what was last actually verified.';
+
+  @override
+  String get speicherkarteLokal => 'In this library';
+
+  @override
+  String get speicherkarteExtern => 'In external photo folders';
+
+  @override
+  String get speicherkarteServer => 'On the connected server';
+
+  @override
+  String get speicherkarteKopie => 'Available on this device';
+
+  @override
+  String get speicherkarteSicherung => 'Verified backup copy';
+
+  @override
+  String get speicherkarteUngeprueft => 'Backup status unknown';
+
+  @override
+  String get speicherkarteFehlt => 'Unavailable or changed';
+
+  @override
+  String get speicherkartePruefen => 'Verify backup target';
+
+  @override
+  String get speicherkarteHistorisch =>
+      'Confirmation applies to the time of content verification. Disconnected or subsequently changed targets have not been reverified.';
+
+  @override
+  String get speicherkartePruefungLaeuft => 'Verifying file contents …';
+
+  @override
+  String get speicherkarteKeinZiel => 'No backup target verified yet.';
+
+  @override
+  String get speicherkarteDateien => 'Show photos';
+
+  @override
+  String get speicherkarteGesperrt =>
+      'Locked photos are shown as a count only.';
+
+  @override
+  String get speicherkarteSicherungFehlt => 'No verified copy found';
+
+  @override
+  String get backupVariantenOffen => 'Variant files still to back up';
+
+  @override
+  String get entwWerkzeugeTitel => 'Editing tools';
+
+  @override
+  String get arbeitskopienBereit => 'Working preview is ready.';
+
+  @override
+  String get arbeitskopienBearbeiten => 'Edit offline';
+
+  @override
+  String get arbeitskopienLoeschenFrage =>
+      'Delete this working preview and its local draft? The original and applied variants are kept.';
+
+  @override
+  String get speicherkartePapierkorb => 'In trash';
+
+  @override
+  String get speicherkarteBestand => 'Photos and videos';
+
+  @override
+  String get speicherkarteOrte => 'Current original locations';
+
+  @override
+  String get speicherkarteNachweise => 'Backup evidence';
+
+  @override
+  String get speicherkarteLetztePruefung => 'Contents verified on';
+
+  @override
+  String get speicherkarteNichtVerbunden => 'Target currently unavailable';
+
+  @override
+  String get speicherkarteTeilpruefung => 'Partial verification';
+
+  @override
+  String get speicherkartePruefziel =>
+      'Select the backup folder itself: PhotoVault-Backup or PhotoVault-AutoBackup';
+
+  @override
+  String get speicherkarteKeineAktuellenOriginale =>
+      'There are no unlocked originals for this verification.';
+
+  @override
+  String get speicherkarteStandNurDateien =>
+      'Local availability is shown without content verification. Backup copies refer to the stated verification time. Working previews do not replace originals. The same photo may exist in several locations.';
+
+  @override
+  String get speicherkarteNachweisUnlesbar =>
+      'Saved backup evidence cannot be read. Backup status is therefore shown as unknown.';
+
+  @override
+  String get speicherkarteAbbruchNachDatei => 'Stop after current file';
+
+  @override
+  String get speicherkarteFehler =>
+      'The overview or verification could not be fully loaded. Check the selected backup folder and access to storage locations.';
+
+  @override
+  String get farbraumSystem => 'Automatic system colour management';
+
+  @override
+  String get farbraumBeibehalten => 'Keep embedded colour space';
+
+  @override
+  String get farbraumKeinProfil => 'No printer profile selected';
+
+  @override
+  String get farbraumEigenesProfil => 'Custom ICC profile';
+
+  @override
+  String get farbraumVerwendung =>
+      'Profiles apply to this library on this device. The output profile applies to rendered JPEG exports. Originals remain unchanged; privacy exports use sRGB.';
+
+  @override
+  String get farbraumPapier => 'Simulate paper colour';
+
+  @override
+  String get farbraumIntentWahrnehmung => 'Perceptual';
+
+  @override
+  String get farbraumIntentRelativ => 'Relative colorimetric';
+
+  @override
+  String get farbraumIntentSaettigung => 'Saturation';
+
+  @override
+  String get farbraumIntentAbsolut => 'Absolute colorimetric';
+
+  @override
+  String get zuschnittZiehen =>
+      'Drag in the image to select a crop. Tap to reset.';
+
+  @override
+  String get katalogGrenzen =>
+      'External originals and sidecars remain unchanged. Copy a photo into the library before retouching or locking it. Its external source remains outside vault protection.';
+
+  @override
+  String get farbraumP3 => 'Display P3';
+
+  @override
+  String get integVarianteFehlt =>
+      'A variant file is missing or changed. Restore the variant from a backup or remove it in the variants view.';
 }

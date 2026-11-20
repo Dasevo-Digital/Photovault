@@ -19,6 +19,15 @@ class AufnahmedatumDienst {
   }) async {
     final neu = datum.toLocal();
     final alterPfad = asset.relativePath;
+    if (paths.istReferenziert(alterPfad)) {
+      await db.transaction(() async {
+        await db.setAufnahmezeitpunkt(asset.id, neu);
+        await (db.update(db.assets)..where((t) => t.id.equals(asset.id))).write(
+          AssetsCompanion(datumGeschaetzt: Value(geschaetzt)),
+        );
+      });
+      return;
+    }
     final neuerPfad = paths.originalRelativePath(
       neu,
       asset.id,

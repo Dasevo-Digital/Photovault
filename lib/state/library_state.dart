@@ -24,6 +24,7 @@ import '../services/backup_koordinator.dart';
 export '../services/backup_koordinator.dart'
     show Backuphindernis, Backupwarnung;
 import '../services/bibliothekssperre.dart';
+import '../services/bibliotheksgeraetedaten.dart';
 import '../services/bilddekodierung.dart';
 import '../services/entwicklung_ablegen.dart';
 import '../services/fotokammer_dienst.dart';
@@ -67,6 +68,7 @@ import '../services/segmentation_service.dart';
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/services/papierkorb_leeren.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/services/original_referenzen.dart';
 import '../services/vault_crypto.dart';
 import '../services/tresor_dateiwechsel.dart';
 import '../services/xmp_writer.dart';
@@ -893,6 +895,23 @@ class LibraryState extends ChangeNotifier {
     paths = await StoragePaths.oeffne(
       Directory(p.join(bibliothek.path, 'library')),
     );
+    final lokal = await LibraryLocation.datenordner();
+    final ortKennung = await Bibliotheksgeraetedaten.kennung(paths);
+    paths.referenzen = OriginalReferenzen(
+      File(p.join(lokal.path, 'originalorte', '$ortKennung.json')),
+    );
+    try {
+      await paths.referenzen!.laden();
+      for (final e in paths.referenzen!.ordner.entries) {
+        await FolderAccess.forCurrentPlatform().resolveRoot(
+          path: e.value,
+          token: paths.referenzen!.zugriffe[e.key],
+        );
+      }
+    } on Object {
+      paths.referenzen = null;
+      paths.referenzenLadefehler = true;
+    }
     await erholeTresorDateiwechsel();
     // Die Kopie einer Bibliothek auf dem Server? Dann gleich hier den
     // Abgleich einrichten – vor allem anderen, das schreiben könnte.
@@ -2239,12 +2258,12 @@ class LibraryState extends ChangeNotifier {
       try {
         final result = asset.type == 'IMAGE'
             ? await importService.generateThumbnailAndPreview(
-                paths.absolute(asset.relativePath),
+                (await paths.bereit(asset.relativePath)),
                 asset.id,
                 p.extension(asset.originalFileName),
               )
             : await importService.generateVideoThumbnail(
-                paths.absolute(asset.relativePath),
+                (await paths.bereit(asset.relativePath)),
                 asset.id,
               );
         if (result.hasThumbnail || result.durationSeconds != null) {
@@ -2379,7 +2398,7 @@ class LibraryState extends ChangeNotifier {
     yield ImportProgress(0, verdaechtig.length);
     for (final asset in verdaechtig) {
       try {
-        final datei = paths.absolute(asset.relativePath);
+        final datei = (await paths.bereit(asset.relativePath));
         if (await datei.exists()) {
           final kennung = await ImportService.inhaltskennung(datei, null);
           if (kennung != null) {
@@ -2430,7 +2449,7 @@ class LibraryState extends ChangeNotifier {
     try {
       for (final asset in assets) {
         final gps = await importService.readGpsLocation(
-          paths.absolute(asset.relativePath),
+          (await paths.bereit(asset.relativePath)),
         );
         if (gps != null) {
           await db.fuehreAus(
@@ -2503,7 +2522,7 @@ class LibraryState extends ChangeNotifier {
 
     try {
       for (final asset in assets) {
-        final datei = paths.absolute(asset.relativePath);
+        final datei = (await paths.bereit(asset.relativePath));
         // Eine Datei, die nicht da ist, sagt nichts – und „nicht da"
         // heisst nicht „ohne Datum". Sie bleibt ungeprüft, damit ein
         // späterer Lauf sie wieder aufgreift.
@@ -2630,7 +2649,7 @@ class LibraryState extends ChangeNotifier {
     yield ImportProgress(0, assets.length);
     for (final asset in assets) {
       final info = await importService.readCameraInfo(
-        paths.absolute(asset.relativePath),
+        (await paths.bereit(asset.relativePath)),
       );
       if (!info.isEmpty) {
         await db.fuehreAus(KameraangabenSetzen(asset.id, info));
@@ -2674,7 +2693,7 @@ class LibraryState extends ChangeNotifier {
     var done = 0;
     yield ImportProgress(0, kandidaten.length);
     for (final asset in kandidaten) {
-      final datei = paths.absolute(asset.relativePath);
+      final datei = (await paths.bereit(asset.relativePath));
       if (await datei.exists()) {
         final daten = await importService.readAufnahmedaten(datei);
         if (!daten.kamera.isEmpty) {
@@ -2733,7 +2752,7 @@ class LibraryState extends ChangeNotifier {
         continue;
       }
 
-      final datei = paths.absolute(asset.relativePath);
+      final datei = (await paths.bereit(asset.relativePath));
       if (!await datei.exists()) continue;
       final daten = await importService.readAufnahmedaten(datei);
 
@@ -3230,6 +3249,7 @@ class LibraryState extends ChangeNotifier {
           jpeg: bytes,
           einstellungen: DevelopSettingsCompanion.insert(
             assetId: asset.id,
+            cropJson: Value(werte.zuschnitt.json),
             exposure: Value(werte.exposure),
             temperature: Value(werte.temperature),
             tint: Value(werte.tint),
@@ -3462,7 +3482,9 @@ class LibraryState extends ChangeNotifier {
           ? paths.xmpSidecarPathDarktable(quelle)
           : paths.xmpSidecarPath(quelle);
       if (ordner == null) {
-        await paths.absolute(name).writeAsString(xmp);
+        final ziel = paths.absolute(name);
+        await ziel.parent.create(recursive: true);
+        await ziel.writeAsString(xmp);
       } else if (vergeben.add(name.toLowerCase())) {
         await File(name).writeAsString(xmp);
       }
@@ -3752,6 +3774,8 @@ class LibraryState extends ChangeNotifier {
       'tags': relations['tags'] ?? const <String>[],
       'albums': relations['albums'] ?? const <String>[],
       'beschriftungen': relations['beschriftungen'] ?? const <String>[],
+      'entwicklungsvarianten':
+          relations['entwicklungsvarianten'] ?? const <String>[],
     };
     final cipher = AesGcm.with256bits();
     final nonce = cipher.newNonce();
@@ -3797,6 +3821,8 @@ class LibraryState extends ChangeNotifier {
       assetId,
       beschriftungen: (json['beschriftungen'] as List? ?? const [])
           .cast<String>(),
+      entwicklungsvarianten:
+          (json['entwicklungsvarianten'] as List? ?? const []).cast<String>(),
       AssetsCompanion(
         originalFileName: Value(json['originalFileName'] as String),
         fileCreatedAt: Value(DateTime.parse(json['fileCreatedAt'] as String)),
@@ -3918,8 +3944,14 @@ class LibraryState extends ChangeNotifier {
         if (a.id != frisch.id && a.isLocked != sperren && !a.isTrashed) a,
     ];
     final wechsel = TresorDateiwechsel(paths);
+    if (aufnahmen.any((a) => paths.offeneArbeitsvorschauen.contains(a.id))) {
+      throw StateError('pv_arbeitsvorschau_offen');
+    }
     final dateien = <String>{};
     for (final a in aufnahmen) {
+      if (paths.istReferenziert(a.relativePath)) {
+        throw StateError('pv_referenzen_uebernehmen');
+      }
       if (!await paths.absolute(a.relativePath).exists()) {
         throw FileSystemException('pv_vault_original_fehlt', a.relativePath);
       }

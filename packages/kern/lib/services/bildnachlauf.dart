@@ -60,7 +60,7 @@ Future<int> berichtigeOriginalmasse(
   var geaendert = 0;
   for (final a in kandidaten) {
     if (abbrechen?.call() ?? false) break;
-    final datei = paths.absolute(a.relativePath);
+    final datei = (await paths.bereit(a.relativePath));
     if (!await datei.exists()) continue;
     final echt = echteMasse(datei, a.widthPx, a.heightPx);
     if (echt.$1 == a.widthPx && echt.$2 == a.heightPx) continue;
@@ -98,7 +98,7 @@ Future<int> erneuereRohvorschauen(
     if (abbrechen?.call() ?? false) break;
     fortschritt?.call(i, kandidaten.length);
     final a = kandidaten[i];
-    final datei = paths.absolute(a.relativePath);
+    final datei = (await paths.bereit(a.relativePath));
     if (!await datei.exists()) continue;
     final kopf = leseRohkopf(datei);
     if (kopf == null || !kopf.linear || kopf.groesstes == null) continue;
@@ -183,7 +183,7 @@ Future<({int neu, String? weiter})> vergroessereVorschauen(
     // Ein Ansichtsbild (#333) ist schon so gross, wie es sein soll; neu
     // geschrieben verlöre es seinen Namen und gälte als Vorschau.
     if (a == null || vorschau == null || hatAnsichtsbild(a)) continue;
-    final quelle = paths.absolute(a.relativePath);
+    final quelle = (await paths.bereit(a.relativePath));
     if (!await quelle.exists()) continue;
     if (await _schonGross(paths.absolute(vorschau), a)) continue;
     final relativ = await importe.erneuereVorschau(
@@ -257,7 +257,7 @@ Future<({int neu, String? weiter})> ergaenzeAnsichtsbilder(
     }
     final a = await db.assetById(id);
     if (a == null || a.previewRelativePath != null) continue;
-    final original = paths.absolute(a.relativePath);
+    final original = (await paths.bereit(a.relativePath));
     if (!await original.exists()) continue;
     versucht++;
     final relativ = await importe.erzeugeAnsichtsbild(

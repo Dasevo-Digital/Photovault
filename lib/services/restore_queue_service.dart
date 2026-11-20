@@ -466,7 +466,7 @@ class RestoreQueueService {
         ),
     ];
 
-    final sourceFile = _paths.absolute(asset.relativePath);
+    final sourceFile = (await _paths.bereit(asset.relativePath));
     final jpegBytes = await NativeImageConverter.developImage(
       sourceFile,
       adjustments: adjustments,

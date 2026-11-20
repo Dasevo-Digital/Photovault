@@ -21,6 +21,7 @@ import 'native_image_converter.dart';
 
 /// Ein Werkzeug des Entwickeln-Bildschirms.
 enum Entwicklungswerkzeug {
+  zuschnitt,
   belichtung,
   weissabgleich,
   temperatur,
@@ -58,6 +59,9 @@ List<Entwicklungswerkzeug> geaenderteWerkzeuge(
   DevelopAdjustments nachher,
 ) {
   final werkzeuge = <Entwicklungswerkzeug>[];
+  if (vorher.zuschnitt.json != nachher.zuschnitt.json) {
+    werkzeuge.add(Entwicklungswerkzeug.zuschnitt);
+  }
 
   void pruefe(Entwicklungswerkzeug w, bool anders) {
     if (anders) werkzeuge.add(w);

@@ -1,3 +1,4 @@
+import 'package:photo_vault/services/library_location.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -55,6 +56,7 @@ void main() {
 
     setUp(() async {
       wurzel = Directory.systemTemp.createTempSync('pv_datenschutz_');
+      LibraryLocation.nutzeFuerTests(anker: wurzel);
       db = AppDatabase(NativeDatabase.memory());
       paths = await StoragePaths.forTesting(
         Directory(p.join(wurzel.path, 'library')),
@@ -63,6 +65,7 @@ void main() {
     });
 
     tearDown(() async {
+      LibraryLocation.zuruecksetzenFuerTests();
       await db.close();
       wurzel.deleteSync(recursive: true);
     });

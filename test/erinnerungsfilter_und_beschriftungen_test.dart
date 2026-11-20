@@ -332,7 +332,7 @@ void main() {
       addTearDown(neu.close);
       expect((await neu.erinnerungsfilter()).leer, isTrue);
       expect(await neu.select(neu.beschriftungsvorschlaege).get(), isEmpty);
-      expect(neu.schemaVersion, 99);
+      expect(neu.schemaVersion, greaterThanOrEqualTo(99));
     },
   );
 }

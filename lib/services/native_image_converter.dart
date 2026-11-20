@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
+import 'package:kern/services/bildzuschnitt.dart';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show compute, visibleForTesting;
@@ -424,6 +425,26 @@ class NativeImageConverter {
   /// innerhalb ihrer eigenen Alphamaske. Gibt `null` zurück, falls die
   /// native Anbindung fehlt oder die Datei nicht gerendert werden konnte.
   static Future<Uint8List?> developImage(
+    File file, {
+    required DevelopAdjustments adjustments,
+    List<MaskAdjustmentLayer> masks = const [],
+    int maxDimension = 2048,
+    double quality = 0.9,
+  }) async {
+    final bytes = await _developImage(
+      file,
+      adjustments: adjustments,
+      masks: masks,
+      maxDimension: maxDimension,
+      quality: quality,
+    );
+    if (bytes == null) return null;
+    return DevelopRender.istMassgeblich
+        ? bytes
+        : schneideEntwicklung(bytes, adjustments.zuschnitt);
+  }
+
+  static Future<Uint8List?> _developImage(
     File file, {
     required DevelopAdjustments adjustments,
     List<MaskAdjustmentLayer> masks = const [],

@@ -58,6 +58,9 @@ Future<Bearbeitungsergebnis> speichereBearbeitung({
   required Uint8List jpeg,
   ImportService? importe,
 }) async {
+  if (paths.istReferenziert(asset.relativePath)) {
+    throw StateError('pv_referenzen_uebernehmen');
+  }
   final import = importe ?? ImportService(db, paths);
   final pruefsumme = sha256.convert(jpeg).toString();
   final altRelativ = asset.relativePath;
@@ -179,7 +182,9 @@ Future<Bearbeitungsergebnis> speichereBearbeitung({
     asset.previewRelativePath,
     asset.developedRelativePath,
   ]) {
-    if (abgeleitet != null) await paths.deletePermanently(abgeleitet);
+    if (abgeleitet != null && !await db.varianteVerwendetDatei(abgeleitet)) {
+      await paths.deletePermanently(abgeleitet);
+    }
   }
   final vorschau = await import.generateThumbnailAndPreview(
     neuDatei,

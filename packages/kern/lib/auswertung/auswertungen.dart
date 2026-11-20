@@ -554,7 +554,7 @@ class Auswertungen {
                 final neue = <({double stelle, Uint8List vector})>[];
                 for (final stelle in stellen) {
                   final bild = await bildwerkzeuge.generateVideoThumbnail(
-                    paths.absolute(video.relativePath),
+                    (await paths.bereit(video.relativePath)),
                     maxDimension: videoStandbildKante,
                     anteil: stelle,
                   );

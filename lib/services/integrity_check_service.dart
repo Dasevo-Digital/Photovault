@@ -18,6 +18,18 @@ enum MissingFileKind {
   trimmed,
   faceCrop,
   mask,
+  variante,
+}
+
+class VariantenDateiSnapshot {
+  const VariantenDateiSnapshot(
+    this.assetId,
+    this.relativePath,
+    this.sha256, {
+    this.isLocked = false,
+  });
+  final String assetId, relativePath, sha256;
+  final bool isLocked;
 }
 
 /// Leichtgewichtiges, isolate-taugliches Abbild der für die
@@ -70,6 +82,8 @@ class IntegrityCheckParams {
   final List<FaceCropSnapshot> faceCrops;
   final List<MaskSnapshot> masks;
   final bool verifyChecksums;
+  final Map<String, String> referenzPfade;
+  final List<VariantenDateiSnapshot> varianten;
 
   const IntegrityCheckParams({
     required this.libraryRootPath,
@@ -77,6 +91,8 @@ class IntegrityCheckParams {
     required this.faceCrops,
     required this.masks,
     required this.verifyChecksums,
+    this.referenzPfade = const {},
+    this.varianten = const [],
   });
 }
 
@@ -187,7 +203,9 @@ Future<IntegrityCheckReport> runIntegrityCheck(
   ) async {
     if (relativePath == null) return;
     knownRelativePaths.add(p.normalize(relativePath));
-    final file = File(p.join(root.path, relativePath));
+    final file = File(
+      params.referenzPfade[relativePath] ?? p.join(root.path, relativePath),
+    );
     if (!await file.exists()) {
       missingFiles.add(
         MissingFileIssue(
@@ -231,7 +249,10 @@ Future<IntegrityCheckReport> runIntegrityCheck(
       MissingFileKind.trimmed,
     );
 
-    final originalFile = File(p.join(root.path, asset.relativePath));
+    final originalFile = File(
+      params.referenzPfade[asset.relativePath] ??
+          p.join(root.path, asset.relativePath),
+    );
     if (await originalFile.exists()) {
       if (asset.isLocked) {
         final hasValidHeader = await VaultCrypto.hasValidEncryptedHeader(
@@ -269,6 +290,28 @@ Future<IntegrityCheckReport> runIntegrityCheck(
       mask.maskId.toString(),
       MissingFileKind.mask,
     );
+  }
+  if (params.varianten.length > 200000) {
+    throw const FormatException('pv_varianten_umfang');
+  }
+  for (final v in params.varianten) {
+    await checkPath(v.relativePath, v.assetId, MissingFileKind.variante);
+    final f = File(p.join(root.path, v.relativePath));
+    if (await f.exists() &&
+        (v.isLocked
+            ? !await VaultCrypto.hasValidEncryptedHeader(f)
+            : params.verifyChecksums &&
+                  v.sha256.isNotEmpty &&
+                  (await sha256.bind(f.openRead()).first).toString() !=
+                      v.sha256)) {
+      missingFiles.add(
+        MissingFileIssue(
+          ownerId: v.assetId,
+          kind: MissingFileKind.variante,
+          relativePath: v.relativePath,
+        ),
+      );
+    }
   }
 
   final orphanedFiles = <OrphanedFileIssue>[];

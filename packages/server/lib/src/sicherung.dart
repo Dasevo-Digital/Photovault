@@ -296,6 +296,7 @@ class Serversicherung {
           )) {
             gesamt = f.total;
             fehlgeschlagen += f.fehlgeschlagen ?? 0;
+            fehlgeschlagen += f.zusatzdateienOffen ?? 0;
             probe = f.wiederherstellungsprobe ?? probe;
           }
           fehlgeschlagen += kammer.gescheitert;

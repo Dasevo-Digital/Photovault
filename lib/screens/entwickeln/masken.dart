@@ -136,7 +136,10 @@ mixin _Masken on _EntwickelnBasis {
     // Als Befehl – verbunden erfährt so der Server davon (#109).
     await widget.db.fuehreAus(MaskeLoeschen(mask.id));
     final file = widget.paths.absolute(mask.maskRelativePath);
-    if (await file.exists()) await file.delete();
+    if (!await widget.db.varianteVerwendetDatei(mask.maskRelativePath) &&
+        await file.exists()) {
+      await file.delete();
+    }
     if (!mounted) return;
     _geaenderteMasken.remove(mask.id);
     setState(() {
@@ -910,7 +913,10 @@ mixin _Masken on _EntwickelnBasis {
         MaskenformAendern(editingId, shape.encode(), relativePath),
       );
       final alt = widget.paths.absolute(existing.maskRelativePath);
-      if (await alt.exists()) await alt.delete();
+      if (!await widget.db.varianteVerwendetDatei(existing.maskRelativePath) &&
+          await alt.exists()) {
+        await alt.delete();
+      }
     } else if (!await _maskeAnlegen(relativePath, name, form: shape.encode())) {
       return;
     }

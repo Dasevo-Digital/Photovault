@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:photo_vault/services/library_location.dart';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -30,6 +31,7 @@ void main() {
 
   setUp(() async {
     wurzel = Directory.systemTemp.createTempSync('pv_entw_');
+    LibraryLocation.nutzeFuerTests(anker: wurzel);
     db = AppDatabase(NativeDatabase.memory());
     paths = await StoragePaths.forTesting(Directory(p.join(wurzel.path, 'l')));
 
@@ -62,6 +64,7 @@ void main() {
   });
 
   tearDown(() async {
+    LibraryLocation.zuruecksetzenFuerTests();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('photo_vault/image_convert'),
@@ -94,6 +97,12 @@ void main() {
         home: DevelopScreen(asset: foto, db: db, paths: paths),
       ),
     );
+    await tester.runAsync(() async {
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+    });
     await takte(tester);
   }
 

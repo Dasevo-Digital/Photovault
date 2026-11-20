@@ -54,6 +54,22 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       final assets = await widget.library.db.allAssetsForIntegrityCheck();
       final faces = await widget.library.db.allFaces();
       final masks = await widget.library.db.allDevelopMasks();
+      final varianten = await widget.library.db.variantenDateienZurPruefung();
+      final gesperrt = {
+        for (final a in assets)
+          if (a.isLocked) a.id,
+      };
+      final referenzen = <String, String>{};
+      for (final a in assets) {
+        if (!widget.library.paths.istReferenziert(a.relativePath)) continue;
+        try {
+          referenzen[a.relativePath] = (await widget.library.paths.bereit(
+            a.relativePath,
+          )).path;
+        } on Object {
+          // Ein fehlendes oder verändertes externes Original bleibt ein Befund.
+        }
+      }
 
       final params = IntegrityCheckParams(
         libraryRootPath: widget.library.paths.root.path,
@@ -81,6 +97,16 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
             MaskSnapshot(maskId: m.id, relativePath: m.maskRelativePath),
         ],
         verifyChecksums: _verifyChecksums,
+        referenzPfade: referenzen,
+        varianten: [
+          for (final v in varianten)
+            VariantenDateiSnapshot(
+              v.assetId,
+              v.pfad,
+              v.sha256,
+              isLocked: gesperrt.contains(v.assetId),
+            ),
+        ],
       );
 
       final report = await compute(runIntegrityCheck, params);
@@ -255,6 +281,8 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
         await widget.library.db.fuehreAus(
           MaskeLoeschen(int.parse(issue.ownerId)),
         );
+      case MissingFileKind.variante:
+        return;
     }
     if (!mounted) return;
     setState(() => _report = _withoutMissing(_report!, issue));
@@ -268,6 +296,10 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
       vorschau: _bestaetigungsbild(issue.relativePath, gesperrt: false),
     );
     if (!confirmed) return;
+    if (await widget.library.db.varianteVerwendetDatei(issue.relativePath)) {
+      await _load();
+      return;
+    }
     await widget.library.paths.deletePermanently(issue.relativePath);
     if (!mounted) return;
     setState(() => _report = _withoutOrphan(_report!, issue));
@@ -295,6 +327,11 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
     var geloescht = 0;
     for (final issue in report.orphanedFiles) {
       try {
+        if (await widget.library.db.varianteVerwendetDatei(
+          issue.relativePath,
+        )) {
+          continue;
+        }
         await widget.library.paths.deletePermanently(issue.relativePath);
         geloescht++;
       } catch (e) {
@@ -368,6 +405,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
     MissingFileKind.trimmed => t.integArtVideoZuschnitt,
     MissingFileKind.faceCrop => t.integArtGesichtsCrop,
     MissingFileKind.mask => t.integArtMaske,
+    MissingFileKind.variante => t.integVarianteFehlt,
   };
 
   @override
@@ -483,7 +521,9 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
                         children: [
                           ?knopf,
                           TextButton(
-                            onPressed: () => _removeMissingFromDb(issue),
+                            onPressed: issue.kind == MissingFileKind.variante
+                                ? null
+                                : () => _removeMissingFromDb(issue),
                             child: Text(
                               AppTexte.of(context).integAusDbEntfernen,
                             ),

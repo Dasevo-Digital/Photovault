@@ -1,3 +1,4 @@
+import 'package:photo_vault/services/library_location.dart';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
@@ -24,6 +25,7 @@ void main() {
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_exportvorgabe_');
+    LibraryLocation.nutzeFuerTests(anker: tempRoot);
     db = AppDatabase(NativeDatabase.memory());
     paths = await StoragePaths.forTesting(
       Directory(p.join(tempRoot.path, 'lib')),
@@ -34,6 +36,7 @@ void main() {
   });
 
   tearDown(() async {
+    LibraryLocation.zuruecksetzenFuerTests();
     await db.close();
     tempRoot.deleteSync(recursive: true);
   });

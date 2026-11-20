@@ -146,7 +146,7 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
           sidecarsFound++;
         } else if (ausOrdner == null) {
           fields = parseEingebettetesXmp(
-            widget.library.paths.absolute(asset.relativePath),
+            (await widget.library.paths.bereit(asset.relativePath)),
           );
           if (fields != null) eingebettetFound++;
         }
