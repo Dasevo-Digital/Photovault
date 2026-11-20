@@ -682,6 +682,7 @@ class Abgleich {
           // hier nicht gibt (oder umgekehrt) – dann lieber gar nicht.
           final stand = await verbindung.hole('api/v1/abgleich/stand');
           final schema = stand['schema'];
+          await meldeGeraetestand();
           if (schema is int && schema != db.schemaVersion) {
             await _melde(erreichbar: true, serverSchema: schema);
             _laeuft = false;
@@ -694,6 +695,7 @@ class Abgleich {
         }
         await sende();
         await empfange(warten: warten);
+        await meldeGeraetestand(erfolgreich: true);
         warten = const Duration(seconds: 25);
         _pause = const Duration(seconds: 2);
         _selbstAbgebrochen = false;
@@ -728,6 +730,43 @@ class Abgleich {
     final w = _wecker = Completer<void>();
     await Future.any([w.future, Future<void>.delayed(d)]);
     _wecker = null;
+  }
+
+  DateTime? _geraetGemeldet;
+  int? _geraetOffen;
+  bool _geraetErfolg = false;
+
+  /// Eine optionale Zustandsmeldung darf den eigentlichen Abgleich nicht
+  /// verhindern. Ältere Server und Clients bleiben ohne diese Angaben sichtbar.
+  Future<void> meldeGeraetestand({bool erfolgreich = false}) async {
+    final offen =
+        (await db
+                .customSelect(
+                  'SELECT count(*) AS n FROM pv_ausgang WHERE bestaetigt IS NULL',
+                )
+                .getSingle())
+            .read<int>('n');
+    final jetzt = DateTime.now();
+    if (_geraetGemeldet != null &&
+        _geraetOffen == offen &&
+        (!erfolgreich || _geraetErfolg) &&
+        jetzt.difference(_geraetGemeldet!) < const Duration(minutes: 5)) {
+      return;
+    }
+    try {
+      await verbindung.schicke('api/v1/geraete/stand', {
+        'fassung': verbindung.clientFassung,
+        'schema': db.schemaVersion,
+        'plattform': Platform.operatingSystem,
+        'offen': offen,
+        'erfolgreich': erfolgreich,
+      }, zeitlimit: const Duration(seconds: 5));
+      _geraetGemeldet = jetzt;
+      _geraetOffen = offen;
+      _geraetErfolg = erfolgreich;
+    } on Object {
+      // Fehlende Metadaten ersetzen keinen Verbindungs- oder Schemanachweis.
+    }
   }
 
   Future<void> _melde({

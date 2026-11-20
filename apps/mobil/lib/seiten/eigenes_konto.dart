@@ -1,3 +1,5 @@
+import 'package:abgleich_ui/geraetestand_anzeige.dart';
+import 'package:kern/db/database.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -42,6 +44,7 @@ class EigenesKonto extends StatefulWidget {
 class _EigenesKontoState extends State<EigenesKonto> {
   Map<String, Object?>? _konto;
   List<Map<String, Object?>> _geraete = const [];
+  int _zielSchema = AppDatabase.aktuelleSchemaVersion;
   bool _oidcMoeglich = false;
   bool _verknuepft = false;
 
@@ -59,6 +62,12 @@ class _EigenesKontoState extends State<EigenesKonto> {
     try {
       final k = await widget.verbindung.hole('api/v1/konto');
       final g = await widget.verbindung.hole('api/v1/geraete');
+      final gemeldetSchema = g['schema'];
+      final zielSchema =
+          gemeldetSchema is int &&
+              gemeldetSchema > AppDatabase.aktuelleSchemaVersion
+          ? gemeldetSchema
+          : AppDatabase.aktuelleSchemaVersion;
       // Ein älterer Server kennt die Frage nicht – dann eben ohne.
       var oidc = false;
       List<Map<String, Object?>>? passkeys;
@@ -76,6 +85,7 @@ class _EigenesKontoState extends State<EigenesKonto> {
       if (!mounted) return;
       setState(() {
         _konto = k;
+        _zielSchema = zielSchema;
         _oidcMoeglich = oidc;
         _passkeys = passkeys;
         _geraete = [
@@ -252,19 +262,26 @@ class _EigenesKontoState extends State<EigenesKonto> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
+        GeraeteAktualisierungsplan(geraete: _geraete, zielSchema: _zielSchema),
         for (final g in _geraete)
           ListTile(
             leading: const Icon(Icons.devices_other_outlined),
             title: Text(
               '${g['name']}${g['id'] == dieses ? ' ${t.eigenDiesesTelefon}' : ''}',
             ),
-            subtitle: Text(
-              [
-                if (DateTime.tryParse('${g['zuletzt']}') case final z?)
-                  t.eigenZuletzt(zeit.format(z.toLocal())),
-                if ((g['adresse'] ?? '') != '') '${g['adresse']}',
-              ].join(' · '),
-              style: TextStyle(color: farben.onSurfaceVariant),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  [
+                    if (DateTime.tryParse('${g['zuletzt']}') case final z?)
+                      t.eigenZuletzt(zeit.format(z.toLocal())),
+                    if ((g['adresse'] ?? '') != '') '${g['adresse']}',
+                  ].join(' · '),
+                  style: TextStyle(color: farben.onSurfaceVariant),
+                ),
+                GeraetestandAnzeige(daten: g, zielSchema: _zielSchema),
+              ],
             ),
             trailing: TextButton(
               onPressed: g['id'] == dieses

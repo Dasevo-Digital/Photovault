@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show compute;
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
@@ -11,6 +12,7 @@ import '../l10n/app_localizations.dart';
 import '../widgets/namens_dialog.dart' show MitTextsteuerung;
 import 'package:kern/services/clip_service.dart';
 import 'package:kern/services/bildsuche.dart';
+import 'package:kern/services/exakter_vektorindex.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:kern/services/sortierung.dart';
 import '../services/suchsatz.dart';
@@ -65,6 +67,9 @@ class _SearchScreenState extends State<SearchScreen>
   /// zu erklären gibt.
   String? _statusText;
   bool _searched = false;
+  bool _indexNutzen = false;
+  ExakterVektorindex? _index;
+  Timer? _indexRuhe;
 
   /// Die Treffer in der Reihenfolge, in der die Suche sie gefunden hat –
   /// bei der Bildersuche nach Ähnlichkeit, sonst nach Aufnahmedatum.
@@ -453,10 +458,21 @@ class _SearchScreenState extends State<SearchScreen>
           _filters,
         )).toSet();
         // searchAssets sortiert nach Datum – hier zählt die Ähnlichkeit.
+        if (_indexNutzen &&
+            ExakterVektorindex.passtInsBudget(embeddings) &&
+            _index?.passtZu(embeddings) != true) {
+          final gebaut = await compute(erstelleVektorindex, embeddings);
+          if (!mounted) return;
+          gebaut.bindeQuelle(embeddings);
+          _index = gebaut;
+        }
+        _indexRuhe?.cancel();
+        _indexRuhe = Timer(const Duration(minutes: 3), () => _index = null);
         final rangfolge = rangfolgeDerBildsuche(
           queryVector,
           embeddings,
           erlaubt,
+          index: _indexNutzen ? _index : null,
         );
         if (rangfolge.isEmpty) {
           if (!mounted) return;
@@ -529,6 +545,8 @@ class _SearchScreenState extends State<SearchScreen>
     _nachzuegler?.cancel();
     unawaited(_aenderungen?.cancel());
     _queryCtrl.dispose();
+    _indexRuhe?.cancel();
+    _index = null;
     super.dispose();
   }
 
@@ -579,6 +597,17 @@ class _SearchScreenState extends State<SearchScreen>
               suffixIcon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  IconButton(
+                    isSelected: _indexNutzen,
+                    icon: const Icon(Icons.account_tree_outlined),
+                    tooltip: AppTexte.of(context).sucheExakterIndex,
+                    onPressed: () {
+                      setState(() {
+                        _indexNutzen = !_indexNutzen;
+                        if (!_indexNutzen) _index = null;
+                      });
+                    },
+                  ),
                   if (!_filters.isEmpty)
                     IconButton(
                       icon: const Icon(Icons.bookmark_add_outlined),

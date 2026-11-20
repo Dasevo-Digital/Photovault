@@ -145,18 +145,26 @@ extension VokabularAbfragen on AppDatabase {
     if (filters.startDate != null) {
       final start = filters.startDate!;
       wo.add(
-        assets.fileCreatedAt.isBiggerOrEqualValue(
-          DateTime(start.year, start.month, start.day),
-        ),
+        (assets.datumVon.isNull() &
+                assets.fileCreatedAt.isBiggerOrEqualValue(
+                  DateTime(start.year, start.month, start.day),
+                )) |
+            assets.datumBis.isBiggerThanValue(
+              DateTime.utc(start.year, start.month, start.day),
+            ),
       );
     }
     if (filters.endDate != null) {
       final end = filters.endDate!;
       // Enddatum inklusive -> bis zum letzten Millisekunde des gewählten Tages.
       wo.add(
-        assets.fileCreatedAt.isSmallerOrEqualValue(
-          DateTime(end.year, end.month, end.day, 23, 59, 59, 999),
-        ),
+        (assets.datumVon.isNull() &
+                assets.fileCreatedAt.isSmallerThanValue(
+                  DateTime(end.year, end.month, end.day + 1),
+                )) |
+            assets.datumVon.isSmallerThanValue(
+              DateTime.utc(end.year, end.month, end.day + 1),
+            ),
       );
     }
 

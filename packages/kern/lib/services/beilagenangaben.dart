@@ -20,6 +20,7 @@ class Beilagenangaben {
     this.breite,
     this.laenge,
     this.aufgenommenAm,
+    this.datierung,
     this.alben = const [],
     this.favorit = false,
   });
@@ -33,6 +34,7 @@ class Beilagenangaben {
   final double? breite;
   final double? laenge;
   final DateTime? aufgenommenAm;
+  final AufnahmeDatierung? datierung;
   final List<String> alben;
   final bool favorit;
 
@@ -50,6 +52,7 @@ class Beilagenangaben {
     'breite': ?breite,
     'laenge': ?laenge,
     'aufgenommenAm': ?aufgenommenAm?.toUtc().toIso8601String(),
+    'datierung': ?datierung?.alsJson(),
     if (alben.isNotEmpty) 'alben': alben,
     if (favorit) 'favorit': true,
   };
@@ -70,6 +73,7 @@ class Beilagenangaben {
         breite: breite,
         laenge: laenge,
         aufgenommenAm: aufgenommenAm,
+        datierung: datierung,
         alben: alben,
         favorit: favorit,
       ).alsMap(),
@@ -115,6 +119,7 @@ class Beilagenangaben {
       aufgenommenAm: j['aufgenommenAm'] is String
           ? DateTime.tryParse(j['aufgenommenAm'] as String)
           : null,
+      datierung: _datierung(j['datierung']),
       alben: alben,
       favorit: j['favorit'] == true,
     );
@@ -167,6 +172,9 @@ class Beilagenangaben {
         AufnahmedatenSetzen([(id: id, zeitpunkt: datum, geschaetzt: false)]),
       );
     }
+    if (datierung case final d?) {
+      await db.fuehreAus(DatierungSetzen([id], d));
+    }
     if (favorit) await db.fuehreAus(FavoritSetzen([id], true));
     for (final name in alben.toSet()) {
       final vorhanden = await (db.select(
@@ -190,5 +198,14 @@ class Beilagenangaben {
         await db.fuehreAus(OrtSetzen([id], breite, laenge));
       }
     }
+  }
+}
+
+AufnahmeDatierung? _datierung(Object? j) {
+  if (j is! Map) return null;
+  try {
+    return AufnahmeDatierung.aus(j.cast<String, Object?>());
+  } on Object {
+    return null;
   }
 }

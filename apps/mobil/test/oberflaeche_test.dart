@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/l10n/sync_texte.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -137,7 +138,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Anmelden(sitzung: Sitzung()),
       ),
@@ -184,7 +188,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Anmelden(
           sitzung: Sitzung(),
@@ -238,7 +245,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Konten(verwaltung: _Verwaltung()),
       ),
@@ -285,7 +295,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Sicherungsseite(dienst: dienst),
       ),
@@ -325,7 +338,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Sicherungsseite(dienst: dienst),
       ),
@@ -402,7 +418,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Builder(
@@ -454,7 +473,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Builder(
@@ -512,7 +534,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Builder(
@@ -581,7 +606,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: AufnahmenRaster(sitzung: sitzung, zeilen: zeilen),
@@ -664,7 +692,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: AufnahmenRaster(
@@ -723,7 +754,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: AufnahmenRaster(
@@ -782,7 +816,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Zeitleiste(sitzung: sitzung)),
       ),
@@ -904,7 +941,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Zeitleiste(sitzung: sitzung)),
       ),
@@ -1222,7 +1262,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Aufnahmedaten(
@@ -1295,7 +1338,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Aufnahmedaten(
@@ -1334,7 +1380,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Vergleich(
           sitzung: sitzung,
@@ -1412,7 +1461,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Rueckblick(sitzung: sitzung, heute: DateTime(2026, 10, 20)),
@@ -1435,7 +1487,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Kalender(sitzung: sitzung)),
       ),
@@ -1488,7 +1543,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
@@ -1563,7 +1621,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Orte(sitzung: sitzung)),
       ),
@@ -1623,7 +1684,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Betrachter(
           sitzung: sitzung,
@@ -1709,7 +1773,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
@@ -1782,7 +1849,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Personen(sitzung: sitzung)),
       ),
@@ -1885,7 +1955,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Personen(sitzung: sitzung)),
       ),
@@ -1989,7 +2062,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Betrachter(
           sitzung: sitzung,
@@ -2081,7 +2157,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Builder(
           builder: (context) => Scaffold(
@@ -2158,7 +2237,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Suche(sitzung: sitzung)),
       ),
@@ -2210,7 +2292,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Suche(sitzung: sitzung)),
       ),
@@ -2248,7 +2333,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Suche(sitzung: sitzung)),
       ),
@@ -2296,7 +2384,10 @@ void main() {
     );
     Widget app(Widget inhalt) => MaterialApp(
       locale: const Locale('de'),
-      localizationsDelegates: AppTexte.localizationsDelegates,
+      localizationsDelegates: const [
+        ...AppTexte.localizationsDelegates,
+        SyncTexte.delegate,
+      ],
       supportedLocales: AppTexte.supportedLocales,
       home: Scaffold(body: inhalt),
     );
@@ -2398,7 +2489,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Builder(
@@ -2452,7 +2546,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: SingleChildScrollView(
@@ -2518,7 +2615,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: NeueCodes(verbindung: verbindung),
       ),
@@ -2572,7 +2672,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Builder(
@@ -2651,7 +2754,10 @@ void main() {
       MaterialApp(
         key: ValueKey(zeile.id),
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Betrachter(sitzung: sitzung, zeilen: [zeile], start: 0),
       ),
@@ -2693,7 +2799,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Betrachter(
           sitzung: sitzung,
@@ -2823,7 +2932,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: AufnahmenRaster(
@@ -2899,7 +3011,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: ReisenSeite(sitzung: sitzung)),
       ),
@@ -2981,7 +3096,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: AktivitaetSeite(sitzung: sitzung, aktivitaetId: 'runde'),
@@ -3071,7 +3189,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
+          localizationsDelegates: const [
+            ...AppTexte.localizationsDelegates,
+            SyncTexte.delegate,
+          ],
           supportedLocales: AppTexte.supportedLocales,
           home: Scaffold(
             body: Angabenliste(
@@ -3116,7 +3237,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Angabenliste(sitzung: sitzung, angaben: angaben!),
@@ -3207,7 +3331,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Angabenliste(sitzung: sitzung, angaben: angaben),
@@ -3286,7 +3413,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Statistik(sitzung: sitzung)),
       ),
@@ -3328,7 +3458,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Duplikate(sitzung: sitzung)),
       ),
@@ -3371,7 +3504,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Einstellungen(sitzung: sitzung)),
       ),
@@ -3459,7 +3595,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Stammbaum(sitzung: sitzung, fokus: 'Oma'),
@@ -3522,7 +3661,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(body: Stammbaum(sitzung: sitzung)),
       ),
@@ -3597,7 +3739,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Stammbaum(sitzung: sitzung, fokus: 'Ich'),
@@ -3660,7 +3805,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: Lebensbaum(sitzung: sitzung, fokus: 'kind'),
@@ -3703,7 +3851,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Entwickeln(sitzung: sitzung, id: 'e1'),
       ),
@@ -3798,7 +3949,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: ListView(
@@ -3824,6 +3978,8 @@ void main() {
     await tester.tap(find.text(t.kontoAbmelden));
     expect(abgemeldet, isTrue);
     // Ein anderes Gerät nach Rückfrage.
+    await tester.ensureVisible(find.text(t.eigenGeraetAbmelden).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text(t.eigenGeraetAbmelden).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text(t.eigenGeraetAbmelden).last);
@@ -3831,6 +3987,8 @@ void main() {
     expect(anfragen, contains('DELETE /api/v1/geraete/g2'));
     expect(find.text('Browser (Firefox)'), findsNothing);
 
+    await tester.ensureVisible(find.text(t.eigenPasswortAendern));
+    await tester.pumpAndSettle();
     await tester.tap(find.text(t.eigenPasswortAendern));
     await tester.pumpAndSettle();
     final felder = find.byType(TextField);
@@ -3892,7 +4050,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: ListView(
@@ -3942,7 +4103,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
+          localizationsDelegates: const [
+            ...AppTexte.localizationsDelegates,
+            SyncTexte.delegate,
+          ],
           supportedLocales: AppTexte.supportedLocales,
           home: Scaffold(
             body: AufnahmenRaster(
@@ -3999,7 +4163,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           locale: const Locale('de'),
-          localizationsDelegates: AppTexte.localizationsDelegates,
+          localizationsDelegates: const [
+            ...AppTexte.localizationsDelegates,
+            SyncTexte.delegate,
+          ],
           supportedLocales: AppTexte.supportedLocales,
           home: Scaffold(
             body: AufnahmenRaster(
@@ -4040,7 +4207,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Konto(sitzung: sitzung),
       ),

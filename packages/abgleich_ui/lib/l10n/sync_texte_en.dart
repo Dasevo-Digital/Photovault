@@ -171,4 +171,69 @@ class SyncTexteEn extends SyncTexte {
   @override
   String get zuGross =>
       'Too large for a single sync command. Reduce the selection or content.';
+
+  @override
+  String geraetVersion(String version) {
+    return 'App version: $version';
+  }
+
+  @override
+  String get geraetVersionUnbekannt => 'App version not reported';
+
+  @override
+  String geraetSchema(int schema, int ziel) {
+    return 'Catalog version: $schema · required: $ziel';
+  }
+
+  @override
+  String get geraetSchemaUnbekannt => 'Catalog version not reported';
+
+  @override
+  String get geraetAktualisieren =>
+      'The app and server need the same catalog version.';
+
+  @override
+  String geraetOffen(int anzahl) {
+    return 'Last reported pending changes: $anzahl';
+  }
+
+  @override
+  String get geraetOffenUnbekannt => 'Pending changes not reported';
+
+  @override
+  String geraetAbgleich(String zeit) {
+    return 'Successful sync reported: $zeit';
+  }
+
+  @override
+  String get geraetKeinAbgleich => 'No successful sync reported';
+
+  @override
+  String geraetGemeldet(String zeit) {
+    return 'Status reported $zeit';
+  }
+
+  @override
+  String get geraetStandUnbekannt =>
+      'Current status unknown. Reconnect this device.';
+
+  @override
+  String get geraetePlanTitel => 'Prepare an update';
+
+  @override
+  String get geraetePlanText =>
+      'Sync pending changes with the existing version first. Have compatible app packages ready for every device, then update the server and apps to the same catalog version.';
+
+  @override
+  String geraetePlanBetroffen(String namen) {
+    return 'Different or unknown catalog version: $namen';
+  }
+
+  @override
+  String get geraeteErstAbgleichen =>
+      'At least one device reports pending changes. Sync again and check the status before switching.';
+
+  @override
+  String get geraeteHistorisch =>
+      'These details come from the most recent device reports. A disconnected device may have additional pending changes.';
 }

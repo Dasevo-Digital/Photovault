@@ -1282,9 +1282,12 @@ neuen Schlüssel überschrieben.
 
 Für geprüfte Uploads und Konfliktschutz müssen Server und Apps diese
 Funktionen unterstützen. Neue Apps halten geschützte Änderungen bei einem
-älteren Server zurück. Ältere Apps bleiben mit dem neuen Server kompatibel,
-senden aber weiterhin ohne Konfliktbasis; für durchgängigen Schutz müssen
-alle schreibenden Geräte aktualisiert sein. Bereits vor der Aktualisierung
+älteren Server zurück. Server und Apps müssen dasselbe Katalogschema unterstützen. Bei einer
+abweichenden Schemafassung stoppt der Abgleich; erst Server und alle
+schreibenden Geräte gemeinsam aktualisieren. Die Geräteübersicht zeigt
+zuletzt gemeldete Fassungen und ausstehende Änderungen. Bei gleichem Schema
+können ältere Protokollstände weiterhin ohne Konfliktbasis senden; für
+durchgängigen Schutz müssen alle schreibenden Geräte aktualisiert sein. Bereits vor der Aktualisierung
 gespeicherte Befehle erhalten nachträglich eine Verschlüsselung, können
 aber keine rückwirkende Konfliktbasis erhalten; diese Altaufträge werden
 weiterhin nach dem bisherigen Verfahren abgearbeitet.
@@ -1604,3 +1607,45 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   Reproduktion, Sonden und Ausschlussliste unter
   [docs/hardswish_fehler/](docs/hardswish_fehler/).
 - Siehe "Transparenz zu den technischen Risiken" oben.
+
+
+### Erweiterte Abläufe
+
+Speicherorte und Sicherungen bieten einen Sicherungsassistenten. Vor lokaler
+Freigabe werden zwei externe Kopien frisch inhaltlich geprüft. Unterschiedliche
+Dateisystemkennungen beweisen keine physische Unabhängigkeit; diese muss der
+Benutzer ausdrücklich bestätigen. Geplante Prüfungen referenzierter Ordner
+zeigen neue, geänderte und fehlende Dateien. Neue Dateien kommen nur nach
+Bestätigung hinzu; unerreichbare Laufwerke sind keine Löschanweisung.
+
+Im Infoblatt lässt sich eine Datierung nach Tag, Monat, Jahr oder Zeitraum
+mit Herkunft eintragen. Das ursprüngliche Aufnahmedatum bleibt erhalten.
+Zeiträume stehen im Kalender bei ihrem Beginn, die Datumssuche berücksichtigt
+Überschneidungen. XMP und Sicherungen tragen Bereich und Herkunft mit.
+
+Der neutrale RAW-Export als lineares 16-Bit-TIFF beginnt am RAW-Original.
+Er übernimmt keine JPEG-Vorschaufassung und keine daran vorgenommenen Änderungen.
+macOS nutzt den RAW-Decoder mit linearem Fließkomma-Arbeitsraum und RGBA16-Ausgabe
+(bis 50 Megapixel); Linux/Windows nutzen LibRaw mit `-6 -W -g 1 1 -o 1`.
+Nicht unterstützte Dateien brechen ab, statt als 8-Bit-Ersatz ausgegeben zu werden.
+Dies ist der eigene höherpräzise Exportweg; der bisherige Vorschaueditor und
+seine ICC-JPEG-Ausgabe bleiben getrennte Verarbeitungspfade. HDR-Ausgabe ist
+kein Teil dieses Formats.
+
+Der Suchindex lässt sich in der Textsuche optional einschalten. Ein Kugelbaum
+verwirft nur mathematisch ausgeschlossene Teilbäume und fällt bei ungeeigneten
+Vektoren auf vollständige Bewertung zurück. Aufbauzeit und zusätzlicher Speicher
+können sich bei kleinen oder gleichmäßig verteilten Beständen nicht lohnen.
+Ein Modell- oder Vektorwechsel erzeugt einen neuen Index; Suchfilter gelten
+bei jeder Abfrage neu.
+
+`release.py vorbereiten` legt Version und Tag nur lokal an. Builds verwenden
+eigene Arbeitskopien; vorhandene Arbeitsordner auf Testrechnern bleiben erhalten.
+`entwurf` veröffentlicht Quellen erst nach Prüfung aller erwarteten Pakete.
+Der Serverablauf verlangt den inventarisierten `server_daten`-Ordner,
+prüft ihn gegen den laufenden Dienst und sichert im angehaltenen Zustand
+Daten, Programm und effektive Dienstkonfiguration. Inhaltsprüfung, SQLite-Prüfung,
+Platz für Sicherung und Rückweg sowie ein Gesundheitscheck sind vorgeschrieben.
+Bei fehlgeschlagenem Start werden Programm und Daten gemeinsam zurückgesetzt.
+Rückfallstände bleiben zur Abnahme erhalten. Jeder Produktiveingriff erfordert
+eine eigene ausdrückliche Bestätigung.

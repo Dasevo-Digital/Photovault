@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:xml/xml.dart';
 
 import '../db/database.dart';
@@ -48,6 +49,10 @@ String buildXmpPacket(
               'xmlns:exif': 'http://ns.adobe.com/exif/1.0/',
               'xmlns:tiff': 'http://ns.adobe.com/tiff/1.0/',
               'xmlns:aux': 'http://ns.adobe.com/exif/1.0/aux/',
+              if (asset.kalenderdatierung case final d?) ...{
+                'xmlns:pv': 'urn:photovault:metadata:1.0/',
+                'pv:Dating': jsonEncode(d.alsJson()),
+              },
               if (gesichter.isNotEmpty) ...{
                 'xmlns:mwg-rs':
                     'http://www.metadataworkinggroup.com/schemas/regions/',

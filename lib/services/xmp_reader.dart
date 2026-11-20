@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:kern/db/database.dart' show AufnahmeDatierung;
 
 import 'dart:convert';
 import 'dart:typed_data';
@@ -21,6 +22,7 @@ import 'package:kern/services/xmp_regionen.dart';
 class XmpFields {
   /// 0 bis 5. Andere Werte werden nicht übernommen.
   final int? rating;
+  final AufnahmeDatierung? datierung;
 
   /// In darktable oder Lightroom abgelehnt (`xmp:Rating` = -1).
   final bool abgelehnt;
@@ -36,6 +38,7 @@ class XmpFields {
 
   const XmpFields({
     this.rating,
+    this.datierung,
     this.abgelehnt = false,
     this.colorLabel,
     this.description,
@@ -47,6 +50,7 @@ class XmpFields {
 
   bool get isEmpty =>
       rating == null &&
+      datierung == null &&
       !abgelehnt &&
       colorLabel == null &&
       description == null &&
@@ -57,6 +61,7 @@ class XmpFields {
 
   /// Was davon beim Import mitkommt. 0 Sterne heisst „nicht bewertet“.
   Beilagenangaben get alsBeilage => Beilagenangaben(
+    datierung: datierung,
     sterne: rating != null && rating! > 0 ? rating : null,
     abgelehnt: abgelehnt,
     farbe: colorLabel,
@@ -218,7 +223,19 @@ XmpFields? parseXmpContent(String xmlContent) {
     if (items.isNotEmpty) tags = items;
   }
 
+  AufnahmeDatierung? datierung;
+  try {
+    final d = findAttribute('pv:Dating');
+    if (d != null) {
+      datierung = AufnahmeDatierung.aus(
+        (jsonDecode(d) as Map).cast<String, Object?>(),
+      );
+    }
+  } on Object {
+    /* Eine defekte Datierung verwirft keine anderen Angaben. */
+  }
   final fields = XmpFields(
+    datierung: datierung,
     rating: rating,
     abgelehnt: bewertung == -1,
     colorLabel: colorLabel,

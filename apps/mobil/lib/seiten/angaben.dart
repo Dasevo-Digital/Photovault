@@ -262,7 +262,11 @@ class _AngabenlisteState extends State<Angabenliste> {
         _Reihe(
           symbol: Icons.event_outlined,
           haupt: Text(
-            datumZeit.format((_uebernommen?.neu ?? a.fileCreatedAt).toLocal()),
+            a.kalenderdatierung != null && _uebernommen == null
+                ? datierungstext(a.kalenderdatierung!, sprache)
+                : datumZeit.format(
+                    (_uebernommen?.neu ?? a.fileCreatedAt).toLocal(),
+                  ),
           ),
           neben: (_uebernommen?.geschaetzt ?? a.datumGeschaetzt)
               ? t.angabenDatumGeschaetzt

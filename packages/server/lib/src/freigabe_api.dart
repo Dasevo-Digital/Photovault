@@ -321,7 +321,8 @@ class Freigabeapi {
           {
             'id': a.id,
             'art': a.type == 'VIDEO' ? 'video' : 'bild',
-            'aufgenommen': a.fileCreatedAt.toIso8601String(),
+            'aufgenommen': a.anzeigeDatum.toIso8601String(),
+            'datierung': ?a.kalenderdatierung?.alsJson(),
             if (a.widthPx != null) 'breite': a.widthPx,
             if (a.heightPx != null) 'hoehe': a.heightPx,
             if (a.durationSeconds != null) 'dauer': a.durationSeconds,

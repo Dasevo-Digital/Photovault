@@ -456,6 +456,7 @@ const EN = {
   'Videos bleiben aussen vor.': 'Videos are left out.',
   '{n} Aufnahmen herunterladen': 'Download {n} items',
   'Original': 'Original',
+  'Datierung': 'Dating',
   'Die Datei, wie sie aufgenommen wurde – auch RAW und Video.': 'The file as it was taken – RAW and video too.',
   'Mit der Bearbeitung. Datum und Kamera kommen mit, der Ort nicht.': 'With the edits. Date and camera come along, the location does not.',
   'laut Dateiname': 'from the file name',

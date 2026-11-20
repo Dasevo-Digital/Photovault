@@ -1,3 +1,4 @@
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:abgleich_ui/fotokammer_dienst.dart';
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
@@ -203,6 +204,12 @@ class Sitzung extends ChangeNotifier {
       File(p.join(ordner.path, 'offline_alben.json')),
     );
     final s = Serververbindung(v.server, v.token);
+    try {
+      s.clientFassung = (await PackageInfo.fromPlatform()).version;
+    } on Object {
+      /* Alte oder nicht native Prüfumgebungen melden keine Fassung. */
+    }
+
     final a = Abgleich(
       db,
       s,

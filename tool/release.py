@@ -10,9 +10,8 @@ liefen (Issue #188), in der Reihenfolge, in der sie laufen müssen:
     python3 tool/release.py veroeffentlichen 3.40.0
 
 vorbereiten   pubspec und Flatpak-Metainfo auf die Fassung, Commit
-              „Version x“, annotierte Marke, Datenschutzprüfung, erst main,
-              dann die Marke pushen (eine Marke allein schiebt die Historie
-              mit).
+              „Version x“, Datenschutzprüfung, lokale annotierte Marke.
+              Main und Marke erst beim Entwurf nach geprüften Paketen pushen.
 bauen         Linux (Flatpak) und Windows (Zip) auf den Testrechnern, macOS
               hier, die Server-Pakete mit Docker; alles in den Ordner
               <upload_basis>/PhotoVault-Release-v<x>-Upload, dazu
@@ -54,6 +53,7 @@ Das Gitea-Token kommt aus dem Schlüsselbund (git credential-osxkeychain)
 und wird nirgends gespeichert oder ausgegeben.
 """
 
+from contextlib import contextmanager
 import argparse
 import base64
 import hashlib
@@ -84,7 +84,7 @@ def ziele():
     return json.loads(KONFIG.read_text())
 
 
-def lauf(befehl, *, cwd=REPO, pruefen=True, ausgabe=False, eingabe=None, versuche=1, pause=90):
+def lauf(befehl, *, cwd=None, pruefen=True, ausgabe=False, eingabe=None, versuche=1, pause=90):
     """Führt [befehl] aus; mit [ausgabe] kommt stdout zurück.
 
     Mit [versuche] wird ein gescheiterter Schritt nach [pause] Sekunden
@@ -92,6 +92,7 @@ def lauf(befehl, *, cwd=REPO, pruefen=True, ausgabe=False, eingabe=None, versuch
     3.54.0 scheiterten Docker und Xcode eine Stunde lang an Zeitüberschreitungen
     zu GitHub und Docker Hub, die jeweils nach Minuten wieder vorbei waren.
     """
+    cwd = REPO if cwd is None else cwd
     text = befehl if isinstance(befehl, str) else ' '.join(shlex.quote(str(b)) for b in befehl)
     for versuch in range(1, versuche + 1):
         print('›', text, flush=True)
@@ -265,31 +266,62 @@ def vorbereiten(args):
     stand_und_fassung(fassung)
     lauf(['git', 'add', 'pubspec.yaml', str(m.relative_to(REPO)), *DATENSCHUTZTEXTE])
     lauf(['git', 'commit', '-q', '-m', f'Version {fassung}'])
-    lauf(['git', 'tag', '-a', f'v{fassung}', '-m', f'Photo Vault {fassung}'])
     lauf(['bash', 'tool/pruefe_repository_datenschutz.sh'])
-    # Erst main: Eine Marke allein schiebt die Historie mit, und wird main
-    # danach abgelehnt, steht eine Marke neben dem Zweig.
-    lauf(['git', 'push', 'origin', 'main'])
-    lauf(['git', 'push', 'origin', f'v{fassung}'])
+    lauf(['git', 'tag', '-a', f'v{fassung}', '-m', f'Photo Vault {fassung}'])
+    print('Nur lokal vorbereitet. Veröffentlicht wird nach gebauten und geprüften Paketen.')
 
 
 # --- bauen ------------------------------------------------------------------------
 
 WINDOWS_BAU = r'''$ErrorActionPreference = 'Stop'
-$repo = Join-Path $env:USERPROFILE 'photo_vault'
-Set-Location $repo
+$repo = Join-Path $env:LOCALAPPDATA 'PhotoVaultBuilds/{kennung}'
+$bundle = Join-Path $env:TEMP '{kennung}.bundle'
+if (Test-Path -LiteralPath $repo) {{ throw 'Isolierter Bauordner ist schon belegt' }}
 $env:Path = '{flutter};' + $env:Path
-git fetch -q C:/Windows/Temp/pv.bundle refs/heads/main:refs/remotes/bundle/main refs/tags/{marke}:refs/tags/{marke}
-if ($LASTEXITCODE -ne 0) {{ throw 'fetch' }}
-git reset -q --hard {marke}
-git config core.fileMode false
-git config core.autocrlf false
-git clean -fdq lib test tool assets docs packages apps
-git log --oneline -1
-$ErrorActionPreference = 'Continue'
-powershell -NoProfile -ExecutionPolicy Bypass -File tool\windows_bauen.ps1 -Pruefen -Zip
-"BAU-ENDE $LASTEXITCODE"
+try {{
+  git clone --no-checkout -- $bundle $repo
+  if ($LASTEXITCODE -ne 0) {{ throw 'clone' }}
+  Set-Location $repo
+  git config core.autocrlf false
+  git checkout --detach {commit}
+  if ($LASTEXITCODE -ne 0) {{ throw 'checkout' }}
+  powershell -NoProfile -ExecutionPolicy Bypass -File tool\windows_bauen.ps1 -Pruefen -Zip
+  $status = $LASTEXITCODE
+  if ($status -ne 0) {{ throw "Bau fehlgeschlagen: $status" }}
+}} finally {{
+  Set-Location $env:USERPROFILE
+  if (Test-Path -LiteralPath $repo) {{ Remove-Item -LiteralPath $repo -Recurse -Force }}
+  if (Test-Path -LiteralPath $bundle) {{ Remove-Item -LiteralPath $bundle -Force }}
+}}
+'BAU-ENDE 0'
 '''
+
+@contextmanager
+def isolierter_baum(basis, commit):
+    """Alle lokalen Builds lesen einen festen Commit in eigener Arbeitskopie."""
+    global REPO
+    quelle = REPO
+    ziel = Path(tempfile.mkdtemp(prefix='quelle-', dir=basis))
+    try:
+        lauf(['git', 'clone', '--quiet', '--no-hardlinks', '--no-checkout', '--', str(quelle), str(ziel)])
+        lauf(['git', 'checkout', '--quiet', '--detach', commit], cwd=ziel)
+        REPO = ziel
+        yield ziel
+    finally:
+        REPO = quelle
+        # Nur der in diesem Aufruf neu angelegte Baum, nie eine Benutzerkopie.
+        shutil.rmtree(ziel)
+
+
+def linux_bau(kennung, commit):
+    inner = 'trap \'cd /; rm -rf -- "$1"; rm -f -- "$2"\' EXIT; bash tool/flatpak_bauen.sh --pruefen --buendel && echo BAU-ENDE-0'
+    return (f'set -eu; work=$(mktemp -d "$HOME/{kennung}.XXXXXX"); '
+            f'bundle=/tmp/{kennung}.bundle; '
+            'git clone --quiet --no-checkout -- "$bundle" "$work"; '
+            'cd "$work"; '
+            f'git checkout --quiet --detach {shlex.quote(commit)}; '
+            'export PATH="$HOME/flutter/bin:$HOME/snap/flutter/common/flutter/bin:$PATH"; '
+            f'nohup bash -c {shlex.quote(inner)} pv "$work" "$bundle" > "$HOME/pv_bau_{kennung}.log" 2>&1 &')
 
 
 def bauen(args):
@@ -311,29 +343,32 @@ def bauen(args):
             sys.exit(f'HEAD weicht ausserhalb von tool/ von {marke} ab – erst vorbereiten:\n{anders}')
     a = arbeitsordner(fassung, z)
     u = upload_ordner(z, fassung)
+    commit = lauf(['git','rev-parse',f'{marke}^{{commit}}'],ausgabe=True).strip()
+    kennung = f'pv-{fassung}-{uuid.uuid4().hex}'
+    gebaut=set()
+    belegte_pakete={}
+    try:
+        alt=json.loads((u/'BUILD-STAND.json').read_text())
+        if alt.get('commit')==commit and alt.get('fassung')==fassung:
+            belegte_pakete={n:h for n,h in alt.get('pakete',{}).items() if n in dateien(fassung) and (u/n).is_file() and _sha256(u/n)==h}
+    except (OSError,ValueError,AttributeError):
+        pass
 
     # Linux und Windows laufen im Hintergrund, während hier macOS baut.
     windows = None
     if 'linux' in nur:
-        repo = z.get('linux_repo', '~/photo_vault')
-        b = buendel(a, 'linux', marke, marke_dort(z['linux_ssh'], f"git -C {repo} tag -l 'v*'"))
-        lauf(['scp', '-q', str(b), f'{z["linux_ssh"]}:/tmp/pv.bundle'])
-        linux = (f'cd {z.get("linux_repo", "~/photo_vault")} && git fetch -q /tmp/pv.bundle '
-                 f'refs/heads/main:refs/remotes/bundle/main refs/tags/{marke}:refs/tags/{marke} && '
-                 f'git reset -q --hard {marke} && git clean -fdq lib test tool assets docs packages apps && '
-                 f'export PATH=$HOME/flutter/bin:$HOME/snap/flutter/common/flutter/bin:$PATH && '
-                 f'(nohup bash tool/flatpak_bauen.sh --pruefen --buendel > ~/pv_bau_{fassung}.log 2>&1 &)')
-        lauf(['ssh', z['linux_ssh'], linux])
+        b = buendel(a, 'linux', marke, None)
+        lauf(['scp', '-q', str(b), f'{z["linux_ssh"]}:/tmp/{kennung}.bundle'])
+        lauf(['ssh', z['linux_ssh'], linux_bau(kennung, commit)])
 
     if 'windows' in nur:
         ps1 = a / 'windows_bau.ps1'
-        ps1.write_text(WINDOWS_BAU.format(flutter=z.get('windows_flutter', r'C:\src\flutter\bin'), marke=marke))
-        basis = marke_dort(z['windows_ssh'], 'powershell -NoProfile -Command "git -C (Join-Path $env:USERPROFILE \'photo_vault\') tag -l \'v*\'"')
-        b = buendel(a, 'windows', marke, basis)
-        lauf(['scp', '-q', str(b), f'{z["windows_ssh"]}:C:/Windows/Temp/pv.bundle'])
-        lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:pv_windows_bau.ps1'])
+        ps1.write_text(WINDOWS_BAU.format(flutter=z.get('windows_flutter', r'C:\src\flutter\bin').replace("'","''"), kennung=kennung,commit=commit))
+        b = buendel(a, 'windows', marke, None)
+        lauf(['scp', '-q', str(b), f'{z["windows_ssh"]}:AppData/Local/Temp/{kennung}.bundle'])
+        lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:{kennung}.ps1'])
         windows_log = open(a / 'windows_bau.log', 'w')
-        windows = subprocess.Popen(['ssh', z['windows_ssh'], 'powershell -NoProfile -ExecutionPolicy Bypass -File pv_windows_bau.ps1'],
+        windows = subprocess.Popen(['ssh', z['windows_ssh'], f'powershell -NoProfile -ExecutionPolicy Bypass -File {kennung}.ps1'],
                                    stdout=windows_log, stderr=subprocess.STDOUT)
 
     # Scheitert hier etwas, laufen Linux und Windows trotzdem zu Ende und
@@ -342,13 +377,17 @@ def bauen(args):
     fertig = []
     if 'mac' in nur:
         try:
-            _baue_mac(fassung, u, z)
+            with isolierter_baum(a, commit):
+                _baue_mac(fassung, u, z)
+                gebaut.add('mac')
         except SystemExit as e:
             fehler.append(f'macOS: {e}')
 
     if 'server' in nur:
         try:
-            _baue_server(fassung, marke, a, u)
+            with isolierter_baum(a, commit):
+                _baue_server(fassung, marke, a, u)
+                gebaut.add('server')
         except SystemExit as e:
             fehler.append(f'Server: {e}')
 
@@ -358,6 +397,7 @@ def bauen(args):
         else:
             lauf(['scp', '-q', f'{z["windows_ssh"]}:Desktop/PhotoVault-{fassung}-windows-x64.zip', str(u)])
             fertig.append('windows')
+            gebaut.add('windows')
 
     if 'linux' in nur:
         flatpak = f'Desktop/PhotoVault-{fassung}-x86_64.flatpak'
@@ -370,20 +410,29 @@ def bauen(args):
             if 'fertig' in r.stdout:
                 break
             time.sleep(20)
-        log = lauf(['ssh', z['linux_ssh'], f'grep -E "✗|FEHLER" ~/pv_bau_{fassung}.log | head -5; test -f ~/{flatpak} && echo DA'], ausgabe=True, pruefen=False)
-        if 'DA' not in log:
+        log = lauf(['ssh', z['linux_ssh'], f'grep -E "✗|FEHLER|BAU-ENDE-0" ~/pv_bau_{kennung}.log | tail -5; test -f ~/{flatpak} && echo DA'], ausgabe=True, pruefen=False)
+        if 'DA' not in log or 'BAU-ENDE-0' not in log:
             fehler.append(f'Flatpak fehlt:\n{log}')
         else:
             if '✗' in log or 'FEHLER' in log:
                 print(f'Das Flatpak ist da, die Prüfung meldet aber:\n{log}')
             lauf(['scp', '-q', f'{z["linux_ssh"]}:{flatpak}', str(u)])
             fertig.append('linux')
+            gebaut.add('linux')
 
     summen(u, fassung)
     for plattform in fertig:
         fern_bereitlegen(z, plattform, fassung, u)
     if fehler:
         sys.exit('\n'.join(fehler))
+    namen={'mac':[f'PhotoVault-{fassung}-macos.zip'],
+           'windows':[f'PhotoVault-{fassung}-windows-x64.zip'],
+           'linux':[f'PhotoVault-{fassung}-x86_64.flatpak'],
+           'server':[f'PhotoVault-Server-{fassung}-linux-amd64.tar.gz',f'PhotoVault-Server-{fassung}-linux-arm64.tar.gz']}
+    for plattform in gebaut:
+        for name in namen[plattform]:
+            belegte_pakete[name]=_sha256(u/name)
+    (u/'BUILD-STAND.json').write_text(json.dumps({'fassung':fassung,'commit':commit,'pakete':belegte_pakete},indent=2)+'\n')
 
 
 def _baue_mac(fassung, u, z):
@@ -407,7 +456,7 @@ def _baue_mac(fassung, u, z):
         # Auch wenn etwas scheitert: Die Bündel unter build/ fänden Spotlight
         # und Launchpad – und öffneten womöglich die echte Bibliothek. Vorher
         # prüfen, dass keins läuft.
-        if 'photo_vault/build' in lauf('ps -Ao comm', ausgabe=True):
+        if str(REPO / 'build') in lauf('ps -Ao comm', ausgabe=True):
             print('Ein Build-Bündel läuft noch – nicht aufgeräumt.')
         else:
             lauf('rm -rf build/macos/Build/Products/*/Photo\\ Vault*.app')
@@ -724,6 +773,22 @@ def _lade_hoch(z, rid, name, daten, kopf, tok, groesse, versuche=3, pause=10):
     return st, a
 
 
+def pruefe_releasepakete(fassung, ordner):
+    erwartet = dateien(fassung)
+    summen = summen_lesen((ordner / 'SHA256SUMS.txt').read_text())
+    for name in erwartet:
+        datei = ordner / name
+        if not datei.is_file() or summen.get(name) != _sha256(datei):
+            sys.exit(f'Releasepaket fehlt oder Prüfsumme weicht ab: {name}')
+    try:
+        stand=json.loads((ordner/'BUILD-STAND.json').read_text())
+    except (OSError,ValueError):
+        sys.exit('Geprüfter Buildstand fehlt – Pakete vor Veröffentlichung neu bauen.')
+    commit=lauf(['git','rev-parse',f'v{fassung}^{{commit}}'],ausgabe=True).strip()
+    if stand.get('fassung')!=fassung or stand.get('commit')!=commit or stand.get('pakete')!={n:summen[n] for n in erwartet}:
+        sys.exit('Buildstand, Tag und Pakete stimmen nicht überein.')
+
+
 def entwurf(args):
     z = ziele()
     fassung = args.fassung
@@ -731,6 +796,7 @@ def entwurf(args):
     if not u.is_dir():
         sys.exit(f'Kein Upload-Ordner {u.name} – ist {fassung} gebaut?')
     text = (u / f'RELEASE-TEXT-v{fassung}.md').read_text(encoding='utf-8')
+    pruefe_releasepakete(fassung, upload_ordner(z, fassung, anlegen=False))
     tok = token(z)
     # Ein veröffentlichtes Release findet /releases/tags/<marke> – so lassen
     # sich Pakete nachtragen, etwa Linux und Windows zu einer Fassung, die
@@ -749,6 +815,10 @@ def entwurf(args):
     if veroeffentlicht and not getattr(args, 'nachtragen', False):
         sys.exit('Das Release ist schon veröffentlicht – nichts geändert. '
                  'Fehlende Pakete nur mit --nachtragen.')
+    lauf(['bash','tool/pruefe_repository_datenschutz.sh'])
+    lauf(['git','push','origin','main'])
+    lauf(['bash','tool/pruefe_repository_datenschutz.sh'])
+    lauf(['git','push','origin',f'v{fassung}'])
     if rel is None:
         st, rel = gitea(z, '/releases', json.dumps({'tag_name': f'v{fassung}', 'name': f'Photo Vault {fassung}', 'body': text,
                                                      'draft': True, 'prerelease': False}).encode(), 'POST',
@@ -858,25 +928,9 @@ def einspielen(args):
         antwort = input(f'Produktivserver auf {fassung} bringen? Zum Bestätigen „ja“ eingeben: ').strip().lower()
         if antwort != 'ja':
             sys.exit('Server nicht angefasst.')
+        from server_wartung import aktualisieren
         paket = a / 'paket-openvino' / 'photo-vault-server-linux-amd64-openvino.tar.gz'
-        o = ['-i', os.path.expanduser(z['server_schluessel']), '-o', f'UserKnownHostsFile={os.path.expanduser(z["server_known_hosts"])}',
-             '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10']
-        lauf(['scp', '-q', *o, str(paket), f'{z["server_ssh"]}:/root/pv-neu.tar.gz'])
-        # Getauscht wird nur das Bündel, nicht die Einheit unter /etc. Hat
-        # sie sich geändert, läuft das neue Programm sonst mit der alten –
-        # bei 3.49.4 hätte die Gastprüfung so die nötigen Namensräume nicht
-        # bekommen. Dann vor dem Anhalten abbrechen.
-        lauf(['ssh', *o, z['server_ssh'],
-              'set -e; cd /opt; rm -rf photo-vault-server.neu && mkdir photo-vault-server.neu && '
-              'tar -xzf /root/pv-neu.tar.gz -C photo-vault-server.neu --strip-components=1; '
-              'if ! cmp -s photo-vault-server.neu/systemd/photo-vault-server.service '
-              '/etc/systemd/system/photo-vault-server.service; then '
-              'echo "Die Einheit im Bündel weicht von /etc/systemd/system ab – erst übernehmen '
-              '(README, Einzeldatei mit systemd). Der Dienst läuft unverändert."; '
-              'rm -rf photo-vault-server.neu /root/pv-neu.tar.gz; exit 3; fi; '
-              'systemctl stop photo-vault-server; rm -rf photo-vault-server.old; '
-              'mv photo-vault-server photo-vault-server.old; mv photo-vault-server.neu photo-vault-server; '
-              'systemctl start photo-vault-server; sleep 12; systemctl is-active photo-vault-server; rm /root/pv-neu.tar.gz'])
+        aktualisieren(z, paket, fassung)
 
 
 # --- veroeffentlichen -------------------------------------------------------------
@@ -948,6 +1002,8 @@ def main():
     for ziel in ['linux', 'windows', 'mac', 'server']:
         e.add_argument(f'--{ziel}', action='store_true')
     args = p.parse_args()
+    if not re.fullmatch(r'[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}',args.fassung):
+        p.error('Version muss aus drei Zahlen bestehen.')
     {'vorbereiten': vorbereiten, 'bauen': bauen, 'entwurf': entwurf,
      'einspielen': einspielen, 'veroeffentlichen': veroeffentlichen}[args.schritt](args)
 

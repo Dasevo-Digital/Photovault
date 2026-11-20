@@ -140,6 +140,41 @@ void main() {
         inhalt: jsonEncode({'art': art, 'werte': w}),
       );
 
+  test(
+    'Kalenderbereiche behalten Reihenfolge und Cursor über mehrere Seiten',
+    () async {
+      final a = await ladeHoch(erikaToken, 'alt.jpg', 40);
+      final b = await ladeHoch(erikaToken, 'neu.jpg', 140);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      await db.fuehreAus(DatierungSetzen([a], AufnahmeDatierung.jahr(1985)));
+      await db.fuehreAus(
+        DatierungSetzen([b], AufnahmeDatierung.monat(1990, 5)),
+      );
+      final seite = await jsonAus(
+        await frag('GET', '/api/v1/aufnahmen?anzahl=1', token: erikaToken),
+      );
+      expect((seite['aufnahmen'] as List).single['id'], b);
+      final cursor = seite['weiter'] as String;
+      final zweite = await jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/aufnahmen?anzahl=1&nach=${Uri.encodeQueryComponent(cursor)}',
+          token: erikaToken,
+        ),
+      );
+      final foto = (zweite['aufnahmen'] as List).single as Map;
+      expect(foto['id'], a);
+      expect((foto['datierung'] as Map)['genauigkeit'], 'jahr');
+      final monate = await jsonAus(
+        await frag('GET', '/api/v1/zeitleiste/monate', token: erikaToken),
+      );
+      expect((monate['monate'] as List).map((m) => m['monat']), [
+        '1990-05',
+        '1985-00',
+      ]);
+    },
+  );
+
   test('Archiv: aus der Zeitleiste, eigens abrufbar (#304)', () async {
     final weg = await ladeHoch(erikaToken, 'IMG_0500.jpg', 40);
     final bleibt = await ladeHoch(erikaToken, 'IMG_0501.jpg', 140);

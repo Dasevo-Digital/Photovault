@@ -99,10 +99,7 @@ class ReferenzKatalog {
         p.isWithin(bibliothek, root)) {
       throw const FormatException('pv_referenzen_bibliothek');
     }
-    final muster = [
-      for (final s in ausschliessen.where((s) => s.trim().isNotEmpty))
-        _muster(s.trim()),
-    ];
+    final muster = ausschlussmuster(ausschliessen);
     bool ausgeschlossen(String pfad, {bool ordner = false}) {
       final rel = p.relative(pfad, from: root).replaceAll(r'\', '/');
       return muster.any(
@@ -171,6 +168,10 @@ class ReferenzKatalog {
       await refs.speichern();
     }
   }
+
+  static List<RegExp> ausschlussmuster(Iterable<String> werte) => [
+    for (final s in werte.where((s) => s.trim().isNotEmpty)) _muster(s.trim()),
+  ];
 
   static RegExp _muster(String wert) {
     if (wert.length > 512 ||

@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/l10n/sync_texte.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -67,10 +68,17 @@ void main() {
   );
 
   Future<AppTexte> zeige(WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1100, 1700);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: ServerEigenesKontoScreen(verbindung: verbindung()),
       ),

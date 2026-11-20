@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/l10n/sync_texte.dart';
 import 'dart:io';
 import 'services/farbverwaltung.dart';
 
@@ -222,6 +223,7 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                 locale: localeFromString(settingsSnapshot.data?.sprache),
                 supportedLocales: AppTexte.supportedLocales,
                 localizationsDelegates: const [
+                  SyncTexte.delegate,
                   AppTexte.delegate,
                   GelaendeTexte.delegate,
                   GlobalMaterialLocalizations.delegate,

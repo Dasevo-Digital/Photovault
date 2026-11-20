@@ -206,6 +206,9 @@ extension BackupWiederherstellungsprobe on BackupService {
                 )) ||
             (foto['datumGeschaetzt'] is bool &&
                 a.datumGeschaetzt != foto['datumGeschaetzt']) ||
+            (foto.containsKey('datierung') &&
+                jsonEncode(a.kalenderdatierung?.alsJson()) !=
+                    jsonEncode(foto['datierung'])) ||
             (foto.containsKey('colorLabel') &&
                 a.colorLabel != foto['colorLabel']) ||
             (foto.containsKey('latitude') &&

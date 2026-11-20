@@ -1,3 +1,4 @@
+import 'package:kern/db/database.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -316,11 +317,50 @@ class Anmeldungsapi {
   }
 
   Response geraete(Request anfrage) => _json({
+    'schema': AppDatabase.aktuelleSchemaVersion,
     'geraete': [
       for (final g in konten.geraete(kontoVon(anfrage).id)) g.alsJson(),
     ],
     'dieses': geraetVon(anfrage).id,
   });
+
+  Future<Response> geraetestand(Request anfrage) async {
+    try {
+      final bytes = <int>[];
+      await for (final teil in anfrage.read()) {
+        if (bytes.length + teil.length > 4096) {
+          return _json({'fehler': 'Meldung zu groß'}, status: 413);
+        }
+        bytes.addAll(teil);
+      }
+      final j = (jsonDecode(utf8.decode(bytes)) as Map).cast<String, Object?>();
+      if (j.keys.any(
+        (k) => !{
+          'fassung',
+          'schema',
+          'plattform',
+          'offen',
+          'erfolgreich',
+        }.contains(k),
+      )) {
+        throw const FormatException('pv_geraetestand');
+      }
+      final ok = konten.meldeGeraetestand(
+        kontoVon(anfrage).id,
+        geraetVon(anfrage).id,
+        fassung: j['fassung'] as String?,
+        schema: j['schema'] as int,
+        plattform: j['plattform'] as String,
+        offen: j['offen'] as int,
+        erfolgreich: j['erfolgreich'] as bool,
+      );
+      return _json({'gespeichert': ok}, status: ok ? 200 : 404);
+    } on FormatException {
+      return _json({'fehler': 'Ungültiger Gerätestand'}, status: 400);
+    } on TypeError {
+      return _json({'fehler': 'Ungültiger Gerätestand'}, status: 400);
+    }
+  }
 
   Response geraetAbmelden(Request anfrage, String id) =>
       konten.abmelden(kontoVon(anfrage).id, id)

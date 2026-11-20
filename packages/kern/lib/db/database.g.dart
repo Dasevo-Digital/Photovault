@@ -598,6 +598,61 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _datumVonMeta = const VerificationMeta(
+    'datumVon',
+  );
+  @override
+  late final GeneratedColumn<DateTime> datumVon = GeneratedColumn<DateTime>(
+    'datum_von',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datumBisMeta = const VerificationMeta(
+    'datumBis',
+  );
+  @override
+  late final GeneratedColumn<DateTime> datumBis = GeneratedColumn<DateTime>(
+    'datum_bis',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datumGenauigkeitMeta = const VerificationMeta(
+    'datumGenauigkeit',
+  );
+  @override
+  late final GeneratedColumn<String> datumGenauigkeit = GeneratedColumn<String>(
+    'datum_genauigkeit',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datumQuelleMeta = const VerificationMeta(
+    'datumQuelle',
+  );
+  @override
+  late final GeneratedColumn<String> datumQuelle = GeneratedColumn<String>(
+    'datum_quelle',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _datumHinweisMeta = const VerificationMeta(
+    'datumHinweis',
+  );
+  @override
+  late final GeneratedColumn<String> datumHinweis = GeneratedColumn<String>(
+    'datum_hinweis',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _datumGeprueftMeta = const VerificationMeta(
     'datumGeprueft',
   );
@@ -856,6 +911,11 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
     ocrBoxen,
     gpsGeprueft,
     datumGeschaetzt,
+    datumVon,
+    datumBis,
+    datumGenauigkeit,
+    datumQuelle,
+    datumHinweis,
     datumGeprueft,
     ortGeerbt,
     videobilderGeprueft,
@@ -1277,6 +1337,45 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
         ),
       );
     }
+    if (data.containsKey('datum_von')) {
+      context.handle(
+        _datumVonMeta,
+        datumVon.isAcceptableOrUnknown(data['datum_von']!, _datumVonMeta),
+      );
+    }
+    if (data.containsKey('datum_bis')) {
+      context.handle(
+        _datumBisMeta,
+        datumBis.isAcceptableOrUnknown(data['datum_bis']!, _datumBisMeta),
+      );
+    }
+    if (data.containsKey('datum_genauigkeit')) {
+      context.handle(
+        _datumGenauigkeitMeta,
+        datumGenauigkeit.isAcceptableOrUnknown(
+          data['datum_genauigkeit']!,
+          _datumGenauigkeitMeta,
+        ),
+      );
+    }
+    if (data.containsKey('datum_quelle')) {
+      context.handle(
+        _datumQuelleMeta,
+        datumQuelle.isAcceptableOrUnknown(
+          data['datum_quelle']!,
+          _datumQuelleMeta,
+        ),
+      );
+    }
+    if (data.containsKey('datum_hinweis')) {
+      context.handle(
+        _datumHinweisMeta,
+        datumHinweis.isAcceptableOrUnknown(
+          data['datum_hinweis']!,
+          _datumHinweisMeta,
+        ),
+      );
+    }
     if (data.containsKey('datum_geprueft')) {
       context.handle(
         _datumGeprueftMeta,
@@ -1615,6 +1714,26 @@ class $AssetsTable extends Assets with TableInfo<$AssetsTable, AssetData> {
         DriftSqlType.bool,
         data['${effectivePrefix}datum_geschaetzt'],
       )!,
+      datumVon: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}datum_von'],
+      ),
+      datumBis: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}datum_bis'],
+      ),
+      datumGenauigkeit: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datum_genauigkeit'],
+      ),
+      datumQuelle: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datum_quelle'],
+      ),
+      datumHinweis: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}datum_hinweis'],
+      ),
       datumGeprueft: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}datum_geprueft'],
@@ -1901,6 +2020,14 @@ class AssetData extends DataClass implements Insertable<AssetData> {
   /// als die Datei.
   final bool datumGeschaetzt;
 
+  /// Optionale Kalendergrenzen. Der ursprüngliche Aufnahmezeitpunkt und
+  /// seine Originalablage bleiben beim Setzen einer Bereichsdatierung erhalten.
+  final DateTime? datumVon;
+  final DateTime? datumBis;
+  final String? datumGenauigkeit;
+  final String? datumQuelle;
+  final String? datumHinweis;
+
   /// Ob in dieser Datei schon einmal nach einem Aufnahmedatum gesucht
   /// wurde – dieselbe Notiz „nachgesehen" wie bei [gpsGeprueft] und aus
   /// demselben Grund.
@@ -2071,6 +2198,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     this.ocrBoxen,
     required this.gpsGeprueft,
     required this.datumGeschaetzt,
+    this.datumVon,
+    this.datumBis,
+    this.datumGenauigkeit,
+    this.datumQuelle,
+    this.datumHinweis,
     required this.datumGeprueft,
     required this.ortGeerbt,
     required this.videobilderGeprueft,
@@ -2201,6 +2333,21 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     }
     map['gps_geprueft'] = Variable<bool>(gpsGeprueft);
     map['datum_geschaetzt'] = Variable<bool>(datumGeschaetzt);
+    if (!nullToAbsent || datumVon != null) {
+      map['datum_von'] = Variable<DateTime>(datumVon);
+    }
+    if (!nullToAbsent || datumBis != null) {
+      map['datum_bis'] = Variable<DateTime>(datumBis);
+    }
+    if (!nullToAbsent || datumGenauigkeit != null) {
+      map['datum_genauigkeit'] = Variable<String>(datumGenauigkeit);
+    }
+    if (!nullToAbsent || datumQuelle != null) {
+      map['datum_quelle'] = Variable<String>(datumQuelle);
+    }
+    if (!nullToAbsent || datumHinweis != null) {
+      map['datum_hinweis'] = Variable<String>(datumHinweis);
+    }
     map['datum_geprueft'] = Variable<bool>(datumGeprueft);
     map['ort_geerbt'] = Variable<bool>(ortGeerbt);
     map['videobilder_geprueft'] = Variable<bool>(videobilderGeprueft);
@@ -2346,6 +2493,21 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           : Value(ocrBoxen),
       gpsGeprueft: Value(gpsGeprueft),
       datumGeschaetzt: Value(datumGeschaetzt),
+      datumVon: datumVon == null && nullToAbsent
+          ? const Value.absent()
+          : Value(datumVon),
+      datumBis: datumBis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(datumBis),
+      datumGenauigkeit: datumGenauigkeit == null && nullToAbsent
+          ? const Value.absent()
+          : Value(datumGenauigkeit),
+      datumQuelle: datumQuelle == null && nullToAbsent
+          ? const Value.absent()
+          : Value(datumQuelle),
+      datumHinweis: datumHinweis == null && nullToAbsent
+          ? const Value.absent()
+          : Value(datumHinweis),
       datumGeprueft: Value(datumGeprueft),
       ortGeerbt: Value(ortGeerbt),
       videobilderGeprueft: Value(videobilderGeprueft),
@@ -2449,6 +2611,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       ocrBoxen: serializer.fromJson<String?>(json['ocrBoxen']),
       gpsGeprueft: serializer.fromJson<bool>(json['gpsGeprueft']),
       datumGeschaetzt: serializer.fromJson<bool>(json['datumGeschaetzt']),
+      datumVon: serializer.fromJson<DateTime?>(json['datumVon']),
+      datumBis: serializer.fromJson<DateTime?>(json['datumBis']),
+      datumGenauigkeit: serializer.fromJson<String?>(json['datumGenauigkeit']),
+      datumQuelle: serializer.fromJson<String?>(json['datumQuelle']),
+      datumHinweis: serializer.fromJson<String?>(json['datumHinweis']),
       datumGeprueft: serializer.fromJson<bool>(json['datumGeprueft']),
       ortGeerbt: serializer.fromJson<bool>(json['ortGeerbt']),
       videobilderGeprueft: serializer.fromJson<bool>(
@@ -2529,6 +2696,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       'ocrBoxen': serializer.toJson<String?>(ocrBoxen),
       'gpsGeprueft': serializer.toJson<bool>(gpsGeprueft),
       'datumGeschaetzt': serializer.toJson<bool>(datumGeschaetzt),
+      'datumVon': serializer.toJson<DateTime?>(datumVon),
+      'datumBis': serializer.toJson<DateTime?>(datumBis),
+      'datumGenauigkeit': serializer.toJson<String?>(datumGenauigkeit),
+      'datumQuelle': serializer.toJson<String?>(datumQuelle),
+      'datumHinweis': serializer.toJson<String?>(datumHinweis),
       'datumGeprueft': serializer.toJson<bool>(datumGeprueft),
       'ortGeerbt': serializer.toJson<bool>(ortGeerbt),
       'videobilderGeprueft': serializer.toJson<bool>(videobilderGeprueft),
@@ -2599,6 +2771,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     Value<String?> ocrBoxen = const Value.absent(),
     bool? gpsGeprueft,
     bool? datumGeschaetzt,
+    Value<DateTime?> datumVon = const Value.absent(),
+    Value<DateTime?> datumBis = const Value.absent(),
+    Value<String?> datumGenauigkeit = const Value.absent(),
+    Value<String?> datumQuelle = const Value.absent(),
+    Value<String?> datumHinweis = const Value.absent(),
     bool? datumGeprueft,
     bool? ortGeerbt,
     bool? videobilderGeprueft,
@@ -2694,6 +2871,13 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     ocrBoxen: ocrBoxen.present ? ocrBoxen.value : this.ocrBoxen,
     gpsGeprueft: gpsGeprueft ?? this.gpsGeprueft,
     datumGeschaetzt: datumGeschaetzt ?? this.datumGeschaetzt,
+    datumVon: datumVon.present ? datumVon.value : this.datumVon,
+    datumBis: datumBis.present ? datumBis.value : this.datumBis,
+    datumGenauigkeit: datumGenauigkeit.present
+        ? datumGenauigkeit.value
+        : this.datumGenauigkeit,
+    datumQuelle: datumQuelle.present ? datumQuelle.value : this.datumQuelle,
+    datumHinweis: datumHinweis.present ? datumHinweis.value : this.datumHinweis,
     datumGeprueft: datumGeprueft ?? this.datumGeprueft,
     ortGeerbt: ortGeerbt ?? this.ortGeerbt,
     videobilderGeprueft: videobilderGeprueft ?? this.videobilderGeprueft,
@@ -2835,6 +3019,17 @@ class AssetData extends DataClass implements Insertable<AssetData> {
       datumGeschaetzt: data.datumGeschaetzt.present
           ? data.datumGeschaetzt.value
           : this.datumGeschaetzt,
+      datumVon: data.datumVon.present ? data.datumVon.value : this.datumVon,
+      datumBis: data.datumBis.present ? data.datumBis.value : this.datumBis,
+      datumGenauigkeit: data.datumGenauigkeit.present
+          ? data.datumGenauigkeit.value
+          : this.datumGenauigkeit,
+      datumQuelle: data.datumQuelle.present
+          ? data.datumQuelle.value
+          : this.datumQuelle,
+      datumHinweis: data.datumHinweis.present
+          ? data.datumHinweis.value
+          : this.datumHinweis,
       datumGeprueft: data.datumGeprueft.present
           ? data.datumGeprueft.value
           : this.datumGeprueft,
@@ -2931,6 +3126,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           ..write('ocrBoxen: $ocrBoxen, ')
           ..write('gpsGeprueft: $gpsGeprueft, ')
           ..write('datumGeschaetzt: $datumGeschaetzt, ')
+          ..write('datumVon: $datumVon, ')
+          ..write('datumBis: $datumBis, ')
+          ..write('datumGenauigkeit: $datumGenauigkeit, ')
+          ..write('datumQuelle: $datumQuelle, ')
+          ..write('datumHinweis: $datumHinweis, ')
           ..write('datumGeprueft: $datumGeprueft, ')
           ..write('ortGeerbt: $ortGeerbt, ')
           ..write('videobilderGeprueft: $videobilderGeprueft, ')
@@ -3003,6 +3203,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
     ocrBoxen,
     gpsGeprueft,
     datumGeschaetzt,
+    datumVon,
+    datumBis,
+    datumGenauigkeit,
+    datumQuelle,
+    datumHinweis,
     datumGeprueft,
     ortGeerbt,
     videobilderGeprueft,
@@ -3074,6 +3279,11 @@ class AssetData extends DataClass implements Insertable<AssetData> {
           other.ocrBoxen == this.ocrBoxen &&
           other.gpsGeprueft == this.gpsGeprueft &&
           other.datumGeschaetzt == this.datumGeschaetzt &&
+          other.datumVon == this.datumVon &&
+          other.datumBis == this.datumBis &&
+          other.datumGenauigkeit == this.datumGenauigkeit &&
+          other.datumQuelle == this.datumQuelle &&
+          other.datumHinweis == this.datumHinweis &&
           other.datumGeprueft == this.datumGeprueft &&
           other.ortGeerbt == this.ortGeerbt &&
           other.videobilderGeprueft == this.videobilderGeprueft &&
@@ -3143,6 +3353,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
   final Value<String?> ocrBoxen;
   final Value<bool> gpsGeprueft;
   final Value<bool> datumGeschaetzt;
+  final Value<DateTime?> datumVon;
+  final Value<DateTime?> datumBis;
+  final Value<String?> datumGenauigkeit;
+  final Value<String?> datumQuelle;
+  final Value<String?> datumHinweis;
   final Value<bool> datumGeprueft;
   final Value<bool> ortGeerbt;
   final Value<bool> videobilderGeprueft;
@@ -3211,6 +3426,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.ocrBoxen = const Value.absent(),
     this.gpsGeprueft = const Value.absent(),
     this.datumGeschaetzt = const Value.absent(),
+    this.datumVon = const Value.absent(),
+    this.datumBis = const Value.absent(),
+    this.datumGenauigkeit = const Value.absent(),
+    this.datumQuelle = const Value.absent(),
+    this.datumHinweis = const Value.absent(),
     this.datumGeprueft = const Value.absent(),
     this.ortGeerbt = const Value.absent(),
     this.videobilderGeprueft = const Value.absent(),
@@ -3280,6 +3500,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     this.ocrBoxen = const Value.absent(),
     this.gpsGeprueft = const Value.absent(),
     this.datumGeschaetzt = const Value.absent(),
+    this.datumVon = const Value.absent(),
+    this.datumBis = const Value.absent(),
+    this.datumGenauigkeit = const Value.absent(),
+    this.datumQuelle = const Value.absent(),
+    this.datumHinweis = const Value.absent(),
     this.datumGeprueft = const Value.absent(),
     this.ortGeerbt = const Value.absent(),
     this.videobilderGeprueft = const Value.absent(),
@@ -3355,6 +3580,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Expression<String>? ocrBoxen,
     Expression<bool>? gpsGeprueft,
     Expression<bool>? datumGeschaetzt,
+    Expression<DateTime>? datumVon,
+    Expression<DateTime>? datumBis,
+    Expression<String>? datumGenauigkeit,
+    Expression<String>? datumQuelle,
+    Expression<String>? datumHinweis,
     Expression<bool>? datumGeprueft,
     Expression<bool>? ortGeerbt,
     Expression<bool>? videobilderGeprueft,
@@ -3430,6 +3660,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       if (ocrBoxen != null) 'ocr_boxen': ocrBoxen,
       if (gpsGeprueft != null) 'gps_geprueft': gpsGeprueft,
       if (datumGeschaetzt != null) 'datum_geschaetzt': datumGeschaetzt,
+      if (datumVon != null) 'datum_von': datumVon,
+      if (datumBis != null) 'datum_bis': datumBis,
+      if (datumGenauigkeit != null) 'datum_genauigkeit': datumGenauigkeit,
+      if (datumQuelle != null) 'datum_quelle': datumQuelle,
+      if (datumHinweis != null) 'datum_hinweis': datumHinweis,
       if (datumGeprueft != null) 'datum_geprueft': datumGeprueft,
       if (ortGeerbt != null) 'ort_geerbt': ortGeerbt,
       if (videobilderGeprueft != null)
@@ -3502,6 +3737,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     Value<String?>? ocrBoxen,
     Value<bool>? gpsGeprueft,
     Value<bool>? datumGeschaetzt,
+    Value<DateTime?>? datumVon,
+    Value<DateTime?>? datumBis,
+    Value<String?>? datumGenauigkeit,
+    Value<String?>? datumQuelle,
+    Value<String?>? datumHinweis,
     Value<bool>? datumGeprueft,
     Value<bool>? ortGeerbt,
     Value<bool>? videobilderGeprueft,
@@ -3573,6 +3813,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
       ocrBoxen: ocrBoxen ?? this.ocrBoxen,
       gpsGeprueft: gpsGeprueft ?? this.gpsGeprueft,
       datumGeschaetzt: datumGeschaetzt ?? this.datumGeschaetzt,
+      datumVon: datumVon ?? this.datumVon,
+      datumBis: datumBis ?? this.datumBis,
+      datumGenauigkeit: datumGenauigkeit ?? this.datumGenauigkeit,
+      datumQuelle: datumQuelle ?? this.datumQuelle,
+      datumHinweis: datumHinweis ?? this.datumHinweis,
       datumGeprueft: datumGeprueft ?? this.datumGeprueft,
       ortGeerbt: ortGeerbt ?? this.ortGeerbt,
       videobilderGeprueft: videobilderGeprueft ?? this.videobilderGeprueft,
@@ -3758,6 +4003,21 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
     if (datumGeschaetzt.present) {
       map['datum_geschaetzt'] = Variable<bool>(datumGeschaetzt.value);
     }
+    if (datumVon.present) {
+      map['datum_von'] = Variable<DateTime>(datumVon.value);
+    }
+    if (datumBis.present) {
+      map['datum_bis'] = Variable<DateTime>(datumBis.value);
+    }
+    if (datumGenauigkeit.present) {
+      map['datum_genauigkeit'] = Variable<String>(datumGenauigkeit.value);
+    }
+    if (datumQuelle.present) {
+      map['datum_quelle'] = Variable<String>(datumQuelle.value);
+    }
+    if (datumHinweis.present) {
+      map['datum_hinweis'] = Variable<String>(datumHinweis.value);
+    }
     if (datumGeprueft.present) {
       map['datum_geprueft'] = Variable<bool>(datumGeprueft.value);
     }
@@ -3865,6 +4125,11 @@ class AssetsCompanion extends UpdateCompanion<AssetData> {
           ..write('ocrBoxen: $ocrBoxen, ')
           ..write('gpsGeprueft: $gpsGeprueft, ')
           ..write('datumGeschaetzt: $datumGeschaetzt, ')
+          ..write('datumVon: $datumVon, ')
+          ..write('datumBis: $datumBis, ')
+          ..write('datumGenauigkeit: $datumGenauigkeit, ')
+          ..write('datumQuelle: $datumQuelle, ')
+          ..write('datumHinweis: $datumHinweis, ')
           ..write('datumGeprueft: $datumGeprueft, ')
           ..write('ortGeerbt: $ortGeerbt, ')
           ..write('videobilderGeprueft: $videobilderGeprueft, ')
@@ -28427,6 +28692,11 @@ typedef $$AssetsTableCreateCompanionBuilder =
       Value<String?> ocrBoxen,
       Value<bool> gpsGeprueft,
       Value<bool> datumGeschaetzt,
+      Value<DateTime?> datumVon,
+      Value<DateTime?> datumBis,
+      Value<String?> datumGenauigkeit,
+      Value<String?> datumQuelle,
+      Value<String?> datumHinweis,
       Value<bool> datumGeprueft,
       Value<bool> ortGeerbt,
       Value<bool> videobilderGeprueft,
@@ -28497,6 +28767,11 @@ typedef $$AssetsTableUpdateCompanionBuilder =
       Value<String?> ocrBoxen,
       Value<bool> gpsGeprueft,
       Value<bool> datumGeschaetzt,
+      Value<DateTime?> datumVon,
+      Value<DateTime?> datumBis,
+      Value<String?> datumGenauigkeit,
+      Value<String?> datumQuelle,
+      Value<String?> datumHinweis,
       Value<bool> datumGeprueft,
       Value<bool> ortGeerbt,
       Value<bool> videobilderGeprueft,
@@ -28802,6 +29077,31 @@ class $$AssetsTableFilterComposer
 
   ColumnFilters<bool> get datumGeschaetzt => $composableBuilder(
     column: $table.datumGeschaetzt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get datumVon => $composableBuilder(
+    column: $table.datumVon,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get datumBis => $composableBuilder(
+    column: $table.datumBis,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datumGenauigkeit => $composableBuilder(
+    column: $table.datumGenauigkeit,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datumQuelle => $composableBuilder(
+    column: $table.datumQuelle,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get datumHinweis => $composableBuilder(
+    column: $table.datumHinweis,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -29172,6 +29472,31 @@ class $$AssetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get datumVon => $composableBuilder(
+    column: $table.datumVon,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get datumBis => $composableBuilder(
+    column: $table.datumBis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datumGenauigkeit => $composableBuilder(
+    column: $table.datumGenauigkeit,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datumQuelle => $composableBuilder(
+    column: $table.datumQuelle,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get datumHinweis => $composableBuilder(
+    column: $table.datumHinweis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get datumGeprueft => $composableBuilder(
     column: $table.datumGeprueft,
     builder: (column) => ColumnOrderings(column),
@@ -29478,6 +29803,27 @@ class $$AssetsTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<DateTime> get datumVon =>
+      $composableBuilder(column: $table.datumVon, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get datumBis =>
+      $composableBuilder(column: $table.datumBis, builder: (column) => column);
+
+  GeneratedColumn<String> get datumGenauigkeit => $composableBuilder(
+    column: $table.datumGenauigkeit,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get datumQuelle => $composableBuilder(
+    column: $table.datumQuelle,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get datumHinweis => $composableBuilder(
+    column: $table.datumHinweis,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<bool> get datumGeprueft => $composableBuilder(
     column: $table.datumGeprueft,
     builder: (column) => column,
@@ -29656,6 +30002,11 @@ class $$AssetsTableTableManager
                 Value<String?> ocrBoxen = const Value.absent(),
                 Value<bool> gpsGeprueft = const Value.absent(),
                 Value<bool> datumGeschaetzt = const Value.absent(),
+                Value<DateTime?> datumVon = const Value.absent(),
+                Value<DateTime?> datumBis = const Value.absent(),
+                Value<String?> datumGenauigkeit = const Value.absent(),
+                Value<String?> datumQuelle = const Value.absent(),
+                Value<String?> datumHinweis = const Value.absent(),
                 Value<bool> datumGeprueft = const Value.absent(),
                 Value<bool> ortGeerbt = const Value.absent(),
                 Value<bool> videobilderGeprueft = const Value.absent(),
@@ -29724,6 +30075,11 @@ class $$AssetsTableTableManager
                 ocrBoxen: ocrBoxen,
                 gpsGeprueft: gpsGeprueft,
                 datumGeschaetzt: datumGeschaetzt,
+                datumVon: datumVon,
+                datumBis: datumBis,
+                datumGenauigkeit: datumGenauigkeit,
+                datumQuelle: datumQuelle,
+                datumHinweis: datumHinweis,
                 datumGeprueft: datumGeprueft,
                 ortGeerbt: ortGeerbt,
                 videobilderGeprueft: videobilderGeprueft,
@@ -29794,6 +30150,11 @@ class $$AssetsTableTableManager
                 Value<String?> ocrBoxen = const Value.absent(),
                 Value<bool> gpsGeprueft = const Value.absent(),
                 Value<bool> datumGeschaetzt = const Value.absent(),
+                Value<DateTime?> datumVon = const Value.absent(),
+                Value<DateTime?> datumBis = const Value.absent(),
+                Value<String?> datumGenauigkeit = const Value.absent(),
+                Value<String?> datumQuelle = const Value.absent(),
+                Value<String?> datumHinweis = const Value.absent(),
                 Value<bool> datumGeprueft = const Value.absent(),
                 Value<bool> ortGeerbt = const Value.absent(),
                 Value<bool> videobilderGeprueft = const Value.absent(),
@@ -29862,6 +30223,11 @@ class $$AssetsTableTableManager
                 ocrBoxen: ocrBoxen,
                 gpsGeprueft: gpsGeprueft,
                 datumGeschaetzt: datumGeschaetzt,
+                datumVon: datumVon,
+                datumBis: datumBis,
+                datumGenauigkeit: datumGenauigkeit,
+                datumQuelle: datumQuelle,
+                datumHinweis: datumHinweis,
                 datumGeprueft: datumGeprueft,
                 ortGeerbt: ortGeerbt,
                 videobilderGeprueft: videobilderGeprueft,

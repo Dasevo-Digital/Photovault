@@ -27,6 +27,8 @@ Map<String, Object?> zeileAlsJson(Rasterzeile r) => {
   'art': r.type == 'VIDEO' ? 'video' : 'bild',
   'name': r.originalFileName,
   'aufgenommen': r.fileCreatedAt.toIso8601String(),
+  'datierung': ?r.datierung?.alsJson(),
+  if (r.datierung != null) 'kalendermonat': r.monatsschluessel,
   if (r.durationSeconds != null) 'dauer': r.durationSeconds,
   if (r.isFavorite) 'favorit': true,
   if (r.rating > 0) 'bewertung': r.rating,

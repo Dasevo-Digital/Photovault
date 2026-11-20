@@ -4431,7 +4431,7 @@
   },
   "viewerVideobildSchonDa": "This exact frame is already saved as a photo.",
   "viewerVideobildFehler": "Could not grab a frame from the video at this point.",
-  "datierungTitel": "Date old photos",
+  "datierungTitel": "Set dating",
   "datierungEinleitung": "These photos carry no real capture date – guessed during import or set by a scanner – and look old. Image search estimates the decade from them. A range is given; if it is too wide, the model does not know and there is nothing to apply. The middle of the year is applied, and the date stays marked as estimated.",
   "datierungOhneModell": "The estimate needs the image search model (CLIP). You can download it under Settings → AI models.",
   "datierungKeine": "None of the photos without a real capture date looks old.",
@@ -5625,5 +5625,142 @@
         "type": "String"
       }
     }
-  }
+  },
+  "restaurGrundSpeicherbudget": "The enlarged image exceeds the memory budget for this task. Choose a smaller output.",
+  "katalogAbgleichText": "Scheduled checks create a preview while the app is open. New files are cataloged after confirmation. External originals are not modified.",
+  "katalogAbgleichPruefen": "Check for changes",
+  "katalogAbgleichPlanen": "Schedule checks",
+  "katalogAbgleichAus": "No scheduled checks",
+  "katalogAbgleichIntervall": "Check every {stunden} hours",
+  "@katalogAbgleichIntervall": {
+    "placeholders": {
+      "stunden": {
+        "type": "int"
+      }
+    }
+  },
+  "katalogAbgleichStand": "Preview from {datum}",
+  "@katalogAbgleichStand": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "katalogAbgleichUnvollstaendig": "Check incomplete. Missing files were not evaluated.",
+  "katalogAbgleichZahlen": "{neu} new · {geaendert} changed · {fehlt} not found",
+  "@katalogAbgleichZahlen": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "geaendert": {
+        "type": "int"
+      },
+      "fehlt": {
+        "type": "int"
+      }
+    }
+  },
+  "katalogAbgleichKonflikte": "Changed and missing originals remain unresolved. Metadata and existing photos are not overwritten or deleted.",
+  "katalogAbgleichVorschau": "Change preview",
+  "katalogAbgleichMehr": "The preview shows the first 100 entries.",
+  "katalogAbgleichGeaendert": "Content changed — check the link",
+  "katalogAbgleichUebernehmen": "Catalog new files",
+  "katalogAbgleichFrage": "{anzahl} new files will be cataloged without copying them. Changed and missing photos are left unchanged.",
+  "@katalogAbgleichFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "schutzTitel": "Plan protection and storage release",
+  "schutzText": "Create another original location and an additional backup on separate physical drives. After verifying their contents, you can release local originals. Photos and metadata remain in the catalog.",
+  "schutzNurLokal": "This assistant works with a local library and its external original links.",
+  "schutzOriginalort": "Choose an external originals folder",
+  "schutzSicherungsort": "Choose an existing backup",
+  "schutzSchrittOriginal": "1. Create another original location",
+  "schutzSchrittSicherung": "2. Create an additional backup",
+  "schutzSchrittPruefen": "3. Verify copies and plan storage release",
+  "schutzKopienAnlegen": "Create original copies",
+  "schutzSicherungErstellen": "Back up the library",
+  "schutzVerschluesselt": "Encrypt the new backup with a passphrase",
+  "schutzUnabhaengig": "I confirm that the external original location and the additional backup are on separate physical drives, independent of the current library.",
+  "schutzPruefen": "Verify contents and create a plan",
+  "schutzPlan": "{anzahl} of {gesamt} checked local originals can be released: {bytes}.",
+  "@schutzPlan": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzNachFreigabe": "After release, the external originals remain linked to the catalog. Connect that location to open originals. The additional backup remains a recovery copy. Locked and trashed photos are excluded.",
+  "schutzFreigeben": "Release local storage",
+  "schutzFreigebenFrage": "Remove {anzahl} local original files using {bytes}? The catalog will refer to the external original location. Both remaining copies are checked again before each removal.",
+  "@schutzFreigebenFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzFreigegeben": "Removed {anzahl} local files and released {bytes}.",
+  "@schutzFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzKopiert": "Created or verified {anzahl} original copies.",
+  "@schutzKopiert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "schutzSicherungAngelegt": "Backup run finished. Content verification will show which originals are fully protected.",
+  "schutzAbgebrochen": "Operation canceled. Completed copies are retained.",
+  "schutzDatentraeger": "The drives could not be distinguished. Choose separate drives; two folders on the same drive are insufficient.",
+  "schutzBestaetigungFehlt": "Confirm the physical independence of the drives first.",
+  "schutzKonflikt": "A file or its location changed. Verify the copies again before releasing storage.",
+  "schutzKopieFehlt": "A required recovery copy is missing or its content changed. The local file is retained.",
+  "schutzZielFehler": "The destination is unavailable or unsuitable. Choose a folder outside the library.",
+  "schutzFehler": "The operation could not finish. Check the destination, passphrase and free space.",
+  "datierungErklaerung": "A known calendar range receives no invented time. The original file and original timestamp are retained. Timeline ranges appear at their beginning; search covers the full range.",
+  "datierungTag": "Day",
+  "datierungMonat": "Month",
+  "datierungJahr": "Year",
+  "datierungZeitraum": "Range",
+  "datierungManuell": "Manual entry",
+  "datierungBeschriftung": "Photo inscription",
+  "datierungUeberlieferung": "Family account",
+  "datierungDatei": "File metadata",
+  "datierungDateiname": "Filename",
+  "datierungUnbekannt": "Unknown",
+  "datierungQuelle": "Source",
+  "datierungHinweis": "Provenance note",
+  "datierungVon": "Year, month or beginning",
+  "datierungBis": "End, inclusive",
+  "datierungUngueltig": "Please enter a valid calendar range.",
+  "exportRaw16": "16-bit TIFF from RAW original (neutral, linear)",
+  "sucheExakterIndex": "Optional exact search index: building takes time and memory; may be faster or slower depending on the collection.",
+  "datierungBeispielJahr": "1985",
+  "datierungBeispielMonat": "1985-06",
+  "datierungBeispielTag": "1985-06-15"
 }

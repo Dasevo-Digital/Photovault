@@ -42,7 +42,7 @@ List<Tile> splitIntoTiles(
   required int tileSize,
   required int overlap,
 }) {
-  assert(tileSize > overlap, 'tileSize muss größer als overlap sein');
+  _pruefeKacheln(tileSize, overlap, 1);
   final stride = tileSize - overlap;
   final xs = _tileStarts(source.width, tileSize, stride);
   final ys = _tileStarts(source.height, tileSize, stride);
@@ -103,18 +103,56 @@ Float32List _tileWeights({
   return weights;
 }
 
-/// Zerlegt [source] in Kacheln, ruft [infer] pro Kachel auf (z.B. eine
-/// ONNX-Inferenz, siehe RestoreService) und setzt die – bereits um
-/// [scaleFactor] vergrößerten – Ergebnis-Kacheln mit gewichteter
-/// Rand-Überblendung zu einem [scaleFactor]-fach größeren Gesamtbild
-/// zusammen. Generischer Baustein, unabhängig von ONNX/Real-ESRGAN –
-/// [infer] kann für Tests auch eine reine Identitäts-/Skalierungsfunktion
-/// sein (siehe tile_processor_test.dart).
-///
-/// [isCancelled] wird zwischen Kacheln geprüft (kein Abbruch mitten in
-/// einer laufenden Inferenz) – bei Abbruch werden nur die bereits
-/// verarbeiteten Kacheln zusammengesetzt (das Ergebnis ist dann nicht
-/// vollständig und wird vom Aufrufer verworfen, nicht gespeichert).
+/// Geplanter Speicher für Quelle, Ergebnis und Zusammensetzung. Der
+/// native Modellspeicher ist zusätzlich vom jeweiligen Modell abhängig.
+class TileMemoryPlan {
+  const TileMemoryPlan(
+    this.sourceBytes,
+    this.outputBytes,
+    this.bandBytes,
+    this.tileBytes,
+  );
+  final int sourceBytes, outputBytes, bandBytes, tileBytes;
+  int get totalBytes => sourceBytes + outputBytes + bandBytes + tileBytes;
+}
+
+void _pruefeKacheln(int tileSize, int overlap, int scaleFactor) {
+  if (tileSize <= 0 || overlap < 0 || overlap >= tileSize || scaleFactor <= 0) {
+    throw ArgumentError('pv_kachel_parameter');
+  }
+}
+
+TileMemoryPlan tileMemoryPlan(
+  img.Image source, {
+  required int tileSize,
+  required int overlap,
+  required int scaleFactor,
+}) {
+  _pruefeKacheln(tileSize, overlap, scaleFactor);
+  final width = source.width * scaleFactor;
+  final height = source.height * scaleFactor;
+  final tw = math.min(tileSize, source.width),
+      th = math.min(tileSize, source.height);
+  return TileMemoryPlan(
+    source.data?.lengthInBytes ?? source.width * source.height * 4,
+    width * height * 3,
+    width * th * scaleFactor * 16,
+    tw * th * (4 + scaleFactor * scaleFactor * 7),
+  );
+}
+
+class TileMemoryLimit implements Exception {
+  const TileMemoryLimit(this.requiredBytes, this.limitBytes);
+  final int requiredBytes, limitBytes;
+  @override
+  String toString() => 'pv_kachel_speicher:$requiredBytes:$limitBytes';
+}
+
+/// Verarbeitet jeweils nur eine Quellkachel. Fertige Zeilen werden sofort
+/// normalisiert; Float-Akkumulatoren belegen nur ein umlaufendes Zeilenband.
+/// Die Additionsreihenfolge und Überblendung entsprechen der vollständigen
+/// Zusammensetzung. Ein abgebrochenes Ergebnis bleibt unvollständig und
+/// muss vom Aufrufer verworfen werden.
 Future<img.Image> processInTiles(
   img.Image source, {
   required int tileSize,
@@ -123,68 +161,94 @@ Future<img.Image> processInTiles(
   required Future<img.Image> Function(img.Image tile) infer,
   void Function(int done, int total)? onProgress,
   bool Function()? isCancelled,
+  int maxWorkingBytes = 1536 * 1024 * 1024,
+  void Function(TileMemoryPlan plan)? onMemoryPlan,
 }) async {
-  final tiles = splitIntoTiles(source, tileSize: tileSize, overlap: overlap);
+  final plan = tileMemoryPlan(
+    source,
+    tileSize: tileSize,
+    overlap: overlap,
+    scaleFactor: scaleFactor,
+  );
+  onMemoryPlan?.call(plan);
+  if (plan.totalBytes > maxWorkingBytes) {
+    throw TileMemoryLimit(plan.totalBytes, maxWorkingBytes);
+  }
+  final stride = tileSize - overlap;
+  final xs = _tileStarts(source.width, tileSize, stride);
+  final ys = _tileStarts(source.height, tileSize, stride);
   final outWidth = source.width * scaleFactor;
   final outHeight = source.height * scaleFactor;
-  final accum = Float32List(outWidth * outHeight * 3);
-  final weightSum = Float32List(outWidth * outHeight);
-
-  for (var i = 0; i < tiles.length; i++) {
-    if (isCancelled?.call() ?? false) break;
-    final tile = tiles[i];
-    final processed = await infer(tile.image);
-    final ox = tile.x * scaleFactor;
-    final oy = tile.y * scaleFactor;
-    final weights = _tileWeights(
-      width: processed.width,
-      height: processed.height,
-      featherX: overlap * scaleFactor,
-      featherY: overlap * scaleFactor,
-      touchesLeft: tile.x == 0,
-      touchesTop: tile.y == 0,
-      touchesRight: tile.x + tile.image.width >= source.width,
-      touchesBottom: tile.y + tile.image.height >= source.height,
-    );
-
-    for (var y = 0; y < processed.height; y++) {
-      final outY = oy + y;
-      if (outY >= outHeight) continue;
-      final rowBase = outY * outWidth;
-      final tileRowBase = y * processed.width;
-      for (var x = 0; x < processed.width; x++) {
-        final outX = ox + x;
-        if (outX >= outWidth) continue;
-        final w = weights[tileRowBase + x];
-        if (w <= 0) continue;
-        final px = processed.getPixel(x, y);
-        final outIdx = rowBase + outX;
-        accum[outIdx * 3] += px.r * w;
-        accum[outIdx * 3 + 1] += px.g * w;
-        accum[outIdx * 3 + 2] += px.b * w;
-        weightSum[outIdx] += w;
-      }
-    }
-    onProgress?.call(i + 1, tiles.length);
-  }
-
+  final bandHeight = math.min(tileSize, source.height) * scaleFactor;
+  final accum = Float32List(outWidth * bandHeight * 3);
+  final weightSum = Float32List(outWidth * bandHeight);
   final result = img.Image(width: outWidth, height: outHeight);
-  for (var y = 0; y < outHeight; y++) {
-    final rowBase = y * outWidth;
-    for (var x = 0; x < outWidth; x++) {
-      final idx = rowBase + x;
-      final w = weightSum[idx];
-      if (w <= 0) {
-        continue; // Bei voller Kachel-Abdeckung sollte das nie vorkommen.
+  var written = 0, done = 0;
+  void flush(int until) {
+    for (; written < until; written++) {
+      final row = (written % bandHeight) * outWidth;
+      for (var x = 0; x < outWidth; x++) {
+        final idx = row + x;
+        final w = weightSum[idx];
+        if (w > 0) {
+          result.setPixelRgb(
+            x,
+            written,
+            (accum[idx * 3] / w).round().clamp(0, 255),
+            (accum[idx * 3 + 1] / w).round().clamp(0, 255),
+            (accum[idx * 3 + 2] / w).round().clamp(0, 255),
+          );
+        }
+        accum[idx * 3] = 0;
+        accum[idx * 3 + 1] = 0;
+        accum[idx * 3 + 2] = 0;
+        weightSum[idx] = 0;
       }
-      result.setPixelRgb(
-        x,
-        y,
-        (accum[idx * 3] / w).round().clamp(0, 255),
-        (accum[idx * 3 + 1] / w).round().clamp(0, 255),
-        (accum[idx * 3 + 2] / w).round().clamp(0, 255),
-      );
     }
   }
+
+  rows:
+  for (var row = 0; row < ys.length; row++) {
+    final ty = ys[row];
+    for (final tx in xs) {
+      if (isCancelled?.call() ?? false) break rows;
+      final tw = math.min(tileSize, source.width - tx);
+      final th = math.min(tileSize, source.height - ty);
+      final tile = img.copyCrop(source, x: tx, y: ty, width: tw, height: th);
+      final processed = await infer(tile);
+      if (processed.width != tw * scaleFactor ||
+          processed.height != th * scaleFactor) {
+        throw StateError('pv_kachel_ausgabe');
+      }
+      final weights = _tileWeights(
+        width: processed.width,
+        height: processed.height,
+        featherX: overlap * scaleFactor,
+        featherY: overlap * scaleFactor,
+        touchesLeft: tx == 0,
+        touchesTop: ty == 0,
+        touchesRight: tx + tw >= source.width,
+        touchesBottom: ty + th >= source.height,
+      );
+      final ox = tx * scaleFactor, oy = ty * scaleFactor;
+      for (var y = 0; y < processed.height; y++) {
+        final rowBase = ((oy + y) % bandHeight) * outWidth;
+        for (var x = 0; x < processed.width; x++) {
+          final w = weights[y * processed.width + x];
+          if (w <= 0) continue;
+          final px = processed.getPixel(x, y);
+          final idx = rowBase + ox + x;
+          accum[idx * 3] += px.r * w;
+          accum[idx * 3 + 1] += px.g * w;
+          accum[idx * 3 + 2] += px.b * w;
+          weightSum[idx] += w;
+        }
+      }
+      done++;
+      onProgress?.call(done, xs.length * ys.length);
+    }
+    flush(row + 1 < ys.length ? ys[row + 1] * scaleFactor : outHeight);
+  }
+  flush(outHeight);
   return result;
 }

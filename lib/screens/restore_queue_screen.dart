@@ -83,6 +83,7 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
     'aufloesungUnbekannt' => t.restaurGrundAufloesung,
     'nichtGerendert' => t.restaurGrundNichtGerendert,
     'nichtDekodiert' => t.restaurGrundNichtDekodiert,
+    'speicherbudget' => t.restaurGrundSpeicherbudget,
     _ => null,
   };
 

@@ -63,6 +63,7 @@ enum RestaurierungsGrund {
   aufloesungUnbekannt,
   nichtGerendert,
   nichtDekodiert,
+  speicherbudget,
 }
 
 /// Geworfen, wenn das Modell fehlt – der Aufrufer zeigt seinen eigenen,
@@ -396,7 +397,13 @@ class RestoreQueueService {
         _ablage = null;
       }
     } catch (e) {
-      await _status(job.id, 'failed', errorMessage: e.toString());
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: e.toString().contains('pv_kachel_speicher:')
+            ? RestaurierungsGrund.speicherbudget.name
+            : e.toString(),
+      );
     } finally {
       halter!.zurueckgeben();
       if (_beendet) await halter.freigebenWennUnbenutzt();

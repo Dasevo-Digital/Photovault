@@ -49,7 +49,7 @@ import 'konten/serverdatenbank.dart';
       : personenBedingung(personen, alle: false);
   return (
     sql:
-        '${ab == null ? '' : ' AND file_created_at >= ?'}'
+        '${ab == null ? '' : ' AND coalesce(datum_von,file_created_at) >= ?'}'
         '${p == null ? '' : ' AND ${p.sql}'}',
     werte: [if (ab != null) Variable<DateTime>(ab), ...?p?.werte],
   );
@@ -259,7 +259,7 @@ Future<int> fuelleAlbum(
         in await db
             .customSelect(
               'SELECT id FROM assets WHERE $rasterSichtbar AND ${b.sql}'
-              '${ab == null ? '' : ' AND file_created_at >= ?'}',
+              '${ab == null ? '' : ' AND coalesce(datum_von,file_created_at) >= ?'}',
               variables: [...b.werte, if (ab != null) Variable<DateTime>(ab)],
               readsFrom: {db.assets, db.faces},
             )

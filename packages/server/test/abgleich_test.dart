@@ -1201,7 +1201,12 @@ void main() {
       final z = await zustand.timeout(const Duration(seconds: 5));
       expect(z.serverSchema, db.schemaVersion + 1);
       await a.beende();
-      expect(anfragen, ['/api/v1/abgleich/stand'], reason: 'sonst nichts');
+      expect(
+        anfragen,
+        ['/api/v1/abgleich/stand', '/api/v1/geraete/stand'],
+        reason:
+            'nur Kontaktmeldung, keine Katalogdaten bei abweichendem Schema',
+      );
     },
   );
 

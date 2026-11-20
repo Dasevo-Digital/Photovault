@@ -34,6 +34,37 @@ import '../standort_parser.dart';
 /// Jede Funktion gibt `null`/`false` zurück, wenn das jeweilige Werkzeug
 /// fehlt – die App bleibt dann benutzbar, nur diese eine Fähigkeit fehlt.
 class DesktopImageTools {
+  /// LibRaw schreibt unmittelbar lineares RGB16. Die Quelle liegt nur als
+  /// eigene temporäre Kopie vor; kein Wandler darf neben Originalen schreiben.
+  static Future<Uint8List?> rawLinear16(File original) async {
+    final tool = await aufruf('dcraw_emu');
+    if (tool == null) return null;
+    final temp = await Directory.systemTemp.createTemp('pv_raw16_');
+    try {
+      final input = p.join(temp.path, 'quelle${p.extension(original.path)}');
+      await original.copy(input);
+      final result = await _laufe(tool, [
+        '-w',
+        '-6',
+        '-W',
+        '-g',
+        '1',
+        '1',
+        '-o',
+        '1',
+        '-T',
+        input,
+      ]);
+      final output = File('$input.tiff');
+      if (result?.exitCode != 0 || !await output.exists()) return null;
+      // Begrenzt auch bösartige/fehlerhafte Konverter-Ausgaben vor readAsBytes.
+      if (await output.length() > 768 * 1024 * 1024) return null;
+      return await output.readAsBytes();
+    } finally {
+      await temp.delete(recursive: true);
+    }
+  }
+
   DesktopImageTools._();
 
   /// Wo die Werkzeuge gefunden wurden – `null`, wo keins gefunden wurde.

@@ -6,6 +6,7 @@
 library;
 
 import 'package:kern/db/database.dart';
+import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/listengliederung.dart';
 
 export 'package:kern/services/listengliederung.dart' show ListenGruppierung;
@@ -32,8 +33,6 @@ class Assetgruppe {
 String? kamerabezeichnung(AssetData asset) =>
     kamerabezeichnungAus(asset.cameraMake, asset.cameraModel);
 
-int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
-
 /// Gliedert [assets] nach [art].
 ///
 /// [assets] kommt bereits nach Datum sortiert (neueste zuerst) – innerhalb
@@ -56,9 +55,8 @@ List<Assetgruppe> gruppiereAssets(
   final nachSchluessel = <String, List<AssetData>>{};
   for (final asset in assets) {
     final schluessel = switch (art) {
-      ListenGruppierung.monat =>
-        '${asset.fileCreatedAt.year * 100 + asset.fileCreatedAt.month}',
-      ListenGruppierung.tag => '${_tagesschluessel(asset.fileCreatedAt)}',
+      ListenGruppierung.monat => '${Rasterzeile.aus(asset).monatsschluessel}',
+      ListenGruppierung.tag => '${Rasterzeile.aus(asset).tagesschluessel}',
       ListenGruppierung.kamera => kamerabezeichnung(asset) ?? '',
       ListenGruppierung.keine => '',
     };

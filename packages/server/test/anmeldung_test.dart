@@ -504,6 +504,118 @@ void main() {
       return r2['token']! as String;
     }
 
+    test(
+      'Gerätemeldungen bleiben beim angemeldeten Konto und unterscheiden Kontakt von erfolgreichem Abgleich',
+      () async {
+        final eins = await melde('statuskonto');
+        final zwei = await melde('andereskonto');
+        final anfang = await jsonAus(
+          await frag('GET', '/api/v1/geraete', token: eins),
+        );
+        expect((anfang['geraete'] as List).single['clientSchema'], isNull);
+        final meldung = {
+          'fassung': '3.67.12',
+          'schema': 100,
+          'plattform': 'linux',
+          'offen': 3,
+          'erfolgreich': false,
+        };
+        expect(
+          (await frag(
+            'POST',
+            '/api/v1/geraete/stand',
+            token: eins,
+            json: meldung,
+          )).statusCode,
+          200,
+        );
+        var stand =
+            (await jsonAus(
+                  await frag('GET', '/api/v1/geraete', token: eins),
+                ))['geraete']
+                as List;
+        expect(stand.single['clientFassung'], '3.67.12');
+        expect(stand.single['clientSchema'], 100);
+        expect(stand.single['clientOffen'], 3);
+        expect(stand.single['clientAbgleich'], isNull);
+        expect(stand.single['clientGemeldet'], isNotNull);
+        meldung['offen'] = 0;
+        meldung['erfolgreich'] = true;
+        expect(
+          (await frag(
+            'POST',
+            '/api/v1/geraete/stand',
+            token: eins,
+            json: meldung,
+          )).statusCode,
+          200,
+        );
+        stand =
+            (await jsonAus(
+                  await frag('GET', '/api/v1/geraete', token: eins),
+                ))['geraete']
+                as List;
+        expect(stand.single['clientAbgleich'], isNotNull);
+        final fremd =
+            (await jsonAus(
+                  await frag('GET', '/api/v1/geraete', token: zwei),
+                ))['geraete']
+                as List;
+        expect(fremd.single['clientSchema'], isNull);
+      },
+    );
+
+    test(
+      'Gerätemeldung verlangt Anmeldung, begrenzt den Körper und lehnt fremde Kennungen ab',
+      () async {
+        final token = await melde('statuskonto');
+        final gut = {
+          'fassung': '3.67.12',
+          'schema': 100,
+          'plattform': 'windows',
+          'offen': 0,
+          'erfolgreich': false,
+        };
+        expect(
+          (await frag('POST', '/api/v1/geraete/stand', json: gut)).statusCode,
+          401,
+        );
+        for (final schlecht in [
+          {...gut, 'schema': 0},
+          {...gut, 'offen': -1},
+          {...gut, 'plattform': 'unbekannt'},
+          {...gut, 'fassung': 'ungueltig'},
+          {...gut, 'geraet': 'fremde-kennung'},
+          {...gut, 'erfolgreich': 'ja'},
+        ]) {
+          expect(
+            (await frag(
+              'POST',
+              '/api/v1/geraete/stand',
+              token: token,
+              json: schlecht,
+            )).statusCode,
+            400,
+          );
+        }
+        expect(
+          (await frag(
+            'POST',
+            '/api/v1/geraete/stand',
+            token: token,
+            inhalt: 'x' * 4097,
+          )).statusCode,
+          413,
+        );
+        final stand =
+            (await jsonAus(
+                  await frag('GET', '/api/v1/geraete', token: token),
+                ))['geraete']
+                as List;
+        expect(stand.single['clientSchema'], isNull);
+      },
+    );
+
     test('anmelden, Konto und Geräte ansehen, abmelden', () async {
       final zustand = await jsonAus(await frag('GET', '/api/v1/zustand'));
       expect(zustand['anmeldung'], {

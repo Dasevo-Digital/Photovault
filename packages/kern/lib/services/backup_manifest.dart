@@ -1,3 +1,4 @@
+import 'aufnahme_datierung.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cryptography/cryptography.dart';
@@ -5,6 +6,9 @@ import 'backup_modelle.dart';
 
 class BackupAufnahme {
   BackupAufnahme(Map<String, dynamic> werte) : werte = Map.unmodifiable(werte) {
+    if (werte['datierung'] case final Map d) {
+      AufnahmeDatierung.aus(d.cast<String, Object?>());
+    }
     if (pruefsumme.isEmpty || name.isEmpty) {
       throw const FormatException('pv_restore_manifest');
     }

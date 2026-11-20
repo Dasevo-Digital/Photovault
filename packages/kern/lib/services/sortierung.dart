@@ -74,8 +74,8 @@ bool sortierungAbsteigend(Rastersortierung s) =>
 /// Aufnahmen gemessen, Ladefenster 600 Zeilen:
 ///
 /// ```
-/// file_created_at DESC                     0,8 ms
-/// file_created_at ASC                      0,7 ms
+/// coalesce(datum_von,file_created_at) DESC                     0,8 ms
+/// coalesce(datum_von,file_created_at) ASC                      0,7 ms
 /// imported_at DESC                        68,3 ms
 /// original_file_name COLLATE NOCASE ASC   70,5 ms
 /// rating DESC                             70,1 ms
@@ -87,16 +87,19 @@ bool sortierungAbsteigend(Rastersortierung s) =>
 /// für eine Reihenfolge, die die Ausnahme ist. Siebzig Millisekunden
 /// zahlt, wer sie einstellt; nicht jeder andere.
 String sortierungSql(Rastersortierung s) => switch (s) {
-  Rastersortierung.aufnahmeNeu => 'file_created_at DESC',
-  Rastersortierung.aufnahmeAlt => 'file_created_at ASC',
+  Rastersortierung.aufnahmeNeu => 'coalesce(datum_von,file_created_at) DESC',
+  Rastersortierung.aufnahmeAlt => 'coalesce(datum_von,file_created_at) ASC',
   // Zweiter Schlüssel überall dort, wo der erste sich wiederholen
   // kann: Zwei Dateien gleicher Grösse dürfen nicht bei jeder
   // Abfrage die Plätze tauschen.
-  Rastersortierung.importNeu => 'imported_at DESC, file_created_at DESC',
+  Rastersortierung.importNeu =>
+    'imported_at DESC, coalesce(datum_von,file_created_at) DESC',
   Rastersortierung.name =>
-    'original_file_name COLLATE NOCASE ASC, file_created_at DESC',
-  Rastersortierung.bewertung => 'rating DESC, file_created_at DESC',
-  Rastersortierung.groesse => 'file_size_bytes DESC, file_created_at DESC',
+    'original_file_name COLLATE NOCASE ASC, coalesce(datum_von,file_created_at) DESC',
+  Rastersortierung.bewertung =>
+    'rating DESC, coalesce(datum_von,file_created_at) DESC',
+  Rastersortierung.groesse =>
+    'file_size_bytes DESC, coalesce(datum_von,file_created_at) DESC',
 };
 
 /// Dieselbe Reihenfolge als Vergleicher.
@@ -107,12 +110,13 @@ String sortierungSql(Rastersortierung s) => switch (s) {
 /// nach denselben Regeln wie in [sortierungSql].
 int Function(AssetData, AssetData) sortierungVergleicher(Rastersortierung s) {
   int datumAb(AssetData a, AssetData b) =>
-      b.fileCreatedAt.compareTo(a.fileCreatedAt);
+      (b.datumVon ?? b.fileCreatedAt).compareTo(a.datumVon ?? a.fileCreatedAt);
   return switch (s) {
     Rastersortierung.aufnahmeNeu => datumAb,
-    Rastersortierung.aufnahmeAlt => (a, b) => a.fileCreatedAt.compareTo(
-      b.fileCreatedAt,
-    ),
+    Rastersortierung.aufnahmeAlt =>
+      (a, b) => (a.datumVon ?? a.fileCreatedAt).compareTo(
+        b.datumVon ?? b.fileCreatedAt,
+      ),
     Rastersortierung.importNeu => (a, b) {
       final i = b.importedAt.compareTo(a.importedAt);
       return i != 0 ? i : datumAb(a, b);

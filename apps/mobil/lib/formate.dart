@@ -1,3 +1,4 @@
+import 'package:kern/db/database.dart';
 import 'package:intl/intl.dart';
 
 // Datum und Uhrzeit wie im Browser (Intl `dateStyle: 'medium'`,
@@ -13,3 +14,8 @@ DateFormat datumMittel(String sprache) => sprache.startsWith('de')
 DateFormat datumZeitMittel(String sprache) => sprache.startsWith('de')
     ? DateFormat('dd.MM.yyyy, HH:mm', sprache)
     : DateFormat('MMM d, y, h:mm a', sprache);
+
+String datierungstext(AufnahmeDatierung d, String sprache) => d.beschreibung(
+  tag: datumMittel(sprache).format,
+  monat: DateFormat.yMMMM(sprache).format,
+);

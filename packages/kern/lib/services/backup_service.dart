@@ -68,7 +68,8 @@ class BackupService {
   final Directory? _festesZwischenlager;
   final _uuid = const Uuid();
 
-  static const _backupFolderName = 'PhotoVault-Backup';
+  static const backupFolderName = 'PhotoVault-Backup';
+  static const _backupFolderName = backupFolderName;
 
   /// Ab welcher Grösse das Zwischenlager im System-Temp nachweislich nicht
   /// mehr reicht – `null`, solange nichts daran gescheitert ist.
@@ -734,6 +735,7 @@ class BackupService {
         'description': a.description,
         'fileCreatedAt': a.fileCreatedAt.toUtc().toIso8601String(),
         'datumGeschaetzt': a.datumGeschaetzt,
+        'datierung': ?a.kalenderdatierung?.alsJson(),
         // Sterne und Farbmarke sind Handarbeit und standen bis hierher
         // nicht in der Sicherung — die Anleitung nannte „Bewertungen"
         // trotzdem. Wer nach einem Plattenschaden zurückspielte, fand

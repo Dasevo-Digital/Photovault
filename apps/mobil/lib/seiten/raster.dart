@@ -15,6 +15,7 @@ import 'package:kern/services/rasterstufen.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
 
 import '../bilder.dart';
+import '../formate.dart' show datierungstext;
 import '../l10n/app_localizations.dart';
 import '../lokal/lokalbetrachter.dart';
 import '../lokal/ungesichert.dart';
@@ -1200,12 +1201,16 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
       final monat = DateFormat.yMMMM(sprache);
       final tag = DateFormat.yMMMMEEEEd(sprache);
       final eintraege = _listenEintraege(l, switch (l.gliederung) {
-        ListenGruppierung.monat => (z) => monat.format(
-          z.fileCreatedAt.toLocal(),
-        ),
+        ListenGruppierung.monat =>
+          (z) => z.datierung != null
+              ? datierungstext(z.datierung!, sprache)
+              : monat.format(z.fileCreatedAt.toLocal()),
         // Die Liste kennt keine Monatsköpfe darüber; der Tag nennt das
         // ganze Datum (wie am Rechner).
-        ListenGruppierung.tag => (z) => tag.format(z.fileCreatedAt.toLocal()),
+        ListenGruppierung.tag =>
+          (z) => z.datierung != null
+              ? datierungstext(z.datierung!, sprache)
+              : tag.format(z.fileCreatedAt.toLocal()),
         ListenGruppierung.kamera =>
           (z) =>
               kamerabezeichnungAus(
@@ -1325,9 +1330,20 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
             return switch (e.art) {
               _Art.monat => Padding(
                 padding: const EdgeInsets.fromLTRB(12, 20, 12, 0),
-                child: Text(monatFormat.format(tag), style: monatStil),
+                child: Text(
+                  zeilen[von].datierung != null
+                      ? datierungstext(zeilen[von].datierung!, sprache)
+                      : monatFormat.format(tag),
+                  style: monatStil,
+                ),
               ),
-              _Art.tag => _tageskopf(tagFormat.format(tag), von, bis),
+              _Art.tag => _tageskopf(
+                zeilen[von].datierung != null
+                    ? datierungstext(zeilen[von].datierung!, sprache)
+                    : tagFormat.format(tag),
+                von,
+                bis,
+              ),
               _Art.reihe =>
                 e.reihe == null
                     ? _reihe(e.von, bis, letzteReihe(e))
@@ -1410,7 +1426,10 @@ List<_Tag> _tage(List<Rasterzeile> zeilen, {bool jeMonat = false}) {
   while (von < zeilen.length) {
     final tag = gruppe(zeilen[von]);
     var bis = von + 1;
-    while (bis < zeilen.length && gruppe(zeilen[bis]) == tag) {
+    while (bis < zeilen.length &&
+        gruppe(zeilen[bis]) == tag &&
+        (zeilen[bis].datierung?.alsJson().toString() ?? '') ==
+            (zeilen[von].datierung?.alsJson().toString() ?? '')) {
       bis++;
     }
     tage.add((tag: tag, von: von, bis: bis));

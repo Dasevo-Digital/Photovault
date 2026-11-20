@@ -132,6 +132,15 @@ class ImageConverterChannel: NSObject {
                     let status = lensCorrectionStatus(path: path)
                     DispatchQueue.main.async { result(status) }
                 }
+            case "rawLinear16":
+                guard let args = call.arguments as? [String: Any], let path = args["path"] as? String else {
+                    result(FlutterError(code: "bad_args", message: "path fehlt", details: nil))
+                    return
+                }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let data = rawLinear16(path: path)
+                    DispatchQueue.main.async { result(data.map { FlutterStandardTypedData(bytes: $0) }) }
+                }
             case "developImage":
                 guard
                     let args = call.arguments as? [String: Any],
@@ -811,6 +820,24 @@ class ImageConverterChannel: NSObject {
     /// angepasste Bild angewendet und über `CIBlendWithMask` zurück-
     /// kompositiert. Gibt `nil` zurück, wenn die Datei nicht geladen werden
     /// kann.
+    // BEGIN RAW16
+    /// Linearer Arbeitsraum und uint16-Ausgabe ab dem echten RAW-Decoder.
+    /// Nie über CGImageSource-Vorschaubilder oder eine RGBA8-Zwischenstufe.
+    static func rawLinear16(path: String) -> Data? {
+        guard #available(macOS 12.0, *),
+              let filter = CIRAWFilter(imageURL: URL(fileURLWithPath: path)),
+              filter.nativeSize.width > 0, filter.nativeSize.height > 0,
+              filter.nativeSize.width * filter.nativeSize.height <= 50_000_000,
+              let color = CGColorSpace(name: CGColorSpace.linearSRGB)
+        else { return nil }
+        filter.scaleFactor = 1
+        filter.exposure = 0
+        guard let image = filter.outputImage else { return nil }
+        let context = CIContext(options: [.workingColorSpace: color, .workingFormat: CIFormat.RGBAf.rawValue])
+        return context.tiffRepresentation(of: image, format: .RGBA16, colorSpace: color, options: [:])
+    }
+    // END RAW16
+
     private static func developImage(
         path: String, maxDimension: Int, quality: Double, adjustments: DevelopAdjustments,
         maskLayers: [MaskLayer] = []

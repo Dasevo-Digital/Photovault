@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
@@ -257,7 +258,9 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
 
   String _labelFor(int key) {
     final sprache = Localizations.localeOf(context).toString();
-    final wann = widget.groups[key]!.first.fileCreatedAt;
+    final a = widget.groups[key]!.first;
+    if (a.datierung != null) return datierungstext(a.datierung!, sprache);
+    final wann = a.fileCreatedAt;
     return widget.tageweise
         ? DateFormat.MMMd(sprache).format(wann)
         : DateFormat.yMMM(sprache).format(wann);
@@ -271,6 +274,10 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
   /// kam „202609" heraus – an jedem beschrifteten Tag dieselbe Zahl.
   String _festeBeschriftung(int index) {
     if (!widget.tageweise) return '${widget.orderedKeys[index] ~/ 100}';
+    final a = widget.groups[widget.orderedKeys[index]]!.first;
+    if (a.datierung != null && a.datierung!.genauigkeit.name != 'tag') {
+      return '…';
+    }
     return DateFormat.d(
       Localizations.localeOf(context).toString(),
     ).format(widget.groups[widget.orderedKeys[index]]!.first.fileCreatedAt);

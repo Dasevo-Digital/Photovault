@@ -222,6 +222,14 @@ class Assets extends Table {
   BoolColumn get datumGeschaetzt =>
       boolean().withDefault(const Constant(false))();
 
+  /// Optionale Kalendergrenzen. Der ursprüngliche Aufnahmezeitpunkt und
+  /// seine Originalablage bleiben beim Setzen einer Bereichsdatierung erhalten.
+  DateTimeColumn get datumVon => dateTime().nullable()();
+  DateTimeColumn get datumBis => dateTime().nullable()();
+  TextColumn get datumGenauigkeit => text().nullable()();
+  TextColumn get datumQuelle => text().nullable()();
+  TextColumn get datumHinweis => text().nullable()();
+
   /// Ob in dieser Datei schon einmal nach einem Aufnahmedatum gesucht
   /// wurde – dieselbe Notiz „nachgesehen" wie bei [gpsGeprueft] und aus
   /// demselben Grund.

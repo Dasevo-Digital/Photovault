@@ -91,17 +91,10 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     message(STATUS "Downloading ONNX Runtime...")
     file(MAKE_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
 
-    # Download the zipfile
-    set(ONNXRUNTIME_ZIPFILE "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime.zip")
-    file(DOWNLOAD ${ONNXRUNTIME_URL} ${ONNXRUNTIME_ZIPFILE} SHOW_PROGRESS)
-
-    # Extract the zipfile
-    message(STATUS "Extracting ONNX Runtime...")
-    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf ${ONNXRUNTIME_ZIPFILE}
-                    WORKING_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
-
-    # Clean up the zipfile
-    file(REMOVE ${ONNXRUNTIME_ZIPFILE})
+    include("${CMAKE_CURRENT_LIST_DIR}/../cmake/runtime_download.cmake")
+    set(runtime_sha "${ONNXRUNTIME_ARCHIVE_SHA256}")
+    pv_runtime_download("${ONNXRUNTIME_URL}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.zip"
+      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}" "${runtime_sha}")
   endif()
 
   # Set paths to the extracted files

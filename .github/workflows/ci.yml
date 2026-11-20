@@ -145,6 +145,10 @@ jobs:
         if: matrix.target == 'linux'
         timeout-minutes: 12
         run: xvfb-run -a -s '-screen 0 1600x1000x24' flutter test -d linux integration_test/katalog_grundgeruest_test.dart --reporter expanded
+      - name: RAW16 nativ
+        if: matrix.target == 'apple'
+        timeout-minutes: 3
+        run: python3 tool/raw16_nativ_probe.py
       - name: Handy-Katalog (Start und Anmeldung)
         if: matrix.target == 'apple'
         timeout-minutes: 18
@@ -162,7 +166,15 @@ jobs:
           print(next(g["udid"] for r in runtimes for g in geraete[r] if g["name"].startswith("iPhone")))
           ')
           xcrun simctl bootstatus "$simulator" -b
-          flutter test -d "$simulator" integration_test/katalog_mob_kurz_test.dart --reporter expanded
+          set +e
+          flutter test -d "$simulator" integration_test/katalog_mob_kurz_test.dart --reporter expanded 2>&1 | tee handy.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            ende=$(tail -n 100 handy.log | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Handy-Katalog::$ende"
+            exit "$status"
+          fi
       # Nach dem Bauen: Scheitern die Installationsabläufe, ist der Bau
       # trotzdem geprüft – vorher übersprang ein roter Test ihn wochenlang
       # (#257). Ihre Ausgabe steht wie beim Bauen als Anmerkung am Lauf.
@@ -194,7 +206,17 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Bild bauen
-        run: docker build -f packages/server/Dockerfile -t photo-vault-server:pruefung .
+        shell: bash
+        run: |
+          set +e
+          docker build -f packages/server/Dockerfile -t photo-vault-server:pruefung . --progress=plain 2>&1 | tee server-bau.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            ende=$(tail -n 100 server-bau.log | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Serverbau::$ende"
+            exit "$status"
+          fi
       - name: Startet und antwortet
         run: |
           docker run -d --name pv photo-vault-server:pruefung
@@ -212,7 +234,17 @@ jobs:
       # baut, startet und antwortet.
       - name: Bild mit OpenVINO bauen
         if: matrix.runner == 'ubuntu-24.04'
-        run: docker build -f packages/server/Dockerfile --target openvino -t photo-vault-server:openvino .
+        shell: bash
+        run: |
+          set +e
+          docker build -f packages/server/Dockerfile --target openvino -t photo-vault-server:openvino . --progress=plain 2>&1 | tee server-bau.log
+          status=${PIPESTATUS[0]}
+          set -e
+          if [ "$status" -ne 0 ]; then
+            ende=$(tail -n 100 server-bau.log | sed -e 's/%/%25/g' -e 's/\r//g' | awk '{printf "%s%%0A", $0}')
+            echo "::error title=Serverbau::$ende"
+            exit "$status"
+          fi
       - name: Bild mit OpenVINO startet und antwortet
         if: matrix.runner == 'ubuntu-24.04'
         run: |

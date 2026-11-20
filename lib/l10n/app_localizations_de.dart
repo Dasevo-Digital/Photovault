@@ -9214,7 +9214,7 @@ class AppTexteDe extends AppTexte {
       'Aus dem Video ließ sich an dieser Stelle kein Bild greifen.';
 
   @override
-  String get datierungTitel => 'Alte Fotos zeitlich einordnen';
+  String get datierungTitel => 'Datierung festlegen';
 
   @override
   String get datierungEinleitung =>
@@ -11485,4 +11485,230 @@ class AppTexteDe extends AppTexte {
   String speicherinventarDateien(String name) {
     return 'Bibliotheksdateien von $name';
   }
+
+  @override
+  String get restaurGrundSpeicherbudget =>
+      'Das vergrößerte Bild benötigt mehr Arbeitsspeicher als für diesen Auftrag vorgesehen. Wähle eine kleinere Ausgabe.';
+
+  @override
+  String get katalogAbgleichText =>
+      'Geplante Prüfungen erstellen eine Vorschau, solange die App geöffnet ist. Neue Dateien werden erst nach Bestätigung katalogisiert. Externe Originale werden nicht verändert.';
+
+  @override
+  String get katalogAbgleichPruefen => 'Änderungen prüfen';
+
+  @override
+  String get katalogAbgleichPlanen => 'Prüfung planen';
+
+  @override
+  String get katalogAbgleichAus => 'Keine geplante Prüfung';
+
+  @override
+  String katalogAbgleichIntervall(int stunden) {
+    return 'Prüfung alle $stunden Stunden';
+  }
+
+  @override
+  String katalogAbgleichStand(String datum) {
+    return 'Vorschau vom $datum';
+  }
+
+  @override
+  String get katalogAbgleichUnvollstaendig =>
+      'Prüfung unvollständig. Fehlende Dateien wurden nicht bewertet.';
+
+  @override
+  String katalogAbgleichZahlen(int neu, int geaendert, int fehlt) {
+    return '$neu neu · $geaendert verändert · $fehlt nicht gefunden';
+  }
+
+  @override
+  String get katalogAbgleichKonflikte =>
+      'Veränderte und nicht gefundene Originale bleiben als Konflikte erhalten. Metadaten und vorhandene Aufnahmen werden nicht überschrieben oder gelöscht.';
+
+  @override
+  String get katalogAbgleichVorschau => 'Änderungsvorschau';
+
+  @override
+  String get katalogAbgleichMehr =>
+      'Die Vorschau zeigt die ersten 100 Einträge.';
+
+  @override
+  String get katalogAbgleichGeaendert => 'Inhalt verändert – Zuordnung prüfen';
+
+  @override
+  String get katalogAbgleichUebernehmen => 'Neue Dateien katalogisieren';
+
+  @override
+  String katalogAbgleichFrage(int anzahl) {
+    return '$anzahl neue Dateien werden ohne Kopie in den Katalog aufgenommen. Veränderte und fehlende Aufnahmen bleiben unverändert.';
+  }
+
+  @override
+  String get schutzTitel => 'Sicherung und Speicherfreigabe planen';
+
+  @override
+  String get schutzText =>
+      'Lege zuerst einen weiteren Originalort und eine zusätzliche Sicherung auf getrennten physischen Datenträgern an. Nach aktueller Prüfung kannst du lokale Originaldateien freigeben. Fotos und Metadaten bleiben im Katalog.';
+
+  @override
+  String get schutzNurLokal =>
+      'Dieser Assistent arbeitet mit einer lokalen Bibliothek und ihren externen Originalverweisen.';
+
+  @override
+  String get schutzOriginalort => 'Externen Originalordner wählen';
+
+  @override
+  String get schutzSicherungsort => 'Vorhandene Sicherung wählen';
+
+  @override
+  String get schutzSchrittOriginal => '1. Weiteren Originalort anlegen';
+
+  @override
+  String get schutzSchrittSicherung => '2. Zusätzliche Sicherung anlegen';
+
+  @override
+  String get schutzSchrittPruefen => '3. Kopien prüfen und Freigabe planen';
+
+  @override
+  String get schutzKopienAnlegen => 'Originalkopien anlegen';
+
+  @override
+  String get schutzSicherungErstellen => 'Bibliothek sichern';
+
+  @override
+  String get schutzVerschluesselt =>
+      'Neue Sicherung mit Passphrase verschlüsseln';
+
+  @override
+  String get schutzUnabhaengig =>
+      'Ich bestätige: Der externe Originalort und die zusätzliche Sicherung liegen auf getrennten physischen Datenträgern, unabhängig von der bisherigen Bibliothek.';
+
+  @override
+  String get schutzPruefen => 'Inhalte prüfen und Plan erstellen';
+
+  @override
+  String schutzPlan(int anzahl, int gesamt, String bytes) {
+    return '$anzahl von $gesamt geprüften lokalen Originalen können freigegeben werden: $bytes.';
+  }
+
+  @override
+  String get schutzNachFreigabe =>
+      'Nach der Freigabe bleibt der externe Originalort mit dem Katalog verknüpft. Er muss zum Öffnen der Originale verbunden sein. Die zusätzliche Sicherung bleibt als Rückfallkopie erhalten. Gesperrte Fotos und Papierkorb sind ausgenommen.';
+
+  @override
+  String get schutzFreigeben => 'Lokalen Speicher freigeben';
+
+  @override
+  String schutzFreigebenFrage(int anzahl, String bytes) {
+    return '$anzahl lokale Originaldateien mit $bytes entfernen? Der Katalog verweist danach auf den externen Originalort. Beide verbleibenden Kopien werden vor jedem Entfernen erneut geprüft.';
+  }
+
+  @override
+  String schutzFreigegeben(int anzahl, String bytes) {
+    return '$anzahl lokale Dateien entfernt, $bytes freigegeben.';
+  }
+
+  @override
+  String schutzKopiert(int anzahl) {
+    return '$anzahl Originalkopien angelegt oder inhaltlich bestätigt.';
+  }
+
+  @override
+  String get schutzSicherungAngelegt =>
+      'Sicherungslauf beendet. Die Inhaltsprüfung zeigt, welche Originale vollständig geschützt sind.';
+
+  @override
+  String get schutzAbgebrochen =>
+      'Vorgang abgebrochen. Bereits fertiggestellte Kopien bleiben erhalten.';
+
+  @override
+  String get schutzDatentraeger =>
+      'Die Datenträger konnten nicht eindeutig unterschieden werden. Wähle getrennte Laufwerke; zwei Ordner auf demselben Laufwerk genügen nicht.';
+
+  @override
+  String get schutzBestaetigungFehlt =>
+      'Bestätige zuerst die physische Unabhängigkeit der Datenträger.';
+
+  @override
+  String get schutzKonflikt =>
+      'Datei oder Zuordnung hat sich geändert. Prüfe die Kopien erneut, bevor du Speicher freigibst.';
+
+  @override
+  String get schutzKopieFehlt =>
+      'Eine benötigte Rückfallkopie fehlt oder stimmt inhaltlich nicht mehr. Die lokale Datei bleibt erhalten.';
+
+  @override
+  String get schutzZielFehler =>
+      'Der Zielordner ist nicht erreichbar oder nicht geeignet. Wähle einen Ordner außerhalb der Bibliothek.';
+
+  @override
+  String get schutzFehler =>
+      'Der Vorgang konnte nicht abgeschlossen werden. Prüfe Zielordner, Passphrase und freien Speicher.';
+
+  @override
+  String get datierungErklaerung =>
+      'Ein bekannter Kalenderbereich erhält keine erfundene Uhrzeit. Originaldatei und ursprünglicher Zeitstempel bleiben erhalten. Zeiträume stehen in der Zeitleiste beim Beginn; die Suche berücksichtigt den gesamten Bereich.';
+
+  @override
+  String get datierungTag => 'Tag';
+
+  @override
+  String get datierungMonat => 'Monat';
+
+  @override
+  String get datierungJahr => 'Jahr';
+
+  @override
+  String get datierungZeitraum => 'Zeitraum';
+
+  @override
+  String get datierungManuell => 'Eigene Angabe';
+
+  @override
+  String get datierungBeschriftung => 'Beschriftung des Fotos';
+
+  @override
+  String get datierungUeberlieferung => 'Überlieferung';
+
+  @override
+  String get datierungDatei => 'Dateiangaben';
+
+  @override
+  String get datierungDateiname => 'Dateiname';
+
+  @override
+  String get datierungUnbekannt => 'Unbekannt';
+
+  @override
+  String get datierungQuelle => 'Quelle';
+
+  @override
+  String get datierungHinweis => 'Hinweis zur Herkunft';
+
+  @override
+  String get datierungVon => 'Jahr, Monat oder Beginn';
+
+  @override
+  String get datierungBis => 'Ende einschließlich';
+
+  @override
+  String get datierungUngueltig =>
+      'Bitte einen gültigen Kalenderbereich eingeben.';
+
+  @override
+  String get exportRaw16 => '16-Bit-TIFF aus RAW-Original (neutral, linear)';
+
+  @override
+  String get sucheExakterIndex =>
+      'Optionaler exakter Suchindex: Aufbau benötigt Zeit und Speicher; je nach Bildbestand schneller oder langsamer.';
+
+  @override
+  String get datierungBeispielJahr => '1985';
+
+  @override
+  String get datierungBeispielMonat => '1985-06';
+
+  @override
+  String get datierungBeispielTag => '1985-06-15';
 }

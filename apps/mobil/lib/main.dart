@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/l10n/sync_texte.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -57,6 +58,7 @@ class PhotoVaultMobil extends StatelessWidget {
         useMaterial3: true,
       ),
       localizationsDelegates: const [
+        SyncTexte.delegate,
         ...AppTexte.localizationsDelegates,
         GelaendeTexte.delegate,
       ],

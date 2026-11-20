@@ -743,7 +743,7 @@ class Teilungsapi {
       final titel = await db
           .customSelect(
             'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar${b.sql} '
-            'ORDER BY file_created_at DESC, id DESC LIMIT 1',
+            'ORDER BY coalesce(datum_von,file_created_at) DESC, id DESC LIMIT 1',
             variables: b.werte,
           )
           .getSingleOrNull();
@@ -885,7 +885,7 @@ class Teilungsapi {
       'aufnahmen': [for (final z in liste) partnerzeileAlsJson(z)],
       'weiter': liste.length < anzahl
           ? null
-          : '${liste.last.fileCreatedAt.millisecondsSinceEpoch}~${liste.last.id}',
+          : '${liste.last.sortierZeitpunkt.millisecondsSinceEpoch}~${liste.last.id}',
     });
   }
 
@@ -972,8 +972,8 @@ Future<List<Rasterzeile>> partnerzeilen(
         // Was der Partner archiviert hat, steht auch bei ihm nicht in der
         // Zeitleiste (#304).
         'SELECT $rasterSpalten FROM assets WHERE $zeitleisteSichtbar${b.sql}'
-        '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
-        ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
+        '${nach == null ? '' : ' AND coalesce(datum_von,file_created_at) <= ? AND (coalesce(datum_von,file_created_at) < ? OR id < ?)'}'
+        ' ORDER BY coalesce(datum_von,file_created_at) DESC, id DESC LIMIT ?',
         variables: [
           ...b.werte,
           if (nach != null) ...[

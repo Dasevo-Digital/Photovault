@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path/path.dart' as p;
 import '../security_scoped_bookmark.dart' as native;
 import 'folder_access.dart';
 
@@ -24,6 +26,20 @@ class MacOsFolderAccess implements FolderAccess {
   @override
   Future<String?> resolveRoot({String? path, String? token}) async {
     if (token == null || token.isEmpty) return null;
-    return native.SecurityScopedBookmark.resolve(token);
+    try {
+      final teil = PickedFolder.teilzugriff(token);
+      if (teil == null) {
+        return await native.SecurityScopedBookmark.resolve(token);
+      }
+      final basis = await native.SecurityScopedBookmark.resolve(teil.token);
+      if (basis == null) return null;
+      final root = await Directory(basis).resolveSymbolicLinks();
+      final dir = Directory(p.join(root, teil.relativ));
+      if (!await dir.exists()) return null;
+      final real = await dir.resolveSymbolicLinks();
+      return p.isWithin(root, real) ? real : null;
+    } on Object {
+      return null;
+    }
   }
 }

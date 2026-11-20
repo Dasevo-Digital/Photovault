@@ -295,6 +295,7 @@ Handler baueApi({
     ..post('/api/v1/konto/wiederherstellungscodes', anmeldung.codes)
     ..post('/api/v1/konto/oidc', anmeldung.oidcVerknuepfen)
     ..get('/api/v1/geraete', anmeldung.geraete)
+    ..post('/api/v1/geraete/stand', anmeldung.geraetestand)
     ..delete('/api/v1/geraete/<id>', anmeldung.geraetAbmelden)
     ..get('/api/v1/bibliothek', api.bibliothek)
     ..get('/api/v1/aufnahmen', api.aufnahmen)
@@ -1010,8 +1011,8 @@ class _Api {
           'SELECT $rasterSpalten FROM assets WHERE $wo'
           // Die erste Bedingung gibt dem Index eine Grenze: Am OR allein
           // ging er sonst bis zur Seite alles durch.
-          '${nach == null ? '' : ' AND file_created_at <= ? AND (file_created_at < ? OR id < ?)'}'
-          ' ORDER BY file_created_at DESC, id DESC LIMIT ?',
+          '${nach == null ? '' : ' AND coalesce(datum_von,file_created_at) <= ? AND (coalesce(datum_von,file_created_at) < ? OR id < ?)'}'
+          ' ORDER BY coalesce(datum_von,file_created_at) DESC, id DESC LIMIT ?',
           variables: [
             if (nach != null) ...[
               Variable<DateTime>(nach.zeit),
@@ -1035,7 +1036,7 @@ class _Api {
         'aufnahmen': await alsJson(liste),
         'weiter': liste.length < anzahl
             ? null
-            : _Lesezeichen(liste.last.fileCreatedAt, liste.last.id).text,
+            : _Lesezeichen(liste.last.sortierZeitpunkt, liste.last.id).text,
       });
     }
     final alle = <({Rasterzeile z, _Partnerquelle? von})>[
@@ -1052,7 +1053,7 @@ class _Api {
       }
     }
     alle.sort((a, b) {
-      final c = b.z.fileCreatedAt.compareTo(a.z.fileCreatedAt);
+      final c = b.z.sortierZeitpunkt.compareTo(a.z.sortierZeitpunkt);
       return c != 0 ? c : b.z.id.compareTo(a.z.id);
     });
     final seite = alle.take(anzahl).toList();
@@ -1089,7 +1090,7 @@ class _Api {
       ],
       'weiter': seite.length < anzahl
           ? null
-          : _Lesezeichen(seite.last.z.fileCreatedAt, seite.last.z.id).text,
+          : _Lesezeichen(seite.last.z.sortierZeitpunkt, seite.last.z.id).text,
     });
   }
 
@@ -1173,7 +1174,7 @@ class _Api {
       for (final z
           in await db
               .customSelect(
-                "SELECT strftime('%Y-%m', file_created_at, 'unixepoch', 'localtime') "
+                "SELECT CASE WHEN datum_von IS NOT NULL THEN strftime('%Y',datum_von,'unixepoch') || '-' || CASE WHEN datum_genauigkeit IN ('jahr','zeitraum') THEN '00' ELSE strftime('%m',datum_von,'unixepoch') END ELSE strftime('%Y-%m',file_created_at,'unixepoch','localtime') END "
                 'AS m, COUNT(*) AS n FROM assets WHERE $zeitleisteSichtbar$bedingung '
                 'GROUP BY m',
                 variables: werte,

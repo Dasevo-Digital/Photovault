@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -34,7 +35,7 @@ const double _scrubberWidth = 64.0;
 }) {
   final gruppen = <int, List<Rasterzeile>>{};
   for (final a in assets) {
-    final key = a.fileCreatedAt.year * 100 + a.fileCreatedAt.month;
+    final key = a.monatsschluessel;
     gruppen.putIfAbsent(key, () => []).add(a);
   }
   // Die Monate laufen in dieselbe Richtung wie die Fotos darin. Stünde
@@ -57,10 +58,7 @@ const double _scrubberWidth = 64.0;
 }) {
   final gruppen = <int, List<Rasterzeile>>{};
   for (final a in assets) {
-    final d = a.fileCreatedAt;
-    gruppen
-        .putIfAbsent(d.year * 10000 + d.month * 100 + d.day, () => [])
-        .add(a);
+    gruppen.putIfAbsent(a.tagesschluessel, () => []).add(a);
   }
   final schluessel = gruppen.keys.toList()
     ..sort((a, b) => absteigend ? b.compareTo(a) : a.compareTo(b));
@@ -454,21 +452,30 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
   }
 
   /// Die Überschrift einer Gruppe – für beide Rasterformen dieselbe.
-  Widget _ueberschrift(BuildContext context, List<Rasterzeile> gruppe) =>
-      _MonthHeader(
-        label:
-            (widget.nachTag
-                    ? DateFormat.yMMMMEEEEd(
-                        Localizations.localeOf(context).toString(),
-                      )
-                    : DateFormat.yMMMM(
-                        Localizations.localeOf(context).toString(),
-                      ))
-                .format(gruppe.first.fileCreatedAt),
-        groupAssets: gruppe,
-        selectedIds: widget.selectedIds,
-        onTap: widget.onHeaderTap,
-      );
+  Widget _ueberschrift(
+    BuildContext context,
+    List<Rasterzeile> gruppe,
+  ) => _MonthHeader(
+    label: gruppe.first.monatsschluessel % 100 == 0
+        ? '${AppTexte.of(context).datierungTitel} · ${gruppe.first.fileCreatedAt.year}'
+        : gruppe.first.datierung != null &&
+              gruppe.first.datierung!.genauigkeit.name != 'tag'
+        ? datierungstext(
+            gruppe.first.datierung!,
+            Localizations.localeOf(context).toString(),
+          )
+        : (widget.nachTag
+                  ? DateFormat.yMMMMEEEEd(
+                      Localizations.localeOf(context).toString(),
+                    )
+                  : DateFormat.yMMMM(
+                      Localizations.localeOf(context).toString(),
+                    ))
+              .format(gruppe.first.fileCreatedAt),
+    groupAssets: gruppe,
+    selectedIds: widget.selectedIds,
+    onTap: widget.onHeaderTap,
+  );
 
   /// Die Überschrift eines Tages – quer über die Breite bei einem grossen
   /// Tag, auf [breite] beschränkt bei einem kleinen.
@@ -478,13 +485,20 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
     double breite,
   ) {
     return _TagesHeader(
-      label: tagesbeschriftung(
-        tag.first.fileCreatedAt,
-        AppTexte.of(context),
-        Localizations.localeOf(context).toString(),
-        heute: DateTime.now(),
-        knapp: breite < _knappeTagesbreite,
-      ),
+      label: tag.first.monatsschluessel % 100 == 0
+          ? '${AppTexte.of(context).datierungTitel} · ${tag.first.fileCreatedAt.year}'
+          : tag.first.datierung != null
+          ? datierungstext(
+              tag.first.datierung!,
+              Localizations.localeOf(context).toString(),
+            )
+          : tagesbeschriftung(
+              tag.first.fileCreatedAt,
+              AppTexte.of(context),
+              Localizations.localeOf(context).toString(),
+              heute: DateTime.now(),
+              knapp: breite < _knappeTagesbreite,
+            ),
       groupAssets: tag,
       selectedIds: widget.selectedIds,
       onTap: widget.onHeaderTap,

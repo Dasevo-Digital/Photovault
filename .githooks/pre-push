@@ -11,7 +11,7 @@ zero=0000000000000000000000000000000000000000
 remote=${1:-origin}
 commit=""
 # Nur Tags, deren Commit der Server auf main schon hat? Den hat dieser
-# Hook beim Push von main geprüft. release.py vorbereiten pusht erst main,
+# Hook beim Push von main geprüft. release.py entwurf pusht erst main,
 # dann die Marke – und der zweite volle Lauf kostete jede Fassung eine
 # Viertelstunde (#287).
 schon_geprueft=1

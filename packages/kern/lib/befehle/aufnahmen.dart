@@ -349,6 +349,26 @@ final class AufnahmedatenSetzen extends Befehl<void> {
   Future<void> anwenden(AppDatabase db) => db.setzeAufnahmedaten(daten);
 }
 
+/// Ein ausdrücklich bekannter Kalenderbereich ohne erfundene Uhrzeit.
+final class DatierungSetzen extends Befehl<void> {
+  const DatierungSetzen(this.ids, this.datierung);
+  final List<String> ids;
+  final AufnahmeDatierung datierung;
+  static DatierungSetzen aus(Map<String, Object?> j) => DatierungSetzen(
+    _kennungen(j['ids']),
+    AufnahmeDatierung.aus((j['datierung'] as Map).cast<String, Object?>()),
+  );
+  @override
+  String get art => 'datierungSetzen';
+  @override
+  Map<String, Object?> get werte => {
+    'ids': ids,
+    'datierung': datierung.alsJson(),
+  };
+  @override
+  Future<void> anwenden(AppDatabase db) => db.setzeDatierung(ids, datierung);
+}
+
 /// Der Dateiname, unter dem eine Aufnahme geführt wird.
 final class DateinameSetzen extends Befehl<void> {
   const DateinameSetzen(this.id, this.name);

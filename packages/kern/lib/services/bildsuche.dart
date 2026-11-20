@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'clip_service.dart';
+import 'exakter_vektorindex.dart';
 import 'videostandbilder.dart';
 
 /// Die Rangfolge der Suche nach Bildinhalt – für den Desktop, der den
@@ -46,18 +47,29 @@ List<String> rangfolgeDerBildsuche(
   Map<String, Float32List> kandidaten,
   Set<String> erlaubt, {
   int anzahl = 200,
+  ExakterVektorindex? index,
 }) {
-  final zugelassen = <String, Float32List>{
-    for (final e in kandidaten.entries)
-      if (erlaubt.contains(aufnahmeAusSuchschluessel(e.key))) e.key: e.value,
-  };
+  if (index != null && !index.passtZu(kandidaten)) index = null;
+  final zugelassen = index == null
+      ? <String, Float32List>{
+          for (final e in kandidaten.entries)
+            if (erlaubt.contains(aufnahmeAusSuchschluessel(e.key)))
+              e.key: e.value,
+        }
+      : const <String, Float32List>{};
   // Etwas mehr als [anzahl]: Ein Video kann mit mehreren Standbildern in
   // der Rangfolge auftauchen, und die fallen gleich wieder zusammen.
-  final rang = ClipService.rankBySimilarity(
-    vektor,
-    zugelassen,
-    topK: anzahl * (1 + videoStandbilderHoechstens),
-  );
+  final rang = index != null && index.passtZu(kandidaten)
+      ? index.suche(
+          vektor,
+          erlaubt: (key) => erlaubt.contains(aufnahmeAusSuchschluessel(key)),
+          topK: anzahl * (1 + videoStandbilderHoechstens),
+        )
+      : ClipService.rankBySimilarity(
+          vektor,
+          zugelassen,
+          topK: anzahl * (1 + videoStandbilderHoechstens),
+        );
   // Je Aufnahme zählt ihr bestes Standbild; die Rangfolge kommt
   // absteigend, das erste Auftreten ist also das beste.
   final gesehen = <String>{};

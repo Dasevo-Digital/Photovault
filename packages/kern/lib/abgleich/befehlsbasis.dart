@@ -233,10 +233,15 @@ class Befehlsbasis {
             'ai_caption_edited',
             'ai_caption_scanned',
           ],
-          'jahrSchaetzen' || 'aufnahmedatenSetzen' => [
+          'jahrSchaetzen' || 'aufnahmedatenSetzen' || 'datierungSetzen' => [
             'file_created_at',
             'datum_geschaetzt',
             'datum_geprueft',
+            'datum_von',
+            'datum_bis',
+            'datum_genauigkeit',
+            'datum_quelle',
+            'datum_hinweis',
           ],
           'serieBilden' ||
           'serieAufloesen' ||

@@ -65,6 +65,12 @@ class Geraet {
     required this.angelegt,
     required this.zuletzt,
     this.adresse,
+    this.clientFassung,
+    this.clientSchema,
+    this.clientPlattform,
+    this.clientOffen,
+    this.clientGemeldet,
+    this.clientAbgleich,
   });
 
   final String id;
@@ -73,6 +79,9 @@ class Geraet {
   final DateTime angelegt;
   final DateTime zuletzt;
   final String? adresse;
+  final String? clientFassung, clientPlattform;
+  final int? clientSchema, clientOffen;
+  final DateTime? clientGemeldet, clientAbgleich;
 
   Map<String, Object?> alsJson() => {
     'id': id,
@@ -80,6 +89,12 @@ class Geraet {
     'angelegt': angelegt.toUtc().toIso8601String(),
     'zuletzt': zuletzt.toUtc().toIso8601String(),
     'adresse': adresse,
+    'clientFassung': clientFassung,
+    'clientSchema': clientSchema,
+    'clientPlattform': clientPlattform,
+    'clientOffen': clientOffen,
+    'clientGemeldet': clientGemeldet?.toUtc().toIso8601String(),
+    'clientAbgleich': clientAbgleich?.toUtc().toIso8601String(),
   };
 
   static Geraet _aus(Row z) => Geraet(
@@ -89,6 +104,16 @@ class Geraet {
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt'] as int),
     zuletzt: DateTime.fromMillisecondsSinceEpoch(z['zuletzt'] as int),
     adresse: z['adresse'] as String?,
+    clientFassung: z['client_fassung'] as String?,
+    clientSchema: z['client_schema'] as int?,
+    clientPlattform: z['client_plattform'] as String?,
+    clientOffen: z['client_offen'] as int?,
+    clientGemeldet: z['client_gemeldet'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(z['client_gemeldet'] as int),
+    clientAbgleich: z['client_abgleich'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch(z['client_abgleich'] as int),
   );
 }
 
@@ -714,6 +739,49 @@ class Kontodienst {
       ]);
     }
     return (konto: konto(geraet.konto)!, geraet: geraet);
+  }
+
+  bool meldeGeraetestand(
+    String kontoId,
+    String geraetId, {
+    required String? fassung,
+    required int schema,
+    required String plattform,
+    required int offen,
+    required bool erfolgreich,
+  }) {
+    if (schema < 1 ||
+        schema > 10000 ||
+        offen < 0 ||
+        offen > 1000000 ||
+        !{'macos', 'linux', 'windows', 'android', 'ios'}.contains(plattform) ||
+        (fassung != null &&
+            !RegExp(
+              r'^(Entwicklung|[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}(?:[+-][a-zA-Z0-9.-]{1,40})?)$',
+            ).hasMatch(fassung))) {
+      throw const FormatException('pv_geraetestand');
+    }
+    final jetzt = _uhr().millisecondsSinceEpoch;
+    _db.execute(
+      '''
+      UPDATE geraete SET client_fassung = ?, client_schema = ?,
+        client_plattform = ?, client_offen = ?, client_gemeldet = ?,
+        client_abgleich = CASE WHEN ? THEN ? ELSE client_abgleich END
+      WHERE konto = ? AND id = ?
+    ''',
+      [
+        fassung,
+        schema,
+        plattform,
+        offen,
+        jetzt,
+        erfolgreich ? 1 : 0,
+        jetzt,
+        kontoId,
+        geraetId,
+      ],
+    );
+    return _db.updatedRows == 1;
   }
 
   List<Geraet> geraete(String kontoId) => [

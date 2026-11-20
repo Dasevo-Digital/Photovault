@@ -72,6 +72,22 @@ const datumZeit = new Intl.DateTimeFormat(GEBIET, { dateStyle: 'medium', timeSty
 const monatJahr = new Intl.DateTimeFormat(GEBIET, { month: 'long', year: 'numeric' });
 const tagKopf = new Intl.DateTimeFormat(GEBIET, { weekday: 'long', day: 'numeric', month: 'long' });
 
+// Kalenderbereiche sind keine Uhrzeiten; ihre Felder werden in UTC formatiert.
+function kalendermonatVon(a) {
+  if(!a.datierung) return monatsschluessel(new Date(a.aufgenommen));
+  return a.datierung.von.slice(0,4) + '-' + (['jahr','zeitraum'].includes(a.datierung.genauigkeit) ? '00' : a.datierung.von.slice(5,7));
+}
+
+function aufnahmedatumText(a, format = datumZeit) {
+  const d = a.datierung;
+  if (!d) return format.format(new Date(a.aufgenommen));
+  const tag = new Intl.DateTimeFormat(GEBIET, {dateStyle:'medium', timeZone:'UTC'});
+  if(d.genauigkeit === 'jahr') return d.von.slice(0,4);
+  if(d.genauigkeit === 'monat') return new Intl.DateTimeFormat(GEBIET, {month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(d.von));
+  if(d.genauigkeit === 'tag') return tag.format(new Date(d.von));
+  return `${tag.format(new Date(d.von))} – ${tag.format(new Date(Date.parse(d.bis) - 86400000))}`;
+}
+
 let sitzung = null;   // {name, verwalter, geraet}
 
 // --- Ansichten -------------------------------------------------------------
@@ -418,7 +434,7 @@ let letzterMonat = null;
 
 // Der Tag einer Aufnahme in der Zeit des Browsers – Schlüssel für die
 // Tagesauswahl.
-const tagVon = (a) => { const d = new Date(a.aufgenommen); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+const tagVon = (a) => { if(a.datierung) return JSON.stringify(a.datierung); const d = new Date(a.aufgenommen); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
 
 // Ein gefülltes Zeichen für eine Kachel (Symbole m-… in index.html).
 function kachelzeichen(name, klasse = '') {
@@ -603,7 +619,7 @@ function zelleVon(s, a) {
     case 'dateiname': text = a.name || ''; break;
     // Die Uhrzeit weicht dem Vermerk, wenn das Datum geschätzt ist – sie
     // wäre die genaueste Angabe und zugleich die, die sicher nicht stimmt.
-    case 'datum': text = a.geschaetzt ? `${listenDatum.format(new Date(a.aufgenommen))} (${t('geschätzt')})` : listenDatumZeit.format(new Date(a.aufgenommen)); break;
+    case 'datum': text = a.geschaetzt ? `${listenDatum.format(new Date(a.aufgenommen))} (${t('geschätzt')})` : aufnahmedatumText(a,listenDatumZeit); break;
     case 'kamera': text = kamerabezeichnung(a.kamera, a.modell); break;
     case 'objektiv': text = a.objektiv || ''; break;
     case 'belichtung': text = belichtungstext(a); break;
@@ -770,7 +786,7 @@ function tageskopf(a, tag) {
   k.type = 'button';
   k.dataset.tag = tag;
   k.title = t('Ganzen Tag auswählen');
-  k.append(el('span', 'tag', tagKopf.format(new Date(a.aufgenommen))), el('span', 'kreis'));
+  k.append(el('span', 'tag', aufnahmedatumText(a,tagKopf)), el('span', 'kreis'));
   k.addEventListener('click', () => schalteTag(tag));
   return k;
 }
@@ -817,16 +833,16 @@ function haengeAn(aufnahmen) {
       // Die Liste kennt keine Monatsköpfe darüber; der Tag nennt das ganze Datum.
       if (tag !== letzterTag) {
         letzterTag = tag;
-        raster.append(el('h2', 'monat', datum.format(new Date(a.aufgenommen))));
+        raster.append(el('h2', 'monat', aufnahmedatumText(a,datum)));
       }
     } else if (liste.nachTagen && mitMonaten) {
       const d = new Date(a.aufgenommen);
-      const monat = `${d.getFullYear()}-${d.getMonth()}`;
+      const monat = kalendermonatVon(a);
       if (monat !== letzterMonat) {
         letzterMonat = monat;
         letzterTag = null;
-        const kopf = el('h2', 'monat', monatJahr.format(d));
-        kopf.dataset.monat = monatsschluessel(d);
+        const kopf = el('h2', 'monat', a.datierung && a.datierung.genauigkeit !== 'tag' ? (a.kalendermonat % 100 === 0 ? `${t('Datierung')} · ${a.datierung.von.slice(0,4)}` : aufnahmedatumText(a)) : monatJahr.format(d));
+        kopf.dataset.monat = kalendermonatVon(a);
         kopfDazu(kopf);
       }
       if (mitTagen && tag !== letzterTag) {
@@ -1165,7 +1181,7 @@ async function zeigeErinnerungen() {
   karten.replaceChildren();
   box.hidden = d.art === 'keiner' || d.gruppen.length === 0;
   if (box.hidden) return;
-  const monat = monate.format(new Date(2000, d.monat - 1, 1));
+  const monat = d.monat === 0 ? t('Datierung') : monate.format(new Date(2000, d.monat - 1, 1));
   for (const g of d.gruppen) {
     const k = el('button', 'erinnerung');
     k.type = 'button';
@@ -2766,7 +2782,7 @@ function duplikatgruppe(g) {
         entferne();
       } catch (x) { $('dupl-hinweis').textContent = x.message; }
     });
-    const angaben = [a.breite && a.hoehe ? `${a.breite} × ${a.hoehe}` : '', datumZeit.format(new Date(a.aufgenommen)), a.favorit ? '♥' : '', a.bewertung ? '★'.repeat(a.bewertung) : ''].filter(Boolean).join(' · ');
+    const angaben = [a.breite && a.hoehe ? `${a.breite} × ${a.hoehe}` : '', aufnahmedatumText(a,datumZeit), a.favorit ? '♥' : '', a.bewertung ? '★'.repeat(a.bewertung) : ''].filter(Boolean).join(' · ');
     const name = el('div', 'name', a.name);
     name.title = a.name;
     zelle.append(img, name, el('div', 'angaben', angaben), knopf);
@@ -3377,7 +3393,7 @@ async function zeigeImFoto(g) {
   }
   if (d) {
     const ort = d.ort ? [d.ort.stadt, land(d.ort.land)].filter(Boolean).join(', ') : '';
-    $('imfoto-text').textContent = [datumZeit.format(new Date(d.aufgenommen)), ort, d.name].filter(Boolean).join(' · ');
+    $('imfoto-text').textContent = [aufnahmedatumText(d,datumZeit), ort, d.name].filter(Boolean).join(' · ');
   }
 }
 $('imfoto-zu').addEventListener('click', () => $('imfoto-dialog').close());
@@ -4901,7 +4917,7 @@ function monatsschluesselOben() {
     const ziel = document.elementFromPoint(x, y);
     const k = ziel && ziel.closest ? ziel.closest('#raster .kachel') : null;
     const a = k && liste.aufnahmen[Number(k.dataset.index)];
-    if (a) return monatsschluessel(new Date(a.aufgenommen));
+    if (a) return kalendermonatVon(a);
   }
   return null;
 }
@@ -4918,7 +4934,7 @@ function monatBei(anteil) {
 
 function monatAusSchluessel(schluessel) {
   const [j, m] = schluessel.split('-').map(Number);
-  return monatJahr.format(new Date(j, m - 1, 1));
+  return m === 0 ? `${t('Datierung')} · ${j}` : monatJahr.format(new Date(j, m - 1, 1));
 }
 
 function monatskopf(schluessel) {
@@ -4981,7 +4997,7 @@ function monatOben() {
     const ziel = document.elementFromPoint(x, y);
     const k = ziel && ziel.closest ? ziel.closest('#raster .kachel') : null;
     const a = k && liste.aufnahmen[Number(k.dataset.index)];
-    if (a) return monatJahr.format(new Date(a.aufgenommen));
+    if (a) return a.datierung && a.datierung.genauigkeit !== 'tag' ? aufnahmedatumText(a) : monatJahr.format(new Date(a.aufgenommen));
   }
   return null;
 }
@@ -5603,7 +5619,7 @@ function oeffne(i) {
   blickZurueck(false);
   $('betrachter').classList.remove('still');
   $('betrachter').style.removeProperty('background');
-  $('angaben').textContent = `${datumZeit.format(new Date(a.aufgenommen))} · ${a.name}${a.von ? ` · ${t('von {name}', { name: a.von })}` : ''}`;
+  $('angaben').textContent = `${aufnahmedatumText(a,datumZeit)} · ${a.name}${a.von ? ` · ${t('von {name}', { name: a.von })}` : ''}`;
   $('favorit').textContent = a.favorit ? '♥' : '♡';
   $('laden').href = aufnahmeUrl(a.id, 'original');
   $('laden').download = a.name || '';
@@ -5954,7 +5970,7 @@ async function zeigeAngaben() {
     feld.replaceChildren(
       ...kommentare,
       el('h3', null, t('Angaben')),
-      el('p', '', datumZeit.format(new Date(a.aufgenommen))),
+      el('p', '', aufnahmedatumText(a,datumZeit)),
       el('p', 'leise', a.name || ''),
       ...(a.breite && a.hoehe ? [el('p', 'leise', `${a.breite} × ${a.hoehe}`)] : []),
       ...(a.von ? [el('p', 'leise', a.konto ? t('Aus der Bibliothek von {name}', { name: a.von }) : t('Beigetragen von {name}', { name: a.von }))] : []),
@@ -5967,7 +5983,7 @@ async function zeigeAngaben() {
   if (!liste || liste.aufnahmen[offen] !== a) return; // inzwischen weitergeblättert
   const teile = [...kommentare];
   teile.push(el('h3', null, t('Angaben')));
-  const datumsreihe = reihe('📅', datumZeit.format(new Date(d.aufgenommen)), d.datumGeschaetzt ? t('Datum geschätzt') : null);
+  const datumsreihe = reihe('📅', aufnahmedatumText(d,datumZeit), d.datumGeschaetzt ? t('Datum geschätzt') : null);
   if (d.datumsvorschlag) datumsreihe.querySelector('.inhalt').append(datumsvorschlagHinweis(a, d.datumsvorschlag));
   teile.push(datumsreihe);
   const datei = [d.breite && d.hoehe ? `${d.breite} × ${d.hoehe}` : '', d.bytes ? groesse(d.bytes) : '', d.format ? d.format.toUpperCase() : '', d.dauer ? `${Math.round(d.dauer)} s` : '', d.bearbeitet ? t('bearbeitet') : ''].filter(Boolean).join(' · ');

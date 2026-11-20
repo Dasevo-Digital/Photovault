@@ -2,6 +2,32 @@ part of '../database.dart';
 
 /// Angaben an Aufnahmen setzen und die Nachträge (Ort, Datum, Kamera, Texterkennung, Beschreibung).
 extension NachtragsAbfragen on AppDatabase {
+  Future<void> setzeDatierung(
+    List<String> ids,
+    AufnahmeDatierung datierung,
+  ) async {
+    // Auch direkt aufgerufene Dienste halten denselben validierten Vertrag ein.
+    final d = AufnahmeDatierung.aus(datierung.alsJson());
+    if (ids.length > 2000) throw const FormatException('pv_datierung_umfang');
+    await transaction(() async {
+      final eindeutig = ids.toSet().toList();
+      for (var i = 0; i < eindeutig.length; i += 500) {
+        final teil = eindeutig.skip(i).take(500).toList();
+        await (update(assets)..where((a) => a.id.isIn(teil))).write(
+          AssetsCompanion(
+            datumVon: Value(d.von),
+            datumBis: Value(d.bis),
+            datumGenauigkeit: Value(d.genauigkeit.name),
+            datumQuelle: Value(d.quelle.name),
+            datumHinweis: Value(d.hinweis),
+            datumGeschaetzt: const Value(true),
+            datumGeprueft: const Value(true),
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> setDescription(String assetId, String description) =>
       (update(assets)..where((t) => t.id.equals(assetId))).write(
         AssetsCompanion(description: Value(description)),
@@ -19,6 +45,11 @@ extension NachtragsAbfragen on AppDatabase {
       (update(assets)..where((t) => t.id.equals(assetId))).write(
         AssetsCompanion(
           fileCreatedAt: Value(fileCreatedAt),
+          datumVon: const Value(null),
+          datumBis: const Value(null),
+          datumGenauigkeit: const Value(null),
+          datumQuelle: const Value(null),
+          datumHinweis: const Value(null),
           // Wie bei [setAufnahmezeitpunkt]: Ein gesetztes Datum ist kein
           // geratenes mehr.
           datumGeschaetzt: const Value(false),
@@ -66,6 +97,11 @@ extension NachtragsAbfragen on AppDatabase {
   ) => (update(assets)..where((t) => t.id.equals(videoId))).write(
     AssetsCompanion(
       fileCreatedAt: Value(foto.fileCreatedAt),
+      datumVon: Value(foto.datumVon),
+      datumBis: Value(foto.datumBis),
+      datumGenauigkeit: Value(foto.datumGenauigkeit),
+      datumQuelle: Value(foto.datumQuelle),
+      datumHinweis: Value(foto.datumHinweis),
       datumGeschaetzt: Value(foto.datumGeschaetzt),
       datumGeprueft: const Value(true),
       zeitversatzMinuten: Value(foto.zeitversatzMinuten),
@@ -506,6 +542,11 @@ extension NachtragsAbfragen on AppDatabase {
   }) => (update(assets)..where((t) => t.id.equals(assetId))).write(
     AssetsCompanion(
       fileCreatedAt: Value(zeitpunkt),
+      datumVon: const Value(null),
+      datumBis: const Value(null),
+      datumGenauigkeit: const Value(null),
+      datumQuelle: const Value(null),
+      datumHinweis: const Value(null),
       datumGeschaetzt: const Value(false),
       relativePath: neuerPfad == null ? const Value.absent() : Value(neuerPfad),
     ),
@@ -573,6 +614,11 @@ extension NachtragsAbfragen on AppDatabase {
       await (update(assets)..where((t) => t.id.equals(d.id))).write(
         AssetsCompanion(
           fileCreatedAt: Value(d.zeitpunkt),
+          datumVon: const Value(null),
+          datumBis: const Value(null),
+          datumGenauigkeit: const Value(null),
+          datumQuelle: const Value(null),
+          datumHinweis: const Value(null),
           datumGeschaetzt: Value(d.geschaetzt),
           datumGeprueft: const Value(true),
         ),

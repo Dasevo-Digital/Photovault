@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:flutter/material.dart';
@@ -80,8 +81,14 @@ class AssetListView extends StatefulWidget {
     if (zahl == null) return schluessel;
     final sprache = Localizations.localeOf(context).toString();
     if (gruppierung == ListenGruppierung.tag) {
+      if (zahl % 100 == 0) {
+        return '${AppTexte.of(context).datierungTitel} · ${zahl ~/ 10000}';
+      }
       final datum = DateTime(zahl ~/ 10000, zahl ~/ 100 % 100, zahl % 100);
       return DateFormat.yMMMMEEEEd(sprache).format(datum);
+    }
+    if (zahl % 100 == 0) {
+      return '${AppTexte.of(context).datierungTitel} · ${zahl ~/ 100}';
     }
     final datum = DateTime(zahl ~/ 100, zahl % 100);
     return DateFormat.yMMMM(sprache).format(datum);
@@ -494,7 +501,9 @@ class _Zeile extends StatelessWidget {
       // nebeneinander liest - dort faellt eine Reihe gleicher
       // Zeitstempel ueberhaupt erst auf.
       Listenspalte.datum => text(
-        asset.datumGeschaetzt
+        asset.kalenderdatierung != null
+            ? datierungstext(asset.kalenderdatierung!, sprache)
+            : asset.datumGeschaetzt
             ? '${DateFormat.yMd(sprache).format(asset.fileCreatedAt)} '
                   '(${AppTexte.of(context).infoDatumGeschaetztKurz})'
             : DateFormat.yMd(sprache).add_Hm().format(asset.fileCreatedAt),

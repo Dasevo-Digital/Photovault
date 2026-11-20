@@ -9165,7 +9165,7 @@ class AppTexteEn extends AppTexte {
       'Could not grab a frame from the video at this point.';
 
   @override
-  String get datierungTitel => 'Date old photos';
+  String get datierungTitel => 'Set dating';
 
   @override
   String get datierungEinleitung =>
@@ -11418,4 +11418,228 @@ class AppTexteEn extends AppTexte {
   String speicherinventarDateien(String name) {
     return 'Library files for $name';
   }
+
+  @override
+  String get restaurGrundSpeicherbudget =>
+      'The enlarged image exceeds the memory budget for this task. Choose a smaller output.';
+
+  @override
+  String get katalogAbgleichText =>
+      'Scheduled checks create a preview while the app is open. New files are cataloged after confirmation. External originals are not modified.';
+
+  @override
+  String get katalogAbgleichPruefen => 'Check for changes';
+
+  @override
+  String get katalogAbgleichPlanen => 'Schedule checks';
+
+  @override
+  String get katalogAbgleichAus => 'No scheduled checks';
+
+  @override
+  String katalogAbgleichIntervall(int stunden) {
+    return 'Check every $stunden hours';
+  }
+
+  @override
+  String katalogAbgleichStand(String datum) {
+    return 'Preview from $datum';
+  }
+
+  @override
+  String get katalogAbgleichUnvollstaendig =>
+      'Check incomplete. Missing files were not evaluated.';
+
+  @override
+  String katalogAbgleichZahlen(int neu, int geaendert, int fehlt) {
+    return '$neu new · $geaendert changed · $fehlt not found';
+  }
+
+  @override
+  String get katalogAbgleichKonflikte =>
+      'Changed and missing originals remain unresolved. Metadata and existing photos are not overwritten or deleted.';
+
+  @override
+  String get katalogAbgleichVorschau => 'Change preview';
+
+  @override
+  String get katalogAbgleichMehr => 'The preview shows the first 100 entries.';
+
+  @override
+  String get katalogAbgleichGeaendert => 'Content changed — check the link';
+
+  @override
+  String get katalogAbgleichUebernehmen => 'Catalog new files';
+
+  @override
+  String katalogAbgleichFrage(int anzahl) {
+    return '$anzahl new files will be cataloged without copying them. Changed and missing photos are left unchanged.';
+  }
+
+  @override
+  String get schutzTitel => 'Plan protection and storage release';
+
+  @override
+  String get schutzText =>
+      'Create another original location and an additional backup on separate physical drives. After verifying their contents, you can release local originals. Photos and metadata remain in the catalog.';
+
+  @override
+  String get schutzNurLokal =>
+      'This assistant works with a local library and its external original links.';
+
+  @override
+  String get schutzOriginalort => 'Choose an external originals folder';
+
+  @override
+  String get schutzSicherungsort => 'Choose an existing backup';
+
+  @override
+  String get schutzSchrittOriginal => '1. Create another original location';
+
+  @override
+  String get schutzSchrittSicherung => '2. Create an additional backup';
+
+  @override
+  String get schutzSchrittPruefen =>
+      '3. Verify copies and plan storage release';
+
+  @override
+  String get schutzKopienAnlegen => 'Create original copies';
+
+  @override
+  String get schutzSicherungErstellen => 'Back up the library';
+
+  @override
+  String get schutzVerschluesselt => 'Encrypt the new backup with a passphrase';
+
+  @override
+  String get schutzUnabhaengig =>
+      'I confirm that the external original location and the additional backup are on separate physical drives, independent of the current library.';
+
+  @override
+  String get schutzPruefen => 'Verify contents and create a plan';
+
+  @override
+  String schutzPlan(int anzahl, int gesamt, String bytes) {
+    return '$anzahl of $gesamt checked local originals can be released: $bytes.';
+  }
+
+  @override
+  String get schutzNachFreigabe =>
+      'After release, the external originals remain linked to the catalog. Connect that location to open originals. The additional backup remains a recovery copy. Locked and trashed photos are excluded.';
+
+  @override
+  String get schutzFreigeben => 'Release local storage';
+
+  @override
+  String schutzFreigebenFrage(int anzahl, String bytes) {
+    return 'Remove $anzahl local original files using $bytes? The catalog will refer to the external original location. Both remaining copies are checked again before each removal.';
+  }
+
+  @override
+  String schutzFreigegeben(int anzahl, String bytes) {
+    return 'Removed $anzahl local files and released $bytes.';
+  }
+
+  @override
+  String schutzKopiert(int anzahl) {
+    return 'Created or verified $anzahl original copies.';
+  }
+
+  @override
+  String get schutzSicherungAngelegt =>
+      'Backup run finished. Content verification will show which originals are fully protected.';
+
+  @override
+  String get schutzAbgebrochen =>
+      'Operation canceled. Completed copies are retained.';
+
+  @override
+  String get schutzDatentraeger =>
+      'The drives could not be distinguished. Choose separate drives; two folders on the same drive are insufficient.';
+
+  @override
+  String get schutzBestaetigungFehlt =>
+      'Confirm the physical independence of the drives first.';
+
+  @override
+  String get schutzKonflikt =>
+      'A file or its location changed. Verify the copies again before releasing storage.';
+
+  @override
+  String get schutzKopieFehlt =>
+      'A required recovery copy is missing or its content changed. The local file is retained.';
+
+  @override
+  String get schutzZielFehler =>
+      'The destination is unavailable or unsuitable. Choose a folder outside the library.';
+
+  @override
+  String get schutzFehler =>
+      'The operation could not finish. Check the destination, passphrase and free space.';
+
+  @override
+  String get datierungErklaerung =>
+      'A known calendar range receives no invented time. The original file and original timestamp are retained. Timeline ranges appear at their beginning; search covers the full range.';
+
+  @override
+  String get datierungTag => 'Day';
+
+  @override
+  String get datierungMonat => 'Month';
+
+  @override
+  String get datierungJahr => 'Year';
+
+  @override
+  String get datierungZeitraum => 'Range';
+
+  @override
+  String get datierungManuell => 'Manual entry';
+
+  @override
+  String get datierungBeschriftung => 'Photo inscription';
+
+  @override
+  String get datierungUeberlieferung => 'Family account';
+
+  @override
+  String get datierungDatei => 'File metadata';
+
+  @override
+  String get datierungDateiname => 'Filename';
+
+  @override
+  String get datierungUnbekannt => 'Unknown';
+
+  @override
+  String get datierungQuelle => 'Source';
+
+  @override
+  String get datierungHinweis => 'Provenance note';
+
+  @override
+  String get datierungVon => 'Year, month or beginning';
+
+  @override
+  String get datierungBis => 'End, inclusive';
+
+  @override
+  String get datierungUngueltig => 'Please enter a valid calendar range.';
+
+  @override
+  String get exportRaw16 => '16-bit TIFF from RAW original (neutral, linear)';
+
+  @override
+  String get sucheExakterIndex =>
+      'Optional exact search index: building takes time and memory; may be faster or slower depending on the collection.';
+
+  @override
+  String get datierungBeispielJahr => '1985';
+
+  @override
+  String get datierungBeispielMonat => '1985-06';
+
+  @override
+  String get datierungBeispielTag => '1985-06-15';
 }

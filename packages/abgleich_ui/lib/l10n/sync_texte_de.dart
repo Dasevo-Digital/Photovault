@@ -172,4 +172,69 @@ class SyncTexteDe extends SyncTexte {
   @override
   String get zuGross =>
       'Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern.';
+
+  @override
+  String geraetVersion(String version) {
+    return 'App-Version: $version';
+  }
+
+  @override
+  String get geraetVersionUnbekannt => 'App-Version nicht gemeldet';
+
+  @override
+  String geraetSchema(int schema, int ziel) {
+    return 'Katalogstand: $schema · benötigt: $ziel';
+  }
+
+  @override
+  String get geraetSchemaUnbekannt => 'Katalogstand nicht gemeldet';
+
+  @override
+  String get geraetAktualisieren =>
+      'App und Server benötigen denselben Katalogstand.';
+
+  @override
+  String geraetOffen(int anzahl) {
+    return 'Zuletzt gemeldete offene Änderungen: $anzahl';
+  }
+
+  @override
+  String get geraetOffenUnbekannt => 'Offene Änderungen nicht gemeldet';
+
+  @override
+  String geraetAbgleich(String zeit) {
+    return 'Erfolgreicher Abgleich gemeldet: $zeit';
+  }
+
+  @override
+  String get geraetKeinAbgleich => 'Kein erfolgreicher Abgleich gemeldet';
+
+  @override
+  String geraetGemeldet(String zeit) {
+    return 'Stand vom $zeit';
+  }
+
+  @override
+  String get geraetStandUnbekannt =>
+      'Aktueller Stand unbekannt. Das Gerät erneut verbinden.';
+
+  @override
+  String get geraetePlanTitel => 'Aktualisierung vorbereiten';
+
+  @override
+  String get geraetePlanText =>
+      'Offene Änderungen zuerst mit dem bisherigen Stand abgleichen. Passende App-Pakete für alle Geräte bereithalten und Server sowie Apps auf denselben Katalogstand bringen.';
+
+  @override
+  String geraetePlanBetroffen(String namen) {
+    return 'Abweichender oder unbekannter Katalogstand: $namen';
+  }
+
+  @override
+  String get geraeteErstAbgleichen =>
+      'Mindestens ein Gerät meldet noch offene Änderungen. Vor einem Wechsel erneut abgleichen und den Stand prüfen.';
+
+  @override
+  String get geraeteHistorisch =>
+      'Die Angaben stammen aus den letzten Gerätemeldungen. Ein nicht verbundenes Gerät kann inzwischen weitere offene Änderungen haben.';
 }

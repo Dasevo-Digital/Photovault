@@ -1,3 +1,4 @@
+import 'package:abgleich_ui/l10n/sync_texte.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -59,7 +60,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         locale: const Locale('de'),
-        localizationsDelegates: AppTexte.localizationsDelegates,
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
         supportedLocales: AppTexte.supportedLocales,
         home: Scaffold(
           body: ListView(

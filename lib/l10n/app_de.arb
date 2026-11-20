@@ -5868,7 +5868,7 @@
   },
   "viewerVideobildSchonDa": "Genau dieses Bild ist schon als Foto gesichert.",
   "viewerVideobildFehler": "Aus dem Video ließ sich an dieser Stelle kein Bild greifen.",
-  "datierungTitel": "Alte Fotos zeitlich einordnen",
+  "datierungTitel": "Datierung festlegen",
   "datierungEinleitung": "Diese Fotos tragen kein echtes Aufnahmedatum – geraten beim Import oder vom Scanner gesetzt – und sehen alt aus. Die Bildsuche schätzt daraus das Jahrzehnt. Angegeben ist eine Spanne; ist sie zu breit, weiß das Modell es nicht, und es gibt nichts zu übernehmen. Übernommen wird die Mitte des Jahres, und das Datum bleibt als geschätzt markiert.",
   "datierungOhneModell": "Für die Schätzung braucht es das Modell der Bildsuche (CLIP). Es lässt sich unter Einstellungen → KI-Modelle laden.",
   "datierungKeine": "Unter den Fotos ohne echtes Aufnahmedatum sieht keines alt aus.",
@@ -7285,5 +7285,142 @@
         "type": "String"
       }
     }
-  }
+  },
+  "restaurGrundSpeicherbudget": "Das vergrößerte Bild benötigt mehr Arbeitsspeicher als für diesen Auftrag vorgesehen. Wähle eine kleinere Ausgabe.",
+  "katalogAbgleichText": "Geplante Prüfungen erstellen eine Vorschau, solange die App geöffnet ist. Neue Dateien werden erst nach Bestätigung katalogisiert. Externe Originale werden nicht verändert.",
+  "katalogAbgleichPruefen": "Änderungen prüfen",
+  "katalogAbgleichPlanen": "Prüfung planen",
+  "katalogAbgleichAus": "Keine geplante Prüfung",
+  "katalogAbgleichIntervall": "Prüfung alle {stunden} Stunden",
+  "@katalogAbgleichIntervall": {
+    "placeholders": {
+      "stunden": {
+        "type": "int"
+      }
+    }
+  },
+  "katalogAbgleichStand": "Vorschau vom {datum}",
+  "@katalogAbgleichStand": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      }
+    }
+  },
+  "katalogAbgleichUnvollstaendig": "Prüfung unvollständig. Fehlende Dateien wurden nicht bewertet.",
+  "katalogAbgleichZahlen": "{neu} neu · {geaendert} verändert · {fehlt} nicht gefunden",
+  "@katalogAbgleichZahlen": {
+    "placeholders": {
+      "neu": {
+        "type": "int"
+      },
+      "geaendert": {
+        "type": "int"
+      },
+      "fehlt": {
+        "type": "int"
+      }
+    }
+  },
+  "katalogAbgleichKonflikte": "Veränderte und nicht gefundene Originale bleiben als Konflikte erhalten. Metadaten und vorhandene Aufnahmen werden nicht überschrieben oder gelöscht.",
+  "katalogAbgleichVorschau": "Änderungsvorschau",
+  "katalogAbgleichMehr": "Die Vorschau zeigt die ersten 100 Einträge.",
+  "katalogAbgleichGeaendert": "Inhalt verändert – Zuordnung prüfen",
+  "katalogAbgleichUebernehmen": "Neue Dateien katalogisieren",
+  "katalogAbgleichFrage": "{anzahl} neue Dateien werden ohne Kopie in den Katalog aufgenommen. Veränderte und fehlende Aufnahmen bleiben unverändert.",
+  "@katalogAbgleichFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "schutzTitel": "Sicherung und Speicherfreigabe planen",
+  "schutzText": "Lege zuerst einen weiteren Originalort und eine zusätzliche Sicherung auf getrennten physischen Datenträgern an. Nach aktueller Prüfung kannst du lokale Originaldateien freigeben. Fotos und Metadaten bleiben im Katalog.",
+  "schutzNurLokal": "Dieser Assistent arbeitet mit einer lokalen Bibliothek und ihren externen Originalverweisen.",
+  "schutzOriginalort": "Externen Originalordner wählen",
+  "schutzSicherungsort": "Vorhandene Sicherung wählen",
+  "schutzSchrittOriginal": "1. Weiteren Originalort anlegen",
+  "schutzSchrittSicherung": "2. Zusätzliche Sicherung anlegen",
+  "schutzSchrittPruefen": "3. Kopien prüfen und Freigabe planen",
+  "schutzKopienAnlegen": "Originalkopien anlegen",
+  "schutzSicherungErstellen": "Bibliothek sichern",
+  "schutzVerschluesselt": "Neue Sicherung mit Passphrase verschlüsseln",
+  "schutzUnabhaengig": "Ich bestätige: Der externe Originalort und die zusätzliche Sicherung liegen auf getrennten physischen Datenträgern, unabhängig von der bisherigen Bibliothek.",
+  "schutzPruefen": "Inhalte prüfen und Plan erstellen",
+  "schutzPlan": "{anzahl} von {gesamt} geprüften lokalen Originalen können freigegeben werden: {bytes}.",
+  "@schutzPlan": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "gesamt": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzNachFreigabe": "Nach der Freigabe bleibt der externe Originalort mit dem Katalog verknüpft. Er muss zum Öffnen der Originale verbunden sein. Die zusätzliche Sicherung bleibt als Rückfallkopie erhalten. Gesperrte Fotos und Papierkorb sind ausgenommen.",
+  "schutzFreigeben": "Lokalen Speicher freigeben",
+  "schutzFreigebenFrage": "{anzahl} lokale Originaldateien mit {bytes} entfernen? Der Katalog verweist danach auf den externen Originalort. Beide verbleibenden Kopien werden vor jedem Entfernen erneut geprüft.",
+  "@schutzFreigebenFrage": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzFreigegeben": "{anzahl} lokale Dateien entfernt, {bytes} freigegeben.",
+  "@schutzFreigegeben": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "bytes": {
+        "type": "String"
+      }
+    }
+  },
+  "schutzKopiert": "{anzahl} Originalkopien angelegt oder inhaltlich bestätigt.",
+  "@schutzKopiert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "schutzSicherungAngelegt": "Sicherungslauf beendet. Die Inhaltsprüfung zeigt, welche Originale vollständig geschützt sind.",
+  "schutzAbgebrochen": "Vorgang abgebrochen. Bereits fertiggestellte Kopien bleiben erhalten.",
+  "schutzDatentraeger": "Die Datenträger konnten nicht eindeutig unterschieden werden. Wähle getrennte Laufwerke; zwei Ordner auf demselben Laufwerk genügen nicht.",
+  "schutzBestaetigungFehlt": "Bestätige zuerst die physische Unabhängigkeit der Datenträger.",
+  "schutzKonflikt": "Datei oder Zuordnung hat sich geändert. Prüfe die Kopien erneut, bevor du Speicher freigibst.",
+  "schutzKopieFehlt": "Eine benötigte Rückfallkopie fehlt oder stimmt inhaltlich nicht mehr. Die lokale Datei bleibt erhalten.",
+  "schutzZielFehler": "Der Zielordner ist nicht erreichbar oder nicht geeignet. Wähle einen Ordner außerhalb der Bibliothek.",
+  "schutzFehler": "Der Vorgang konnte nicht abgeschlossen werden. Prüfe Zielordner, Passphrase und freien Speicher.",
+  "datierungErklaerung": "Ein bekannter Kalenderbereich erhält keine erfundene Uhrzeit. Originaldatei und ursprünglicher Zeitstempel bleiben erhalten. Zeiträume stehen in der Zeitleiste beim Beginn; die Suche berücksichtigt den gesamten Bereich.",
+  "datierungTag": "Tag",
+  "datierungMonat": "Monat",
+  "datierungJahr": "Jahr",
+  "datierungZeitraum": "Zeitraum",
+  "datierungManuell": "Eigene Angabe",
+  "datierungBeschriftung": "Beschriftung des Fotos",
+  "datierungUeberlieferung": "Überlieferung",
+  "datierungDatei": "Dateiangaben",
+  "datierungDateiname": "Dateiname",
+  "datierungUnbekannt": "Unbekannt",
+  "datierungQuelle": "Quelle",
+  "datierungHinweis": "Hinweis zur Herkunft",
+  "datierungVon": "Jahr, Monat oder Beginn",
+  "datierungBis": "Ende einschließlich",
+  "datierungUngueltig": "Bitte einen gültigen Kalenderbereich eingeben.",
+  "exportRaw16": "16-Bit-TIFF aus RAW-Original (neutral, linear)",
+  "sucheExakterIndex": "Optionaler exakter Suchindex: Aufbau benötigt Zeit und Speicher; je nach Bildbestand schneller oder langsamer.",
+  "datierungBeispielJahr": "1985",
+  "datierungBeispielMonat": "1985-06",
+  "datierungBeispielTag": "1985-06-15"
 }

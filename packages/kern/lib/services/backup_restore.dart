@@ -784,6 +784,13 @@ class BackupWiederhersteller {
               DateinameSetzen(assetId, p.basename(originalFileName)),
             );
           }
+          if (entry['datierung'] case final Map d) {
+            await _db.fuehreAus(
+              DatierungSetzen([
+                assetId,
+              ], AufnahmeDatierung.aus(d.cast<String, Object?>())),
+            );
+          }
           if (entry['isFavorite'] == true) {
             await _db.fuehreAus(FavoritSetzen([assetId], true));
           }

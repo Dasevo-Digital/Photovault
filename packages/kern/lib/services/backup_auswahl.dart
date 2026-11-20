@@ -58,6 +58,7 @@ class BackupAuswahl {
     this._quellen,
   );
   final String _wurzel;
+  String get wurzel => _wurzel;
   final SecretKey? _schluessel;
   final List<GesicherteAufnahme> aufnahmen;
   final Map<String, File> _quellen;

@@ -66,5 +66,66 @@
   },
   "wertBreite": "Breitengrad",
   "wertLaenge": "Längengrad",
-  "zuGross": "Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern."
+  "zuGross": "Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern.",
+  "geraetVersion": "App-Version: {version}",
+  "@geraetVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetVersionUnbekannt": "App-Version nicht gemeldet",
+  "geraetSchema": "Katalogstand: {schema} · benötigt: {ziel}",
+  "@geraetSchema": {
+    "placeholders": {
+      "schema": {
+        "type": "int"
+      },
+      "ziel": {
+        "type": "int"
+      }
+    }
+  },
+  "geraetSchemaUnbekannt": "Katalogstand nicht gemeldet",
+  "geraetAktualisieren": "App und Server benötigen denselben Katalogstand.",
+  "geraetOffen": "Zuletzt gemeldete offene Änderungen: {anzahl}",
+  "@geraetOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "geraetOffenUnbekannt": "Offene Änderungen nicht gemeldet",
+  "geraetAbgleich": "Erfolgreicher Abgleich gemeldet: {zeit}",
+  "@geraetAbgleich": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetKeinAbgleich": "Kein erfolgreicher Abgleich gemeldet",
+  "geraetGemeldet": "Stand vom {zeit}",
+  "@geraetGemeldet": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetStandUnbekannt": "Aktueller Stand unbekannt. Das Gerät erneut verbinden.",
+  "geraetePlanTitel": "Aktualisierung vorbereiten",
+  "geraetePlanText": "Offene Änderungen zuerst mit dem bisherigen Stand abgleichen. Passende App-Pakete für alle Geräte bereithalten und Server sowie Apps auf denselben Katalogstand bringen.",
+  "geraetePlanBetroffen": "Abweichender oder unbekannter Katalogstand: {namen}",
+  "@geraetePlanBetroffen": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "geraeteErstAbgleichen": "Mindestens ein Gerät meldet noch offene Änderungen. Vor einem Wechsel erneut abgleichen und den Stand prüfen.",
+  "geraeteHistorisch": "Die Angaben stammen aus den letzten Gerätemeldungen. Ein nicht verbundenes Gerät kann inzwischen weitere offene Änderungen haben."
 }

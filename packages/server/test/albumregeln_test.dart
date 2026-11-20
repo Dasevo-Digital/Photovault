@@ -590,6 +590,7 @@ void main() {
         PRIMARY KEY (besitzer, partner));
       INSERT INTO konten (id, name, angelegt) VALUES ('a', 'a', 1), ('b', 'b', 1);
       INSERT INTO partnerfreigaben VALUES ('a', 'b', 1);
+      CREATE TABLE geraete (id TEXT PRIMARY KEY);
       PRAGMA user_version = 9;
     ''');
     roh.close();

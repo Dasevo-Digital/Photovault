@@ -1,4 +1,6 @@
 import 'package:file_picker/file_picker.dart';
+import 'datierungs_dialog.dart';
+import '../services/datierungstext.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -860,9 +862,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         icon: asset.datumGeschaetzt
                             ? Icons.event_busy_outlined
                             : Icons.calendar_today_outlined,
-                        title: DateFormat.yMMMd(
-                          sprache,
-                        ).format(asset.fileCreatedAt),
+                        title: asset.kalenderdatierung != null
+                            ? datierungstext(asset.kalenderdatierung!, sprache)
+                            : DateFormat.yMMMd(
+                                sprache,
+                              ).format(asset.fileCreatedAt),
                         // Die Zeitzone steht hinter der Uhrzeit, nicht
                         // statt ihrer: Der Zeitstempel ist und bleibt die
                         // ORTSZEIT der Kamera, und die ist die Zeit, an
@@ -870,7 +874,18 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         // dazu, in welcher Zone sie galt - ob die
                         // Aufnahmen aus Mazar-e Sharif um 16 Uhr in
                         // Berlin oder um 18:30 vor Ort entstanden.
-                        subtitle: asset.datumGeschaetzt
+                        subtitle: asset.kalenderdatierung != null
+                            ? [
+                                    datierungsquelletext(
+                                      AppTexte.of(context),
+                                      asset.kalenderdatierung!.quelle,
+                                    ),
+                                    asset.datumHinweis,
+                                  ]
+                                  .whereType<String>()
+                                  .where((s) => s.isNotEmpty)
+                                  .join(' · ')
+                            : asset.datumGeschaetzt
                             ? AppTexte.of(context).infoDatumGeschaetzt
                             : [
                                 DateFormat.E(sprache)
@@ -881,6 +896,21 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                   zeitversatzText(v),
                               ].join(' · '),
                         onEdit: _pickDate,
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.date_range),
+                          label: Text(AppTexte.of(context).datierungTitel),
+                          onPressed: () async {
+                            final d = await frageDatierung(context, _asset);
+                            if (d == null || !mounted) return;
+                            await widget.db.fuehreAus(
+                              DatierungSetzen([_asset.id], d),
+                            );
+                            await _refresh();
+                          },
+                        ),
                       ),
                       if (_datumsvorschlag case final v?)
                         Padding(

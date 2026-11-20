@@ -1,3 +1,5 @@
+import '../services/referenz_abgleich.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:kern/services/bearbeitung_speichern.dart';
 import 'package:kern/services/aufnahmedatum.dart';
 import 'package:kern/abgleich/fallschluessel.dart';
@@ -810,6 +812,8 @@ class LibraryState extends ChangeNotifier {
     _autoBackupTimer?.cancel();
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
+    _referenzAbgleich?.beende();
+    _referenzAbgleich = null;
     _modellFreigabeTimer?.cancel();
     _speicherUhr?.cancel();
     Future<void> mitFrist(String was, Future<void> Function() schritt) async {
@@ -846,6 +850,8 @@ class LibraryState extends ChangeNotifier {
     backupwarnung.value = null;
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
+    _referenzAbgleich?.beende();
+    _referenzAbgleich = null;
     _modellFreigabeTimer?.cancel();
     _vorratsDb?.einbettungsvorratLeeren();
     _autoBackupTimer = null;
@@ -1034,10 +1040,11 @@ class LibraryState extends ChangeNotifier {
     // Hintergrunddienst, der das erledigen könnte.
     if (!verbunden) {
       unawaited(pruefeUeberwachtenOrdner());
-      _ordnerTimer = Timer.periodic(
-        _ordnerIntervall,
-        (_) => pruefeUeberwachtenOrdner(),
-      );
+      unawaited(pruefeReferenzplaene());
+      _ordnerTimer = Timer.periodic(_ordnerIntervall, (_) {
+        unawaited(pruefeUeberwachtenOrdner());
+        unawaited(pruefeReferenzplaene());
+      });
     }
 
     // Gibt KI-Modelle frei, die seit dem letzten Durchlauf nicht mehr in
@@ -1115,6 +1122,12 @@ class LibraryState extends ChangeNotifier {
   Future<void> _verbinde() async {
     final v = verbindung!;
     final s = Serververbindung(v.server, v.token);
+    try {
+      s.clientFassung = (await PackageInfo.fromPlatform()).version;
+    } on Object {
+      /* Alte oder nicht native Prüfumgebungen melden keine Fassung. */
+    }
+
     final ablage = Verbindungsdatei.tokenablage;
     final a = Abgleich(
       db,
@@ -2946,6 +2959,27 @@ class LibraryState extends ChangeNotifier {
   // Überwachter Ordner
   // -----------------------------------------------------------------------
 
+  ReferenzAbgleich? _referenzAbgleich;
+  ReferenzAbgleich? get referenzAbgleich {
+    if (verbunden || paths.referenzen == null) return null;
+    return _referenzAbgleich ??= ReferenzAbgleich(db, paths, importService);
+  }
+
+  Future<void> pruefeReferenzplaene() async {
+    final dienst = referenzAbgleich;
+    if (dienst == null) return;
+    final vorher = dienst.plaene.values.toList();
+    try {
+      await dienst.pruefeFaellige();
+      if (identical(_referenzAbgleich, dienst) &&
+          !listEquals(vorher, dienst.plaene.values.toList())) {
+        notifyListeners();
+      }
+    } on Object {
+      /* Die letzte erfolgreiche Vorschau bleibt erhalten. */
+    }
+  }
+
   Timer? _ordnerTimer;
   bool _ordnerLaeuft = false;
 
@@ -4490,6 +4524,8 @@ class LibraryState extends ChangeNotifier {
     wiederherstellungsprobe.dispose();
     _trashPurgeTimer?.cancel();
     _ordnerTimer?.cancel();
+    _referenzAbgleich?.beende();
+    _referenzAbgleich = null;
     _modellFreigabeTimer?.cancel();
     // Ohne diese Zeile tickt nach jedem Abbau noch drei Minuten eine Uhr
     // weiter – und sie haelt ueber ihren Abschluss genau den

@@ -396,6 +396,102 @@ abstract class SyncTexte {
   /// In de, this message translates to:
   /// **'Zu groß für einen einzelnen Abgleich. Auswahl oder Inhalt verkleinern.'**
   String get zuGross;
+
+  /// No description provided for @geraetVersion.
+  ///
+  /// In de, this message translates to:
+  /// **'App-Version: {version}'**
+  String geraetVersion(String version);
+
+  /// No description provided for @geraetVersionUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'App-Version nicht gemeldet'**
+  String get geraetVersionUnbekannt;
+
+  /// No description provided for @geraetSchema.
+  ///
+  /// In de, this message translates to:
+  /// **'Katalogstand: {schema} · benötigt: {ziel}'**
+  String geraetSchema(int schema, int ziel);
+
+  /// No description provided for @geraetSchemaUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Katalogstand nicht gemeldet'**
+  String get geraetSchemaUnbekannt;
+
+  /// No description provided for @geraetAktualisieren.
+  ///
+  /// In de, this message translates to:
+  /// **'App und Server benötigen denselben Katalogstand.'**
+  String get geraetAktualisieren;
+
+  /// No description provided for @geraetOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt gemeldete offene Änderungen: {anzahl}'**
+  String geraetOffen(int anzahl);
+
+  /// No description provided for @geraetOffenUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Offene Änderungen nicht gemeldet'**
+  String get geraetOffenUnbekannt;
+
+  /// No description provided for @geraetAbgleich.
+  ///
+  /// In de, this message translates to:
+  /// **'Erfolgreicher Abgleich gemeldet: {zeit}'**
+  String geraetAbgleich(String zeit);
+
+  /// No description provided for @geraetKeinAbgleich.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein erfolgreicher Abgleich gemeldet'**
+  String get geraetKeinAbgleich;
+
+  /// No description provided for @geraetGemeldet.
+  ///
+  /// In de, this message translates to:
+  /// **'Stand vom {zeit}'**
+  String geraetGemeldet(String zeit);
+
+  /// No description provided for @geraetStandUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktueller Stand unbekannt. Das Gerät erneut verbinden.'**
+  String get geraetStandUnbekannt;
+
+  /// No description provided for @geraetePlanTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Aktualisierung vorbereiten'**
+  String get geraetePlanTitel;
+
+  /// No description provided for @geraetePlanText.
+  ///
+  /// In de, this message translates to:
+  /// **'Offene Änderungen zuerst mit dem bisherigen Stand abgleichen. Passende App-Pakete für alle Geräte bereithalten und Server sowie Apps auf denselben Katalogstand bringen.'**
+  String get geraetePlanText;
+
+  /// No description provided for @geraetePlanBetroffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Abweichender oder unbekannter Katalogstand: {namen}'**
+  String geraetePlanBetroffen(String namen);
+
+  /// No description provided for @geraeteErstAbgleichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Mindestens ein Gerät meldet noch offene Änderungen. Vor einem Wechsel erneut abgleichen und den Stand prüfen.'**
+  String get geraeteErstAbgleichen;
+
+  /// No description provided for @geraeteHistorisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Angaben stammen aus den letzten Gerätemeldungen. Ein nicht verbundenes Gerät kann inzwischen weitere offene Änderungen haben.'**
+  String get geraeteHistorisch;
 }
 
 class _SyncTexteDelegate extends LocalizationsDelegate<SyncTexte> {

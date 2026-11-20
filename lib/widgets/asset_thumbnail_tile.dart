@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -109,7 +110,9 @@ class _AssetThumbnailTileState extends State<AssetThumbnailTile> {
       t.kachelBeschreibung(
         widget.asset.type == 'VIDEO' ? t.allgVideo : t.allgFoto,
         widget.asset.originalFileName,
-        DateFormat.yMMMMd(sprache).format(widget.asset.fileCreatedAt),
+        widget.asset.datierung != null
+            ? datierungstext(widget.asset.datierung!, sprache)
+            : DateFormat.yMMMMd(sprache).format(widget.asset.fileCreatedAt),
       ),
     ];
     if (widget.asset.type == 'VIDEO' && widget.asset.durationSeconds != null) {

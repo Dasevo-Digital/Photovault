@@ -2,6 +2,25 @@ part of '../database.dart';
 
 /// Aufnahmen, Zeitleiste und die Datenströme, die einen Schwall aushalten.
 extension AufnahmenAbfragen on AppDatabase {
+  Expression<bool> _kalenderjahr(Assets t, int jahr) =>
+      (t.datumVon.isNull() &
+          t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr)) &
+          t.fileCreatedAt.isSmallerThanValue(DateTime(jahr + 1))) |
+      (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr)) &
+          t.datumVon.isSmallerThanValue(DateTime.utc(jahr + 1)));
+  Expression<bool> _kalendermonat(Assets t, int jahr, int monat) {
+    if (monat == 0) {
+      return _kalenderjahr(t, jahr) &
+          t.datumGenauigkeit.isIn(['jahr', 'zeitraum']);
+    }
+    return (t.datumVon.isNull() &
+            t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr, monat)) &
+            t.fileCreatedAt.isSmallerThanValue(DateTime(jahr, monat + 1))) |
+        (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr, monat)) &
+            t.datumVon.isSmallerThanValue(DateTime.utc(jahr, monat + 1)) &
+            t.datumGenauigkeit.isNotIn(['jahr', 'zeitraum']));
+  }
+
   Future<AssetData?> assetById(String id) =>
       (select(assets)..where((t) => t.id.equals(id))).getSingleOrNull();
 
@@ -168,28 +187,31 @@ extension AufnahmenAbfragen on AppDatabase {
   /// auseinanderlaufen koennen; `sortierung_test.dart` haelt sie
   /// zusammen, indem es die erzeugte Abfrage gegen [sortierungSql]
   /// stellt.
-  List<OrderingTerm Function($AssetsTable)> _sortierterme(
-    Rastersortierung s,
-  ) => switch (s) {
-    Rastersortierung.aufnahmeNeu => [(t) => OrderingTerm.desc(t.fileCreatedAt)],
-    Rastersortierung.aufnahmeAlt => [(t) => OrderingTerm.asc(t.fileCreatedAt)],
-    Rastersortierung.importNeu => [
-      (t) => OrderingTerm.desc(t.importedAt),
-      (t) => OrderingTerm.desc(t.fileCreatedAt),
-    ],
-    Rastersortierung.name => [
-      (t) => OrderingTerm.asc(t.originalFileName.collate(Collate.noCase)),
-      (t) => OrderingTerm.desc(t.fileCreatedAt),
-    ],
-    Rastersortierung.bewertung => [
-      (t) => OrderingTerm.desc(t.rating),
-      (t) => OrderingTerm.desc(t.fileCreatedAt),
-    ],
-    Rastersortierung.groesse => [
-      (t) => OrderingTerm.desc(t.fileSizeBytes),
-      (t) => OrderingTerm.desc(t.fileCreatedAt),
-    ],
-  };
+  List<OrderingTerm Function($AssetsTable)> _sortierterme(Rastersortierung s) =>
+      switch (s) {
+        Rastersortierung.aufnahmeNeu => [
+          (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+        Rastersortierung.aufnahmeAlt => [
+          (t) => OrderingTerm.asc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+        Rastersortierung.importNeu => [
+          (t) => OrderingTerm.desc(t.importedAt),
+          (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+        Rastersortierung.name => [
+          (t) => OrderingTerm.asc(t.originalFileName.collate(Collate.noCase)),
+          (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+        Rastersortierung.bewertung => [
+          (t) => OrderingTerm.desc(t.rating),
+          (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+        Rastersortierung.groesse => [
+          (t) => OrderingTerm.desc(t.fileSizeBytes),
+          (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+        ],
+      };
 
   /// Dieselbe Auswahl wie [watchTimeline], aber **nur die Spalten, die
   /// ein Raster anfasst** – siehe [Rasterzeile] für die Messung.
@@ -237,7 +259,7 @@ extension AufnahmenAbfragen on AppDatabase {
   /// Bibliothek 80 ms, die 20 gebrauchten sind 30.
   Future<List<Rasterzeile>> alleRasterzeilen() async => (await customSelect(
     'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar '
-    'ORDER BY file_created_at DESC',
+    'ORDER BY coalesce(datum_von,file_created_at) DESC',
     readsFrom: {assets},
   ).get()).map(Rasterzeile.ausZeile).toList();
 
@@ -249,7 +271,9 @@ extension AufnahmenAbfragen on AppDatabase {
                   t.isLocked.equals(false) &
                   _isPrimaryGridEntry(t),
             )
-            ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]))
+            ..orderBy([
+              (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+            ]))
           .get();
 
   /// Fotos/Videos genau eines Kalenderjahres – im Gegensatz zu
@@ -257,18 +281,17 @@ extension AufnahmenAbfragen on AppDatabase {
   /// YearDetailScreen) direkt als indexgestützte SQL-Bereichsabfrage, die bei
   /// großen Bibliotheken nicht erst alle anderen Jahre mitladen muss.
   Stream<List<AssetData>> watchTimelineForYear(int year) {
-    final start = DateTime(year);
-    final end = DateTime(year + 1);
     final abfrage = select(assets)
       ..where(
         (t) =>
             t.isTrashed.equals(false) &
             t.isLocked.equals(false) &
             _inZeitleiste(t) &
-            t.fileCreatedAt.isBiggerOrEqualValue(start) &
-            t.fileCreatedAt.isSmallerThanValue(end),
+            _kalenderjahr(t, year),
       )
-      ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]);
+      ..orderBy([
+        (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+      ]);
     return _gedrosselt(() => abfrage, TableUpdateQuery.onTable(assets));
   }
 
@@ -317,20 +340,20 @@ extension AufnahmenAbfragen on AppDatabase {
   /// ohne den Modifier interpretiert SQLites strftime() die rohe Zahl als
   /// Julianisches Datum statt als Unix-Zeit und liefert NULL zurück.
   static const _jahrAusdruck = CustomExpression<String>(
-    'CASE WHEN file_created_at >= 0 THEN '
+    "CASE WHEN datum_von IS NOT NULL THEN strftime('%Y', datum_von, 'unixepoch') WHEN file_created_at >= 0 THEN "
     "strftime('%Y', file_created_at, 'unixepoch', 'localtime') END",
   );
 
   /// Wie [_jahrAusdruck], nur der Monat (`01`..`12`).
   static const _monatAusdruck = CustomExpression<String>(
-    'CASE WHEN file_created_at >= 0 THEN '
+    "CASE WHEN datum_von IS NOT NULL THEN CASE WHEN datum_genauigkeit IN ('jahr','zeitraum') THEN '00' ELSE strftime('%m', datum_von, 'unixepoch') END WHEN file_created_at >= 0 THEN "
     "strftime('%m', file_created_at, 'unixepoch', 'localtime') END",
   );
 
   /// Der Zeitstempel einer Aufnahme vor 1970, sonst `NULL` – siehe
   /// [_jahrAusdruck].
   static const _vor1970 = CustomExpression<int>(
-    'CASE WHEN file_created_at < 0 THEN file_created_at END',
+    'CASE WHEN datum_von IS NULL AND file_created_at < 0 THEN file_created_at END',
   );
 
   /// Zählungen je Jahr oder Monat aus einer Abfrage, die nach [teil] und
@@ -492,7 +515,10 @@ extension AufnahmenAbfragen on AppDatabase {
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
             _inZeitleiste(assets) &
-            assets.fileCreatedAt.isBiggerThanValue(asset.fileCreatedAt),
+            coalesce([
+              assets.datumVon,
+              assets.fileCreatedAt,
+            ]).isBiggerThanValue(asset.datumVon ?? asset.fileCreatedAt),
       );
     final row = await query.getSingle();
     return row.read<int>(countExpr) ?? 0;
@@ -511,16 +537,13 @@ extension AufnahmenAbfragen on AppDatabase {
   /// also auch die Monate ([_monatAusdruck]): In UTC gezählt, landete der
   /// 1. Januar um 00:30 innerhalb des Jahres im Dezember.
   Stream<Map<int, int>> watchAssetCountsByMonth(int jahr) {
-    final start = DateTime(jahr);
-    final ende = DateTime(jahr + 1);
     final query = selectOnly(assets)
       ..addColumns([_monatAusdruck, _vor1970, assets.id.count()])
       ..where(
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
             _inZeitleiste(assets) &
-            assets.fileCreatedAt.isBiggerOrEqualValue(start) &
-            assets.fileCreatedAt.isSmallerThanValue(ende),
+            _kalenderjahr(assets, jahr),
       )
       ..groupBy([_monatAusdruck, _vor1970]);
     return query.watch().map(
@@ -540,35 +563,33 @@ extension AufnahmenAbfragen on AppDatabase {
   /// Alle Aufnahmen eines Monats, neueste zuerst – wie
   /// [watchTimelineForYear], nur enger.
   Stream<List<AssetData>> watchTimelineForMonth(int jahr, int monat) {
-    final start = DateTime(jahr, monat);
-    final ende = DateTime(jahr, monat + 1);
     final abfrage = select(assets)
       ..where(
         (t) =>
             t.isTrashed.equals(false) &
             t.isLocked.equals(false) &
             _inZeitleiste(t) &
-            t.fileCreatedAt.isBiggerOrEqualValue(start) &
-            t.fileCreatedAt.isSmallerThanValue(ende),
+            _kalendermonat(t, jahr, monat),
       )
-      ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]);
+      ..orderBy([
+        (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+      ]);
     return _gedrosselt(() => abfrage, TableUpdateQuery.onTable(assets));
   }
 
   /// Titelbild eines Monats – neuestes Foto/Video darin.
   Future<AssetData?> newestAssetForMonth(int jahr, int monat) {
-    final start = DateTime(jahr, monat);
-    final ende = DateTime(jahr, monat + 1);
     return (select(assets)
           ..where(
             (t) =>
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
                 _inZeitleiste(t) &
-                t.fileCreatedAt.isBiggerOrEqualValue(start) &
-                t.fileCreatedAt.isSmallerThanValue(ende),
+                _kalendermonat(t, jahr, monat),
           )
-          ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)])
+          ..orderBy([
+            (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+          ])
           ..limit(1))
         .getSingleOrNull();
   }
@@ -578,18 +599,17 @@ extension AufnahmenAbfragen on AppDatabase {
   /// [watchTimelineForYear], aber auf ein einzelnes Ergebnis begrenzt (pro
   /// Jahr wird dort nur ein Titelbild gebraucht, nicht die volle Liste).
   Future<AssetData?> newestAssetForYear(int year) {
-    final start = DateTime(year);
-    final end = DateTime(year + 1);
     return (select(assets)
           ..where(
             (t) =>
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
                 _inZeitleiste(t) &
-                t.fileCreatedAt.isBiggerOrEqualValue(start) &
-                t.fileCreatedAt.isSmallerThanValue(end),
+                _kalenderjahr(t, year),
           )
-          ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)])
+          ..orderBy([
+            (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+          ])
           ..limit(1))
         .getSingleOrNull();
   }

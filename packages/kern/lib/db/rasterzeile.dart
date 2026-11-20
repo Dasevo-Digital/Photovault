@@ -42,7 +42,7 @@ const String rasterSpalten =
     'thumbnail_relative_path, file_created_at, duration_seconds, '
     'is_favorite, is_stack_cover, stack_id, stack_size, linked_asset_id, '
     'rating, color_label, width_px, height_px, latitude, longitude, '
-    'camera_make, is_locked, dateiformat, '
+    'camera_make, is_locked, dateiformat, datum_von, datum_bis, datum_genauigkeit, datum_quelle, datum_hinweis, '
     'coalesce(restored_relative_path, developed_relative_path, '
     'trimmed_relative_path, preview_relative_path) AS fassung';
 
@@ -92,7 +92,22 @@ class Rasterzeile {
     required this.isLocked,
     this.dateiformat,
     this.fassung,
+    this.datierung,
   });
+
+  final AufnahmeDatierung? datierung;
+  DateTime get sortierZeitpunkt => datierung?.von ?? fileCreatedAt;
+  int get monatsschluessel =>
+      fileCreatedAt.year * 100 +
+      (datierung?.genauigkeit == Datierungsgenauigkeit.jahr ||
+              datierung?.genauigkeit == Datierungsgenauigkeit.zeitraum
+          ? 0
+          : fileCreatedAt.month);
+  int get tagesschluessel =>
+      monatsschluessel * 100 +
+      (datierung != null && datierung!.genauigkeit != Datierungsgenauigkeit.tag
+          ? 0
+          : fileCreatedAt.day);
 
   final String id;
   final String type;
@@ -135,7 +150,8 @@ class Rasterzeile {
     originalFileName: a.originalFileName,
     relativePath: a.relativePath,
     thumbnailRelativePath: a.thumbnailRelativePath,
-    fileCreatedAt: a.fileCreatedAt,
+    fileCreatedAt: a.anzeigeDatum,
+    datierung: a.kalenderdatierung,
     durationSeconds: a.durationSeconds,
     isFavorite: a.isFavorite,
     isStackCover: a.isStackCover,
@@ -171,9 +187,17 @@ class Rasterzeile {
     originalFileName: r.read<String>('original_file_name'),
     relativePath: r.read<String>('relative_path'),
     thumbnailRelativePath: r.readNullable<String>('thumbnail_relative_path'),
-    fileCreatedAt: DateTime.fromMillisecondsSinceEpoch(
-      r.read<int>('file_created_at') * 1000,
-    ),
+    fileCreatedAt: r.readNullable<int>('datum_von') != null
+        ? kalenderAnker(
+            DateTime.fromMillisecondsSinceEpoch(
+              r.read<int>('datum_von') * 1000,
+              isUtc: true,
+            ),
+          )
+        : DateTime.fromMillisecondsSinceEpoch(
+            r.read<int>('file_created_at') * 1000,
+          ),
+    datierung: _rasterDatierung(r),
     durationSeconds: r.readNullable<double>('duration_seconds'),
     isFavorite: r.read<int>('is_favorite') != 0,
     isStackCover: r.read<int>('is_stack_cover') != 0,
@@ -205,4 +229,23 @@ class Rasterzeile {
   // und anderem `isFavorite`, und ein Vergleich zweier Listen fiele auf
   // „nichts geaendert" herein. Die Auswahl arbeitet ohnehin mit
   // Kennungen (siehe Rasterbedienung), nicht mit Objekten.
+}
+
+AufnahmeDatierung? _rasterDatierung(QueryRow r) {
+  final von = r.readNullable<int>('datum_von'),
+      bis = r.readNullable<int>('datum_bis');
+  if (von == null || bis == null) return null;
+  return AufnahmeDatierung.aus({
+    'von': DateTime.fromMillisecondsSinceEpoch(
+      von * 1000,
+      isUtc: true,
+    ).toIso8601String().substring(0, 10),
+    'bis': DateTime.fromMillisecondsSinceEpoch(
+      bis * 1000,
+      isUtc: true,
+    ).toIso8601String().substring(0, 10),
+    'genauigkeit': r.readNullable<String>('datum_genauigkeit'),
+    'quelle': r.readNullable<String>('datum_quelle'),
+    'hinweis': r.readNullable<String>('datum_hinweis'),
+  });
 }

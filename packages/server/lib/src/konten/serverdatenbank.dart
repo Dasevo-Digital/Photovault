@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 11;
+  static const schema = 12;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -325,6 +325,34 @@ class Serverdatenbank {
         PRAGMA user_version = 11;
         COMMIT;
       ''');
+    }
+    if (stand < 12) {
+      final spalten = db
+          .select('PRAGMA table_info(geraete)')
+          .map((r) => r['name'])
+          .toSet();
+      db.execute('BEGIN');
+      try {
+        for (final feld in const {
+          'client_fassung': 'TEXT',
+          'client_schema': 'INTEGER',
+          'client_plattform': 'TEXT',
+          'client_offen': 'INTEGER',
+          'client_gemeldet': 'INTEGER',
+          'client_abgleich': 'INTEGER',
+        }.entries) {
+          if (!spalten.contains(feld.key)) {
+            db.execute(
+              'ALTER TABLE geraete ADD COLUMN ${feld.key} ${feld.value}',
+            );
+          }
+        }
+        db.execute('PRAGMA user_version = 12');
+        db.execute('COMMIT');
+      } on Object {
+        db.execute('ROLLBACK');
+        rethrow;
+      }
     }
   }
 

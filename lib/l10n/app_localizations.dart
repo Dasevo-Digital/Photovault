@@ -14146,7 +14146,7 @@ abstract class AppTexte {
   /// No description provided for @datierungTitel.
   ///
   /// In de, this message translates to:
-  /// **'Alte Fotos zeitlich einordnen'**
+  /// **'Datierung festlegen'**
   String get datierungTitel;
 
   /// No description provided for @datierungEinleitung.
@@ -17445,6 +17445,384 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Bibliotheksdateien von {name}'**
   String speicherinventarDateien(String name);
+
+  /// No description provided for @restaurGrundSpeicherbudget.
+  ///
+  /// In de, this message translates to:
+  /// **'Das vergrößerte Bild benötigt mehr Arbeitsspeicher als für diesen Auftrag vorgesehen. Wähle eine kleinere Ausgabe.'**
+  String get restaurGrundSpeicherbudget;
+
+  /// No description provided for @katalogAbgleichText.
+  ///
+  /// In de, this message translates to:
+  /// **'Geplante Prüfungen erstellen eine Vorschau, solange die App geöffnet ist. Neue Dateien werden erst nach Bestätigung katalogisiert. Externe Originale werden nicht verändert.'**
+  String get katalogAbgleichText;
+
+  /// No description provided for @katalogAbgleichPruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'Änderungen prüfen'**
+  String get katalogAbgleichPruefen;
+
+  /// No description provided for @katalogAbgleichPlanen.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfung planen'**
+  String get katalogAbgleichPlanen;
+
+  /// No description provided for @katalogAbgleichAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine geplante Prüfung'**
+  String get katalogAbgleichAus;
+
+  /// No description provided for @katalogAbgleichIntervall.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfung alle {stunden} Stunden'**
+  String katalogAbgleichIntervall(int stunden);
+
+  /// No description provided for @katalogAbgleichStand.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschau vom {datum}'**
+  String katalogAbgleichStand(String datum);
+
+  /// No description provided for @katalogAbgleichUnvollstaendig.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfung unvollständig. Fehlende Dateien wurden nicht bewertet.'**
+  String get katalogAbgleichUnvollstaendig;
+
+  /// No description provided for @katalogAbgleichZahlen.
+  ///
+  /// In de, this message translates to:
+  /// **'{neu} neu · {geaendert} verändert · {fehlt} nicht gefunden'**
+  String katalogAbgleichZahlen(int neu, int geaendert, int fehlt);
+
+  /// No description provided for @katalogAbgleichKonflikte.
+  ///
+  /// In de, this message translates to:
+  /// **'Veränderte und nicht gefundene Originale bleiben als Konflikte erhalten. Metadaten und vorhandene Aufnahmen werden nicht überschrieben oder gelöscht.'**
+  String get katalogAbgleichKonflikte;
+
+  /// No description provided for @katalogAbgleichVorschau.
+  ///
+  /// In de, this message translates to:
+  /// **'Änderungsvorschau'**
+  String get katalogAbgleichVorschau;
+
+  /// No description provided for @katalogAbgleichMehr.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Vorschau zeigt die ersten 100 Einträge.'**
+  String get katalogAbgleichMehr;
+
+  /// No description provided for @katalogAbgleichGeaendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Inhalt verändert – Zuordnung prüfen'**
+  String get katalogAbgleichGeaendert;
+
+  /// No description provided for @katalogAbgleichUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Dateien katalogisieren'**
+  String get katalogAbgleichUebernehmen;
+
+  /// No description provided for @katalogAbgleichFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} neue Dateien werden ohne Kopie in den Katalog aufgenommen. Veränderte und fehlende Aufnahmen bleiben unverändert.'**
+  String katalogAbgleichFrage(int anzahl);
+
+  /// No description provided for @schutzTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherung und Speicherfreigabe planen'**
+  String get schutzTitel;
+
+  /// No description provided for @schutzText.
+  ///
+  /// In de, this message translates to:
+  /// **'Lege zuerst einen weiteren Originalort und eine zusätzliche Sicherung auf getrennten physischen Datenträgern an. Nach aktueller Prüfung kannst du lokale Originaldateien freigeben. Fotos und Metadaten bleiben im Katalog.'**
+  String get schutzText;
+
+  /// No description provided for @schutzNurLokal.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieser Assistent arbeitet mit einer lokalen Bibliothek und ihren externen Originalverweisen.'**
+  String get schutzNurLokal;
+
+  /// No description provided for @schutzOriginalort.
+  ///
+  /// In de, this message translates to:
+  /// **'Externen Originalordner wählen'**
+  String get schutzOriginalort;
+
+  /// No description provided for @schutzSicherungsort.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorhandene Sicherung wählen'**
+  String get schutzSicherungsort;
+
+  /// No description provided for @schutzSchrittOriginal.
+  ///
+  /// In de, this message translates to:
+  /// **'1. Weiteren Originalort anlegen'**
+  String get schutzSchrittOriginal;
+
+  /// No description provided for @schutzSchrittSicherung.
+  ///
+  /// In de, this message translates to:
+  /// **'2. Zusätzliche Sicherung anlegen'**
+  String get schutzSchrittSicherung;
+
+  /// No description provided for @schutzSchrittPruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'3. Kopien prüfen und Freigabe planen'**
+  String get schutzSchrittPruefen;
+
+  /// No description provided for @schutzKopienAnlegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Originalkopien anlegen'**
+  String get schutzKopienAnlegen;
+
+  /// No description provided for @schutzSicherungErstellen.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek sichern'**
+  String get schutzSicherungErstellen;
+
+  /// No description provided for @schutzVerschluesselt.
+  ///
+  /// In de, this message translates to:
+  /// **'Neue Sicherung mit Passphrase verschlüsseln'**
+  String get schutzVerschluesselt;
+
+  /// No description provided for @schutzUnabhaengig.
+  ///
+  /// In de, this message translates to:
+  /// **'Ich bestätige: Der externe Originalort und die zusätzliche Sicherung liegen auf getrennten physischen Datenträgern, unabhängig von der bisherigen Bibliothek.'**
+  String get schutzUnabhaengig;
+
+  /// No description provided for @schutzPruefen.
+  ///
+  /// In de, this message translates to:
+  /// **'Inhalte prüfen und Plan erstellen'**
+  String get schutzPruefen;
+
+  /// No description provided for @schutzPlan.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} von {gesamt} geprüften lokalen Originalen können freigegeben werden: {bytes}.'**
+  String schutzPlan(int anzahl, int gesamt, String bytes);
+
+  /// No description provided for @schutzNachFreigabe.
+  ///
+  /// In de, this message translates to:
+  /// **'Nach der Freigabe bleibt der externe Originalort mit dem Katalog verknüpft. Er muss zum Öffnen der Originale verbunden sein. Die zusätzliche Sicherung bleibt als Rückfallkopie erhalten. Gesperrte Fotos und Papierkorb sind ausgenommen.'**
+  String get schutzNachFreigabe;
+
+  /// No description provided for @schutzFreigeben.
+  ///
+  /// In de, this message translates to:
+  /// **'Lokalen Speicher freigeben'**
+  String get schutzFreigeben;
+
+  /// No description provided for @schutzFreigebenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} lokale Originaldateien mit {bytes} entfernen? Der Katalog verweist danach auf den externen Originalort. Beide verbleibenden Kopien werden vor jedem Entfernen erneut geprüft.'**
+  String schutzFreigebenFrage(int anzahl, String bytes);
+
+  /// No description provided for @schutzFreigegeben.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} lokale Dateien entfernt, {bytes} freigegeben.'**
+  String schutzFreigegeben(int anzahl, String bytes);
+
+  /// No description provided for @schutzKopiert.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Originalkopien angelegt oder inhaltlich bestätigt.'**
+  String schutzKopiert(int anzahl);
+
+  /// No description provided for @schutzSicherungAngelegt.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungslauf beendet. Die Inhaltsprüfung zeigt, welche Originale vollständig geschützt sind.'**
+  String get schutzSicherungAngelegt;
+
+  /// No description provided for @schutzAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorgang abgebrochen. Bereits fertiggestellte Kopien bleiben erhalten.'**
+  String get schutzAbgebrochen;
+
+  /// No description provided for @schutzDatentraeger.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datenträger konnten nicht eindeutig unterschieden werden. Wähle getrennte Laufwerke; zwei Ordner auf demselben Laufwerk genügen nicht.'**
+  String get schutzDatentraeger;
+
+  /// No description provided for @schutzBestaetigungFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bestätige zuerst die physische Unabhängigkeit der Datenträger.'**
+  String get schutzBestaetigungFehlt;
+
+  /// No description provided for @schutzKonflikt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datei oder Zuordnung hat sich geändert. Prüfe die Kopien erneut, bevor du Speicher freigibst.'**
+  String get schutzKonflikt;
+
+  /// No description provided for @schutzKopieFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine benötigte Rückfallkopie fehlt oder stimmt inhaltlich nicht mehr. Die lokale Datei bleibt erhalten.'**
+  String get schutzKopieFehlt;
+
+  /// No description provided for @schutzZielFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Zielordner ist nicht erreichbar oder nicht geeignet. Wähle einen Ordner außerhalb der Bibliothek.'**
+  String get schutzZielFehler;
+
+  /// No description provided for @schutzFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Vorgang konnte nicht abgeschlossen werden. Prüfe Zielordner, Passphrase und freien Speicher.'**
+  String get schutzFehler;
+
+  /// No description provided for @datierungErklaerung.
+  ///
+  /// In de, this message translates to:
+  /// **'Ein bekannter Kalenderbereich erhält keine erfundene Uhrzeit. Originaldatei und ursprünglicher Zeitstempel bleiben erhalten. Zeiträume stehen in der Zeitleiste beim Beginn; die Suche berücksichtigt den gesamten Bereich.'**
+  String get datierungErklaerung;
+
+  /// No description provided for @datierungTag.
+  ///
+  /// In de, this message translates to:
+  /// **'Tag'**
+  String get datierungTag;
+
+  /// No description provided for @datierungMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'Monat'**
+  String get datierungMonat;
+
+  /// No description provided for @datierungJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'Jahr'**
+  String get datierungJahr;
+
+  /// No description provided for @datierungZeitraum.
+  ///
+  /// In de, this message translates to:
+  /// **'Zeitraum'**
+  String get datierungZeitraum;
+
+  /// No description provided for @datierungManuell.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigene Angabe'**
+  String get datierungManuell;
+
+  /// No description provided for @datierungBeschriftung.
+  ///
+  /// In de, this message translates to:
+  /// **'Beschriftung des Fotos'**
+  String get datierungBeschriftung;
+
+  /// No description provided for @datierungUeberlieferung.
+  ///
+  /// In de, this message translates to:
+  /// **'Überlieferung'**
+  String get datierungUeberlieferung;
+
+  /// No description provided for @datierungDatei.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiangaben'**
+  String get datierungDatei;
+
+  /// No description provided for @datierungDateiname.
+  ///
+  /// In de, this message translates to:
+  /// **'Dateiname'**
+  String get datierungDateiname;
+
+  /// No description provided for @datierungUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Unbekannt'**
+  String get datierungUnbekannt;
+
+  /// No description provided for @datierungQuelle.
+  ///
+  /// In de, this message translates to:
+  /// **'Quelle'**
+  String get datierungQuelle;
+
+  /// No description provided for @datierungHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Hinweis zur Herkunft'**
+  String get datierungHinweis;
+
+  /// No description provided for @datierungVon.
+  ///
+  /// In de, this message translates to:
+  /// **'Jahr, Monat oder Beginn'**
+  String get datierungVon;
+
+  /// No description provided for @datierungBis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ende einschließlich'**
+  String get datierungBis;
+
+  /// No description provided for @datierungUngueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte einen gültigen Kalenderbereich eingeben.'**
+  String get datierungUngueltig;
+
+  /// No description provided for @exportRaw16.
+  ///
+  /// In de, this message translates to:
+  /// **'16-Bit-TIFF aus RAW-Original (neutral, linear)'**
+  String get exportRaw16;
+
+  /// No description provided for @sucheExakterIndex.
+  ///
+  /// In de, this message translates to:
+  /// **'Optionaler exakter Suchindex: Aufbau benötigt Zeit und Speicher; je nach Bildbestand schneller oder langsamer.'**
+  String get sucheExakterIndex;
+
+  /// No description provided for @datierungBeispielJahr.
+  ///
+  /// In de, this message translates to:
+  /// **'1985'**
+  String get datierungBeispielJahr;
+
+  /// No description provided for @datierungBeispielMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'1985-06'**
+  String get datierungBeispielMonat;
+
+  /// No description provided for @datierungBeispielTag.
+  ///
+  /// In de, this message translates to:
+  /// **'1985-06-15'**
+  String get datierungBeispielTag;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

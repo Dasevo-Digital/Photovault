@@ -1,3 +1,5 @@
+import '../services/aufnahme_datierung.dart';
+export '../services/aufnahme_datierung.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -390,12 +392,15 @@ class AppDatabase extends _$AppDatabase {
   }
 
   @override
-  int get schemaVersion => 100;
+  int get schemaVersion => aktuelleSchemaVersion;
+
+  static const aktuelleSchemaVersion = 101;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
+      await _createKalenderIndex();
       await _createPerformanceIndices(m);
       await _createIndicesV14(m);
       await _createIndicesV48(m);
@@ -559,4 +564,22 @@ class AppDatabase extends _$AppDatabase {
     )..where((t) => t.id.equals(0))).getSingleOrNull();
     return row?.autoAnalyzeAfterImport ?? true;
   }
+}
+
+extension AufnahmeKalender on AssetData {
+  AufnahmeDatierung? get kalenderdatierung {
+    if (datumVon == null || datumBis == null || datumGenauigkeit == null) {
+      return null;
+    }
+    return AufnahmeDatierung.aus({
+      'von': datumVon!.toUtc().toIso8601String().substring(0, 10),
+      'bis': datumBis!.toUtc().toIso8601String().substring(0, 10),
+      'genauigkeit': datumGenauigkeit,
+      'quelle': datumQuelle,
+      'hinweis': datumHinweis,
+    });
+  }
+
+  DateTime get anzeigeDatum =>
+      datumVon == null ? fileCreatedAt : kalenderAnker(datumVon!);
 }

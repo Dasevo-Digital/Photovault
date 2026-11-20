@@ -28,15 +28,17 @@ Uint8List mitAufnahmeangaben(Uint8List jpeg, AssetData a) {
   try {
     final exif = img.ExifData();
     exif.imageIfd.orientation = 1;
-    exif.imageIfd['DateTime'] = img.IfdValueAscii(zeit);
+    if (a.datumVon == null) exif.imageIfd['DateTime'] = img.IfdValueAscii(zeit);
     if (a.cameraMake case final m? when m.trim().isNotEmpty) {
       exif.imageIfd.make = m;
     }
     if (a.cameraModel case final m? when m.trim().isNotEmpty) {
       exif.imageIfd.model = m;
     }
-    exif.exifIfd['DateTimeOriginal'] = img.IfdValueAscii(zeit);
-    exif.exifIfd['DateTimeDigitized'] = img.IfdValueAscii(zeit);
+    if (a.datumVon == null) {
+      exif.exifIfd['DateTimeOriginal'] = img.IfdValueAscii(zeit);
+      exif.exifIfd['DateTimeDigitized'] = img.IfdValueAscii(zeit);
+    }
     return img.injectJpgExif(jpeg, exif) ?? jpeg;
   } catch (_) {
     return jpeg;

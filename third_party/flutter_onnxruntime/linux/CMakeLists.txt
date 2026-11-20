@@ -121,17 +121,17 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     message(STATUS "Downloading ONNX Runtime...")
     file(MAKE_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
 
-    # Download the tarball
-    set(ONNXRUNTIME_TARBALL "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime.tgz")
-    file(DOWNLOAD ${ONNXRUNTIME_URL} ${ONNXRUNTIME_TARBALL} SHOW_PROGRESS)
-
-    # Extract the tarball
-    message(STATUS "Extracting ONNX Runtime...")
-    execute_process(COMMAND ${CMAKE_COMMAND} -E tar xzf ${ONNXRUNTIME_TARBALL}
-                    WORKING_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
-
-    # Clean up the tarball
-    file(REMOVE ${ONNXRUNTIME_TARBALL})
+    include("${CMAKE_CURRENT_LIST_DIR}/../cmake/runtime_download.cmake")
+    set(runtime_sha "${ONNXRUNTIME_ARCHIVE_SHA256}")
+    if(ONNXRUNTIME_VERSION STREQUAL "1.28.3" AND "${runtime_sha}" STREQUAL "")
+      if(ONNXRUNTIME_ARCH STREQUAL "x64")
+        set(runtime_sha "db14e4863bd37893fc59729d986ab2a0d043d10b7d44da1913c4982b7e3d009c")
+      elseif(ONNXRUNTIME_ARCH STREQUAL "aarch64")
+        set(runtime_sha "6c6b1ae96d7b0be9f555092857c6a4f2b0b5587a5298d732d9e52e8253038ce7")
+      endif()
+    endif()
+    pv_runtime_download("${ONNXRUNTIME_URL}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.tgz"
+      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}" "${runtime_sha}")
   endif()
 
   # Set paths to the extracted files

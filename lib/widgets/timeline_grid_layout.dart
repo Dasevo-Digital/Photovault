@@ -318,8 +318,6 @@ class TagesbildZeile extends Tageszeile {
   int get anzahl => reihe.plaetze.length;
 }
 
-int _tagesschluessel(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
-
 /// Die Reihen eines Tages, mit Indizes in der Monatsgruppe.
 ///
 /// Bei Quadraten dieselbe Spaltenzahl und Kante wie im Monatsraster – ein
@@ -400,10 +398,9 @@ List<Tageszeile> zeitleisteTageszeilen(
 
   var von = 0;
   while (von < gruppe.length) {
-    final tag = _tagesschluessel(gruppe[von].fileCreatedAt);
+    final tag = gruppe[von].tagesschluessel;
     var bis = von;
-    while (bis + 1 < gruppe.length &&
-        _tagesschluessel(gruppe[bis + 1].fileCreatedAt) == tag) {
+    while (bis + 1 < gruppe.length && gruppe[bis + 1].tagesschluessel == tag) {
       bis++;
     }
     final reihen = _reihenDesTages(

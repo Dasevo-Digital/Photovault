@@ -166,6 +166,7 @@ const Map<String, Befehl<Object?> Function(Map<String, Object?>)> _arten = {
   'bildbeschreibungSetzen': BildbeschreibungSetzen.aus,
   'jahrSchaetzen': JahrSchaetzen.aus,
   'aufnahmedatenSetzen': AufnahmedatenSetzen.aus,
+  'datierungSetzen': DatierungSetzen.aus,
   'dateinameSetzen': DateinameSetzen.aus,
   'inDenPapierkorb': InDenPapierkorb.aus,
   'ausDemPapierkorb': AusDemPapierkorb.aus,

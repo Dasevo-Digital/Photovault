@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'raw_praezision.dart';
 import 'dart:typed_data';
 
 import 'package:path/path.dart' as p;
@@ -30,6 +31,7 @@ import 'package:kern/services/jpeg_icc.dart';
 /// eigener Voreinstellungen wäre ein eigenes Stück Oberfläche.
 enum Exportgroesse {
   original(null),
+  raw16(null),
   gross(4096),
   web(2048),
   email(1024);
@@ -46,6 +48,7 @@ enum Exportgroesse {
 /// verlässlich auseinander.
 String exportgroesseBezeichnung(AppTexte t, Exportgroesse g) => switch (g) {
   Exportgroesse.original => t.exportOriginal,
+  Exportgroesse.raw16 => t.exportRaw16,
   Exportgroesse.gross => t.exportGross,
   Exportgroesse.web => t.exportWeb,
   Exportgroesse.email => t.exportEmail,
@@ -64,6 +67,7 @@ class Exportvorgabe {
   /// Ohne das bleibt die Datei Bit für Bit, wie sie ist – der einzige Weg,
   /// der RAW, Videos und alles Übrige unangetastet lässt.
   final bool nachJpeg;
+  final bool raw16;
 
   /// Längere Bildkante in Pixeln, `null` = nicht begrenzen. Ohne
   /// [nachJpeg] ohne Bedeutung.
@@ -86,6 +90,7 @@ class Exportvorgabe {
 
   const Exportvorgabe({
     this.nachJpeg = false,
+    this.raw16 = false,
     this.maxKante,
     this.qualitaet = 0.9,
     this.namensmuster = '{name}',
@@ -96,8 +101,11 @@ class Exportvorgabe {
 
   /// Die Entsprechung einer der vier festen Grössen – damit der schnelle
   /// Weg und der Voreinstellungs-Weg denselben Code durchlaufen.
-  factory Exportvorgabe.ausGroesse(Exportgroesse g) =>
-      Exportvorgabe(nachJpeg: g.maxKante != null, maxKante: g.maxKante);
+  factory Exportvorgabe.ausGroesse(Exportgroesse g) => Exportvorgabe(
+    nachJpeg: g.maxKante != null,
+    maxKante: g.maxKante,
+    raw16: g == Exportgroesse.raw16,
+  );
 
   factory Exportvorgabe.datenschutz() => const Exportvorgabe(
     nachJpeg: true,
@@ -199,7 +207,15 @@ class ExportService {
     // `maxDimension: null` heisst für den nativen Wandler „nicht
     // begrenzen" – so lässt sich auch in voller Auflösung nach JPEG
     // rendern, was mit der alten Aufzählung nicht ging.
+    if (v.raw16 &&
+        (v.nachJpeg ||
+            v.metadatenEntfernen ||
+            v.gesichterVerdecken ||
+            asset.type != 'IMAGE')) {
+      throw const FormatException('pv_raw16_vorgabe');
+    }
     Uint8List? gerendert;
+    if (v.raw16) gerendert = await RawPraezision.entwickle(sourceFile);
     if ((v.nachJpeg || v.metadatenEntfernen) && asset.type == 'IMAGE') {
       // **Gerendert wird, was man sieht** (#212): restauriert, sonst
       // entwickelt, sonst das Original – wie beim Herunterladen als JPEG
@@ -235,7 +251,7 @@ class ExportService {
       }
     }
 
-    if (gerendert != null) {
+    if (gerendert != null && !v.raw16) {
       gerendert = await (await Farbverwaltung.fuer(
         _paths,
       )).exportiere(gerendert, datenschutz: v.metadatenEntfernen);
@@ -257,7 +273,9 @@ class ExportService {
     // das Rendern fehlgeschlagen (oder war es ein Video), wird kopiert –
     // dann darf dort auch kein `.jpg` stehen.
     final endung = gerendert != null
-        ? '.jpg'
+        ? v.raw16
+              ? '.tiff'
+              : '.jpg'
         : p.extension(asset.originalFileName);
     final zielName = dateiname(
       v.namensmuster,

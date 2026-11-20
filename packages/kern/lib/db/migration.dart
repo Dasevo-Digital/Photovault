@@ -2,6 +2,10 @@ part of 'database.dart';
 
 /// Anlegen und Aufstufen des Schemas: Indizes, Volltextsuche, Hilfen der Migration.
 extension Migrationsschritte on AppDatabase {
+  Future<void> _createKalenderIndex() => customStatement(
+    'CREATE INDEX IF NOT EXISTS idx_assets_kalender ON assets(is_trashed,is_locked,coalesce(datum_von,file_created_at))',
+  );
+
   /// Ohne Statistik hält der Planer „nicht im Papierkorb, nicht gesperrt“
   /// für eine scharfe Bedingung, obwohl sie fast alles trifft, und wählt die
   /// falschen Wege: An 100.000 Fotos kostete allein das die Alben über eine
@@ -1517,6 +1521,20 @@ extension Migrationsschritte on AppDatabase {
       );
       await customStatement(
         'CREATE INDEX IF NOT EXISTS develop_variant_files_path ON develop_variant_files(relative_path)',
+      );
+    }
+    if (from < 101) {
+      for (final (spalte, name) in [
+        (assets.datumVon, 'datum_von'),
+        (assets.datumBis, 'datum_bis'),
+        (assets.datumGenauigkeit, 'datum_genauigkeit'),
+        (assets.datumQuelle, 'datum_quelle'),
+        (assets.datumHinweis, 'datum_hinweis'),
+      ]) {
+        await _addColumnIfMissing(m, assets, spalte, 'assets', name);
+      }
+      await customStatement(
+        'CREATE INDEX IF NOT EXISTS idx_assets_kalender ON assets(is_trashed,is_locked,coalesce(datum_von,file_created_at))',
       );
     }
   }

@@ -337,9 +337,11 @@ void main() {
       const EntwicklungsvarianteEntfernen('a1', 'var-1'),
       const SchnittSpeichern('v1', 1.5, 7.25, 'trimmed/v1-1.mp4'),
       const SchnittZuruecksetzen('v1'),
+      DatierungSetzen(['a1'], AufnahmeDatierung.jahr(1985)),
     ];
 
     String artVon(Befehl<Object?> b) => switch (b) {
+      DatierungSetzen() => 'datierungSetzen',
       EntwicklungsvarianteSpeichern() => 'entwicklungsvarianteSpeichern',
       EntwicklungsvarianteAktivieren() => 'entwicklungsvarianteAktivieren',
       EntwicklungsvarianteEntfernen() => 'entwicklungsvarianteEntfernen',
@@ -971,6 +973,7 @@ const _einordnung = <String, _Art>{
   'setAiCaptionVonHand': _Art.befehl,
   'setzeGeschaetztesJahr': _Art.befehl,
   'setzeAufnahmedaten': _Art.befehl,
+  'setzeDatierung': _Art.befehl,
   'setOriginalFileName': _Art.befehl,
   'moveToTrash': _Art.befehl,
   'restoreFromTrash': _Art.befehl,

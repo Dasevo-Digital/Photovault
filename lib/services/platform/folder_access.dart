@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:convert';
+import 'package:path/path.dart' as p;
 
 import 'folder_access_desktop.dart';
 import 'folder_access_macos.dart';
@@ -14,6 +16,52 @@ class PickedFolder {
   final String path;
   final String token;
   const PickedFolder(this.path, this.token);
+
+  static const _praefix = 'pv-unterordner:1:';
+  static bool _relativ(String wert) =>
+      wert.isNotEmpty &&
+      wert.length <= 4096 &&
+      !p.isAbsolute(wert) &&
+      !wert.contains('\u0000') &&
+      !wert.contains(r'\') &&
+      !wert.contains(':') &&
+      !p.split(p.normalize(wert)).contains('..') &&
+      p.normalize(wert) != '.';
+
+  /// Ein neu angelegter Unterordner erbt ausschließlich den ausdrücklich
+  /// gewählten Elternzugriff. Der gespeicherte Zielpfad bleibt eindeutig.
+  PickedFolder unterordner(String relativ) {
+    if (!_relativ(relativ)) throw const FormatException('pv_ordner_unterpfad');
+    final vorher = teilzugriff(token);
+    final ziel = p.normalize(p.join(vorher?.relativ ?? '', relativ));
+    if (!_relativ(ziel)) throw const FormatException('pv_ordner_unterpfad');
+    return PickedFolder(
+      p.join(path, relativ),
+      token.isEmpty
+          ? ''
+          : '$_praefix${base64Url.encode(utf8.encode(jsonEncode({'token': vorher?.token ?? token, 'relativ': ziel})))}',
+    );
+  }
+
+  static ({String token, String relativ})? teilzugriff(String token) {
+    if (!token.startsWith(_praefix)) return null;
+    if (token.length > 1024 * 1024) {
+      throw const FormatException('pv_ordner_zugriff');
+    }
+    final j =
+        jsonDecode(
+              utf8.decode(base64Url.decode(token.substring(_praefix.length))),
+            )
+            as Map;
+    final basis = j['token'] as String, rel = j['relativ'] as String;
+    if (j.length != 2 ||
+        basis.isEmpty ||
+        basis.startsWith(_praefix) ||
+        !_relativ(rel)) {
+      throw const FormatException('pv_ordner_zugriff');
+    }
+    return (token: basis, relativ: rel);
+  }
 }
 
 /// Plattformabhängiger Zugriff auf einen frei gewählten Bibliotheksordner.

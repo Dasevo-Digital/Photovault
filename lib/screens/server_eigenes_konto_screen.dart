@@ -1,3 +1,5 @@
+import 'package:abgleich_ui/geraetestand_anzeige.dart';
+import 'package:kern/db/database.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/oidc_verknuepfung.dart';
@@ -26,6 +28,7 @@ class ServerEigenesKontoScreen extends StatefulWidget {
 class _ServerEigenesKontoScreenState extends State<ServerEigenesKontoScreen> {
   Map<String, Object?>? _konto;
   List<Map<String, Object?>> _geraete = const [];
+  int _zielSchema = AppDatabase.aktuelleSchemaVersion;
   bool _oidcMoeglich = false;
   bool _verknuepft = false;
   String? _fehler;
@@ -40,10 +43,17 @@ class _ServerEigenesKontoScreenState extends State<ServerEigenesKontoScreen> {
     try {
       final k = await widget.verbindung.hole('api/v1/konto');
       final g = await widget.verbindung.hole('api/v1/geraete');
+      final gemeldetSchema = g['schema'];
+      final zielSchema =
+          gemeldetSchema is int &&
+              gemeldetSchema > AppDatabase.aktuelleSchemaVersion
+          ? gemeldetSchema
+          : AppDatabase.aktuelleSchemaVersion;
       final z = await widget.verbindung.hole('api/v1/zustand');
       if (!mounted) return;
       setState(() {
         _konto = k;
+        _zielSchema = zielSchema;
         _geraete = [
           for (final x in (g['geraete'] as List? ?? const []))
             (x as Map).cast<String, Object?>(),
@@ -154,6 +164,10 @@ class _ServerEigenesKontoScreenState extends State<ServerEigenesKontoScreen> {
                   t.serverGeraeteTitel,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
+                GeraeteAktualisierungsplan(
+                  geraete: _geraete,
+                  zielSchema: _zielSchema,
+                ),
                 for (final g in _geraete)
                   ListTile(
                     leading: const Icon(Icons.devices_other_outlined),
@@ -162,13 +176,20 @@ class _ServerEigenesKontoScreenState extends State<ServerEigenesKontoScreen> {
                           ? '${g['name']} (${t.serverDiesesGeraet})'
                           : '${g['name']}',
                     ),
-                    subtitle: Text(
-                      [
-                        if (DateTime.tryParse('${g['zuletzt']}') case final z?)
-                          t.serverGeraetZuletzt(zeit.format(z.toLocal())),
-                        if ((g['adresse'] ?? '') != '') '${g['adresse']}',
-                      ].join(' · '),
-                      style: TextStyle(color: farben.onSurfaceVariant),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          [
+                            if (DateTime.tryParse('${g['zuletzt']}')
+                                case final z?)
+                              t.serverGeraetZuletzt(zeit.format(z.toLocal())),
+                            if ((g['adresse'] ?? '') != '') '${g['adresse']}',
+                          ].join(' · '),
+                          style: TextStyle(color: farben.onSurfaceVariant),
+                        ),
+                        GeraetestandAnzeige(daten: g, zielSchema: _zielSchema),
+                      ],
                     ),
                     // Dieser Rechner meldet sich über „Trennen“ ab – dort
                     // steht, was mit der Bibliothek geschieht.

@@ -66,5 +66,66 @@
   },
   "wertBreite": "Latitude",
   "wertLaenge": "Longitude",
-  "zuGross": "Too large for a single sync command. Reduce the selection or content."
+  "zuGross": "Too large for a single sync command. Reduce the selection or content.",
+  "geraetVersion": "App version: {version}",
+  "@geraetVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetVersionUnbekannt": "App version not reported",
+  "geraetSchema": "Catalog version: {schema} · required: {ziel}",
+  "@geraetSchema": {
+    "placeholders": {
+      "schema": {
+        "type": "int"
+      },
+      "ziel": {
+        "type": "int"
+      }
+    }
+  },
+  "geraetSchemaUnbekannt": "Catalog version not reported",
+  "geraetAktualisieren": "The app and server need the same catalog version.",
+  "geraetOffen": "Last reported pending changes: {anzahl}",
+  "@geraetOffen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "geraetOffenUnbekannt": "Pending changes not reported",
+  "geraetAbgleich": "Successful sync reported: {zeit}",
+  "@geraetAbgleich": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetKeinAbgleich": "No successful sync reported",
+  "geraetGemeldet": "Status reported {zeit}",
+  "@geraetGemeldet": {
+    "placeholders": {
+      "zeit": {
+        "type": "String"
+      }
+    }
+  },
+  "geraetStandUnbekannt": "Current status unknown. Reconnect this device.",
+  "geraetePlanTitel": "Prepare an update",
+  "geraetePlanText": "Sync pending changes with the existing version first. Have compatible app packages ready for every device, then update the server and apps to the same catalog version.",
+  "geraetePlanBetroffen": "Different or unknown catalog version: {namen}",
+  "@geraetePlanBetroffen": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "geraeteErstAbgleichen": "At least one device reports pending changes. Sync again and check the status before switching.",
+  "geraeteHistorisch": "These details come from the most recent device reports. A disconnected device may have additional pending changes."
 }

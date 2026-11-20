@@ -32,11 +32,13 @@ class Serververbindung {
     this.token, {
     http.Client? client,
     this.downloadStille = const Duration(seconds: 60),
+    this.clientFassung,
   }) : _http = client ?? http.Client();
 
   /// z. B. `https://fotos.example.de/`
   final Uri basis;
   final String token;
+  String? clientFassung;
   final http.Client _http;
 
   Map<String, String> get _kopf => {'authorization': 'Bearer $token'};

@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+import '../services/referenz_abgleich.dart';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
@@ -87,6 +89,7 @@ class _ReferenzKatalogScreenState extends State<ReferenzKatalogScreen> {
         abgebrochen: () => _abbruch,
       );
       await widget.library.paths.referenzen!.merkeZugriff(id, neu.token);
+      await widget.library.referenzAbgleich?.bestaetigeNeueZuordnung(id);
       if (mounted) setState(() => _meldung = t.katalogGeprueft);
     } on Object {
       if (mounted) setState(() => _meldung = t.katalogFehler);
@@ -95,8 +98,217 @@ class _ReferenzKatalogScreenState extends State<ReferenzKatalogScreen> {
     }
   }
 
+  Future<void> _pruefeReferenzen(String id) async {
+    final dienst = widget.library.referenzAbgleich;
+    if (dienst == null) return;
+    setState(() {
+      _arbeitet = true;
+      _abbruch = false;
+      _meldung = null;
+    });
+    try {
+      await dienst.pruefe(
+        id,
+        ausschliessen: _ausschluesse.text.split('\n'),
+        abgebrochen: () => _abbruch || !mounted,
+      );
+    } on ReferenzAbbruch {
+      if (mounted) {
+        setState(() => _meldung = AppTexte.of(context).katalogAbgebrochen);
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _meldung = AppTexte.of(context).katalogFehler);
+      }
+    } finally {
+      if (mounted) setState(() => _arbeitet = false);
+    }
+  }
+
+  Future<void> _planeReferenzen(String id, int stunden) async {
+    try {
+      await widget.library.referenzAbgleich?.plane(
+        id,
+        stunden == 0 ? null : stunden,
+        ausschliessen: _ausschluesse.text.split('\n'),
+      );
+      if (mounted) setState(() {});
+    } on Object {
+      if (mounted) {
+        setState(() => _meldung = AppTexte.of(context).katalogFehler);
+      }
+    }
+  }
+
+  Future<void> _uebernehmePlan(ReferenzPruefplan plan) async {
+    final t = AppTexte.of(context);
+    final n = plan.eintraege
+        .where((e) => e.art == ReferenzAenderung.neu)
+        .length;
+    final ja = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(t.katalogAbgleichUebernehmen),
+        content: Text(t.katalogAbgleichFrage(n)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(t.allgAbbrechen),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(t.allgUebernehmen),
+          ),
+        ],
+      ),
+    );
+    if (ja != true || !mounted) return;
+    setState(() {
+      _arbeitet = true;
+      _abbruch = false;
+    });
+    try {
+      await widget.library.referenzAbgleich?.uebernehmeNeue(
+        plan,
+        abgebrochen: () => _abbruch || !mounted,
+      );
+    } on Object {
+      if (mounted) setState(() => _meldung = t.katalogFehler);
+    } finally {
+      if (mounted) setState(() => _arbeitet = false);
+    }
+  }
+
+  Widget _referenzOrdner(String id, String pfad, bool erlaubt) {
+    final t = AppTexte.of(context);
+    final dienst = widget.library.referenzAbgleich;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: FutureBuilder<void>(
+          future: dienst?.laden(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) return Text(t.katalogFehler);
+            final plan = dienst?.plaene[id];
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SelectableText(pfad),
+                if (dienst?.intervalle[id] case final stunden?)
+                  Text(t.katalogAbgleichIntervall(stunden)),
+                if (plan != null) ...[
+                  Text(
+                    t.katalogAbgleichStand(
+                      DateFormat.yMd(
+                        Localizations.localeOf(context).toString(),
+                      ).add_Hm().format(plan.am.toLocal()),
+                    ),
+                  ),
+                  if (!plan.erreichbar)
+                    Text(t.speicherinventarNichtErreichbar)
+                  else if (!plan.vollstaendig)
+                    Text(t.katalogAbgleichUnvollstaendig)
+                  else ...[
+                    Text(
+                      t.katalogAbgleichZahlen(
+                        plan.eintraege
+                            .where((e) => e.art == ReferenzAenderung.neu)
+                            .length,
+                        plan.eintraege
+                            .where((e) => e.art == ReferenzAenderung.geaendert)
+                            .length,
+                        plan.eintraege
+                            .where((e) => e.art == ReferenzAenderung.fehlt)
+                            .length,
+                      ),
+                    ),
+                    Text(t.katalogAbgleichKonflikte),
+                    if (plan.eintraege.isNotEmpty)
+                      ExpansionTile(
+                        title: Text(t.katalogAbgleichVorschau),
+                        children: [
+                          for (final e in plan.eintraege.take(100))
+                            ListTile(
+                              title: Text(e.relativ),
+                              subtitle: Text(switch (e.art) {
+                                ReferenzAenderung.neu => t.katalogNeu,
+                                ReferenzAenderung.geaendert =>
+                                  t.katalogAbgleichGeaendert,
+                                ReferenzAenderung.fehlt => t.speicherkarteFehlt,
+                              }),
+                            ),
+                          if (plan.eintraege.length > 100)
+                            Text(t.katalogAbgleichMehr),
+                        ],
+                      ),
+                  ],
+                ],
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton(
+                      onPressed: erlaubt && !_arbeitet
+                          ? () => _pruefeReferenzen(id)
+                          : null,
+                      child: Text(t.katalogAbgleichPruefen),
+                    ),
+                    PopupMenuButton<int>(
+                      enabled: erlaubt && !_arbeitet,
+                      tooltip: t.katalogAbgleichPlanen,
+                      onSelected: (v) => _planeReferenzen(id, v),
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 0,
+                          child: Text(t.katalogAbgleichAus),
+                        ),
+                        for (final stunden in [1, 24, 168])
+                          PopupMenuItem(
+                            value: stunden,
+                            child: Text(t.katalogAbgleichIntervall(stunden)),
+                          ),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text(t.katalogAbgleichPlanen),
+                      ),
+                    ),
+                    if (plan != null &&
+                        plan.erreichbar &&
+                        plan.vollstaendig &&
+                        plan.eintraege.any(
+                          (e) => e.art == ReferenzAenderung.neu,
+                        ))
+                      FilledButton(
+                        onPressed: erlaubt && !_arbeitet
+                            ? () => _uebernehmePlan(plan)
+                            : null,
+                        child: Text(t.katalogAbgleichUebernehmen),
+                      ),
+                    TextButton.icon(
+                      onPressed: erlaubt && !_arbeitet
+                          ? () => _neuZuordnen(id)
+                          : null,
+                      icon: const Icon(Icons.drive_file_move_outline),
+                      label: Text(t.katalogNeuZuordnen),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: widget.library,
+    builder: (context, _) => _inhalt(context),
+  );
+
+  Widget _inhalt(BuildContext context) {
     final t = AppTexte.of(context);
     final refs = widget.library.paths.referenzen;
     final erlaubt = !widget.library.verbunden && refs != null;
@@ -109,6 +321,7 @@ class _ReferenzKatalogScreenState extends State<ReferenzKatalogScreen> {
           children: [
             Text(t.katalogText),
             Text(t.katalogGrenzen),
+            Text(t.katalogAbgleichText),
             if (widget.library.verbunden)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -182,19 +395,7 @@ class _ReferenzKatalogScreenState extends State<ReferenzKatalogScreen> {
             if (refs?.ordner.isEmpty ?? true) Text(t.katalogLeer),
             for (final e
                 in refs?.ordner.entries ?? const <MapEntry<String, String>>[])
-              Card(
-                child: ListTile(
-                  leading: const Icon(Icons.folder_outlined),
-                  title: Text(e.value),
-                  trailing: IconButton(
-                    tooltip: t.katalogNeuZuordnen,
-                    onPressed: erlaubt && !_arbeitet
-                        ? () => _neuZuordnen(e.key)
-                        : null,
-                    icon: const Icon(Icons.drive_file_move_outline),
-                  ),
-                ),
-              ),
+              _referenzOrdner(e.key, e.value, erlaubt),
           ],
         ),
       ),

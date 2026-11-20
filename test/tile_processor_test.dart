@@ -1,3 +1,4 @@
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:photo_vault/services/tile_processor.dart';
@@ -186,6 +187,118 @@ void main() {
       for (var i = 1; i < progressCalls.length; i++) {
         expect(progressCalls[i].$1, progressCalls[i - 1].$1 + 1);
       }
+    },
+  );
+  test(
+    'Bandweise Zusammensetzung erhält die bisherigen Referenzpixel bei ungleichen und großen Überlappungen',
+    () async {
+      final referenzen = [
+        (
+          (73, 59, 24, 7, 1),
+          'd639ab1ea7db54e05576540e2ad2bdf2edb7546316fe91adf8ef575640424c9b',
+        ),
+        (
+          (73, 59, 24, 13, 2),
+          'e34152b7a5347cb150246c77023249d8d4f90fb23593e44212be0971022ebcf8',
+        ),
+        (
+          (11, 9, 24, 7, 3),
+          'c6f1e16ae8528418db97e35243904aaa1d6db9d0f3e4506c61bcb84c76b5e42f',
+        ),
+      ];
+      for (final (abmessungen, hash) in referenzen) {
+        final (w, h, t, o, skala) = abmessungen;
+        final quelle = img.Image(width: w, height: h);
+        for (final p in quelle) {
+          p.setRgb(
+            (p.x * 41 + p.y * 13) % 256,
+            (p.x * 7 + p.y * 19) % 256,
+            (p.x * 17 + p.y * 3) % 256,
+          );
+        }
+        var aufruf = 0;
+        final ausgabe = await processInTiles(
+          quelle,
+          tileSize: t,
+          overlap: o,
+          scaleFactor: skala,
+          infer: (kachel) async {
+            final r = img.copyResize(
+              kachel,
+              width: kachel.width * skala,
+              height: kachel.height * skala,
+              interpolation: img.Interpolation.nearest,
+            );
+            final offset = (aufruf++ % 5) * 3;
+            for (final p in r) {
+              p.r = (p.r + offset).clamp(0, 255);
+              p.g = (p.g - offset).clamp(0, 255);
+            }
+            return r;
+          },
+        );
+        expect(
+          sha256.convert(ausgabe.getBytes()).toString(),
+          hash,
+          reason: '$abmessungen',
+        );
+      }
+    },
+  );
+
+  test(
+    'Speicherbudget stoppt vor der ersten Inferenz und erhält die Quelle',
+    () async {
+      final quelle = gradientImage(300, 200);
+      final vorher = sha256.convert(quelle.getBytes()).toString();
+      var aufrufe = 0;
+      await expectLater(
+        processInTiles(
+          quelle,
+          tileSize: 64,
+          overlap: 8,
+          scaleFactor: 4,
+          maxWorkingBytes: 1024,
+          infer: (kachel) async {
+            aufrufe++;
+            return kachel;
+          },
+        ),
+        throwsA(isA<TileMemoryLimit>()),
+      );
+      expect(aufrufe, 0);
+      expect(sha256.convert(quelle.getBytes()).toString(), vorher);
+    },
+  );
+
+  test(
+    'Ungültige Kachelparameter und abweichende Inferenzgröße werden abgefangen',
+    () async {
+      final quelle = gradientImage(30, 20);
+      expect(
+        () => splitIntoTiles(quelle, tileSize: 16, overlap: 16),
+        throwsArgumentError,
+      );
+      await expectLater(
+        processInTiles(
+          quelle,
+          tileSize: 16,
+          overlap: -1,
+          scaleFactor: 1,
+          infer: (t) async => t,
+        ),
+        throwsArgumentError,
+      );
+      await expectLater(
+        processInTiles(
+          quelle,
+          tileSize: 16,
+          overlap: 4,
+          scaleFactor: 2,
+          infer: (t) async => t,
+        ),
+        throwsStateError,
+      );
     },
   );
 }

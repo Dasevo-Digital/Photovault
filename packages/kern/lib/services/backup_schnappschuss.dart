@@ -251,6 +251,19 @@ class BackupSchnappschussSpeicher {
             isUtc: true,
           ).toIso8601String();
         }
+        if (spalten.contains('datum_von') && r['datum_von'] != null) {
+          String tag(String feld) => DateTime.fromMillisecondsSinceEpoch(
+            (r[feld] as int) * 1000,
+            isUtc: true,
+          ).toIso8601String().substring(0, 10);
+          werte['datierung'] = {
+            'von': tag('datum_von'),
+            'bis': tag('datum_bis'),
+            'genauigkeit': r['datum_genauigkeit'],
+            'quelle': r['datum_quelle'],
+            'hinweis': r['datum_hinweis'],
+          };
+        }
         werte['tags'] = tags[id] ?? const <String>[];
         werte['kiTags'] = ki[id] ?? const <String>[];
         // Ältere Stände kennen die Spalten nicht – dann bleibt es leer.

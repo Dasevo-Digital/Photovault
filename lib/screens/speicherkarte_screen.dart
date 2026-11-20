@@ -1,3 +1,4 @@
+import 'speicherschutz_screen.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -250,6 +251,22 @@ class _SpeicherkarteScreenState extends State<SpeicherkarteScreen> {
             Text(
               t.speicherkarteHistorisch,
               style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _prueft
+                  ? null
+                  : () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              SpeicherschutzScreen(library: widget.library),
+                        ),
+                      );
+                      if (mounted) _neu();
+                    },
+              icon: const Icon(Icons.health_and_safety_outlined),
+              label: Text(t.schutzTitel),
             ),
             const SizedBox(height: 24),
             const Divider(),
