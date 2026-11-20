@@ -75,6 +75,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.67.12" date="2026-11-20">
+      <description>
+        <p>Named editing variants preserve adjustments, masks and crops independently of the original.</p>
+        <p>Local working previews allow offline drafts with content checks and conflict protection when reconnecting.</p>
+        <p>External photo folders can be catalogued without copying originals, with exclusions and verified relinking.</p>
+        <p>ICC colour profiles, soft proofing and gamut warnings separate display and JPEG output.</p>
+        <p>An interactive storage map distinguishes original locations, local copies and dated content-verified backups.</p>
+      </description>
+    </release>
     <release version="3.67.11" date="2026-11-19">
       <description>
         <p>Protect locked target metadata during full and selective restore. Validate ZIP headers before decompression and enforce request buffer budgets after authentication.</p>
