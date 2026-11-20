@@ -93,6 +93,8 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
       context,
       t.ortVorschlagAlleFrageTitel,
       t.ortVorschlagAlleFrage(_buendel.length, aufnahmen),
+      bestaetigen: t.allgUebernehmen,
+      destruktiv: false,
     );
     if (!ja || !mounted) return;
     setState(() => _uebernimmtAlle = true);

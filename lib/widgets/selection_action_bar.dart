@@ -227,12 +227,15 @@ class SelectionActionBar extends StatelessWidget {
 /// „Löschen" – der Regelfall. Wo etwas anderes geschieht, muss dort
 /// etwas anderes stehen: „Original wiederherstellen" mit einem Knopf
 /// „Löschen" daneben liest sich, als werde das Original gelöscht.
+/// Rückgängig machbare Gruppierungen und Ergänzungen verwenden mit
+/// [destruktiv] false die normale Aktionsfarbe statt einer Löschwarnung.
 Future<bool> confirmDialog(
   BuildContext context,
   String title,
   String message, {
   Widget? vorschau,
   String? bestaetigen,
+  bool destruktiv = true,
 }) async {
   final result = await showDialog<bool>(
     context: context,
@@ -257,12 +260,19 @@ Future<bool> confirmDialog(
         // gehören zusammen: Wer nur den Grund austauscht, lässt die
         // Schrift auf der Vorgabe stehen.
         FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Theme.of(context).colorScheme.onError,
-          ),
+          style: destruktiv
+              ? FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                )
+              : null,
           onPressed: () => Navigator.pop(context, true),
-          child: Text(bestaetigen ?? AppTexte.of(context).allgLoeschen),
+          child: Text(
+            bestaetigen ??
+                (destruktiv
+                    ? AppTexte.of(context).allgLoeschen
+                    : AppTexte.of(context).allgUebernehmen),
+          ),
         ),
       ],
     ),

@@ -462,6 +462,7 @@ mixin _Verlauf on _EntwickelnBasis {
       context,
       t.entwZuruecksetzenTitel,
       t.entwZuruecksetzenText,
+      bestaetigen: t.einstZuruecksetzen,
     )) {
       return;
     }

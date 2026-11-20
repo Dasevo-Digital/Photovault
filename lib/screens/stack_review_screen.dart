@@ -181,6 +181,8 @@ class _StackReviewScreenState extends State<StackReviewScreen> {
       context,
       t.stapelAlleFrageTitel,
       t.stapelAlleFrage(anzahl),
+      bestaetigen: t.allgUebernehmen,
+      destruktiv: false,
     );
     if (ja) await _uebernimmAlle();
   }

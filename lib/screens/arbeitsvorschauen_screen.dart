@@ -84,6 +84,8 @@ class _ArbeitsvorschauenScreenState extends State<ArbeitsvorschauenScreen> {
               context,
               t.arbeitskopienKonflikt,
               t.arbeitskopienAlsVariante,
+              bestaetigen: t.allgUebernehmen,
+              destruktiv: false,
             )) {
           setState(() => _meldung = t.arbeitskopienKonflikt);
           return;

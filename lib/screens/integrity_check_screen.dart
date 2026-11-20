@@ -249,6 +249,7 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
     final confirmed = await confirmDialog(
       context,
       AppTexte.of(context).integAusDbEntfernenTitel,
+      bestaetigen: AppTexte.of(context).integAusDbEntfernen,
       vorschau: _bestaetigungsbild(
         sicht?.pfad,
         gesperrt: sicht?.gesperrt ?? false,
