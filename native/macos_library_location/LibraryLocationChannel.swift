@@ -74,6 +74,28 @@ class LibraryLocationChannel: NSObject {
                     return
                 }
                 result(resolveBookmark(base64: bookmarkBase64))
+            case "storageVolume":
+                guard let args = call.arguments as? [String: Any],
+                      let path = args["path"] as? String, path.hasPrefix("/") else {
+                    result(nil)
+                    return
+                }
+                DispatchQueue.global(qos: .utility).async {
+                    let data: [String: String]?
+                    do {
+                        let values = try URL(fileURLWithPath: path).resourceValues(
+                            forKeys: [.volumeURLKey, .volumeNameKey, .volumeUUIDStringKey]
+                        )
+                        if let volume = values.volume {
+                            data = [
+                                "path": volume.path,
+                                "name": values.volumeName ?? volume.lastPathComponent,
+                                "id": values.volumeUUIDString ?? volume.path,
+                            ]
+                        } else { data = nil }
+                    } catch { data = nil }
+                    DispatchQueue.main.async { result(data) }
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -130,8 +152,10 @@ class LibraryLocationChannel: NSObject {
             bookmarkDataIsStale: &isStale
         ) else { return nil }
 
-        guard url.startAccessingSecurityScopedResource() else { return nil }
-        accessedURLs.append(url)
+        if !accessedURLs.contains(url) {
+            guard url.startAccessingSecurityScopedResource() else { return nil }
+            accessedURLs.append(url)
+        }
 
         return url.path
     }

@@ -11387,4 +11387,102 @@ class AppTexteDe extends AppTexte {
   @override
   String get integVarianteFehlt =>
       'Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht.';
+
+  @override
+  String get speicherinventarTitel => 'Bibliotheken und Datenträger';
+
+  @override
+  String get speicherinventarText =>
+      'Alle hier bekannten Bibliotheken und ihre gespeicherten Sicherungsziele. Weitere Bibliotheken kannst du hinzufügen.';
+
+  @override
+  String get speicherinventarGeraet => 'Dieses Gerät';
+
+  @override
+  String get speicherinventarLaufwerkUnbekannt =>
+      'Datenträger nicht ermittelbar';
+
+  @override
+  String get speicherinventarHistorisch =>
+      'Zuletzt diesem Datenträger zugeordnet';
+
+  @override
+  String get speicherinventarAktiv => 'Geöffnete Bibliothek';
+
+  @override
+  String get speicherinventarErreichbar => 'Ordner erreichbar';
+
+  @override
+  String get speicherinventarNichtErreichbar =>
+      'Nicht erreichbar oder Zugriff fehlt';
+
+  @override
+  String get speicherinventarKeineNachweise =>
+      'Sicherungsstand nicht ermittelt';
+
+  @override
+  String get speicherinventarListeFehler =>
+      'Einige gespeicherte Ortsangaben konnten nicht geladen oder aktualisiert werden. Die geöffnete Bibliothek bleibt sichtbar.';
+
+  @override
+  String get speicherinventarDetailHinweis =>
+      'Die Fotozahlen und Sicherungsdetails weiter unten beziehen sich auf die geöffnete Bibliothek. Die anderen Bibliotheken werden für diese Übersicht nicht geöffnet.';
+
+  @override
+  String get speicherinventarLaufwerkHinweis =>
+      'Die Gruppierung nach Datenträgern bestätigt noch keine voneinander unabhängigen Sicherungskopien.';
+
+  @override
+  String get speicherinventarAktuelleFotos => 'Fotos der geöffneten Bibliothek';
+
+  @override
+  String speicherinventarBibliothek(String name) {
+    return 'Bibliothek: $name';
+  }
+
+  @override
+  String speicherinventarSicherung(String name) {
+    return 'Sicherungsziel für $name';
+  }
+
+  @override
+  String speicherinventarNachweis(String datum, int anzahl) {
+    final intl.NumberFormat anzahlNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String anzahlString = anzahlNumberFormat.format(anzahl);
+
+    return 'Prüfung vom $datum: $anzahlString bestätigte Originale';
+  }
+
+  @override
+  String get speicherinventarJetztUnter => 'Jetzt unter';
+
+  @override
+  String get speicherinventarWeiterePfade => 'Weitere bekannte Pfade';
+
+  @override
+  String get speicherinventarKeinKatalog => 'Katalogdatei nicht gefunden';
+
+  @override
+  String get speicherinventarHinzufuegen => 'Vorhandene Bibliothek hinzufügen';
+
+  @override
+  String get speicherinventarOrdnerWaehlen =>
+      'Vorhandenen Bibliotheksordner wählen. Er enthält die Datei library.sqlite und den Unterordner library. Fotos werden nicht verschoben.';
+
+  @override
+  String get speicherinventarFalscherOrdner =>
+      'Hier wurde keine Bibliothek gefunden. Wähle den übergeordneten Ordner mit library.sqlite, nicht den Unterordner mit den Originalen.';
+
+  @override
+  String get speicherinventarHinzufuegenFehler =>
+      'Die Bibliothek konnte nicht zur Übersicht hinzugefügt werden. Prüfe den Ordner und die Zugriffsrechte.';
+
+  @override
+  String get speicherinventarDetails => 'Ortsangaben anzeigen';
+
+  @override
+  String speicherinventarDateien(String name) {
+    return 'Bibliotheksdateien von $name';
+  }
 }

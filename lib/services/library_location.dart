@@ -72,6 +72,7 @@ class BibliothekMitZustand {
     required this.erreichbar,
     required this.istAktiv,
     required this.istStandard,
+    this.aufgeloesterPfad,
   });
 
   final Bibliothekseintrag eintrag;
@@ -83,6 +84,9 @@ class BibliothekMitZustand {
   /// gespeicherten Liste – er lässt sich deshalb auch nicht daraus
   /// entfernen, und es gibt ihn immer.
   final bool istStandard;
+
+  /// Tatsächlich erreichbarer Pfad nach Auflösen eines Lesezeichens.
+  final String? aufgeloesterPfad;
 
   /// Ob sich dieser Eintrag aus der Liste streichen lässt. Der
   /// Standardordner nicht (es gibt ihn immer), die aktive Bibliothek auch
@@ -454,21 +458,40 @@ class LibraryLocation {
   ///
   /// Fehlt die Datei oder ist sie unlesbar, ist die Liste leer – die App
   /// arbeitet dann im Standardordner.
-  static Future<({String? aktiv, List<Bibliothekseintrag> liste})>
-  _leseKonfig() async {
+  static Future<({String? aktiv, List<Bibliothekseintrag> liste})> _leseKonfig({
+    bool fehlerMelden = false,
+  }) async {
     final configFile = await _configFile();
     if (!await configFile.exists()) {
       return (aktiv: null, liste: <Bibliothekseintrag>[]);
     }
     try {
-      final json =
-          jsonDecode(await configFile.readAsString()) as Map<String, dynamic>;
+      final String text;
+      if (fehlerMelden) {
+        final teile = <int>[];
+        await for (final block in configFile.openRead()) {
+          if (teile.length + block.length > 1024 * 1024) {
+            throw const FormatException('pv_bibliotheksliste_umfang');
+          }
+          teile.addAll(block);
+        }
+        text = utf8.decode(teile);
+      } else {
+        text = await configFile.readAsString();
+      }
+      final json = jsonDecode(text) as Map<String, dynamic>;
       final roh = json['bibliotheken'] as List<dynamic>?;
       if (roh == null) {
         // Altes Format.
         final pfad = json['path'] as String?;
-        if (pfad == null) return (aktiv: null, liste: <Bibliothekseintrag>[]);
+        if (pfad == null) {
+          if (fehlerMelden) throw const FormatException('pv_bibliotheksliste');
+          return (aktiv: null, liste: <Bibliothekseintrag>[]);
+        }
         return (aktiv: pfad, liste: [Bibliothekseintrag.fromJson(json)]);
+      }
+      if (fehlerMelden && roh.length > 2000) {
+        throw const FormatException('pv_bibliotheksliste_umfang');
       }
       return (
         aktiv: json['aktiv'] as String?,
@@ -477,6 +500,7 @@ class LibraryLocation {
             .toList(),
       );
     } catch (_) {
+      if (fehlerMelden) rethrow;
       return (aktiv: null, liste: <Bibliothekseintrag>[]);
     }
   }
@@ -589,8 +613,10 @@ class LibraryLocation {
   /// sind und welche die aktive ist. Der Standardordner ist immer dabei,
   /// auch wenn er nie ausdrücklich hinzugefügt wurde – sonst liesse sich
   /// aus einer externen Bibliothek nicht mehr zurückwechseln.
-  static Future<List<BibliothekMitZustand>> bekannte() async {
-    final konfig = await _leseKonfig();
+  static Future<List<BibliothekMitZustand>> bekannte({
+    bool fehlerMelden = false,
+  }) async {
+    final konfig = await _leseKonfig(fehlerMelden: fehlerMelden);
     final standard = await _anchorDir();
     final aktiv = konfig.aktiv ?? standard.path;
 
@@ -601,17 +627,23 @@ class LibraryLocation {
 
     final ergebnis = <BibliothekMitZustand>[];
     for (final e in eintraege) {
-      final erreichbar = p.equals(e.path, standard.path)
-          ? true
-          : (await _imEigenenOrdner(e) ??
-                    await _access.resolveRoot(path: e.path, token: e.token)) !=
-                null;
+      String? aufgeloest;
+      try {
+        aufgeloest = p.equals(e.path, standard.path)
+            ? standard.path
+            : await _imEigenenOrdner(e) ??
+                  await _access.resolveRoot(path: e.path, token: e.token);
+      } on Object {
+        aufgeloest = null;
+      }
+      final erreichbar = aufgeloest != null;
       ergebnis.add(
         BibliothekMitZustand(
           eintrag: e,
           erreichbar: erreichbar,
           istAktiv: p.equals(e.path, aktiv),
           istStandard: p.equals(e.path, standard.path),
+          aufgeloesterPfad: aufgeloest,
         ),
       );
     }
@@ -649,8 +681,9 @@ class LibraryLocation {
   static Future<Bibliothekseintrag> fuegeHinzu(
     PickedFolder picked, {
     String? name,
+    bool fehlerMelden = false,
   }) async {
-    final konfig = await _leseKonfig();
+    final konfig = await _leseKonfig(fehlerMelden: fehlerMelden);
     final eintrag = Bibliothekseintrag(
       path: picked.path,
       token: picked.token,
@@ -660,6 +693,9 @@ class LibraryLocation {
       ...konfig.liste.where((e) => !p.equals(e.path, picked.path)),
       eintrag,
     ];
+    if (fehlerMelden && liste.length > 2000) {
+      throw const FormatException('pv_bibliotheksliste_umfang');
+    }
     await _schreibeKonfig(konfig.aktiv, liste);
     return eintrag;
   }

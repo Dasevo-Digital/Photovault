@@ -7228,5 +7228,62 @@
   "zuschnittZiehen": "Im Bild ziehen, um einen Ausschnitt zu wählen. Ein Tippen setzt ihn zurück.",
   "katalogGrenzen": "Externe Originale und ihre Beilagen bleiben unverändert. Für Retusche oder den gesperrten Ordner zuerst eine Kopie in die Bibliothek übernehmen. Die externe Quelldatei bleibt dabei außerhalb des Schutzes.",
   "farbraumP3": "Display P3",
-  "integVarianteFehlt": "Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht."
+  "integVarianteFehlt": "Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht.",
+  "speicherinventarTitel": "Bibliotheken und Datenträger",
+  "speicherinventarText": "Alle hier bekannten Bibliotheken und ihre gespeicherten Sicherungsziele. Weitere Bibliotheken kannst du hinzufügen.",
+  "speicherinventarGeraet": "Dieses Gerät",
+  "speicherinventarLaufwerkUnbekannt": "Datenträger nicht ermittelbar",
+  "speicherinventarHistorisch": "Zuletzt diesem Datenträger zugeordnet",
+  "speicherinventarAktiv": "Geöffnete Bibliothek",
+  "speicherinventarErreichbar": "Ordner erreichbar",
+  "speicherinventarNichtErreichbar": "Nicht erreichbar oder Zugriff fehlt",
+  "speicherinventarKeineNachweise": "Sicherungsstand nicht ermittelt",
+  "speicherinventarListeFehler": "Einige gespeicherte Ortsangaben konnten nicht geladen oder aktualisiert werden. Die geöffnete Bibliothek bleibt sichtbar.",
+  "speicherinventarDetailHinweis": "Die Fotozahlen und Sicherungsdetails weiter unten beziehen sich auf die geöffnete Bibliothek. Die anderen Bibliotheken werden für diese Übersicht nicht geöffnet.",
+  "speicherinventarLaufwerkHinweis": "Die Gruppierung nach Datenträgern bestätigt noch keine voneinander unabhängigen Sicherungskopien.",
+  "speicherinventarAktuelleFotos": "Fotos der geöffneten Bibliothek",
+  "speicherinventarBibliothek": "Bibliothek: {name}",
+  "@speicherinventarBibliothek": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speicherinventarSicherung": "Sicherungsziel für {name}",
+  "@speicherinventarSicherung": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speicherinventarNachweis": "Prüfung vom {datum}: {anzahl} bestätigte Originale",
+  "@speicherinventarNachweis": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "speicherinventarJetztUnter": "Jetzt unter",
+  "speicherinventarWeiterePfade": "Weitere bekannte Pfade",
+  "speicherinventarKeinKatalog": "Katalogdatei nicht gefunden",
+  "speicherinventarHinzufuegen": "Vorhandene Bibliothek hinzufügen",
+  "speicherinventarOrdnerWaehlen": "Vorhandenen Bibliotheksordner wählen. Er enthält die Datei library.sqlite und den Unterordner library. Fotos werden nicht verschoben.",
+  "speicherinventarFalscherOrdner": "Hier wurde keine Bibliothek gefunden. Wähle den übergeordneten Ordner mit library.sqlite, nicht den Unterordner mit den Originalen.",
+  "speicherinventarHinzufuegenFehler": "Die Bibliothek konnte nicht zur Übersicht hinzugefügt werden. Prüfe den Ordner und die Zugriffsrechte.",
+  "speicherinventarDetails": "Ortsangaben anzeigen",
+  "speicherinventarDateien": "Bibliotheksdateien von {name}",
+  "@speicherinventarDateien": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -5568,5 +5568,62 @@
   "zuschnittZiehen": "Drag in the image to select a crop. Tap to reset.",
   "katalogGrenzen": "External originals and sidecars remain unchanged. Copy a photo into the library before retouching or locking it. Its external source remains outside vault protection.",
   "farbraumP3": "Display P3",
-  "integVarianteFehlt": "A variant file is missing or changed. Restore the variant from a backup or remove it in the variants view."
+  "integVarianteFehlt": "A variant file is missing or changed. Restore the variant from a backup or remove it in the variants view.",
+  "speicherinventarTitel": "Libraries and drives",
+  "speicherinventarText": "All libraries known here and their recorded backup destinations. You can add more libraries.",
+  "speicherinventarGeraet": "This device",
+  "speicherinventarLaufwerkUnbekannt": "Drive could not be determined",
+  "speicherinventarHistorisch": "Last associated with this drive",
+  "speicherinventarAktiv": "Open library",
+  "speicherinventarErreichbar": "Folder accessible",
+  "speicherinventarNichtErreichbar": "Unavailable or access not granted",
+  "speicherinventarKeineNachweise": "Backup coverage not determined",
+  "speicherinventarListeFehler": "Some saved location details could not be loaded or updated. The open library remains visible.",
+  "speicherinventarDetailHinweis": "Photo counts and backup details below refer to the open library. Other libraries are not opened for this overview.",
+  "speicherinventarLaufwerkHinweis": "Grouping by drive does not establish that backup copies are independent.",
+  "speicherinventarAktuelleFotos": "Photos in the open library",
+  "speicherinventarBibliothek": "Library: {name}",
+  "@speicherinventarBibliothek": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speicherinventarSicherung": "Backup destination for {name}",
+  "@speicherinventarSicherung": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "speicherinventarNachweis": "Verification on {datum}: {anzahl} confirmed originals",
+  "@speicherinventarNachweis": {
+    "placeholders": {
+      "datum": {
+        "type": "String"
+      },
+      "anzahl": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "speicherinventarJetztUnter": "Now located at",
+  "speicherinventarWeiterePfade": "Other known paths",
+  "speicherinventarKeinKatalog": "Catalog file not found",
+  "speicherinventarHinzufuegen": "Add existing library",
+  "speicherinventarOrdnerWaehlen": "Choose an existing library folder containing library.sqlite and the library subfolder. Photos will not be moved.",
+  "speicherinventarFalscherOrdner": "No library was found here. Choose the parent folder containing library.sqlite, not the subfolder holding originals.",
+  "speicherinventarHinzufuegenFehler": "The library could not be added to the overview. Check the folder and access permissions.",
+  "speicherinventarDetails": "Show location details",
+  "speicherinventarDateien": "Library files for {name}",
+  "@speicherinventarDateien": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

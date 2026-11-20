@@ -80,6 +80,33 @@ class SpeicherkarteStand {
   int get gesamt => fotos.length + gesperrt;
 }
 
+List<Sicherungsnachweis> dekodiereSicherungsnachweise(String text) {
+  final j = jsonDecode(text) as Map;
+  if (j['fassung'] != 1) throw const FormatException('pv_speicherkarte_format');
+  final werte = j['nachweise'] as List;
+  if (werte.length > 20) throw const FormatException('pv_speicherkarte_umfang');
+  return [for (final w in werte) _dekodiereNachweis(w as Map)];
+}
+
+Sicherungsnachweis _dekodiereNachweis(Map v) {
+  final befunde = (v['befunde'] as Map).cast<String, String>();
+  if (befunde.length > 200000 ||
+      befunde.keys.any((s) => !RegExp(r'^[a-f0-9]{64}$').hasMatch(s))) {
+    throw const FormatException('pv_speicherkarte_format');
+  }
+  return Sicherungsnachweis(
+    v['id'] as String,
+    v['ziel'] as String,
+    v['token'] as String? ?? '',
+    DateTime.parse(v['am'] as String),
+    Map.unmodifiable({
+      for (final e in befunde.entries)
+        e.key: Kopienbefund.values.byName(e.value),
+    }),
+    v['vollstaendig'] == true,
+  );
+}
+
 class SpeicherkarteDienst {
   SpeicherkarteDienst(this.db, this.paths, this.nachweisdatei);
   final AppDatabase db;
@@ -103,23 +130,12 @@ class SpeicherkarteDienst {
     if (await nachweisdatei.length() > 32 * 1024 * 1024) {
       throw const FormatException('pv_speicherkarte_umfang');
     }
-    final j = jsonDecode(await nachweisdatei.readAsString()) as Map;
-    if (j['fassung'] != 1) {
-      throw const FormatException('pv_speicherkarte_format');
-    }
-    final werte = j['nachweise'] as List;
-    if (werte.length > 20) {
-      throw const FormatException('pv_speicherkarte_umfang');
-    }
+    final werte = dekodiereSicherungsnachweise(
+      await nachweisdatei.readAsString(),
+    );
     final aus = <Sicherungsnachweis>[];
-    for (final w in werte) {
-      final v = w as Map;
-      final befunde = (v['befunde'] as Map).cast<String, String>();
-      if (befunde.length > 200000 ||
-          befunde.keys.any((s) => !RegExp(r'^[a-f0-9]{64}$').hasMatch(s))) {
-        throw const FormatException('pv_speicherkarte_format');
-      }
-      final ziel = v['ziel'] as String, token = v['token'] as String? ?? '';
+    for (final n in werte) {
+      final ziel = n.ziel, token = n.token;
       String? aufgeloest;
       try {
         aufgeloest = token.isEmpty
@@ -135,15 +151,12 @@ class SpeicherkarteDienst {
           aufgeloest != null && await Directory(aufgeloest).exists();
       aus.add(
         Sicherungsnachweis(
-          v['id'] as String,
+          n.id,
           ziel,
           token,
-          DateTime.parse(v['am'] as String),
-          {
-            for (final e in befunde.entries)
-              e.key: Kopienbefund.values.byName(e.value),
-          },
-          v['vollstaendig'] == true,
+          n.am,
+          n.befunde,
+          n.vollstaendig,
           erreichbar: erreichbar,
         ),
       );

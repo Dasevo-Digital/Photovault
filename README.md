@@ -1199,6 +1199,30 @@ bearbeitetes Foto wird deshalb neu kopiert. Die alte Datei bleibt dabei als
 `….vorher-<Prüfsumme>.jpg` liegen, wenn die Bibliothek ihren Inhalt sonst
 nirgends mehr hat.
 
+## Speicherorte und Sicherungen
+
+**Einstellungen → Speicherorte und Sicherungen** zeigt die geöffneten und
+weiteren auf diesem Gerät bekannten Bibliotheken mit ihren konkreten Pfaden,
+gruppiert nach den vom Betriebssystem gemeldeten Datenträgern. Auch nicht
+verbundene Bibliotheken bleiben sichtbar. Nach einer erfolgreichen Erfassung
+bleibt ihre letzte Laufwerkszuordnung bei abgezogenem Laufwerk als frühere
+Angabe erhalten. Verweisen Bibliotheksdateien über symbolische Verknüpfungen
+auf einen anderen Ort, wird auch dieser angezeigt.
+
+Über **Vorhandene Bibliothek hinzufügen** lässt sich ein bisher nicht erfasster
+Ordner aufnehmen. Gewählt wird der übergeordnete Ordner mit `library.sqlite`
+und `library`, nicht nur der Originalordner. Das Hinzufügen öffnet keinen
+Katalog, wechselt keine Bibliothek und verschiebt keine Fotos. Eine automatische
+Suche über sämtliche Festplatten findet nicht statt.
+
+Gespeicherte Sicherungsprüfungen nennen Ziel, Zeitpunkt und den damals
+bestätigten Umfang. Diese Angaben bestätigen weder den heutigen Inhalt noch
+voneinander unabhängige physische Sicherungsmedien. Fehlt der Zugriff oder die
+Zuordnung, zeigt die Ansicht das ausdrücklich. Inaktive Kataloge werden für
+die Übersicht nicht geöffnet oder migriert; ihre aktuellen Fotozahlen und
+ihr vollständiger Sicherungsstand bleiben deshalb unbestimmt. Die Fotozahlen
+und Detailgruppen darunter gelten für die geöffnete Bibliothek.
+
 ## Wiederherstellungsprobe, Importvorschau und Konflikte
 
 Nach einer vollständigen Sicherung stellt Photo Vault automatisch bis zu drei

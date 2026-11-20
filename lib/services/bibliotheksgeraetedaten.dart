@@ -23,7 +23,7 @@ class Bibliotheksgeraetedaten {
     }
   }
 
-  static Future<String> _lese(Directory root) async {
+  static Future<String?> bestehendeKennung(Directory root) async {
     final datei = File(p.join(root.path, '.standortkennung'));
     final art = await FileSystemEntity.type(datei.path, followLinks: false);
     if (art == FileSystemEntityType.file) {
@@ -39,6 +39,13 @@ class Bibliotheksgeraetedaten {
     if (art != FileSystemEntityType.notFound) {
       throw const FormatException('pv_geraetedaten_pfad');
     }
+    return null;
+  }
+
+  static Future<String> _lese(Directory root) async {
+    final vorhanden = await bestehendeKennung(root);
+    if (vorhanden != null) return vorhanden;
+    final datei = File(p.join(root.path, '.standortkennung'));
     final id = const Uuid().v4(),
         teil = File('${datei.path}.${const Uuid().v4()}.part');
     try {

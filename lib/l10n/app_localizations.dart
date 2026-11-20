@@ -17295,6 +17295,156 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Variantendatei fehlt oder wurde verändert. Stelle die Variante aus einer Sicherung wieder her oder entferne sie in der Variantenübersicht.'**
   String get integVarianteFehlt;
+
+  /// No description provided for @speicherinventarTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliotheken und Datenträger'**
+  String get speicherinventarTitel;
+
+  /// No description provided for @speicherinventarText.
+  ///
+  /// In de, this message translates to:
+  /// **'Alle hier bekannten Bibliotheken und ihre gespeicherten Sicherungsziele. Weitere Bibliotheken kannst du hinzufügen.'**
+  String get speicherinventarText;
+
+  /// No description provided for @speicherinventarGeraet.
+  ///
+  /// In de, this message translates to:
+  /// **'Dieses Gerät'**
+  String get speicherinventarGeraet;
+
+  /// No description provided for @speicherinventarLaufwerkUnbekannt.
+  ///
+  /// In de, this message translates to:
+  /// **'Datenträger nicht ermittelbar'**
+  String get speicherinventarLaufwerkUnbekannt;
+
+  /// No description provided for @speicherinventarHistorisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuletzt diesem Datenträger zugeordnet'**
+  String get speicherinventarHistorisch;
+
+  /// No description provided for @speicherinventarAktiv.
+  ///
+  /// In de, this message translates to:
+  /// **'Geöffnete Bibliothek'**
+  String get speicherinventarAktiv;
+
+  /// No description provided for @speicherinventarErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Ordner erreichbar'**
+  String get speicherinventarErreichbar;
+
+  /// No description provided for @speicherinventarNichtErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht erreichbar oder Zugriff fehlt'**
+  String get speicherinventarNichtErreichbar;
+
+  /// No description provided for @speicherinventarKeineNachweise.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsstand nicht ermittelt'**
+  String get speicherinventarKeineNachweise;
+
+  /// No description provided for @speicherinventarListeFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Einige gespeicherte Ortsangaben konnten nicht geladen oder aktualisiert werden. Die geöffnete Bibliothek bleibt sichtbar.'**
+  String get speicherinventarListeFehler;
+
+  /// No description provided for @speicherinventarDetailHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Fotozahlen und Sicherungsdetails weiter unten beziehen sich auf die geöffnete Bibliothek. Die anderen Bibliotheken werden für diese Übersicht nicht geöffnet.'**
+  String get speicherinventarDetailHinweis;
+
+  /// No description provided for @speicherinventarLaufwerkHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Gruppierung nach Datenträgern bestätigt noch keine voneinander unabhängigen Sicherungskopien.'**
+  String get speicherinventarLaufwerkHinweis;
+
+  /// No description provided for @speicherinventarAktuelleFotos.
+  ///
+  /// In de, this message translates to:
+  /// **'Fotos der geöffneten Bibliothek'**
+  String get speicherinventarAktuelleFotos;
+
+  /// No description provided for @speicherinventarBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliothek: {name}'**
+  String speicherinventarBibliothek(String name);
+
+  /// No description provided for @speicherinventarSicherung.
+  ///
+  /// In de, this message translates to:
+  /// **'Sicherungsziel für {name}'**
+  String speicherinventarSicherung(String name);
+
+  /// No description provided for @speicherinventarNachweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Prüfung vom {datum}: {anzahl} bestätigte Originale'**
+  String speicherinventarNachweis(String datum, int anzahl);
+
+  /// No description provided for @speicherinventarJetztUnter.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt unter'**
+  String get speicherinventarJetztUnter;
+
+  /// No description provided for @speicherinventarWeiterePfade.
+  ///
+  /// In de, this message translates to:
+  /// **'Weitere bekannte Pfade'**
+  String get speicherinventarWeiterePfade;
+
+  /// No description provided for @speicherinventarKeinKatalog.
+  ///
+  /// In de, this message translates to:
+  /// **'Katalogdatei nicht gefunden'**
+  String get speicherinventarKeinKatalog;
+
+  /// No description provided for @speicherinventarHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorhandene Bibliothek hinzufügen'**
+  String get speicherinventarHinzufuegen;
+
+  /// No description provided for @speicherinventarOrdnerWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorhandenen Bibliotheksordner wählen. Er enthält die Datei library.sqlite und den Unterordner library. Fotos werden nicht verschoben.'**
+  String get speicherinventarOrdnerWaehlen;
+
+  /// No description provided for @speicherinventarFalscherOrdner.
+  ///
+  /// In de, this message translates to:
+  /// **'Hier wurde keine Bibliothek gefunden. Wähle den übergeordneten Ordner mit library.sqlite, nicht den Unterordner mit den Originalen.'**
+  String get speicherinventarFalscherOrdner;
+
+  /// No description provided for @speicherinventarHinzufuegenFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek konnte nicht zur Übersicht hinzugefügt werden. Prüfe den Ordner und die Zugriffsrechte.'**
+  String get speicherinventarHinzufuegenFehler;
+
+  /// No description provided for @speicherinventarDetails.
+  ///
+  /// In de, this message translates to:
+  /// **'Ortsangaben anzeigen'**
+  String get speicherinventarDetails;
+
+  /// No description provided for @speicherinventarDateien.
+  ///
+  /// In de, this message translates to:
+  /// **'Bibliotheksdateien von {name}'**
+  String speicherinventarDateien(String name);
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

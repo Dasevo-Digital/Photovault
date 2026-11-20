@@ -7,10 +7,13 @@ import '../l10n/app_localizations.dart';
 import '../services/importquittungen.dart' show Kopienbefund;
 import '../services/platform/folder_access.dart';
 import '../services/speicherkarte.dart';
+import '../services/speicherinventar.dart';
+import '../services/library_location.dart';
 import '../state/library_state.dart';
 import '../widgets/bibliotheksbild.dart';
 import '../widgets/pin_dialogs.dart';
 import '../widgets/speicherkarte_grafik.dart';
+import '../widgets/speicherinventar_grafik.dart';
 import 'arbeitsvorschauen_screen.dart';
 import 'asset_viewer_screen.dart';
 import 'referenz_katalog_screen.dart';
@@ -28,15 +31,69 @@ class _SpeicherkarteScreenState extends State<SpeicherkarteScreen> {
     widget.library.paths,
   );
   late Future<SpeicherkarteStand> _stand = _laden();
+  int _inventarrunde = 0;
+  late Future<SpeicherinventarStand> _inventar = _ladeInventar();
+  bool _merktBibliothek = false;
+
+  Future<SpeicherinventarStand> _ladeInventar() async {
+    final runde = ++_inventarrunde;
+    final privat = await LibraryLocation.datenordner();
+    return Speicherinventar(
+      aktiveWurzel: widget.library.paths.root.parent,
+      privat: privat,
+    ).laden(abgebrochen: () => !mounted || runde != _inventarrunde);
+  }
+
+  Future<void> _hinzufuegen() async {
+    final t = AppTexte.of(context);
+    final ziel = await LibraryLocation.pickFolder(
+      dialogMessage: t.speicherinventarOrdnerWaehlen,
+    );
+    if (ziel == null || !mounted) return;
+    setState(() {
+      _merktBibliothek = true;
+      _meldung = null;
+    });
+    try {
+      final passend = await Speicherinventar.istBibliotheksordner(
+        Directory(ziel.path),
+      );
+      if (!mounted) return;
+      if (!passend) {
+        setState(() => _meldung = t.speicherinventarFalscherOrdner);
+        return;
+      }
+      await LibraryLocation.fuegeHinzu(ziel, fehlerMelden: true);
+      if (mounted) _neu();
+    } on Object {
+      if (mounted) {
+        setState(() => _meldung = t.speicherinventarHinzufuegenFehler);
+      }
+    } finally {
+      if (mounted) setState(() => _merktBibliothek = false);
+    }
+  }
+
   final _fortschritt = ValueNotifier<(int, int)>((0, 0));
   bool _prueft = false, _abbruch = false;
   String? _meldung;
-  Future<SpeicherkarteStand> _laden() async =>
-      (await _dienst).laden(abgebrochen: () => !mounted);
-  void _neu() => setState(() => _stand = _laden());
+  int _standrunde = 0;
+  Future<SpeicherkarteStand> _laden() async {
+    final runde = ++_standrunde;
+    return (await _dienst).laden(
+      abgebrochen: () => !mounted || runde != _standrunde,
+    );
+  }
+
+  void _neu() => setState(() {
+    _stand = _laden();
+    _inventar = _ladeInventar();
+  });
   @override
   void dispose() {
     _abbruch = true;
+    _inventarrunde++;
+    _standrunde++;
     _fortschritt.dispose();
     super.dispose();
   }
@@ -148,172 +205,224 @@ class _SpeicherkarteScreenState extends State<SpeicherkarteScreen> {
             ),
           ],
         ),
-        body: FutureBuilder(
-          future: _stand,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return Center(child: Text(t.speicherkarteFehler));
-            }
-            final stand = snapshot.data;
-            if (stand == null) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            final datum = DateFormat.yMd(
-              Localizations.localeOf(context).toString(),
-            ).add_Hm();
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Text(
-                  t.speicherkarteText,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                SpeicherkarteGrafik(
-                  stand: stand,
-                  beiAuswahl: _prueft ? null : (g) => _auswahl(stand, g),
-                ),
-                Text(t.speicherkarteStandNurDateien),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text(
+              t.speicherinventarTitel,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(t.speicherinventarText),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _prueft || _merktBibliothek ? null : _hinzufuegen,
+              icon: const Icon(Icons.library_add_outlined),
+              label: Text(t.speicherinventarHinzufuegen),
+            ),
+            if (_meldung != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Semantics(liveRegion: true, child: Text(_meldung!)),
+              ),
+            FutureBuilder<SpeicherinventarStand>(
+              future: _inventar,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Text(t.speicherinventarListeFehler);
+                }
+                final stand = snapshot.data;
+                if (stand == null) {
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                return SpeicherinventarGrafik(stand: stand);
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              t.speicherinventarLaufwerkHinweis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              t.speicherkarteHistorisch,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 24),
+            const Divider(),
+            Text(
+              t.speicherinventarAktuelleFotos,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Text(t.speicherinventarDetailHinweis),
+            const SizedBox(height: 12),
+            FutureBuilder<SpeicherkarteStand>(
+              future: _stand,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text(t.speicherkarteFehler));
+                }
+                final stand = snapshot.data;
+                if (stand == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final datum = DateFormat.yMd(
+                  Localizations.localeOf(context).toString(),
+                ).add_Hm();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    FilledButton.icon(
-                      onPressed: _prueft ? null : _pruefen,
-                      icon: const Icon(Icons.verified_user_outlined),
-                      label: Text(t.speicherkartePruefen),
+                    Text(
+                      t.speicherkarteText,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                    OutlinedButton.icon(
-                      onPressed: _prueft
-                          ? null
-                          : () async {
-                              await Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => ReferenzKatalogScreen(
-                                    library: widget.library,
-                                  ),
-                                ),
-                              );
-                              if (mounted) _neu();
-                            },
-                      icon: const Icon(Icons.folder_open_outlined),
-                      label: Text(t.katalogTitel),
+                    const SizedBox(height: 12),
+                    SpeicherkarteGrafik(
+                      stand: stand,
+                      beiAuswahl: _prueft ? null : (g) => _auswahl(stand, g),
                     ),
-                    if (_prueft)
-                      TextButton(
-                        onPressed: () => setState(() => _abbruch = true),
-                        child: Text(
-                          _abbruch
-                              ? t.speicherkarteAbbruchNachDatei
-                              : t.ausbauAbbrechen,
-                        ),
-                      ),
-                  ],
-                ),
-                if (_prueft)
-                  ValueListenableBuilder(
-                    valueListenable: _fortschritt,
-                    builder: (context, w, _) => Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${t.speicherkartePruefungLaeuft} ${w.$1} / ${w.$2}',
-                          ),
-                          LinearProgressIndicator(
-                            value: w.$2 > 0 ? w.$1 / w.$2 : null,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (_meldung != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Semantics(liveRegion: true, child: Text(_meldung!)),
-                  ),
-                if (stand.nachweiseUnlesbar)
-                  Text(t.speicherkarteNachweisUnlesbar),
-                if (stand.arbeitsvorschauenUnlesbar)
-                  Text(t.arbeitskopienFehler),
-                const SizedBox(height: 24),
-                Text(
-                  t.speicherkarteOrte,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                ListTile(
-                  leading: const Icon(Icons.computer_outlined),
-                  title: Text(t.speicherkarteLokal),
-                  subtitle: SelectableText(widget.library.paths.root.path),
-                ),
-                if (widget.library.verbindung case final v?)
-                  ListTile(
-                    leading: const Icon(Icons.cloud_outlined),
-                    title: Text(t.speicherkarteServer),
-                    subtitle: SelectableText(
-                      '${v.server.scheme}://${v.server.host}${v.server.hasPort ? ':${v.server.port}' : ''}',
-                    ),
-                  ),
-                for (final e in stand.originalorte.entries)
-                  ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: SelectableText(e.key),
-                    trailing: Text('${e.value}'),
-                  ),
-                const SizedBox(height: 16),
-                Text(
-                  t.speicherkarteNachweise,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(t.speicherkarteHistorisch),
-                if (stand.nachweise.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(t.speicherkarteKeinZiel),
-                  ),
-                for (final n in stand.nachweise)
-                  Card(
-                    child: ExpansionTile(
-                      leading: Icon(
-                        n.erreichbar
-                            ? Icons.verified_outlined
-                            : Icons.cloud_off_outlined,
-                      ),
-                      title: Text(n.ziel),
-                      subtitle: Text(
-                        '${t.speicherkarteLetztePruefung}: ${datum.format(n.am.toLocal())} · ${n.bestaetigt}${n.erreichbar ? '' : ' · ${t.speicherkarteNichtVerbunden}'}${n.vollstaendig ? '' : ' · ${t.speicherkarteTeilpruefung}'}',
-                      ),
+                    Text(t.speicherkarteStandNurDateien),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        for (final befund in Kopienbefund.values)
-                          ListTile(
-                            title: Text(switch (befund) {
-                              Kopienbefund.bestaetigt =>
-                                t.speicherkarteSicherung,
-                              Kopienbefund.fehlt =>
-                                t.speicherkarteSicherungFehlt,
-                              Kopienbefund.unlesbar => t.katalogFehlerzahl,
-                            }),
-                            trailing: Text(
-                              '${n.befunde.values.where((b) => b == befund).length}',
+                        FilledButton.icon(
+                          onPressed: _prueft ? null : _pruefen,
+                          icon: const Icon(Icons.verified_user_outlined),
+                          label: Text(t.speicherkartePruefen),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: _prueft
+                              ? null
+                              : () async {
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => ReferenzKatalogScreen(
+                                        library: widget.library,
+                                      ),
+                                    ),
+                                  );
+                                  if (mounted) _neu();
+                                },
+                          icon: const Icon(Icons.folder_open_outlined),
+                          label: Text(t.katalogTitel),
+                        ),
+                        if (_prueft)
+                          TextButton(
+                            onPressed: () => setState(() => _abbruch = true),
+                            child: Text(
+                              _abbruch
+                                  ? t.speicherkarteAbbruchNachDatei
+                                  : t.ausbauAbbrechen,
                             ),
-                            onTap: () => _fotos([
-                              for (final f in stand.fotos.values)
-                                if (n.befunde[f.sha256] == befund &&
-                                    !f.papierkorb)
-                                  f.id,
-                            ], t.speicherkarteNachweise),
                           ),
                       ],
                     ),
-                  ),
-                const SizedBox(height: 12),
-                Text('${t.speicherkarteGesperrt} (${stand.gesperrt})'),
-              ],
-            );
-          },
+                    if (_prueft)
+                      ValueListenableBuilder(
+                        valueListenable: _fortschritt,
+                        builder: (context, w, _) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${t.speicherkartePruefungLaeuft} ${w.$1} / ${w.$2}',
+                              ),
+                              LinearProgressIndicator(
+                                value: w.$2 > 0 ? w.$1 / w.$2 : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    if (stand.nachweiseUnlesbar)
+                      Text(t.speicherkarteNachweisUnlesbar),
+                    if (stand.arbeitsvorschauenUnlesbar)
+                      Text(t.arbeitskopienFehler),
+                    const SizedBox(height: 24),
+                    Text(
+                      t.speicherkarteOrte,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.computer_outlined),
+                      title: Text(t.speicherkarteLokal),
+                      subtitle: SelectableText(widget.library.paths.root.path),
+                    ),
+                    if (widget.library.verbindung case final v?)
+                      ListTile(
+                        leading: const Icon(Icons.cloud_outlined),
+                        title: Text(t.speicherkarteServer),
+                        subtitle: SelectableText(
+                          '${v.server.scheme}://${v.server.host}${v.server.hasPort ? ':${v.server.port}' : ''}',
+                        ),
+                      ),
+                    for (final e in stand.originalorte.entries)
+                      ListTile(
+                        leading: const Icon(Icons.folder_outlined),
+                        title: SelectableText(e.key),
+                        trailing: Text('${e.value}'),
+                      ),
+                    const SizedBox(height: 16),
+                    Text(
+                      t.speicherkarteNachweise,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(t.speicherkarteHistorisch),
+                    if (stand.nachweise.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(t.speicherkarteKeinZiel),
+                      ),
+                    for (final n in stand.nachweise)
+                      Card(
+                        child: ExpansionTile(
+                          leading: Icon(
+                            n.erreichbar
+                                ? Icons.verified_outlined
+                                : Icons.cloud_off_outlined,
+                          ),
+                          title: Text(n.ziel),
+                          subtitle: Text(
+                            '${t.speicherkarteLetztePruefung}: ${datum.format(n.am.toLocal())} · ${n.bestaetigt}${n.erreichbar ? '' : ' · ${t.speicherkarteNichtVerbunden}'}${n.vollstaendig ? '' : ' · ${t.speicherkarteTeilpruefung}'}',
+                          ),
+                          children: [
+                            for (final befund in Kopienbefund.values)
+                              ListTile(
+                                title: Text(switch (befund) {
+                                  Kopienbefund.bestaetigt =>
+                                    t.speicherkarteSicherung,
+                                  Kopienbefund.fehlt =>
+                                    t.speicherkarteSicherungFehlt,
+                                  Kopienbefund.unlesbar => t.katalogFehlerzahl,
+                                }),
+                                trailing: Text(
+                                  '${n.befunde.values.where((b) => b == befund).length}',
+                                ),
+                                onTap: () => _fotos([
+                                  for (final f in stand.fotos.values)
+                                    if (n.befunde[f.sha256] == befund &&
+                                        !f.papierkorb)
+                                      f.id,
+                                ], t.speicherkarteNachweise),
+                              ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 12),
+                    Text('${t.speicherkarteGesperrt} (${stand.gesperrt})'),
+                  ],
+                );
+              },
+            ),
+          ],
         ),
       ),
     );

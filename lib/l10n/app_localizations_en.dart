@@ -11322,4 +11322,100 @@ class AppTexteEn extends AppTexte {
   @override
   String get integVarianteFehlt =>
       'A variant file is missing or changed. Restore the variant from a backup or remove it in the variants view.';
+
+  @override
+  String get speicherinventarTitel => 'Libraries and drives';
+
+  @override
+  String get speicherinventarText =>
+      'All libraries known here and their recorded backup destinations. You can add more libraries.';
+
+  @override
+  String get speicherinventarGeraet => 'This device';
+
+  @override
+  String get speicherinventarLaufwerkUnbekannt =>
+      'Drive could not be determined';
+
+  @override
+  String get speicherinventarHistorisch => 'Last associated with this drive';
+
+  @override
+  String get speicherinventarAktiv => 'Open library';
+
+  @override
+  String get speicherinventarErreichbar => 'Folder accessible';
+
+  @override
+  String get speicherinventarNichtErreichbar =>
+      'Unavailable or access not granted';
+
+  @override
+  String get speicherinventarKeineNachweise => 'Backup coverage not determined';
+
+  @override
+  String get speicherinventarListeFehler =>
+      'Some saved location details could not be loaded or updated. The open library remains visible.';
+
+  @override
+  String get speicherinventarDetailHinweis =>
+      'Photo counts and backup details below refer to the open library. Other libraries are not opened for this overview.';
+
+  @override
+  String get speicherinventarLaufwerkHinweis =>
+      'Grouping by drive does not establish that backup copies are independent.';
+
+  @override
+  String get speicherinventarAktuelleFotos => 'Photos in the open library';
+
+  @override
+  String speicherinventarBibliothek(String name) {
+    return 'Library: $name';
+  }
+
+  @override
+  String speicherinventarSicherung(String name) {
+    return 'Backup destination for $name';
+  }
+
+  @override
+  String speicherinventarNachweis(String datum, int anzahl) {
+    final intl.NumberFormat anzahlNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String anzahlString = anzahlNumberFormat.format(anzahl);
+
+    return 'Verification on $datum: $anzahlString confirmed originals';
+  }
+
+  @override
+  String get speicherinventarJetztUnter => 'Now located at';
+
+  @override
+  String get speicherinventarWeiterePfade => 'Other known paths';
+
+  @override
+  String get speicherinventarKeinKatalog => 'Catalog file not found';
+
+  @override
+  String get speicherinventarHinzufuegen => 'Add existing library';
+
+  @override
+  String get speicherinventarOrdnerWaehlen =>
+      'Choose an existing library folder containing library.sqlite and the library subfolder. Photos will not be moved.';
+
+  @override
+  String get speicherinventarFalscherOrdner =>
+      'No library was found here. Choose the parent folder containing library.sqlite, not the subfolder holding originals.';
+
+  @override
+  String get speicherinventarHinzufuegenFehler =>
+      'The library could not be added to the overview. Check the folder and access permissions.';
+
+  @override
+  String get speicherinventarDetails => 'Show location details';
+
+  @override
+  String speicherinventarDateien(String name) {
+    return 'Library files for $name';
+  }
 }
