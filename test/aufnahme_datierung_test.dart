@@ -89,6 +89,16 @@ void main() {
       final r = (await restoredDb.select(restoredDb.assets).get()).single;
       expect(r.kalenderdatierung!.alsJson(), d.alsJson());
       expect(r.fileCreatedAt, a.fileCreatedAt);
+      // Auch der vorhandene Jahresvorschlag muss einen früheren Bereich ersetzen.
+      await db.fuehreAus(JahrSchaetzen(id, 1965));
+      expect(
+        (await db.assetById(id))!.kalenderdatierung!.von,
+        DateTime.utc(1965),
+      );
+      expect(
+        (await db.assetById(id))!.kalenderdatierung!.genauigkeit,
+        Datierungsgenauigkeit.jahr,
+      );
       await db.setAufnahmezeitpunkt(id, DateTime(1986, 4, 5, 12));
       expect((await db.assetById(id))!.kalenderdatierung, isNull);
       await restoredDb.close();

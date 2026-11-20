@@ -76,14 +76,22 @@ extension EinbettungsAbfragen on AppDatabase {
   /// Der 1. Juli statt des 1. Januar: Ein Foto „um 1965" an den Neujahrstag
   /// zu legen, behauptet einen Tag, den niemand kennt, und es fiele in
   /// jeden Jahresrückblick auf genau diesen Tag.
-  Future<void> setzeGeschaetztesJahr(String assetId, int jahr) =>
-      (update(assets)..where((t) => t.id.equals(assetId))).write(
-        AssetsCompanion(
-          fileCreatedAt: Value(DateTime(jahr, 7, 1, 12)),
-          datumGeschaetzt: const Value(true),
-          datumGeprueft: const Value(true),
-        ),
-      );
+  Future<void> setzeGeschaetztesJahr(String assetId, int jahr) async {
+    final d = AufnahmeDatierung.jahr(jahr);
+    await (update(assets)..where((t) => t.id.equals(assetId))).write(
+      AssetsCompanion(
+        // Der bisherige Zeitstempelvertrag bleibt für Ablage/alte Sicherungen.
+        fileCreatedAt: Value(DateTime(jahr, 7, 1, 12)),
+        datumVon: Value(d.von),
+        datumBis: Value(d.bis),
+        datumGenauigkeit: Value(d.genauigkeit.name),
+        datumQuelle: Value(d.quelle.name),
+        datumHinweis: const Value(null),
+        datumGeschaetzt: const Value(true),
+        datumGeprueft: const Value(true),
+      ),
+    );
+  }
 
   /// Fotos ohne CLIP-Embedding – z.B. weil sie importiert wurden, bevor das
   /// CLIP-Modell installiert war (Embeddings werden sonst automatisch beim
