@@ -118,7 +118,8 @@ Future<Response> beschriftungsAnfrage(
           if (besitzer) 'stand': stand.stand,
           if (besitzer)
             'aktuell': switch (v.art) {
-              'jahr' => '${a.fileCreatedAt.year}',
+              'jahr' =>
+                a.kalenderdatierung?.jahresangabe ?? '${a.fileCreatedAt.year}',
               'ort' => a.locationCity ?? '',
               _ => stand.personen.map((p) => p.name).join(', '),
             },

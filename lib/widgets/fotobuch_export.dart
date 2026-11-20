@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -120,7 +121,9 @@ Future<void> fotobuchExportieren(
       wahl,
       ziel: File(pfad),
       untertitel: untertitel,
-      datum: (a) => a.datumGeschaetzt
+      datum: (a) => a.kalenderdatierung != null
+          ? datierungstext(a.kalenderdatierung!, sprache.toString())
+          : a.datumGeschaetzt
           ? t.fotobuchUmJahr(a.fileCreatedAt.year)
           : DateFormat.yMMMMd(sprache.toString()).format(a.fileCreatedAt),
       sprache: sprache.languageCode,

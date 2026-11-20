@@ -424,9 +424,16 @@ class _BetrachterState extends State<Betrachter> {
               // Kurz wie im Browser („12.09.2026“) – rechts stehen fünf
               // Knöpfe.
               title: Text(
-                datumMittel(
-                  Localizations.localeOf(context).toLanguageTag(),
-                ).format(zeile.fileCreatedAt.toLocal()),
+                zeile.datierung != null
+                    ? datierungstext(
+                        zeile.datierung!,
+                        Localizations.localeOf(context).toLanguageTag(),
+                      )
+                    : datumMittel(
+                        Localizations.localeOf(context).toLanguageTag(),
+                      ).format(zeile.fileCreatedAt.toLocal()),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               actions: [
                 if (!widget.imPapierkorb)

@@ -1013,7 +1013,9 @@ class _AufnahmenRasterState extends State<AufnahmenRaster> {
         Listenspalte.dateiname => '',
         // Die Uhrzeit weicht dem Vermerk, wenn das Datum geschätzt ist.
         Listenspalte.datum =>
-          a.geschaetzt
+          z.datierung != null
+              ? datierungstext(z.datierung!, sprache)
+              : a.geschaetzt
               ? '${DateFormat.yMd(sprache).format(z.fileCreatedAt.toLocal())} '
                     '(${t.listeGeschaetzt})'
               : DateFormat.yMd(

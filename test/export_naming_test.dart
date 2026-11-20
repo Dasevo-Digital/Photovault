@@ -12,8 +12,14 @@ AssetData _asset({
   DateTime? aufgenommen,
   String? hersteller,
   String? modell,
+  AufnahmeDatierung? datierung,
 }) {
   return AssetData(
+    datumVon: datierung?.von,
+    datumBis: datierung?.bis,
+    datumGenauigkeit: datierung?.genauigkeit.name,
+    datumQuelle: datierung?.quelle.name,
+    datumHinweis: datierung?.hinweis,
     id: 'a1',
     relativePath: 'originals/2026/03/a1.cr3',
     originalFileName: dateiname,
@@ -48,6 +54,27 @@ AssetData _asset({
 }
 
 void main() {
+  test(
+    'ungefähre Datierung exportiert keine erfundenen Tage oder Uhrzeiten',
+    () {
+      final jahr = _asset(datierung: AufnahmeDatierung.jahr(1985));
+      expect(namenAusMuster('{datum}_{zeit}', jahr, nummer: 1), '1985_');
+      expect(namenAusMuster('{jahr}{monat}{tag}', jahr, nummer: 1), '1985');
+      final monat = _asset(datierung: AufnahmeDatierung.monat(1985, 6));
+      expect(namenAusMuster('{datum}_{zeit}', monat, nummer: 1), '1985-06_');
+      final spanne = _asset(
+        datierung: AufnahmeDatierung.zeitraum(
+          DateTime(1985),
+          DateTime(1989, 12, 31),
+        ),
+      );
+      expect(
+        namenAusMuster('{datum}', spanne, nummer: 1),
+        '1985-01-01_1989-12-31',
+      );
+    },
+  );
+
   test('jeder Baustein setzt ein, was er verspricht', () {
     final a = _asset(hersteller: 'SONY', modell: 'ILCE-6300');
     expect(namenAusMuster('{name}', a, nummer: 1), 'IMG_1234');

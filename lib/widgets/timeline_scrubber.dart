@@ -259,7 +259,12 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
   String _labelFor(int key) {
     final sprache = Localizations.localeOf(context).toString();
     final a = widget.groups[key]!.first;
-    if (a.datierung != null) return datierungstext(a.datierung!, sprache);
+    if (a.monatsschluessel % 100 == 0) {
+      return '${a.fileCreatedAt.year} · ${AppTexte.of(context).datierungTitel}';
+    }
+    if (a.datierung != null && a.datierung!.genauigkeit.name != 'tag') {
+      return datierungstext(a.datierung!, sprache);
+    }
     final wann = a.fileCreatedAt;
     return widget.tageweise
         ? DateFormat.MMMd(sprache).format(wann)

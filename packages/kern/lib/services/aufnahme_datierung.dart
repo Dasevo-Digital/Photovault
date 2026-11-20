@@ -148,6 +148,19 @@ class AufnahmeDatierung {
     Datierungsgenauigkeit.zeitraum =>
       '${tag(von)} – ${tag(bis.subtract(const Duration(days: 1)))}',
   };
+  String get jahresangabe {
+    final letztes = bis.subtract(const Duration(days: 1)).year;
+    return von.year == letztes ? '${von.year}' : '${von.year}–$letztes';
+  }
+
+  /// Dateiname aus den bekannten Kalenderteilen, ohne Uhrzeit oder erfundene Tage.
+  String get dateinamensdatum => switch (genauigkeit) {
+    Datierungsgenauigkeit.jahr => _text(von).substring(0, 4),
+    Datierungsgenauigkeit.monat => _text(von).substring(0, 7),
+    Datierungsgenauigkeit.tag => _text(von),
+    Datierungsgenauigkeit.zeitraum =>
+      '${_text(von)}_${_text(bis.subtract(const Duration(days: 1)))}',
+  };
   bool ueberlappt(DateTime anfang, DateTime endeExklusiv) =>
       von.isBefore(endeExklusiv) && bis.isAfter(anfang);
 }

@@ -1,3 +1,4 @@
+import '../services/datierungstext.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -894,7 +895,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
               // die Zeile sonst über (gemessen bei 800 Punkten Breite).
               Flexible(
                 child: Text(
-                  '${asset.fileCreatedAt.day}.${asset.fileCreatedAt.month}.${asset.fileCreatedAt.year}',
+                  asset.kalenderdatierung != null
+                      ? datierungstext(
+                          asset.kalenderdatierung!,
+                          Localizations.localeOf(context).toLanguageTag(),
+                        )
+                      : '${asset.fileCreatedAt.day}.${asset.fileCreatedAt.month}.${asset.fileCreatedAt.year}',
                   overflow: TextOverflow.ellipsis,
                   softWrap: false,
                 ),

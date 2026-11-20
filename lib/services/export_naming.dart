@@ -59,7 +59,8 @@ final _randmuell = RegExp(r'^[.\s]+|[.\s]+$');
 /// ursprüngliche Dateiname. Ein Export darf nicht an einem unglücklichen
 /// Muster scheitern.
 String namenAusMuster(String muster, AssetData asset, {required int nummer}) {
-  final zeitpunkt = asset.fileCreatedAt;
+  final zeitpunkt = asset.anzeigeDatum;
+  final datierung = asset.kalenderdatierung;
   String zwei(int wert) => wert.toString().padLeft(2, '0');
 
   final werte = <String, String>{
@@ -67,12 +68,25 @@ String namenAusMuster(String muster, AssetData asset, {required int nummer}) {
       asset.originalFileName,
     ),
     Namensbaustein.datum.muster:
+        datierung?.dateinamensdatum ??
         '${zeitpunkt.year}-${zwei(zeitpunkt.month)}-${zwei(zeitpunkt.day)}',
-    Namensbaustein.zeit.muster:
-        '${zwei(zeitpunkt.hour)}${zwei(zeitpunkt.minute)}',
-    Namensbaustein.jahr.muster: '${zeitpunkt.year}',
-    Namensbaustein.monat.muster: zwei(zeitpunkt.month),
-    Namensbaustein.tag.muster: zwei(zeitpunkt.day),
+    Namensbaustein.zeit.muster: datierung == null
+        ? '${zwei(zeitpunkt.hour)}${zwei(zeitpunkt.minute)}'
+        : '',
+    Namensbaustein.jahr.muster:
+        datierung?.jahresangabe.replaceAll('–', '_') ?? '${zeitpunkt.year}',
+    Namensbaustein.monat.muster:
+        datierung != null &&
+            {
+              Datierungsgenauigkeit.jahr,
+              Datierungsgenauigkeit.zeitraum,
+            }.contains(datierung.genauigkeit)
+        ? ''
+        : zwei(zeitpunkt.month),
+    Namensbaustein.tag.muster:
+        datierung != null && datierung.genauigkeit != Datierungsgenauigkeit.tag
+        ? ''
+        : zwei(zeitpunkt.day),
     Namensbaustein.kamera.muster: _kamera(asset),
     Namensbaustein.nummer.muster: nummer.toString().padLeft(4, '0'),
   };
