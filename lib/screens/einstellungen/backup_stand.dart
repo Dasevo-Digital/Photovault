@@ -55,12 +55,26 @@ class _BackupStandAnzeigeState extends State<BackupStandAnzeige> {
     }
   }
 
-  Future<void> _lade() async {
+  /// So lange steht „Wird gezählt …“ nach „Neu zählen“ mindestens da.
+  ///
+  /// Ein kleines Ziel ist in Millisekunden gezählt; ohne diese Frist sah
+  /// man den Hinweis nie, und bei gleichem Ergebnis wirkte der Knopf tot
+  /// (SIC-046).
+  static const _mindestensZaehlen = Duration(milliseconds: 700);
+
+  Future<void> _lade({bool vonHand = false}) async {
     final nummer = ++_lauf;
     final entsperrt = widget.entsperrt;
+    final uhr = Stopwatch()..start();
+    Future<void> frist() async {
+      final rest = _mindestensZaehlen - uhr.elapsed;
+      if (vonHand && rest > Duration.zero) await Future<void>.delayed(rest);
+    }
+
     setState(() => _zaehlt = true);
     try {
       final s = await (entsperrt ? widget.zaehle : widget.gemerkt)(widget.ziel);
+      await frist();
       if (!mounted || nummer != _lauf) return;
       setState(() {
         _stand = s;
@@ -69,6 +83,7 @@ class _BackupStandAnzeigeState extends State<BackupStandAnzeige> {
         _nichtErreichbar = false;
       });
     } on Object {
+      await frist();
       // Eine Platte, die gerade fehlt, ist kein leeres Backup.
       if (!mounted || nummer != _lauf) return;
       setState(() {
@@ -137,7 +152,7 @@ class _BackupStandAnzeigeState extends State<BackupStandAnzeige> {
           ? IconButton(
               tooltip: t.backupStandNeuZaehlen,
               icon: const Icon(Icons.refresh),
-              onPressed: _zaehlt ? null : _lade,
+              onPressed: _zaehlt ? null : () => _lade(vonHand: true),
             )
           : (widget.entsperren == null
                 ? null

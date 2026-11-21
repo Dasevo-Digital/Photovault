@@ -598,7 +598,7 @@ Future<void> _runRestore(Einstellungsstand stand) async {
               passphrase: passphrase,
               generationSnapshotPath: generation?.snapshotPath,
             )
-            .map((p) => _wiederherstellZeile(t, p)),
+            .transform(wiederherstellZeilen(t)),
       );
     },
   );
@@ -662,6 +662,30 @@ Future<void> _durchsucheSicherung(Einstellungsstand stand) async {
     if (context.mounted) melde.fehler(t.backupAuswahlLesefehler);
   }
 }
+
+/// Macht aus den Ereignissen der Wiederherstellung die Zeilen des
+/// Fensters – und hält die Zeile zur Übernahme aus dem Schnappschuss
+/// [halten] lang stehen.
+///
+/// Die Übernahme ist meist in Millisekunden durch, und was danach kommt
+/// (Live Photos, Fotokammer) meldet sich nicht eigens: Ohne Pause stand
+/// die Zeile „N Einträge aus dem Datenbank-Schnappschuss übernommen …“
+/// kürzer als ein Bild auf dem Schirm, und niemand sah sie (SIC-063). Der
+/// Lauf wartet so lange; ein paar Sekunden Wartezeit sind der Preis dafür,
+/// dass man erfährt, ob auch Personen und Reisen zurück sind.
+@visibleForTesting
+StreamTransformer<BackupProgress, String> wiederherstellZeilen(
+  AppTexte t, {
+  Duration halten = const Duration(seconds: 2),
+}) => StreamTransformer.fromBind(
+  (ereignisse) => ereignisse.asyncExpand((p) async* {
+    yield _wiederherstellZeile(t, p);
+    final uebernahme =
+        p.uebernommeneZeilen != null &&
+        !(p.wiederherstellung?.abgeschlossen ?? false);
+    if (uebernahme) await Future<void>.delayed(halten);
+  }),
+);
 
 /// `null` bedeutet ausschließlich Abbruch. Ohne Generationen wird der
 /// aktuelle Stand direkt gewählt; sonst ist jede Wahl ausdrücklich.

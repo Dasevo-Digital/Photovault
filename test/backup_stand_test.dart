@@ -204,9 +204,20 @@ void main() {
       expect(find.text(de.backupStandZaehlt), findsOneWidget);
       expect(find.textContaining('Ausstehend: 700 Dateien'), findsOneWidget);
       offen.complete(stand(offen: 5));
+      await t.pump(const Duration(seconds: 1));
       await t.pumpAndSettle();
       expect(find.text(de.backupStandZaehlt), findsNothing);
       expect(find.textContaining('Ausstehend: 5 Dateien'), findsOneWidget);
+
+      // Auch wenn das Zählen sofort durch ist, steht der Hinweis kurz da.
+      offen = null;
+      await t.tap(find.byTooltip(de.backupStandNeuZaehlen));
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 100));
+      expect(find.text(de.backupStandZaehlt), findsOneWidget);
+      await t.pump(const Duration(seconds: 1));
+      await t.pumpAndSettle();
+      expect(find.text(de.backupStandZaehlt), findsNothing);
     });
 
     testWidgets('alles da', (t) async {
