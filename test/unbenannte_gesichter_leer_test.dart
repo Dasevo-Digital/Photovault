@@ -166,6 +166,45 @@ void main() {
     });
   });
 
+  testWidgets('nach der Suche liest der Reiter seinen Stand neu (PER-010)', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      library.faceEngineHalter = halter<FaceEngineService>(
+        'Gesichter',
+        installiert: true,
+      );
+      await aufnahme('a1');
+      await aufnahme('a2');
+      await zeige(tester);
+      expect(
+        find.textContaining('2 Aufnahmen sind noch nicht nach Gesichtern'),
+        findsOneWidget,
+      );
+      // Was die Suche tut, hier vorweggenommen: Danach ist alles
+      // durchsucht, gefunden wurde nichts.
+      await (db.update(
+        db.assets,
+      )).write(const AssetsCompanion(facesScanned: Value(true)));
+      await tester.tapAt(
+        tester.getCenter(find.text('Jetzt nach Gesichtern suchen')),
+      );
+      await library.lauf('gesichter')!.abschluss;
+      await takte(tester);
+      expect(
+        find.textContaining('noch nicht nach Gesichtern'),
+        findsNothing,
+        reason: 'der Lauf ist durch',
+      );
+      expect(find.text('Jetzt nach Gesichtern suchen'), findsNothing);
+      expect(
+        find.textContaining('Keine unbenannten Gesichter'),
+        findsOneWidget,
+      );
+      await abbauen(tester);
+    });
+  });
+
   testWidgets('alles durchsucht und nichts gefunden: der alte Satz', (
     tester,
   ) async {

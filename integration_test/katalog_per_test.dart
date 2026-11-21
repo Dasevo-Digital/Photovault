@@ -1301,10 +1301,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Der Reiter liest seinen Stand nur beim Öffnen und nach eigenen
-  // Handgriffen (lib/screens/people_screen.dart:161–185, _neuLaden). Nach
-  // dem Lauf steht wieder „30 Aufnahmen sind noch nicht … durchsucht“ mit
-  // dem Knopf; gefundene Gesichter erschienen erst nach erneutem Öffnen.
+  // Behoben in #412: Der Reiter liest Stand und Raster neu, sobald die
+  // Gesichtssuche durch ist.
   pruefung('PER-010 Gesichtssuche aus dem leeren Reiter', (tester) async {
     await sucheAusLeeremReiter(tester);
     await warteAufLauf(tester, 'gesichter');
@@ -1321,7 +1319,7 @@ void main() {
     );
     expect(find.text(de.personenKeineUnbenannten), findsOneWidget);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-034 PER-096 Erneuter Scan: Ignorierte bleiben, Ausnahmen', (
     tester,

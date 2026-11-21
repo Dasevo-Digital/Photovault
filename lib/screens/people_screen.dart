@@ -134,6 +134,8 @@ class _PeopleScreenState extends State<PeopleScreen>
   void initState() {
     super.initState();
     _neuLaden();
+    // Läuft die Suche schon (aus den Werkzeugen angestossen), gilt dasselbe.
+    _nachDerSucheNeuLaden();
   }
 
   @override
@@ -159,7 +161,27 @@ class _PeopleScreenState extends State<PeopleScreen>
       rechenintensiv: true,
       strom: () => widget.library.rescanFaces(onlyNewPhotos: true),
     );
-    if (abweisung != null) melde.hinweis(abweisungstext(t, abweisung));
+    if (abweisung != null) {
+      melde.hinweis(abweisungstext(t, abweisung));
+      return;
+    }
+    _nachDerSucheNeuLaden();
+  }
+
+  /// Liest Stand und Raster neu, sobald die Gesichtssuche durch ist.
+  ///
+  /// Der Reiter liest sie sonst nur beim Öffnen und nach eigenen
+  /// Handgriffen: Nach dem Lauf stand wieder „… noch nicht durchsucht“ samt
+  /// Knopf da, und gefundene Gesichter erschienen erst nach erneutem
+  /// Öffnen (PER-010).
+  void _nachDerSucheNeuLaden() {
+    final lauf = widget.library.lauf('gesichter');
+    if (lauf == null || lauf.beendet) return;
+    unawaited(
+      lauf.abschluss.then((_) {
+        if (mounted) _neuLaden();
+      }),
+    );
   }
 
   /// Holt den Tab „Ignoriert" nach, sobald er tatsächlich angesehen wird.
