@@ -163,4 +163,43 @@ void main() {
     }
     expect(zoom(tester), lessThanOrEqualTo(grenze));
   });
+
+  testWidgets('eine Spur ohne ein verortetes Foto: Karte statt Fehler', (
+    tester,
+  ) async {
+    // Reise mit GPX-Spur, aber ohne verortetes Foto: Die Linie der Fotos
+    // hatte null Punkte, und flutter_map scheiterte an ihrem Umriss.
+    tester.view.physicalSize = const Size(900, 1400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Routenkarte(
+              route: const [],
+              orte: const [],
+              nachId: const {},
+              paths: paths,
+              beiOrt: (_) {},
+              spuren: const [
+                [
+                  (breite: 47.42, laenge: 10.98),
+                  (breite: 47.43, laenge: 10.99),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(FlutterMap), findsOneWidget);
+  });
 }

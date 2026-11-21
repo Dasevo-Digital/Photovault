@@ -179,11 +179,16 @@ class _RoutenkarteState extends State<Routenkarte> {
                 const Kachelschicht(),
                 PolylineLayer(
                   polylines: [
-                    Polyline(
-                      points: punkte,
-                      strokeWidth: 3,
-                      color: farben.primary,
-                    ),
+                    // Nur mit mindestens zwei Punkten, wie die Spurlinien
+                    // darunter: Eine Reise mit GPX-Spur, aber ohne
+                    // verortetes Foto, legte eine Linie aus null Punkten
+                    // an, und flutter_map scheiterte an deren Umriss.
+                    if (punkte.length > 1)
+                      Polyline(
+                        points: punkte,
+                        strokeWidth: 3,
+                        color: farben.primary,
+                      ),
                     for (final linie in spurlinien)
                       if (linie.length > 1)
                         Polyline(

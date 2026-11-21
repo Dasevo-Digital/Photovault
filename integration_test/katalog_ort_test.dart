@@ -5298,13 +5298,8 @@ void main() {
 
   // Prüfungen, deren Fehler ausserhalb des Tests auflaufen können,
   // stehen am Ende.
-  // Befund beim Vorbereiten von ORT-122: Eine Reise mit GPX-Spur, aber
-  // ohne verortetes Foto. Routenkarte legt dann eine Linie aus null Punkten
-  // an (lib/widgets/routenkarte.dart:180–186), flutter_map scheitert an
-  // LatLngBounds aus einer leeren Liste.
-  // Befund ORT-122: Routenkarte legt eine Linie aus null Punkten an und
-  // scheitert an LatLngBounds (routenkarte.dart:180–186). Drei Läufe
-  // (Reise und Aktivität).
+  // Behoben in #413: Die Routenkarte zeichnet die Linie der Fotos erst ab
+  // zwei Punkten; mit Spur und ohne verortetes Foto steht die Karte da.
   testWidgets('ORT-122 Reise mit Spur, aber ohne verortete Fotos', (
     tester,
   ) async {
@@ -5343,7 +5338,7 @@ void main() {
     expect(fehler, isNull, reason: 'Routenkarte mit leerer Fotostrecke');
     expect(hatKarte, isTrue);
     await finish(tester);
-  }, skip: true);
+  });
 
   // Behoben in #413: liesGpxDatei macht aus dem Lesefehler einen GpxFehler
   // (unlesbar); die Verortung meldet ihn und gibt Kreisel und Knopf frei.
