@@ -408,6 +408,11 @@ void main() {
             );
       });
 
+      /// Unter Last (die ganze Suite auf einmal) steht die Reglerspalte
+      /// erst später da – vor der Zählung abwarten, nicht beim Ziehen.
+      Future<void> zeigeMitReglern(WidgetTester tester) =>
+          zeige(tester, bis: () => find.byType(Slider).evaluate().isNotEmpty);
+
       /// Zieht am Regler mit [beschriftung] in mehreren Schritten – so, wie
       /// ein Finger es tut, und nicht in einem Sprung.
       Future<void> ziehe(WidgetTester tester, String beschriftung) async {
@@ -432,7 +437,7 @@ void main() {
       testWidgets('die Vignettierung rechnet schon waehrend des Ziehens', (
         tester,
       ) async {
-        await zeige(tester);
+        await zeigeMitReglern(tester);
         final vorher = rendervorgaenge;
         await ziehe(tester, 'Vignettierung');
         // Mehr als der eine Render, der frueher erst nach dem Loslassen
@@ -448,7 +453,7 @@ void main() {
       testWidgets('es laeuft trotzdem immer nur ein Render', (tester) async {
         // Ohne diese Regel waere eine langsame Datei - ein RAW geht durch
         // CIRAWFilter - eine Warteschlange, die nie leer wird.
-        await zeige(tester);
+        await zeigeMitReglern(tester);
         final vorher = rendervorgaenge;
         await ziehe(tester, 'Klarheit');
         final anzahl = rendervorgaenge - vorher;
@@ -465,7 +470,7 @@ void main() {
         // Diese Regler laufen nicht ueber den Entpreller, und dort wird
         // der Schritt sonst festgehalten - ohne Nachfassen fehlten sie im
         // Verlauf ganz.
-        await zeige(tester);
+        await zeigeMitReglern(tester);
         await ziehe(tester, 'Klarheit');
         await tester.tap(find.byIcon(Icons.history));
         await takte(tester, 20);
@@ -477,7 +482,7 @@ void main() {
       testWidgets('die Belichtung bleibt beim Shader', (tester) async {
         // Sie ist im Shader genau (0,1 % Abweichung) - dort waere ein
         // nativer Render je Bewegung verschenkte Arbeit.
-        await zeige(tester);
+        await zeigeMitReglern(tester);
         final vorher = rendervorgaenge;
         await ziehe(tester, 'Belichtung');
         expect(
