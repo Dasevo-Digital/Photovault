@@ -4258,8 +4258,10 @@ async function zeigeVerwaltung() {
     const li = el('li');
     li.append(el('span', null, `${k.name}${k.verwalter ? ` · ${t('Verwalter')}` : ''}${k.totp ? ' · TOTP' : ''}${k.gesperrt ? ` · ${t('gesperrt')}` : ''} · ${t(k.geraete === 1 ? '{n} Gerät' : '{n} Geräte', { n: k.geraete })}${k.du ? ` · ${t('du')}` : ''}`));
     const kn = el('span');
-    if (k.gesperrt) { const b = el('button', null, t('Entsperren')); b.type = 'button'; b.addEventListener('click', async () => { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); zeigeVerwaltung(); }); kn.append(b); }
-    if (!k.du) { const b = el('button', null, t('Entfernen')); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(t('„{name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.', { name: k.name }))) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); zeigeVerwaltung(); } catch (x) { alert(x.message); } }); kn.append(b); }
+    // Scheitert die Anfrage (etwa weil das Konto inzwischen fehlt), eine
+    // Meldung und die Liste neu – sie stand sonst mit dem alten Eintrag da.
+    if (k.gesperrt) { const b = el('button', null, t('Entsperren')); b.type = 'button'; b.addEventListener('click', async () => { try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); } catch (x) { alert(x.message); } zeigeVerwaltung().catch((x) => meldung(x.message)); }); kn.append(b); }
+    if (!k.du) { const b = el('button', null, t('Entfernen')); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(t('„{name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.', { name: k.name }))) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); } catch (x) { alert(x.message); } zeigeVerwaltung().catch((x) => meldung(x.message)); }); kn.append(b); }
     li.append(kn);
     kl.append(li);
   }
