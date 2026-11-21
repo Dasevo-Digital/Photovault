@@ -6,7 +6,10 @@ import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
 
+import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
+import '../l10n/app_localizations.dart';
 import '../state/library_state.dart';
 import 'package:kern/services/face_engine_service.dart';
 
@@ -25,6 +28,13 @@ import 'package:kern/services/face_engine_service.dart';
 /// [kasten] ist der Rahmen als **Anteil** des Bildes (0..1), so wie die
 /// Datenbank ihn führt.
 ///
+/// Das Gesicht gehört [personId] oder einer neuen Person [neuerName]. Die
+/// neue Person entsteht hier, erst wenn feststeht, dass auch das Gesicht
+/// entstehen kann: Vorher legten die Aufrufer sie vorab an, und bei
+/// angehaltenem Server blieb eine leere Person zurück (PER-090). Ist der
+/// Server nicht erreichbar, kommt [KeineVerbindung] durch, und es ist
+/// nichts angelegt.
+///
 /// [beiEinbettungsfehler] wird gerufen, wenn sich zwar der Ausschnitt
 /// speichern liess, das Wiedererkennungsmodell aber nicht. Der Aufrufer
 /// entscheidet, wie er das sagt; **abgebrochen wird nicht**. Das ist
@@ -37,23 +47,39 @@ Future<String?> gesichtVonHandAnlegen({
   required String assetId,
   required File bilddatei,
   required Rect kasten,
-  required String personId,
+  String? personId,
+  String? neuerName,
   void Function(Object fehler)? beiEinbettungsfehler,
 }) async {
+  assert(
+    (personId == null) != (neuerName == null),
+    'entweder eine vorhandene oder eine neue Person',
+  );
+  Future<String> person() async {
+    if (personId != null) return personId;
+    final id = const Uuid().v4();
+    await library.db.fuehreAus(PersonAnlegen(id, neuerName!));
+    return id;
+  }
+
   // **Verbunden legt der Server an** (Issue #190). Die Kopie darf nicht
   // selbst schreiben – `insertFace` brach am Schutz `pv_nur_ueber_server`
   // wortlos ab. Der Server hat Original und Modell und schickt das Gesicht
   // über den Abgleich zurück.
   final abgleich = library.abgleich;
   if (library.verbunden && abgleich != null) {
-    // Erst die offenen Befehle: Eine eben angelegte Person muss beim Server
+    // Erst fragen, ob er da ist: Eine neue Person entstünde sonst hier,
+    // ihr Gesicht aber nie.
+    await abgleich.verbindung.hole('api/v1/zustand');
+    final pid = await person();
+    // Dann die offenen Befehle: Eine eben angelegte Person muss beim Server
     // sein, bevor ihr ein Gesicht zugeordnet wird.
     await abgleich.sende();
     final antwort = await abgleich.verbindung.schicke(
       'api/v1/aufnahmen/${Uri.encodeComponent(assetId)}/gesichter',
       {
         'kasten': [kasten.left, kasten.top, kasten.width, kasten.height],
-        'personId': personId,
+        'personId': pid,
       },
     );
     final id = (antwort['gesicht']! as Map)['id']! as String;
@@ -79,6 +105,7 @@ Future<String?> gesichtVonHandAnlegen({
   }
   if (gelesen == null) return null;
   final bild = gelesen;
+  final pid = await person();
 
   final gesichtId = const Uuid().v4();
   final box = DetectedFace(
@@ -110,7 +137,7 @@ Future<String?> gesichtVonHandAnlegen({
     FacesCompanion.insert(
       id: gesichtId,
       assetId: assetId,
-      personId: Value(personId),
+      personId: Value(pid),
       boxX: box.x,
       boxY: box.y,
       boxW: box.width,
@@ -127,9 +154,18 @@ Future<String?> gesichtVonHandAnlegen({
           : const Value.absent(),
     ),
   );
-  await library.db.setPersonCoverIfUnset(personId, ausschnittPfad);
+  await library.db.setPersonCoverIfUnset(pid, ausschnittPfad);
   return gesichtId;
 }
+
+/// Was beim Anlegen eines Gesichts von Hand schiefging, als Satz: Ist der
+/// Server nicht erreichbar, kann weder er das Gesicht anlegen noch liegt
+/// das Original hier (PER-090).
+String gesichtVonHandFehlertext(AppTexte t, Object fehler) => switch (fehler) {
+  KeineVerbindung() => t.entwOriginalNichtDa,
+  final Serverfehler f => grundAus(f) ?? t.serverFehler,
+  _ => t.serverFehler,
+};
 
 /// Ob ein aufgezogener Rahmen gross genug ist, um ein Gesicht zu sein.
 ///

@@ -4,6 +4,11 @@ import 'dart:ui' show Offset, Rect, Size;
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
@@ -175,6 +180,74 @@ void main() {
     expect(id, isNull);
     expect(await db.facesForAsset('a1'), isEmpty);
     expect(paths.facesDir.listSync(), isEmpty);
+  });
+
+  group('eine neue Person (PER-090)', () {
+    Future<List<String>> personen() async => [
+      for (final p in await db.select(db.people).get()) p.name,
+    ];
+
+    test('entsteht mit dem Gesicht', () async {
+      final id = await gesichtVonHandAnlegen(
+        library: library,
+        assetId: 'a1',
+        bilddatei: foto,
+        kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
+        neuerName: 'Person B',
+      );
+      expect(id, isNotNull);
+      final b = (await db.select(db.people).get()).firstWhere(
+        (p) => p.name == 'Person B',
+      );
+      expect((await db.facesForAsset('a1')).single.personId, b.id);
+    });
+
+    test('bleibt ohne lesbares Bild aus', () async {
+      final kaputt = File(p.join(ordner.path, 'kaputt.jpg'))
+        ..writeAsBytesSync([1, 2, 3, 4]);
+      final id = await gesichtVonHandAnlegen(
+        library: library,
+        assetId: 'a1',
+        bilddatei: kaputt,
+        kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
+        neuerName: 'Person B',
+      );
+      expect(id, isNull);
+      expect(await personen(), ['Anna'], reason: 'keine leere Person');
+    });
+
+    test('bleibt bei nicht erreichbarem Server aus', () async {
+      // Verbunden legt der Server das Gesicht an. Antwortet er nicht, darf
+      // hier keine Person ohne Gesicht entstehen.
+      final verbindung = Serververbindung(
+        Uri.parse('http://server/'),
+        'x',
+        client: MockClient(
+          (_) async => throw http.ClientException('Verbindung abgewiesen'),
+        ),
+      );
+      library
+        ..verbindung = Verbindungsdatei(
+          server: Uri.parse('http://server/'),
+          konto: 'k',
+          geraet: 'g',
+          token: 'x',
+        )
+        ..abgleich = Abgleich(db, verbindung);
+
+      await expectLater(
+        gesichtVonHandAnlegen(
+          library: library,
+          assetId: 'a1',
+          bilddatei: foto,
+          kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
+          neuerName: 'Person B',
+        ),
+        throwsA(isA<KeineVerbindung>()),
+      );
+      expect(await personen(), ['Anna'], reason: 'keine leere Person');
+      expect(await db.facesForAsset('a1'), isEmpty);
+    });
   });
 
   group('Wie gross ein Rahmen sein muss', () {

@@ -1900,26 +1900,31 @@ class _AssetPageState extends State<_AssetPage> {
     );
     if (wahl == null || !mounted) return;
 
-    final personId = wahl.newName != null
-        ? const Uuid().v4()
-        : wahl.existingPersonId!;
-    if (wahl.newName != null) {
-      await widget.db.fuehreAus(PersonAnlegen(personId, wahl.newName!));
+    // Eine neue Person entsteht erst mit dem Gesicht, in
+    // gesichtVonHandAnlegen – sonst bliebe ohne Server eine leere zurück
+    // (PER-090).
+    final String? angelegt;
+    try {
+      final datei = await _fileFuture;
+      angelegt = await gesichtVonHandAnlegen(
+        library: bibliothek,
+        assetId: widget.asset.id,
+        bilddatei: datei,
+        kasten: kasten,
+        personId: wahl.existingPersonId,
+        neuerName: wahl.newName,
+        beiEinbettungsfehler: (e) {
+          if (mounted) {
+            melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+          }
+        },
+      );
+    } on Exception catch (e) {
+      if (mounted) {
+        melde.fehler(gesichtVonHandFehlertext(AppTexte.of(context), e));
+      }
+      return;
     }
-
-    final datei = await _fileFuture;
-    final angelegt = await gesichtVonHandAnlegen(
-      library: bibliothek,
-      assetId: widget.asset.id,
-      bilddatei: datei,
-      kasten: kasten,
-      personId: personId,
-      beiEinbettungsfehler: (e) {
-        if (mounted) {
-          melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
-        }
-      },
-    );
     if (!mounted) return;
     if (angelegt == null) {
       melde.fehler(AppTexte.of(context).viewerRahmenNichtLesbar);

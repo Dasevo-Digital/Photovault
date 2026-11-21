@@ -646,30 +646,30 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       return;
     }
 
-    String personId;
-    if (choice.newName != null) {
-      personId = const Uuid().v4();
-      await widget.library.db.fuehreAus(
-        PersonAnlegen(personId, choice.newName!),
+    // Ausschnitt, Einbettung, Zeile und eine neue Person entstehen an einer
+    // Stelle - die Vollbildansicht kann dasselbe und darf keinen zweiten Weg
+    // dafür haben. Die neue Person erst dort: Ist der Server nicht
+    // erreichbar, bleibt sonst eine leere Person zurück (PER-090).
+    try {
+      await gesichtVonHandAnlegen(
+        library: widget.library,
+        assetId: _asset.id,
+        bilddatei: bilddatei,
+        kasten: normalizedRect,
+        personId: choice.existingPersonId,
+        neuerName: choice.newName,
+        beiEinbettungsfehler: (e) {
+          if (mounted) {
+            melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
+          }
+        },
       );
-    } else {
-      personId = choice.existingPersonId!;
+    } on Exception catch (e) {
+      if (mounted) {
+        melde.fehler(gesichtVonHandFehlertext(AppTexte.of(context), e));
+      }
+      return;
     }
-
-    // Ausschnitt, Einbettung und Zeile entstehen an einer Stelle - die
-    // Vollbildansicht kann dasselbe und darf keinen zweiten Weg dafür haben.
-    await gesichtVonHandAnlegen(
-      library: widget.library,
-      assetId: _asset.id,
-      bilddatei: bilddatei,
-      kasten: normalizedRect,
-      personId: personId,
-      beiEinbettungsfehler: (e) {
-        if (mounted) {
-          melde.fehler(AppTexte.of(context).gesichtEmbeddingFehler('$e'));
-        }
-      },
-    );
 
     if (!mounted) return;
     setState(() {

@@ -3362,16 +3362,10 @@ void _serverTests() {
     skip: ohneServer,
   );
 
-  // Befund: Auf dem Weg des Katalogs (Foto bei laufendem Server geöffnet,
-  // Server angehalten, Gesicht aufgezogen, „Person B“ angelegt) entsteht
-  // eine leere Person B ohne Gesicht, und es kommt keine Meldung.
-  // _finishManualBox legt die Person an, bevor das Gesicht entsteht
-  // (lib/screens/face_review_screen.dart:649–657); die Anzeigedatei liegt
-  // nach dem Öffnen hier, darum greift die Prüfung davor (638–646) nicht.
-  // Verbunden schickt gesichtVonHandAnlegen das Gesicht an den Server
-  // (lib/services/gesicht_von_hand.dart:48–58); bei angehaltenem Server
-  // wirft das „KeineVerbindung“ unbehandelt, ohne Meldung. Zweimal
-  // nachgestellt (Läufe r2-bea-d und r2-bea-f).
+  // Behoben in #420: Die neue Person entsteht erst mit dem Gesicht in
+  // gesichtVonHandAnlegen, nachdem der Server geantwortet hat; ist er
+  // angehalten, entsteht weder Gesicht noch Person B, und es kommt „Das
+  // Original liegt nicht hier, und der Server ist nicht erreichbar.“
   mitServer('PER-090 Mitserver Manuelles Gesicht bei gestopptem Server', (
     tester,
   ) async {
@@ -3493,5 +3487,5 @@ void _serverTests() {
       reason: 'Fehlermeldung',
     );
     await bea.abschluss(tester);
-  }, skip: true);
+  }, skip: ohneServer);
 }
