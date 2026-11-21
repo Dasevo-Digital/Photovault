@@ -443,7 +443,7 @@
   "duplAlle": "{n} copies to the trash",
   "duplKeineEinbettungen": "No image embeddings yet – the analysis on the server has to run first.",
   "duplKeine": "No duplicates at {p} similarity.",
-  "duplAusnahmen": "{n} pairs are excluded.",
+  "duplAusnahmen": "{n, plural, =1{One pair is excluded.} other{{n} pairs are excluded.}}",
   "duplGruppen": "{n} groups at {p} similarity. The outlined photo would be kept when cleaning up; groups with several favorites or ratings stay untouched.",
   "duplKeineDuplikate": "Not duplicates",
   "duplNurVonHand": "{n} items · several marked, by hand only",

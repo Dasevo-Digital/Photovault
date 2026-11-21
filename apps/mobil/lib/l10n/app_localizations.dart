@@ -1732,7 +1732,7 @@ abstract class AppTexte {
   /// No description provided for @duplAusnahmen.
   ///
   /// In de, this message translates to:
-  /// **'{n} Paare sind ausgenommen.'**
+  /// **'{n, plural, =1{Ein Paar ist ausgenommen.} other{{n} Paare sind ausgenommen.}}'**
   String duplAusnahmen(int n);
 
   /// No description provided for @duplGruppen.

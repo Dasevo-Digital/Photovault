@@ -1110,7 +1110,13 @@ class AppTexteEn extends AppTexte {
 
   @override
   String duplAusnahmen(int n) {
-    return '$n pairs are excluded.';
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n pairs are excluded.',
+      one: 'One pair is excluded.',
+    );
+    return '$_temp0';
   }
 
   @override

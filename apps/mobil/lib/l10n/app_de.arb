@@ -635,7 +635,7 @@
       }
     }
   },
-  "duplAusnahmen": "{n} Paare sind ausgenommen.",
+  "duplAusnahmen": "{n, plural, =1{Ein Paar ist ausgenommen.} other{{n} Paare sind ausgenommen.}}",
   "@duplAusnahmen": {
     "placeholders": {
       "n": {
