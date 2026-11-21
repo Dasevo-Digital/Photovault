@@ -4,7 +4,7 @@ Diese Kopie stammt aus dem Paket `flutter_earth_globe` 2.2.1 (MIT, © George
 Panagiotou, <https://github.com/Pana-g/flutter_earth_globe>), unverändert aus
 dem Archiv von pub.dev übernommen. Weggelassen sind `example/`, `doc/`,
 `screenshots/` und `README.md`, in `pubspec.yaml` der Abschnitt
-`screenshots`. Geändert sind drei Dinge (Issue #9).
+`screenshots`. Geändert sind vier Dinge (Issue #9, Punkt 4 aus #413).
 
 ## 1. Kachelmosaik über der Grundtextur
 
@@ -35,3 +35,13 @@ der Shader zeichnet, der sie nie liest. Bei der 8K-Textur waren das 134 MB
 zusätzlich, und der Globus erschien erst, wenn die Kopie fertig war. Jetzt
 entsteht sie in `verarbeiteFuerCpu()` erst, wenn der CPU-Weg sie braucht
 (`rotating_globe.dart`, dort wo er vorher mangels Kopie abbrach).
+
+## 4. Pins beim ersten Bild
+
+`RotatingGlobe` baut die Beschriftungen der Punkte im äusseren `Stack` aus
+`visiblePoints`. Gefüllt wurde die Liste aber erst in
+`_calculateForegroundPositions`, aufgerufen aus den `ValueListenableBuilder`n
+in `_buildSphereContent` – und die bauen erst nach dem `Stack`. Beim Öffnen
+war die Liste deshalb leer, und ohne weiteres `setState` (Zoomen, Drehen)
+erschienen keine Pins. Jetzt rechnet der `LayoutBuilder` die Positionen vor
+dem Aufbau des `Stack` einmal aus (`rotating_globe.dart`).

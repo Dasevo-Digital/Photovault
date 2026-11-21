@@ -1798,14 +1798,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund-Prüfung zu ORT-018: Die Pins stehen erst nach der ersten
-  // Bedienung da. Die Beschriftungen baut RotatingGlobe aus visiblePoints
-  // (third_party/flutter_earth_globe/lib/rotating_globe.dart, Stack in
-  // build), gefüllt wird die Liste aber erst danach im inneren
-  // ValueListenableBuilder (_buildSphereContent → _calculateForegroundPositions).
-  // Befund ORT-018: Ohne Bedienung erscheinen keine Pins, erst nach einem
-  // Zoomschritt (rotating_globe.dart, visiblePoints wird erst nach dem
-  // Stack im inneren ValueListenableBuilder gefüllt). Drei Läufe.
+  // Behoben in #413: RotatingGlobe rechnet die Punktpositionen jetzt vor dem
+  // Aufbau der Beschriftungen aus (third_party/flutter_earth_globe,
+  // ANPASSUNGEN.md Punkt 4).
   testWidgets('ORT-018 Pins erscheinen beim Öffnen ohne Bedienung', (
     tester,
   ) async {
@@ -1844,7 +1839,7 @@ void main() {
       reason: 'Pins stehen erst nach der ersten Bedienung',
     );
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('ORT-024 Globus mit rund 1000 verorteten Fotos', (tester) async {
     await starte(tester);

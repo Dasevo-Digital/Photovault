@@ -1873,6 +1873,13 @@ class RotatingGlobeState extends State<RotatingGlobe>
                           });
                         });
                       }
+                      // Photo Vault: Die Beschriftungen unten lesen
+                      // visiblePoints, gefüllt wird es aber erst in den
+                      // Bausteinen von _buildSphereContent – und die bauen
+                      // nach dieser Liste. Ohne diese Zeile standen beim
+                      // Öffnen keine Pins da, bis ein weiteres Neuzeichnen
+                      // kam (siehe ANPASSUNGEN.md, Punkt 4).
+                      _calculateForegroundPositions(constraints);
                       return Stack(
                         children: [
                           Positioned(
