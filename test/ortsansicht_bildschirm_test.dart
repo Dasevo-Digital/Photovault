@@ -192,6 +192,29 @@ void main() {
     expect(find.text('Regionen · 1 von 3'), findsOneWidget);
   });
 
+  testWidgets('mit Fotos steht im Kopf nicht „von Hand“', (tester) async {
+    // Die Marke allein entschied: Wer ein Land mit Fotos zusätzlich als
+    // besucht markierte, las „1 Aufnahme · von Hand“ (ORT-101).
+    await aufnahme(
+      'a1',
+      land: 'Germany',
+      region: 'Lower Saxony',
+      ort: 'Hannover',
+    );
+    await zeige(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Besucht'));
+    await tester.pumpAndSettle();
+    expect(await db.alleOrtsmarken(), hasLength(1));
+    expect(find.textContaining('von Hand'), findsNothing);
+  });
+
+  testWidgets('ohne Fotos steht „von Hand“ im Kopf', (tester) async {
+    await zeige(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Besucht'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('von Hand'), findsOneWidget);
+  });
+
   testWidgets('ein zweites Antippen nimmt die Marke zurueck', (tester) async {
     await zeige(tester);
     await tester.tap(find.widgetWithText(ChoiceChip, 'Geplant'));

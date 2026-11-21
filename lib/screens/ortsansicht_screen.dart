@@ -306,7 +306,9 @@ class _Kopf extends StatelessWidget {
     final zeile = [
       ?land?.hauptstadt,
       if (stand.aufnahmen > 0) t.laenderAufnahmen(stand.aufnahmen),
-      if (stand.marke == Markenart.besucht) t.laenderVonHand,
+      // „von Hand“ nur, wenn kein Foto den Ort belegt – sonst stand es
+      // neben „1 Aufnahme“, als wäre der Besuch nicht belegt.
+      if (stand.nurVonHand) t.laenderVonHand,
       if (stand.marke == Markenart.geplant) t.laenderGeplant,
     ].join(' · ');
 

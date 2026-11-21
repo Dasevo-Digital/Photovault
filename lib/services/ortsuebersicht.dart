@@ -80,6 +80,11 @@ class Ortsuebersicht {
   /// Ob für einen Besuch überhaupt etwas spricht.
   bool get besucht =>
       aufnahmen > 0 || unterorteBesucht > 0 || marke == Markenart.besucht;
+
+  /// Nur von Hand als besucht markiert – kein Foto belegt es. Dieselbe
+  /// Regel wie in der Länderliste (`nurVonHand`) und auf der Weltkarte:
+  /// Belegen Fotos den Ort, ist die Marke keine Auskunft mehr über ihn.
+  bool get nurVonHand => marke == Markenart.besucht && aufnahmen == 0;
 }
 
 /// Stellt zusammen, was über einen Ort bekannt ist.

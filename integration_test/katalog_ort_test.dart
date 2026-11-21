@@ -3917,9 +3917,9 @@ void main() {
     await finish(tester);
   });
 
-  // Hinweis zu ORT-101 (automatisch, nicht e2e): Im Kopf der Ortsansicht steht
-  // „von Hand“ auch, wenn Fotos das Land belegen (ortsansicht_screen.dart:309,
-  // `stand.marke == Markenart.besucht` statt „nur von Hand“). Zwei Läufe.
+  // Behoben in #413: Der Kopf der Ortsansicht nennt „von Hand“ nur, wenn kein
+  // Foto den Ort belegt (Ortsuebersicht.nurVonHand, dieselbe Regel wie in der
+  // Länderliste).
   testWidgets('ORT-101 Kopf der Ortsansicht: „von Hand“ trotz Fotos', (
     tester,
   ) async {
@@ -3952,7 +3952,7 @@ void main() {
     print('ORT-101 Kopfzeile: $zeile');
     expect(zeile, isNot(contains(de.laenderVonHand)));
     await finish(tester);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Weltkarte
