@@ -143,11 +143,21 @@ class LibraryState extends ChangeNotifier {
   late ModelDownloadService modelDownloadService;
   ModelProcessingState? modelProcessingState;
   late GeoDataDownloadService geoDataDownloadService;
-  late RestoreQueueService restoreQueue;
 
-  /// Ob [restoreQueue] schon angelegt ist. Das geschieht erst mitten in
+  /// Die Warteschlange der Restaurierung. Angelegt wird sie erst mitten in
   /// [initialize] – auf den Startbildschirmen davor (Bibliothek belegt,
-  /// nicht erreichbar, Startfehler) gibt es noch keine Warteschlange.
+  /// nicht erreichbar, Startfehler) gibt es sie noch nicht.
+  RestoreQueueService get restoreQueue => _restoreQueue;
+  set restoreQueue(RestoreQueueService warteschlange) {
+    _restoreQueue = warteschlange;
+    // Im Setter, nicht nur in [initialize]: Prüfstände setzen die
+    // Warteschlange selbst, und auch dann muss das Beenden sie anhalten.
+    _restoreQueueAngelegt = true;
+  }
+
+  late RestoreQueueService _restoreQueue;
+
+  /// Ob [restoreQueue] schon angelegt ist.
   bool _restoreQueueAngelegt = false;
 
   /// Meldet eine Bedienung – die Restaurierung wartet, bis die App eine
@@ -977,7 +987,6 @@ class LibraryState extends ChangeNotifier {
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
     restoreQueue = RestoreQueueService(db, paths, waitForIdle: true);
-    _restoreQueueAngelegt = true;
 
     // Nicht mehr selbst aus dem App-Support-Ordner gebaut: Unter Windows
     // liegt der Datenordner im MSIX-Paket woanders als in der
