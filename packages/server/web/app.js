@@ -2142,11 +2142,13 @@ function oeffneLinkDialog(fall, titel) {
   $('link-dialog').showModal();
 }
 
-// Eine Adresse, die von aussen niemand erreicht: im Heimnetz oder lokal.
+// Eine Adresse, die von aussen niemand erreicht: im Heimnetz oder lokal –
+// dieselben Bereiche wie ohneTlsErlaubt im Kern, also auch Link-Local und
+// der Bereich aus RFC 6598, den VPNs wie Tailscale vergeben.
 function nurImHeimnetz(adresse) {
   let h = '';
   try { h = new URL(adresse).hostname; } catch (_) { return false; }
-  return h === 'localhost' || h.endsWith('.local') || h.endsWith('.lan') || /^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?fe80:|\[?fd[0-9a-f]{2}:)/i.test(h);
+  return h === 'localhost' || h.endsWith('.local') || h.endsWith('.lan') || /^(10\.|127\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|\[?fe80:|\[?f[cd][0-9a-f]{2}:)/i.test(h);
 }
 
 $('form-link').addEventListener('submit', async (e) => {
