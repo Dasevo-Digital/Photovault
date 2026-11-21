@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kern/db/database.dart';
@@ -25,6 +27,11 @@ class Einstellungen extends StatefulWidget {
 class _EinstellungenState extends State<Einstellungen> {
   Bibliothekseinstellungen? _e;
   final _tage = TextEditingController();
+  final _tageFokus = FocusNode();
+
+  /// Die Frist, die zuletzt gesendet oder geladen wurde – damit dieselbe
+  /// nicht zweimal geht.
+  int? _tageGesendet;
   var _leeren = false;
   var _vorschlaegeAn = false;
   var _vorschlaegeAb = 0.7;
@@ -36,12 +43,31 @@ class _EinstellungenState extends State<Einstellungen> {
   void initState() {
     super.initState();
     _lade();
+    // Die Zifferntastatur des iPhones hat keine Eingabetaste: Was jemand
+    // eintippt und dann woanders hintippt oder die Seite verlässt, ging
+    // sonst still verloren (gesendet wurde nur in onSubmitted).
+    _tageFokus.addListener(() {
+      if (!_tageFokus.hasFocus && mounted) _tageUebernehmen();
+    });
   }
 
   @override
   void dispose() {
+    // Verlassen ohne Bestätigen: die eingetippte Frist trotzdem merken.
+    final tage = _tageZahl;
+    if (_e != null && tage != _tageGesendet) {
+      unawaited(_db.fuehreAus(PapierkorbFristSetzen(an: _leeren, tage: tage)));
+    }
+    _tageFokus.dispose();
     _tage.dispose();
     super.dispose();
+  }
+
+  /// Sendet die eingetippte Frist, wenn sie sich geändert hat.
+  void _tageUebernehmen() {
+    final tage = _tageZahl;
+    if (_e == null || tage == _tageGesendet) return;
+    _sende(PapierkorbFristSetzen(an: _leeren, tage: tage));
   }
 
   Future<void> _lade() async {
@@ -51,6 +77,7 @@ class _EinstellungenState extends State<Einstellungen> {
       _e = e;
       _leeren = e.papierkorbLeeren;
       _tage.text = '${e.papierkorbTage}';
+      _tageGesendet = e.papierkorbTage;
       _vorschlaegeAn = e.vorschlaegeAb != null;
       _vorschlaegeAb = e.vorschlaegeAb ?? 0.7;
       _schwelle = e.gesichtsschwelle;
@@ -60,6 +87,7 @@ class _EinstellungenState extends State<Einstellungen> {
   Future<void> _sende(Befehl<void> b) async {
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
+    if (b is PapierkorbFristSetzen) _tageGesendet = b.tage;
     await _db.fuehreAus(b);
     bote
       ..hideCurrentSnackBar()
@@ -205,6 +233,7 @@ class _EinstellungenState extends State<Einstellungen> {
                 width: 72,
                 child: TextField(
                   controller: _tage,
+                  focusNode: _tageFokus,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   contextMenuBuilder: einfuegbaresMenue,
