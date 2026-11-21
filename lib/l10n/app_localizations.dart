@@ -7114,7 +7114,7 @@ abstract class AppTexte {
   /// No description provided for @erkundenImMonatVorJahren.
   ///
   /// In de, this message translates to:
-  /// **'Im {monat} vor {jahre} Jahren'**
+  /// **'{jahre, plural, =1{Im {monat} vor 1 Jahr} other{Im {monat} vor {jahre} Jahren}}'**
   String erkundenImMonatVorJahren(String monat, int jahre);
 
   /// No description provided for @gesichtBenennen.

@@ -4297,7 +4297,13 @@ class AppTexteEn extends AppTexte {
 
   @override
   String erkundenImMonatVorJahren(String monat, int jahre) {
-    return 'In $monat, $jahre years ago';
+    String _temp0 = intl.Intl.pluralLogic(
+      jahre,
+      locale: localeName,
+      other: 'In $monat, $jahre years ago',
+      one: 'In $monat, 1 year ago',
+    );
+    return '$_temp0';
   }
 
   @override

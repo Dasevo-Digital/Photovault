@@ -6218,34 +6218,31 @@ void main() {
     },
   );
 
-  // Befund: „Im {monat} vor {jahre} Jahren“ hat keine Einzahl
-  // (app_de.arb, erkundenImMonatVorJahren; explore_screen.dart:1070) – bei
-  // einem Jahr steht „vor 1 Jahren“.
-  testWidgets(
-    'ANS-122 Monatsrückblick vor einem Jahr in der Einzahl',
-    skip: true,
-    (tester) async {
-      final h = DateTime.now();
-      final andererTag = h.day > 14 ? 3 : 25;
-      await startApp(
-        tester,
-        fotos: [
-          testfoto(
-            'monat.jpg',
-            datum: DateTime(h.year - 1, h.month, andererTag, 10),
-          ),
-        ],
-      );
-      await openSection(tester, Hauptbereich.rueckblick);
-      final monat = DateFormat.MMMM('de').format(h);
-      final kopf = find.textContaining('Im $monat vor');
-      await waitFor(tester, kopf);
-      final text = tester.widget<Text>(kopf).data!;
-      print('ANS-122: Überschrift „$text“');
-      expect(text, isNot(contains('1 Jahren')));
-      await finish(tester);
-    },
-  );
+  // Behoben in #410: erkundenImMonatVorJahren hat jetzt eine Einzahl (de und
+  // en).
+  testWidgets('ANS-122 Monatsrückblick vor einem Jahr in der Einzahl', (
+    tester,
+  ) async {
+    final h = DateTime.now();
+    final andererTag = h.day > 14 ? 3 : 25;
+    await startApp(
+      tester,
+      fotos: [
+        testfoto(
+          'monat.jpg',
+          datum: DateTime(h.year - 1, h.month, andererTag, 10),
+        ),
+      ],
+    );
+    await openSection(tester, Hauptbereich.rueckblick);
+    final monat = DateFormat.MMMM('de').format(h);
+    final kopf = find.textContaining('Im $monat vor');
+    await waitFor(tester, kopf);
+    final text = tester.widget<Text>(kopf).data!;
+    print('ANS-122: Überschrift „$text“');
+    expect(text, isNot(contains('1 Jahren')));
+    await finish(tester);
+  });
 
   testWidgets('ANS-123 Abschnitte und „Alle anzeigen“ im Rückblick', (
     tester,

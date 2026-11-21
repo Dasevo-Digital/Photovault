@@ -1511,7 +1511,7 @@
   "allgSucheFehlgeschlagen": "Search failed: {fehler}",
   "allgUnbekannterFehler": "Unknown error",
   "erkundenVorJahren": "{jahre, plural, =1{1 year ago} other{{jahre} years ago}}",
-  "erkundenImMonatVorJahren": "In {monat}, {jahre} years ago",
+  "erkundenImMonatVorJahren": "{jahre, plural, =1{In {monat}, 1 year ago} other{In {monat}, {jahre} years ago}}",
   "@erkundenImMonatVorJahren": {
     "placeholders": {
       "monat": {

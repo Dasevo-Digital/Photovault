@@ -2542,7 +2542,7 @@
       }
     }
   },
-  "erkundenImMonatVorJahren": "Im {monat} vor {jahre} Jahren",
+  "erkundenImMonatVorJahren": "{jahre, plural, =1{Im {monat} vor 1 Jahr} other{Im {monat} vor {jahre} Jahren}}",
   "@erkundenImMonatVorJahren": {
     "placeholders": {
       "monat": {

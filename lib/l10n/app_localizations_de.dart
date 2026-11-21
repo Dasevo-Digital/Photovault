@@ -4326,7 +4326,13 @@ class AppTexteDe extends AppTexte {
 
   @override
   String erkundenImMonatVorJahren(String monat, int jahre) {
-    return 'Im $monat vor $jahre Jahren';
+    String _temp0 = intl.Intl.pluralLogic(
+      jahre,
+      locale: localeName,
+      other: 'Im $monat vor $jahre Jahren',
+      one: 'Im $monat vor 1 Jahr',
+    );
+    return '$_temp0';
   }
 
   @override
