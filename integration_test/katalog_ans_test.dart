@@ -1505,23 +1505,24 @@ void main() {
     await waitFor(tester, kachel('zeile_1100.jpg'));
     await oeffne(tester, 'zeile_1100.jpg');
     await rechtsklick(tester, find.byType(PageView));
-    await tap(tester, find.text(de.viewerInTimelineZeigen));
-    await waitGone(tester, betrachter);
-    await waitFor(tester, kachel('zeile_1100.jpg'));
+    // Ohne das Warten von tap(): Die Hervorhebung blinkt nur 1,8 s, und
+    // tap() wartet danach bis zu fünf Sekunden, solange sich etwas bewegt –
+    // das Blinken wäre vorbei, bevor nachgesehen wird.
+    await waitFor(tester, find.text(de.viewerInTimelineZeigen));
+    await tester.tap(find.text(de.viewerInTimelineZeigen).first);
+    final blinkt = find.ancestor(
+      of: kachel('zeile_1100.jpg'),
+      matching: find.byWidgetPredicate(
+        (w) => w.runtimeType.toString() == '_FlashHighlight',
+      ),
+    );
+    await waitFor(tester, blinkt);
+    expect(blinkt, findsOneWidget, reason: 'kurz hervorgehoben');
+    expect(betrachter, findsNothing);
     await eventually(
       tester,
       () async => sichtbar(tester, kachel('zeile_1100.jpg')),
       was: 'Foto im Blick',
-    );
-    expect(
-      find.ancestor(
-        of: kachel('zeile_1100.jpg'),
-        matching: find.byWidgetPredicate(
-          (w) => w.runtimeType.toString() == '_FlashHighlight',
-        ),
-      ),
-      findsOneWidget,
-      reason: 'kurz hervorgehoben',
     );
     print('ANS-015: Monat ${find.text('März 2017').evaluate().length}');
     await finish(tester);
