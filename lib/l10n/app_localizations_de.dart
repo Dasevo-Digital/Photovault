@@ -6919,6 +6919,10 @@ class AppTexteDe extends AppTexte {
   String get stammbaumTafelFertig => 'Die Tafel wurde geschrieben.';
 
   @override
+  String get stammbaumNichtGeschrieben =>
+      'Die Datei ließ sich dort nicht schreiben. Wähle einen anderen Ort.';
+
+  @override
   String get aufgWirdErmittelt => 'Wird ermittelt …';
 
   @override

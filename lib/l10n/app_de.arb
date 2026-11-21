@@ -4268,6 +4268,7 @@
   "stammbaumZierbaumDrucken": "Zierbaum als PDF",
   "stammbaumTafelDrucken": "Tafel als PDF …",
   "stammbaumTafelFertig": "Die Tafel wurde geschrieben.",
+  "stammbaumNichtGeschrieben": "Die Datei ließ sich dort nicht schreiben. Wähle einen anderen Ort.",
   "aufgWirdErmittelt": "Wird ermittelt …",
   "aufgAbgebrochenBei": "Abgebrochen bei {erledigt} von {gesamt}",
   "@aufgAbgebrochenBei": {

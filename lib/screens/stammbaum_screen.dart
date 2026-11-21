@@ -496,7 +496,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
   void _ruecke(String id) {
     if (id == _fokusId) return;
     setState(() {
-      _pfad.add(_fokusId!);
+      // Ohne Person in der Mitte (leerer Stammbaum) gibt es keinen Weg
+      // zurück, nur einen Anfang.
+      if (_fokusId case final vorher?) _pfad.add(vorher);
       _fokusId = id;
     });
     _rechneGrade();
@@ -1238,7 +1240,10 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       final id = const Uuid().v4();
       await widget.library.db.fuehreAus(PersonAnlegen(id, wahl.newName!));
       if (!mounted) return;
-      setState(() => _fokusId = id);
+      setState(() {
+        if (_fokusId case final vorher?) _pfad.add(vorher);
+        _fokusId = id;
+      });
       await _laden();
       return;
     }
@@ -1401,9 +1406,34 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       farben: Theme.of(context).colorScheme,
       textRichtung: Directionality.of(context),
     );
-    await File(ziel).writeAsBytes(bytes);
+    await _schreibe(
+      ziel,
+      (datei) => datei.writeAsBytes(bytes),
+      t.stammbaumTafelFertig,
+    );
+  }
+
+  /// Schreibt [schreiben] nach [ziel] und meldet [fertig] – oder, ist das
+  /// Ziel nicht beschreibbar, einen verständlichen Fehler statt einer
+  /// unbehandelten Ausnahme (PER-160). Der leere Platzhalter der
+  /// Speicherortwahl geht dann wieder weg.
+  Future<void> _schreibe(
+    String ziel,
+    Future<void> Function(File datei) schreiben,
+    String fertig,
+  ) async {
+    try {
+      await schreiben(File(ziel));
+    } on FileSystemException catch (e) {
+      debugPrint('Stammbaum: $ziel nicht geschrieben: $e');
+      leerenPlatzhalterEntfernen(ziel);
+      if (mounted) {
+        melde.fehler(AppTexte.of(context).stammbaumNichtGeschrieben);
+      }
+      return;
+    }
     if (!mounted) return;
-    melde.erfolg(t.stammbaumTafelFertig);
+    melde.erfolg(fertig);
   }
 
   /// Schreibt den Zierbaum als PDF – das Blatt an die Wand.
@@ -1444,9 +1474,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       farben: farben,
       textRichtung: richtung,
     );
-    await File(ziel).writeAsBytes(bytes);
-    if (!mounted) return;
-    melde.erfolg(t.stammbaumTafelFertig);
+    await _schreibe(
+      ziel,
+      (datei) => datei.writeAsBytes(bytes),
+      t.stammbaumTafelFertig,
+    );
   }
 
   /// Schreibt den Bestand als GEDCOM-Datei.
@@ -1483,9 +1515,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     if (!mounted) return;
     // Ausdrücklich UTF-8: Der Kopf der Datei kündigt es an, und die
     // Standard-Kodierung von `writeAsString` ist es nicht überall.
-    await File(ziel).writeAsString(inhalt, encoding: utf8);
-    if (!mounted) return;
-    melde.erfolg(t.stammbaumGedcomFertig(_personen.length));
+    await _schreibe(
+      ziel,
+      (datei) => datei.writeAsString(inhalt, encoding: utf8),
+      t.stammbaumGedcomFertig(_personen.length),
+    );
   }
 
   /// Liest eine GEDCOM-Datei ein – der Weg *hinein*.
@@ -2248,9 +2282,11 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
       textRichtung: richtung,
       portrait: _lebensPortraits ? _portraitVon : null,
     );
-    await File(ziel).writeAsBytes(bytes);
-    if (!mounted) return;
-    melde.erfolg(t.stammbaumTafelFertig);
+    await _schreibe(
+      ziel,
+      (datei) => datei.writeAsBytes(bytes),
+      t.stammbaumTafelFertig,
+    );
   }
 
   Widget _hinweis(BuildContext context, String text) => Center(
@@ -2316,13 +2352,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     return FamilienZeitleiste(
       zeilen: zeilen,
       fokusId: fokus.id,
-      onTippen: (id) {
-        setState(() {
-          _fokusId = id;
-          _rechneGrade();
-        });
-        _merken();
-      },
+      // Über den gemeinsamen Weg: Nur er merkt sich, woher man kam – sonst
+      // verliess der Zurück-Pfeil danach den ganzen Stammbaum (PER-151).
+      onTippen: _ruecke,
       beschriftung: (z) => [
         z.name,
         lebensspanne(
@@ -2506,14 +2538,14 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                       : t.stammbaumTitelVon(fokus.name),
                 ),
               ),
-              if (fokus != null) ...[
-                const SizedBox(width: AppSpacing.sm),
-                IconButton(
-                  tooltip: t.stammbaumAndereWaehlen,
-                  icon: const Icon(Icons.swap_horiz, size: 20),
-                  onPressed: _waehlePerson,
-                ),
-              ],
+              // Auch ohne Person in der Mitte: Der leere Stammbaum verweist
+              // genau auf diesen Knopf, um jemanden anzulegen (PER-109).
+              const SizedBox(width: AppSpacing.sm),
+              IconButton(
+                tooltip: t.stammbaumAndereWaehlen,
+                icon: const Icon(Icons.swap_horiz, size: 20),
+                onPressed: _waehlePerson,
+              ),
             ],
           ),
           bottom: fokus == null

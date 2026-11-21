@@ -3822,8 +3822,8 @@ void main() {
   // Stammbaum
   // =========================================================================
 
-  // Befund: Der Knopf „Andere Person in die Mitte“ erscheint nur, wenn
-  // jemand in der Mitte steht (lib/screens/stammbaum_screen.dart:2508).
+  // Behoben in #412: Der Knopf „Andere Person in die Mitte“ steht auch im
+  // leeren Stammbaum, auf den sein Text verweist.
   pruefung('PER-109 Stammbaum ohne Personen', (tester) async {
     await start(tester);
     await stammbaumOeffnen(tester);
@@ -3837,7 +3837,7 @@ void main() {
     await neuePersonImDialog(tester, 'Person A');
     await waitFor(tester, find.text(de.stammbaumTitelVon('Person A')));
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-111 Andere Person in die Mitte', (tester) async {
     await start(tester);
@@ -4254,8 +4254,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Die Zeitleiste setzt die Mitte direkt und merkt den Weg nicht
-  // (lib/screens/stammbaum_screen.dart:2318–2324).
+  // Behoben in #412: Die Zeitleiste rückt über denselben Weg wie die
+  // anderen Ansichten; der Zurück-Pfeil führt zur vorigen Mitte.
   pruefung('PER-151 Zeitleiste und Zurück-Pfeil', (tester) async {
     await start(tester);
     await tester.runAsync(() async {
@@ -4298,7 +4298,7 @@ void main() {
     );
     expect(find.text(de.stammbaumTitelVon('Person A')), findsOneWidget);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-143 Baum: zu viele Haushalte', (tester) async {
     await start(tester);
@@ -4445,8 +4445,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Das Schreiben steht ohne try/catch
-  // (lib/screens/stammbaum_screen.dart:1403, 1446, 1485, 2250).
+  // Behoben in #412: GEDCOM, Tafel, Zierbaum und Lebensbaum fangen einen
+  // Schreibfehler ab und melden ihn verständlich.
   pruefung('PER-160 Ziel nicht beschreibbar', (tester) async {
     await start(tester);
     await tester.runAsync(() => person('Person A'));
@@ -4471,7 +4471,7 @@ void main() {
       reason: 'verständliche Fehlermeldung',
     );
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung('PER-168 Große GEDCOM-Datei', (tester) async {
     await start(tester);

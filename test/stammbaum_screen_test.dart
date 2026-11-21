@@ -1,10 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/services/lebensbaum.dart';
 import 'package:kern/services/lebensbaum_vorlage.dart';
@@ -16,6 +19,7 @@ import 'package:photo_vault/screens/stammbaum_screen.dart';
 import 'package:photo_vault/widgets/faecher_ansicht.dart';
 import 'package:photo_vault/widgets/familien_zeitleiste.dart';
 import 'package:photo_vault/services/backup_service.dart';
+import 'package:photo_vault/services/meldungsdienst.dart';
 import 'package:kern/services/stammbaum.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
@@ -1025,6 +1029,92 @@ void main() {
     expect(find.text('Opa'), findsWidgets);
   });
 
+  testWidgets('nach einem Tipp in der Zeitleiste führt Zurück zur vorigen '
+      'Mitte (PER-151)', (tester) async {
+    await lebenslaeufe();
+    await zeigeZeitleiste(tester, 'kind');
+    await tester.tap(find.text('Uropa'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(
+      find.byType(StammbaumScreen),
+      findsOneWidget,
+      reason: 'zurück beim Kind, nicht aus dem Stammbaum heraus',
+    );
+    expect(find.text('Stammbaum: Kind'), findsOneWidget);
+  });
+
+  testWidgets('der leere Stammbaum bietet „Andere Person in die Mitte“ '
+      '(PER-109)', (tester) async {
+    await db.delete(db.personBeziehungen).go();
+    await db.delete(db.people).go();
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: StammbaumScreen(library: library),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('noch keine Personen'), findsOneWidget);
+    await tester.tap(find.byTooltip('Andere Person in die Mitte'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      ),
+      'Person A',
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('„Person A“'));
+    await tester.pumpAndSettle();
+    expect(find.text('Stammbaum: Person A'), findsOneWidget);
+  });
+
+  testWidgets('ein nicht beschreibbares Ziel ergibt eine Meldung (PER-160)', (
+    tester,
+  ) async {
+    PackageInfo.setMockInitialValues(
+      appName: 'Photo Vault',
+      packageName: 'test',
+      version: '0',
+      buildNumber: '0',
+      buildSignature: '',
+    );
+    // Ein Ziel unter einer Datei statt unter einem Ordner: Dort lässt sich
+    // nichts schreiben („Not a directory“).
+    final datei = File(p.join(tempRoot.path, 'datei'))..writeAsStringSync('x');
+    final vorher = FilePickerPlatform.instance;
+    FilePickerPlatform.instance = _ZielDialog(
+      p.join(datei.path, 'stammbaum.ged'),
+    );
+    addTearDown(() => FilePickerPlatform.instance = vorher);
+    melde.verlaufLeeren();
+    addTearDown(melde.verlaufLeeren);
+    await zeige(tester, 'kind');
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Als GEDCOM ausgeben …'));
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(tester.takeException(), isNull, reason: 'keine unbehandelte');
+    expect(
+      [for (final m in melde.verlauf) m.text],
+      contains(
+        'Die Datei ließ sich dort nicht schreiben. Wähle einen '
+        'anderen Ort.',
+      ),
+    );
+  });
+
   testWidgets('die Zeitleiste laesst sich vorlesen', (tester) async {
     // Ein gezeichneter Balken ist für die Sprachausgabe nichts. Ohne die
     // Beschriftung je Zeile wäre diese Ansicht dort leer.
@@ -1559,4 +1649,24 @@ void main() {
       expect(find.text('Opa'), findsOneWidget);
     });
   });
+}
+
+/// Ein Speichern-Dialog, der [ziel] zurückgibt, ohne dort etwas anzulegen.
+class _ZielDialog extends FilePickerPlatform {
+  _ZielDialog(this.ziel);
+
+  final String ziel;
+
+  @override
+  Future<Uri?> saveFile({
+    required String fileName,
+    required Uint8List bytes,
+    required String mimeType,
+    String? dialogTitle,
+    String? initialDirectory,
+    Function(FilePickerStatus)? onFileSaving,
+    WindowsOptions windowsOptions = const WindowsOptions(),
+    LinuxOptions linuxOptions = const LinuxOptions(),
+    WebOptions webOptions = const WebOptions(),
+  }) async => Uri.file(ziel);
 }

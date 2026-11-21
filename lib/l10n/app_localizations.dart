@@ -10705,6 +10705,12 @@ abstract class AppTexte {
   /// **'Die Tafel wurde geschrieben.'**
   String get stammbaumTafelFertig;
 
+  /// No description provided for @stammbaumNichtGeschrieben.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datei ließ sich dort nicht schreiben. Wähle einen anderen Ort.'**
+  String get stammbaumNichtGeschrieben;
+
   /// No description provided for @aufgWirdErmittelt.
   ///
   /// In de, this message translates to:

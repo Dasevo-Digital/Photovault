@@ -6883,6 +6883,10 @@ class AppTexteEn extends AppTexte {
   String get stammbaumTafelFertig => 'The chart has been written.';
 
   @override
+  String get stammbaumNichtGeschrieben =>
+      'The file could not be written there. Choose a different location.';
+
+  @override
   String get aufgWirdErmittelt => 'Working out what is left …';
 
   @override
