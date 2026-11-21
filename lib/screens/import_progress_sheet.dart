@@ -290,12 +290,10 @@ String importFehlertext(AppTexte t, Object? grund) => switch (grund) {
 };
 
 /// Bekannte Kennungen als Satz, alles andere unverändert. Ältere Server
-/// schicken die Kennung noch mit dem Namen der Ausnahme davor.
+/// schicken die Kennung noch mit dem Namen der Ausnahme davor; gelesen wird
+/// deshalb die Kennung am Ende des Textes.
 String _kennungstext(AppTexte t, String text) {
-  const vorsatz = 'FormatException: ';
-  final kennung = text.startsWith(vorsatz)
-      ? text.substring(vorsatz.length)
-      : text;
+  final kennung = RegExp(r'pv_[a-z0-9_]+$').firstMatch(text)?.group(0);
   return switch (kennung) {
     'pv_import_quelle_geaendert' => t.importFehlerQuelleGeaendert,
     'pv_import_regeln_geaendert' ||
