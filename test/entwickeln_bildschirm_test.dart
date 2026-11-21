@@ -82,7 +82,9 @@ void main() {
     }
   }
 
-  Future<void> zeige(WidgetTester tester) async {
+  /// [bis]: Unter Last (die ganze Suite auf einmal) kommt der Stand aus
+  /// der Datenbank später an; dann weiter takten, bis er da ist.
+  Future<void> zeige(WidgetTester tester, {bool Function()? bis}) async {
     // Hoch genug, dass die ganze Reglerspalte ohne Rollen dasteht -
     // ein Regler ausserhalb des Bildes nimmt keine Geste an.
     tester.view.physicalSize = const Size(1400, 2600);
@@ -101,6 +103,10 @@ void main() {
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 25));
         await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      for (var i = 0; i < 200 && !(bis?.call() ?? true); i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 10));
       }
     });
     await takte(tester);
@@ -127,7 +133,10 @@ void main() {
           createdAt: DateTime(2026, 3, 6),
         ),
       );
-      await zeige(tester);
+      await zeige(
+        tester,
+        bis: () => find.textContaining('Wartet').evaluate().isNotEmpty,
+      );
       expect(find.text('KI-Restaurierung'), findsOneWidget);
       expect(find.textContaining('Wartet'), findsOneWidget);
       await abbauen(tester);
@@ -149,7 +158,10 @@ void main() {
           tilesTotal: const Value(20),
         ),
       );
-      await zeige(tester);
+      await zeige(
+        tester,
+        bis: () => find.textContaining('50').evaluate().isNotEmpty,
+      );
       expect(find.textContaining('50'), findsWidgets);
       await abbauen(tester);
     });
