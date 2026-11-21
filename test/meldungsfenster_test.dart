@@ -61,6 +61,19 @@ void main() {
     await ruhe(tester);
   });
 
+  testWidgets('eine überlange Meldung läuft nicht über', (tester) async {
+    // KI-143: Die Fehlermeldung des Scan-Arbeitsbereichs mit angehängtem
+    // Wortlaut liess die Spalte im kleinen Fenster überlaufen.
+    await zeige(tester, groesse: const Size(800, 360));
+    final lang = List.filled(60, 'Ein sehr langer Fehlertext').join(' ');
+    d.fehler(lang);
+    d.fehler('Zweite Meldung');
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.text(lang), findsOneWidget);
+    await ruhe(tester);
+  });
+
   testWidgets('der Knopf darunter bleibt anklickbar', (tester) async {
     // **Der Test, der diesen Bildschirm rechtfertigt.** Eine Einblendung
     // über allem ist ein unsichtbarer Deckel, wenn man ihn falsch baut:

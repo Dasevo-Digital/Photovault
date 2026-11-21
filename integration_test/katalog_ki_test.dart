@@ -6245,34 +6245,31 @@ void main() {
         timeout: const Duration(seconds: 60),
         was: 'Scan analysiert',
       );
-      if (_findet(find.text(de.scanErkannt(2)))) {
-        await eintragen(tester, field(de.scanBeschreibung), 'Ferien');
-        await scanImportieren(tester, 2);
-        await eventually(
-          tester,
-          () async =>
-              (await bibliothek.db
-                      .customSelect(
-                        'SELECT count(*) AS n FROM assets WHERE '
-                        "original_file_name LIKE 'srvscan%' "
-                        "AND description = 'Ferien'",
-                      )
-                      .getSingle())
-                  .read<int>('n') ==
-              2,
-          timeout: const Duration(minutes: 2),
-          was: 'Scan-Ausschnitte über den Abgleich da',
-        );
-      } else {
-        // Befund KI-128: Die Scan-Analyse scheitert schon vor dem Import.
-        print('KI-143 blockiert: Scan-Analyse scheitert (Befund KI-128)');
-        melde.alleSchliessen();
-        await pumpe(tester, 600);
-        // Die überlange Fehlermeldung lässt das Meldungsfenster überlaufen –
-        // eine Folge desselben Befunds, nicht dieser Prüfung.
-        final folge = tester.takeException();
-        print('KI-143 Folgefehler der Meldung: ${folge.runtimeType}');
-      }
+      // Behoben in #414: Die Scan-Analyse läuft seit #405 wieder (KI-128);
+      // eine überlange Fehlermeldung lässt das Meldungsfenster nicht mehr
+      // überlaufen (es rollt).
+      expect(
+        _findet(find.text(de.scanErkannt(2))),
+        isTrue,
+        reason: 'Scan-Analyse gescheitert',
+      );
+      await eintragen(tester, field(de.scanBeschreibung), 'Ferien');
+      await scanImportieren(tester, 2);
+      await eventually(
+        tester,
+        () async =>
+            (await bibliothek.db
+                    .customSelect(
+                      'SELECT count(*) AS n FROM assets WHERE '
+                      "original_file_name LIKE 'srvscan%' "
+                      "AND description = 'Ferien'",
+                    )
+                    .getSingle())
+                .read<int>('n') ==
+            2,
+        timeout: const Duration(minutes: 2),
+        was: 'Scan-Ausschnitte über den Abgleich da',
+      );
 
       // KI-178: ausschalten (den Server selbst kann die Prüfung nicht
       // beenden).

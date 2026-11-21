@@ -14,6 +14,7 @@ import '../services/scan_workspace.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/einfuegbares_menue.dart';
+import 'import_progress_sheet.dart' show importFehlertext;
 
 /// Sicherer Arbeitsbereich für Flachbettscans: Eine oder mehrere
 /// Quelldateien werden analysiert, erkannte Papierfotos lassen sich vor dem
@@ -81,8 +82,9 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
           neu.add(_ScanQuelle.aus(pfad, bytes, analyse));
         } catch (e) {
           if (mounted) {
+            final t = AppTexte.of(context);
             melde.fehler(
-              AppTexte.of(context).scanFehler('${p.basename(pfad)}: $e'),
+              t.scanFehler('${p.basename(pfad)}: ${importFehlertext(t, e)}'),
             );
           }
         }
@@ -241,7 +243,10 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      if (mounted) melde.fehler(t.scanFehler('$e'));
+      // Dieselbe Übersetzung wie beim Import: In einer verbundenen
+      // Bibliothek scheitert das Hochladen an Server oder Verbindung, und
+      // deren Rohtext (KeineVerbindung, JSON) gehört nicht in die Meldung.
+      if (mounted) melde.fehler(t.scanFehler(importFehlertext(t, e)));
     } finally {
       if (await temp.exists()) await temp.delete(recursive: true);
       if (mounted) setState(() => _beschaeftigt = false);

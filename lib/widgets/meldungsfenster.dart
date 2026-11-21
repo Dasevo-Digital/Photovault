@@ -185,15 +185,20 @@ class _MeldungsfensterState extends State<Meldungsfenster> {
             alignment: schmal ? Alignment.bottomCenter : Alignment.topRight,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < karten.length; i++) ...[
-                    if (i > 0) const SizedBox(height: AppSpacing.sm),
-                    karten[i],
+              // Rollbar, sobald der Stapel höher wird als das Fenster: Eine
+              // sehr lange Meldung – etwa ein Fehler mit angehängtem
+              // Wortlaut – liess die Spalte sonst unten überlaufen.
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < karten.length; i++) ...[
+                      if (i > 0) const SizedBox(height: AppSpacing.sm),
+                      karten[i],
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
