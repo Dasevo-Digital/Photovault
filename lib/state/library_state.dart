@@ -3429,8 +3429,10 @@ class LibraryState extends ChangeNotifier {
     final werte = quelle.regler;
 
     var done = 0;
+    var getan = 0;
     yield ImportProgress(0, ziele.length);
     for (final asset in ziele) {
+      Object? grund;
       try {
         final bytes = await NativeImageConverter.developImage(
           await paths.bereit(asset.relativePath),
@@ -3468,16 +3470,20 @@ class LibraryState extends ChangeNotifier {
             updatedAt: DateTime.now(),
           ),
         );
+        getan++;
       } catch (e) {
-        debugPrint(
-          'Entwicklung übertragen fehlgeschlagen für ${asset.originalFileName}: $e',
-        );
+        // Gemeldet, nicht nur protokolliert (BEA-058): Ohne das zählte
+        // ein Foto ohne Original als erledigt, und niemand erfuhr davon.
+        grund = e;
       }
       done++;
       yield ImportProgress(
         done,
         ziele.length,
         currentFile: asset.originalFileName,
+        gescheitert: grund != null,
+        grund: grund,
+        getan: done == ziele.length ? getan : null,
       );
     }
   }

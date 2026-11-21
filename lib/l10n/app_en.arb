@@ -732,6 +732,7 @@
   "auswUebertragenText": "Everything that applies to the whole image is carried over: exposure, white balance, contrast, highlights, shadows, clarity, sharpness, noise reduction, vignette, lens correction, colour table, tone curve and colour mixer. Each photo is re-rendered.\n\nMasks are not carried over. Each photo's previous state stays in its history.",
   "auswUebertragen": "Paste",
   "auswUebertrageLaeuft": "Pasting develop settings …",
+  "auswUebertragenGescheitert": "{anzahl, plural, =1{Could not paste onto one photo} other{Could not paste onto {anzahl} photos}} – the original is missing or could not be rendered: {namen}",
   "auswKeineGeeigneten": "No suitable photos – locked photos and videos are left out.",
   "auswZielordner": "Choose a destination folder for {anzahl} photo(s)",
   "auswExportiereLaeuft": "Exporting … ({erledigt} / {gesamt})",

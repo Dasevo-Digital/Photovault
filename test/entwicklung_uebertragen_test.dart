@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
@@ -13,6 +14,7 @@ import 'package:photo_vault/state/library_state.dart';
 /// Zwischenablage nach Lightroom-Vorbild. Geprüft wird vor allem, was NICHT
 /// mitwandert: gesperrte Fotos, Videos und Masken.
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory tempRoot;
   late AppDatabase db;
   late StoragePaths paths;
@@ -172,5 +174,38 @@ void main() {
           'eine Maske umschliesst einen Ort im Quellbild und hätte im '
           'Zielbild keine Entsprechung',
     );
+  });
+
+  test('ein Foto ohne Original zählt nicht als erledigt (BEA-058)', () async {
+    // Der native Wandler antwortet im Prüfstand nicht von selbst. Wie der
+    // echte rendert er nur, was es gibt.
+    const kanal = MethodChannel('photo_vault/image_convert');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(kanal, (aufruf) async {
+          if (aufruf.method != 'developImage') return null;
+          final pfad = (aufruf.arguments as Map)['path'] as String;
+          return File(pfad).existsSync()
+              ? Uint8List.fromList(List.filled(32, 7))
+              : null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(kanal, null),
+    );
+    final quelle = await importiere('quelle4.jpg', 10);
+    await entwickle(quelle);
+    await lib.kopiereEntwicklungVon(quelle);
+    final weg = await importiere('weg.jpg', 12);
+    final ohne = (await db.assetById(weg))!;
+    paths.absolute(ohne.relativePath).deleteSync();
+
+    final schritte = await lib.uebertrageEntwicklung([weg]).toList();
+    final gescheitert = [
+      for (final s in schritte)
+        if (s.gescheitert) s.currentFile,
+    ];
+    expect(gescheitert, ['weg.jpg'], reason: 'das Scheitern wird gemeldet');
+    expect(schritte.last.getan, 0, reason: 'erledigt ist nichts');
+    expect(await db.developSettingsForAsset(weg), isNull);
   });
 }

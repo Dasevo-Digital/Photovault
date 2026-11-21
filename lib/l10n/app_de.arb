@@ -1178,6 +1178,17 @@
   "auswUebertragenText": "Übernommen wird alles, was für das ganze Bild gilt: Belichtung, Weissabgleich, Kontrast, Lichter, Schatten, Klarheit, Schärfe, Rauschunterdrückung, Vignettierung, Objektivkorrektur, Farbtabelle, Tonwertkurve und Farbmischer. Jedes Foto wird dabei neu gerendert.\n\nMasken werden nicht übertragen. Der bisherige Stand jedes Fotos bleibt in dessen Verlauf erhalten.",
   "auswUebertragen": "Übertragen",
   "auswUebertrageLaeuft": "Übertrage Entwicklung …",
+  "auswUebertragenGescheitert": "{anzahl, plural, =1{Ein Foto wurde nicht übertragen} other{{anzahl} Fotos wurden nicht übertragen}} – das Original fehlt oder ließ sich nicht rendern: {namen}",
+  "@auswUebertragenGescheitert": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      },
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
   "auswKeineGeeigneten": "Keine geeigneten Fotos – gesperrte Fotos und Videos bleiben aussen vor.",
   "auswZielordner": "Zielordner für {anzahl} Foto(s) wählen",
   "@auswZielordner": {

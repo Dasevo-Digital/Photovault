@@ -3671,6 +3671,12 @@ abstract class AppTexte {
   /// **'Übertrage Entwicklung …'**
   String get auswUebertrageLaeuft;
 
+  /// No description provided for @auswUebertragenGescheitert.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Ein Foto wurde nicht übertragen} other{{anzahl} Fotos wurden nicht übertragen}} – das Original fehlt oder ließ sich nicht rendern: {namen}'**
+  String auswUebertragenGescheitert(int anzahl, String namen);
+
   /// No description provided for @auswKeineGeeigneten.
   ///
   /// In de, this message translates to:

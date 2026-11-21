@@ -3070,7 +3070,8 @@ void _uebertragenTests() {
     }
     expect(entwickelt, 200);
 
-    // Hinweis: Was scheitert, zählt trotzdem als erledigt.
+    // Behoben in #411: Was scheitert, zählt nicht als erledigt und wird
+    // gemeldet.
     final drei = await importiereDirekt(tester, [
       for (var i = 0; i < 3; i++)
         grauFoto('x$i.jpg', wert: 70 + i, datum: DateTime(2022, 3, 3, 9, i)),
@@ -3081,16 +3082,15 @@ void _uebertragenTests() {
     merkeMeldungen();
     await tap(tester, find.byTooltip(de.auswEntwicklungUebertragen));
     await tap(tester, find.widgetWithText(FilledButton, de.auswUebertragen));
-    await waitFor(tester, find.textContaining('3 / 3'), timeout: _lang);
+    await waitFor(tester, find.text(de.allgSchliessen), timeout: _lang);
+    expect(find.textContaining('2 / 3'), findsOneWidget);
+    expect(find.textContaining('3 / 3'), findsNothing);
     final kaputt = await lauf(
       tester,
       () => bibliothek.db.developSettingsForAsset(drei[1]),
     );
-    beobachtung(
-      'BEA-058',
-      'Original fehlt: Zähler endet bei 3 / 3, Entwicklung angelegt: ${kaputt != null}, '
-          'neue Meldungen: ${neueMeldungen()}',
-    );
+    expect(kaputt, isNull);
+    expect(neueMeldungen(), isNotEmpty, reason: 'der Fehler wird gemeldet');
     await tap(tester, find.text(de.allgSchliessen));
     await abschluss(tester);
   });
@@ -7876,9 +7876,9 @@ void _befundTests() {
     await abschluss(tester);
   });
 
-  // Befund: Scheitert beim Übertragen ein Foto (hier: Original fehlt), zählt
-  // der Fortschritt es trotzdem als erledigt, und es gibt keine Meldung
-  // (state/library_state.dart:3227–3238, nur debugPrint).
+  // Behoben in #411: Scheitert beim Übertragen ein Foto (hier: Original
+  // fehlt), zählt der Fortschritt es nicht als erledigt, nennt es und
+  // meldet es am Ende.
   testWidgets('BEA-058 Befund: gescheitertes Foto zählt als erledigt', (
     tester,
   ) async {
@@ -7908,7 +7908,7 @@ void _befundTests() {
     );
     expect(neueMeldungen(), isNotEmpty, reason: 'der Fehler wird gemeldet');
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Befund: Der Größenexport eines unbearbeiteten Fotos trägt weder
   // Aufnahmedatum noch Kamera: Die Aufnahmeangaben werden nur bei einer

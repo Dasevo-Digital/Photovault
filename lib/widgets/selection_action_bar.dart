@@ -1091,23 +1091,45 @@ Future<void> runBatchApplyPreset(
   final werte = await library.werteAusVorgabe(gewaehlt);
   if (!context.mounted) return;
 
-  // Vor dem Dialog auflösen, wie beim Übertragen: Der Mapper unten läuft
-  // lange nachdem dieser Kontext gültig war.
-  final keineGeeigneten = AppTexte.of(context).auswKeineGeeigneten;
+  // Die Texte sind schon oben aufgelöst: Der Verlauf unten läuft lange
+  // nachdem dieser Kontext gültig war.
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => ProgressDialog(
-      title: AppTexte.of(context).auswUebertrageLaeuft,
-      stream: library
-          .uebertrageEntwicklung(assetIds, vorgabe: werte)
-          .map(
-            (p) => p.total == 0
-                ? keineGeeigneten
-                : '${p.done} / ${p.total}${p.currentFile != null ? ' — ${p.currentFile}' : ''}',
-          ),
+      title: t.auswUebertrageLaeuft,
+      stream: _uebertragungsverlauf(
+        library.uebertrageEntwicklung(assetIds, vorgabe: werte),
+        t,
+      ),
     ),
   );
+}
+
+/// Der Text des Fortschrittsfensters beim Übertragen einer Entwicklung.
+///
+/// Gezählt wird, was gelang: Ein Foto, dessen Original fehlt, ist nicht
+/// erledigt (BEA-058). Was scheiterte, steht unter dem Zähler und kommt am
+/// Ende als Meldung – vorher stand es nur im Protokoll.
+Stream<String> _uebertragungsverlauf(
+  Stream<ImportProgress> verlauf,
+  AppTexte t,
+) async* {
+  final gescheitert = <String>[];
+  String nichtUebertragen() =>
+      t.auswUebertragenGescheitert(gescheitert.length, gescheitert.join(', '));
+  await for (final p in verlauf) {
+    if (p.total == 0) {
+      yield t.auswKeineGeeigneten;
+      continue;
+    }
+    if (p.gescheitert) gescheitert.add(p.currentFile ?? '?');
+    final zaehler =
+        '${p.done - gescheitert.length} / ${p.total}'
+        '${p.currentFile != null ? ' — ${p.currentFile}' : ''}';
+    yield gescheitert.isEmpty ? zaehler : '$zaehler\n${nichtUebertragen()}';
+  }
+  if (gescheitert.isNotEmpty) melde.warnung(nichtUebertragen());
 }
 
 /// Überträgt die zuvor kopierten Entwicklungseinstellungen auf [assets].
@@ -1142,21 +1164,15 @@ Future<void> runBatchPasteDevelop(
   );
   if (bestaetigt != true || !context.mounted) return;
 
-  // Vor dem Dialog auflösen: Der Mapper unten läuft bei jedem Ereignis, also
-  // lange nachdem dieser Kontext gültig war.
-  final keineGeeigneten = AppTexte.of(context).auswKeineGeeigneten;
+  // Vor dem Dialog auflösen: Der Verlauf unten läuft bei jedem Ereignis,
+  // also lange nachdem dieser Kontext gültig war.
+  final t = AppTexte.of(context);
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => ProgressDialog(
-      title: AppTexte.of(context).auswUebertrageLaeuft,
-      stream: library
-          .uebertrageEntwicklung(assetIds)
-          .map(
-            (p) => p.total == 0
-                ? keineGeeigneten
-                : '${p.done} / ${p.total}${p.currentFile != null ? ' — ${p.currentFile}' : ''}',
-          ),
+      title: t.auswUebertrageLaeuft,
+      stream: _uebertragungsverlauf(library.uebertrageEntwicklung(assetIds), t),
     ),
   );
 }

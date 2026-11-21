@@ -2189,6 +2189,17 @@ class AppTexteDe extends AppTexte {
   String get auswUebertrageLaeuft => 'Übertrage Entwicklung …';
 
   @override
+  String auswUebertragenGescheitert(int anzahl, String namen) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Fotos wurden nicht übertragen',
+      one: 'Ein Foto wurde nicht übertragen',
+    );
+    return '$_temp0 – das Original fehlt oder ließ sich nicht rendern: $namen';
+  }
+
+  @override
   String get auswKeineGeeigneten =>
       'Keine geeigneten Fotos – gesperrte Fotos und Videos bleiben aussen vor.';
 

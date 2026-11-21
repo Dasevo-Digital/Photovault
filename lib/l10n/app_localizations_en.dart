@@ -2172,6 +2172,17 @@ class AppTexteEn extends AppTexte {
   String get auswUebertrageLaeuft => 'Pasting develop settings …';
 
   @override
+  String auswUebertragenGescheitert(int anzahl, String namen) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Could not paste onto $anzahl photos',
+      one: 'Could not paste onto one photo',
+    );
+    return '$_temp0 – the original is missing or could not be rendered: $namen';
+  }
+
+  @override
   String get auswKeineGeeigneten =>
       'No suitable photos – locked photos and videos are left out.';
 
