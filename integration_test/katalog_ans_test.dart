@@ -3067,48 +3067,38 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Wird das letzte übrige Foto per ⌫ gelöscht, schliesst sich die
-  // Ansicht zwar, baut sich vorher aber mit leerer Liste noch einmal auf:
-  // _removeCurrentAndAdvance (asset_viewer_screen.dart:401) leert _assets
-  // per setState und ruft erst danach Navigator.pop; build
-  // (asset_viewer_screen.dart:881) greift über _currentAsset (:233) auf
-  // _assets[_currentIndex] zu – RangeError beim Bauen.
-  testWidgets(
-    'ANS-049 Letztes Foto per Taste löschen schliesst die Ansicht',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [
-          testfoto('x1.jpg', datum: DateTime(2025, 4, 2, 10)),
-          testfoto('x2.jpg', datum: DateTime(2025, 4, 1, 10)),
-        ],
-      );
-      await openSection(tester, Hauptbereich.zeitleiste);
-      await oeffne(tester, 'x1.jpg');
-      await key(tester, LogicalKeyboardKey.backspace);
-      await tap(tester, find.widgetWithText(FilledButton, de.allgLoeschen));
-      await waitFor(tester, betrachterZeigt(DateTime(2025, 4, 1, 10)));
-      await key(tester, LogicalKeyboardKey.backspace);
-      await tap(tester, find.widgetWithText(FilledButton, de.allgLoeschen));
-      await waitGone(tester, betrachter);
-      final fehler = tester.takeException();
-      print('ANS-049: Ausnahme beim Schliessen: $fehler');
-      expect(fehler, isNull);
-      expect(find.text(de.timelineLeer), findsOneWidget);
-      await finish(tester);
-    },
-  );
+  // Behoben in #410: Beim letzten Foto schliesst die Ansicht, ohne die Liste
+  // vorher zu leeren; kein Aufbau mit leerer Liste mehr.
+  testWidgets('ANS-049 Letztes Foto per Taste löschen schliesst die Ansicht', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [
+        testfoto('x1.jpg', datum: DateTime(2025, 4, 2, 10)),
+        testfoto('x2.jpg', datum: DateTime(2025, 4, 1, 10)),
+      ],
+    );
+    await openSection(tester, Hauptbereich.zeitleiste);
+    await oeffne(tester, 'x1.jpg');
+    await key(tester, LogicalKeyboardKey.backspace);
+    await tap(tester, find.widgetWithText(FilledButton, de.allgLoeschen));
+    await waitFor(tester, betrachterZeigt(DateTime(2025, 4, 1, 10)));
+    await key(tester, LogicalKeyboardKey.backspace);
+    await tap(tester, find.widgetWithText(FilledButton, de.allgLoeschen));
+    await waitGone(tester, betrachter);
+    final fehler = tester.takeException();
+    print('ANS-049: Ausnahme beim Schliessen: $fehler');
+    expect(fehler, isNull);
+    expect(find.text(de.timelineLeer), findsOneWidget);
+    await finish(tester);
+  });
 
-  // Befund: Im Album nimmt der Knopf „In den Papierkorb verschieben (⌫)“
-  // das Foto aus dem Album (album_detail_screen.dart:91–96, onDelete mit
-  // AusAlbumNehmen), die Taste ⌫ nicht: Sie geht über
-  // _confirmAndDeleteCurrent → _removeCurrentAndAdvance
-  // (asset_viewer_screen.dart:383–391) und legt nur in den Papierkorb. Nach
-  // dem Wiederherstellen steht das Foto wieder im Album, beim Knopf nicht.
+  // Behoben in #410: Die Taste ⌫ geht wie der Knopf über onDelete (im Album:
+  // aus dem Album und in den Papierkorb); „Rückgängig“ legt es über onRestore
+  // wieder ins Album.
   testWidgets(
     'ANS-049 Im Album: Knopf und Taste ⌫ behandeln die Albumzugehörigkeit',
-    skip: true,
     (tester) async {
       await startApp(
         tester,

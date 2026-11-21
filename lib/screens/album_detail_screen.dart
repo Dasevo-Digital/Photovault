@@ -95,6 +95,13 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
             );
             await widget.library.db.fuehreAus(InDenPapierkorb([a.id]));
           },
+          // „Rückgängig“ nach der Taste ⌫ legt es auch wieder ins Album.
+          onRestore: (a) async {
+            await widget.library.db.fuehreAus(AusDemPapierkorb([a.id]));
+            await widget.library.db.fuehreAus(
+              AlbumFuellen(widget.albumId, [a.id]),
+            );
+          },
           onLock: (a) async {
             if (await ensureVaultUnlocked(context, widget.library)) {
               await widget.library.lockAsset(a);

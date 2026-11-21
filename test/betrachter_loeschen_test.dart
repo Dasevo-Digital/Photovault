@@ -135,4 +135,103 @@ void main() {
     expect(await imPapierkorb(tester), isEmpty);
     expect(seiten(tester), 3, reason: 'wieder an seinem Platz');
   });
+
+  testWidgets('das letzte Foto per Taste: Ansicht schliesst ohne Fehler', (
+    tester,
+  ) async {
+    // Die Liste wurde vor dem Schliessen geleert; beim Aufbau während des
+    // Schliessens las die Ansicht das Foto an Stelle 0 – RangeError.
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: bibliothek,
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => AssetViewerScreen(
+                    assets: [fotos.first],
+                    initialIndex: 0,
+                    paths: pfade,
+                    db: db,
+                    library: bibliothek,
+                    cullingMode: true,
+                  ),
+                ),
+              ),
+              child: const Text('öffnen'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('öffnen'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AssetViewerScreen), findsOneWidget);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.delete);
+    for (var i = 0; i < 5; i++) {
+      await warte(tester);
+    }
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AssetViewerScreen), findsNothing);
+    expect(await imPapierkorb(tester), ['a']);
+  });
+
+  testWidgets('die Taste ⌫ löscht wie der Knopf, Rückgängig macht es wieder '
+      'gut', (tester) async {
+    // Im Album nahm der Knopf das Foto aus dem Album, die Taste nicht.
+    final geloescht = <String>[];
+    final zurueck = <String>[];
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: bibliothek,
+        child: MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildDarkTheme(),
+          home: AssetViewerScreen(
+            assets: fotos,
+            initialIndex: 0,
+            paths: pfade,
+            db: db,
+            library: bibliothek,
+            onDelete: (a) async {
+              geloescht.add(a.id);
+              await db.fuehreAus(InDenPapierkorb([a.id]));
+            },
+            onRestore: (a) async {
+              zurueck.add(a.id);
+              await db.fuehreAus(AusDemPapierkorb([a.id]));
+            },
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.widgetWithText(FilledButton, 'Löschen'));
+    for (var i = 0; i < 3; i++) {
+      await warte(tester);
+    }
+    expect(geloescht, ['a']);
+    expect(seiten(tester), 2);
+
+    melde.verlauf.first.aktion!.beiDruck();
+    for (var i = 0; i < 3; i++) {
+      await warte(tester);
+    }
+    expect(zurueck, ['a']);
+    expect(await imPapierkorb(tester), isEmpty);
+    expect(seiten(tester), 3);
+  });
 }

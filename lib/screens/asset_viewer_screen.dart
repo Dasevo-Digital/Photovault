@@ -89,7 +89,16 @@ class AssetViewerScreen extends StatefulWidget {
   /// Listen kann der Parameter entfallen.
   final LibraryState? library;
   final Future<void> Function(AssetData asset)? onToggleFavorite;
+
+  /// Was „In den Papierkorb“ hier heisst – für den Knopf **und** die
+  /// Taste ⌫. Im Album zum Beispiel auch: aus dem Album nehmen. Ohne
+  /// Angabe legt die Sichtung nur in den Papierkorb.
   final Future<void> Function(AssetData asset)? onDelete;
+
+  /// Macht [onDelete] für „Rückgängig“ wieder gut. Ohne Angabe kommt die
+  /// Aufnahme nur aus dem Papierkorb zurück – richtig, solange [onDelete]
+  /// nichts anderes tut.
+  final Future<void> Function(AssetData asset)? onRestore;
   final Future<void> Function(AssetData asset)? onLock;
 
   /// Sichtungs-Modus (Culling): zeigt eine kompakte Hinweisleiste statt des
@@ -112,6 +121,7 @@ class AssetViewerScreen extends StatefulWidget {
     this.library,
     this.onToggleFavorite,
     this.onDelete,
+    this.onRestore,
     this.onLock,
     this.cullingMode = false,
     this.darktable,
@@ -398,7 +408,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       final abgelehnt = _currentAsset;
       final platz = _currentIndex;
       final wasLastIndex = platz == _assets.length - 1;
-      await widget.db.fuehreAus(InDenPapierkorb([abgelehnt.id]));
+      // Über denselben Weg wie der Knopf: Was „Löschen“ hier heisst,
+      // weiss der Aufrufer. Im Album nahm die Taste das Foto sonst nicht
+      // aus dem Album, beim Wiederherstellen stand es wieder darin.
+      final loeschen = widget.onDelete;
+      if (loeschen != null) {
+        await loeschen(abgelehnt);
+      } else {
+        await widget.db.fuehreAus(InDenPapierkorb([abgelehnt.id]));
+      }
       if (!mounted) return;
       final t = AppTexte.of(context);
       melde.hinweis(
@@ -408,11 +426,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           beiDruck: () => unawaited(_holeZurueck(abgelehnt, platz)),
         ),
       );
-      setState(() => _assets.removeWhere((a) => a.id == abgelehnt.id));
-      if (_assets.isEmpty) {
+      // Das letzte Foto: schliessen, ohne die Liste vorher zu leeren. Die
+      // Ansicht baut sich beim Schliessen noch auf und läse sonst das
+      // Foto an einer Stelle, die es nicht mehr gibt (RangeError).
+      if (_assets.length == 1) {
         Navigator.of(context).pop();
         return;
       }
+      setState(() => _assets.removeWhere((a) => a.id == abgelehnt.id));
       if (wasLastIndex) {
         final newIndex = _assets.length - 1;
         setState(() => _currentIndex = newIndex);
@@ -428,7 +449,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   var _loescht = false;
 
   Future<void> _holeZurueck(AssetData aufnahme, int platz) async {
-    await widget.db.fuehreAus(AusDemPapierkorb([aufnahme.id]));
+    final zurueck = widget.onRestore;
+    if (zurueck != null) {
+      await zurueck(aufnahme);
+    } else {
+      await widget.db.fuehreAus(AusDemPapierkorb([aufnahme.id]));
+    }
     if (!mounted) return;
     final ziel = platz.clamp(0, _assets.length);
     setState(() {
