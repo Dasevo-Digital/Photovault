@@ -3634,9 +3634,9 @@ void main() {
     },
   );
 
-  // Befund ORT-093: besuchteOrte zählt die Videohälfte eines Live Photos
-  // mit (packages/kern/lib/db/abfragen/spuren.dart:194–208, kein
-  // _isPrimaryGridEntry). Zwei Läufe.
+  // Behoben in #413: besuchteOrte zählt dieselbe Menge wie die Karte (_mitOrt,
+  // nur Haupteinträge); die Videohälfte eines Live Photos zählt nicht mehr
+  // mit.
   testWidgets('ORT-093 Live Photo zählt in der Länderliste einmal', (
     tester,
   ) async {
@@ -3682,7 +3682,7 @@ void main() {
     print('ORT-093 Live Photo: $unter');
     expect(unter, contains(de.laenderAufnahmen(1)));
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('ORT-098 Gesperrte und gelöschte Fotos zählen nicht als Besuch', (
     tester,

@@ -203,6 +203,36 @@ void main() {
     expect((await db.besuchteOrte()).single.anzahl, 1);
   });
 
+  test('ein Live Photo zählt in den besuchten Orten einmal', () async {
+    // Die Videohälfte trägt denselben Ort. Die Karte zeigt sie nicht, die
+    // Länderliste zählte sie mit („2 Aufnahmen“).
+    for (final (id, typ, partner) in [
+      ('foto', 'IMAGE', 'video'),
+      ('video', 'VIDEO', 'foto'),
+    ]) {
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.x',
+              relativePath: 'originals/$id.x',
+              checksum: 'pruef-$id',
+              type: typ,
+              fileCreatedAt: DateTime(2024, 6, 3),
+              importedAt: DateTime(2024),
+              latitude: const Value(41.9),
+              longitude: const Value(12.5),
+              locationCity: const Value('Rom'),
+              locationCountry: const Value('Italien'),
+              linkedAssetId: Value(partner),
+            ),
+          );
+    }
+    expect((await db.besuchteOrte()).single.anzahl, 1);
+    expect(await db.assetsWithLocation(), hasLength(1));
+  });
+
   test('auch unverortete gesperrte Aufnahmen bleiben draussen', () async {
     // Sie waeren sonst der Umweg: ueber das Auffuellen erkannter Reisen
     // landeten sie doch im Raster.

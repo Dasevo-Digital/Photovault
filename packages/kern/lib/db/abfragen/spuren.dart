@@ -201,11 +201,10 @@ extension SpurenAbfragen on AppDatabase {
         assets.locationCity,
         anzahl,
       ])
-      ..where(
-        assets.latitude.isNotNull() &
-            assets.isTrashed.equals(false) &
-            assets.isLocked.equals(false),
-      )
+      // Dieselbe Menge wie die Karte (siehe [assetsWithLocation]): Sonst
+      // zählte die Videohälfte eines Live Photos als zweite Aufnahme, und
+      // die Länderliste nannte „2 Aufnahmen“, wo die Karte eine zeigt.
+      ..where(_mitOrt(assets))
       ..groupBy([
         assets.locationCountry,
         assets.locationState,
