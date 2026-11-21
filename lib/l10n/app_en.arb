@@ -4697,6 +4697,7 @@
       }
     }
   },
+  "serverSicherungProbeGescheitert": "The restore test was not successful – part of the backup could not be restored as a test.",
   "serverSicherungVeraltet": "No successful backup since {wann}.",
   "@serverSicherungVeraltet": {
     "placeholders": {

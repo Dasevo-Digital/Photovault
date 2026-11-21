@@ -296,6 +296,19 @@ void main() {
     expect(find.textContaining('12'), findsOneWidget);
     expect(find.text(t.serverSicherungJetzt), findsOneWidget);
 
+    // Eine gescheiterte Probe meldet der Server als Code; der stand roh
+    // da („pv_probe_unlesbar“).
+    bib.serversicherungFuerTests = const Serversicherungsstand(
+      stufe: 'fehler',
+      fehler: 'pv_probe_unlesbar',
+    );
+    t = await zeige(tester, (_) => ServerSicherungAbschnitt(bib));
+    expect(
+      find.text(t.serverSicherungFehler(t.serverSicherungProbeGescheitert)),
+      findsOneWidget,
+    );
+    expect(find.textContaining('pv_probe'), findsNothing);
+
     bib.serversicherungFuerTests = const Serversicherungsstand(
       stufe: 'zielFehlt',
     );

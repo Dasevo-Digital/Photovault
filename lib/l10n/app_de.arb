@@ -6141,6 +6141,7 @@
       }
     }
   },
+  "serverSicherungProbeGescheitert": "Die Wiederherstellungsprobe war nicht erfolgreich – ein Teil der Sicherung ließ sich nicht probeweise zurückholen.",
   "serverSicherungVeraltet": "Seit {wann} keine gelungene Sicherung.",
   "@serverSicherungVeraltet": {
     "placeholders": {

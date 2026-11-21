@@ -9596,6 +9596,10 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get serverSicherungProbeGescheitert =>
+      'The restore test was not successful – part of the backup could not be restored as a test.';
+
+  @override
   String serverSicherungVeraltet(String wann) {
     return 'No successful backup since $wann.';
   }

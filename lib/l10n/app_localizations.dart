@@ -14737,6 +14737,12 @@ abstract class AppTexte {
   /// **'Die letzte Sicherung ist gescheitert: {grund}'**
   String serverSicherungFehler(String grund);
 
+  /// No description provided for @serverSicherungProbeGescheitert.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Wiederherstellungsprobe war nicht erfolgreich – ein Teil der Sicherung ließ sich nicht probeweise zurückholen.'**
+  String get serverSicherungProbeGescheitert;
+
   /// No description provided for @serverSicherungVeraltet.
   ///
   /// In de, this message translates to:

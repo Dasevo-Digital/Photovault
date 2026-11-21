@@ -9645,6 +9645,10 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get serverSicherungProbeGescheitert =>
+      'Die Wiederherstellungsprobe war nicht erfolgreich – ein Teil der Sicherung ließ sich nicht probeweise zurückholen.';
+
+  @override
   String serverSicherungVeraltet(String wann) {
     return 'Seit $wann keine gelungene Sicherung.';
   }

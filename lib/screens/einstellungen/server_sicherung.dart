@@ -55,7 +55,7 @@ class ServerSicherungAbschnitt extends StatelessWidget {
         false,
       ),
       'zielFehlt' => (t.serverSicherungZielFehlt, true),
-      'fehler' => (t.serverSicherungFehler(s.fehler ?? '–'), true),
+      'fehler' => (t.serverSicherungFehler(_grund(t, s.fehler)), true),
       'veraltet' => (
         s.letzterErfolg == null
             ? t.serverSicherungVeraltetNie
@@ -242,3 +242,15 @@ class _PassphraseDialogState extends State<_PassphraseDialog> {
     );
   }
 }
+
+/// Der Grund einer gescheiterten Sicherung, wie ihn der Server meldet.
+///
+/// Eine gescheiterte Probe kommt als Code (`pv_probe_…`) und stand so
+/// roh da – „pv_probe_unlesbar“ (Nebenbefund der zweiten Prüfrunde).
+/// Andere Gründe schreibt der Server als Satz; die gehen unverändert
+/// durch.
+String _grund(AppTexte t, String? fehler) => switch (fehler) {
+  null || '' => '–',
+  final f when f.startsWith('pv_probe_') => t.serverSicherungProbeGescheitert,
+  final f => f,
+};
