@@ -452,17 +452,20 @@ class _MapScreenState extends State<MapScreen> {
     // Absichtlich ohne `await`: Das Umschalten soll sofort geschehen, das
     // Merken darf hinterherlaufen.
     unawaited(widget.library.db.setzeKartenansicht(mode.alsText));
-    _zoomAufStilGrenzeZiehen(mode);
     setState(() {
       _mode = mode;
       if (mode != Kartenansicht.globus) {
         _lastFlatMode = mode;
         // Explizite Auswahl über das Menü statt eines Pin-Sprungs (siehe
-        // [_jumpToFlatMap]) -> normale Übersicht statt eines noch aus
-        // einem früheren Sprung übrig gebliebenen Zielorts.
+        // [_jumpToFlatMap]) -> kein noch aus einem früheren Sprung übrig
+        // gebliebener Zielort.
         _pendingFlatFocus = null;
         _pendingFlatZoom = null;
-        _flacherZoom = _standardZoom;
+        // Gruppiert wird nach der Kamera, die die Karte wirklich hat:
+        // Der Steuerer behält sie über den Wechsel hinweg (siehe
+        // [_flacheKamera]). Mit fest 6 standen bei Zoom 21 drei Fotos als
+        // ein Sammelmarker da.
+        _flacherZoom = (_flacheKamera?.zoom ?? _standardZoom).roundToDouble();
         // Sonst stünde der Zoomhinweis beim nächsten Öffnen des Globus
         // sofort da, obwohl der wieder bei Stufe 0 beginnt.
         _globusZoom = 0;
@@ -495,21 +498,57 @@ class _MapScreenState extends State<MapScreen> {
         _globePointsSynced = false;
       }
     });
+    _zoomAufStilGrenzeZiehen(mode);
     if (mode == Kartenansicht.globus && !_globePointsSynced) {
       _syncGlobePoints(focus: true);
     }
+  }
+
+  /// Die Kamera der flachen Karte – oder `null`, solange sie noch nie
+  /// gezeigt wurde.
+  ///
+  /// **Der Steuerer behält sie.** flutter_map übernimmt bei einem schon
+  /// benutzten [MapController] die alte Kamera und liest `initialCenter`
+  /// und `initialZoom` nicht mehr (MapControllerImpl.options:
+  /// `value.camera?.withOptions(…)`). Auch eine niedrigere `maxZoom`
+  /// zieht den Zoom nicht zurück. Wohin die Karte soll, muss deshalb
+  /// über [_flacheKarteBewegen] gehen.
+  MapCamera? get _flacheKamera {
+    try {
+      return _flacheKarte.camera;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Bewegt die flache Karte, sobald sie (wieder) im Baum steht.
+  ///
+  /// Nach dem Bild, weil sie beim Wechsel vom Globus erst noch aufgebaut
+  /// wird; ohne Kamera gelten `initialCenter`/`initialZoom` ohnehin.
+  void _flacheKarteBewegen(ll.LatLng? ziel, double zoom) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final kamera = _flacheKamera;
+      if (!mounted || kamera == null || _mode == Kartenansicht.globus) return;
+      _flacheKarte.move(ziel ?? kamera.center, zoom);
+      setState(() => _flacherZoom = zoom.roundToDouble());
+    });
   }
 
   /// Springt von einem Globus-Pin direkt in die flache, kachelbasierte
   /// Karte an dieser Stelle (siehe Doku bei [_pendingFlatFocus]) – der
   /// Globus selbst kann Straßenebene nicht darstellen.
   void _jumpToFlatMap(List<AssetData> group) {
+    final ziel = _averageCenter(group);
+    final zoom = math.min(16.0, _stilgrenze(_lastFlatMode));
     setState(() {
-      _pendingFlatFocus = _averageCenter(group);
-      _pendingFlatZoom = 16;
-      _flacherZoom = 16;
+      _pendingFlatFocus = ziel;
+      _pendingFlatZoom = zoom;
+      _flacherZoom = zoom;
       _mode = _lastFlatMode;
     });
+    // War die flache Karte schon einmal offen, blieb sie sonst auf ihrem
+    // alten Ausschnitt stehen – siehe [_flacheKamera].
+    _flacheKarteBewegen(ziel, zoom);
   }
 
   @override
@@ -936,17 +975,25 @@ class _MapScreenState extends State<MapScreen> {
   /// zu, holen den bestehenden Stand aber nicht von selbst zurück.
   void _zoomAufStilGrenzeZiehen(Kartenansicht neueAnsicht) {
     if (neueAnsicht == Kartenansicht.globus) return;
-    final grenze = switch (neueAnsicht) {
-      Kartenansicht.hell => Kartenstil.hell,
-      Kartenansicht.topo => Kartenstil.topo,
-      Kartenansicht.eigene => Kartenstil.eigene,
-      Kartenansicht.dunkel || Kartenansicht.globus => Kartenstil.dunkel,
-    }.hoechsteAnzeigeStufe.toDouble();
+    final grenze = _stilgrenze(neueAnsicht);
     if (_flacherZoom > grenze) _flacherZoom = grenze;
     if (_pendingFlatZoom != null && _pendingFlatZoom! > grenze) {
       _pendingFlatZoom = grenze;
     }
+    // Die Kamera selbst: Die neue `maxZoom` holt sie nicht zurück.
+    final kamera = _flacheKamera;
+    if (kamera != null && kamera.zoom > grenze) {
+      _flacheKarteBewegen(null, grenze);
+    }
   }
+
+  /// Die höchste Stufe, die der Stil dieser Ansicht anzeigt.
+  double _stilgrenze(Kartenansicht ansicht) => switch (ansicht) {
+    Kartenansicht.hell => Kartenstil.hell,
+    Kartenansicht.topo => Kartenstil.topo,
+    Kartenansicht.eigene => Kartenstil.eigene,
+    Kartenansicht.dunkel || Kartenansicht.globus => Kartenstil.dunkel,
+  }.hoechsteAnzeigeStufe.toDouble();
 
   void _ereignisseUmschalten() {
     setState(() => _ereignisseZeigen = !_ereignisseZeigen);

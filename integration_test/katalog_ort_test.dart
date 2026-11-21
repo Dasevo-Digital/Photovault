@@ -1314,10 +1314,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund ORT-008: Nach dem Wechsel Dunkel (Zoom 21) → Topografie bleibt die
-  // Kamera bei 21 über der Grenze 19, und die Fotos werden wie bei Stufe 6
-  // gruppiert (map_screen.dart:937–949 zieht nur _flacherZoom, :465 setzt
-  // ihn auf 6). In drei Läufen reproduziert.
+  // Behoben in #413: Beim Stilwechsel zieht die Karte die Kamera selbst an die
+  // Stilgrenze und gruppiert nach dem Zoom der Kamera statt fest nach Stufe 6.
   testWidgets('ORT-008 Zoomgrenze je Stil und Gruppierung nach dem Wechsel', (
     tester,
   ) async {
@@ -1371,7 +1369,7 @@ void main() {
     ];
     expect(befunde, isEmpty);
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('ORT-011 ORT-012 ORT-013 Liste „Fotos im Ausschnitt“', (
     tester,
@@ -1737,11 +1735,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund ORT-019: Nach flacher Karte → „Hell“ → Globus springt der Pin
-  // in „Hell“, die Karte bleibt aber auf dem alten Ausschnitt (Zoom 6):
-  // initialCenter/initialZoom (map_screen.dart:823–824) greifen nicht, weil
-  // flutter_map beim schon benutzten MapController die alte Kamera behält
-  // (MapControllerImpl.options). Zwei Läufe.
+  // Behoben in #413: Der Pin-Sprung bewegt die schon benutzte flache Karte
+  // über den Steuerer (Zoom 16, an der Stilgrenze geklemmt), statt sich auf
+  // initialCenter/initialZoom zu verlassen.
   testWidgets('ORT-019 Pin springt nach „Hell“ in die helle Karte', (
     tester,
   ) async {
@@ -1770,7 +1766,7 @@ void main() {
     expect(stilDerKarte(tester), Kartenstil.hell);
     expect(zoomVon(tester), closeTo(16, 0.01));
     await finish(tester);
-  }, skip: true);
+  });
 
   // Befund-Prüfung zu ORT-022: Die Knöpfe hängen an `_globusZoom`, aber
   // `_onGlobeZoomChanged` (map_screen.dart:443–447) baut nur neu, wenn die
