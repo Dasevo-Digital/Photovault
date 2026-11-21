@@ -9,7 +9,11 @@ import 'import_service.dart';
 import 'beilagenangaben.dart';
 import 'regelpruefung.dart';
 
-enum ImportPlanArt { neu, vorhanden, doppelt, format, fehler }
+/// [beilage]: eine `.xmp`-Beilage neben einem Foto derselben Auswahl. Sie
+/// wird nicht eigens importiert, sondern mit ihrem Foto übernommen (siehe
+/// [ImportPlanEintrag.beilageZu]). Vorher stand sie als „Format wird nicht
+/// unterstützt“ da, obwohl ihre Angaben ankamen (IMP-082).
+enum ImportPlanArt { neu, vorhanden, doppelt, format, fehler, beilage }
 
 class ImportPlanEintrag {
   const ImportPlanEintrag({
@@ -24,9 +28,13 @@ class ImportPlanEintrag {
     this.favorit = false,
     this.ungueltigeZiele = false,
     this.beilage,
+    this.beilageZu,
   });
   final String pfad;
   final ImportPlanArt art;
+
+  /// Bei einer [ImportPlanArt.beilage]: das Foto, zu dem sie gehört.
+  final String? beilageZu;
   final ImportDateiangaben? angaben;
   final List<String> alben, tags, regeln;
   final List<String> albumIds, tagIds;
@@ -44,6 +52,7 @@ class ImportPlanEintrag {
     favorit: favorit,
     ungueltigeZiele: ungueltigeZiele,
     beilage: wert,
+    beilageZu: beilageZu,
   );
 }
 
@@ -235,10 +244,18 @@ class ImportPlanDienst {
     };
     final gesehen = <String>{};
     final ergebnis = <ImportPlanEintrag>[];
+    final beilagen = beilagenDerAuswahl(dateien, importe.isSupported);
     for (final pfad in dateien.toSet()) {
       if (abgebrochen?.call() ?? false) throw const ImportPlanAbgebrochen();
       if (!importe.isSupported(pfad)) {
-        ergebnis.add(ImportPlanEintrag(pfad: pfad, art: ImportPlanArt.format));
+        final zu = beilagen[pfad];
+        ergebnis.add(
+          ImportPlanEintrag(
+            pfad: pfad,
+            art: zu == null ? ImportPlanArt.format : ImportPlanArt.beilage,
+            beilageZu: zu,
+          ),
+        );
       } else {
         try {
           final a = await importe.untersucheDatei(pfad);
@@ -325,4 +342,49 @@ class ImportPlanDienst {
       ),
     );
   }
+}
+
+/// Die `.xmp`-Beilagen unter [dateien], die zu einem unterstützten Foto
+/// derselben Auswahl gehören: Beilage → Foto.
+///
+/// Nach denselben Regeln, nach denen der Import sie liest (`beilageNeben`
+/// in der App): `foto.xmp` (Lightroom, Photo Vault) oder `foto.jpg.xmp`
+/// (darktable), neben dem Foto und unter genau diesem Namen. Liegen beide,
+/// zählt die zuletzt geänderte; die andere bleibt eine fremde Datei.
+Map<String, String> beilagenDerAuswahl(
+  Iterable<String> dateien,
+  bool Function(String pfad) unterstuetzt,
+) {
+  // Die Schreibweise in der Auswahl kann von der des Fotos abweichen
+  // (macOS und Windows unterscheiden Gross und Klein nicht); ob die Datei
+  // unter dem Namen des Fotos zu finden ist, entscheidet das Dateisystem
+  // – wie beim Import.
+  final xmpJeName = <String, String>{
+    for (final d in dateien)
+      if (p.extension(d).toLowerCase() == '.xmp') d.toLowerCase(): d,
+  };
+  if (xmpJeName.isEmpty) return const {};
+  final ergebnis = <String, String>{};
+  for (final foto in dateien) {
+    if (!unterstuetzt(foto)) continue;
+    String? beste;
+    DateTime? zeit;
+    for (final name in [p.setExtension(foto, '.xmp'), '$foto.xmp']) {
+      final gewaehlt = xmpJeName[name.toLowerCase()];
+      if (gewaehlt == null) continue;
+      try {
+        final datei = File(name);
+        if (!datei.existsSync()) continue;
+        final t = datei.lastModifiedSync();
+        if (zeit == null || t.isAfter(zeit)) {
+          beste = gewaehlt;
+          zeit = t;
+        }
+      } on FileSystemException {
+        continue;
+      }
+    }
+    if (beste != null) ergebnis[beste] = foto;
+  }
+  return ergebnis;
 }

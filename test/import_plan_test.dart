@@ -151,6 +151,51 @@ void main() {
     },
   );
 
+  // Eine `.xmp`-Beilage neben ihrem Foto stand als „Format wird nicht
+  // unterstützt“ da, obwohl der Import ihre Angaben übernimmt (IMP-082).
+  // Eine Beilage ohne Foto in der Auswahl bleibt, was sie ist.
+  test(
+    'Beilagen neben ihrem Foto sind Beilagen, keine fremden Dateien',
+    () async {
+      final jpg = await foto('foto.jpg', [1, 2]);
+      final lightroom = await foto('foto.xmp', [3]);
+      final raw = await foto('bild.JPG', [4, 5]);
+      final darktable = await foto('bild.JPG.xmp', [6]);
+      final allein = await foto('allein.xmp', [7]);
+      final notiz = await foto('notiz.txt', [8]);
+      final plan = await dienst.erstelle([
+        jpg,
+        lightroom,
+        raw,
+        darktable,
+        allein,
+        notiz,
+      ]);
+      final art = {for (final e in plan.eintraege) p.basename(e.pfad): e};
+      expect(art['foto.xmp']!.art, ImportPlanArt.beilage);
+      expect(art['foto.xmp']!.beilageZu, jpg);
+      expect(art['bild.JPG.xmp']!.art, ImportPlanArt.beilage);
+      expect(art['bild.JPG.xmp']!.beilageZu, raw);
+      expect(art['allein.xmp']!.art, ImportPlanArt.format);
+      expect(art['notiz.txt']!.art, ImportPlanArt.format);
+      expect(art['foto.jpg']!.art, ImportPlanArt.neu);
+    },
+  );
+
+  // Liegen beide Beilagen, liest der Import nur die zuletzt geänderte
+  // (neuesteXmpBeilage); die andere kommt nicht mit.
+  test('von zwei Beilagen eines Fotos ist nur die neuere seine', () async {
+    final jpg = await foto('paar.jpg', [1, 2]);
+    final alt = await foto('paar.xmp', [3]);
+    final neu = await foto('paar.jpg.xmp', [4]);
+    await File(neu).setLastModified(DateTime(2026, 6, 2, 10));
+    final plan = await dienst.erstelle([jpg, alt, neu]);
+    final art = {for (final e in plan.eintraege) p.basename(e.pfad): e};
+    expect(art['paar.jpg.xmp']!.art, ImportPlanArt.beilage);
+    expect(art['paar.jpg.xmp']!.beilageZu, jpg);
+    expect(art['paar.xmp']!.art, ImportPlanArt.format);
+  });
+
   test(
     'Regelstand erkennt Änderungen, bleibt bei neuen fremden Tags und Favoriten stabil',
     () async {

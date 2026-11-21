@@ -10391,6 +10391,11 @@ class AppTexteEn extends AppTexte {
   String get importPlanFormat => 'Unsupported format';
 
   @override
+  String importPlanBeilage(String foto) {
+    return 'Sidecar of $foto – taken over with the photo';
+  }
+
+  @override
   String get importPlanFehler =>
       'File missing, unreadable or changed during review';
 

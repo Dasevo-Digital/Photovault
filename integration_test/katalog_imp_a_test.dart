@@ -2331,6 +2331,10 @@ void main() {
     debugPrint(
       'IMP-082 Beilagen in der Prüfung: ${z['foto.xmp']?.text} / ${z['mitort.xmp']?.text}',
     );
+    // Behoben in #409: Die Beilagen stehen als Beilage ihres Fotos da,
+    // nicht als „Format wird nicht unterstützt“.
+    expect(status(z['foto.xmp']!), de.importPlanBeilage('foto.jpg'));
+    expect(status(z['mitort.xmp']!), de.importPlanBeilage('mitort.jpg'));
     await starte(tester, 2);
     await warteAufAbschluss(tester);
     await schliesseBlatt(tester);

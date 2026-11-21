@@ -255,6 +255,9 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                         ImportPlanArt.doppelt => t.importPlanDoppelt,
                         ImportPlanArt.format => t.importPlanFormat,
                         ImportPlanArt.fehler => t.importPlanFehler,
+                        ImportPlanArt.beilage => t.importPlanBeilage(
+                          p.basename(e.beilageZu ?? ''),
+                        ),
                       };
                       final metadata = widget.umzug?.beilagen[e.pfad];
                       return Column(

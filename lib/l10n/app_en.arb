@@ -5065,6 +5065,7 @@
   "importPlanVorhanden": "Already in the library",
   "importPlanDoppelt": "Identical content already in this selection",
   "importPlanFormat": "Unsupported format",
+  "importPlanBeilage": "Sidecar of {foto} – taken over with the photo",
   "importPlanFehler": "File missing, unreadable or changed during review",
   "importPlanDatumGeschaetzt": "Estimated date",
   "importPlanAlben": "Albums: {namen}",

@@ -10446,6 +10446,11 @@ class AppTexteDe extends AppTexte {
   String get importPlanFormat => 'Format wird nicht unterstützt';
 
   @override
+  String importPlanBeilage(String foto) {
+    return 'Beilage zu $foto – wird mit dem Foto übernommen';
+  }
+
+  @override
   String get importPlanFehler =>
       'Datei fehlt, ist nicht lesbar oder wurde während der Prüfung geändert';
 

@@ -15882,6 +15882,12 @@ abstract class AppTexte {
   /// **'Format wird nicht unterstützt'**
   String get importPlanFormat;
 
+  /// No description provided for @importPlanBeilage.
+  ///
+  /// In de, this message translates to:
+  /// **'Beilage zu {foto} – wird mit dem Foto übernommen'**
+  String importPlanBeilage(String foto);
+
   /// No description provided for @importPlanFehler.
   ///
   /// In de, this message translates to:

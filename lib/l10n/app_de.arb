@@ -6689,6 +6689,14 @@
   "importPlanVorhanden": "Bereits in der Bibliothek",
   "importPlanDoppelt": "Identischer Inhalt bereits in dieser Auswahl",
   "importPlanFormat": "Format wird nicht unterstützt",
+  "importPlanBeilage": "Beilage zu {foto} – wird mit dem Foto übernommen",
+  "@importPlanBeilage": {
+    "placeholders": {
+      "foto": {
+        "type": "String"
+      }
+    }
+  },
   "importPlanFehler": "Datei fehlt, ist nicht lesbar oder wurde während der Prüfung geändert",
   "importPlanDatumGeschaetzt": "Datum geschätzt",
   "importPlanAlben": "Alben: {namen}",
