@@ -25,6 +25,15 @@ class Serverfehler implements Exception {
   String toString() => 'Serverfehler($status): $text';
 }
 
+/// [text] als JSON, oder `null`, wenn es keins ist.
+Object? jsonOderNull(String text) {
+  try {
+    return jsonDecode(text);
+  } on FormatException {
+    return null;
+  }
+}
+
 /// Eine angemeldete Verbindung zu einem Photo Vault Server.
 class Serververbindung {
   Serververbindung(
@@ -112,7 +121,16 @@ class Serververbindung {
   ) async {
     final r = await _mitFrist(zeitlimit, anfrage);
     if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
-    final j = jsonDecode(utf8.decode(r.bodyBytes));
+    // Keine FormatException nach oben: Eine Antwort, die kein JSON ist
+    // (ein Proxy, ein fremder Dienst), ist ein Fehler des Servers. Die
+    // Aufrufer fangen Serverfehler und KeineVerbindung – eine
+    // FormatException liess etwa das Fenster „Lade 1 von 1 hoch …“ beim
+    // Beitragen offen stehen (SIC-196).
+    final text = utf8.decode(r.bodyBytes, allowMalformed: true);
+    final j = jsonOderNull(text);
+    if (j == null && text.trim() != 'null') {
+      throw Serverfehler(r.statusCode, r.body);
+    }
     return j is Map ? j.cast<String, Object?>() : {'wert': j};
   }
 

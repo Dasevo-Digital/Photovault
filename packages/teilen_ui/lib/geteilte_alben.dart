@@ -656,6 +656,12 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
       } on KeineVerbindung {
         meldung = t.geteiltOffline;
         break;
+      } catch (_) {
+        // Alles andere – eine Datei, die sich nicht lesen lässt, eine
+        // Antwort, mit der niemand rechnete: Diese Datei ist nicht
+        // angekommen. Vorher lief der Fehler hier hinaus, und das Fenster
+        // „Lade 1 von 1 hoch …“ blieb für immer stehen (SIC-196).
+        meldung = t.geteiltFehler(d.name);
       }
     }
     weg.pop();

@@ -65,7 +65,9 @@ class Anmeldung {
   /// dort anmeldet (`{protokoll, anmeldung: {totp, oidc}}`).
   Future<Map<String, Object?>> zustand() async {
     final r = await _schicke(() => _http.get(_adresse('api/v1/zustand')));
-    final j = jsonDecode(r.body);
+    // Erst lesen, ob es JSON ist: Ein fremder Webserver antwortet mit HTML,
+    // und die FormatException ging sonst an jeder Meldung vorbei (SIC-099).
+    final j = jsonOderNull(r.body);
     if (r.statusCode != 200 || j is! Map || j['dienst'] != 'photo-vault') {
       throw Serverfehler(r.statusCode, r.body);
     }
@@ -116,8 +118,9 @@ class Anmeldung {
       );
     }
     if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);
-    final j = (jsonDecode(utf8.decode(r.bodyBytes)) as Map)
-        .cast<String, Object?>();
+    final roh = jsonOderNull(utf8.decode(r.bodyBytes, allowMalformed: true));
+    if (roh is! Map) throw Serverfehler(r.statusCode, r.body);
+    final j = roh.cast<String, Object?>();
     return switch (j['schritt']) {
       'totp' => AnmeldungCode(j['vorgang']! as String),
       'totp_einrichten' => AnmeldungTotpEinrichten(

@@ -10,6 +10,7 @@ import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/geteilt_rechner.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
+import 'package:teilen_ui/l10n/teilen_texte.dart';
 
 /// Geteilte Alben am Rechner (#289): dieselbe Oberfläche wie am Telefon
 /// (packages/teilen_ui), mit Dateidialog und media_kit.
@@ -94,5 +95,65 @@ void main() {
     await oeffne(tester, const Size(400, 800));
     expect(find.byType(BottomSheet), findsOneWidget);
     expect(find.byType(Dialog), findsNothing);
+  });
+  // SIC-196: Scheiterte das Beitragen an etwas anderem als einem Server-
+  // oder Verbindungsfehler, blieb das Fenster „Lade 1 von 1 hoch …“ offen.
+  testWidgets('Beitragen: das Fenster schliesst bei jedem Fehler', (
+    tester,
+  ) async {
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: MockClient(
+        (r) async => http.Response(
+          jsonEncode({
+            'album': {'name': 'Urlaub', 'besitzer': 'B', 'beitragen': true},
+            'aufnahmen': [],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      ),
+    );
+    final zugang = Teilungszugang(
+      verbindung: v,
+      waehle: (_) async => [
+        Beitragsdatei(
+          name: 'kaputt.jpg',
+          geaendert: DateTime(2026, 8, 14),
+          datei: () async => throw const FileSystemException('nicht lesbar'),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: GeteiltesAlbumSeite(
+          zugang: zugang,
+          album: const GeteiltesAlbum(
+            id: 'a1',
+            name: 'Urlaub',
+            besitzer: 'B',
+            beitragen: true,
+            anzahl: 0,
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    final t = lookupTeilenTexte(const Locale('de'));
+    await tester.tap(find.byTooltip(t.geteiltHinzufuegen));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text(t.geteiltFehler('kaputt.jpg')), findsOneWidget);
   });
 }

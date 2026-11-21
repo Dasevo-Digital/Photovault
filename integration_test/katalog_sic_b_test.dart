@@ -1625,10 +1625,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Anmeldung.zustand liest die Antwort als JSON, bevor der Status
-  // geprüft wird; eine HTML-Antwort wirft eine FormatException, die
-  // _mitArbeit nicht fängt (packages/kern/lib/abgleich/anmeldung.dart:68,
-  // lib/screens/server_verbinden_screen.dart:92-100) – keine Meldung.
+  // Behoben in #415: Eine Antwort, die kein JSON ist, wird in Anmeldung und
+  // Serververbindung zum Serverfehler.
   testWidgets('SIC-099 Fremder Webserver mit HTML', (tester) async {
     await startApp(tester);
     final html = _Zwischen()
@@ -1645,7 +1643,7 @@ void main() {
     await _anmeldenUi(tester, adresse: '${html.adresse}', name: 'xy', pw: _pw);
     await waitFor(tester, find.text(de.serverKeinPhotoVault));
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('SIC-138 SIC-149 SIC-129 SIC-132 SIC-133 SIC-130 Eigenes Konto', (
     tester,
@@ -3260,9 +3258,8 @@ void main() {
     },
   );
 
-  // Befund: Scheitert das Beitragen an etwas anderem als einem Server- oder
-  // Verbindungsfehler, bleibt das Fortschrittsfenster offen
-  // (packages/teilen_ui/lib/geteilte_alben.dart:597-660, _hinzufuegen).
+  // Behoben in #415: _hinzufuegen fängt jeden Fehler je Datei, und eine
+  // Antwort ohne JSON ist ein Serverfehler.
   testWidgets('SIC-196 Fortschrittsfenster schliesst bei jedem Fehler', (
     tester,
   ) async {
@@ -3302,7 +3299,7 @@ void main() {
     print('SIC-196 nach dem Fehler: ${onScreen(tester)}');
     expect(find.textContaining('Lade 1 von 1'), findsNothing);
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('SIC-216 SIC-218 SIC-219 Bibliothek teilen (Besitzer)', (
     tester,
