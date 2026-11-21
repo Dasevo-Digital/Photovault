@@ -317,6 +317,51 @@ void main() {
     expect(letzteMeldung(), '„Deutschland“ belegen deine Fotos bereits.');
   });
 
+  // Auf der Stufe „Orte“ tragen die Punkte „ISO|Ort“, gespeichert wird
+  // „Land|Region|Ort“. Verglichen wurde mit dem gespeicherten Schlüssel –
+  // der zweite Klick nahm die Marke nie weg, und ein Ort mit Fotos bekam
+  // doch einen Haken (ORT-112).
+  //
+  // Geklickt wird über dem Skagerrak: Die nächste Stadt des Auszugs ist
+  // Hamburg, und der Punkt dort ist weit genug weg, um nicht getroffen zu
+  // werden.
+  testWidgets('auf der Stufe Orte nimmt derselbe Klick die Marke weg', (
+    tester,
+  ) async {
+    await db.setzeOrtsmarke(
+      OrtsmarkenCompanion.insert(
+        art: 'ort',
+        schluessel: 'Deutschland|Hamburg|Hamburg',
+        name: 'Hamburg',
+        status: 'besucht',
+        angelegtAm: DateTime(2024),
+      ),
+    );
+    await zeige(tester);
+    await tester.tap(find.text('Orte'));
+    await tester.pumpAndSettle();
+    await klicke(tester, 57.5, 9.0);
+    expect(await db.alleOrtsmarken(), isEmpty);
+    expect(letzteMeldung(), '„Hamburg“ ist nicht mehr markiert.');
+  });
+
+  testWidgets('ein Ort mit Fotos bekommt keinen Haken von Hand', (
+    tester,
+  ) async {
+    await aufnahme(
+      'a1',
+      land: 'Deutschland',
+      region: 'Hamburg',
+      ort: 'Hamburg',
+    );
+    await zeige(tester);
+    await tester.tap(find.text('Orte'));
+    await tester.pumpAndSettle();
+    await klicke(tester, 57.5, 9.0);
+    expect(await db.alleOrtsmarken(), isEmpty);
+    expect(letzteMeldung(), '„Hamburg“ belegen deine Fotos bereits.');
+  });
+
   testWidgets('ein Klick auf eine Marke fuehrt in den Ort', (tester) async {
     // **Was hier war** ist die naheliegendere Frage an einen Punkt auf
     // einer Fotokarte als „welchen Haken setze ich". Das Blatt mit den

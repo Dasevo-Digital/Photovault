@@ -4028,9 +4028,9 @@ void main() {
     await finish(tester);
   });
 
-  // Befund ORT-112: Auf der Stufe „Orte“ passen die Schlüssel nicht
-  // zusammen (weltkarte_screen.dart:210/231 „ISO|Ort“ gegen Z. 433
-  // „Land|Region|Ort“, Vergleich Z. 322–341). Zwei Läufe.
+  // Behoben in #413: Der Klick vergleicht im Schlüsselraum der Punkte
+  // („ISO|Ort“), löscht die Marke unter ihrem gespeicherten Schlüssel, und
+  // ein Ort mit Fotos zählt als belegt.
   testWidgets(
     'ORT-112 Weltkarte: Ort markieren und mit zweitem Klick entfernen',
     (tester) async {
@@ -4121,7 +4121,6 @@ void main() {
       expect(befunde, isEmpty);
       await finish(tester);
     },
-    skip: true,
   );
 
   // =========================================================================

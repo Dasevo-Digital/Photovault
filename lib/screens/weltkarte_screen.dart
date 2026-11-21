@@ -42,6 +42,28 @@ class WeltkarteScreen extends StatefulWidget {
 /// Welche Art Marke ein Punkt auf der Karte ist.
 enum _Ebene { land, region, ort }
 
+/// Der Schlüssel eines Ortes auf der Karte: „ISO|Ort“.
+@visibleForTesting
+String ortspunktSchluessel(String iso, String ort) => '$iso|$ort';
+
+/// Aus dem gespeicherten Schlüssel einer Ortsmarke („Land|Region|Ort“,
+/// das Land mit englischem Namen) der Punkt auf der Karte – `null`, wenn
+/// der Schlüssel nicht so aussieht.
+@visibleForTesting
+({String schluessel, String iso, String ort})? ortspunktAusMarke(
+  ReverseGeocoder geo,
+  String markenschluessel,
+) {
+  final teile = markenschluessel.split('|');
+  if (teile.length < 3) return null;
+  final iso = geo.isoNachName[teile[0]] ?? teile[0].toUpperCase();
+  return (
+    schluessel: ortspunktSchluessel(iso, teile[2]),
+    iso: iso,
+    ort: teile[2],
+  );
+}
+
 /// Ein Punkt auf der Weltkarte.
 class _Kartenpunkt {
   final _Ebene ebene;
@@ -55,6 +77,11 @@ class _Kartenpunkt {
 
   final Markenart? marke;
 
+  /// Unter welchem Schlüssel die Marke gespeichert ist – bei Orten
+  /// „Land|Region|Ort“, während der Punkt „ISO|Ort“ trägt (siehe
+  /// [ortspunktSchluessel]). Gebraucht, um genau diese Marke zu löschen.
+  final String? markenschluessel;
+
   const _Kartenpunkt({
     required this.ebene,
     required this.schluessel,
@@ -63,6 +90,7 @@ class _Kartenpunkt {
     required this.laenge,
     required this.aufnahmen,
     required this.marke,
+    this.markenschluessel,
   });
 
   bool get belegt => aufnahmen > 0;
@@ -193,6 +221,10 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     final aufnahmenJeLand = <String, int>{};
     final regionen = <String, String>{}; // Code -> Name
     final orte = <String, ({String name, String iso})>{};
+    // Was Fotos belegen – getrennt von den Marken: Eine Region oder ein
+    // Ort mit Fotos und einer Marke ist belegt, nicht „von Hand“.
+    final belegteRegionen = <String>{};
+    final belegteOrte = <String>{};
 
     for (final a in besucht) {
       final land = a.land;
@@ -203,17 +235,23 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
       final region = a.region;
       if (region != null && region.isNotEmpty) {
         final code = geo.regionscodes['$iso|$region'];
-        if (code != null) regionen[code] = region;
+        if (code != null) {
+          regionen[code] = region;
+          belegteRegionen.add(code);
+        }
       }
       final ort = a.ort;
       if (ort != null && ort.isNotEmpty) {
-        orte['$iso|$ort'] = (name: ort, iso: iso);
+        orte[ortspunktSchluessel(iso, ort)] = (name: ort, iso: iso);
+        belegteOrte.add(ortspunktSchluessel(iso, ort));
       }
     }
 
     final landmarken = <String, Markenart>{};
     final regionsmarken = <String, Markenart>{};
     final ortsmarken = <String, Markenart>{};
+    // Punktschlüssel -> Schlüssel der gespeicherten Marke.
+    final gespeichert = <String, String>{};
     for (final m in marken) {
       final wert = m.status == 'geplant'
           ? Markenart.geplant
@@ -221,17 +259,19 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
       switch (m.art) {
         case 'land':
           landmarken[m.schluessel.toUpperCase()] = wert;
+          gespeichert['land:${m.schluessel.toUpperCase()}'] = m.schluessel;
         case 'region':
           regionsmarken[m.schluessel] = wert;
+          gespeichert['region:${m.schluessel}'] = m.schluessel;
           regionen.putIfAbsent(m.schluessel, () => m.name);
         case 'ort':
-          final teile = m.schluessel.split('|');
-          if (teile.length < 3) continue;
-          final iso = geo.isoNachName[teile[0]] ?? teile[0].toUpperCase();
-          ortsmarken['$iso|${teile[2]}'] = wert;
+          final punkt = ortspunktAusMarke(geo, m.schluessel);
+          if (punkt == null) continue;
+          ortsmarken[punkt.schluessel] = wert;
+          gespeichert['ort:${punkt.schluessel}'] = m.schluessel;
           orte.putIfAbsent(
-            '$iso|${teile[2]}',
-            () => (name: teile[2], iso: iso),
+            punkt.schluessel,
+            () => (name: punkt.ort, iso: punkt.iso),
           );
       }
     }
@@ -252,6 +292,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           laenge: punkt.laenge,
           aufnahmen: aufnahmenJeLand[iso] ?? 0,
           marke: landmarken[iso],
+          markenschluessel: gespeichert['land:$iso'],
         ),
       );
     }
@@ -268,8 +309,9 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           laenge: punkt.laenge,
           // Eine Region gilt als belegt, sobald ein Foto sie nennt – die
           // Zahl der Aufnahmen steht am Land, nicht hier.
-          aufnahmen: regionsmarken.containsKey(e.key) ? 0 : 1,
+          aufnahmen: belegteRegionen.contains(e.key) ? 1 : 0,
           marke: regionsmarken[e.key],
+          markenschluessel: gespeichert['region:${e.key}'],
         ),
       );
     }
@@ -284,8 +326,9 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           name: e.value.name,
           breite: punkt.breite,
           laenge: punkt.laenge,
-          aufnahmen: ortsmarken.containsKey(e.key) ? 0 : 1,
+          aufnahmen: belegteOrte.contains(e.key) ? 1 : 0,
           marke: ortsmarken[e.key],
+          markenschluessel: gespeichert['ort:${e.key}'],
         ),
       );
     }
@@ -319,15 +362,23 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     }
 
     // Steht dort schon eine Marke von Hand, nimmt derselbe Klick sie weg.
+    //
+    // Verglichen wird mit dem Schlüssel der Punkte, nicht mit dem der
+    // Marke: Orte tragen auf der Karte „ISO|Ort“, gespeichert wird
+    // „Land|Region|Ort“. Mit dem gespeicherten verglichen griff der zweite
+    // Klick nie, und ein Ort mit Fotos bekam doch einen Haken.
     final vorhanden = _punkte?.where(
       (p) =>
           p.ebene == _stufe &&
-          p.schluessel == ziel.schluessel &&
+          p.schluessel == ziel.punktschluessel &&
           p.marke != null,
     );
     if (vorhanden != null && vorhanden.isNotEmpty) {
       await widget.library.db.fuehreAus(
-        OrtsmarkeLoeschen(_stufe.name, ziel.schluessel),
+        OrtsmarkeLoeschen(
+          _stufe.name,
+          vorhanden.first.markenschluessel ?? ziel.schluessel,
+        ),
       );
       await _laden();
       if (mounted) _sage(t.weltkarteMarkeWeggenommen(ziel.anzeige));
@@ -337,7 +388,8 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     // Was die Fotos belegen, braucht keinen Haken. Ihn trotzdem zu setzen
     // würde die Herkunft der Angabe verwischen.
     final belegt = _punkte?.any(
-      (p) => p.ebene == _stufe && p.schluessel == ziel.schluessel && p.belegt,
+      (p) =>
+          p.ebene == _stufe && p.schluessel == ziel.punktschluessel && p.belegt,
     );
     if (belegt == true && !_alsGeplant) {
       _sage(t.weltkarteSchonBelegt(ziel.anzeige));
@@ -362,6 +414,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
   /// in einer deutschen Oberfläche keine Auskunft, sondern eine Panne.
   ({
     String schluessel,
+    String punktschluessel,
     String name,
     String anzeige,
     double? breite,
@@ -383,6 +436,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
         final land = geo?.laenderkatalog.nachIso(code);
         return (
           schluessel: code,
+          punktschluessel: code,
           name: land?.name ?? code,
           anzeige: land?.anzeige(sprache) ?? code,
           breite: null,
@@ -416,6 +470,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
             code;
         return (
           schluessel: code,
+          punktschluessel: code,
           name: name,
           anzeige: name,
           breite: null,
@@ -428,9 +483,13 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
         // mehrdeutig: „Springfield" gibt es über zwanzigmal.
         if (treffer == null) return null;
         if (iso == null && treffer.country == null) return null;
+        final schluessel =
+            '${treffer.country ?? ''}|${treffer.state ?? ''}|${treffer.city}';
         return (
-          schluessel:
-              '${treffer.country ?? ''}|${treffer.state ?? ''}|${treffer.city}',
+          schluessel: schluessel,
+          punktschluessel: geo == null
+              ? schluessel
+              : (ortspunktAusMarke(geo, schluessel)?.schluessel ?? schluessel),
           name: treffer.city,
           anzeige: treffer.city,
           breite: stelle.latitude,
