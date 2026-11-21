@@ -996,6 +996,18 @@ abstract class AppTexte {
   /// **'Auf diesem Foto ist kein Gesicht erkannt.'**
   String get viewerKeineGesichter;
 
+  /// No description provided for @viewerOriginalNichtDa.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Original liegt nicht hier, und der Server ist nicht erreichbar. Zu sehen ist die Vorschau.'**
+  String get viewerOriginalNichtDa;
+
+  /// No description provided for @viewerOriginalFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Original lässt sich nicht öffnen.'**
+  String get viewerOriginalFehler;
+
   /// No description provided for @viewerGesichtBenennen.
   ///
   /// In de, this message translates to:

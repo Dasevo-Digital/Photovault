@@ -566,6 +566,13 @@ class AppTexteDe extends AppTexte {
       'Auf diesem Foto ist kein Gesicht erkannt.';
 
   @override
+  String get viewerOriginalNichtDa =>
+      'Das Original liegt nicht hier, und der Server ist nicht erreichbar. Zu sehen ist die Vorschau.';
+
+  @override
+  String get viewerOriginalFehler => 'Das Original lässt sich nicht öffnen.';
+
+  @override
   String get viewerGesichtBenennen => 'Gesicht benennen';
 
   @override

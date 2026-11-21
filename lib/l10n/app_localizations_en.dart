@@ -560,6 +560,13 @@ class AppTexteEn extends AppTexte {
   String get viewerKeineGesichter => 'No face detected in this photo.';
 
   @override
+  String get viewerOriginalNichtDa =>
+      'The original is not on this device, and the server cannot be reached. Showing the preview.';
+
+  @override
+  String get viewerOriginalFehler => 'The original cannot be opened.';
+
+  @override
   String get viewerGesichtBenennen => 'Name this face';
 
   @override

@@ -12,6 +12,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 
+import 'package:kern/abgleich/verbindung.dart' show KeineVerbindung;
 import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/asset_display_path.dart';
@@ -1701,6 +1702,18 @@ class _AssetPageState extends State<_AssetPage> {
     return widget.paths.bereit(relativePath);
   }
 
+  /// Die Datei für alles neben der Anzeige – Masse, Gesichter – oder
+  /// `null`, wenn sie sich nicht holen lässt. Den Grund zeigt [build]; ein
+  /// zweites `await` auf dieselbe gescheiterte Zukunft liefe sonst als
+  /// unbehandelte Ausnahme ins Leere.
+  Future<File?> _dateiWennDa() async {
+    try {
+      return await _fileFuture;
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1733,15 +1746,10 @@ class _AssetPageState extends State<_AssetPage> {
       setState(() => _bildmasse = Size(breite.toDouble(), hoehe.toDouble()));
       return;
     }
-    final File datei;
-    try {
-      datei = await _fileFuture;
-    } on Object {
-      // Ohne Datei (offline, Original nicht hier) zeigt die Seite schon
-      // ihren Hinweis; die Masse fehlen dann eben (BEA-177).
-      return;
-    }
-    if (!mounted || widget.asset.id != asset.id) return;
+    // Ohne Datei (offline, Original nicht hier) zeigt die Seite schon
+    // ihren Hinweis; die Masse fehlen dann eben (BEA-177).
+    final datei = await _dateiWennDa();
+    if (datei == null || !mounted || widget.asset.id != asset.id) return;
     final masse = await _masseVon(begrenztesBild(datei));
     if (!mounted || widget.asset.id != asset.id) return;
     setState(() => _bildmasse = masse);
@@ -1818,13 +1826,8 @@ class _AssetPageState extends State<_AssetPage> {
       }
     });
     if (_bildmasse == null && gesichter.isNotEmpty) {
-      final File datei;
-      try {
-        datei = await _fileFuture;
-      } on Object {
-        return; // wie in _masseSicherstellen
-      }
-      if (!mounted || widget.asset.id != asset.id) return;
+      final datei = await _dateiWennDa();
+      if (datei == null || !mounted || widget.asset.id != asset.id) return;
       final masse = await _masseVon(begrenztesBild(datei));
       if (!mounted || widget.asset.id != asset.id) return;
       setState(() => _bildmasse = masse);
@@ -2010,6 +2013,16 @@ class _AssetPageState extends State<_AssetPage> {
     return FutureBuilder<File>(
       future: _fileFuture,
       builder: (context, snapshot) {
+        // Scheitert das Holen (verbunden, Server nicht erreichbar), ist
+        // das ein Ergebnis und kein Warten: Die Seite zeigte sonst für
+        // immer die Ladeanzeige, ohne Hinweis und ohne Vorschaubild.
+        if (snapshot.hasError) {
+          return _OriginalFehlt(
+            asset: asset,
+            paths: widget.paths,
+            fehler: snapshot.error!,
+          );
+        }
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -2389,6 +2402,50 @@ class _InFotopunkten extends StatelessWidget {
 /// Gebraucht für die Auskunft „hier ist kein Gesicht". Ohne sie sähe das
 /// Einschalten der Rahmen bei einer Landschaftsaufnahme aus, als sei der
 /// Knopf kaputt.
+/// Was eine Seite zeigt, deren Original sich nicht holen liess: das
+/// Vorschaubild, soweit es da ist, und darüber den Grund.
+class _OriginalFehlt extends StatelessWidget {
+  final AssetData asset;
+  final StoragePaths paths;
+  final Object fehler;
+
+  const _OriginalFehlt({
+    required this.asset,
+    required this.paths,
+    required this.fehler,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final vorschau = asset.isLocked ? null : asset.thumbnailRelativePath;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (vorschau != null)
+          bibliotheksbild(
+            paths,
+            vorschau,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+        Positioned(
+          left: AppSpacing.md,
+          right: AppSpacing.md,
+          bottom: AppSpacing.md,
+          child: Center(
+            child: _Hinweisfahne(
+              text: fehler is KeineVerbindung
+                  ? t.viewerOriginalNichtDa
+                  : t.viewerOriginalFehler,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _Hinweisfahne extends StatelessWidget {
   final String text;
   const _Hinweisfahne({required this.text});
@@ -2461,6 +2518,18 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
         : widget.paths.bereit(videoAsset.relativePath));
   }
 
+  /// Das Standbild ohne Live-Funktion.
+  Widget _standbild() => BildZoomGesten(
+    steuerung: _zoomsteuerung,
+    child: PhotoView(
+      imageProvider: begrenztesBild(widget.imageFile),
+      controller: _zoomsteuerung,
+      backgroundDecoration: const BoxDecoration(color: Colors.black),
+      initialScale: widget.isPanorama ? PhotoViewComputedScale.covered : null,
+      minScale: widget.isPanorama ? PhotoViewComputedScale.covered : null,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<AssetData?>(
@@ -2470,24 +2539,15 @@ class _LivePhotoPageState extends State<_LivePhotoPage> {
         if (videoAsset == null) {
           // Video (noch) nicht geladen oder wurde gelöscht – Standbild ohne
           // Live-Funktion zeigen, statt die Ansicht zu blockieren.
-          return BildZoomGesten(
-            steuerung: _zoomsteuerung,
-            child: PhotoView(
-              imageProvider: begrenztesBild(widget.imageFile),
-              controller: _zoomsteuerung,
-              backgroundDecoration: const BoxDecoration(color: Colors.black),
-              initialScale: widget.isPanorama
-                  ? PhotoViewComputedScale.covered
-                  : null,
-              minScale: widget.isPanorama
-                  ? PhotoViewComputedScale.covered
-                  : null,
-            ),
-          );
+          return _standbild();
         }
         return FutureBuilder<File>(
           future: _resolveVideoFile(videoAsset),
           builder: (context, videoSnapshot) {
+            // Lässt sich die Videohälfte nicht holen (verbunden, ohne
+            // Server), bleibt das Foto selbst – nicht eine Ladeanzeige
+            // für immer.
+            if (videoSnapshot.hasError) return _standbild();
             if (!videoSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
             }

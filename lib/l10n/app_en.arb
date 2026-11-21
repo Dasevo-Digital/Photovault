@@ -207,6 +207,8 @@
   "viewerGesichterZeigen": "Show faces",
   "viewerGesichterVerbergen": "Hide faces",
   "viewerKeineGesichter": "No face detected in this photo.",
+  "viewerOriginalNichtDa": "The original is not on this device, and the server cannot be reached. Showing the preview.",
+  "viewerOriginalFehler": "The original cannot be opened.",
   "viewerGesichtBenennen": "Name this face",
   "viewerEntwicklungAnwenden": "Paste develop settings",
   "viewerEntwicklungAnwendenLang": "Paste the copied develop settings onto this photo",

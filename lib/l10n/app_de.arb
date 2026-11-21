@@ -291,6 +291,8 @@
   "viewerGesichterZeigen": "Gesichter zeigen",
   "viewerGesichterVerbergen": "Gesichter verbergen",
   "viewerKeineGesichter": "Auf diesem Foto ist kein Gesicht erkannt.",
+  "viewerOriginalNichtDa": "Das Original liegt nicht hier, und der Server ist nicht erreichbar. Zu sehen ist die Vorschau.",
+  "viewerOriginalFehler": "Das Original lässt sich nicht öffnen.",
   "viewerGesichtBenennen": "Gesicht benennen",
   "viewerEntwicklungAnwenden": "Kopierte Entwicklung anwenden",
   "viewerEntwicklungAnwendenLang": "Kopierte Entwicklung auf dieses Foto anwenden",

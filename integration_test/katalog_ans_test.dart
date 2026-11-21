@@ -7915,18 +7915,11 @@ void main() {
     },
   );
 
-  // Befund: Ein Foto, dessen Original in der verbundenen Kopie nicht
-  // vorrätig ist, zeigt bei gestopptem Server nur die Ladeanzeige – nach
-  // 20 s noch immer, ohne Hinweis und ohne Vorschaubild. Der Fehler beim
-  // Holen wird nicht behandelt: StoragePaths.bereit → Dateibeschaffung.hole
-  // wirft KeineVerbindung, und asset_viewer_screen.dart:1938–1940
-  // (_AssetPage.build) zeigt bei `!snapshot.hasData` – also auch bei
-  // `snapshot.hasError` – nur CircularProgressIndicator. In beiden Läufen
-  // kam KeineVerbindung ausserdem als nicht abgefangene Ausnahme an (im
-  // zweiten brach die Prüfung daran gleich beim Öffnen ab).
+  // Behoben in #410: Scheitert das Holen des Originals, zeigt die Seite das
+  // Vorschaubild und den Hinweis „Das Original liegt nicht hier …“; die
+  // übrigen Nutzer der Datei fangen den Fehler ab.
   testWidgets(
     'ANS-061 mitServer Original nicht vorrätig bei gestopptem Server',
-    skip: true,
     (tester) async {
       await startApp(tester);
       addTearDown(() => ohneNetz.serverGesperrt = false);
