@@ -15,7 +15,9 @@ import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:photo_vault/widgets/asset_info_sheet.dart';
+import 'package:photo_vault/widgets/color_label_picker.dart';
 import 'package:photo_vault/widgets/mini_location_map.dart';
+import 'package:photo_vault/widgets/star_rating.dart';
 import 'package:provider/provider.dart';
 
 /// Die kleine Karte der Info-Leiste holt keine Kacheln aus dem Netz.
@@ -155,6 +157,47 @@ void main() {
     expect(a.colorLabel, isNull);
     expect(a.isFavorite, isFalse);
     expect(seite(tester), 0, reason: 'blättert nicht weiter');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('Bewertung und Farbmarke per Taste erscheinen in der offenen '
+      'Info-Leiste', (tester) async {
+    await zeigeMitInfo(tester);
+    int sterne() => tester
+        .widget<StarRating>(
+          find.descendant(
+            of: find.byType(AssetInfoSheet),
+            matching: find.byType(StarRating),
+          ),
+        )
+        .value;
+    String? marke() => tester
+        .widget<ColorLabelPicker>(
+          find.descendant(
+            of: find.byType(AssetInfoSheet),
+            matching: find.byType(ColorLabelPicker),
+          ),
+        )
+        .value;
+    expect(sterne(), 0);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit4);
+    await warte(tester);
+    expect((await aufnahme(tester, 'a')).rating, 4);
+    expect(sterne(), 4);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit7);
+    await warte(tester);
+    expect(marke(), 'yellow');
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit7);
+    await warte(tester);
+    expect(marke(), isNull);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+    await warte(tester);
+    expect(sterne(), 0);
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 1));

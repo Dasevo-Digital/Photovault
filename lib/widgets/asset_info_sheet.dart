@@ -122,6 +122,25 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     _ladeFormate();
   }
 
+  /// Eine neue Fassung von aussen – etwa Bewertung oder Farbmarke, per
+  /// Taste in der Einzelansicht gesetzt. Ohne das blieb die offene Leiste
+  /// bei der Fassung, mit der sie aufgegangen war: In der Datenbank stand
+  /// „4 Sterne“, hier weiter keiner.
+  @override
+  void didUpdateWidget(covariant AssetInfoSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (identical(widget.asset, oldWidget.asset) || widget.asset == _asset) {
+      return;
+    }
+    _asset = widget.asset;
+    // Was gerade geschrieben wird, bleibt; sonst zieht das Feld nach.
+    final beschreibung = _asset.description ?? '';
+    if (!_descriptionFocusNode.hasFocus &&
+        _descriptionController.text != beschreibung) {
+      _descriptionController.text = beschreibung;
+    }
+  }
+
   Future<void> _ladeFormate() async {
     final stapel = _asset.stackId;
     var formate = const <AssetData>[];

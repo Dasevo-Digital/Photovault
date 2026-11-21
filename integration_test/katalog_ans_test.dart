@@ -3730,65 +3730,55 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Bewertung und Farbmarke per Taste kommen in der Datenbank an,
-  // die offene Info-Leiste zeigt sie aber nicht: AssetInfoSheet übernimmt
-  // die Aufnahme nur in initState (asset_info_sheet.dart:77, `late
-  // AssetData _asset = widget.asset`) und hat kein didUpdateWidget; die
-  // Einzelansicht reicht die neue Fassung nur über das Widget herein
-  // (asset_viewer_screen.dart:1198–1201, gleicher Schlüssel).
-  testWidgets(
-    'ANS-059 Bewertung und Farbmarke per Taste in der Einzelansicht',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [
-          testfoto('taste.jpg', datum: DateTime(2025, 4, 2, 10)),
-          testfoto('anderes.jpg', datum: DateTime(2025, 4, 1, 10)),
-        ],
+  // Behoben in #410: AssetInfoSheet übernimmt in didUpdateWidget die neue
+  // Fassung, die die Einzelansicht hereinreicht.
+  testWidgets('ANS-059 Bewertung und Farbmarke per Taste in der Einzelansicht', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [
+        testfoto('taste.jpg', datum: DateTime(2025, 4, 2, 10)),
+        testfoto('anderes.jpg', datum: DateTime(2025, 4, 1, 10)),
+      ],
+    );
+    await openSection(tester, Hauptbereich.zeitleiste);
+    await oeffne(tester, 'taste.jpg');
+    await tap(tester, knopf(de.viewerInfo));
+    final sterne = find.descendant(
+      of: find.byType(AssetInfoSheet),
+      matching: find.byType(StarRating),
+    );
+    final farben = find.descendant(
+      of: find.byType(AssetInfoSheet),
+      matching: find.byType(ColorLabelPicker),
+    );
+    await waitFor(tester, sterne);
+    Future<void> pruefe(int sternZahl, String? farbe, String was) async {
+      await eventually(tester, () async {
+        final a = await aufnahme(tester, 'taste.jpg');
+        return a.rating == sternZahl && a.colorLabel == farbe;
+      }, was: '$was in der Datenbank');
+      await settle(tester);
+      print(
+        'ANS-059 $was: Leiste zeigt ${tester.widget<StarRating>(sterne).value}'
+        ' Sterne, Farbe ${tester.widget<ColorLabelPicker>(farben).value}',
       );
-      await openSection(tester, Hauptbereich.zeitleiste);
-      await oeffne(tester, 'taste.jpg');
-      await tap(tester, knopf(de.viewerInfo));
-      final sterne = find.descendant(
-        of: find.byType(AssetInfoSheet),
-        matching: find.byType(StarRating),
-      );
-      final farben = find.descendant(
-        of: find.byType(AssetInfoSheet),
-        matching: find.byType(ColorLabelPicker),
-      );
-      await waitFor(tester, sterne);
-      Future<void> pruefe(int sternZahl, String? farbe, String was) async {
-        await eventually(tester, () async {
-          final a = await aufnahme(tester, 'taste.jpg');
-          return a.rating == sternZahl && a.colorLabel == farbe;
-        }, was: '$was in der Datenbank');
-        await settle(tester);
-        print(
-          'ANS-059 $was: Leiste zeigt ${tester.widget<StarRating>(sterne).value}'
-          ' Sterne, Farbe ${tester.widget<ColorLabelPicker>(farben).value}',
-        );
-        expect(tester.widget<StarRating>(sterne).value, sternZahl, reason: was);
-        expect(
-          tester.widget<ColorLabelPicker>(farben).value,
-          farbe,
-          reason: was,
-        );
-      }
+      expect(tester.widget<StarRating>(sterne).value, sternZahl, reason: was);
+      expect(tester.widget<ColorLabelPicker>(farben).value, farbe, reason: was);
+    }
 
-      await key(tester, LogicalKeyboardKey.digit4);
-      await pruefe(4, null, '„4“');
-      await key(tester, LogicalKeyboardKey.digit0);
-      await pruefe(0, null, '„0“');
-      await key(tester, LogicalKeyboardKey.digit7);
-      await pruefe(0, 'yellow', '„7“');
-      await key(tester, LogicalKeyboardKey.digit7);
-      await pruefe(0, null, 'zweites „7“');
-      await schliesseBetrachter(tester);
-      await finish(tester);
-    },
-  );
+    await key(tester, LogicalKeyboardKey.digit4);
+    await pruefe(4, null, '„4“');
+    await key(tester, LogicalKeyboardKey.digit0);
+    await pruefe(0, null, '„0“');
+    await key(tester, LogicalKeyboardKey.digit7);
+    await pruefe(0, 'yellow', '„7“');
+    await key(tester, LogicalKeyboardKey.digit7);
+    await pruefe(0, null, 'zweites „7“');
+    await schliesseBetrachter(tester);
+    await finish(tester);
+  });
 
   testWidgets('ANS-060 Erinnerungen: ohne Löschen', (tester) async {
     final heute = DateTime.now();
