@@ -7905,6 +7905,7 @@ void main() {
   // übrigen Nutzer der Datei fangen den Fehler ab.
   testWidgets(
     'ANS-061 mitServer Original nicht vorrätig bei gestopptem Server',
+    skip: serverAdresse.isEmpty,
     (tester) async {
       await startApp(tester);
       addTearDown(() => ohneNetz.serverGesperrt = false);
