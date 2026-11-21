@@ -1035,17 +1035,7 @@ class LibraryState extends ChangeNotifier {
       );
     }
 
-    // Überwachter Ordner – einmal beim Start und danach regelmässig, aus
-    // demselben Grund wie beim automatischen Backup: Es gibt keinen
-    // Hintergrunddienst, der das erledigen könnte.
-    if (!verbunden) {
-      unawaited(pruefeUeberwachtenOrdner());
-      unawaited(pruefeReferenzplaene());
-      _ordnerTimer = Timer.periodic(_ordnerIntervall, (_) {
-        unawaited(pruefeUeberwachtenOrdner());
-        unawaited(pruefeReferenzplaene());
-      });
-    }
+    richteOrdnertaktEin();
 
     // Gibt KI-Modelle frei, die seit dem letzten Durchlauf nicht mehr in
     // Benutzung sind (siehe ModellHalter.freigebenWennUnbenutzt) – das ist
@@ -3036,6 +3026,33 @@ class LibraryState extends ChangeNotifier {
 
   Timer? _ordnerTimer;
   bool _ordnerLaeuft = false;
+
+  /// Überwachter Ordner – einmal beim Start und danach regelmässig, aus
+  /// demselben Grund wie beim automatischen Backup: Es gibt keinen
+  /// Hintergrunddienst, der das erledigen könnte.
+  ///
+  /// **Auch verbunden.** Bis hierher startete der Takt nur ohne Server;
+  /// mit Server lief allein der Durchgang beim Einrichten, und später
+  /// hineingelegte Fotos kamen erst nach dem nächsten Einrichten – während
+  /// die Karte „Wird alle fünf Minuten geprüft“ sagte (IMP-103). Der
+  /// Durchgang selbst lädt verbunden hoch (siehe [importFiles]) und zählt
+  /// einen nicht erreichbaren Server nicht als Fehlversuch (#395).
+  @visibleForTesting
+  void richteOrdnertaktEin() {
+    _ordnerTimer?.cancel();
+    // Die Referenzpläne gibt es nur ohne Server; verbunden kehrt
+    // [pruefeReferenzplaene] gleich zurück.
+    unawaited(pruefeUeberwachtenOrdner());
+    unawaited(pruefeReferenzplaene());
+    _ordnerTimer = Timer.periodic(_ordnerIntervall, (_) {
+      unawaited(pruefeUeberwachtenOrdner());
+      unawaited(pruefeReferenzplaene());
+    });
+  }
+
+  /// Ob der Takt des überwachten Ordners läuft – für Prüfstände.
+  @visibleForTesting
+  bool get ordnertaktLaeuft => _ordnerTimer?.isActive ?? false;
 
   /// Wie oft nachgesehen wird. Bewusst Abtastung statt echter
   /// Dateisystem-Ereignisse: Letzteres bräuchte eine weitere Abhängigkeit,

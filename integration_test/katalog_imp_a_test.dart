@@ -3055,11 +3055,8 @@ void main() {
     await finish(tester);
   }, skip: serverAdresse.isEmpty);
 
-  // Befund (zweimal reproduziert): Mit Server startet der Fünf-Minuten-Takt
-  // des überwachten Ordners nicht (lib/state/library_state.dart:1010–1016,
-  // nur `if (!verbunden)`); später gelegte Fotos kommen erst beim nächsten
-  // Start oder Neueinrichten. Die Karte sagt trotzdem „Wird alle fünf
-  // Minuten geprüft“.
+  // Behoben in #409: Der Fünf-Minuten-Takt des überwachten Ordners läuft auch
+  // verbunden (LibraryState.richteOrdnertaktEin).
   pruefung(
     'IMP-103 Befund MitServer: später gelegtes Foto kommt im Takt',
     (tester) async {
@@ -3094,7 +3091,7 @@ void main() {
       // holt, soll nicht als Fehler auf diese Prüfung fallen.
       await finish(tester);
     },
-    skip: true,
+    skip: serverAdresse.isEmpty,
     timeout: const Timeout(Duration(minutes: 12)),
   );
 }

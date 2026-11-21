@@ -8,6 +8,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/backup_fotokammer.dart';
 import 'package:kern/services/backup_service.dart';
@@ -286,6 +287,25 @@ void main() {
       );
       expect((await db.assetById(f.id))!.papierkorbAktion, isNotNull);
     });
+  });
+
+  // Mit Server lief der Fünf-Minuten-Takt nicht; später hineingelegte
+  // Fotos kamen erst nach dem nächsten Einrichten (IMP-103).
+  test('Überwachter Ordner: der Takt läuft auch verbunden', () async {
+    final library = LibraryState()
+      ..db = db
+      ..paths = paths
+      ..importService = importe
+      ..verbindung = Verbindungsdatei(
+        server: Uri.parse('http://127.0.0.1:9/'),
+        konto: 'probe',
+        geraet: 'Rechner',
+        token: 'probe',
+      );
+    expect(library.verbunden, isTrue);
+    library.richteOrdnertaktEin();
+    addTearDown(library.vorDemBeenden);
+    expect(library.ordnertaktLaeuft, isTrue);
   });
 
   group('Überwachter Ordner ohne Server', () {
