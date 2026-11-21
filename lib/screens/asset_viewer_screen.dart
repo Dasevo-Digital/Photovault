@@ -1666,13 +1666,21 @@ class _AssetPageState extends State<_AssetPage> {
     super.initState();
     _maybeScheduleFocusPeaking();
     if (widget.gesichterZeigen) unawaited(_gesichterLaden());
-    if (widget.drittelRaster) unawaited(_masseSicherstellen());
+    if (_brauchtMasse(widget)) unawaited(_masseSicherstellen());
   }
 
-  /// Das Raster braucht die Masse des Bildes so wie die Rahmen: Nur mit
-  /// ihnen ist das Kind der Zoomfläche genau das Foto, und ein Drittel des
-  /// Fotos liegt nicht auf einem Drittel des Fensters samt schwarzer
-  /// Ränder.
+  /// Raster und Textkästen brauchen die Masse des Bildes so wie die
+  /// Gesichtsrahmen – beide unabhängig davon, ob die Gesichter an sind.
+  ///
+  /// Früher holte nur das Raster die Masse selbst; „Erkannten Text
+  /// hervorheben“ allein zeigte deshalb keine Rahmen, erst zusammen mit
+  /// „Gesichter zeigen“.
+  bool _brauchtMasse(_AssetPage w) =>
+      w.drittelRaster || (w.textZeigen && _stellen.isNotEmpty);
+
+  /// Nur mit den Massen ist das Kind der Zoomfläche genau das Foto, und
+  /// ein Drittel des Fotos liegt nicht auf einem Drittel des Fensters samt
+  /// schwarzer Ränder.
   Future<void> _masseSicherstellen() async {
     if (_bildmasse != null) return;
     final asset = widget.asset;
@@ -1701,8 +1709,8 @@ class _AssetPageState extends State<_AssetPage> {
     } else if (widget.gesichterZeigen && !oldWidget.gesichterZeigen) {
       unawaited(_gesichterLaden());
     }
-    if (widget.drittelRaster &&
-        (!oldWidget.drittelRaster || widget.asset.id != oldWidget.asset.id)) {
+    if (_brauchtMasse(widget) &&
+        (!_brauchtMasse(oldWidget) || widget.asset.id != oldWidget.asset.id)) {
       unawaited(_masseSicherstellen());
     }
     if (widget.focusPeakingEnabled && widget.isCurrent) {

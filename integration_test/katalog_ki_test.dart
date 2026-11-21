@@ -4209,9 +4209,8 @@ void main() {
     },
   );
 
-  // Befund: „Erkannten Text hervorheben“ allein zeigt keine Rahmen: Die Bildmasse holt der Betrachter nur für Gesichter oder Raster (asset_viewer_screen.dart:1663/1698, Bedingung :2012).
+  // Behoben in #414: Der Betrachter holt die Bildmasse auch für die Textkästen (_brauchtMasse).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-098 Befundpruefung Textrahmen ohne eingeschaltete Gesichter',
     (tester) async {
