@@ -29,14 +29,29 @@ class _Uebersicht extends StatefulWidget {
 class _UebersichtState extends State<_Uebersicht> {
   StreamSubscription<Abgleichszustand>? _abo;
   List<Abgleichsfall> _faelle = [];
-  bool _arbeitet = false, _fehler = false, _mehr = false;
+  bool _arbeitet = false, _mehr = false;
+
+  /// Zwei Gründe für den Hinweis „Die Übersicht konnte nicht aktualisiert
+  /// werden …“, die sich verschieden auflösen: Eine Liste, die sich nicht
+  /// lesen liess, ist mit dem nächsten gelungenen Lesen erledigt; ein
+  /// gescheiterter Abgleich mit der nächsten Runde, in der der Server
+  /// antwortet. Vorher gab es nur einen Schalter, und kein Weg ausser
+  /// einem erneuten Klick setzte ihn zurück – auch nicht das
+  /// Wiederverbinden (SIC-168).
+  bool _ladefehler = false, _abgleichfehler = false;
+  bool get _fehler => _ladefehler || _abgleichfehler;
   int _limit = 100;
   int _lauf = 0;
 
   @override
   void initState() {
     super.initState();
-    _abo = widget.abgleich.zustand.listen((_) => _lade());
+    _abo = widget.abgleich.zustand.listen((z) {
+      if (z.erreichbar && _abgleichfehler && !_arbeitet) {
+        setState(() => _abgleichfehler = false);
+      }
+      _lade();
+    });
     _lade();
   }
 
@@ -61,22 +76,23 @@ class _UebersichtState extends State<_Uebersicht> {
       setState(() {
         _faelle = faelle.take(_limit).toList();
         _mehr = faelle.length > _limit;
+        _ladefehler = false;
       });
     } catch (_) {
-      if (mounted && lauf == _lauf) setState(() => _fehler = true);
+      if (mounted && lauf == _lauf) setState(() => _ladefehler = true);
     }
   }
 
   Future<void> _abgleichen() async {
     setState(() {
       _arbeitet = true;
-      _fehler = false;
+      _abgleichfehler = false;
     });
     try {
       await widget.abgleich.sende();
       await widget.abgleich.empfange();
     } catch (_) {
-      if (mounted) setState(() => _fehler = true);
+      if (mounted) setState(() => _abgleichfehler = true);
     } finally {
       await _lade();
       if (mounted) setState(() => _arbeitet = false);

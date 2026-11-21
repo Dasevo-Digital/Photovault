@@ -187,4 +187,40 @@ void main() {
       findsOneWidget,
     );
   });
+  // SIC-168: Scheiterte „Abgleich erneut versuchen“ einmal, blieb der
+  // Hinweis auch nach dem Wiederverbinden stehen.
+  testWidgets('der Hinweis eines gescheiterten Abgleichs geht mit der nächsten '
+      'gelungenen Runde', (t) async {
+    await vorbereiten(offen: true);
+    await t.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        supportedLocales: AppTexte.supportedLocales,
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        home: Abgleichsuebersicht(abgleich: a),
+      ),
+    );
+    Future<void> bilder() async {
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await bilder();
+    const hinweis =
+        'Die Übersicht konnte nicht aktualisiert werden. Gespeicherte '
+        'Änderungen bleiben erhalten.';
+    await t.tap(find.byTooltip('Abgleich erneut versuchen'));
+    await bilder();
+    expect(find.text(hinweis), findsOneWidget);
+
+    // Wieder verbunden: Die nächste Runde läuft ohne Zutun durch.
+    offline = false;
+    final runde = a.sende();
+    await bilder();
+    await runde;
+    await bilder();
+    expect(a.zustandJetzt.erreichbar, isTrue);
+    expect(find.text(hinweis), findsNothing);
+  }, timeout: const Timeout(Duration(seconds: 60)));
 }
