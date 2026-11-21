@@ -896,11 +896,8 @@ void freigabenTests() {
     expect(rasterIds(tester), [b.ids[0]]);
   });
 
-  // Befund: Wer nach einem Widerspruch gleich wieder Zugang verlangt, sieht
-  // die rohe Antwort des Servers `{"fehler":"Gerade erst abgelehnt – später
-  // wieder."}` (2× nachgestellt): packages/teilen_ui/lib/nachlass.dart:202
-  // zeigt `Serverfehler.text`, also den JSON-Körper, statt der Meldung.
-  // Der übrige Ablauf (Hinweis, Ablehnen, Fristablauf) ist grün.
+  // Behoben in #418: Der Nachlass zeigt den Grund des Servers
+  // (teilenFehlertext), nicht seine rohe Antwort.
   pruefung('MOB-107 Nachlass: ablehnen, erneut verlangen, Frist läuft ab', (
     tester,
   ) async {
@@ -1006,18 +1003,16 @@ void freigabenTests() {
       isEmpty,
       reason: 'verständliche Meldung statt JSON',
     );
-  }, skip: true);
+    expect(sofort, isNotEmpty, reason: 'eine Meldung steht da');
+  });
 }
 
 // ======================================================================
 // Suche
 
 void sucheTests() {
-  // Befund: Der Knopf „Zurücksetzen“ neben der Filterzeile leert ohne
-  // Suchtext nur den Filter; die Treffer der Filtersuche bleiben stehen
-  // (2× nachgestellt). apps/mobil/lib/seiten/suche.dart:263-269 setzt nur
-  // `_filter` zurück und sucht nur bei Suchtext neu; `_treffer` bleibt.
-  // „Zurücksetzen“ im Filterblatt leert dagegen alles (grün).
+  // Behoben in #418: Der Knopf neben der Filterzeile sucht wie
+  // „Zurücksetzen“ im Filterblatt neu und leert ohne Suchtext alles.
   pruefung('MOB-115 Filter der Suche: alle zusammen, Videos, Zurücksetzen', (
     tester,
   ) async {
@@ -1292,7 +1287,8 @@ void sucheTests() {
           .first,
       matching: find.byType(IconButton),
     );
-    if (knopf.evaluate().isNotEmpty) {
+    final knopfDa = knopf.evaluate().isNotEmpty;
+    if (knopfDa) {
       await tippe(tester, knopf.first, ms: 1500);
       final raster = find.byWidgetPredicate(
         (w) => w.runtimeType.toString() == 'AufnahmenRaster',
@@ -1307,5 +1303,6 @@ void sucheTests() {
         reason: '„Zurücksetzen“ an der Filterzeile leert alles',
       );
     }
-  }, skip: true);
+    expect(knopfDa, isTrue, reason: 'Knopf an der Filterzeile');
+  });
 }

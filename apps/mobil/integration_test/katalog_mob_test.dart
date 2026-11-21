@@ -92,10 +92,8 @@ void main() {
     expect(ausnahmen(tester), isEmpty);
   });
 
-  // Befund: Statt „Dort antwortet kein Photo-Vault-Server …“ steht „Hat nicht
-  // geklappt. (FormatException …)“: kern/lib/abgleich/anmeldung.dart:68
-  // dekodiert die Antwort als JSON, bevor Status und Inhalt geprüft werden;
-  // eine HTML/Text-Antwort wirft FormatException (2× reproduziert).
+  // Behoben in #418: Anmeldung.zustand() prüft Status und Inhalt, bevor es
+  // die Antwort deutet; ein fremder Dienst ist ein Serverfehler.
   pruefung('MOB-002 Adresse zeigt auf keinen Photo-Vault-Server', (
     tester,
   ) async {
@@ -130,7 +128,7 @@ void main() {
     }
     print('MOB-002 gezeigt: $gezeigt');
     expect(gezeigt, everyElement(de.anmeldenKeinServer));
-  }, skip: true);
+  });
 
   pruefung('MOB-003 http:// nur im eigenen Netz, sonst nur https', (
     tester,
@@ -398,10 +396,8 @@ void main() {
     expect(app.sitzung.verbindung!.konto, konto);
   });
 
-  // Befund: anmelden.dart:256-258 springt nach einem Fehler beim Holen der
-  // Bibliothek in den Schritt „Wiederherstellungscodes“; ohne Codes wirft
-  // anmelden.dart:419 (_codes!) „Null check operator“ – Fehlerbild statt
-  // Meldung (2× reproduziert).
+  // Behoben in #418: Ohne Wiederherstellungscodes bleibt die Seite nach dem
+  // Fehler mit Meldung, „Erneut versuchen“ und „Zurück zur Anmeldung“.
   pruefung('MOB-014 Server fällt beim Laden der Bibliothek aus', (
     tester,
   ) async {
@@ -428,18 +424,22 @@ void main() {
           .text(de.anmeldenNichtErreichbar)
           .evaluate()
           .isNotEmpty;
-      befunde.add('Durchgang $durchgang: Ausnahmen $fehler, Meldung $meldung');
+      final zurueck = find.text(de.anmeldenZurueck).evaluate().isNotEmpty;
+      befunde.add(
+        'Durchgang $durchgang: Ausnahmen $fehler, Meldung $meldung, '
+        'zurück $zurueck',
+      );
       await proxyZuruecksetzen();
+      // Ein zweiter Versuch klappt.
+      await tippe(tester, find.text(de.startfehlerErneut));
+      await warteAufKacheln(tester, 2);
     }
     print('MOB-014 $befunde');
     expect(
       befunde,
-      everyElement(contains('Ausnahmen [], Meldung true')),
-      reason:
-          'anmelden.dart:258 springt nach dem Fehler in den Schritt '
-          '„Wiederherstellungscodes“, _codes! (anmelden.dart:419) ist null',
+      everyElement(contains('Ausnahmen [], Meldung true, zurück true')),
     );
-  }, skip: true);
+  });
 
   pruefung('MOB-015 Nach Neustart ohne erneute Anmeldung, auch offline', (
     tester,
@@ -1334,10 +1334,8 @@ void auswahlTests() {
     );
   });
 
-  // Befund: „Rückgängig“ nach dem Archivieren einer gemischten Auswahl (eine
-  // schon archiviert, eine nicht) setzt beide auf nicht archiviert:
-  // auswahl.dart:87 wendet ArchivSetzen(ids, alle) auf alle an, statt den
-  // vorherigen Stand je Aufnahme herzustellen (2× reproduziert).
+  // Behoben in #418: „Rückgängig“ stellt nur die geänderten Aufnahmen
+  // zurück, und die Meldung vergeht von selbst.
   pruefung('MOB-043 Archivieren und Rückgängig', (tester) async {
     final k = await kontoMitFotos('K043', 4);
     final app = await starteApp(tester, server: hauptApp, konto: k.konto);
@@ -1347,10 +1345,6 @@ void auswahlTests() {
     await tippe(tester, kacheln().at(1));
     await tippe(tester, _aktion(de.auswahlArchiv));
     await meldung(tester, de.auswahlArchiviert(2));
-    await ruhe(tester, 6000);
-    print(
-      'MOB-043 Meldung mit Rückgängig nach 6 s noch da: ${find.text(de.auswahlArchiviert(2)).evaluate().isNotEmpty}',
-    );
     await tippe(tester, find.text(de.variantenRueckgaengig));
     await warteBis(
       tester,
@@ -1366,6 +1360,9 @@ void auswahlTests() {
       () => rasterIds(tester).length == 2,
       grund: 'archiviert',
     );
+    // Ohne Tipp vergeht die Meldung mit „Rückgängig“ von selbst.
+    await ruhe(tester, 6000);
+    expect(find.text(de.auswahlArchiviert(2)), findsNothing);
     await meldungenWeg(tester);
     await bibOeffnen(tester, de.bibArchiv);
     await warteBis(
@@ -1411,7 +1408,8 @@ void auswahlTests() {
       isTrue,
       reason: 'Rückgängig stellt den Stand vor dem Archivieren her',
     );
-  }, skip: true);
+    expect((await app.sitzung.db.assetById(ids[3]))!.isArchived, isFalse);
+  });
 
   pruefung('MOB-044 Ort für mehrere Aufnahmen setzen', (tester) async {
     final k = await kontoMitFotos('K044', 2);
@@ -2487,7 +2485,8 @@ void gesichterTests() {
     await starteApp(tester, server: hauptApp, konto: leer);
     await bereich(tester, de.navBibliothek);
     await warte(tester, find.text(de.personenLeer));
-    expect(de.personenLeer, contains('benennt man am Rechner'));
+    // Behoben in #418: Das Telefon benennt selbst (MOB-071).
+    expect(de.personenLeer, contains(de.gesichterOhneNamen));
   });
 
   pruefung('MOB-080 Gesicht im ganzen Foto zeigen', (tester) async {
@@ -2651,49 +2650,50 @@ void albenTests() {
     });
   });
 
-  pruefung('MOB-085 Intelligentes Album nach Bildinhalt ohne Modell oder Netz', (
-    tester,
-  ) async {
-    final k = await kontoMitFotos('K085', 2);
-    await mitRechner(
-      hauptDirekt,
-      k.konto,
-      (r) => r.tue(SchlagwortAnheften([k.ids[0]], 'Hund')),
-    );
-    final app = await starteApp(tester, server: hauptApp, konto: k.konto);
-    await warteAufKacheln(tester, 2);
-    await app.sitzung.db.fuehreAus(
-      SucheMerken(
-        _kennung(),
-        'Inhaltsalbum',
-        alsGespeicherteSuche(
-          const Suchfilter(),
-          text: 'Hund',
-          art: Suchart.inhalt,
+  pruefung(
+    'MOB-085 Intelligentes Album nach Bildinhalt ohne Modell oder Netz',
+    (tester) async {
+      final k = await kontoMitFotos('K085', 2);
+      await mitRechner(
+        hauptDirekt,
+        k.konto,
+        (r) => r.tue(SchlagwortAnheften([k.ids[0]], 'Hund')),
+      );
+      final app = await starteApp(tester, server: hauptApp, konto: k.konto);
+      await warteAufKacheln(tester, 2);
+      await app.sitzung.db.fuehreAus(
+        SucheMerken(
+          _kennung(),
+          'Inhaltsalbum',
+          alsGespeicherteSuche(
+            const Suchfilter(),
+            text: 'Hund',
+            art: Suchart.inhalt,
+          ),
         ),
-      ),
-    );
-    await bereich(tester, de.navAlben);
-    await tippe(tester, find.text('Inhaltsalbum'));
-    await warte(tester, find.text(de.sucheKeinModell));
-    final treffer = find.byWidgetPredicate(
-      (w) => w.runtimeType.toString() == 'AufnahmenRaster',
-    );
-    print(
-      'MOB-085 ohne Modell: Raster mit Textreffern ${treffer.evaluate().isNotEmpty}',
-    );
-    await schliesse(tester);
-    await proxyAus();
-    await ruhe(tester, 1000);
-    await tippe(tester, find.text('Inhaltsalbum'));
-    await warte(
-      tester,
-      find.text(de.sucheFehler),
-      max: const Duration(seconds: 60),
-    );
-    expect(ausnahmen(tester), isEmpty);
-    expect(treffer.evaluate().isNotEmpty || true, isTrue);
-  });
+      );
+      await bereich(tester, de.navAlben);
+      await tippe(tester, find.text('Inhaltsalbum'));
+      await warte(tester, find.text(de.sucheKeinModell));
+      // Behoben in #418: ohne Modell die Treffer der Textsuche.
+      await warteBis(
+        tester,
+        () => rasterIds(tester).isNotEmpty,
+        grund: 'Textreffer',
+      );
+      expect(rasterIds(tester), [k.ids[0]]);
+      await schliesse(tester);
+      await proxyAus();
+      await ruhe(tester, 1000);
+      await tippe(tester, find.text('Inhaltsalbum'));
+      await warte(
+        tester,
+        find.text(de.sucheFehler),
+        max: const Duration(seconds: 60),
+      );
+      expect(ausnahmen(tester), isEmpty);
+    },
+  );
 
   pruefung('MOB-086 MOB-089 Album offline behalten und aufheben', (
     tester,
@@ -2862,10 +2862,8 @@ void freigabenTests() {
     expect(find.text(de.linkGaesteHochladen), findsNothing);
   });
 
-  // Befund: Ohne Server steht statt „Ohne Verbindung zum Server gibt es keinen
-  // Link.“ der rohe Fehler „KeineVerbindung(ClientException …)“ (catch in
-  // freigaben.dart:106-107); den Text zeigt nur freigaben.dart:85-86 ohne
-  // Abgleich (2× reproduziert).
+  // Behoben in #418: Auch bei abgerissener Verbindung steht „Ohne
+  // Verbindung zum Server gibt es keinen Link.“, nie die rohe Ausnahme.
   pruefung('MOB-091 Link: Titel, Passwortlänge, ohne Server', (tester) async {
     final k = await kontoMitFotos('K091', 1);
     await _albumMit(k.konto, 'Linkalbum', k.ids);
@@ -2898,11 +2896,10 @@ void freigabenTests() {
     final freigaben =
         (await k.v.hole('api/v1/freigaben'))['freigaben'] as List?;
     expect(freigaben ?? const [], isEmpty);
-  }, skip: true);
+  });
 
-  // Befund: freigaben.dart:248 nurImHeimnetz kennt den VPN-Bereich 100.64/10
-  // nicht, obwohl ohneTlsErlaubt ihn als eigenes Netz behandelt: Für einen
-  // Link mit 100.x-Adresse fehlt der rote Heimnetz-Hinweis (2× reproduziert).
+  // Behoben in #418: nurImHeimnetz nimmt die Bereiche aus dem Kern
+  // (imEigenenNetz), wie ohneTlsErlaubt – samt dem der VPNs.
   pruefung('MOB-094 Hinweis: Link nur im Heimnetz erreichbar', (tester) async {
     final k = await kontoMitFotos('K094', 1);
     await _albumMit(k.konto, 'Heimnetz', k.ids);
@@ -2930,8 +2927,8 @@ void freigabenTests() {
       'MOB-094 100.64/10 als Heimnetz erkannt: $vpn; ohneTlsErlaubt: '
       '${ohneTlsErlaubt(Uri.parse(vpnAdresse))}',
     );
-    expect(vpn, isTrue, reason: 'freigaben.dart:254 kennt 100.64/10 nicht');
-  }, skip: true);
+    expect(vpn, isTrue);
+  });
 
   pruefung('MOB-095 Geteilte Links verwalten und löschen', (tester) async {
     final k = await kontoMitFotos('K095', 2);
@@ -3567,10 +3564,8 @@ Future<void> _suche(
 }
 
 void sucheTests() {
-  // Befund: Ohne Netz liefert „Bildinhalt“ nur „Die Suche hat nicht geklappt.“
-  // statt auf die Textsuche auszuweichen: sitzung.dart:586 fängt nur 404
-  // ab, KeineVerbindung landet in suche.dart:124 (catch) (2× reproduziert).
-  // MOB-111 (ohne Modell) ist grün.
+  // Behoben in #418: Ohne Netz sagt „Bildinhalt“, dass die Bildsuche den
+  // Server braucht, und zeigt die Treffer der Textsuche.
   pruefung('MOB-111 MOB-113 Bildinhalt ohne Modell und ohne Netz', (
     tester,
   ) async {
@@ -3596,6 +3591,8 @@ void sucheTests() {
     await proxyAus();
     await ruhe(tester, 1000);
     await _suche(tester, 'Hund', inhalt: true);
+    await warte(tester, find.text(de.sucheInhaltOhneServer));
+    expect(rasterIds(tester), [k.ids[0]], reason: 'Textreffer ohne Netz');
     final ohne = sichtbareTexte(tester);
     print(
       'MOB-113 Bildinhalt ohne Netz: ${ohne.where((t) => t.length > 10).toList()}',
@@ -3611,12 +3608,8 @@ void sucheTests() {
     await ruhe(tester, 1500);
     expect(rasterIds(tester), [k.ids[0]], reason: 'nach Umschalten Textreffer');
     expect(find.text(de.sucheFehler), findsNothing);
-    expect(
-      ohne,
-      isNot(contains(de.sucheFehler)),
-      reason: 'suche.dart:109 fängt nur 404 ab',
-    );
-  }, skip: true);
+    expect(ohne, isNot(contains(de.sucheFehler)));
+  });
 
   pruefung('MOB-112 Textsuche ohne Netz', (tester) async {
     final konto = await kontoAnlegen(hauptDirekt, 'K112');
@@ -4909,9 +4902,8 @@ void einstellungenTests() {
     expect(e.formateStapeln, isTrue);
   });
 
-  // Befund: „14“ eingetippt und die Seite ohne Bestätigen verlassen: die Frist
-  // bleibt beim alten Wert (3650); einstellungen.dart:212 sendet nur in
-  // onSubmitted (2× reproduziert). 7, 0→1 und 9999→3650 stimmen.
+  // Behoben in #418: Die Frist geht auch, wenn das Feld den Fokus verliert
+  // oder die Seite ohne Bestätigen geschlossen wird.
   pruefung('MOB-158 Papierkorb automatisch leeren: Frist', (tester) async {
     final k = await kontoMitFotos('K158', 1);
     await starteApp(tester, server: hauptApp, konto: k.konto);
@@ -4954,12 +4946,8 @@ void einstellungenTests() {
     await ruhe(tester, 3000);
     final nach = await amServer0();
     print('MOB-158 „14“ ohne Bestätigen, am Server: $nach');
-    expect(
-      nach,
-      14,
-      reason: 'einstellungen.dart:212 sendet nur beim Bestätigen',
-    );
-  }, skip: true);
+    expect(nach, 14);
+  });
 
   pruefung('MOB-159 Gesichtsvorschläge und Schwelle', (tester) async {
     final k = await kontoMitFotos('K159', 1);
@@ -5223,6 +5211,13 @@ void sicherungTests() {
     await tippe(tester, find.text(de.sicherungAlben), ms: 1500);
     await rolleZu(tester, find.text(album.name));
     await tippe(tester, find.text(album.name), ms: 800);
+    // Mit jedem Lauf kommt ein Album dazu: „Alle Fotos“ steht dann oben
+    // ausserhalb des Bildes.
+    await rolleZu(
+      tester,
+      find.widgetWithText(CheckboxListTile, de.sicherungAlleFotos),
+      schritt: -250,
+    );
     expect(
       tester
           .widget<CheckboxListTile>(
@@ -5233,19 +5228,22 @@ void sicherungTests() {
     );
     await zurueck(tester);
     await warte(tester, find.text(de.sicherungAlleFotos));
-    await rolleZu(tester, find.text(de.sicherungJetzt));
+    // „Jetzt sichern“ steht über den Alben.
+    await rolleZu(tester, find.text(de.sicherungJetzt), schritt: -250);
     await tippe(tester, find.text(de.sicherungJetzt));
+    // Gezählt wird am Telefon: Die Testbilder früherer Läufe sind gleich,
+    // und der Server nimmt jedes nur einmal – seine Zahl erreicht die der
+    // Mediathek dann nie.
     await warteBis(
       tester,
-      () async => await _serverAnzahl(konto) == alle,
+      () => find.text(de.sicherungStand(alle, alle)).evaluate().isNotEmpty,
       max: const Duration(minutes: 4),
       grund: 'übrige gesichert',
     );
     expect(
       zeile,
       isEmpty,
-      reason:
-          'dienst.dart:79 zählt Fotos ausserhalb der Auswahl als ungesichert',
+      reason: 'nur Fotos der Auswahl zählen als ungesichert',
     );
   });
 

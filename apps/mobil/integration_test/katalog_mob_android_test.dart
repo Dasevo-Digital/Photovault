@@ -129,8 +129,8 @@ void main() {
       _paket,
       'android.permission.POST_NOTIFICATIONS',
     ]);
-    // MOB-171 (mit „Nie gefragt“) ist als Befund übersprungen; die übrigen
-    // Prüfungen brauchen den Zugriff auf die Fotos.
+    // MOB-171 nimmt den Zugriff selbst weg („Nie fragen“) und gibt ihn
+    // zurück; die übrigen Prüfungen brauchen ihn.
     for (final r in [
       'android.permission.READ_MEDIA_IMAGES',
       'android.permission.READ_MEDIA_VIDEO',
@@ -143,10 +143,11 @@ void main() {
     await proxyZuruecksetzen();
   });
 
-  // Befund: Nach dem Erlauben in den Einstellungen bleibt die Zeile „Kein
-  // Zugriff auf die Fotos“ stehen, bis man den Schalter erneut antippt:
-  // sicherung/dienst.dart:326 prüft den Zugriff beim Zurückkehren nur bei
-  // eingeschalteter Sicherung (2× reproduziert).
+  // Behoben in #418: Zurück in der App liest der Sicherungsdienst den
+  // Zugriff auch bei ausgeschalteter Sicherung neu (zurueckInDerApp).
+  // Ist der Zugriff beim Start erteilt, beendet Android die App beim
+  // Entziehen: Dann vor dem Lauf per adb entziehen und MOB-171 allein
+  // laufen lassen (ohne „Vorbereitung“, die ihn erteilt).
   pruefung('MOB-171 Kein Zugriff auf die Fotos', (tester) async {
     await pinEntfernen();
     for (final r in [
@@ -197,14 +198,8 @@ void main() {
     await tippe(tester, schalter, ms: 3000);
     expect(tester.widget<SwitchListTile>(schalter).value, isTrue);
     expect(find.text(de.sicherungKeinZugriff), findsNothing);
-    expect(
-      bleibt,
-      isFalse,
-      reason:
-          'dienst.dart:326 prüft den Zugriff beim Zurückkehren nur bei '
-          'eingeschalteter Sicherung',
-    );
-  }, skip: true);
+    expect(bleibt, isFalse, reason: 'Zeile verschwindet ohne Neustart');
+  });
 
   pruefung('MOB-160 MOB-163 App-Sperre einschalten und abschalten', (
     tester,

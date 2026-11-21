@@ -615,11 +615,8 @@ Future<void> _entwickelnOeffnen(WidgetTester tester) async {
 }
 
 void entwickelnTests() {
-  // Befund: Nach „Speichern“ zeigt der Betrachter weiter die alte Fassung
-  // (originals/…); erst nach Schliessen und erneutem Öffnen die entwickelte
-  // (2 Fotos, 2 Läufe). apps/mobil/lib/seiten/betrachter.dart:466 entfernt
-  // nur `_daten[id]`; die Bildquelle bleibt in `_suchen`/`_quellen`
-  // (betrachter.dart:75-76, 136, 146) zwischengespeichert.
+  // Behoben in #418: Nach dem Entwickeln vergisst der Betrachter auch die
+  // Bildquelle und zeigt gleich die neue Fassung.
   pruefung('MOB-134 Entwickeln: Vorschau, Vorher, Weissabgleich, Speichern', (
     tester,
   ) async {
@@ -767,7 +764,7 @@ void entwickelnTests() {
       everyElement(contains('developed/')),
       reason: 'Betrachter zeigt gleich die neue Fassung',
     );
-  }, skip: true);
+  });
 
   pruefung('MOB-136 Masken und Tonkurve vom Rechner', (tester) async {
     final konto = await kontoAnlegen(hauptDirekt, 'K136');

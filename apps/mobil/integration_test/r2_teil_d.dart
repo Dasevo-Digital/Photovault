@@ -43,11 +43,9 @@ Finder get _lokaleKachel => find.byWidgetPredicate(
 );
 
 void sicherungTests() {
-  // Befund: Ist die Sicherung aus, meldet die Sicherungsseite die Abmeldung
-  // nicht (2× nachgestellt): apps/mobil/lib/seiten/sicherung.dart:122 baut
-  // den Stand nur bei eingeschalteter Sicherung, und der Hinweis (:309-317)
-  // kommt nur aus `dienst.fehler`, also erst nach einem Lauf mit 401. Mit
-  // eingeschalteter Sicherung erscheint er (grün), ebenso oben in der App.
+  // Behoben in #418: Die Sitzung meldet die Abmeldung an den
+  // Sicherungsdienst, und die Sicherungsseite zeigt sie auch bei
+  // ausgeschalteter Sicherung.
   pruefung('MOB-021 Abgemeldet: Hinweis oben und auf der Sicherungsseite', (
     tester,
   ) async {
@@ -108,7 +106,7 @@ void sicherungTests() {
       isEmpty,
       reason: 'Sicherungsseite meldet die Abmeldung',
     );
-  }, skip: true);
+  });
 
   pruefung(
     'MOB-042 MOB-185 MOB-186 Vom Telefon löschen (Systemrückfrage nachgestellt)',

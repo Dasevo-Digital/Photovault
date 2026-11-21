@@ -14,14 +14,23 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 
 import 'katalog_hilfen.dart';
 
-final mlDirekt = Uri.parse('http://$hostAdresse:18820/');
-final mlApp = Uri.parse('http://$hostAdresse:18821/');
+/// Die Ports des Servers „ml“ und seines Vorschalt-Proxys (Vorgabe wie in
+/// der ersten Runde; für Nachprüfungen per --dart-define andere).
+const _mlPort = int.fromEnvironment('PV_ML_PORT', defaultValue: 18820);
+const _mlAppPort = int.fromEnvironment('PV_ML_APP_PORT', defaultValue: 18821);
+const _mlSteuerPort = int.fromEnvironment(
+  'PV_ML_STEUER_PORT',
+  defaultValue: 18822,
+);
+final mlDirekt = Uri.parse('http://$hostAdresse:$_mlPort/');
+final mlApp = Uri.parse('http://$hostAdresse:$_mlAppPort/');
 const mlFix = String.fromEnvironment('PV_FIXTURES_ML');
 const voegel = {
   'animals_eagle.jpg',
@@ -31,7 +40,7 @@ const voegel = {
 };
 
 Future<List<String>> mlLog() async {
-  final r = await http.get(Uri.parse('http://$hostAdresse:18822/log'));
+  final r = await http.get(Uri.parse('http://$hostAdresse:$_mlSteuerPort/log'));
   return [
     for (final e in jsonDecode(r.body) as List)
       '${(e as Map)['methode']} ${e['pfad']} ${e['status']}',
@@ -614,12 +623,9 @@ void main() {
     expect(farbeDanach, isNot(Colors.white));
   });
 
-  // Befund (2× nachgestellt): Nach „Auswertung anstossen“ lädt die Zeile ihren
-  // Stand genau einmal, gleich nach dem POST (konto.dart:261-268); der Server
-  // hat dann oft noch keinen `stand`, und laeuft ohne stand gilt als „nichts
-  // offen“ (konto.dart:274). Ohne erneutes Laden bleibt sie so, während der
-  // Server rechnet. Ebenso zeigt „Sicherung des Servers: zuletzt …“ nach
-  // „Jetzt sichern“ den alten Stand (Abfrage nur alle 15 min, sitzung.dart:274).
+  // Behoben in #418: Nach dem Anstossen sieht die Zeile nach, solange die
+  // Auswertung läuft; nach „Jetzt sichern“ fragt die Seite den Stand der
+  // Server-Sicherung nach, bis der Lauf vorbei ist.
   pruefung('MOB-155 Verwalter: Auswertung läuft, Server jetzt sichern', (
     tester,
   ) async {
@@ -689,10 +695,28 @@ void main() {
       '${s2['ende']} letzterErfolg ${s2['letzterErfolg']}; sichtbar: $meldungen',
     );
     expect(
-      nachher != null && nachher.startsWith('Auswertung läuft: '),
+      nachher != null && nachher.startsWith('Auswertung läuft'),
       isTrue,
       reason: 'nach dem Anstossen: $nachher (Server ${amServer['stand']})',
     );
+    if (amServer2['laeuft'] == true && amServer2['stand'] != null) {
+      expect(
+        spaeter,
+        startsWith('Auswertung läuft: '),
+        reason: 'die Zeile sieht nach, während der Server rechnet',
+      );
+    }
     expect(s2['ende'], isNot(ende0), reason: 'Sicherung lief');
-  }, skip: true);
+    // Der neue Zeitpunkt der Server-Sicherung steht oben.
+    final neu = DateTime.tryParse('${s2['letzterErfolg']}')?.toLocal();
+    if (neu != null) {
+      await warte(
+        tester,
+        find.text(
+          de.serverSicherungStand(DateFormat.yMd('de').add_Hm().format(neu)),
+        ),
+        max: const Duration(seconds: 15),
+      );
+    }
+  });
 }
