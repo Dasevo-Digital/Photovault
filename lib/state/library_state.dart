@@ -4002,9 +4002,14 @@ class LibraryState extends ChangeNotifier {
     ], flush: true);
   }
 
-  Future<void> _restorePrivateMetadata(String assetId, SecretKey key) async {
+  /// Die verschlüsselt abgelegten privaten Angaben von [assetId], oder
+  /// `null` bei einem Bestand aus älteren Fassungen ohne diese Datei.
+  Future<Map<String, dynamic>?> _privateMetadataLesen(
+    String assetId,
+    SecretKey key,
+  ) async {
     final target = paths.absolute(paths.vaultMetadataRelativePath(assetId));
-    if (!await target.exists()) return; // Bestand aus älteren Fassungen.
+    if (!await target.exists()) return null;
     final bytes = await target.readAsBytes();
     if (bytes.length < 4 + 12 + 16 ||
         !listEquals(bytes.sublist(0, 4), _privateMetadataMagic)) {
@@ -4019,7 +4024,44 @@ class LibraryState extends ChangeNotifier {
       secretKey: key,
       aad: utf8.encode(assetId),
     );
-    final json = jsonDecode(utf8.decode(clear)) as Map<String, dynamic>;
+    return jsonDecode(utf8.decode(clear)) as Map<String, dynamic>;
+  }
+
+  /// [asset] mit den Angaben, nach denen eine Datei benannt wird – Name,
+  /// Aufnahmezeit und Kamera –, so wie sie in den gesperrten Ordner kamen.
+  ///
+  /// In der Datenbank heisst jede gesperrte Aufnahme „Private Aufnahme“
+  /// vom 1.1.1970; die echten Angaben liegen verschlüsselt daneben. Ein
+  /// bewusster Export oder das Teilen aus dem entsperrten Ordner braucht
+  /// sie – sonst kam die Datei ohne Namen und ohne Endung am Ziel an
+  /// (BEA-132). Nur im Speicher; in die Datenbank kommt nichts davon. Ist
+  /// der Ordner nicht entsperrt oder fehlt die Datei, bleibt [asset], wie
+  /// es ist.
+  Future<AssetData> mitEchtenNamensangaben(AssetData asset) async {
+    final key = _vaultKey;
+    if (!asset.isLocked || key == null) return asset;
+    try {
+      final angaben = await _privateMetadataLesen(asset.id, key);
+      if (angaben == null) return asset;
+      final name = angaben['originalFileName'];
+      final zeit = DateTime.tryParse('${angaben['fileCreatedAt']}');
+      return asset.copyWith(
+        originalFileName: name is String && name.isNotEmpty
+            ? p.basename(name)
+            : asset.originalFileName,
+        fileCreatedAt: zeit ?? asset.fileCreatedAt,
+        cameraMake: Value(angaben['cameraMake'] as String?),
+        cameraModel: Value(angaben['cameraModel'] as String?),
+      );
+    } on Object catch (e) {
+      debugPrint('Angaben der gesperrten Aufnahme nicht lesbar: $e');
+      return asset;
+    }
+  }
+
+  Future<void> _restorePrivateMetadata(String assetId, SecretKey key) async {
+    final json = await _privateMetadataLesen(assetId, key);
+    if (json == null) return; // Bestand aus älteren Fassungen.
     double? number(String key) => (json[key] as num?)?.toDouble();
     final tags = <(String, String)>[];
     for (final encoded in (json['tags'] as List? ?? const [])) {

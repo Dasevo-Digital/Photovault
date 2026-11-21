@@ -6258,6 +6258,7 @@ void _exportTests() {
 
       // BEA-132
       final klar = sha(datei((await aufnahme(tester, gesperrt)).relativePath));
+      final echterName = (await aufnahme(tester, gesperrt)).originalFileName;
       await tresorEinrichten(tester);
       await sperre(tester, gesperrt);
       await oeffneGesperrtenOrdner(tester);
@@ -6279,6 +6280,9 @@ void _exportTests() {
         'exportierte Dateien: ${ausgabe.map((f) => p.basename(f.path)).toList()}',
       );
       expect(sha(bild), klar, reason: 'entschlüsselt und lesbar');
+      // Behoben in #411: mit dem echten Namen samt Endung, nicht als
+      // „Private Aufnahme“.
+      expect(p.basename(bild.path), echterName);
       final xmp = ausgabe.firstWhere((f) => f.path.endsWith('.xmp'));
       expect(xmp.existsSync(), isTrue);
       beobachtung(

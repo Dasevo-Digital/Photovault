@@ -99,11 +99,14 @@ class SecureShareService {
           File(p.join(dataDir.path, opaqueName)),
           wrapped.masterKey,
         );
+        // Name und Zeit wie in der Bibliothek, auch aus dem gesperrten
+        // Ordner (BEA-132).
+        final benannt = await _exporter.benannt(asset);
         manifest.add({
           'file': opaqueName,
-          'name': p.basename(asset.originalFileName),
+          'name': p.basename(benannt.originalFileName),
           'type': asset.type,
-          'capturedAt': asset.fileCreatedAt.toIso8601String(),
+          'capturedAt': benannt.fileCreatedAt.toIso8601String(),
           'checksum': asset.checksum,
         });
       }

@@ -859,12 +859,13 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       final files = <XFile>[
         XFile((await exporter.resolveSourceFile(asset)).path),
       ];
-      final names = <String>[asset.originalFileName];
+      // Der echte Name, auch aus dem gesperrten Ordner (BEA-132).
+      final names = <String>[(await exporter.benannt(asset)).originalFileName];
       if (asset.linkedAssetId != null) {
         final partner = await widget.db.assetById(asset.linkedAssetId!);
         if (partner != null) {
           files.add(XFile((await exporter.resolveSourceFile(partner)).path));
-          names.add(partner.originalFileName);
+          names.add((await exporter.benannt(partner)).originalFileName);
         }
       }
       final box =

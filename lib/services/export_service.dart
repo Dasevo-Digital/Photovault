@@ -174,6 +174,15 @@ class ExportService {
   Future<File> resolveSourceFile(AssetData asset) =>
       _dateiZu(asset, asset.relativePath);
 
+  /// [asset] mit den Angaben, nach denen es hinausgeht – bei einer
+  /// gesperrten Aufnahme Name, Zeit und Kamera aus dem Tresor statt
+  /// „Private Aufnahme“ (BEA-132, siehe
+  /// [LibraryState.mitEchtenNamensangaben]).
+  Future<AssetData> benannt(AssetData asset) async =>
+      asset.isLocked && _library != null
+      ? await _library.mitEchtenNamensangaben(asset)
+      : asset;
+
   Future<File> _dateiZu(AssetData asset, String relativ) async {
     return asset.isLocked && _library != null
         ? await _library.decryptForViewing(relativ)
@@ -272,14 +281,15 @@ class ExportService {
     // Die Endung richtet sich danach, was WIRKLICH geschrieben wird: Ist
     // das Rendern fehlgeschlagen (oder war es ein Video), wird kopiert –
     // dann darf dort auch kein `.jpg` stehen.
+    final mitNamen = await benannt(asset);
     final endung = gerendert != null
         ? v.raw16
               ? '.tiff'
               : '.jpg'
-        : p.extension(asset.originalFileName);
+        : p.extension(mitNamen.originalFileName);
     final zielName = dateiname(
       v.namensmuster,
-      asset,
+      mitNamen,
       nummer: nummer,
       endung: endung,
     );
