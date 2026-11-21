@@ -3274,8 +3274,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund ORT-076: confirmDialog ohne `bestaetigen` – der Knopf heisst
-  // rot „Löschen“ (ortsvorschlaege_screen.dart, _frageAlle). Zwei Läufe.
+  // Behoben in #413: Die Rückfrage gibt confirmDialog die Beschriftung
+  // „Übernehmen“ mit.
   testWidgets('ORT-076 Bestätigungsknopf heisst nicht „Löschen“', (
     tester,
   ) async {
@@ -3302,7 +3302,7 @@ void main() {
       reason: 'Übernehmen wird mit einem roten „Löschen“-Knopf bestätigt',
     );
     await finish(tester);
-  }, skip: true);
+  });
 
   // =========================================================================
   // GPX

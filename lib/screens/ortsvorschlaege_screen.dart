@@ -89,6 +89,8 @@ class _OrtsvorschlaegeScreenState extends State<OrtsvorschlaegeScreen> {
   Future<void> _frageAlle() async {
     final t = AppTexte.of(context);
     final aufnahmen = _buendel.fold<int>(0, (n, b) => n + b.vorschlaege.length);
+    // Mit eigener Beschriftung: Ohne sie heisst der Knopf „Löschen“ –
+    // die Vorgabe von confirmDialog –, obwohl hier nichts gelöscht wird.
     final ja = await confirmDialog(
       context,
       t.ortVorschlagAlleFrageTitel,
