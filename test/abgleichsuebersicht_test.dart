@@ -223,4 +223,30 @@ void main() {
     expect(a.zustandJetzt.erreichbar, isTrue);
     expect(find.text(hinweis), findsNothing);
   }, timeout: const Timeout(Duration(seconds: 60)));
+  // Zusatz aus der zweiten Prüfrunde: Ein abgelehntes Umbenennen eines
+  // Schlagworts hiess „Bibliotheksänderung“ mit „0 betroffene Aufnahmen“.
+  testWidgets('ein abgelehntes Umbenennen heisst „Tags ändern“, ohne '
+      '„0 betroffene Aufnahmen“', (t) async {
+    await db.fuehreAus(const SchlagwortAnheften(['foto'], 'strand'));
+    final kennung = (await db.tagsForAsset('foto')).single.id;
+    await db.fuehreAus(SchlagwortUmbenennen(kennung, 'meer'));
+    await a.sende();
+    await a.empfange();
+    expect(
+      (await a.faelle()).map((f) => f.befehl['art']),
+      contains('schlagwortUmbenennen'),
+    );
+    await t.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        supportedLocales: AppTexte.supportedLocales,
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        home: Abgleichsuebersicht(abgleich: a),
+      ),
+    );
+    await t.pumpAndSettle();
+    expect(find.text('Bibliotheksänderung'), findsNothing);
+    expect(find.text('Tags ändern'), findsWidgets);
+    expect(find.textContaining('0 betroffene Aufnahmen'), findsNothing);
+  });
 }

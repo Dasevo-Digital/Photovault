@@ -155,6 +155,16 @@ class _UebersichtState extends State<_Uebersicht> {
                         );
                       }
                       final f = _faelle[i];
+                      final sprache = Localizations.localeOf(
+                        context,
+                      ).toString();
+                      final angaben = [
+                        // Eine Änderung ohne Fotos (etwa ein umbenanntes
+                        // Schlagwort) betrifft keine Aufnahme – „0
+                        // betroffene Aufnahmen“ sagte nichts.
+                        if (f.fotoIds.isNotEmpty) t.fotos(f.fotoIds.length),
+                        DateFormat.yMd(sprache).add_Hm().format(f.am),
+                      ];
                       return ListTile(
                         leading: Icon(
                           f.ausstehend
@@ -163,7 +173,7 @@ class _UebersichtState extends State<_Uebersicht> {
                         ),
                         title: Text(_aktion(t, f)),
                         subtitle: Text(
-                          '${_status(t, f)}\n${t.fotos(f.fotoIds.length)} · ${DateFormat.yMd(Localizations.localeOf(context).toString()).add_Hm().format(f.am)}',
+                          '${_status(t, f)}\n${angaben.join(' · ')}',
                         ),
                         isThreeLine: true,
                         trailing: const Icon(Icons.chevron_right),
@@ -184,7 +194,14 @@ String _aktion(SyncTexte t, Abgleichsfall f) => switch (f.befehl['art']) {
   'farbmarkeSetzen' => t.farbe,
   'beschreibungSetzen' => t.beschreibung,
   final String s when s.toLowerCase().contains('album') => t.album,
-  final String s when s.toLowerCase().contains('tag') => t.tag,
+  // Die Befehle heissen deutsch: „schlagwortUmbenennen“ enthält kein
+  // „tag“ und hiess deshalb „Bibliotheksänderung“, „reisetagnotizSetzen“
+  // dagegen „Tags ändern“.
+  final String s
+      when s.toLowerCase().contains('schlagw') ||
+          s.startsWith('kiBegriff') ||
+          s == 'vokabularUebersetzen' =>
+    t.tag,
   final String s
       when s.toLowerCase().contains('person') ||
           s.toLowerCase().contains('gesicht') =>
@@ -387,7 +404,8 @@ class _EntscheidungState extends State<_Entscheidung> {
             ),
           ],
           if (v != null) ...[
-            Text(t.fotos(widget.fall.fotoIds.length)),
+            if (widget.fall.fotoIds.isNotEmpty)
+              Text(t.fotos(widget.fall.fotoIds.length)),
             if (v.geschuetzt)
               Text(t.geschuetzt)
             else ...[
