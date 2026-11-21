@@ -168,7 +168,13 @@ class _ZeitleisteState extends State<Zeitleiste> {
           }
           return RefreshIndicator(
             onRefresh: () async {
-              await sitzung.gleicheAb();
+              try {
+                await sitzung.gleicheAb();
+              } on Exception {
+                // Was nicht klappt – kein Netz, abgemeldet –, sagt die
+                // Leiste oben. Der Fehler ging hier sonst ungefangen
+                // verloren.
+              }
               await d?.zaehleUngesicherte();
             },
             child: zeilen.isEmpty
