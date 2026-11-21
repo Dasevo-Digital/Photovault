@@ -440,7 +440,14 @@ class _MapScreenState extends State<MapScreen> {
       return;
     }
     _lastGroupedZoomBucket = bucket;
-    if ((bucket >= zoomHinweisAb) != (_globusZoom >= zoomHinweisAb)) {
+    // Neu gebaut wird, wenn sich etwas Sichtbares ändert: der Hinweis
+    // oben – oder einer der Zoomknöpfe, weil die Stufe an eine Grenze
+    // kommt oder sie verlässt. Vorher nur beim Hinweis; „Weiter weg“ und
+    // „Näher heran“ blieben an den Grenzen bedienbar, ohne etwas zu tun.
+    final c = _globeController;
+    bool amRand(double z) => c != null && (z >= c.maxZoom || z <= c.minZoom);
+    if ((bucket >= zoomHinweisAb) != (_globusZoom >= zoomHinweisAb) ||
+        amRand(bucket) != amRand(_globusZoom)) {
       setState(() => _globusZoom = bucket);
     } else {
       _globusZoom = bucket;

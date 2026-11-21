@@ -1768,12 +1768,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund-Prüfung zu ORT-022: Die Knöpfe hängen an `_globusZoom`, aber
-  // `_onGlobeZoomChanged` (map_screen.dart:443–447) baut nur neu, wenn die
-  // Stufe 3 überschritten wird.
-  // Befund ORT-022: „Weiter weg“ an der kleinsten Stufe und „Näher heran“
-  // an Stufe 6 bleiben bedienbar (map_screen.dart:443–447 baut nur beim
-  // Überschreiten von Stufe 3 neu, :701–706). Zwei Läufe.
+  // Behoben in #413: _onGlobeZoomChanged baut auch neu, wenn die Stufe eine
+  // Zoomgrenze erreicht oder verlässt; die Knöpfe werden dort grau.
   testWidgets('ORT-022 Zoomknöpfe des Globus werden an den Grenzen grau', (
     tester,
   ) async {
@@ -1800,7 +1796,7 @@ void main() {
     print('ORT-022 $befunde');
     expect(befunde, isEmpty);
     await finish(tester);
-  }, skip: true);
+  });
 
   // Befund-Prüfung zu ORT-018: Die Pins stehen erst nach der ersten
   // Bedienung da. Die Beschriftungen baut RotatingGlobe aus visiblePoints
