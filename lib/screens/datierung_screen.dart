@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/datierung.dart';
@@ -44,8 +43,11 @@ class _DatierungScreenState extends State<DatierungScreen> {
     final t = AppTexte.of(context);
     setState(() => _arbeitet = true);
     for (final s in welche) {
-      await widget.library.db.fuehreAus(
-        JahrSchaetzen(s.asset.id, s.datierung.jahr),
+      // Über die Bibliothek: Sie legt die Datei auch in den Monatsordner
+      // des geschätzten Datums (IMP-124).
+      await widget.library.uebernimmGeschaetztesJahr(
+        s.asset.id,
+        s.datierung.jahr,
       );
       _uebernommen.add(s.asset.id);
     }

@@ -53,12 +53,12 @@ class _AufnahmedatenScreenState extends State<AufnahmedatenScreen> {
   Future<void> _uebernehmen(List<Datumsvorschlag> welche) async {
     final t = AppTexte.of(context);
     setState(() => _arbeitet = true);
+    // Über die Bibliothek: Sie legt die Datei auch in den Monatsordner des
+    // neuen Datums (IMP-115).
     for (var i = 0; i < welche.length; i += 200) {
-      await widget.library.db.fuehreAus(
-        AufnahmedatenSetzen([
-          for (final v in welche.skip(i).take(200)) v.alsEintrag,
-        ]),
-      );
+      await widget.library.uebernimmAufnahmedaten([
+        for (final v in welche.skip(i).take(200)) v.alsEintrag,
+      ]);
     }
     _uebernommen.addAll([for (final v in welche) v.id]);
     _gewaehlt.removeAll(_uebernommen);

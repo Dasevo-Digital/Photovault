@@ -1,5 +1,9 @@
 part of '../database.dart';
 
+/// Der Zeitpunkt, den ein auf [jahr] geschätztes Foto bekommt – siehe
+/// [EinbettungsAbfragen.setzeGeschaetztesJahr].
+DateTime jahresmitte(int jahr) => DateTime(jahr, 7, 1, 12);
+
 /// CLIP-Bildeinbettungen für die Suche.
 extension EinbettungsAbfragen on AppDatabase {
   // -----------------------------------------------------------------------
@@ -81,7 +85,7 @@ extension EinbettungsAbfragen on AppDatabase {
     await (update(assets)..where((t) => t.id.equals(assetId))).write(
       AssetsCompanion(
         // Der bisherige Zeitstempelvertrag bleibt für Ablage/alte Sicherungen.
-        fileCreatedAt: Value(DateTime(jahr, 7, 1, 12)),
+        fileCreatedAt: Value(jahresmitte(jahr)),
         datumVon: Value(d.von),
         datumBis: Value(d.bis),
         datumGenauigkeit: Value(d.genauigkeit.name),

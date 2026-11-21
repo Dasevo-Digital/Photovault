@@ -177,7 +177,9 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   Future<void> _datumsvorschlagUebernehmen() async {
     final v = _datumsvorschlag;
     if (v == null) return;
-    await widget.db.fuehreAus(AufnahmedatenSetzen([v.alsEintrag]));
+    // Über die Bibliothek: Sie legt die Datei auch in den Monatsordner des
+    // neuen Datums (IMP-119).
+    await context.read<LibraryState>().uebernimmAufnahmedaten([v.alsEintrag]);
     if (!mounted) return;
     setState(() => _datumsvorschlag = null);
     await _refresh();

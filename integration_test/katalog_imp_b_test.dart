@@ -383,11 +383,9 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: Übernommene Daten aus dem Dateinamen (aufnahmedaten_screen.dart:58),
-  // aus dem Info-Blatt (asset_info_sheet.dart:176) und aus der Datierung
-  // (datierung_screen.dart:48) gehen nur in die Datenbank. Das Original
-  // bleibt im Monatsordner des alten Datums – anders als beim Datum von
-  // Hand (library_state.dart:2834, setzeAufnahmedatumVonHand).
+  // Behoben in #409: Aufnahmedaten, Info-Blatt und Datierung übernehmen über
+  // LibraryState.uebernimmAufnahmedaten bzw. uebernimmGeschaetztesJahr und
+  // legen die Datei wie beim Datum von Hand um.
   testWidgets('IMP-115 IMP-119 IMP-124 Übernommenes Datum legt die Datei um', (
     tester,
   ) async {
@@ -462,7 +460,7 @@ void main() {
       print('IMP-115/119/124: Ablage offen: $offen; $probleme');
       expect(probleme, isEmpty);
     });
-  }, skip: true);
+  });
 
   // ---------------------------------------------------------------------
   // Duplikate & ähnliche Fotos

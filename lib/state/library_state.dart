@@ -2951,6 +2951,49 @@ class LibraryState extends ChangeNotifier {
   Future<void> _datumUmschreiben(AssetData asset, DateTime neu) =>
       AufnahmedatumDienst(db, paths).setze(asset, neu);
 
+  /// Übernimmt Aufnahmedaten aus einer Prüfung – aus dem Dateinamen oder
+  /// aus der Datei selbst – und legt die Datei dorthin, wo sie nach dem
+  /// neuen Datum hingehört, wie [setzeAufnahmedatumVonHand].
+  ///
+  /// **Warum nicht nur der Befehl.** Die Übernahme schrieb bis hierher
+  /// nur die Datenbank ([AufnahmedatenSetzen]); das Original blieb im
+  /// Monatsordner des alten Datums, und „Ablage nach Datum ordnen“ zählte
+  /// es danach als falsch abgelegt (IMP-115, IMP-119). Der Befehl läuft
+  /// weiter mit: Er setzt die Marken „geschätzt“ und „geprüft“, und
+  /// verbunden erledigt er alles – die Ablage am Server bleibt, wo sie ist.
+  Future<void> uebernimmAufnahmedaten(
+    List<({String id, DateTime zeitpunkt, bool geschaetzt})> daten,
+  ) async {
+    if (!verbunden) {
+      for (final d in daten) {
+        final asset = await db.assetById(d.id);
+        if (asset == null) continue;
+        await AufnahmedatumDienst(
+          db,
+          paths,
+        ).setze(asset, d.zeitpunkt, geschaetzt: d.geschaetzt);
+      }
+    }
+    await db.fuehreAus(AufnahmedatenSetzen(daten));
+    notifyListeners();
+  }
+
+  /// Wie [uebernimmAufnahmedaten] für eine Schätzung des Jahres
+  /// ([JahrSchaetzen]): Mitte des Jahres, weiter als geschätzt (IMP-124).
+  Future<void> uebernimmGeschaetztesJahr(String id, int jahr) async {
+    if (!verbunden) {
+      final asset = await db.assetById(id);
+      if (asset != null) {
+        await AufnahmedatumDienst(
+          db,
+          paths,
+        ).setze(asset, jahresmitte(jahr), geschaetzt: true);
+      }
+    }
+    await db.fuehreAus(JahrSchaetzen(id, jahr));
+    notifyListeners();
+  }
+
   /// **Beipackzettel, die ihr Foto verloren haben.**
   ///
   /// Bis Fassung 2.6 nahm ein Umzug den `.xmp` nicht mit. An der echten

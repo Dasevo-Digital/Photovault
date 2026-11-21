@@ -63,6 +63,64 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  // Übernommen wurde nur in der Datenbank; das Original blieb im
+  // Monatsordner des alten Datums, anders als beim Datum von Hand, und
+  // „Ablage nach Datum ordnen“ zählte es danach als falsch abgelegt
+  // (IMP-115, IMP-119, IMP-124).
+  group('übernommenes Datum legt die Datei um', () {
+    Future<String> abgelegt(String id) async {
+      final rel = library.paths.originalRelativePath(
+        DateTime(2026, 11, 2),
+        id,
+        '.jpg',
+      );
+      library.paths.absolute(rel)
+        ..parent.createSync(recursive: true)
+        ..writeAsBytesSync([1, 2, 3]);
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '24-11-13 10-48-28.jpg',
+              relativePath: rel,
+              checksum: 'pruef-$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2026, 11, 2, 9),
+              importedAt: DateTime(2026, 11, 2),
+              datumGeschaetzt: const Value(true),
+            ),
+          );
+      return rel;
+    }
+
+    test('aus dem Dateinamen', () async {
+      final alt = await abgelegt('n');
+      await library.uebernimmAufnahmedaten([
+        (id: 'n', zeitpunkt: DateTime(2024, 11, 13, 10, 48), geschaetzt: false),
+      ]);
+      final a = (await db.assetById('n'))!;
+      expect(a.fileCreatedAt, DateTime(2024, 11, 13, 10, 48));
+      expect(a.datumGeschaetzt, isFalse);
+      expect(a.datumGeprueft, isTrue);
+      expect(a.relativePath, p.posix.join('originals', '2024', '11', 'n.jpg'));
+      expect(library.paths.absolute(a.relativePath).existsSync(), isTrue);
+      expect(library.paths.absolute(alt).existsSync(), isFalse);
+      expect(await db.countAblageordnung(), 0);
+    });
+
+    test('geschätztes Jahr', () async {
+      await abgelegt('j');
+      await library.uebernimmGeschaetztesJahr('j', 1965);
+      final a = (await db.assetById('j'))!;
+      expect(a.fileCreatedAt, DateTime(1965, 7, 1, 12));
+      expect(a.datumGeschaetzt, isTrue);
+      expect(a.relativePath, p.posix.join('originals', '1965', '07', 'j.jpg'));
+      expect(library.paths.absolute(a.relativePath).existsSync(), isTrue);
+      expect(await db.countAblageordnung(), 0);
+    });
+  });
+
   testWidgets('wählen und übernehmen', (tester) async {
     await tester.runAsync(() async {
       await aufnahme('mit', '22-06-18 16-20-30 c3d4.jpg');
