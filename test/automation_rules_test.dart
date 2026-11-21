@@ -327,6 +327,54 @@ void main() {
     );
 
     test(
+      'dateRange: der letzte Tag zählt ganz, auch bei einer Regel für einen Tag',
+      () async {
+        // KI-159: Der Datumswähler liefert Mitternacht. Ein Foto vom
+        // letzten Tag um 14 Uhr fiel heraus, eine Regel 10.–10. traf nie.
+        await db.upsertAutomationRule(
+          AutomationRulesCompanion.insert(
+            id: 'r1',
+            name: 'Anfang Mai',
+            triggerType: 'dateRange',
+            dateFrom: Value(DateTime(2025, 5, 1)),
+            dateTo: Value(DateTime(2025, 5, 5)),
+            autoFavorite: const Value(true),
+          ),
+        );
+        await db.upsertAutomationRule(
+          AutomationRulesCompanion.insert(
+            id: 'r2',
+            name: 'Ein Tag',
+            triggerType: 'dateRange',
+            dateFrom: Value(DateTime(2025, 5, 10)),
+            dateTo: Value(DateTime(2025, 5, 10)),
+            autoFavorite: const Value(true),
+          ),
+        );
+
+        Future<bool> favorit(String name, DateTime zeit) async {
+          final id = await importPhoto(name);
+          await library.applyAutomationRules(id, fileCreatedAt: zeit);
+          return (await db.assetById(id))!.isFavorite;
+        }
+
+        expect(await favorit('erster.jpg', DateTime(2025, 5, 1, 8)), isTrue);
+        expect(await favorit('letzter.jpg', DateTime(2025, 5, 5, 14)), isTrue);
+        expect(
+          await favorit('spaet.jpg', DateTime(2025, 5, 5, 23, 59, 59)),
+          isTrue,
+        );
+        expect(await favorit('ein_tag.jpg', DateTime(2025, 5, 10, 10)), isTrue);
+        expect(await favorit('danach.jpg', DateTime(2025, 5, 6)), isFalse);
+        expect(
+          await favorit('davor.jpg', DateTime(2025, 4, 30, 23, 59)),
+          isFalse,
+        );
+        expect(await favorit('nach_tag.jpg', DateTime(2025, 5, 11)), isFalse);
+      },
+    );
+
+    test(
       'ein Aufruf ohne die für einen Regeltyp nötigen Parameter überspringt genau diesen Typ',
       () async {
         await db.upsertAutomationRule(

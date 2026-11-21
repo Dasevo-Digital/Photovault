@@ -5652,9 +5652,8 @@ void main() {
     },
   );
 
-  // Befund: Datumsregel: Datumswähler liefert Mitternacht, regelTrifftZu prüft !datum.isAfter(dateTo) – Fotos am letzten Tag nach 0 Uhr und Ein-Tages-Regeln treffen nicht (regelpruefung.dart:34).
+  // Behoben in #414: regelTrifftZu vergleicht ganze Kalendertage, der letzte Tag zählt bis Mitternacht.
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-159 Befundpruefung Datumsregel schliesst den letzten Tag ein',
     (tester) async {

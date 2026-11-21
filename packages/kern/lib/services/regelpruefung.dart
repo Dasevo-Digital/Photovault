@@ -26,12 +26,16 @@ bool regelTrifftZu(
               regel.regionCenterLon!,
             ) <=
             regel.regionRadiusKm!,
+  // Ganze Kalendertage, beide eingeschlossen. Der Datumswähler liefert
+  // Mitternacht; früher hiess die Grenze `!datum.isAfter(dateTo)`, und ein
+  // Foto vom letzten Tag nach 0 Uhr fiel heraus – eine Regel für einen
+  // einzelnen Tag traf praktisch nie.
   'dateRange' =>
     datum != null &&
         regel.dateFrom != null &&
         regel.dateTo != null &&
-        !datum.isBefore(regel.dateFrom!) &&
-        !datum.isAfter(regel.dateTo!),
+        !datum.isBefore(_tagesbeginn(regel.dateFrom!)) &&
+        datum.isBefore(_tagesbeginn(regel.dateTo!, spaeter: 1)),
   'aiTag' =>
     kiTags != null &&
         regel.aiTagTerm != null &&
@@ -51,3 +55,11 @@ bool regelTrifftZu(
             ),
   _ => false,
 };
+
+/// Mitternacht des Tages von [d], [spaeter] Tage weiter – in derselben
+/// Zeitbasis wie [d], damit ein Tag in UTC nicht um die Zeitverschiebung
+/// verrutscht. Über das Datum und nicht über `Duration(days: 1)`: Ein Tag
+/// mit Zeitumstellung hat 23 oder 25 Stunden.
+DateTime _tagesbeginn(DateTime d, {int spaeter = 0}) => d.isUtc
+    ? DateTime.utc(d.year, d.month, d.day + spaeter)
+    : DateTime(d.year, d.month, d.day + spaeter);
