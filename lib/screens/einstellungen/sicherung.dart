@@ -490,7 +490,8 @@ String _wiederherstellZeile(AppTexte t, BackupProgress p) {
 /// Der Dienst meldet nur Zahlen und Dateinamen; ob die Mengenbegrenzung
 /// gegriffen hat, steht als Zahl in [BackupProgress.grenzeOffen] und wird
 /// erst hier zu einem Satz.
-String _backupZeile(AppTexte t, BackupProgress p) {
+@visibleForTesting
+String backupZeile(AppTexte t, BackupProgress p) {
   if (p.zusatzdateienOffen != null) {
     return '${t.backupVariantenOffen}: ${p.zusatzdateienOffen} (${groessentext(p.zusatzdateienBytes ?? 0)})';
   }
@@ -498,7 +499,9 @@ String _backupZeile(AppTexte t, BackupProgress p) {
     return backupProbeTextMit(
       t,
       probe,
-      (d) => DateFormat.yMd().add_Hm().format(d),
+      // In der Sprache der Oberfläche: Ohne Angabe nahm DateFormat die
+      // Vorgabe von intl, und in deutscher Oberfläche stand „11/17/2026“.
+      (d) => datumZeitTextIn(t.localeName, d),
     );
   }
   if (p.fehlgeschlagen != null) {
@@ -547,7 +550,7 @@ Future<void> _runBackup(Einstellungsstand stand) async {
       title: AppTexte.of(context).einstBackupSichertLaeuft,
       stream: stand.library
           .runManualBackup(destination, encrypt: stand.encryptManualBackup)
-          .map((p) => _backupZeile(t, p)),
+          .map((p) => backupZeile(t, p)),
     ),
   );
   stand.refresh();
@@ -869,7 +872,7 @@ Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
           .map(
             (p) => p.total == 0 && p.wiederherstellungsprobe == null
                 ? keineNeuen
-                : _backupZeile(t, p),
+                : backupZeile(t, p),
           )
           // Lesbar statt „PathAccessException … errno = 1“ (#211).
           .handleError(

@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:kern/services/backup_service.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/einstellungen/sicherung.dart';
@@ -7,6 +8,7 @@ import 'package:photo_vault/screens/einstellungen/sicherung.dart';
 /// Die Zeilen im Fenster „Wiederherstellen“.
 void main() {
   final de = lookupAppTexte(const Locale('de'));
+  setUpAll(() => initializeDateFormatting());
 
   RestoreErgebnis ergebnis({required bool fertig}) => RestoreErgebnis(
     geplant: 2,
@@ -53,4 +55,21 @@ void main() {
       );
     },
   );
+  // Nebenbefund: Das Datum der Probe stand im Fortschrittsfenster der
+  // Sicherung im US-Format („11/17/2026“), auch in deutscher Oberfläche.
+  test('das Datum der Probe in der Sprache der Oberfläche', () {
+    final probe = BackupProbeErgebnis(
+      am: DateTime(2026, 11, 17, 9, 5),
+      erfolgreich: true,
+      originale: 3,
+      gesamt: 3,
+      datenbank: true,
+    );
+    final zeile = backupZeile(
+      de,
+      BackupProgress(1, 1, wiederherstellungsprobe: probe),
+    );
+    expect(zeile, contains('17.11.2026'));
+    expect(zeile, isNot(contains('11/17/2026')));
+  });
 }

@@ -35,11 +35,14 @@ String datumText(BuildContext context, DateTime zeitpunkt) => DateFormat.yMd(
   Localizations.localeOf(context).toString(),
 ).format(zeitpunkt);
 
-String datumZeitText(BuildContext context, DateTime zeitpunkt) {
-  final sprache = Localizations.localeOf(context).toString();
-  return '${DateFormat.yMd(sprache).format(zeitpunkt)} – '
-      '${DateFormat.Hm(sprache).format(zeitpunkt)}';
-}
+String datumZeitText(BuildContext context, DateTime zeitpunkt) =>
+    datumZeitTextIn(Localizations.localeOf(context).toString(), zeitpunkt);
+
+/// [datumZeitText] für Stellen ohne Kontext – etwa im Rückruf eines
+/// Stroms, der später läuft als der Aufbau ([AppTexte.localeName]).
+String datumZeitTextIn(String sprache, DateTime zeitpunkt) =>
+    '${DateFormat.yMd(sprache).format(zeitpunkt)} – '
+    '${DateFormat.Hm(sprache).format(zeitpunkt)}';
 
 /// Übersetzt die Fehler der beiden Download-Dienste.
 ///
