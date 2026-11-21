@@ -256,7 +256,7 @@ abstract class AppTexte {
   /// No description provided for @personenLeer.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine benannten Personen. Personen benennt man am Rechner.'**
+  /// **'Noch keine benannten Personen. Ein Gesicht benennst du unter „Ohne Namen“ oder im Betrachter mit „Gesichter zeigen“.'**
   String get personenLeer;
 
   /// No description provided for @karteLeer.

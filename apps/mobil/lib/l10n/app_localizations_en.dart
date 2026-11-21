@@ -100,7 +100,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get personenLeer =>
-      'No named people yet. People are named on the computer.';
+      'No named people yet. Name a face under “Unnamed” or in the viewer with “Show faces”.';
 
   @override
   String get karteLeer => 'No photos with a location yet.';

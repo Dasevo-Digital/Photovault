@@ -33,7 +33,7 @@
   "bibPapierkorbHinweis": "Lange drücken wählt aus – dann zurückholen oder endgültig löschen.",
   "zeitleisteLeer": "Noch keine Aufnahmen. Was auf den Server kommt, erscheint hier.",
   "albenLeer": "Noch keine Alben.",
-  "personenLeer": "Noch keine benannten Personen. Personen benennt man am Rechner.",
+  "personenLeer": "Noch keine benannten Personen. Ein Gesicht benennst du unter „Ohne Namen“ oder im Betrachter mit „Gesichter zeigen“.",
   "karteLeer": "Noch keine Aufnahmen mit Ort.",
   "karteFotos": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
   "@karteFotos": {

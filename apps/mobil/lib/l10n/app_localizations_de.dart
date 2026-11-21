@@ -100,7 +100,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get personenLeer =>
-      'Noch keine benannten Personen. Personen benennt man am Rechner.';
+      'Noch keine benannten Personen. Ein Gesicht benennst du unter „Ohne Namen“ oder im Betrachter mit „Gesichter zeigen“.';
 
   @override
   String get karteLeer => 'Noch keine Aufnahmen mit Ort.';

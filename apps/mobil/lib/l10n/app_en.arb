@@ -26,7 +26,7 @@
   "bibPapierkorbHinweis": "Long-press to select – then restore or delete permanently.",
   "zeitleisteLeer": "No photos yet. Whatever reaches the server appears here.",
   "albenLeer": "No albums yet.",
-  "personenLeer": "No named people yet. People are named on the computer.",
+  "personenLeer": "No named people yet. Name a face under “Unnamed” or in the viewer with “Show faces”.",
   "karteLeer": "No photos with a location yet.",
   "karteFotos": "{n, plural, =1{1 item} other{{n} items}}",
   "abgemeldetHinweis": "This phone was signed out on the server. Sign out under “Account” and connect again.",
