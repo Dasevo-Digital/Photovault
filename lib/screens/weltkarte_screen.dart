@@ -250,8 +250,8 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
     final landmarken = <String, Markenart>{};
     final regionsmarken = <String, Markenart>{};
     final ortsmarken = <String, Markenart>{};
-    // Punktschlüssel -> Schlüssel der gespeicherten Marke.
-    final gespeichert = <String, String>{};
+    // (Ebene, Punktschlüssel) -> Schlüssel der gespeicherten Marke.
+    final gespeichert = <(_Ebene, String), String>{};
     for (final m in marken) {
       final wert = m.status == 'geplant'
           ? Markenart.geplant
@@ -259,16 +259,16 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
       switch (m.art) {
         case 'land':
           landmarken[m.schluessel.toUpperCase()] = wert;
-          gespeichert['land:${m.schluessel.toUpperCase()}'] = m.schluessel;
+          gespeichert[(_Ebene.land, m.schluessel.toUpperCase())] = m.schluessel;
         case 'region':
           regionsmarken[m.schluessel] = wert;
-          gespeichert['region:${m.schluessel}'] = m.schluessel;
+          gespeichert[(_Ebene.region, m.schluessel)] = m.schluessel;
           regionen.putIfAbsent(m.schluessel, () => m.name);
         case 'ort':
           final punkt = ortspunktAusMarke(geo, m.schluessel);
           if (punkt == null) continue;
           ortsmarken[punkt.schluessel] = wert;
-          gespeichert['ort:${punkt.schluessel}'] = m.schluessel;
+          gespeichert[(_Ebene.ort, punkt.schluessel)] = m.schluessel;
           orte.putIfAbsent(
             punkt.schluessel,
             () => (name: punkt.ort, iso: punkt.iso),
@@ -292,7 +292,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           laenge: punkt.laenge,
           aufnahmen: aufnahmenJeLand[iso] ?? 0,
           marke: landmarken[iso],
-          markenschluessel: gespeichert['land:$iso'],
+          markenschluessel: gespeichert[(_Ebene.land, iso)],
         ),
       );
     }
@@ -311,7 +311,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           // Zahl der Aufnahmen steht am Land, nicht hier.
           aufnahmen: belegteRegionen.contains(e.key) ? 1 : 0,
           marke: regionsmarken[e.key],
-          markenschluessel: gespeichert['region:${e.key}'],
+          markenschluessel: gespeichert[(_Ebene.region, e.key)],
         ),
       );
     }
@@ -328,7 +328,7 @@ class _WeltkarteScreenState extends State<WeltkarteScreen> {
           laenge: punkt.laenge,
           aufnahmen: belegteOrte.contains(e.key) ? 1 : 0,
           marke: ortsmarken[e.key],
-          markenschluessel: gespeichert['ort:${e.key}'],
+          markenschluessel: gespeichert[(_Ebene.ort, e.key)],
         ),
       );
     }

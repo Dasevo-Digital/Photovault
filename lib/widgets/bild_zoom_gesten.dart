@@ -165,5 +165,5 @@ class _WischZoomErkenner extends OneSequenceGestureRecognizer {
   void didStopTrackingLastPointer(int pointer) {}
 
   @override
-  String get debugDescription => 'wisch-zoom';
+  String get debugDescription => runtimeType.toString();
 }

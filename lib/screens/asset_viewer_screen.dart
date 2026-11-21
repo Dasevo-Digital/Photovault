@@ -2427,6 +2427,9 @@ class _OriginalFehlt extends StatelessWidget {
             paths,
             vorschau,
             fit: BoxFit.contain,
+            // Eine Miniatur, aber mit Deckel wie jedes Bild aus der
+            // Bibliothek (siehe test/bilddekodierung_test.dart).
+            cacheWidth: 1024,
             errorBuilder: (_, _, _) => const SizedBox.shrink(),
           ),
         Positioned(
