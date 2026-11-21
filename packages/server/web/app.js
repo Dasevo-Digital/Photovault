@@ -6099,10 +6099,25 @@ async function zeigeAngaben() {
   feld.replaceChildren(...teile);
 }
 
+// Wer aus dem Betrachter entwickelt, kommt dorthin zurück: Der Weg nach
+// #/entwickeln schliesst ihn (zeigeWeg), und Speichern, Abbrechen und
+// „Entwicklung entfernen“ gehen mit history.back() zurück in die Liste.
+// Dort öffnet zeigeWeg dasselbe Foto wieder – mit der neuen Fassung.
+let zurueckInDenBetrachter = null;
 $('bearbeiten').addEventListener('click', () => {
   const a = liste && liste.aufnahmen[offen];
-  if (a && a.art !== 'video') location.hash = `#/entwickeln/${encodeURIComponent(a.id)}`;
+  if (!a || a.art === 'video') return;
+  zurueckInDenBetrachter = { id: a.id, weg: location.hash };
+  location.hash = `#/entwickeln/${encodeURIComponent(a.id)}`;
 });
+function betrachterNachEntwickeln(teile) {
+  const z = zurueckInDenBetrachter;
+  if (!z || teile[0] === 'entwickeln') return;
+  zurueckInDenBetrachter = null;
+  if (location.hash !== z.weg || !liste) return;
+  const i = liste.aufnahmen.findIndex((x) => x.id === z.id);
+  if (i >= 0) oeffne(i);
+}
 
 function setzeAngabenOffen(an) {
   angabenOffen = an;
@@ -7059,6 +7074,7 @@ async function zeigeWeg(art) {
       case 'bibliothek': await zeigeBibliothek(); break;
       default: await zeigeFotos();
     }
+    if (!still) betrachterNachEntwickeln(teile);
   } catch (x) {
     // Als Meldung: #ende liegt im Raster und wäre in den meisten Ansichten
     // gar nicht zu sehen.
