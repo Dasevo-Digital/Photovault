@@ -337,6 +337,12 @@ abstract class AppTexte {
   /// **'Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.'**
   String get sucheKeinModell;
 
+  /// No description provided for @sucheInhaltOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Suche nach Bildinhalt braucht den Server, und der ist gerade nicht zu erreichen. Gezeigt wird die Suche im Text.'**
+  String get sucheInhaltOhneServer;
+
   /// No description provided for @sucheFehler.
   ///
   /// In de, this message translates to:

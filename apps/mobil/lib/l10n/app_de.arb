@@ -62,6 +62,7 @@
   "@angabenSchlagwortVorhanden": {"placeholders": {"name": {"type": "String"}}},
   "angabenUmbenennen": "Umbenennen",
   "sucheKeinModell": "Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.",
+  "sucheInhaltOhneServer": "Die Suche nach Bildinhalt braucht den Server, und der ist gerade nicht zu erreichen. Gezeigt wird die Suche im Text.",
   "sucheFehler": "Die Suche hat nicht geklappt.",
   "sucheNichts": "Nichts gefunden.",
   "betrachterFavorit": "Favorit",

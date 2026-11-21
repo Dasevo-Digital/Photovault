@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'alben.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kern/services/intelligente_alben.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/verbindung.dart' show KeineVerbindung;
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/laendernamen.dart';
@@ -106,9 +108,19 @@ class _SucheState extends State<Suche> {
     });
     try {
       final inhalt = text.isNotEmpty && _art == _Art.inhalt;
-      final vektor = inhalt ? await widget.sitzung.textvektor(text) : null;
-      if (inhalt && vektor == null) _hinweis = t.sucheKeinModell;
-      // Ohne Modell nach Inhalt: wie bisher im Text suchen.
+      Float32List? vektor;
+      if (inhalt) {
+        try {
+          vektor = await widget.sitzung.textvektor(text);
+          if (vektor == null) _hinweis = t.sucheKeinModell;
+        } on KeineVerbindung {
+          // Den Suchtext bettet nur der Server ein. Ohne ihn hiess es
+          // „Die Suche hat nicht geklappt.“, obwohl die Textsuche in der
+          // Kopie sofort Treffer hat.
+          _hinweis = t.sucheInhaltOhneServer;
+        }
+      }
+      // Ohne Modell oder ohne Server nach Inhalt: im Text suchen.
       // Kennungen und schlanke Zeilen statt voller (#186): Das Raster
       // braucht nur, was eine Kachel zeigt – an 36.000 Treffern 196 statt
       // 470 ms.
@@ -126,6 +138,14 @@ class _SucheState extends State<Suche> {
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }
+  }
+
+  /// Der Knopf neben der Filterzeile: wie „Zurücksetzen“ im Filterblatt
+  /// neu suchen. Vorher suchte er nur mit Suchtext neu, und ohne ihn
+  /// blieben die Treffer der Filter stehen.
+  void _filterZuruecksetzen() {
+    setState(() => _filter = const Suchfilter());
+    _suche();
   }
 
   /// Die Suche als intelligentes Album merken – über den Befehl, damit es
@@ -263,10 +283,7 @@ class _SucheState extends State<Suche> {
                   IconButton(
                     tooltip: t.sucheFilterZuruecksetzen,
                     icon: const Icon(Icons.close_rounded, size: 18),
-                    onPressed: () {
-                      setState(() => _filter = const Suchfilter());
-                      if (_feld.text.trim().isNotEmpty) _suche();
-                    },
+                    onPressed: _filterZuruecksetzen,
                   ),
                 ],
               ),

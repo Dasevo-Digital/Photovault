@@ -163,6 +163,10 @@ class AppTexteEn extends AppTexte {
       'The server cannot search by content (no model). Showing the text search instead.';
 
   @override
+  String get sucheInhaltOhneServer =>
+      'Searching by image content needs the server, which cannot be reached right now. Showing the text search instead.';
+
+  @override
   String get sucheFehler => 'The search did not work.';
 
   @override

@@ -164,6 +164,10 @@ class AppTexteDe extends AppTexte {
       'Der Server kann nicht nach Bildinhalt suchen (kein Modell). Gezeigt wird die Suche im Text.';
 
   @override
+  String get sucheInhaltOhneServer =>
+      'Die Suche nach Bildinhalt braucht den Server, und der ist gerade nicht zu erreichen. Gezeigt wird die Suche im Text.';
+
+  @override
   String get sucheFehler => 'Die Suche hat nicht geklappt.';
 
   @override

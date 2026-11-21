@@ -40,6 +40,7 @@
   "angabenSchlagwortVorhanden": "A tag named “{name}” already exists.",
   "angabenUmbenennen": "Rename",
   "sucheKeinModell": "The server cannot search by content (no model). Showing the text search instead.",
+  "sucheInhaltOhneServer": "Searching by image content needs the server, which cannot be reached right now. Showing the text search instead.",
   "sucheFehler": "The search did not work.",
   "sucheNichts": "Nothing found.",
   "betrachterFavorit": "Favorite",

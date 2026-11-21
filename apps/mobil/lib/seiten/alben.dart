@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/intelligente_alben.dart';
+import 'package:kern/services/search_filters.dart' show SearchTextMode;
 
 import '../bilder.dart';
 import '../einfuegbares_menue.dart';
@@ -233,14 +234,24 @@ class IntelligentesAlbumSeite extends StatefulWidget {
 class _IntelligentesAlbumSeiteState extends State<IntelligentesAlbumSeite> {
   late final Future<List<AssetData>?> _funde = _lade();
 
-  /// `null`: Sie sucht nach Bildinhalt, und der Server kann den Text nicht
-  /// einbetten.
+  /// Sucht das Album nach Bildinhalt und hat der Server dafür kein Modell,
+  /// zeigt es die Suche im Text – wie die Suche selbst – mit dem Hinweis
+  /// darüber. Vorher blieb dann nur der Hinweis, ohne Treffer.
+  var _ohneModell = false;
+
+  /// `null`, wenn die Suche scheiterte (etwa ohne Server).
   Future<List<AssetData>?> _lade() async {
     final db = widget.sitzung.db;
     final f = db.decodeSavedSearchFilters(widget.suche.filtersJson);
     if (!brauchtSuchvektor(f)) return intelligentesAlbum(db, f);
     final vektor = await widget.sitzung.textvektor(f.query.trim());
-    if (vektor == null) return null;
+    if (vektor == null) {
+      if (mounted) setState(() => _ohneModell = true);
+      return intelligentesAlbum(
+        db,
+        f.copyWith(textMode: SearchTextMode.ueberall),
+      );
+    }
     return intelligentesAlbum(db, f, vektor: vektor);
   }
 
@@ -303,16 +314,24 @@ class _IntelligentesAlbumSeiteState extends State<IntelligentesAlbumSeite> {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(
-                  s.hasError ? t.sucheFehler : t.sucheKeinModell,
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(t.sucheFehler, textAlign: TextAlign.center),
               ),
             );
           }
-          return AufnahmenRaster(
+          final raster = AufnahmenRaster(
             sitzung: widget.sitzung,
             zeilen: [for (final x in a) Rasterzeile.aus(x)],
+          );
+          if (!_ohneModell) return raster;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Text(t.sucheKeinModell),
+              ),
+              Expanded(child: raster),
+            ],
           );
         },
       ),
