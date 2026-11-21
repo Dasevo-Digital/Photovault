@@ -4539,18 +4539,36 @@ class LibraryState extends ChangeNotifier {
   /// bricht am Schutz der abgeglichenen Tabellen ab. Bis dahin lief sie
   /// trotzdem durch: Nichts kam an, jede Datei galt als gescheitert, und
   /// warum, stand nirgends.
+  /// So lange bleibt die Zeile zur Übernahme aus dem Schnappschuss im
+  /// Fenster der Wiederherstellung stehen (siehe [restoreFromBackup]).
+  @visibleForTesting
+  static Duration uebernahmeZeigen = const Duration(seconds: 2);
+
   Stream<BackupProgress> restoreFromBackup(
     String wurzel, {
     String? passphrase,
     String? generationSnapshotPath,
   }) async* {
     _nurOhneServer();
-    yield* backupService.restoreFromBackup(
+    await for (final p in backupService.restoreFromBackup(
       wurzel,
       importService,
       passphrase: passphrase,
       generationSnapshotPath: generationSnapshotPath,
-    );
+    )) {
+      yield p;
+      // Die Übernahme aus dem Schnappschuss ist meist in Millisekunden
+      // durch, und was danach kommt (Live Photos, Fotokammer), meldet sich
+      // nicht eigens: Ohne Pause stand die Zeile „N Einträge aus dem
+      // Datenbank-Schnappschuss übernommen …“ kürzer als ein Bild im
+      // Fenster, und niemand sah sie (SIC-063). Ein paar Sekunden sind der
+      // Preis dafür, dass man erfährt, ob auch Personen und Reisen zurück
+      // sind.
+      if (p.uebernommeneZeilen != null &&
+          !(p.wiederherstellung?.abgeschlossen ?? false)) {
+        await Future<void>.delayed(uebernahmeZeigen);
+      }
+    }
     // Die Wiederherstellung verknüpft Live Photos nach den Paaren der
     // Sicherung (#255). Eine Sicherung ohne Passphrase vor 3.49.9 trug
     // keine; dann paaren Name und Zeit wie beim Import.
