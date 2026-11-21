@@ -12,7 +12,11 @@
 /// Ansichtssache.
 library;
 
+import 'dart:io';
+
 import 'package:xml/xml.dart';
+
+import '../l10n/app_localizations.dart';
 
 import 'package:kern/services/reverse_geocoder.dart';
 
@@ -56,7 +60,33 @@ enum GpxAbbruch {
 
   /// Gar keine Punkte.
   leer,
+
+  /// Die Datei liess sich nicht als Text lesen – kein UTF-8 (etwa ein
+  /// Bild mit der Endung .gpx) oder kein Zugriff.
+  unlesbar,
 }
+
+/// Liest eine GPX-Datei als Text.
+///
+/// Ein Lesefehler ist hier ein [GpxFehler] wie jeder andere: Vorher fingen
+/// die Aufrufer nur [GpxFehler]; eine Datei, die kein UTF-8 ist, warf eine
+/// FileSystemException, Kreisel und gesperrter Knopf blieben stehen, an
+/// anderer Stelle stand der rohe Fehlertext in der Meldung.
+Future<String> liesGpxDatei(String pfad) async {
+  try {
+    return await File(pfad).readAsString();
+  } on FileSystemException {
+    throw const GpxFehler(GpxAbbruch.unlesbar);
+  }
+}
+
+/// Der Satz zu einem [GpxFehler] – für alle, die eine GPX-Datei lesen.
+String gpxFehlertext(AppTexte t, GpxFehler f) => switch (f.grund) {
+  GpxAbbruch.keinGpx => t.gpxFehlerKeinGpx,
+  GpxAbbruch.ohneZeit => t.gpxFehlerOhneZeit,
+  GpxAbbruch.leer => t.gpxFehlerLeer,
+  GpxAbbruch.unlesbar => t.gpxFehlerUnlesbar,
+};
 
 class GpxFehler implements Exception {
   final GpxAbbruch grund;

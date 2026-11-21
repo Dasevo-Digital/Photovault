@@ -4017,6 +4017,7 @@
   "gpxFehlerKeinGpx": "Das ist keine GPX-Datei.",
   "gpxFehlerOhneZeit": "In dieser Spur trägt kein Punkt einen Zeitstempel. Ohne Zeit lässt sich keine Aufnahme zuordnen.",
   "gpxFehlerLeer": "Die Datei enthält keinen einzigen Punkt.",
+  "gpxFehlerUnlesbar": "Die Datei lässt sich nicht lesen. Eine GPX-Datei ist eine Textdatei (UTF-8).",
   "stammbaumKeineFamilienfotos": "Auf keinem Foto wurde bisher jemand aus dieser Familie erkannt.",
   "stammbaumGedcomExport": "Als GEDCOM ausgeben …",
   "stammbaumGedcomFertig": "{anzahl, plural, =1{Eine Person ausgegeben.} other{{anzahl} Personen ausgegeben.}}",

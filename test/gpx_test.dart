@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/services/gpx.dart';
 
@@ -84,6 +86,19 @@ void main() {
         () => liesGpx('<?xml version="1.0"?><gpx></gpx>'),
         throwsA(
           isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.leer),
+        ),
+      );
+    });
+
+    test('eine Datei, die kein Text ist, ist ein GpxFehler', () async {
+      final ordner = Directory.systemTemp.createTempSync('pv_gpx_bild_');
+      addTearDown(() => ordner.deleteSync(recursive: true));
+      final datei = File('${ordner.path}/bild.gpx')
+        ..writeAsBytesSync(const [0xFF, 0xD8, 0xFF, 0xE0, 0xC3, 0x28]);
+      await expectLater(
+        liesGpxDatei(datei.path),
+        throwsA(
+          isA<GpxFehler>().having((e) => e.grund, 'grund', GpxAbbruch.unlesbar),
         ),
       );
     });

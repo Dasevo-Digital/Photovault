@@ -496,18 +496,10 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
 
     List<Rohpunkt> punkte;
     try {
-      punkte = liesGpxPunkte(await File(pfad).readAsString());
+      punkte = liesGpxPunkte(await liesGpxDatei(pfad));
     } on GpxFehler catch (f) {
       if (!mounted) return;
-      melde.fehler(switch (f.grund) {
-        GpxAbbruch.keinGpx => t.gpxFehlerKeinGpx,
-        GpxAbbruch.ohneZeit => t.gpxFehlerOhneZeit,
-        GpxAbbruch.leer => t.gpxFehlerLeer,
-      });
-      return;
-    } on FileSystemException catch (e) {
-      if (!mounted) return;
-      melde.fehler('$e');
+      melde.fehler(gpxFehlertext(t, f));
       return;
     }
 

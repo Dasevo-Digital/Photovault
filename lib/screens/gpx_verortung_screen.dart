@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -56,17 +54,13 @@ class _GpxVerortungScreenState extends State<GpxVerortungScreen> {
     });
     List<Spurpunkt> spur;
     try {
-      spur = liesGpx(await File(pfad).readAsString());
+      spur = liesGpx(await liesGpxDatei(pfad));
     } on GpxFehler catch (f) {
       if (!mounted) return;
       setState(() {
         _arbeitet = false;
         _spur = null;
-        _fehler = switch (f.grund) {
-          GpxAbbruch.keinGpx => t.gpxFehlerKeinGpx,
-          GpxAbbruch.ohneZeit => t.gpxFehlerOhneZeit,
-          GpxAbbruch.leer => t.gpxFehlerLeer,
-        };
+        _fehler = gpxFehlertext(t, f);
       });
       return;
     }

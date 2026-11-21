@@ -10201,6 +10201,12 @@ abstract class AppTexte {
   /// **'Die Datei enthält keinen einzigen Punkt.'**
   String get gpxFehlerLeer;
 
+  /// No description provided for @gpxFehlerUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Datei lässt sich nicht lesen. Eine GPX-Datei ist eine Textdatei (UTF-8).'**
+  String get gpxFehlerUnlesbar;
+
   /// No description provided for @stammbaumKeineFamilienfotos.
   ///
   /// In de, this message translates to:

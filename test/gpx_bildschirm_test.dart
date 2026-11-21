@@ -204,4 +204,27 @@ void main() {
     await waehlen(tester);
     expect(find.text('Das ist keine GPX-Datei.'), findsOneWidget);
   });
+
+  testWidgets('eine unlesbare Datei mit Endung .gpx: Meldung, Knopf frei', (
+    tester,
+  ) async {
+    // Kein UTF-8: readAsString warf eine FileSystemException, gefangen
+    // wurde nur GpxFehler – Kreisel und gesperrter Knopf blieben stehen.
+    spurdatei.writeAsBytesSync(const [0xFF, 0xD8, 0xFF, 0xE0, 0xC3, 0x28]);
+    await zeige(tester);
+    await waehlen(tester);
+    expect(
+      find.text(
+        'Die Datei lässt sich nicht lesen. Eine GPX-Datei ist eine '
+        'Textdatei (UTF-8).',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    final knopf = find.ancestor(
+      of: find.text('GPX-Datei wählen …'),
+      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+    );
+    expect(tester.widget<ButtonStyleButton>(knopf.first).enabled, isTrue);
+  });
 }

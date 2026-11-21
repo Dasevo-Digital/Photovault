@@ -6593,6 +6593,10 @@ class AppTexteDe extends AppTexte {
   String get gpxFehlerLeer => 'Die Datei enthält keinen einzigen Punkt.';
 
   @override
+  String get gpxFehlerUnlesbar =>
+      'Die Datei lässt sich nicht lesen. Eine GPX-Datei ist eine Textdatei (UTF-8).';
+
+  @override
   String get stammbaumKeineFamilienfotos =>
       'Auf keinem Foto wurde bisher jemand aus dieser Familie erkannt.';
 

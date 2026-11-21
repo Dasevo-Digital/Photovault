@@ -5346,9 +5346,8 @@ void main() {
     await finish(tester);
   }, skip: true);
 
-  // Befund ORT-086: Nur GpxFehler wird gefangen (gpx_verortung_screen.dart:59);
-  // die FileSystemException beim Lesen lässt Kreisel und gesperrten Knopf
-  // stehen. Zwei Läufe.
+  // Behoben in #413: liesGpxDatei macht aus dem Lesefehler einen GpxFehler
+  // (unlesbar); die Verortung meldet ihn und gibt Kreisel und Knopf frei.
   testWidgets('ORT-086 Unlesbare Datei mit Endung .gpx', (tester) async {
     await starte(tester);
     await gpxOeffnen(tester);
@@ -5368,5 +5367,5 @@ void main() {
     );
     expect(knopfAktiv(tester, knopf(de.gpxDateiWaehlen)), isTrue);
     await finish(tester);
-  }, skip: true);
+  });
 }

@@ -2909,6 +2909,7 @@
   "gpxFehlerKeinGpx": "This is not a GPX file.",
   "gpxFehlerOhneZeit": "Not a single point in this track has a timestamp. Without a time nothing can be matched.",
   "gpxFehlerLeer": "The file contains no points at all.",
+  "gpxFehlerUnlesbar": "The file cannot be read. A GPX file is a text file (UTF-8).",
   "stammbaumKeineFamilienfotos": "Nobody from this family has been recognised in a photo yet.",
   "stammbaumGedcomExport": "Export as GEDCOM …",
   "stammbaumGedcomFertig": "{anzahl, plural, =1{One person exported.} other{{anzahl} people exported.}}",

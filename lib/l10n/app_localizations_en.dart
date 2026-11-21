@@ -6557,6 +6557,10 @@ class AppTexteEn extends AppTexte {
   String get gpxFehlerLeer => 'The file contains no points at all.';
 
   @override
+  String get gpxFehlerUnlesbar =>
+      'The file cannot be read. A GPX file is a text file (UTF-8).';
+
+  @override
   String get stammbaumKeineFamilienfotos =>
       'Nobody from this family has been recognised in a photo yet.';
 
