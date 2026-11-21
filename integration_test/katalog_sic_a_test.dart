@@ -2314,12 +2314,15 @@ void main() {
         matching: find.textContaining('Alles gesichert'),
       ),
     );
-    await tester.tap(
-      find.descendant(
-        of: stand,
-        matching: find.byTooltip(de.backupStandNeuZaehlen),
-      ),
+    final neuZaehlen = find.descendant(
+      of: stand,
+      matching: find.byTooltip(de.backupStandNeuZaehlen),
     );
+    // Der Knopf liegt unterhalb des Fensters; ohne Rollen ging das Tippen
+    // ins Leere.
+    await tester.ensureVisible(neuZaehlen);
+    await tester.pump();
+    await tester.tap(neuZaehlen);
     await tester.pump();
     expect(
       find.descendant(of: stand, matching: find.text(de.backupStandZaehlt)),
