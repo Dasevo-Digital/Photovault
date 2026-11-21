@@ -334,6 +334,31 @@ class _AutomationRuleEditorDialog extends StatefulWidget {
       _AutomationRuleEditorDialogState();
 }
 
+/// Der Begriff, mit dem die Auswahl „KI-Tag-Begriff“ beim Öffnen steht –
+/// immer einer aus [vokabular] oder keiner.
+///
+/// Früher stand dort ungeprüft das gespeicherte `aiTagTerm`. Das ist bei
+/// einer Regel „Dateiname enthält“ das Dateinamensmuster und bei einer
+/// KI-Tag-Regel womöglich ein Begriff, der nicht mehr im Vokabular steht.
+/// Die Auswahl verlangt einen Wert aus ihren Einträgen und brach sonst mit
+/// einer Zusicherung ab – beim Bearbeiten der Regel oder beim Umstellen
+/// der Bedingung auf „KI-Tag“.
+///
+/// Ein entfernter Begriff einer KI-Tag-Regel wird nicht durch einen
+/// anderen ersetzt: Die Auswahl bleibt leer, und Speichern verlangt eine
+/// Wahl. Sonst änderte das blosse Öffnen und Speichern still die Regel.
+@visibleForTesting
+String? vorbelegterKiTagBegriff(
+  AutomationRuleData? regel,
+  List<String> vokabular,
+) {
+  final gespeichert = regel?.aiTagTerm;
+  if (regel?.triggerType == 'aiTag') {
+    return vokabular.contains(gespeichert) ? gespeichert : null;
+  }
+  return vokabular.isEmpty ? null : vokabular.first;
+}
+
 class _AutomationRuleEditorDialogState
     extends State<_AutomationRuleEditorDialog> {
   late final _nameCtrl = TextEditingController(
@@ -362,9 +387,7 @@ class _AutomationRuleEditorDialogState
   @override
   void initState() {
     super.initState();
-    _aiTagTerm =
-        widget.existing?.aiTagTerm ??
-        (widget.vocabulary.isEmpty ? null : widget.vocabulary.first);
+    _aiTagTerm = vorbelegterKiTagBegriff(widget.existing, widget.vocabulary);
     _dateFrom = widget.existing?.dateFrom;
     _dateTo = widget.existing?.dateTo;
     final targetId = widget.existing?.targetAlbumId;

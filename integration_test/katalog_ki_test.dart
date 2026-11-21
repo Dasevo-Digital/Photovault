@@ -5734,9 +5734,8 @@ void main() {
     },
   );
 
-  // Befund: KI-Tag-Auswahl mit Wert vorbelegt, der nicht in der Liste steht – Assertion in DropdownButton (automation_rules_screen.dart:364).
+  // Behoben in #414: Die Auswahl „KI-Tag-Begriff“ steht beim Öffnen auf einem Begriff aus dem Vokabular oder auf keinem (vorbelegterKiTagBegriff).
   testWidgets(
-    skip: true,
     timeout: zeitgrenze,
     'KI-167 Befundpruefung Bearbeiten mit Begriff ausserhalb des Vokabulars',
     (tester) async {
