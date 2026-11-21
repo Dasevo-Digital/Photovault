@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
@@ -181,6 +182,31 @@ void main() {
       expect(find.textContaining('Ausstehend: 700 Dateien'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.byTooltip('Neu zählen'), findsOneWidget);
+    });
+
+    // SIC-046: Beim Neuzählen blieb der alte Stand ohne jeden Hinweis
+    // stehen; „Wird gezählt …“ kam nur, solange es noch keinen gab.
+    testWidgets('„Neu zählen“ sagt, dass gezählt wird', (t) async {
+      Completer<Sicherungsstand?>? offen;
+      await zeige(
+        t,
+        entsperrt: true,
+        zaehle: (_) {
+          if (offen == null) return Future.value(stand(offen: 700));
+          return offen.future;
+        },
+      );
+      final de = lookupAppTexte(const Locale('de'));
+      expect(find.text(de.backupStandZaehlt), findsNothing);
+      offen = Completer();
+      await t.tap(find.byTooltip(de.backupStandNeuZaehlen));
+      await t.pump();
+      expect(find.text(de.backupStandZaehlt), findsOneWidget);
+      expect(find.textContaining('Ausstehend: 700 Dateien'), findsOneWidget);
+      offen.complete(stand(offen: 5));
+      await t.pumpAndSettle();
+      expect(find.text(de.backupStandZaehlt), findsNothing);
+      expect(find.textContaining('Ausstehend: 5 Dateien'), findsOneWidget);
     });
 
     testWidgets('alles da', (t) async {

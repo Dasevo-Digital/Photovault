@@ -110,7 +110,12 @@ class _BackupStandAnzeigeState extends State<BackupStandAnzeige> {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: LinearProgressIndicator(value: s.anteil),
           ),
-        if (!_aktuell)
+        // Beim Neuzählen bleibt der alte Stand stehen; dass gezählt wird,
+        // muss trotzdem dastehen – vorher sah „Neu zählen“ wie ein Knopf
+        // ohne Wirkung aus (SIC-046).
+        if (_zaehlt)
+          Text(t.backupStandZaehlt, style: klein)
+        else if (!_aktuell)
           Text(t.backupStandVom(datumZeitText(context, s.am)), style: klein)
         else
           Text(t.backupStandHinweis, style: klein),

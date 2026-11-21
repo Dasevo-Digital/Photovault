@@ -2288,52 +2288,49 @@ void main() {
     },
   );
 
-  // Befund: Nach „Neu zählen“ bleibt der alte Stand stehen; „Wird gezählt …“
-  // zeigt die Anzeige nur, solange noch gar kein Stand da ist
-  // (lib/screens/einstellungen/backup_stand.dart:112-121).
-  testWidgets(
-    'SIC-046 Befund: „Neu zählen“ zeigt „Wird gezählt …“',
-    skip: true,
-    (tester) async {
-      await starteApp(tester);
-      await importiereDirekt(tester, [
-        for (var i = 0; i < 4; i++) testfoto('z$i.jpg'),
-      ]);
-      final zAuto = ordner('ziel_auto');
-      await tester.runAsync(() async {
-        await bibliothek.setupBackupPassphrase(_p1);
-        await bibliothek.db.setAutoBackupConfig(
-          enabled: true,
-          destination: zAuto.path,
-        );
-        await bibliothek.runAutoBackupNow(zAuto.path).drain<void>();
-      });
-      final auto = await autoGruppe(tester);
-      final stand = find.descendant(
-        of: auto,
-        matching: find.byType(BackupStandAnzeige),
+  // Behoben in #415: Beim Neuzählen steht unter dem alten Stand
+  // „Wird gezählt …“.
+  testWidgets('SIC-046 Befund: „Neu zählen“ zeigt „Wird gezählt …“', (
+    tester,
+  ) async {
+    await starteApp(tester);
+    await importiereDirekt(tester, [
+      for (var i = 0; i < 4; i++) testfoto('z$i.jpg'),
+    ]);
+    final zAuto = ordner('ziel_auto');
+    await tester.runAsync(() async {
+      await bibliothek.setupBackupPassphrase(_p1);
+      await bibliothek.db.setAutoBackupConfig(
+        enabled: true,
+        destination: zAuto.path,
       );
-      await waitFor(
-        tester,
-        find.descendant(
-          of: stand,
-          matching: find.textContaining('Alles gesichert'),
-        ),
-      );
-      await tester.tap(
-        find.descendant(
-          of: stand,
-          matching: find.byTooltip(de.backupStandNeuZaehlen),
-        ),
-      );
-      await tester.pump();
-      expect(
-        find.descendant(of: stand, matching: find.text(de.backupStandZaehlt)),
-        findsOneWidget,
-      );
-      await fertig(tester);
-    },
-  );
+      await bibliothek.runAutoBackupNow(zAuto.path).drain<void>();
+    });
+    final auto = await autoGruppe(tester);
+    final stand = find.descendant(
+      of: auto,
+      matching: find.byType(BackupStandAnzeige),
+    );
+    await waitFor(
+      tester,
+      find.descendant(
+        of: stand,
+        matching: find.textContaining('Alles gesichert'),
+      ),
+    );
+    await tester.tap(
+      find.descendant(
+        of: stand,
+        matching: find.byTooltip(de.backupStandNeuZaehlen),
+      ),
+    );
+    await tester.pump();
+    expect(
+      find.descendant(of: stand, matching: find.text(de.backupStandZaehlt)),
+      findsOneWidget,
+    );
+    await fertig(tester);
+  });
 
   // =========================================================================
   // Zielordner, Zeitgeber, Meldungen
