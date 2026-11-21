@@ -4482,8 +4482,9 @@ class AppTexteEn extends AppTexte {
   String get metaBelichtungszeit => 'Shutter speed';
 
   @override
-  String get passphraseZuKurz =>
-      'The passphrase must be at least 8 characters long.';
+  String passphraseZuKurz(int anzahl) {
+    return 'The passphrase must be at least $anzahl characters long.';
+  }
 
   @override
   String get exportVorgabenTitel => 'Export presets';
@@ -8367,6 +8368,13 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sicherTeilenZiel => 'Save sharing package';
+
+  @override
+  String get sicherTeilenPassphraseTitel => 'Sharing package passphrase';
+
+  @override
+  String get sicherTeilenPassphraseWarnung =>
+      'Whoever opens the package needs this passphrase – without it, it cannot be decrypted. Pass it on separately from the package itself.';
 
   @override
   String get sicherTeilenDateiname => 'PhotoVault-Share.pvshare';

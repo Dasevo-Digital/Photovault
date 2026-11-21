@@ -128,6 +128,39 @@ void main() {
     expect(find.byType(AlertDialog), findsOneWidget);
   });
 
+  group('das Austauschpaket (BEA-142, BEA-143)', () {
+    Future<String?> paket(BuildContext context) => showSetPassphraseDialog(
+      context,
+      titel: 'Passphrase für das Austauschpaket',
+      warnung: 'Ohne sie lässt es sich nicht entschlüsseln.',
+      mindestens: 10,
+    );
+
+    testWidgets('nennt das Paket, nicht die Backups', (tester) async {
+      await zeige(tester, paket);
+      expect(find.text('Passphrase für das Austauschpaket'), findsOneWidget);
+      expect(find.text('Backup-Passphrase festlegen'), findsNothing);
+      expect(find.textContaining('Backups'), findsNothing);
+    });
+
+    testWidgets('weist 9 Zeichen sofort ab, nimmt 10', (tester) async {
+      await zeige(tester, paket);
+      final felder = find.byType(TextField);
+      await tester.enterText(felder.at(0), 'neunzeich');
+      await tester.enterText(felder.at(1), 'neunzeich');
+      await tester.tap(find.text('Festlegen'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.textContaining('mindestens 10 Zeichen'), findsOneWidget);
+
+      await tester.enterText(felder.at(0), 'zehnzeiche');
+      await tester.enterText(felder.at(1), 'zehnzeiche');
+      await tester.tap(find.text('Festlegen'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+    });
+  });
+
   testWidgets('Abbrechen schliesst ohne Fehler', (tester) async {
     for (final oeffnen in <Future<String?> Function(BuildContext)>[
       showEnterPinDialog,

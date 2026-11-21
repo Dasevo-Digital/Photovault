@@ -4511,8 +4511,9 @@ class AppTexteDe extends AppTexte {
   String get metaBelichtungszeit => 'Belichtungszeit';
 
   @override
-  String get passphraseZuKurz =>
-      'Passphrase muss mindestens 8 Zeichen lang sein.';
+  String passphraseZuKurz(int anzahl) {
+    return 'Die Passphrase muss mindestens $anzahl Zeichen lang sein.';
+  }
 
   @override
   String get exportVorgabenTitel => 'Export-Voreinstellungen';
@@ -8414,6 +8415,13 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get sicherTeilenZiel => 'Austauschpaket speichern';
+
+  @override
+  String get sicherTeilenPassphraseTitel => 'Passphrase für das Austauschpaket';
+
+  @override
+  String get sicherTeilenPassphraseWarnung =>
+      'Wer das Paket öffnen soll, braucht diese Passphrase – ohne sie lässt es sich nicht entschlüsseln. Gib sie auf einem anderen Weg weiter als das Paket selbst.';
 
   @override
   String get sicherTeilenDateiname => 'PhotoVault-Austausch.pvshare';

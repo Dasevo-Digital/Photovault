@@ -1197,7 +1197,13 @@ Future<void> runBatchExport(
     return runBatchExport(context, library, assets);
   }
   if (wahl is _WahlSicherTeilen) {
-    final passphrase = await showSetPassphraseDialog(context);
+    final t = AppTexte.of(context);
+    final passphrase = await showSetPassphraseDialog(
+      context,
+      titel: t.sicherTeilenPassphraseTitel,
+      warnung: t.sicherTeilenPassphraseWarnung,
+      mindestens: SecureShareService.mindestlaenge,
+    );
     if (passphrase == null || !context.mounted) return;
     final begrenzen = await showDialog<bool>(
       context: context,

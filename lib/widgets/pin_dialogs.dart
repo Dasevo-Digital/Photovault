@@ -243,10 +243,21 @@ Future<String?> showEnterPassphraseDialog(
   return result;
 }
 
-/// Lässt eine neue Backup-Passphrase zweimal eingeben (Bestätigung),
-/// validiert clientseitig auf mindestens 8 Zeichen und Übereinstimmung.
-/// Gibt die neue Passphrase zurück oder `null` bei Abbruch.
-Future<String?> showSetPassphraseDialog(BuildContext context) async {
+/// Lässt eine neue Passphrase zweimal eingeben (Bestätigung), validiert
+/// clientseitig auf [mindestens] Zeichen und Übereinstimmung. Gibt die neue
+/// Passphrase zurück oder `null` bei Abbruch.
+///
+/// Ohne [titel] und [warnung] ist es die Passphrase der Backups. Das
+/// Austauschpaket nutzt denselben Dialog mit eigenem Titel, eigener
+/// Warnung und seiner eigenen Mindestlänge – vorher hiess er dort
+/// „Backup-Passphrase festlegen“ und nahm 8 Zeichen an, die das Paket erst
+/// nach Ablaufwahl und Speicherort abwies (BEA-142, BEA-143).
+Future<String?> showSetPassphraseDialog(
+  BuildContext context, {
+  String? titel,
+  String? warnung,
+  int mindestens = 8,
+}) async {
   String? error;
   final result = await showDialog<String>(
     context: context,
@@ -257,7 +268,7 @@ Future<String?> showSetPassphraseDialog(BuildContext context) async {
         final confirmCtrl = felder[1];
         return StatefulBuilder(
           builder: (context, setState) => AlertDialog(
-            title: Text(AppTexte.of(context).passphraseFestlegenTitel),
+            title: Text(titel ?? AppTexte.of(context).passphraseFestlegenTitel),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -292,7 +303,7 @@ Future<String?> showSetPassphraseDialog(BuildContext context) async {
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.md),
                   child: Text(
-                    AppTexte.of(context).passphraseWarnung,
+                    warnung ?? AppTexte.of(context).passphraseWarnung,
                     style: TextStyle(
                       fontSize: 12,
                       color: context.semantik.warnung,
@@ -310,9 +321,12 @@ Future<String?> showSetPassphraseDialog(BuildContext context) async {
                 onPressed: () {
                   final pass = passCtrl.text;
                   final confirm = confirmCtrl.text;
-                  if (pass.length < 8) {
+                  // Wie der Dienst danach: ohne Leerzeichen am Rand gezählt.
+                  if (pass.trim().length < mindestens) {
                     setState(
-                      () => error = AppTexte.of(context).passphraseZuKurz,
+                      () => error = AppTexte.of(
+                        context,
+                      ).passphraseZuKurz(mindestens),
                     );
                     return;
                   }

@@ -1615,7 +1615,7 @@
   "metaBrennweite": "Focal length (mm)",
   "metaBlende": "Aperture (f/…)",
   "metaBelichtungszeit": "Shutter speed",
-  "passphraseZuKurz": "The passphrase must be at least 8 characters long.",
+  "passphraseZuKurz": "The passphrase must be at least {anzahl} characters long.",
   "exportVorgabenTitel": "Export presets",
   "exportVorgabenLeer": "No presets yet. A preset remembers size, quality and file naming – for everything you export more than once.",
   "exportVorgabeNeu": "New preset",
@@ -4145,6 +4145,8 @@
   "sicherTeilenTitel": "Encrypted sharing package",
   "sicherTeilenText": "Share originals and file names in one password-protected .pvshare file.",
   "sicherTeilenZiel": "Save sharing package",
+  "sicherTeilenPassphraseTitel": "Sharing package passphrase",
+  "sicherTeilenPassphraseWarnung": "Whoever opens the package needs this passphrase – without it, it cannot be decrypted. Pass it on separately from the package itself.",
   "sicherTeilenDateiname": "PhotoVault-Share.pvshare",
   "sicherTeilenFertig": "Encrypted sharing package saved: {pfad}",
   "@sicherTeilenFertig": {

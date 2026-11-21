@@ -62,6 +62,10 @@ class SecureShareService {
 
   final ExportService _exporter;
   final DateTime Function() _now;
+
+  /// Wie lang die Passphrase eines Pakets mindestens ist. Der Dialog
+  /// prüft dieselbe Zahl, bevor nach Ablauf und Speicherort gefragt wird.
+  static const mindestlaenge = 10;
   Future<void> createPackage(
     List<AssetData> assets,
     File destination,
@@ -69,8 +73,10 @@ class SecureShareService {
     DateTime? expiresAt,
   }) async {
     if (assets.isEmpty) throw ArgumentError('Keine Aufnahmen ausgewählt');
-    if (passphrase.trim().length < 10) {
-      throw ArgumentError('Die Passphrase muss mindestens 10 Zeichen haben.');
+    if (passphrase.trim().length < mindestlaenge) {
+      throw ArgumentError(
+        'Die Passphrase muss mindestens $mindestlaenge Zeichen haben.',
+      );
     }
     final expiresAtUtc = expiresAt?.toUtc();
     if (expiresAtUtc != null && !expiresAtUtc.isAfter(_now().toUtc())) {

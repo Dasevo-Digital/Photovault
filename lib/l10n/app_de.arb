@@ -2667,7 +2667,14 @@
   "metaBrennweite": "Brennweite (mm)",
   "metaBlende": "Blende (f/…)",
   "metaBelichtungszeit": "Belichtungszeit",
-  "passphraseZuKurz": "Passphrase muss mindestens 8 Zeichen lang sein.",
+  "passphraseZuKurz": "Die Passphrase muss mindestens {anzahl} Zeichen lang sein.",
+  "@passphraseZuKurz": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "exportVorgabenTitel": "Export-Voreinstellungen",
   "exportVorgabenLeer": "Noch keine Voreinstellung. Eine Voreinstellung merkt sich Grösse, Qualität und Dateibenennung – für alles, was Sie öfter als einmal exportieren.",
   "exportVorgabeNeu": "Neue Voreinstellung",
@@ -5332,6 +5339,8 @@
   "sicherTeilenTitel": "Verschlüsseltes Austauschpaket",
   "sicherTeilenText": "Originale und Dateinamen in einer passwortgeschützten .pvshare-Datei weitergeben.",
   "sicherTeilenZiel": "Austauschpaket speichern",
+  "sicherTeilenPassphraseTitel": "Passphrase für das Austauschpaket",
+  "sicherTeilenPassphraseWarnung": "Wer das Paket öffnen soll, braucht diese Passphrase – ohne sie lässt es sich nicht entschlüsseln. Gib sie auf einem anderen Weg weiter als das Paket selbst.",
   "sicherTeilenDateiname": "PhotoVault-Austausch.pvshare",
   "sicherTeilenFertig": "Verschlüsseltes Austauschpaket gespeichert: {pfad}",
   "@sicherTeilenFertig": {

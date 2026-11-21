@@ -7432,8 +7432,8 @@ abstract class AppTexte {
   /// No description provided for @passphraseZuKurz.
   ///
   /// In de, this message translates to:
-  /// **'Passphrase muss mindestens 8 Zeichen lang sein.'**
-  String get passphraseZuKurz;
+  /// **'Die Passphrase muss mindestens {anzahl} Zeichen lang sein.'**
+  String passphraseZuKurz(int anzahl);
 
   /// No description provided for @exportVorgabenTitel.
   ///
@@ -13026,6 +13026,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Austauschpaket speichern'**
   String get sicherTeilenZiel;
+
+  /// No description provided for @sicherTeilenPassphraseTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Passphrase für das Austauschpaket'**
+  String get sicherTeilenPassphraseTitel;
+
+  /// No description provided for @sicherTeilenPassphraseWarnung.
+  ///
+  /// In de, this message translates to:
+  /// **'Wer das Paket öffnen soll, braucht diese Passphrase – ohne sie lässt es sich nicht entschlüsseln. Gib sie auf einem anderen Weg weiter als das Paket selbst.'**
+  String get sicherTeilenPassphraseWarnung;
 
   /// No description provided for @sicherTeilenDateiname.
   ///

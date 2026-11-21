@@ -6494,13 +6494,13 @@ void _austauschTests() {
       // BEA-144
       await waehleAus(tester, ids);
       await exportWaehlen(tester, de.sicherTeilenTitel);
-      await waitFor(tester, find.text(de.passphraseFestlegenTitel));
-      beobachtung(
-        'BEA-142',
-        'Passphrase-Dialog: Titel "${de.passphraseFestlegenTitel}", Warnung "${de.passphraseWarnung.substring(0, 40)}…"',
-      );
+      // Behoben in #411: Der Dialog nennt das Paket, nicht die Backups.
+      await waitFor(tester, find.text(de.sicherTeilenPassphraseTitel));
+      expect(find.text(de.passphraseFestlegenTitel), findsNothing);
+      expect(find.text(de.sicherTeilenPassphraseWarnung), findsOneWidget);
+      expect(find.text(de.passphraseWarnung), findsNothing);
       await passphraseEingeben(tester, 'kurz5', 'kurz5');
-      expect(find.text(de.passphraseZuKurz), findsOneWidget);
+      expect(find.text(de.passphraseZuKurz(10)), findsOneWidget);
       await passphraseEingeben(tester, 'zwoelfzeichen', 'anderezeichen');
       expect(find.text(de.passphraseUngleich), findsOneWidget);
       await tap(tester, inDialog(find.text(de.allgAbbrechen)));
@@ -6548,7 +6548,7 @@ void _austauschTests() {
       await exportWaehlen(tester, de.sicherTeilenTitel);
       await passphraseEingeben(tester, 'neunzeich', 'neunzeich');
       final sofortAbgewiesen = find
-          .text(de.passphraseFestlegenTitel)
+          .text(de.sicherTeilenPassphraseTitel)
           .evaluate()
           .isNotEmpty;
       beobachtung(
@@ -7956,11 +7956,9 @@ void _befundTests() {
     await abschluss(tester);
   }, skip: true);
 
-  // Befund: Der Passphrase-Dialog des Austauschpakets nimmt 8 und 9 Zeichen
-  // an (widgets/pin_dialogs.dart:313 prüft < 8), das Paket verlangt 10
-  // (services/secure_share_service.dart:127). Der Fehler kommt erst nach
-  // Ablaufwahl und Speicherort. Der Dialog heisst zudem „Backup-Passphrase
-  // festlegen“ mit Backup-Warnung (selection_action_bar.dart:1173).
+  // Behoben in #411: Der Passphrase-Dialog des Austauschpakets prüft die
+  // 10 Zeichen, die das Paket verlangt, und weist 9 sofort ab; er heisst
+  // „Passphrase für das Austauschpaket“ und warnt nicht vor Backups.
   testWidgets('BEA-143 Befund: 9 Zeichen werden erst am Ende abgewiesen', (
     tester,
   ) async {
@@ -7973,12 +7971,13 @@ void _befundTests() {
     await exportWaehlen(tester, de.sicherTeilenTitel);
     await passphraseEingeben(tester, 'neunzeich', 'neunzeich');
     expect(
-      find.text(de.passphraseFestlegenTitel),
+      find.text(de.sicherTeilenPassphraseTitel),
       findsOneWidget,
       reason: 'sofort abgewiesen',
     );
+    expect(find.text(de.passphraseZuKurz(10)), findsOneWidget);
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Behoben in #411: Die Automatik rechnet Belichtung und Kontrast so, wie
   // der Renderer sie anwendet (lineares Licht, Kontrast um linear 0,5);
