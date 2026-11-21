@@ -1209,7 +1209,16 @@ async function zeigePapierkorb() {
     kopf.append(leeren);
   }
   zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true, kopf }, t('Papierkorb'));
-  if (d.aufnahmen.length === 0) $('ende').textContent = t('Der Papierkorb ist leer.');
+  papierkorbEnde();
+}
+
+// Unter dem Papierkorb: was eben geschah, und ob er jetzt leer ist. Die
+// Meldung nach dem Löschen oder Zurückholen überschrieb sonst „Der
+// Papierkorb ist leer.“.
+function papierkorbEnde(geschehen) {
+  const leer = !!(liste && liste.papierkorb && liste.aufnahmen.length === 0);
+  if (!geschehen && !leer) return;
+  $('ende').textContent = [geschehen, leer ? t('Der Papierkorb ist leer.') : ''].filter(Boolean).join(' · ');
 }
 
 // Löscht [aufnahmen] endgültig – ohne sie den ganzen Papierkorb (#296).
@@ -1220,7 +1229,7 @@ async function endgueltigLoeschen(aufnahmen, anzahl) {
     const r = await api('/api/v1/papierkorb/leeren', { methode: 'POST', json: aufnahmen ? { ids: aufnahmen.map((a) => a.id) } : { alle: true } });
     auswahlAufheben();
     await zeigePapierkorb();
-    $('ende').textContent = t('{n} endgültig gelöscht', { n: r.geloescht });
+    papierkorbEnde(t('{n} endgültig gelöscht', { n: r.geloescht }));
   } catch (x) { alert(x.message); }
 }
 
@@ -5470,7 +5479,7 @@ $('auswahl-zurueck').addEventListener('click', async () => {
     zeitleiste.leeren();
     auswahlAufheben();
     neuZeichnen();
-    $('ende').textContent = t('{n} zurückgeholt', { n: g.length });
+    papierkorbEnde(t('{n} zurückgeholt', { n: g.length }));
   } catch (x) { alert(x.message); }
 });
 
