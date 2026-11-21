@@ -27,7 +27,16 @@ class Dateibeschaffung {
       if (await ziel.exists()) return;
       await verbindung.ladeHerunter(adresse(relativ), ziel);
     } finally {
-      unawaited(Future<void>(() => _laufend.remove(relativ)));
+      // Mit Block, nicht als Pfeil: `_laufend.remove` gibt den Lauf selbst
+      // zurück, und eine Zukunft, die ihn zurückgibt, übernimmt seinen
+      // Ausgang. Scheiterte das Holen (Server fort), scheiterte sie mit –
+      // unbeachtet, und der Fehler kam als unbehandelte Ausnahme an, obwohl
+      // der Aufrufer ihn längst abgefangen hatte.
+      unawaited(
+        Future<void>(() {
+          _laufend.remove(relativ);
+        }),
+      );
     }
   });
 

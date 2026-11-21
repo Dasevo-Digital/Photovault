@@ -4,6 +4,9 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -34,9 +37,17 @@ void main() {
     pfade = await StoragePaths.forTesting(
       Directory(p.join(wurzel.path, 'lib')),
     );
-    // Wie eine verbundene Kopie ohne Server.
-    pfade.beschaffe = (relativ) async =>
-        throw KeineVerbindung(const SocketException('abgewiesen'));
+    // Wie eine verbundene Kopie ohne Server – mit der echten
+    // Beschaffung, damit auch ein unbehandelter Fehler beim Aufräumen
+    // auffällt.
+    Dateibeschaffung(
+      pfade,
+      Serververbindung(
+        Uri.parse('http://127.0.0.1:9/'),
+        'pruef',
+        client: MockClient((_) async => throw http.ClientException('fort')),
+      ),
+    ).binde();
     bibliothek = LibraryState()
       ..db = db
       ..paths = pfade
