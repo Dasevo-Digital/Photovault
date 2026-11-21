@@ -386,8 +386,39 @@ class _TimelineScreenState extends State<TimelineScreen>
 
   /// Auf die Monatsüberschrift getippt: alle Fotos/Videos des Monats
   /// auswählen – oder, falls bereits alle ausgewählt sind, wieder abwählen.
-  void _toggleGroup(List<Rasterzeile> groupAssets) =>
-      rasterGruppeUmschalten([for (final a in groupAssets) a.id]);
+  /// Ein Klick auf die Überschrift eines Monats oder Tages wählt ihn ganz.
+  ///
+  /// **Auch was noch nicht geladen ist.** Die Zeitleiste hält nur ein
+  /// Ladefenster (siehe [_windowSize]); es endet oft mitten in einem
+  /// Monat. Vorher wählte die Überschrift dieses Monats nur die geladenen
+  /// Fotos und zeigte ihn trotzdem als ganz gewählt – die übrigen gingen
+  /// bei einer Sammeländerung leer aus. Reicht die Gruppe an das Ende des
+  /// Fensters, kommen ihre Kennungen deshalb aus der Datenbank.
+  Future<void> _toggleGroup(
+    List<Rasterzeile> groupAssets, {
+    bool tag = false,
+  }) async {
+    final ids = [for (final a in groupAssets) a.id];
+    final geladen = _geladen;
+    final amEnde =
+        geladen.length >= _windowSize &&
+        geladen.isNotEmpty &&
+        ids.contains(geladen.last.id);
+    if (amEnde) {
+      final d = groupAssets.first.fileCreatedAt;
+      final imMonat = await widget.library.db.aufnahmenImMonat(d.year, d.month);
+      if (!mounted) return;
+      final ganz = [
+        for (final a in imMonat)
+          if (!tag || DateUtils.isSameDay(a.fileCreatedAt, d)) a.id,
+      ];
+      if (ganz.length > ids.length) {
+        rasterGruppeUmschalten(ganz);
+        return;
+      }
+    }
+    rasterGruppeUmschalten(ids);
+  }
 
   /// Bei einem Serien-Titelbild (siehe StackReviewScreen) werden nur die
   /// Stapel-Mitglieder geöffnet statt der vollen Timeline-Liste – sonst
@@ -742,7 +773,9 @@ class _TimelineScreenState extends State<TimelineScreen>
                                 nachObenSignal: widget.nachObenSignal,
                                 selectedIds: _selected,
                                 onLongPress: (asset) => _toggle(asset.id),
-                                onHeaderTap: _toggleGroup,
+                                onHeaderTap: (g) => _toggleGroup(g),
+                                onTagesKopfTap: (g) =>
+                                    _toggleGroup(g, tag: true),
                                 onTap: rasterKlick,
                                 kachelbreite: _kachelbreite,
                                 form: _form,

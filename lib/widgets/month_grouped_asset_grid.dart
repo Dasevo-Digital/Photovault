@@ -146,6 +146,12 @@ class MonthGroupedAssetGrid extends StatefulWidget {
   /// entfernt. Ohne diesen Callback ist die Überschrift nicht antippbar.
   final void Function(List<Rasterzeile> groupAssets)? onHeaderTap;
 
+  /// Wie [onHeaderTap], aber für die Überschrift eines **Tages** – ohne
+  /// Angabe gilt [onHeaderTap] für beide. Getrennt, weil ein Aufrufer, der
+  /// nur einen Ausschnitt geladen hat, wissen muss, welchen Zeitraum die
+  /// Überschrift meint (siehe TimelineScreen).
+  final void Function(List<Rasterzeile> groupAssets)? onTagesKopfTap;
+
   /// IDs der aktuell ausgewählten Fotos – rendert das Auswahl-Overlay auf
   /// den entsprechenden Kacheln (siehe [AssetThumbnailTile.selected]) sowie
   /// das Auswahl-Symbol vor der Monatsüberschrift.
@@ -224,6 +230,7 @@ class MonthGroupedAssetGrid extends StatefulWidget {
     required this.onTap,
     this.onLongPress,
     this.onHeaderTap,
+    this.onTagesKopfTap,
     this.selectedIds,
     this.highlightAssetId,
     this.aktiveKachelId,
@@ -505,7 +512,7 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
             ),
       groupAssets: tag,
       selectedIds: widget.selectedIds,
-      onTap: widget.onHeaderTap,
+      onTap: widget.onTagesKopfTap ?? widget.onHeaderTap,
     );
   }
 
