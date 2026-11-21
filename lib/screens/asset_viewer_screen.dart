@@ -1699,7 +1699,14 @@ class _AssetPageState extends State<_AssetPage> {
       setState(() => _bildmasse = Size(breite.toDouble(), hoehe.toDouble()));
       return;
     }
-    final datei = await _fileFuture;
+    final File datei;
+    try {
+      datei = await _fileFuture;
+    } on Object {
+      // Ohne Datei (offline, Original nicht hier) zeigt die Seite schon
+      // ihren Hinweis; die Masse fehlen dann eben (BEA-177).
+      return;
+    }
     if (!mounted || widget.asset.id != asset.id) return;
     final masse = await _masseVon(begrenztesBild(datei));
     if (!mounted || widget.asset.id != asset.id) return;
@@ -1777,7 +1784,12 @@ class _AssetPageState extends State<_AssetPage> {
       }
     });
     if (_bildmasse == null && gesichter.isNotEmpty) {
-      final datei = await _fileFuture;
+      final File datei;
+      try {
+        datei = await _fileFuture;
+      } on Object {
+        return; // wie in _masseSicherstellen
+      }
       if (!mounted || widget.asset.id != asset.id) return;
       final masse = await _masseVon(begrenztesBild(datei));
       if (!mounted || widget.asset.id != asset.id) return;

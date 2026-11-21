@@ -322,6 +322,32 @@ void main() {
     );
   });
 
+  testWidgets(
+    'ohne Original und ohne Server kein endloser Ladekreis (BEA-177)',
+    (tester) async {
+      // Verbunden, das Original liegt nicht hier, und der Server antwortet
+      // nicht.
+      paths.beschaffe = (_) async => throw Exception('keine Verbindung');
+      await zeige(tester);
+      // Das Nachsehen auf der Platte ist echte Ein-/Ausgabe.
+      for (var i = 0; i < 20; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump(const Duration(milliseconds: 25));
+      }
+      expect(
+        find.text(
+          'Das Original liegt nicht hier, und der Server ist nicht '
+          'erreichbar.',
+        ),
+        findsWidgets,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      await abbauen(tester);
+    },
+  );
+
   group('Das Zurücksetzen', () {
     testWidgets('fragt vorher', (tester) async {
       await zeige(tester);

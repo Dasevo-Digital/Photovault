@@ -521,7 +521,12 @@ int pdfBilder(Uint8List pdf) =>
 
 // --- Steuerung des eigenen Wegwerf-Servers ---------------------------------
 
-const _steuerung = 'http://127.0.0.1:18879';
+/// Die Steuerung des Wegwerf-Servers; ein anderer Prüfplatz gibt seine
+/// eigene über `--dart-define=PV_KATALOG_STEUERUNG=…` an.
+const _steuerung = String.fromEnvironment(
+  'PV_KATALOG_STEUERUNG',
+  defaultValue: 'http://127.0.0.1:18879',
+);
 
 Future<String> steuere(WidgetTester tester, String pfad) async {
   final antwort = await tester.runAsync(() async {
@@ -3167,13 +3172,9 @@ void _serverTests() {
     skip: ohneServer,
   );
 
-  // Befund: Bei angehaltenem Server und fehlendem Original kommt in
-  // „Entwickeln“ zwar die Meldung „Das Original liegt nicht hier …“, die
-  // Bildfläche dreht aber weiter endlos: _originalOderMeldung
-  // (lib/screens/entwickeln/masken.dart:86–100) setzt kein `_error`, und
-  // ohne Vorschau und ohne `_error` zeigt die Fläche einen Ladekreis
-  // (lib/screens/develop_screen.dart:562–575). Zweimal nachgestellt
-  // (Läufe r2-bea-b und r2-bea-d). Video öffnen und Zuschneiden speichern
+  // Behoben in #420: Bei angehaltenem Server und fehlendem Original zeigt
+  // die Bildfläche in „Entwickeln“ „Das Original liegt nicht hier …“ statt
+  // eines endlosen Ladekreises. Video öffnen und Zuschneiden speichern
   // verhalten sich wie erwartet.
   mitServer(
     'BEA-177 Mitserver Server gestoppt: Entwickeln, Video öffnen, Zuschneiden speichern',
@@ -3282,7 +3283,7 @@ void _serverTests() {
       );
       await bea.abschluss(tester);
     },
-    skip: true,
+    skip: ohneServer,
   );
 
   mitServer(

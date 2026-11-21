@@ -89,12 +89,16 @@ mixin _Masken on _EntwickelnBasis {
       return await widget.paths.bereit(widget.asset.relativePath);
     } on Exception {
       if (mounted) {
+        final text = AppTexte.of(context).entwOriginalNichtDa;
         setState(() {
           _rendering = false;
           _saving = false;
           _computingMask = false;
+          // Ohne Bild stand sonst weiter der Ladekreis da, obwohl nichts
+          // mehr kommt (BEA-177): Dann sagt die Bildfläche, warum.
+          if (_previewBytes == null) _error = text;
         });
-        melde.fehler(AppTexte.of(context).entwOriginalNichtDa);
+        melde.fehler(text);
       }
       return null;
     }
