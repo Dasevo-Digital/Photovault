@@ -127,9 +127,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     _statesFuture = _locationCountry != null
         ? widget.library.db.distinctStates(_locationCountry!)
         : Future.value(const []);
-    _citiesFuture = _locationState != null
-        ? widget.library.db.distinctCities(_locationState!)
-        : Future.value(const []);
+    _citiesFuture = _staedte(_locationCountry, _locationState);
     _startDate = f.startDate;
     _endDate = f.endDate;
     _mediaType = f.mediaType;
@@ -157,6 +155,14 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     _blurryOnly = f.maxSharpnessScore != null;
   }
 
+  /// Die Städte zur Wahl: alle des Landes, mit Bundesland nur dessen.
+  /// Schon nach der Landeswahl, nicht erst nach dem Bundesland – wer die
+  /// Stadt kennt, muss die Region nicht erst heraussuchen.
+  Future<List<String>> _staedte(String? country, String? state) =>
+      country == null
+      ? Future.value(const [])
+      : widget.library.db.distinctCities(country, state: state);
+
   void _onCountryChanged(String? country) {
     setState(() {
       _locationCountry = country;
@@ -165,7 +171,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
       _statesFuture = country != null
           ? widget.library.db.distinctStates(country)
           : Future.value(const []);
-      _citiesFuture = Future.value(const []);
+      _citiesFuture = _staedte(country, null);
     });
   }
 
@@ -173,9 +179,7 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
     setState(() {
       _locationState = state;
       _locationCity = null;
-      _citiesFuture = state != null
-          ? widget.library.db.distinctCities(state)
-          : Future.value(const []);
+      _citiesFuture = _staedte(_locationCountry, state);
     });
   }
 
@@ -1259,21 +1263,35 @@ class _SearchOptionsSheetState extends State<SearchOptionsSheet> {
                 AppTexte.of(context).suchoptStadt,
                 _citiesFuture,
                 _locationCity,
-                _locationState == null
+                _locationCountry == null
                     ? null
                     : (v) => setState(() => _locationCity = v),
               ),
             ),
           ],
         ),
-        if (!widget.library.geoDataAvailable)
-          Padding(
-            padding: const EdgeInsets.only(top: AppSpacing.sm),
-            child: Text(
-              AppTexte.of(context).suchoptGeoFehlt,
-              style: TextStyle(fontSize: 12, color: context.semantik.warnung),
-            ),
-          ),
+        // Der Hinweis hängt an den aufgelösten Orten, nicht am Datensatz:
+        // Mit geladenem Datensatz, aber ohne einen einzigen aufgelösten
+        // Ort, fehlte er – die Länderliste war leer, und nichts sagte,
+        // warum. Umgekehrt bleiben aufgelöste Orte (etwa vom Server)
+        // nutzbar, auch wenn hier kein Datensatz liegt.
+        FutureBuilder<List<String>>(
+          future: _countriesFuture,
+          builder: (context, laender) =>
+              laender.connectionState == ConnectionState.done &&
+                  (laender.data?.isEmpty ?? true)
+              ? Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Text(
+                    AppTexte.of(context).suchoptGeoFehlt,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: context.semantik.warnung,
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }

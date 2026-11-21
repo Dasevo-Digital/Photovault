@@ -746,14 +746,22 @@ extension VokabularAbfragen on AppDatabase {
     return rows.map((r) => r.read(assets.locationState)!).toList();
   }
 
-  /// Wie [distinctStates], aber Städte innerhalb eines bestimmten
-  /// Bundeslands/einer Provinz.
-  Future<List<String>> distinctCities(String state) async {
+  /// Wie [distinctStates], aber Städte eines Landes – mit [state] nur die
+  /// dieses Bundeslands/dieser Provinz.
+  ///
+  /// Das Land gehört immer dazu: Die Suche bot Städte erst nach dem
+  /// Bundesland an, und gleichnamige Bundesländer zweier Länder (Limburg)
+  /// hätten sich die Städte geteilt.
+  Future<List<String>> distinctCities(String country, {String? state}) async {
+    var bedingung =
+        assets.locationCity.isNotNull() &
+        assets.locationCountry.equals(country);
+    if (state != null) {
+      bedingung = bedingung & assets.locationState.equals(state);
+    }
     final query = selectOnly(assets, distinct: true)
       ..addColumns([assets.locationCity])
-      ..where(
-        assets.locationCity.isNotNull() & assets.locationState.equals(state),
-      )
+      ..where(bedingung)
       ..orderBy([OrderingTerm.asc(assets.locationCity)]);
     final rows = await query.get();
     return rows.map((r) => r.read(assets.locationCity)!).toList();

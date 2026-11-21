@@ -2247,14 +2247,9 @@ void main() {
     await ende(tester);
   }, timeout: frist);
 
-  // Befund (ANS-108): Der Hinweis „Noch keine Orte aufgelöst – …“ hängt
-  // nicht an aufgelösten Orten, sondern daran, ob ein GeoNames-Datensatz
-  // geladen ist (lib/widgets/search_options_sheet.dart:1268,
-  // `!widget.library.geoDataAvailable`; library_state.dart:1572). Eine
-  // Bibliothek ohne einen aufgelösten Ort zeigt ihn mit Datensatz nicht.
-  // Und die Stadt lässt sich nach der Landeswahl nicht öffnen
-  // (search_options_sheet.dart:1261, gesperrt bis zum Bundesland;
-  // _onCountryChanged leert die Städte, :167).
+  // Behoben in #410: Die Stadt ist schon nach der Landeswahl wählbar (Städte
+  // des Landes), und der Hinweis „Noch keine Orte aufgelöst“ hängt an den
+  // aufgelösten Orten statt am geladenen Datensatz.
   testWidgets(
     'ANS-108 Ortsfilter mit GeoNames-Datensatz, aufgelöst über die Aufgabe',
     (tester) async {
@@ -2271,7 +2266,6 @@ void main() {
       }
       expect(befunde, isEmpty);
     },
-    skip: true,
     timeout: frist,
   );
 

@@ -454,8 +454,15 @@ void main() {
         'Île-de-France',
       ]);
       expect(await db.distinctStates('Deutschland'), ['Berlin']);
-      expect(await db.distinctCities('Île-de-France'), ['Paris']);
-      expect(await db.distinctCities('Auvergne-Rhône-Alpes'), ['Lyon']);
+      expect(await db.distinctCities('France', state: 'Île-de-France'), [
+        'Paris',
+      ]);
+      expect(await db.distinctCities('France', state: 'Auvergne-Rhône-Alpes'), [
+        'Lyon',
+      ]);
+      // Schon nach der Landeswahl: alle Städte des Landes, keine fremden.
+      expect(await db.distinctCities('France'), ['Lyon', 'Paris']);
+      expect(await db.distinctCities('Deutschland'), ['Berlin']);
     },
   );
 
