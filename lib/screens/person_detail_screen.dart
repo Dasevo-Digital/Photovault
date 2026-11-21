@@ -11,8 +11,8 @@ import '../widgets/asset_thumbnail_tile.dart';
 import '../widgets/pin_dialogs.dart';
 import 'package:flutter/foundation.dart' show compute;
 
-import 'package:kern/services/embedding_codec.dart';
 import 'package:kern/services/face_suggestions.dart';
+import 'package:kern/services/gesichtsuebersicht.dart' show vorschlagsstoffFuer;
 import 'asset_viewer_screen.dart';
 import 'face_review_screen.dart';
 import 'person_suggestions_screen.dart';
@@ -57,15 +57,18 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   Future<void> _vorschlaegeSuchen() async {
     setState(() => _sucheLaeuft = true);
     try {
-      final bekannt = [
-        for (final f in await library.db.facesForPerson(person.id))
-          if (f.embedding != null) floatsFromEmbeddingBlob(f.embedding!),
-      ];
-      final offen = await library.db.allUnassignedFaces();
-      final kandidaten = {
-        for (final f in offen)
-          if (f.embedding != null) f.id: floatsFromEmbeddingBlob(f.embedding!),
-      };
+      // Derselbe Stoff wie im Browser: ohne die Gesichter, die für diese
+      // Person schon abgelehnt wurden (PER-063).
+      final (:bekannt, :kandidaten, :offen, abgelehnt: _) =
+          await vorschlagsstoffFuer(library.db, person.id);
+      // Die Person, wie sie jetzt ist: Ihre Schwelle ändert sich mit jeder
+      // Entscheidung, die Ansicht hält aber die beim Öffnen übergebene.
+      final aktuell =
+          await (library.db.select(
+            library.db.people,
+          )..where((t) => t.id.equals(person.id))).getSingleOrNull() ??
+          person;
+      final schwelle = library.schwelleFuerPerson(aktuell);
 
       if (bekannt.isEmpty || kandidaten.isEmpty) {
         if (!mounted) return;
@@ -89,32 +92,31 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
         VorschlagsEingabe(
           bekannt: bekannt,
           kandidaten: kandidaten,
-          schwelle: library.schwelleFuerPerson(person),
+          schwelle: schwelle,
         ),
       );
 
       if (!mounted) return;
       if (roh.isEmpty) {
         melde.hinweis(
-          AppTexte.of(context).vorschlagNichtsGefunden(
-            library.schwelleFuerPerson(person).toStringAsFixed(2),
-          ),
+          AppTexte.of(
+            context,
+          ).vorschlagNichtsGefunden(schwelle.toStringAsFixed(2)),
         );
         return;
       }
 
-      final nachId = {for (final f in offen) f.id: f};
       final vorschlaege = [
         for (final v in roh)
-          if (nachId.containsKey(v.faceId))
-            (gesicht: nachId[v.faceId]!, aehnlichkeit: v.aehnlichkeit),
+          if (offen[v.faceId] case final f?)
+            (gesicht: f, aehnlichkeit: v.aehnlichkeit),
       ];
 
       final uebernommen = await Navigator.of(context).push<int>(
         MaterialPageRoute(
           builder: (_) => PersonSuggestionsScreen(
             library: library,
-            person: person,
+            person: aktuell,
             vorschlaege: vorschlaege,
           ),
         ),

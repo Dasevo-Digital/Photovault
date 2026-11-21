@@ -495,6 +495,21 @@ extension PersonenAbfragen on AppDatabase {
   }) async {
     if (ergebnisse.isEmpty) return;
     final zeitpunkt = jetzt ?? DateTime.now();
+    // Wurde ein Gesicht für diese Person schon abgelehnt, merkt der Lauf es
+    // nicht wieder für sie vor – und übernimmt es auch nicht von selbst
+    // (siehe [abgelehnteGesichterFuer]).
+    final abgelehnt = <String, Set<String>>{};
+    for (final personId in {for (final e in ergebnisse) ?e.personId}) {
+      abgelehnt[personId] = await abgelehnteGesichterFuer(personId);
+    }
+    ergebnisse = [
+      for (final e in ergebnisse)
+        if (e.personId != null &&
+            (abgelehnt[e.personId]?.contains(e.faceId) ?? false))
+          (faceId: e.faceId, personId: null, wert: null)
+        else
+          e,
+    ];
     await batch((b) {
       for (final e in ergebnisse) {
         b.update(
@@ -837,6 +852,27 @@ extension PersonenAbfragen on AppDatabase {
         similarityThreshold: Value(abgeleitet == allgemein ? null : abgeleitet),
       ),
     );
+  }
+
+  /// Die unbenannten Gesichter, die als Vorschlag für [personId] abgelehnt
+  /// wurden – deren letzte Rückmeldung zu dieser Person „nicht sie“ ist.
+  ///
+  /// Sie kommen für diese Person nicht wieder (PER-063, WEB-129). Die
+  /// Schwelle allein hält sie nicht fern: Sie steigt höchstens um
+  /// [maximaleAbweichung] über die allgemeine und bleibt bei
+  /// widersprüchlichen Entscheidungen ganz, wo sie ist – ein abgelehntes
+  /// Gesicht darüber kam bei jedem „Weitere Fotos“ wieder.
+  Future<Set<String>> abgelehnteGesichterFuer(String personId) async {
+    final rows =
+        await (select(faceMatchFeedback)
+              ..where((t) => t.personId.equals(personId))
+              ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+            .get();
+    final zuletzt = <String, bool>{for (final r in rows) r.faceId: r.accepted};
+    return {
+      for (final MapEntry(key: id, value: angenommen) in zuletzt.entries)
+        if (!angenommen) id,
+    };
   }
 
   Future<List<GesichtsRueckmeldung>> gesichtsRueckmeldungen(

@@ -172,6 +172,42 @@ typedef WeitereFotosDaten = ({
   double allgemein,
 });
 
+/// Der Stoff für „Weitere Fotos“ einer Person: die Einbettungen ihrer
+/// Gesichter und die unbenannten Gesichter, die für sie in Frage kommen.
+///
+/// Was für diese Person schon abgelehnt wurde, kommt nicht in Frage
+/// (PER-063, WEB-129; siehe [AppDatabase.abgelehnteGesichterFuer]). Am
+/// Rechner und am Server derselbe Weg.
+Future<
+  ({
+    List<Float32List> bekannt,
+    Map<String, Float32List> kandidaten,
+    Map<String, FaceData> offen,
+    Set<String> abgelehnt,
+  })
+>
+vorschlagsstoffFuer(AppDatabase db, String personId) async {
+  final bekannt = [
+    for (final f in await db.facesForPerson(personId))
+      if (f.embedding != null) floatsFromEmbeddingBlob(f.embedding!),
+  ];
+  final abgelehnt = await db.abgelehnteGesichterFuer(personId);
+  final offen = {
+    for (final f in await db.allUnassignedFaces())
+      if (!abgelehnt.contains(f.id)) f.id: f,
+  };
+  final kandidaten = {
+    for (final f in offen.values)
+      if (f.embedding != null) f.id: floatsFromEmbeddingBlob(f.embedding!),
+  };
+  return (
+    bekannt: bekannt,
+    kandidaten: kandidaten,
+    offen: offen,
+    abgelehnt: abgelehnt,
+  );
+}
+
 Future<WeitereFotosDaten?> weitereFotosVon(
   AppDatabase db,
   String personId,
@@ -182,15 +218,10 @@ Future<WeitereFotosDaten?> weitereFotosVon(
   if (person == null) return null;
   final allgemein = await db.faceSimilarityThresholdWert();
   final schwelle = person.similarityThreshold ?? allgemein;
-  final bekannt = [
-    for (final f in await db.facesForPerson(personId))
-      if (f.embedding != null) floatsFromEmbeddingBlob(f.embedding!),
-  ];
-  final offen = await db.allUnassignedFaces();
-  final kandidaten = {
-    for (final f in offen)
-      if (f.embedding != null) f.id: floatsFromEmbeddingBlob(f.embedding!),
-  };
+  final (:bekannt, :kandidaten, :offen, :abgelehnt) = await vorschlagsstoffFuer(
+    db,
+    personId,
+  );
   final gerechnet = bekannt.isEmpty || kandidaten.isEmpty
       ? const <Gesichtsvorschlag>[]
       : await _vorschlaegeImIsolat(
@@ -202,11 +233,12 @@ Future<WeitereFotosDaten?> weitereFotosVon(
         );
   // Was die Wiedererkennung vorgemerkt hat, kommt dazu – mit dem
   // höheren der beiden Werte, falls beide dasselbe Gesicht nennen.
-  final nachId = {for (final f in offen) f.id: f};
+  final nachId = {...offen};
   final werte = <String, double>{
     for (final v in gerechnet) v.faceId: v.aehnlichkeit,
   };
   for (final v in await db.vorschlaegeFuerPerson(personId)) {
+    if (abgelehnt.contains(v.gesicht.id)) continue;
     nachId[v.gesicht.id] ??= v.gesicht;
     final da = werte[v.gesicht.id];
     if (da == null || v.aehnlichkeit > da) werte[v.gesicht.id] = v.aehnlichkeit;

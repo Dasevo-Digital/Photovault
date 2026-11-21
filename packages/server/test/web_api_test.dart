@@ -654,6 +654,100 @@ void main() {
     },
   );
 
+  test('Weitere Fotos: ein abgelehntes Gesicht kommt nicht wieder, auch über '
+      'der gedeckelten Schwelle (WEB-129, PER-063)', () async {
+    final a = await ladeHoch(erikaToken, 'familie.jpg', 60);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    var richtung = 2;
+    Uint8List vektor(double aehnlichkeit) {
+      final v = Float32List(128);
+      v[1] = aehnlichkeit;
+      v[richtung++] = math.sqrt(1 - aehnlichkeit * aehnlichkeit);
+      return Uint8List.view(v.buffer);
+    }
+
+    await befehl(erikaToken, 'personAnlegen', {
+      'personId': 'anna',
+      'name': 'Anna',
+    });
+    Future<void> gesicht(String id, String? person, double s) => db
+        .into(db.faces)
+        .insert(
+          FacesCompanion.insert(
+            id: id,
+            assetId: a,
+            personId: Value(person),
+            boxX: 0.1,
+            boxY: 0.1,
+            boxW: 0.2,
+            boxH: 0.2,
+            cropRelativePath: Value('faces/$id.jpg'),
+            embedding: Value(vektor(s)),
+          ),
+        );
+    await gesicht('f-anna', 'anna', 1);
+    // Alle drei liegen weit über jeder Schwelle, die sich lernen lässt:
+    // Sie steigt höchstens um 0,15 über die allgemeine.
+    for (final (id, s) in [('h1', 0.97), ('h2', 0.96), ('h3', 0.95)]) {
+      await gesicht(id, null, s);
+    }
+    Future<List<Object?>> vorschlaege() async {
+      final v = await jsonAus(
+        await frag(
+          'GET',
+          '/api/v1/personen/anna/vorschlaege',
+          token: erikaToken,
+        ),
+      );
+      return [for (final x in (v['vorschlaege']! as List).cast<Map>()) x['id']];
+    }
+
+    expect(await vorschlaege(), ['h1', 'h2', 'h3']);
+    final allgemein =
+        (await jsonAus(
+              await frag(
+                'GET',
+                '/api/v1/personen/anna/vorschlaege',
+                token: erikaToken,
+              ),
+            ))['allgemein']!
+            as double;
+    // Zwei angenommen, das ähnlichste abgelehnt – wie im Browser.
+    for (final (art, werte) in [
+      (
+        'gesichterZuordnen',
+        {
+          'gesichtIds': ['h2', 'h3'],
+          'personId': 'anna',
+        },
+      ),
+      (
+        'vorschlaegeVerwerfen',
+        {
+          'gesichtIds': ['h1'],
+        },
+      ),
+      (
+        'gesichtsEntscheidungenMerken',
+        {
+          'personId': 'anna',
+          'entscheidungen': [
+            for (final (id, s, ja) in [
+              ('h1', 0.97, false),
+              ('h2', 0.96, true),
+              ('h3', 0.95, true),
+            ])
+              {'faceId': id, 'accepted': ja, 'similarity': s},
+          ],
+          'allgemeineSchwelle': allgemein,
+        },
+      ),
+    ]) {
+      expect((await befehl(erikaToken, art, werte)).statusCode, 200);
+    }
+    expect(await vorschlaege(), isEmpty, reason: 'h1 ist abgelehnt');
+  });
+
   test('Orte: Länder mit Städten, Anzahl und Titelbild', () async {
     final a = await ladeHoch(erikaToken, 'rom1.jpg', 10);
     final b = await ladeHoch(erikaToken, 'rom2.jpg', 40);

@@ -2686,14 +2686,10 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Das abgewählte Gesicht (Ähnlichkeit 0,60) wird bei „Weitere
-  // Fotos suchen“ wieder vorgeschlagen – in derselben Ansicht wie nach
-  // erneutem Öffnen. Die Suche nimmt alle unbenannten Gesichter
-  // (lib/screens/person_detail_screen.dart:57–108) und schliesst
-  // abgelehnte nicht aus; die gelernte Schwelle ist auf allgemein ± 0,15
-  // gedeckelt (packages/kern/lib/services/face_threshold.dart:34, 85–88,
-  // hier 0,513), und dieselbe Ansicht rechnet ohnehin noch mit der beim
-  // Öffnen übergebenen Person (person_detail_screen.dart:41, 92).
+  // Behoben in #412: „Weitere Fotos suchen“ lässt Gesichter aus, die für
+  // diese Person abgelehnt wurden (packages/kern, abgelehnteGesichterFuer),
+  // und rechnet mit der Person, wie sie jetzt ist – in derselben Ansicht wie
+  // nach erneutem Öffnen.
   pruefung('PER-063 Vorschläge teilweise übernehmen', (tester) async {
     await start(tester);
     final f = await fotos(tester, bilder('vt', 7));
@@ -2751,7 +2747,7 @@ void main() {
     expect(gleicheAnsicht, isFalse, reason: 'wird nicht wieder vorgeschlagen');
     expect(frischeAnsicht, isFalse);
     await finish(tester);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Wiedererkennung und Vorschläge
