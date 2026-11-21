@@ -155,7 +155,26 @@ class BackupWiederhersteller {
             streng: streng,
             nurPruefsummen: auswahlPruefsummen,
           );
-          yield* _zeichneAusschnitteNach();
+          // Als eigenes Ereignis, solange noch nicht alles durch ist: Kam
+          // die Zahl nur mit dem letzten Ereignis, stand dort schon die
+          // Zusammenfassung, und die Zeile „N Einträge aus dem
+          // Datenbank-Schnappschuss übernommen …“ erschien nie (SIC-063).
+          final uebernommen = BackupProgress(
+            done,
+            plan.dateien.length,
+            uebernommeneZeilen: zeilen,
+            fehlgeschlagen: fehlend + gescheitert,
+            wiederherstellung: bilanz(false),
+          );
+          yield uebernommen;
+          var nachgezeichnet = false;
+          await for (final e in _zeichneAusschnitteNach()) {
+            nachgezeichnet = true;
+            yield e;
+          }
+          // Nach den Ausschnitten noch einmal, damit die Zeile bis zum Ende
+          // stehen bleibt und nicht nur einen Augenblick.
+          if (nachgezeichnet) yield uebernommen;
         } on Object catch (e) {
           if (streng) rethrow;
           _problem('pv_restore_schnappschuss', e);

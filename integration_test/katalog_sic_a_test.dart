@@ -1782,15 +1782,11 @@ void main() {
     await fertig(tester);
   });
 
-  // Befund: Die Zeile „N Einträge aus dem Datenbank-Schnappschuss
-  // übernommen …“ erscheint nie. Der Dienst schickt die Zahl nur im letzten
-  // Ereignis mit (packages/kern/lib/services/backup_restore.dart:199), und
-  // dort prüft _wiederherstellZeile zuerst das abgeschlossene Ergebnis
-  // (lib/screens/einstellungen/sicherung.dart:457) und zeigt die
-  // Zusammenfassung.
+  // Behoben in #415: Der Dienst meldet die übernommenen Einträge als
+  // eigenes Ereignis vor dem Ende (und nach den Gesichtsausschnitten noch
+  // einmal).
   testWidgets(
     'SIC-063 Befund: Zeile „Einträge aus dem Datenbank-Schnappschuss übernommen“',
-    skip: true,
     (tester) async {
       await starteApp(tester);
       await importiereDirekt(tester, [testfoto('p1.jpg'), testfoto('p2.jpg')]);

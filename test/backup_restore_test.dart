@@ -9,6 +9,7 @@ import 'package:kern/db/database.dart';
 import 'package:photo_vault/services/backup_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:photo_vault/state/library_state.dart';
 
 import 'hilfen/datenbanken.dart';
 
@@ -285,6 +286,56 @@ void main() {
 
       final asset = (await db.select(db.assets).get()).single;
       expect(asset.originalFileName, 'evil.jpg');
+    },
+  );
+  // SIC-063: Die Zahl der aus dem Schnappschuss übernommenen Einträge kam
+  // nur mit dem letzten Ereignis – dort steht in der Oberfläche schon die
+  // Zusammenfassung, und die Zeile dazu erschien nie.
+  test(
+    'die Übernahme aus dem Schnappschuss meldet sich vor dem Ende',
+    () async {
+      final tempRoot = Directory.systemTemp.createTempSync('pv_uebernahme_');
+      addTearDown(() => tempRoot.deleteSync(recursive: true));
+      final sourceDb = AppDatabase(NativeDatabase.memory());
+      addTearDown(sourceDb.close);
+      final sourcePaths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'quelle')),
+      );
+      final foto = File(p.join(tempRoot.path, 'a.jpg'))
+        ..writeAsBytesSync([1, 2, 3]);
+      await ImportService(sourceDb, sourcePaths).importFile(foto.path);
+      await sourceDb.createPerson(
+        PeopleCompanion.insert(id: 'pa', name: 'Person A'),
+      );
+      // Den Schnappschuss der Datenbank hat die verschlüsselte Sicherung.
+      final quelle = LibraryState()
+        ..db = sourceDb
+        ..paths = sourcePaths
+        ..backupService = BackupService(sourceDb, sourcePaths);
+      await quelle.setupBackupPassphrase('eine lange passphrase');
+      final ziel = Directory(p.join(tempRoot.path, 'ziel'));
+      await quelle.runManualBackup(ziel.path, encrypt: true).drain<void>();
+
+      final targetDb = ZweiteDatenbank(NativeDatabase.memory());
+      addTearDown(targetDb.close);
+      final targetPaths = await StoragePaths.forTesting(
+        Directory(p.join(tempRoot.path, 'neu')),
+      );
+      final ereignisse = await BackupService(targetDb, targetPaths)
+          .restoreFromBackup(
+            p.join(ziel.path, 'PhotoVault-Backup'),
+            ImportService(targetDb, targetPaths),
+            passphrase: 'eine lange passphrase',
+          )
+          .toList();
+      expect(await targetDb.select(targetDb.people).get(), hasLength(1));
+      final zwischendurch = ereignisse.where(
+        (e) =>
+            e.uebernommeneZeilen != null &&
+            !(e.wiederherstellung?.abgeschlossen ?? false),
+      );
+      expect(zwischendurch, isNotEmpty, reason: '$ereignisse');
+      expect(ereignisse.last.wiederherstellung?.abgeschlossen, isTrue);
     },
   );
 }
