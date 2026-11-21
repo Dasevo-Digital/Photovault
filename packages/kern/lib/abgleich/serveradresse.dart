@@ -28,6 +28,14 @@ bool ohneTlsErlaubt(Uri adresse) {
   final host = adresse.host.toLowerCase();
   final ip = InternetAddress.tryParse(host);
   if (ip == null) return !host.contains('.') || host.endsWith('.local');
+  return imEigenenNetz(ip);
+}
+
+/// Ob [ip] im eigenen Netz liegt: Loopback, Link-Local, die privaten
+/// Bereiche des Heimnetzes, der Bereich aus RFC 6598 (VPNs wie Tailscale)
+/// und IPv6-ULA. Von aussen erreicht sie niemand – siehe [ohneTlsErlaubt]
+/// und den Hinweis unter einem geteilten Link.
+bool imEigenenNetz(InternetAddress ip) {
   if (ip.isLoopback || ip.isLinkLocal) return true;
   final b = ip.rawAddress;
   if (ip.type == InternetAddressType.IPv6) return (b[0] & 0xfe) == 0xfc;

@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io' show InternetAddress;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/serveradresse.dart' show imEigenenNetz;
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -101,10 +104,13 @@ class _LinkBlattState extends State<_LinkBlatt> {
         if (widget.albumId != null && _hochladen) 'hochladen': true,
       });
       setState(() => _link = '${d['link']}');
+    } on KeineVerbindung {
+      // Wie ohne Abgleich – nicht die rohe Ausnahme samt SocketException.
+      setState(() => _meldung = t.linkOhneServer);
     } on Serverfehler catch (f) {
-      setState(() => _meldung = f.text.isEmpty ? '${f.status}' : f.text);
-    } catch (x) {
-      setState(() => _meldung = '$x');
+      setState(() => _meldung = grundAus(f) ?? t.fehlerAllgemein);
+    } catch (_) {
+      setState(() => _meldung = t.fehlerAllgemein);
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }
@@ -245,15 +251,15 @@ Future<void> _kopiere(BuildContext context, String link) async {
 }
 
 /// Eine Adresse, die von aussen niemand erreicht – wie im Browser.
+///
+/// Die Bereiche kommen aus dem Kern ([imEigenenNetz]), wie für
+/// `ohneTlsErlaubt`: Die eigene Liste hier kannte den Bereich der VPNs aus
+/// RFC 6598 nicht, und unter einem solchen Link fehlte der Hinweis.
 bool nurImHeimnetz(String adresse) {
-  final h = Uri.tryParse(adresse)?.host ?? '';
-  return h == 'localhost' ||
-      h.endsWith('.local') ||
-      h.endsWith('.lan') ||
-      RegExp(
-        r'^(10\.|127\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|fe80:|fd[0-9a-f]{2}:)',
-        caseSensitive: false,
-      ).hasMatch(h);
+  final h = (Uri.tryParse(adresse)?.host ?? '').toLowerCase();
+  final ip = InternetAddress.tryParse(h);
+  if (ip != null) return imEigenenNetz(ip);
+  return h == 'localhost' || h.endsWith('.local') || h.endsWith('.lan');
 }
 
 /// Die geteilten Links des Kontos, unter Konto – wie im Browser.
