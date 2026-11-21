@@ -4676,8 +4676,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Ein neuer Lebenslauf-Ort wird erst beim nächsten Start
-  // verortet (lib/screens/lebenslauf_screen.dart:52ff.).
+  // Behoben in #412: Ein neuer Lebenslauf-Ort wird gleich beim Anlegen
+  // verortet (LibraryState.verorteEreignis).
   pruefung('PER-175 Neuer Ort wird sofort verortet', (tester) async {
     await start(tester);
     await ortsverzeichnisEinrichten(tester);
@@ -4708,7 +4708,7 @@ void main() {
     print('PER-175 Dialog: $text');
     expect(imDialog(find.text(de.lebenslaufOrtErkannt)), findsOneWidget);
     await finish(tester);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Fotos und Orte der Familie

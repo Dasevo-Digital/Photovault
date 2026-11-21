@@ -95,6 +95,26 @@ void main() {
     );
   });
 
+  test('ein eben angelegtes Ereignis wird sofort verortet (PER-175)', () async {
+    // Nicht erst beim nächsten Start: Der Ortsdialog zeigte sonst „nicht
+    // im Ortsverzeichnis“, obwohl es den Ort kennt.
+    lib.geocoder = await geocoder();
+    await ereignis('e1', ort: 'Berlin');
+    await lib.verorteEreignis('e1', 'Berlin');
+
+    final mit = await db.ereignisseMitKoordinate();
+    expect(mit.single.id, 'e1');
+    expect(mit.single.ortBreite, closeTo(52.524, 0.001));
+
+    await ereignis('e2', ort: 'Gut Hohenrode');
+    await lib.verorteEreignis('e2', 'Gut Hohenrode');
+    expect(
+      (await db.ereignisseOhneKoordinate()).single.id,
+      'e2',
+      reason: 'ein unbekannter Ort bleibt Text',
+    );
+  });
+
   test('ein unbekannter Ort bleibt als Text stehen', () async {
     // Der wichtigste Fall der Stufe: Ein untergegangenes Dorf, ein
     // Gutshof, eine alte Schreibweise. Der Eintrag darf nicht

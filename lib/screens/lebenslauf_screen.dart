@@ -56,9 +56,10 @@ class LebenslaufScreen extends StatelessWidget {
       builder: (_) => const _EreignisDialog(),
     );
     if (ergebnis == null) return;
+    final id = const Uuid().v4();
     await library.db.fuehreAus(
       EreignisHinzufuegen((
-        id: const Uuid().v4(),
+        id: id,
         personId: person.id,
         art: ereignisartZuText(ergebnis.art),
         datum: ergebnis.datum,
@@ -66,6 +67,8 @@ class LebenslaufScreen extends StatelessWidget {
         notiz: ergebnis.notiz,
       )),
     );
+    // Gleich verorten, nicht erst beim nächsten Start (PER-175).
+    await library.verorteEreignis(id, ergebnis.ort);
   }
 
   @override

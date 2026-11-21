@@ -1590,6 +1590,32 @@ class LibraryState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Verortet ein eben angelegtes Lebensereignis mit dem Ort [ort], wenn
+  /// das Ortsverzeichnis ihn kennt – sofort und nicht erst beim nächsten
+  /// Start (PER-175). Als Befehl, damit es verbunden auch beim Server
+  /// ankommt. Ein unbekannter Ort bleibt, wie bei [trageEreignisorteNach],
+  /// als Text stehen.
+  Future<void> verorteEreignis(String ereignisId, String? ort) async {
+    if (ort == null || ort.trim().isEmpty) return;
+    await geoBereit;
+    final geo = geocoder;
+    if (geo == null) return;
+    final mitte = await db.schwerpunktVerorteterFotos();
+    final treffer = geo.sucheOrt(
+      ort,
+      naheBreite: mitte?.breite,
+      naheLaenge: mitte?.laenge,
+    );
+    if (treffer == null) return;
+    await db.fuehreAus(
+      EreignisortSetzen(
+        ereignisId,
+        breite: treffer.breite,
+        laenge: treffer.laenge,
+      ),
+    );
+  }
+
   /// Trägt Koordinaten für Lebensereignisse nach, die bisher nur einen
   /// Ortsnamen haben.
   ///
