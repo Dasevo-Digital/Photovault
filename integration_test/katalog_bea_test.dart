@@ -4908,6 +4908,8 @@ void _diashowTests() {
         findsOneWidget,
         reason: 'auf 40 gekürzt',
       );
+      // Behoben in #411: Die Kürzung wird gesagt, wie beim Fotobuch.
+      expect(find.text(de.diashowGekuerzt(40)), findsOneWidget);
       beobachtung(
         'BEA-109',
         '55 Fotos gewählt, Fenster zeigt "${de.diashowUmfang(40)}"; Meldungen: ${neueMeldungen()}',
@@ -8003,13 +8005,9 @@ void _befundTests() {
     await abschluss(tester);
   });
 
-  // Befund: Videos kommen mit ihrem Vorschaubild auf das Kontaktblatt
-  // (services/contact_sheet_service.dart:85-90 nimmt jedes vorhandene
-  // Vorschaubild); 8 Fotos + 1 Video ergeben „9 Aufnahmen, 0 ausgelassen“,
-  // nur Videos ein Blatt statt der Warnung. Wird doch nichts dargestellt,
-  // bleibt am Ziel eine leere Datei (Platzhalter aus
-  // services/platform/speicherort.dart, selection_action_bar.dart:1259-1263
-  // räumt ihn nicht weg).
+  // Behoben in #411: Videos gelten auf dem Kontaktblatt als ausgelassen;
+  // nur Videos ergeben die Warnung, und am Ziel bleibt dann keine leere
+  // Datei (der Platzhalter der Speicherortwahl geht wieder weg).
   testWidgets(
     'BEA-118 BEA-120 Befund: Videos auf dem Kontaktblatt, leere Datei',
     (tester) async {
@@ -8029,15 +8027,22 @@ void _befundTests() {
         de.kontaktblattFertig(1, 1),
         timeout: _sehrLang,
       );
+
+      // BEA-120: nur das Video – Warnung, und am Ziel keine Datei.
+      final nurVideo = zielOrdner('kontakt-video');
+      await waehleAus(tester, [ids[1]]);
+      await tap(tester, find.byTooltip(de.auswExportieren));
+      dialog.speichernUnter = nurVideo.path;
+      merkeMeldungen();
+      await tap(tester, find.text(de.kontaktblattTitel));
+      await erwarteNeueMeldung(tester, de.kontaktblattLeer, timeout: _sehrLang);
+      expect(dateienIn(nurVideo), isEmpty, reason: 'keine leere Datei');
       await abschluss(tester);
     },
-    skip: true,
   );
 
-  // Befund: Nach „Abbrechen“ im Fenster „Fotobuch wird erstellt …“ bleibt am
-  // Zielort eine leere Datei (0 Byte) unter dem gewählten Namen: der
-  // Platzhalter aus services/platform/speicherort.dart; widgets/
-  // fotobuch_export.dart:140-145 meldet nur „Fotobuch abgebrochen.“.
+  // Behoben in #411: Nach „Abbrechen“ im Fenster „Fotobuch wird erstellt …“
+  // räumt der Export den leeren Platzhalter der Speicherortwahl weg.
   testWidgets('BEA-116 Befund: leere PDF-Datei nach Abbruch', (tester) async {
     await startApp(tester);
     final ids = await importiereDirekt(tester, [
@@ -8067,7 +8072,7 @@ void _befundTests() {
     );
     expect(File(p.join(ziel.path, 'Hundert.pdf')).existsSync(), isFalse);
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Behoben in #406: Das Fenster „Exportiere …“ wird auf dem
   // Wurzel-Navigator geschlossen, auf dem es liegt; die Zeitleiste bleibt.

@@ -29,10 +29,13 @@ Future<void> diashowExportieren(
   required String dateiname,
 }) async {
   final t = AppTexte.of(context);
-  final fotos = [
+  final alleFotos = [
     for (final a in aufnahmen)
       if (a.type != 'VIDEO' && !a.isLocked) a,
-  ].take(diashowHoechstensBilder).toList();
+  ];
+  final fotos = alleFotos.take(diashowHoechstensBilder).toList();
+  // Gesagt, nicht still gekürzt – wie beim Fotobuch (BEA-109).
+  final gekuerzt = alleFotos.length > fotos.length;
   if (fotos.isEmpty) {
     melde.hinweis(t.diashowKeineFotos);
     return;
@@ -68,6 +71,10 @@ Future<void> diashowExportieren(
             LinearProgressIndicator(value: anteil),
             const SizedBox(height: 8),
             Text(t.diashowUmfang(fotos.length)),
+            if (gekuerzt) ...[
+              const SizedBox(height: 4),
+              Text(t.diashowGekuerzt(diashowHoechstensBilder)),
+            ],
           ],
         ),
       ),
@@ -121,9 +128,18 @@ Future<void> diashowExportieren(
   if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
   await fenster;
   stand.dispose();
+  // Ohne fertiges Video bliebe sonst der leere Platzhalter der
+  // Speicherortwahl am Ziel liegen – mit Musik schreibt erst der zweite
+  // Schritt dorthin (BEA-116).
+  if (ergebnis.ausgang != Videoausgang.fertig) leerenPlatzhalterEntfernen(pfad);
   switch (ergebnis.ausgang) {
     case Videoausgang.fertig:
-      melde.erfolg(t.flugVideoFertig(ziel.uri.pathSegments.last));
+      melde.erfolg(
+        [
+          t.flugVideoFertig(ziel.uri.pathSegments.last),
+          if (gekuerzt) t.diashowGekuerzt(diashowHoechstensBilder),
+        ].join(' '),
+      );
     case Videoausgang.abgebrochen:
       melde.hinweis(t.flugVideoAbgebrochen);
     case Videoausgang.keinWerkzeug:

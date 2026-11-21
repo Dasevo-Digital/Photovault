@@ -13855,6 +13855,12 @@ abstract class AppTexte {
   /// **'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.'**
   String get diashowKeineFotos;
 
+  /// No description provided for @diashowGekuerzt.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine Diashow zeigt höchstens {anzahl} Fotos; die ersten {anzahl} sind darin.'**
+  String diashowGekuerzt(int anzahl);
+
   /// No description provided for @jahresrueckblickTitel.
   ///
   /// In de, this message translates to:

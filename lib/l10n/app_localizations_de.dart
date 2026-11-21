@@ -8983,6 +8983,11 @@ class AppTexteDe extends AppTexte {
       'Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.';
 
   @override
+  String diashowGekuerzt(int anzahl) {
+    return 'Eine Diashow zeigt höchstens $anzahl Fotos; die ersten $anzahl sind darin.';
+  }
+
+  @override
   String jahresrueckblickTitel(int jahr) {
     return 'Dein Jahr $jahr';
   }

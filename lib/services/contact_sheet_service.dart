@@ -35,7 +35,10 @@ class ContactSheetService {
     var skipped = 0;
     for (var index = 0; index < assets.length; index++) {
       final asset = assets[index];
-      final image = await _loadImage(asset);
+      // Ein Video hat zwar ein Vorschaubild, ist auf einem Kontaktblatt
+      // aber nicht darstellbar: Es gilt als ausgelassen, wie oben
+      // versprochen (BEA-118, BEA-120).
+      final image = asset.type == 'VIDEO' ? null : await _loadImage(asset);
       if (image == null) {
         skipped++;
         continue;

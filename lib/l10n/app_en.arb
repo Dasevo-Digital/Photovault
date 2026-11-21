@@ -4355,6 +4355,7 @@
   "diashowWirdErstellt": "Creating video …",
   "diashowUmfang": "{anzahl, plural, =1{1 photo} other{{anzahl} photos}}",
   "diashowKeineFotos": "There are no photos here to make a slideshow from – videos and locked items are left out.",
+  "diashowGekuerzt": "A slideshow shows at most {anzahl} photos; the first {anzahl} are included.",
   "jahresrueckblickTitel": "Your year {jahr}",
   "jahresrueckblickUntertitel": "In numbers and pictures – with people, trips and the best photos",
   "jahresrueckblickVorjahr": "Previous year",

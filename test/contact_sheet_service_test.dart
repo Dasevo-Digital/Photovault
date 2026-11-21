@@ -59,4 +59,65 @@ void main() {
     expect(result.skipped, 0);
     expect(String.fromCharCodes(result.bytes.take(4)), '%PDF');
   });
+
+  test('ein Video gilt als ausgelassen, auch mit Vorschaubild '
+      '(BEA-118, BEA-120)', () async {
+    final temp = Directory.systemTemp.createTempSync('pv_contact_sheet_');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final paths = await StoragePaths.forTesting(
+      Directory(p.join(temp.path, 'library')),
+    );
+    Future<AssetData> aufnahme(String id, String type) async {
+      final bytes = img.encodeJpg(img.Image(width: 20, height: 10));
+      final rel = 'originals/$id.jpg';
+      final vorschau = 'thumbs/$id.jpg';
+      for (final r in [rel, vorschau]) {
+        await paths.absolute(r).parent.create(recursive: true);
+        await paths.absolute(r).writeAsBytes(bytes);
+      }
+      return AssetData(
+        id: id,
+        originalFileName: '$id.jpg',
+        relativePath: rel,
+        thumbnailRelativePath: vorschau,
+        checksum: sha256.convert(bytes).toString(),
+        type: type,
+        fileCreatedAt: DateTime(2026, 9, 19),
+        importedAt: DateTime(2026, 9, 19),
+        isFavorite: false,
+        isArchived: false,
+        isTrashed: false,
+        isLocked: false,
+        faceScanExcluded: false,
+        gpsGeprueft: false,
+        datumGeschaetzt: false,
+        datumGeprueft: false,
+        ortGeerbt: false,
+        videobilderGeprueft: false,
+        fileSizeBytes: bytes.length,
+        backedUp: false,
+        autoBackedUp: false,
+        facesScanned: false,
+        rating: 0,
+        ocrScanned: false,
+        aiCaptionScanned: false,
+        aiCaptionEdited: false,
+        aiTagsScanned: false,
+        transkriptGeprueft: false,
+        isStackCover: false,
+      );
+    }
+
+    final dienst = ContactSheetService(paths, ExportService(paths));
+    final foto = await aufnahme('foto', 'IMAGE');
+    final video = await aufnahme('video', 'VIDEO');
+
+    final gemischt = await dienst.create([foto, video]);
+    expect(gemischt.included, 1);
+    expect(gemischt.skipped, 1);
+
+    final nurVideo = await dienst.create([video]);
+    expect(nurVideo.included, 0, reason: 'sonst kommt keine Warnung');
+    expect(nurVideo.skipped, 1);
+  });
 }

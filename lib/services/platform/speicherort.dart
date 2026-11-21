@@ -47,3 +47,19 @@ String mitDateiendung(String pfad, String endung) =>
     pfad.toLowerCase().endsWith('.${endung.toLowerCase()}')
     ? pfad
     : '$pfad.$endung';
+
+/// Räumt den leeren Platzhalter weg, den [waehleSpeicherort] am Ziel
+/// hinterlässt, wenn am Ende doch nichts geschrieben wird – nach einem
+/// Abbruch, einem Fehler oder wenn es nichts darzustellen gab.
+///
+/// Ohne das blieb am Ziel eine leere Datei unter dem gewählten Namen
+/// liegen, die aussieht wie ein Ergebnis (BEA-116, BEA-120). Eine Datei
+/// mit Inhalt bleibt.
+void leerenPlatzhalterEntfernen(String pfad) {
+  final datei = File(pfad);
+  try {
+    if (datei.existsSync() && datei.lengthSync() == 0) datei.deleteSync();
+  } on FileSystemException {
+    // Liegen bleibt dann eine leere Datei; mehr ist nicht zu tun.
+  }
+}

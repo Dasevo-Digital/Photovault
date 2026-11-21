@@ -141,6 +141,11 @@ Future<void> fotobuchExportieren(
       aufnahmen.length -
       (fertig?.bilder ?? 0) -
       (alleFotos.length - fotos.length);
+  // Abgebrochen, gescheitert oder leer: Dann bleibt am Ziel nicht der
+  // leere Platzhalter der Speicherortwahl liegen (BEA-116).
+  if (fehler != null || abbrechen || fertig == null || fertig.bilder == 0) {
+    leerenPlatzhalterEntfernen(pfad);
+  }
   if (fehler != null) {
     melde.fehler(t.fotobuchFehler('$fehler'));
   } else if (abbrechen) {

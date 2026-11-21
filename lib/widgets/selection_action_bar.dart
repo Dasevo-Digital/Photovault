@@ -1251,6 +1251,7 @@ Future<void> runBatchExport(
         melde.erfolg(AppTexte.of(context).sicherTeilenFertig(path));
       }
     } catch (error) {
+      leerenPlatzhalterEntfernen(path);
       if (context.mounted) {
         melde.fehler(AppTexte.of(context).sicherTeilenFehler('$error'));
       }
@@ -1284,6 +1285,8 @@ Future<void> runBatchExport(
         ExportService(library.paths, library: library),
       ).create(assets);
       if (result.included == 0) {
+        // Kein Blatt, also auch keine leere Datei am Ziel (BEA-120).
+        leerenPlatzhalterEntfernen(ziel);
         if (context.mounted) {
           melde.warnung(AppTexte.of(context).kontaktblattLeer);
         }
@@ -1298,6 +1301,7 @@ Future<void> runBatchExport(
         );
       }
     } catch (error) {
+      leerenPlatzhalterEntfernen(ziel);
       if (context.mounted) {
         melde.fehler(AppTexte.of(context).kontaktblattFehler('$error'));
       }

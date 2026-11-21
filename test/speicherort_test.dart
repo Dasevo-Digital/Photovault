@@ -102,4 +102,15 @@ void main() {
     expect(mitDateiendung('/a/film', 'mp4'), '/a/film.mp4');
     expect(mitDateiendung('/a/film.mov', 'mp4'), '/a/film.mov.mp4');
   });
+
+  test('der leere Platzhalter geht weg, eine Datei mit Inhalt bleibt '
+      '(BEA-116, BEA-120)', () {
+    final leer = File(p.join(ordner.path, 'buch.pdf'))..writeAsBytesSync([]);
+    final voll = File(p.join(ordner.path, 'alt.pdf'))..writeAsStringSync('x');
+    leerenPlatzhalterEntfernen(leer.path);
+    leerenPlatzhalterEntfernen(voll.path);
+    leerenPlatzhalterEntfernen(p.join(ordner.path, 'gibt-es-nicht.pdf'));
+    expect(leer.existsSync(), isFalse);
+    expect(voll.readAsStringSync(), 'x');
+  });
 }

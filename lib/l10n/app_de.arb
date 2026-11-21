@@ -5719,6 +5719,14 @@
     }
   },
   "diashowKeineFotos": "Hier sind keine Fotos, aus denen sich eine Diashow machen ließe – Videos und gesperrte Aufnahmen bleiben draußen.",
+  "diashowGekuerzt": "Eine Diashow zeigt höchstens {anzahl} Fotos; die ersten {anzahl} sind darin.",
+  "@diashowGekuerzt": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "jahresrueckblickTitel": "Dein Jahr {jahr}",
   "@jahresrueckblickTitel": {
     "placeholders": {

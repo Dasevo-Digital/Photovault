@@ -8935,6 +8935,11 @@ class AppTexteEn extends AppTexte {
       'There are no photos here to make a slideshow from – videos and locked items are left out.';
 
   @override
+  String diashowGekuerzt(int anzahl) {
+    return 'A slideshow shows at most $anzahl photos; the first $anzahl are included.';
+  }
+
+  @override
   String jahresrueckblickTitel(int jahr) {
     return 'Your year $jahr';
   }
