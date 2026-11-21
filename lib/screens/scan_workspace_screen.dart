@@ -212,13 +212,13 @@ class _ScanWorkspaceScreenState extends State<ScanWorkspaceScreen> {
         // sonst das Datum im Namen des Scans – den Tag des Scannens – und
         // hielte es mit Uhrzeit für sicher (#218). So steht der Zeitpunkt
         // des Imports da, ausdrücklich geschätzt.
+        // Über die Bibliothek: Lag der Tag im Namen in einem anderen
+        // Monat, zieht die Datei in den Ordner von heute um.
         final jetzt = DateTime.now();
-        await widget.library.db.fuehreAus(
-          AufnahmedatenSetzen([
-            for (final id in importiert)
-              (id: id, zeitpunkt: jetzt, geschaetzt: true),
-          ]),
-        );
+        await widget.library.uebernimmAufnahmedaten([
+          for (final id in importiert)
+            (id: id, zeitpunkt: jetzt, geschaetzt: true),
+        ]);
       }
       if (_paarweise) {
         final (:paare, :unvollstaendig) = scanPaare(kennungen);

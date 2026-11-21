@@ -145,7 +145,12 @@ void main() {
               .where((f) => f.path.endsWith('.dart'))) {
         final zeilen = datei.readAsLinesSync();
         for (var i = 0; i < zeilen.length; i++) {
-          if (RegExp(r'\.setFileCreatedAt(Bulk)?\(').hasMatch(zeilen[i])) {
+          // Ebenso die Befehle, die nur die Spalte setzen: Übernommene
+          // Datumsvorschläge liessen die Datei so im alten Monatsordner
+          // (IMP-115, IMP-119, IMP-124).
+          if (RegExp(
+            r'\.setFileCreatedAt(Bulk)?\(|\bAufnahmedatenSetzen\(|\bJahrSchaetzen\(',
+          ).hasMatch(zeilen[i])) {
             verstoesse.add('${datei.path}:${i + 1}');
           }
         }
@@ -155,7 +160,8 @@ void main() {
       verstoesse,
       isEmpty,
       reason:
-          'stattdessen LibraryState.setzeAufnahmedatumVonHand rufen – '
+          'stattdessen LibraryState.setzeAufnahmedatumVonHand bzw. '
+          'uebernimmAufnahmedaten/uebernimmGeschaetztesJahr rufen – '
           'sonst bleibt die Datei im Ordner des alten Datums liegen',
     );
   });
