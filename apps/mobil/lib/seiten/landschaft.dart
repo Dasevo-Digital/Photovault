@@ -38,6 +38,8 @@ Future<void> oeffneLandschaft(
     MaterialPageRoute<void>(
       builder: (_) => GelaendeScreen(
         titel: titel,
+        // Wie die Karte: verbunden über den eigenen Server (#180).
+        kachelnetz: sitzung.kachelnetz,
         auflage: auflage,
         stimmung: stimmung,
         beimStimmungswechsel: db.setzeGelaendeStimmung,

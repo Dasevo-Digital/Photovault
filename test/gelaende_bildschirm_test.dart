@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:typed_data';
+import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -54,7 +55,8 @@ void main() {
 
   Future<void> zeige(
     WidgetTester tester, {
-    required http.Client netz,
+    http.Client? netz,
+    http.Client? kachelnetz,
     Gelaendekarte auflage = const Gelaendekarte(
       grund: Gelaendegrund.wanderkarte,
     ),
@@ -77,6 +79,7 @@ void main() {
           spur: spur,
           titel: 'Brocken',
           netz: netz,
+          kachelnetz: kachelnetz,
           auflage: auflage,
         ),
       ),
@@ -116,6 +119,42 @@ void main() {
     expect(ansicht.netz.dreiecke, greaterThan(1000));
     // Die Spur ist dabei, in Metern.
     expect(ansicht.spur, hasLength(3));
+  });
+
+  testWidgets('mit dem Client der App gehen alle Abrufe über ihn', (
+    tester,
+  ) async {
+    // Verbunden lenkt der Client der App OpenStreetMap und OpenTopoMap
+    // zum eigenen Server um (#180). Die Landschaft nahm bisher einen
+    // eigenen http.Client() und fragte die Anbieter selbst (ORT-054).
+    final ablage = Directory.systemTemp.createTempSync('pv_gelaendenetz_');
+    addTearDown(() => ablage.deleteSync(recursive: true));
+    // Der Client der App geht nicht am gemeinsamen Kachelspeicher vorbei;
+    // der fragt nach seinem Ordner.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (aufruf) async => ablage.path,
+        );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            null,
+          ),
+    );
+    final abgerufen = <Uri>[];
+    await zeige(
+      tester,
+      kachelnetz: MockClient((anfrage) async {
+        abgerufen.add(anfrage.url);
+        return http.Response.bytes(kachel, 200);
+      }),
+    );
+    expect(find.byType(Gelaendeansicht), findsOneWidget);
+    expect(abgerufen, isNotEmpty);
+    // Auch die Wanderkarte (OpenTopoMap) kam über ihn.
+    expect(abgerufen.map((u) => u.host), contains('tile.opentopomap.org'));
   });
 
   testWidgets(

@@ -187,6 +187,11 @@ class Gelaendeansicht extends StatefulWidget {
   /// damit ein Test nicht davon abhängt, was auf dieser Platte liegt.
   final http.Client? netzKlient;
 
+  /// Der Client der App für die Blocktexturen – siehe
+  /// `GelaendeScreen.kachelnetz`. Mit gemeinsamem Kachelspeicher, und
+  /// geschlossen wird er hier nicht.
+  final http.Client? kachelnetz;
+
   /// Wie der Flug die Spur zeigt – siehe `flugstil.dart`.
   ///
   /// **Muss zu [netz] und [spur] passen**, wie [stimmung]: Der Stil
@@ -220,6 +225,7 @@ class Gelaendeansicht extends StatefulWidget {
     this.beiVideoFertig,
     this.melde,
     this.netzKlient,
+    this.kachelnetz,
     this.stil = Flugstil.ueberblick,
     this.titel,
     this.schriftart,
@@ -354,7 +360,7 @@ class _GelaendeansichtState extends State<Gelaendeansicht>
       karte: widget.auflage,
       hoehen: widget.hoehen,
       grundstufe: widget.netz.grundstufe,
-      netz: widget.netzKlient,
+      netz: widget.netzKlient ?? widget.kachelnetz,
       speicher: widget.netzKlient == null
           ? null
           : const DisabledMapCachingProvider(),

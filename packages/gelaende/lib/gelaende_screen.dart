@@ -55,6 +55,17 @@ class GelaendeScreen extends StatefulWidget {
   /// damit ein Test nicht davon abhängt, was auf dieser Platte liegt.
   final http.Client? netz;
 
+  /// Der Client der App für alle Abrufe der Landschaft – Höhen, Karte,
+  /// Blocktexturen. Anders als [netz] geht er nicht am gemeinsamen
+  /// Kachelspeicher vorbei, und geschlossen wird er hier nicht.
+  ///
+  /// **Warum es ihn braucht.** Verbunden mit einem Server, der die Kacheln
+  /// holt (#180), lenkt der Client der App OpenStreetMap und OpenTopoMap
+  /// dorthin um. Ohne ihn nahm die Landschaft einen eigenen
+  /// `http.Client()` und fragte die Anbieter selbst – mit der Adresse des
+  /// Geräts und den Koordinaten der Spur.
+  final http.Client? kachelnetz;
+
   /// Was auf der Landschaft liegt – Grund, Ebenen, Höhenlinien.
   ///
   /// **Warum das von aussen kommt.** Dieser Bildschirm kennt die
@@ -123,6 +134,7 @@ class GelaendeScreen extends StatefulWidget {
     required this.spur,
     required this.titel,
     this.netz,
+    this.kachelnetz,
     this.auflage = const Gelaendekarte(),
     this.stimmung = lichtstimmungVorgabe,
     this.beimStimmungswechsel,
@@ -394,7 +406,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     if (gitter == null || aus == null) return _laden();
 
     setState(() => _laedt = true);
-    final netz = widget.netz ?? http.Client();
+    final netz = _klient();
     final MapCachingProvider? speicher = widget.netz == null
         ? null
         : const DisabledMapCachingProvider();
@@ -425,7 +437,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
       });
       alt?.dispose();
     } finally {
-      if (widget.netz == null) netz.close();
+      if (widget.netz == null && widget.kachelnetz == null) netz.close();
     }
   }
 
@@ -434,6 +446,9 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     _karte?.dispose();
     super.dispose();
   }
+
+  /// Über welchen Client geladen wird – siehe [GelaendeScreen.kachelnetz].
+  http.Client _klient() => widget.netz ?? widget.kachelnetz ?? http.Client();
 
   /// Zählt die Ladeläufe – damit ein älterer, der später fertig wird,
   /// nicht über einen neueren schreibt. Seit der Flugstil neu lädt, kann
@@ -445,7 +460,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
     final lauf = ++_ladelauf;
     bool veraltet() => !mounted || lauf != _ladelauf;
     setState(() => _laedt = true);
-    final netz = widget.netz ?? http.Client();
+    final netz = _klient();
     final MapCachingProvider? speicher = widget.netz == null
         ? null
         : const DisabledMapCachingProvider();
@@ -546,7 +561,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
         ),
       );
     } finally {
-      if (widget.netz == null) netz.close();
+      if (widget.netz == null && widget.kachelnetz == null) netz.close();
     }
   }
 
@@ -961,6 +976,7 @@ class _GelaendeScreenState extends State<GelaendeScreen> {
               beiVideoFertig: widget.beiVideoFertig,
               melde: widget.melde,
               netzKlient: widget.netz,
+              kachelnetz: widget.kachelnetz,
               stimmung: stimmungFuer(_stimmung),
               fussnoten: [
                 _Fussnote(

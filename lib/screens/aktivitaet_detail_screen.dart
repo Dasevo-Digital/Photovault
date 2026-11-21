@@ -23,6 +23,7 @@ import '../widgets/zuordnung_auswahlleiste.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import 'package:gelaende/hoehenprofil.dart';
+import '../widgets/mini_location_map.dart' show kachelNetzClient;
 import '../widgets/namens_dialog.dart';
 import '../widgets/routenkarte.dart';
 import 'asset_viewer_screen.dart';
@@ -253,6 +254,9 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
       MaterialPageRoute(
         builder: (_) => GelaendeScreen(
           titel: _k.name,
+          // Derselbe Client wie die Karten: verbunden über den eigenen
+          // Server (#180), mit Wiederholungen und Rückfall auf die Platte.
+          kachelnetz: kachelNetzClient(),
           auflage: auflage,
           stimmung: stimmung,
           beimStimmungswechsel: widget.library.db.setzeGelaendeStimmung,

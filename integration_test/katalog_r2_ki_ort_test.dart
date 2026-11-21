@@ -569,19 +569,36 @@ void main() {
     },
   );
 
-  // Befund (zweimal nachgestellt, je 157 Abrufe direkt bei
-  // tile.opentopomap.org, keiner über den Server):
-  // Verbunden holt das Gelände (Topografie = OpenTopoMap, Hell/Dunkel = OSM)
-  // seine Kacheln trotzdem selbst beim Anbieter: aktivitaet_detail_screen.dart
-  // gibt GelaendeScreen kein `netz` mit, gelaende_screen.dart nimmt dann
-  // http.Client() (Zeilen 397/448), blocktexturen.dart:439 ebenso – am
-  // Kachelclient mit Kachelumleitung (mini_location_map.dart:590) vorbei.
+  // Behoben in #413: Das Gelände bekommt den Kachelclient der App
+  // (GelaendeScreen.kachelnetz = kachelNetzClient()) und holt OSM und
+  // OpenTopoMap verbunden über den eigenen Server. Die Kartenabrufe
+  // beantwortet hier der Vermittler selbst – der Wegwerf-Server holt in
+  // dieser Prüfung keine einzige Kachel beim Anbieter.
   testWidgets(
     timeout: r2.lang,
     'ORT-054 Befundpruefung Gelaende holt OSM und OpenTopoMap am Server vorbei',
-    skip: true,
+    skip: serverAdresse.isEmpty,
     (tester) async {
       final v = r2.Vermittler(Uri.parse(serverAdresse));
+      v.selbst = (r) async {
+        final pfad = r.uri.path;
+        if (!pfad.startsWith('/api/v1/karte/')) return false;
+        await r.drain<void>();
+        final png = r2.kartenkachel(
+          pfad.contains('/topo/') ? 'topo.vermittler' : 'osm.vermittler',
+          ueberlagerung: false,
+        );
+        r.response.headers.contentType = ContentType('image', 'png');
+        r.response.headers.set('cache-control', 'max-age=86400');
+        r.response.headers.set(
+          HttpHeaders.dateHeader,
+          HttpDate.format(DateTime.now()),
+        );
+        r.response.contentLength = png.length;
+        r.response.add(png);
+        await r.response.close();
+        return true;
+      };
       await tester.runAsync(v.starte);
       addTearDown(v.halteAn);
       await startApp(tester);
@@ -613,6 +630,7 @@ void main() {
         'Server $ueberServer',
       );
       expect(direkt, isEmpty, reason: 'Kacheln am eigenen Server vorbei');
+      expect(ueberServer, greaterThan(0), reason: 'über den eigenen Server');
       await gelaendeZu(tester);
       await finish(tester);
     },
