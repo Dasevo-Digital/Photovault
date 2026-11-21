@@ -28,6 +28,9 @@ class EigeneKarteEinstellung extends StatefulWidget {
 }
 
 class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
+  /// Für den Knopf „Vorlage übernehmen“: Er öffnet das Menü selbst.
+  final _vorlagenMenue = GlobalKey<PopupMenuButtonState<Kartenvorlage>>();
+
   final _name = TextEditingController();
   final _adresse = TextEditingController();
   final _nennung = TextEditingController();
@@ -228,6 +231,7 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 PopupMenuButton<Kartenvorlage>(
+                  key: _vorlagenMenue,
                   onSelected: vorlageEinsetzen,
                   itemBuilder: (context) => [
                     for (final v in kartenvorlagen)
@@ -250,10 +254,12 @@ class EigeneKarteEinstellungState extends State<EigeneKarteEinstellung> {
                       ),
                   ],
                   child: OutlinedButton.icon(
-                    // Der Knopf öffnet das Menü nicht selbst – das tut der
-                    // PopupMenuButton darum herum. `onPressed: null` machte
-                    // ihn grau, deshalb ein leerer Rückruf.
-                    onPressed: null,
+                    // Der Knopf öffnet das Menü über den PopupMenuButton
+                    // darum herum. Mit `onPressed: null` öffnete der zwar
+                    // auch, der Knopf sah aber gesperrt aus (und galt für
+                    // Tastatur und Bildschirmleser als gesperrt).
+                    onPressed: () =>
+                        _vorlagenMenue.currentState?.showButtonMenu(),
                     icon: const Icon(Icons.playlist_add_outlined),
                     label: Text(t.einstEigeneKarteVorlage),
                   ),

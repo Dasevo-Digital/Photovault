@@ -2218,9 +2218,8 @@ void main() {
     },
   );
 
-  // Befund-Prüfung zu ORT-038 (eigene_karte_einstellung.dart:256).
-  // Befund ORT-038: OutlinedButton mit onPressed: null, wirkt ausgegraut
-  // (eigene_karte_einstellung.dart:256). Zwei Läufe.
+  // Behoben in #413: Der Knopf ist bedienbar und öffnet das Vorlagenmenü
+  // selbst (showButtonMenu über den Schlüssel des PopupMenuButton).
   testWidgets('ORT-038 Knopf „Vorlage übernehmen“ sieht bedienbar aus', (
     tester,
   ) async {
@@ -2233,7 +2232,7 @@ void main() {
       reason: 'Knopf ist mit onPressed: null gebaut und wirkt ausgegraut',
     );
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets(
     'ORT-042 ORT-044 Eigene Kartenquelle speichern, benutzen, entfernen',

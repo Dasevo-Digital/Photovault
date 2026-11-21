@@ -120,4 +120,21 @@ void main() {
     expect(knopf, findsOneWidget);
     expect(tester.widget<TextButton>(knopf).onPressed, isNotNull);
   });
+
+  testWidgets('„Vorlage übernehmen“ sieht bedienbar aus und öffnet das Menü', (
+    tester,
+  ) async {
+    // Der Knopf war ein OutlinedButton mit onPressed: null – das Menü ging
+    // über den PopupMenuButton darum herum zwar auf, der Knopf sah aber
+    // gesperrt aus.
+    await zeige(tester);
+    final knopf = find.ancestor(
+      of: find.text('Vorlage übernehmen'),
+      matching: find.byWidgetPredicate((w) => w is ButtonStyleButton),
+    );
+    expect(tester.widget<ButtonStyleButton>(knopf.first).enabled, isTrue);
+    await tester.tap(knopf.first);
+    await tester.pumpAndSettle();
+    expect(find.byType(PopupMenuItem<Kartenvorlage>), findsWidgets);
+  });
 }
