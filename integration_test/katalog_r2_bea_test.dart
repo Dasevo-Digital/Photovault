@@ -1936,13 +1936,9 @@ void _exportTests() {
     },
   );
 
-  // Befund: Der Datenschutzexport verspricht „ohne EXIF“ (Untertitel im
-  // Dialog, Exportvorgabe.datenschutz), die Ausgabe trägt aber einen
-  // EXIF-Block: ImageIO legt beim Kodieren ein Exif-Verzeichnis mit
-  // ColorSpace, PixelXDimension und PixelYDimension an
-  // (macos/Runner/ImageConverter.swift:1194–1203, encodeJpeg, aufgerufen
-  // über lib/services/export_service.dart:208–213). GPS, Kamera, Datum,
-  // Beschreibung und XMP fehlen wie versprochen.
+  // Behoben in #420: Der Datenschutzexport entfernt den EXIF- und den
+  // IPTC-Block, den ImageIO beim Kodieren anlegt; das JPEG trägt kein EXIF
+  // mehr.
   bea.testWidgets('BEA-139 Datenschutzexport ohne EXIF, GPS und XMP', (
     tester,
   ) async {
@@ -2001,7 +1997,7 @@ void _exportTests() {
     );
     expect(bea.hatExifSegment(bytes), isFalse, reason: 'ohne EXIF');
     await bea.abschluss(tester);
-  }, skip: true);
+  });
 
   bea.testWidgets(
     'BEA-140 Datenschutzexport: Gesicht und Kennzeichen, kein Netz',

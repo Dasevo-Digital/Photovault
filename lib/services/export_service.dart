@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import 'export_naming.dart';
+import 'fotobuch.dart' show jpegOhneBeipackzettel;
 import 'native_image_converter.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/jpeg_angaben.dart';
@@ -267,6 +268,15 @@ class ExportService {
       if (!v.metadatenEntfernen) {
         gerendert = mitAufnahmeangaben(gerendert, asset);
       }
+    }
+
+    // Der Datenschutzexport verspricht ein JPEG ohne EXIF. Der Wandler
+    // unter macOS (ImageIO) legt beim Kodieren trotzdem einen EXIF-Block
+    // (Farbraum, Bildmasse) und einen leeren IPTC-Block an (BEA-139).
+    // Beides fällt hier weg, auf jedem System gleich; das Farbprofil
+    // bleibt.
+    if (gerendert != null && !v.raw16 && v.metadatenEntfernen) {
+      gerendert = jpegOhneBeipackzettel(gerendert);
     }
 
     // **Der Riegel vor dem Kopieren.** Ab hier gilt: Wurde nichts

@@ -1,8 +1,8 @@
 import 'package:photo_vault/services/library_location.dart';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
@@ -12,6 +12,8 @@ import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/textstellen.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   test('Datenschutzexport verändert den Gesichtsbereich', () {
     final source = img.Image(width: 100, height: 100);
     for (var y = 0; y < source.height; y++) {
@@ -112,6 +114,66 @@ void main() {
         reason: 'Am Zielort darf nichts liegen – auch keine halbe Kopie.',
       );
     });
+
+    test(
+      'das JPEG trägt keinen EXIF- und keinen IPTC-Block (BEA-139)',
+      () async {
+        // Wie ImageIO unter macOS: Beim Kodieren entstehen ein EXIF-Block
+        // mit Farbraum und Bildmassen und ein leerer Photoshop/IPTC-Block.
+        final exif = img.ExifData();
+        exif.exifIfd['ColorSpace'] = img.IfdValueShort(1);
+        exif.exifIfd['PixelXDimension'] = img.IfdValueShort(64);
+        final mitExif = img.injectJpgExif(
+          Uint8List.fromList(img.encodeJpg(img.Image(width: 64, height: 32))),
+          exif,
+        )!;
+        final iptc = [
+          0xFF,
+          0xED,
+          0x00,
+          0x10,
+          ...'Photoshop 3.0\u0000'.codeUnits,
+        ];
+        final gewandelt = Uint8List.fromList([
+          ...mitExif.sublist(0, 2),
+          ...iptc,
+          ...mitExif.sublist(2),
+        ]);
+        const kanal = MethodChannel('photo_vault/image_convert');
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              kanal,
+              (aufruf) async =>
+                  aufruf.method == 'convertToJpeg' ? gewandelt : null,
+            );
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(kanal, null),
+        );
+        final foto = await aufnahme('f1', 'strand.jpg', 'IMAGE');
+
+        final name = await ExportService(
+          paths,
+        ).exportAsset(foto, ziel.path, vorgabe: Exportvorgabe.datenschutz());
+
+        final daten = File(p.join(ziel.path, name)).readAsBytesSync();
+        final marken = <int>[];
+        var i = 2;
+        while (i + 4 <= daten.length && daten[i] == 0xFF) {
+          final marke = daten[i + 1];
+          if (marke == 0xDA) break;
+          marken.add(marke);
+          i += 2 + ((daten[i + 2] << 8) | daten[i + 3]);
+        }
+        expect(marken, isNot(contains(0xE1)), reason: 'kein EXIF/XMP');
+        expect(marken, isNot(contains(0xED)), reason: 'kein IPTC');
+        expect(img.decodeJpg(daten), isNotNull, reason: 'ein gültiges JPEG');
+      },
+      // Unter Linux und Windows wandeln Werkzeuge, nicht der native Kanal.
+      skip: !Platform.isMacOS,
+    );
 
     test(
       'die Gegenprobe: eine Grössenvorgabe kopiert dasselbe Video sehr wohl',
