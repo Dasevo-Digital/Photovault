@@ -155,9 +155,17 @@ void main() {
       final leererOrdner = Directory(p.join(tempRoot.path, 'leer'))
         ..createSync();
 
+      // Als eigener Fall, den die Oberfläche übersetzt – der feste deutsche
+      // Satz im StateError stand auch in der englischen (SIC-092).
       await expectLater(
         loadExternalLibrary(leererOrdner),
-        throwsA(isA<StateError>()),
+        throwsA(
+          isA<KeineBibliothekImOrdner>().having(
+            (f) => f.ordner,
+            'ordner',
+            leererOrdner.path,
+          ),
+        ),
       );
     },
   );

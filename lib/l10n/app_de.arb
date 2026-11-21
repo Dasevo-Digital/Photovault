@@ -2601,6 +2601,14 @@
       }
     }
   },
+  "zweitKeineBibliothek": "Kein Photo-Vault-Ordner: library.sqlite fehlt unter „{ordner}“.",
+  "@zweitKeineBibliothek": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
   "xmpEinlesenFehlgeschlagen": "Einlesen fehlgeschlagen: {fehler}",
   "@xmpEinlesenFehlgeschlagen": {
     "placeholders": {

@@ -4401,6 +4401,11 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String zweitKeineBibliothek(String ordner) {
+    return 'Kein Photo-Vault-Ordner: library.sqlite fehlt unter „$ordner“.';
+  }
+
+  @override
   String xmpEinlesenFehlgeschlagen(String fehler) {
     return 'Einlesen fehlgeschlagen: $fehler';
   }

@@ -2649,14 +2649,10 @@ void main() {
     await waitFor(tester, find.byType(SecondLibraryCompareScreen));
   }
 
-  // Befund: Der Grund steht als fester deutscher Satz im Dienst
-  // (lib/services/second_library_scan_service.dart:84) und erscheint so
-  // auch in der englischen Oberfläche („Comparison failed: Kein
-  // PhotoVault-Ordner: library.sqlite fehlt unter …“). Nachgestellt im
-  // Test „SIC-088 SIC-091 SIC-093 SIC-092 …“ (Ausgabe „SIC-092 (en)“).
+  // Behoben in #415: Der Dienst wirft KeineBibliothekImOrdner, der
+  // Bildschirm übersetzt ihn (zweitKeineBibliothek).
   testWidgets(
     'SIC-092 Befund: Grund „library.sqlite fehlt“ in der englischen Oberfläche',
-    skip: true,
     (tester) async {
       await starteApp(
         tester,

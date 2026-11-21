@@ -21,7 +21,11 @@ enum _Phase { idle, scanning, loaded, error }
 /// Dart-interne Präfixe wie "Bad state: " vor einer bereits selbst
 /// verständlich formulierten [StateError]-Nachricht (siehe
 /// loadExternalLibrary in second_library_scan_service.dart).
-String _describeError(Object e) => e is StateError ? e.message : e.toString();
+String _describeError(AppTexte t, Object e) => switch (e) {
+  KeineBibliothekImOrdner(:final ordner) => t.zweitKeineBibliothek(ordner),
+  StateError(:final message) => message,
+  _ => e.toString(),
+};
 
 /// Vergleicht die eigene Bibliothek gegen eine zweite, unabhängige
 /// PhotoVault-Bibliothek (z.B. auf einer externen Platte) per
@@ -76,9 +80,8 @@ class _SecondLibraryCompareScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppTexte.of(
-          context,
-        ).zweitVergleichFehlgeschlagen(_describeError(e));
+        final t = AppTexte.of(context);
+        _error = t.zweitVergleichFehlgeschlagen(_describeError(t, e));
         _phase = _Phase.error;
       });
     }
@@ -105,9 +108,8 @@ class _SecondLibraryCompareScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = AppTexte.of(
-          context,
-        ).zweitVergleichFehlgeschlagen(_describeError(e));
+        final t = AppTexte.of(context);
+        _error = t.zweitVergleichFehlgeschlagen(_describeError(t, e));
         _phase = _Phase.error;
       });
     }

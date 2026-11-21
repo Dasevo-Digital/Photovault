@@ -1573,6 +1573,7 @@
   "karteTopografie": "Topographic",
   "karteGlobus": "Globe",
   "zweitVergleichFehlgeschlagen": "Comparison failed: {fehler}",
+  "zweitKeineBibliothek": "Not a Photo Vault folder: library.sqlite is missing in “{ordner}”.",
   "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
   "xmpFeldBewertung": "Rating",
   "viewerInDarktable": "Edit in darktable",

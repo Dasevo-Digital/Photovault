@@ -7261,6 +7261,12 @@ abstract class AppTexte {
   /// **'Vergleich fehlgeschlagen: {fehler}'**
   String zweitVergleichFehlgeschlagen(String fehler);
 
+  /// No description provided for @zweitKeineBibliothek.
+  ///
+  /// In de, this message translates to:
+  /// **'Kein Photo-Vault-Ordner: library.sqlite fehlt unter „{ordner}“.'**
+  String zweitKeineBibliothek(String ordner);
+
   /// No description provided for @xmpEinlesenFehlgeschlagen.
   ///
   /// In de, this message translates to:

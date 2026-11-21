@@ -56,6 +56,20 @@ class ExternalDuplicateMatch {
   });
 }
 
+/// Im gewählten Ordner liegt keine `library.sqlite` – er ist keine
+/// Photo-Vault-Bibliothek.
+///
+/// Eigene Klasse statt eines StateError mit deutschem Satz: Der Satz
+/// erschien so auch in der englischen Oberfläche (SIC-092).
+class KeineBibliothekImOrdner implements Exception {
+  const KeineBibliothekImOrdner(this.ordner);
+
+  final String ordner;
+
+  @override
+  String toString() => 'KeineBibliothekImOrdner($ordner)';
+}
+
 /// Lädt Embeddings/Metadaten einer ZWEITEN, komplett unabhängigen
 /// PhotoVault-Bibliothek (z.B. auf einer externen Platte oder einem alten
 /// Rechner) – "ist das schon in meiner Bibliothek?", bevor man erneut
@@ -80,9 +94,7 @@ class ExternalDuplicateMatch {
 Future<ExternalLibrary> loadExternalLibrary(Directory secondLibraryRoot) async {
   final dbFile = File(p.join(secondLibraryRoot.path, 'library.sqlite'));
   if (!await dbFile.exists()) {
-    throw StateError(
-      'Kein PhotoVault-Ordner: library.sqlite fehlt unter "${secondLibraryRoot.path}".',
-    );
+    throw KeineBibliothekImOrdner(secondLibraryRoot.path);
   }
 
   final tempDir = await Directory.systemTemp.createTemp(
