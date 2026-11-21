@@ -131,6 +131,16 @@ class _BetrachterState extends State<Betrachter> {
     return a;
   }
 
+  /// Nach dem Entwickeln (oder Zurücksetzen): die Angaben und die
+  /// Bildquelle von [id] neu holen. Nur die Angaben zu vergessen genügte
+  /// nicht – die Quelle stand weiter in [_suchen] und [_quellen] und zeigte
+  /// die alte Fassung, bis der Betrachter neu geöffnet wurde.
+  void _vergiss(String id) {
+    _daten.remove(id);
+    _quellen.remove(id);
+    _suchen.remove(id);
+  }
+
   /// Woher das Foto [id] kommt: vom Telefon, wenn es dort liegt (#330),
   /// sonst vom Server.
   Future<Bildquelle?> _quelle(String id) => _suchen[id] ??= _suche(id);
@@ -470,7 +480,7 @@ class _BetrachterState extends State<Betrachter> {
                           ),
                         );
                         // Sonst zeigte der Betrachter weiter die alte Fassung.
-                        _daten.remove(zeile.id);
+                        _vergiss(zeile.id);
                         if (mounted) setState(() {});
                       case 'gesichter':
                         setState(() {
