@@ -4892,8 +4892,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: familienorte_screen.dart:151–152 zeigt „Keine Gruppe
-  // ausgewählt.“, sobald keine Fotomarke da ist.
+  // Behoben in #412: „Orte der Familie“ zeigt die Karte auch, wenn nur
+  // Ereignisse einen Ort haben.
   pruefung('PER-184 Orte der Familie nur mit Ereignissen', (tester) async {
     await start(tester);
     await tester.runAsync(() async {
@@ -4910,7 +4910,7 @@ void main() {
     expect(find.byWidgetPredicate(_istRaute), findsOneWidget);
     expect(find.text(de.orteNichtsGewaehlt), findsNothing);
     await finish(tester);
-  }, skip: true);
+  });
 
   pruefung(
     'PER-187 Familienauswertungen ohne gesperrte, gelöschte, ignorierte',

@@ -141,6 +141,11 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
     final gezeigt = widget.orte
         .where((o) => _sichtbar.contains(o.gruppe))
         .toList();
+    // Leer ist die Karte erst, wenn weder Fotos noch Ereignisse darauf
+    // liegen: Eine Familie kann verortete Ereignisse haben, ohne ein
+    // einziges verortetes Foto (PER-184).
+    final leer =
+        gezeigt.isEmpty && !(_ereignisseZeigen && widget.ereignisse.isNotEmpty);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.titel)),
@@ -148,7 +153,7 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
         children: [
           _legende(context, t),
           Expanded(
-            child: gezeigt.isEmpty
+            child: leer
                 ? Center(child: Text(t.orteNichtsGewaehlt))
                 : _karte(gezeigt),
           ),
