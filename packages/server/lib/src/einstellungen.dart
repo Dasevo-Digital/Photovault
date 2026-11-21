@@ -238,10 +238,12 @@ class Einstellungen {
         (throw ArgumentError('$name: „$t“ ist keine ganze Zahl'));
   }
 
+  /// `0` bleibt erlaubt: Dann wählt das System einen freien Port – so
+  /// starten die Prüfstände ihre Wegwerf-Server.
   static int _port(String? text) {
     final port = _zahl('PV_PORT', text, 8790);
-    if (port < 1 || port > 65535) {
-      throw ArgumentError('PV_PORT: „${text!.trim()}“ – 1 bis 65535');
+    if (port < 0 || port > 65535) {
+      throw ArgumentError('PV_PORT: „${text!.trim()}“ – 0 bis 65535');
     }
     return port;
   }

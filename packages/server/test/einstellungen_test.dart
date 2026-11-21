@@ -32,7 +32,9 @@ void main() {
       () => lies({'PV_PORT': 'abc'}),
       meldet('PV_PORT: „abc“ ist keine ganze Zahl'),
     );
-    expect(() => lies({'PV_PORT': '0'}), throwsArgumentError);
+    // 0 heisst: einen freien Port nehmen (Prüfstände).
+    expect(lies({'PV_PORT': '0'}).port, 0);
+    expect(() => lies({'PV_PORT': '-1'}), throwsArgumentError);
     expect(() => lies({'PV_PORT': '70000'}), throwsArgumentError);
   });
 
