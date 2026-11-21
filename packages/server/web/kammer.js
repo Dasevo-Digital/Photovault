@@ -158,7 +158,9 @@ async function gibFrei(ids, ohneAbgelehnte = false) {
   const fehler = [];
   try {
     for (let i = 0; i < ids.length; i += KAMMER_STAPEL) {
-      $('kammer-hinweis').textContent = t('Gebe frei … {i} von {n}', { i: i, n: ids.length });
+      // Gezählt ab 1 wie überall: das erste Foto des Stapels (bisher der
+      // Index, also „0 von 6“).
+      $('kammer-hinweis').textContent = t('Gebe frei … {i} von {n}', { i: i + 1, n: ids.length });
       const teil = { ids: ids.slice(i, i + KAMMER_STAPEL) };
       if (ohneAbgelehnte) teil.ohneAbgelehnte = true;
       const r = await api('/api/v1/kammer/freigeben', { methode: 'POST', json: teil });
