@@ -909,9 +909,9 @@ function zeigeListe(neu, titel) {
   }
   liste = { aufnahmen: [], nachTagen: false, mehr: null, ...neu, aufnahmen: [], tage: new Map(), kacheln: [], koepfe: new Map() };
   if (!still) $('erinnerungen').hidden = true;
-  $('auswahl-papierkorb').hidden = !!liste.papierkorb;
-  $('auswahl-kammer').hidden = !!liste.papierkorb;
-  $('auswahl-ort').hidden = !!liste.papierkorb;
+  // Im Papierkorb nur, was dort Sinn hat: Ein Favorit, ein Album oder ein
+  // Link für ein Foto, das gleich weg sein kann, nicht.
+  for (const id of ['auswahl-papierkorb', 'auswahl-kammer', 'auswahl-ort', 'auswahl-favorit', 'auswahl-album', 'auswahl-link']) $(id).hidden = !!liste.papierkorb;
   $('auswahl-zurueck').hidden = !liste.papierkorb;
   $('auswahl-endgueltig').hidden = !liste.papierkorb;
   letzterTag = null;
@@ -6940,11 +6940,13 @@ document.addEventListener('keydown', async (e) => {
       else if (taste === 'ArrowLeft') oeffne(offen - 1);
       else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); oeffne(offen + 1); }
       else if (taste === 'i' || taste === 'I') setzeAngabenOffen(!angabenOffen);
-      else if (fremdeAufnahme(a)) return;
+      // Im Papierkorb fehlen „♡“ und „🗑“ – also auch ihre Tasten (und die
+      // Marken): Was dort liegt, wird zurückgeholt oder gelöscht.
+      else if (fremdeAufnahme(a) || liste.papierkorb) return;
       else if (taste === 'f' || taste === 'F') await setzeFavorit([a]);
       else if (/^[0-5]$/.test(taste)) await setzeSterne([a], Number(taste));
       else if (FARBTASTEN[taste]) await setzeFarbe([a], FARBTASTEN[taste]);
-      else if ((taste === 'Delete' || taste === 'Backspace') && !liste.papierkorb) await inDenKorb([a]);
+      else if (taste === 'Delete' || taste === 'Backspace') await inDenKorb([a]);
       return;
     }
     if (taste === '?') { e.preventDefault(); zeigeKuerzel(); return; }
@@ -6982,10 +6984,11 @@ document.addEventListener('keydown', async (e) => {
     else if (taste === ' ' && rahmen >= 0 && liste.kacheln[rahmen].classList.contains('rahmen')) { e.preventDefault(); schalteAuswahl(liste.aufnahmen[rahmen].id, liste.kacheln[rahmen]); }
     // Erst die Auswahl, beim zweiten Mal der Rahmen.
     else if (taste === 'Escape') { if (auswahl.size || auswahlModus) auswahlAufheben(); else setzeRahmen(rahmen, false); }
+    else if (liste.papierkorb) return;
     else if (taste === 'f' || taste === 'F') await setzeFavorit(ziele);
     else if (/^[0-5]$/.test(taste)) await setzeSterne(ziele, Number(taste));
     else if (FARBTASTEN[taste]) await setzeFarbe(ziele, FARBTASTEN[taste]);
-    else if ((taste === 'Delete' || taste === 'Backspace') && !liste.papierkorb) { e.preventDefault(); await inDenKorb(ziele); }
+    else if (taste === 'Delete' || taste === 'Backspace') { e.preventDefault(); await inDenKorb(ziele); }
   } catch (x) { meldung(x.message); }
 });
 
