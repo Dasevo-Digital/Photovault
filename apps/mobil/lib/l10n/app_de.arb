@@ -187,6 +187,7 @@
   "anmeldenSchonEingerichtet": "Der Server hat inzwischen ein Konto. Bitte damit anmelden.",
   "anmeldenZurueck": "Zurück zur Anmeldung",
   "fehlerAllgemein": "Hat nicht geklappt.",
+  "fehlerOhneServer": "Der Server ist gerade nicht zu erreichen.",
   "speichern": "Speichern",
   "entfernen": "Entfernen",
   "kontenVerwalten": "Konten verwalten",

@@ -7,6 +7,7 @@ import 'package:kern/db/rasterzeile.dart';
 
 import '../bilder.dart';
 import '../formate.dart';
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'betrachter.dart';
@@ -126,7 +127,9 @@ class _AufnahmedatenState extends State<Aufnahmedaten> {
         setState(() => _fehler = AppTexte.of(context).datenOhneServer);
       }
     } catch (x) {
-      if (mounted) setState(() => _fehler = '$x');
+      if (mounted) {
+        setState(() => _fehler = fehlertext(AppTexte.of(context), x));
+      }
     } finally {
       if (mounted) setState(() => _prueft = false);
     }

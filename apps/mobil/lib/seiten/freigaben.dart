@@ -10,6 +10,7 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../einfuegbares_menue.dart';
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 
 /// Als Link teilen (Issue #106) – wie im Browser (web/app.js,
@@ -325,7 +326,7 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
       await _lade();
       _beitraege.currentState?._lade();
     } catch (f) {
-      bote.showSnackBar(SnackBar(content: Text('$f')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, f))));
     }
   }
 
@@ -491,7 +492,7 @@ class _GastbeitraegeState extends State<Gastbeitraege> {
         );
       }
     } catch (f) {
-      bote.showSnackBar(SnackBar(content: Text('$f')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, f))));
     }
     await _lade();
     widget.geaendert();

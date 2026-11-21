@@ -141,6 +141,7 @@
   "anmeldenSchonEingerichtet": "The server already has an account now. Please sign in with it.",
   "anmeldenZurueck": "Back to sign-in",
   "fehlerAllgemein": "That did not work.",
+  "fehlerOhneServer": "The server cannot be reached right now.",
   "speichern": "Save",
   "entfernen": "Remove",
   "kontenVerwalten": "Manage accounts",

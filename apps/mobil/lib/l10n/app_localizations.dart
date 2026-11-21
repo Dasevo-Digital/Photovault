@@ -715,6 +715,12 @@ abstract class AppTexte {
   /// **'Hat nicht geklappt.'**
   String get fehlerAllgemein;
 
+  /// No description provided for @fehlerOhneServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist gerade nicht zu erreichen.'**
+  String get fehlerOhneServer;
+
   /// No description provided for @speichern.
   ///
   /// In de, this message translates to:

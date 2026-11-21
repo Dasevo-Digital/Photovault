@@ -5,6 +5,7 @@ import 'package:kern/services/duplikatsuche.dart';
 
 import '../bilder.dart';
 import '../formate.dart';
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'betrachter.dart';
@@ -46,7 +47,9 @@ class _DuplikateState extends State<Duplikate> {
       final e = await sucheDuplikate(_db, _schwelle);
       if (mounted) setState(() => _ergebnis = e);
     } catch (x) {
-      if (mounted) setState(() => _fehler = '$x');
+      if (mounted) {
+        setState(() => _fehler = fehlertext(AppTexte.of(context), x));
+      }
     } finally {
       if (mounted) setState(() => _sucht = false);
     }

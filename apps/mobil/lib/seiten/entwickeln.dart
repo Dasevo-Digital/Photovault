@@ -11,6 +11,7 @@ import 'package:kern/services/entwicklungswerte.dart';
 import 'package:path/path.dart' as p;
 import 'package:zierbild/entwickeln_rechnung.dart';
 
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 
@@ -430,7 +431,7 @@ class _EntwickelnState extends State<Entwickeln> {
       ).showSnackBar(SnackBar(content: Text(t.entwGespeichert)));
       Navigator.of(context).pop();
     } catch (x) {
-      if (mounted) setState(() => _meldung = '$x');
+      if (mounted) setState(() => _meldung = fehlertext(t, x));
     } finally {
       if (mounted) setState(() => _speichert = false);
     }

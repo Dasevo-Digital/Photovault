@@ -1,6 +1,5 @@
 import 'package:abgleich_ui/geraetestand_anzeige.dart';
 import 'package:kern/db/database.dart';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../einfuegbares_menue.dart';
 import '../formate.dart';
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 
 /// Das eigene Konto wie im Browser (web/app.js, zeigeKonto): wer man ist,
@@ -127,7 +127,7 @@ class _EigenesKontoState extends State<EigenesKonto> {
       if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
       await _lade();
     } catch (x) {
-      bote.showSnackBar(SnackBar(content: Text('$x')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, x))));
     }
   }
 
@@ -160,7 +160,7 @@ class _EigenesKontoState extends State<EigenesKonto> {
         }
       }
     } catch (x) {
-      bote.showSnackBar(SnackBar(content: Text('$x')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, x))));
     }
   }
 
@@ -192,7 +192,7 @@ class _EigenesKontoState extends State<EigenesKonto> {
       if (r.statusCode >= 300) throw Serverfehler(r.statusCode, r.body);
       await _lade();
     } catch (x) {
-      bote.showSnackBar(SnackBar(content: Text('$x')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, x))));
     }
   }
 
@@ -226,7 +226,7 @@ class _EigenesKontoState extends State<EigenesKonto> {
     } catch (x) {
       bote
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('$x')));
+        ..showSnackBar(SnackBar(content: Text(fehlertext(t, x))));
     } finally {
       if (mounted) setState(() => _verknuepft = false);
     }
@@ -436,9 +436,9 @@ class _PasswortAendernState extends State<PasswortAendern> {
       }
       setState(() => _meldung = t.eigenPasswortGeaendert);
     } on Serverfehler catch (f) {
-      setState(() => _meldung = _fehlertext(f));
+      setState(() => _meldung = fehlertext(AppTexte.of(context), f));
     } catch (x) {
-      setState(() => _meldung = '$x');
+      setState(() => _meldung = fehlertext(AppTexte.of(context), x));
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }
@@ -551,9 +551,9 @@ class _NeueCodesState extends State<NeueCodes> {
         ];
       });
     } on Serverfehler catch (f) {
-      setState(() => _meldung = _fehlertext(f));
+      setState(() => _meldung = fehlertext(AppTexte.of(context), f));
     } catch (x) {
-      setState(() => _meldung = '$x');
+      setState(() => _meldung = fehlertext(AppTexte.of(context), x));
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }
@@ -626,16 +626,4 @@ class _NeueCodesState extends State<NeueCodes> {
       ),
     );
   }
-}
-
-/// Was der Server zu einem Fehler sagt: das Feld `fehler` seiner Antwort,
-/// nicht die rohe Antwort samt Klammern.
-String _fehlertext(Serverfehler f) {
-  try {
-    final j = jsonDecode(f.text);
-    if (j is Map && j['fehler'] is String) return j['fehler'] as String;
-  } on FormatException {
-    // kein JSON – dann der Text, wie er ist
-  }
-  return f.text.isEmpty ? '${f.status}' : f.text;
 }

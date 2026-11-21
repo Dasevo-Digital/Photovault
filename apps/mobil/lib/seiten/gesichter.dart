@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../bilder.dart';
 import '../einfuegbares_menue.dart';
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'gesicht_im_foto.dart';
@@ -124,7 +125,7 @@ class _BenennenState extends State<_Benennen> {
       if (mounted) {
         setState(() {
           _laeuft = false;
-          _meldung = '$x';
+          _meldung = fehlertext(t, x);
         });
       }
     }
@@ -876,7 +877,9 @@ class _WeitereFotosState extends State<WeitereFotos> {
     } catch (x) {
       if (!mounted) return;
       setState(() => _laeuft = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$x')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(fehlertext(AppTexte.of(context), x))),
+      );
     }
   }
 

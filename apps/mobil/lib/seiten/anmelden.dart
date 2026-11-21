@@ -7,6 +7,7 @@ import 'package:kern/abgleich/serveradresse.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import '../einfuegbares_menue.dart';
@@ -97,7 +98,7 @@ class _AnmeldenState extends State<Anmelden> {
       _fehler = t.anmeldenKeinServer;
     } catch (e) {
       // Sonst bliebe die Seite ohne Meldung im letzten Schritt stehen.
-      _fehler = '${t.fehlerAllgemein} ($e)';
+      _fehler = fehlertext(t, e);
     } finally {
       if (mounted) setState(() => _arbeitet = false);
     }

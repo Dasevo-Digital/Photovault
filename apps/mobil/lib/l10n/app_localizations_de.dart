@@ -395,6 +395,9 @@ class AppTexteDe extends AppTexte {
   String get fehlerAllgemein => 'Hat nicht geklappt.';
 
   @override
+  String get fehlerOhneServer => 'Der Server ist gerade nicht zu erreichen.';
+
+  @override
   String get speichern => 'Speichern';
 
   @override
