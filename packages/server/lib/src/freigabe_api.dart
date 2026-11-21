@@ -624,9 +624,7 @@ class Freigabeapi {
         ablage.geprueft(x.id, ok: false, befund: {'grund': 'unterbrochen'});
       }
     }
-    final freigaben = {
-      for (final x in await dienst.von(konto)) x.freigabe.id: x.freigabe,
-    };
+    final freigaben = {for (final f in dienst.ohneLinkVon(konto)) f.id: f};
     final a = await pruefung.abschottung;
     return _json({
       'beitraege': [

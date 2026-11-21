@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/freigaben.dart' show Freigabedienst;
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
@@ -381,4 +382,22 @@ void main() {
       expect('$wert', isNot(contains(link)));
     }
   });
+  // SRV-040: Nach einem ersetzten server.schluessel lassen sich die Links
+  // nicht mehr lesen. Die Beiträge von Gästen brauchen sie nicht und
+  // blieben trotzdem mit einer unbehandelten 500 aus.
+  test(
+    'ohne passenden Schlüssel bleiben die Freigaben ohne Link lesbar',
+    () async {
+      await Freigabedienst(
+        sdb,
+        Tresorschluessel(List.filled(32, 7)),
+      ).lege(konto: erika.id, titel: 'Sommer', aufnahmen: ['a1']);
+      final neu = Freigabedienst(sdb, Tresorschluessel(List.filled(32, 9)));
+      await expectLater(
+        neu.von(erika.id),
+        throwsA(isA<SchluesselPasstNicht>()),
+      );
+      expect(neu.ohneLinkVon(erika.id).map((f) => f.titel), ['Sommer']);
+    },
+  );
 }

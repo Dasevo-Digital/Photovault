@@ -166,6 +166,20 @@ class Freigabedienst {
     ];
   }
 
+  /// Die Freigaben eines Kontos ohne ihren Link, die jüngste zuerst.
+  ///
+  /// Für alles, was den Link nicht zeigt: Ihn zu entschlüsseln scheitert,
+  /// wenn `server.schluessel` ersetzt wurde ([SchluesselPasstNicht]), und
+  /// das soll nur dort auffallen, wo der Link gebraucht wird – nicht etwa
+  /// in der Liste der Beiträge von Gästen.
+  List<Freigabe> ohneLinkVon(String konto) => [
+    for (final z in _sdb.db.select(
+      'SELECT * FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
+      [konto],
+    ))
+      _aus(z),
+  ];
+
   /// Löscht die Freigabe [id] des Kontos; `false`, wenn es sie nicht gibt.
   bool widerrufe(String konto, String id) {
     _sdb.db.execute('DELETE FROM freigaben WHERE id = ? AND konto = ?', [
