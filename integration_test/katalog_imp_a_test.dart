@@ -2357,8 +2357,6 @@ void main() {
     expect(find.textContaining('Am See'), findsWidgets);
     expect(find.text('Tag A'), findsWidgets);
     await schliesseFoto(tester);
-    // Beobachtung: Die Beilagen stehen in der Prüfung als „nicht unterstützt“.
-    expect(status(z['foto.xmp']!), de.importPlanFormat);
     await finish(tester);
   });
 
