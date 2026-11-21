@@ -5962,61 +5962,56 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: „Deutung zurücknehmen“ stellt den Satz nur aus den erkannten
-  // Teilen zusammen (search_screen.dart:888, `funde.wortlaut`); der
-  // unerkannte Rest („Strand“) fehlt. _satzVerwerfen (search_screen.dart:
-  // 362) baut die Filter neu und verwirft so auch die von Hand gesetzten
-  // „Favoriten“.
-  testWidgets(
-    'ANS-113 Satzdeutung zurücknehmen stellt den Satz wieder her',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [testfoto('x.jpg', datum: DateTime(2023, 5, 1))],
-      );
-      final a = _uuid.v4();
-      await befehl(tester, PersonAnlegen(a, 'Person A'));
-      await gesichtFuer(tester, 'x.jpg', a);
-      await openSection(tester, Hauptbereich.suche);
-      // Von Hand „Favoriten“ setzen.
-      await oeffneSuchoptionen(tester);
-      await imBlatt(tester, de.suchoptFavoriten);
-      await optionenSuchen(tester);
-      const satz = 'Strand 2023 mit 5 Sternen Person A';
-      await tippeSuche(tester, satz);
-      await waitFor(tester, find.byTooltip(de.sucheSatzVerwerfen));
-      await tap(tester, find.byTooltip(de.sucheSatzVerwerfen));
-      await settle(tester);
-      expect(
-        find.descendant(
-          of: find.byType(SearchScreen),
-          matching: find.byType(Chip),
-        ),
-        findsNothing,
-        reason: 'Marken weg',
-      );
-      final feld = tester.widget<TextField>(suchfeld).controller!.text;
-      print('ANS-113: im Feld nach dem Zurücknehmen „$feld“');
-      await oeffneSuchoptionen(tester);
-      final fav = find.descendant(
-        of: optionenBlatt,
-        matching: find.widgetWithText(CheckboxListTile, de.suchoptFavoriten),
-      );
-      await rolleZu(
-        tester,
-        fav,
-        in_: find
-            .descendant(of: optionenBlatt, matching: find.byType(Scrollable))
-            .first,
-      );
-      final favoritBleibt = tester.widget<CheckboxListTile>(fav).value;
-      print('ANS-113: „Favoriten“ danach noch gesetzt: $favoritBleibt');
-      expect(feld, satz);
-      expect(favoritBleibt, isTrue, reason: 'von Hand gesetzter Filter bleibt');
-      await finish(tester);
-    },
-  );
+  // Behoben in #410: Die Suche merkt sich Satz und Filter vor der Deutung;
+  // „Deutung zurücknehmen“ stellt beides wieder her.
+  testWidgets('ANS-113 Satzdeutung zurücknehmen stellt den Satz wieder her', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [testfoto('x.jpg', datum: DateTime(2023, 5, 1))],
+    );
+    final a = _uuid.v4();
+    await befehl(tester, PersonAnlegen(a, 'Person A'));
+    await gesichtFuer(tester, 'x.jpg', a);
+    await openSection(tester, Hauptbereich.suche);
+    // Von Hand „Favoriten“ setzen.
+    await oeffneSuchoptionen(tester);
+    await imBlatt(tester, de.suchoptFavoriten);
+    await optionenSuchen(tester);
+    const satz = 'Strand 2023 mit 5 Sternen Person A';
+    await tippeSuche(tester, satz);
+    await waitFor(tester, find.byTooltip(de.sucheSatzVerwerfen));
+    await tap(tester, find.byTooltip(de.sucheSatzVerwerfen));
+    await settle(tester);
+    expect(
+      find.descendant(
+        of: find.byType(SearchScreen),
+        matching: find.byType(Chip),
+      ),
+      findsNothing,
+      reason: 'Marken weg',
+    );
+    final feld = tester.widget<TextField>(suchfeld).controller!.text;
+    print('ANS-113: im Feld nach dem Zurücknehmen „$feld“');
+    await oeffneSuchoptionen(tester);
+    final fav = find.descendant(
+      of: optionenBlatt,
+      matching: find.widgetWithText(CheckboxListTile, de.suchoptFavoriten),
+    );
+    await rolleZu(
+      tester,
+      fav,
+      in_: find
+          .descendant(of: optionenBlatt, matching: find.byType(Scrollable))
+          .first,
+    );
+    final favoritBleibt = tester.widget<CheckboxListTile>(fav).value;
+    print('ANS-113: „Favoriten“ danach noch gesetzt: $favoritBleibt');
+    expect(feld, satz);
+    expect(favoritBleibt, isTrue, reason: 'von Hand gesetzter Filter bleibt');
+    await finish(tester);
+  });
 
   testWidgets(
     'ANS-118 ANS-119 Gespeicherte Suchen als Chips; Favoriten- und Archivansicht',

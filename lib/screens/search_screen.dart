@@ -106,6 +106,13 @@ class _SearchScreenState extends State<SearchScreen>
   /// von Suche.
   List<Satzfund> _satzfunde = const [];
 
+  /// Der Satz, wie er vor der Deutung im Feld stand, und die Kriterien
+  /// davor – für „Deutung zurücknehmen“. Aus den Funden liess sich der
+  /// Satz nicht zurückgewinnen: Was der Leser nicht erkannte („Strand“,
+  /// „mit“), fehlte dann, und von Hand gesetzte Filter gingen mit.
+  String _satzVorDeutung = '';
+  SearchFilters? _filterVorDeutung;
+
   /// Die Wortlisten aus der Bibliothek, einmal je Sitzung geholt. Personen
   /// und Orte ändern sich selten, und die Abfrage bei jedem Tastendruck
   /// erneut zu stellen wäre bei 8000 Aufnahmen spürbar.
@@ -355,6 +362,8 @@ class _SearchScreenState extends State<SearchScreen>
     setState(() {
       _satzfunde = deutung.funde;
       if (deutung.hatVerstanden) {
+        _satzVorDeutung = eingabe;
+        _filterVorDeutung = _filters;
         _filters = deutung.filter;
         _queryCtrl.text = deutung.rest;
       }
@@ -363,15 +372,17 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   /// Nimmt die Deutung zurück: der ursprüngliche Satz wieder ins Feld, alle
-  /// daraus abgeleiteten Kriterien weg.
-  Future<void> _satzVerwerfen(String urspruenglich) async {
+  /// daraus abgeleiteten Kriterien weg – die von Hand gesetzten bleiben.
+  /// Gesucht wird danach wörtlich.
+  Future<void> _satzVerwerfen() async {
+    final satz = _satzVorDeutung;
+    final vorher =
+        _filterVorDeutung ?? SearchFilters(textMode: _filters.textMode);
     setState(() {
       _satzfunde = const [];
-      _filters = SearchFilters(
-        textMode: _filters.textMode,
-        query: urspruenglich,
-      );
-      _queryCtrl.text = urspruenglich;
+      _filterVorDeutung = null;
+      _filters = vorher.copyWith(query: satz);
+      _queryCtrl.text = satz;
     });
     await _runSearch();
   }
@@ -886,7 +897,7 @@ class _SearchScreenState extends State<SearchScreen>
 /// Suchen erkennen können, warum – und es mit einem Klick zurücknehmen.
 class _Satzmarken extends StatelessWidget {
   final List<Satzfund> funde;
-  final void Function(String urspruenglich) beiVerwerfen;
+  final VoidCallback beiVerwerfen;
 
   const _Satzmarken({required this.funde, required this.beiVerwerfen});
 
@@ -911,10 +922,6 @@ class _Satzmarken extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    // Der Satz, wie er dastand – aus den Wortlauten wieder zusammengesetzt
-    // reicht nicht, deshalb nimmt „Verwerfen" die Wortlaute in der
-    // Reihenfolge der Funde plus den Rest.
-    final urspruenglich = [for (final f in funde) f.wortlaut].join(' ');
     return Padding(
       padding: const EdgeInsets.only(
         left: AppSpacing.lg,
@@ -946,7 +953,7 @@ class _Satzmarken extends StatelessWidget {
             icon: const Icon(Icons.undo, size: 18),
             visualDensity: VisualDensity.compact,
             tooltip: t.sucheSatzVerwerfen,
-            onPressed: () => beiVerwerfen(urspruenglich),
+            onPressed: beiVerwerfen,
           ),
         ],
       ),
