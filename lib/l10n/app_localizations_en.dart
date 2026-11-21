@@ -386,11 +386,11 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get sucheOhneEmbeddings =>
-      'No photo has been analysed for AI image search yet. The run is under Tools → Tasks (“CLIP embeddings”).';
+      'No photo has been analysed for AI image search yet. The run is under Tools → Jobs (“CLIP embeddings”).';
 
   @override
   String get sucheOhneTexterkennung =>
-      'No text has been recognised on any photo yet. The run is under Tools → Tasks (“Recognise text (OCR)”).';
+      'No text has been recognised on any photo yet. The run is under Tools → Jobs (“Recognise text (OCR)”).';
 
   @override
   String sucheModellUnbrauchbar(String datei) {
@@ -786,7 +786,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get erkundenKeineOrte =>
-      'No places resolved yet (see Tools → Places).';
+      'No places resolved yet (see Tools → Jobs, “Resolve country/region/city”).';
 
   @override
   String get erkundenKeineFotos => 'No photos imported yet.';
@@ -2411,7 +2411,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get suchoptGeoFehlt =>
-      'No locations resolved yet – download the GeoNames dataset and resolve your photos (see Settings → Location data, Tools → Locations).';
+      'No locations resolved yet – download the GeoNames dataset (Settings → Location data) and resolve your photos (Tools → Jobs, “Resolve country/region/city”).';
 
   @override
   String get suchoptAnfangsdatum => 'Start date';
@@ -3996,7 +3996,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get infoOrtNichtAufgeloest =>
-      'Location not resolved yet (Tools → Locations)';
+      'Location not resolved yet (Tools → Jobs, “Resolve country/region/city”)';
 
   @override
   String get infoOrtEntfernen => 'Clear the location';

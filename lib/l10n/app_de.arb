@@ -442,7 +442,7 @@
       }
     }
   },
-  "erkundenKeineOrte": "Noch keine Orte aufgelöst (siehe Werkzeuge → Orte).",
+  "erkundenKeineOrte": "Noch keine Orte aufgelöst (siehe Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).",
   "erkundenKeineFotos": "Noch keine Fotos importiert.",
   "karteKeineOrteLang": "Noch keine Fotos mit bekanntem Ort.\n\nDer Ort wird beim Import automatisch aus den GPS-Daten eines Fotos übernommen (falls vorhanden) oder lässt sich in der Info-Ansicht eines Fotos/Videos (Vollbildvorschau → ⓘ) manuell festlegen.",
   "einstOrdnerNichtGeoeffnet": "Ordner konnte nicht geöffnet werden: {pfad}",
@@ -1297,7 +1297,7 @@
   "suchoptLand": "Land",
   "suchoptBundesland": "Bundesland",
   "suchoptStadt": "Stadt",
-  "suchoptGeoFehlt": "Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen und Fotos auflösen (siehe Einstellungen → Standortdaten, Werkzeuge → Orte).",
+  "suchoptGeoFehlt": "Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen (Einstellungen → Standortdaten) und Fotos auflösen (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).",
   "suchoptAnfangsdatum": "Anfangsdatum",
   "suchoptEnddatum": "Enddatum",
   "suchoptDatumEntfernen": "Datum entfernen",
@@ -2213,7 +2213,7 @@
   "infoNiemandZugeordnet": "Noch niemand zugeordnet.",
   "infoDetails": "Details",
   "infoStandortBekannt": "Standort bekannt",
-  "infoOrtNichtAufgeloest": "Ort noch nicht aufgelöst (Werkzeuge → Orte)",
+  "infoOrtNichtAufgeloest": "Ort noch nicht aufgelöst (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“)",
   "infoOrtEntfernen": "Ort entfernen",
   "infoBearbeitet": "Bearbeitet",
   "infoBearbeitetEntwickelt": "entwickelt",

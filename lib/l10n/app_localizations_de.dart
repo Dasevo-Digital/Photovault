@@ -793,7 +793,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get erkundenKeineOrte =>
-      'Noch keine Orte aufgelöst (siehe Werkzeuge → Orte).';
+      'Noch keine Orte aufgelöst (siehe Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).';
 
   @override
   String get erkundenKeineFotos => 'Noch keine Fotos importiert.';
@@ -2428,7 +2428,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get suchoptGeoFehlt =>
-      'Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen und Fotos auflösen (siehe Einstellungen → Standortdaten, Werkzeuge → Orte).';
+      'Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen (Einstellungen → Standortdaten) und Fotos auflösen (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).';
 
   @override
   String get suchoptAnfangsdatum => 'Anfangsdatum';
@@ -4023,7 +4023,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get infoOrtNichtAufgeloest =>
-      'Ort noch nicht aufgelöst (Werkzeuge → Orte)';
+      'Ort noch nicht aufgelöst (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“)';
 
   @override
   String get infoOrtEntfernen => 'Ort entfernen';

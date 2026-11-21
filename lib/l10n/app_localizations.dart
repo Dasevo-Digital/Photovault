@@ -1323,7 +1323,7 @@ abstract class AppTexte {
   /// No description provided for @erkundenKeineOrte.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Orte aufgelöst (siehe Werkzeuge → Orte).'**
+  /// **'Noch keine Orte aufgelöst (siehe Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).'**
   String get erkundenKeineOrte;
 
   /// No description provided for @erkundenKeineFotos.
@@ -4106,7 +4106,7 @@ abstract class AppTexte {
   /// No description provided for @suchoptGeoFehlt.
   ///
   /// In de, this message translates to:
-  /// **'Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen und Fotos auflösen (siehe Einstellungen → Standortdaten, Werkzeuge → Orte).'**
+  /// **'Noch keine Orte aufgelöst – GeoNames-Datensatz herunterladen (Einstellungen → Standortdaten) und Fotos auflösen (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“).'**
   String get suchoptGeoFehlt;
 
   /// No description provided for @suchoptAnfangsdatum.
@@ -6678,7 +6678,7 @@ abstract class AppTexte {
   /// No description provided for @infoOrtNichtAufgeloest.
   ///
   /// In de, this message translates to:
-  /// **'Ort noch nicht aufgelöst (Werkzeuge → Orte)'**
+  /// **'Ort noch nicht aufgelöst (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“)'**
   String get infoOrtNichtAufgeloest;
 
   /// No description provided for @infoOrtEntfernen.

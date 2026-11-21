@@ -2820,26 +2820,33 @@ void main() {
     await finish(tester);
   });
 
-  // Befund ORT-064: Die Info-Zeile verweist auf „Werkzeuge → Orte“, dort steht
-  // nur die GPX-Verortung; das Auflösen liegt unter Werkzeuge → Aufgaben.
-  // Zwei Läufe.
+  // Behoben in #413: Der Wegweiser nennt Werkzeuge → Aufgaben und die
+  // Aufgabe „Land/Bundesland/Stadt auflösen“; dort steht sie auch.
   testWidgets('ORT-064 Wegweiser „Werkzeuge → Orte“ führt zum Auflösen', (
     tester,
   ) async {
     await starte(tester);
-    await bereich(tester, Hauptbereich.werkzeuge);
-    await waitFor(tester, find.byType(ToolsScreen));
-    expect(de.infoOrtNichtAufgeloest, contains('Werkzeuge → Orte'));
+    expect(
+      de.infoOrtNichtAufgeloest,
+      contains('${de.navWerkzeuge} → ${de.aufgTitel}'),
+    );
+    expect(de.infoOrtNichtAufgeloest, contains(de.werkzOrteAufloesenTitel));
+    await aufgabenOeffnen(tester);
+    await sichtbarIn(
+      tester,
+      find.text(de.werkzOrteAufloesenTitel),
+      aufgabenliste,
+    );
     expect(
       find.descendant(
-        of: find.byType(ToolsScreen),
+        of: find.byType(BackgroundTasksScreen),
         matching: find.text(de.werkzOrteAufloesenTitel),
       ),
       findsOneWidget,
-      reason: 'unter Werkzeuge → Orte steht nur „Aus einer GPX-Spur verorten“',
+      reason: 'unter Werkzeuge → Aufgaben steht das Auflösen',
     );
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('ORT-065 Ortsvorschläge beim Tippen', (tester) async {
     await starte(tester, geodaten: true);
