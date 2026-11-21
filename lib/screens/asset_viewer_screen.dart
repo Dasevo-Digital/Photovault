@@ -24,6 +24,7 @@ import 'package:kern/services/textstellen.dart';
 import 'package:kern/services/storage_paths.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
+import '../widgets/tastenkuerzel.dart' show schreibtGerade;
 import '../widgets/bild_zoom_gesten.dart';
 import '../widgets/asset_info_sheet.dart';
 import '../widgets/gesichtsrahmen.dart';
@@ -323,6 +324,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
     }
+    // Wer in der Info-Leiste schreibt, meint das Zeichen, nicht das
+    // Kürzel – auch Pfeile und Leertaste gehören dann dem Feld.
+    if (schreibtGerade()) return KeyEventResult.ignored;
     if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _goToPrevious();
       return KeyEventResult.handled;

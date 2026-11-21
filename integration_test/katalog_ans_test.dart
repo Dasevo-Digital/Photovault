@@ -2803,80 +2803,68 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Tippen in der Info-Leiste löst die Tasten der Einzelansicht aus.
-  // _handleKeyEvent (asset_viewer_screen.dart:316–377) prüft nicht, ob ein
-  // Textfeld den Fokus hat (anders als rasterbedienung.dart:253,
-  // _schreibtGerade) und meldet Ziffern, F, R, P und Leertaste als
-  // erledigt: Bewertung/Favorit/Farbe ändern sich, die Ansicht blättert,
-  // und das Zeichen kommt im Feld nicht an.
-  testWidgets(
-    'ANS-045 Tippen in der Info-Leiste löst keine Tastenkürzel aus',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [
-          testfoto('tipp1.jpg', datum: DateTime(2025, 2, 2, 10)),
-          testfoto('tipp2.jpg', datum: DateTime(2025, 2, 1, 10)),
-        ],
-      );
-      await openSection(tester, Hauptbereich.zeitleiste);
-      await oeffne(tester, 'tipp1.jpg');
-      await tap(tester, knopf(de.viewerInfo));
-      final feld = field(de.infoBeschreibungHinzufuegen);
-      await tap(tester, feld);
-      // Wie beim echten Tippen: Jede Taste kommt als Tastenereignis und als
-      // Texteingabe.
-      Future<void> tippe(String text) async {
-        final tasten = <String, LogicalKeyboardKey>{
-          '2': LogicalKeyboardKey.digit2,
-          '0': LogicalKeyboardKey.digit0,
-          '3': LogicalKeyboardKey.digit3,
-          '5': LogicalKeyboardKey.digit5,
-          'f': LogicalKeyboardKey.keyF,
-          'r': LogicalKeyboardKey.keyR,
-          'p': LogicalKeyboardKey.keyP,
-          ' ': LogicalKeyboardKey.space,
-        };
-        var bisher = '';
-        for (final z in text.split('')) {
-          final taste = tasten[z.toLowerCase()];
-          if (taste != null) await tester.sendKeyEvent(taste);
-          bisher += z;
-          tester.testTextInput.updateEditingValue(
-            TextEditingValue(
-              text: bisher,
-              selection: TextSelection.collapsed(offset: bisher.length),
-            ),
-          );
-          await tester.pump();
-        }
-        await settle(tester);
+  // Behoben in #410: Die Einzelansicht lässt Tasten durch, solange ein
+  // Textfeld den Fokus hat (schreibtGerade, dieselbe Prüfung wie im Raster).
+  testWidgets('ANS-045 Tippen in der Info-Leiste löst keine Tastenkürzel aus', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [
+        testfoto('tipp1.jpg', datum: DateTime(2025, 2, 2, 10)),
+        testfoto('tipp2.jpg', datum: DateTime(2025, 2, 1, 10)),
+      ],
+    );
+    await openSection(tester, Hauptbereich.zeitleiste);
+    await oeffne(tester, 'tipp1.jpg');
+    await tap(tester, knopf(de.viewerInfo));
+    final feld = field(de.infoBeschreibungHinzufuegen);
+    await tap(tester, feld);
+    // Wie beim echten Tippen: Jede Taste kommt als Tastenereignis und als
+    // Texteingabe.
+    Future<void> tippe(String text) async {
+      final tasten = <String, LogicalKeyboardKey>{
+        '2': LogicalKeyboardKey.digit2,
+        '0': LogicalKeyboardKey.digit0,
+        '3': LogicalKeyboardKey.digit3,
+        '5': LogicalKeyboardKey.digit5,
+        'f': LogicalKeyboardKey.keyF,
+        'r': LogicalKeyboardKey.keyR,
+        'p': LogicalKeyboardKey.keyP,
+        ' ': LogicalKeyboardKey.space,
+      };
+      var bisher = '';
+      for (final z in text.split('')) {
+        final taste = tasten[z.toLowerCase()];
+        if (taste != null) await tester.sendKeyEvent(taste);
+        bisher += z;
+        tester.testTextInput.updateEditingValue(
+          TextEditingValue(
+            text: bisher,
+            selection: TextSelection.collapsed(offset: bisher.length),
+          ),
+        );
+        await tester.pump();
       }
-
-      await tippe('Familie 2023 frei');
-      final a = await aufnahme(tester, 'tipp1.jpg');
-      expect(a.rating, 0, reason: 'Ziffern setzen keine Bewertung');
-      expect(a.isFavorite, isFalse, reason: 'F schaltet keinen Favoriten');
-      expect(betrachterZeigt(DateTime(2025, 2, 2, 10)), findsOneWidget);
-      expect(
-        knopfWidget(tester, de.viewerDrittelRaster).isSelected,
-        isNot(true),
-      );
-      expect(
-        knopfWidget(tester, de.viewerFokusPeaking).isSelected,
-        isNot(true),
-      );
-      await tap(tester, field(de.infoTagHinzufuegenPlatzhalter));
-      await tippe('Ferien 5');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
       await settle(tester);
-      final b = await aufnahme(tester, 'tipp1.jpg');
-      expect(b.rating, 0);
-      expect(b.colorLabel, isNull);
-      await finish(tester);
-    },
-  );
+    }
+
+    await tippe('Familie 2023 frei');
+    final a = await aufnahme(tester, 'tipp1.jpg');
+    expect(a.rating, 0, reason: 'Ziffern setzen keine Bewertung');
+    expect(a.isFavorite, isFalse, reason: 'F schaltet keinen Favoriten');
+    expect(betrachterZeigt(DateTime(2025, 2, 2, 10)), findsOneWidget);
+    expect(knopfWidget(tester, de.viewerDrittelRaster).isSelected, isNot(true));
+    expect(knopfWidget(tester, de.viewerFokusPeaking).isSelected, isNot(true));
+    await tap(tester, field(de.infoTagHinzufuegenPlatzhalter));
+    await tippe('Ferien 5');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await settle(tester);
+    final b = await aufnahme(tester, 'tipp1.jpg');
+    expect(b.rating, 0);
+    expect(b.colorLabel, isNull);
+    await finish(tester);
+  });
 
   testWidgets('ANS-046 Diaschau starten, umlaufen, stoppen', (tester) async {
     final d = [
