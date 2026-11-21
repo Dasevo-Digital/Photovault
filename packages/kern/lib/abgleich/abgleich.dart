@@ -130,7 +130,10 @@ class Abgleich {
   bool _laeuft = false;
   Future<void>? _schleife;
   Future<void>? _senden;
-  Future<void>? _sendelauf;
+
+  /// Der laufende Sendelauf; endet nie mit einem Fehler, sondern trägt
+  /// ihn als Wert (siehe [sende]).
+  Future<(Object, StackTrace)?>? _sendelauf;
   bool _serverOhneKonfliktpruefung = false;
   Completer<void>? _wecker;
 
@@ -340,17 +343,37 @@ class Abgleich {
   }
 
   /// Schickt die Warteschlange bald – einmal, auch wenn mehrere fragen.
+  ///
+  /// Der Fehler wird in der Zone abgefangen, in der der Lauf entsteht:
+  /// Über die Grenze einer Fehlerzone reicht Dart ihn nicht weiter, er
+  /// gälte dort als unbehandelt (#422).
   void sendeBald() {
     if (!_laeuft || _senden != null) return;
     _senden = _betriebszone
-        .run(sende)
-        .catchError((Object _) {})
+        .run(() => sende().catchError((Object _) {}))
         .whenComplete(() => _senden = null);
   }
 
   /// Schickt alle unbestätigten Befehle im Stapel.
-  Future<void> sende() =>
-      _sendelauf ??= _sende().whenComplete(() => _sendelauf = null);
+  ///
+  /// Mehrere Aufrufer teilen sich einen Lauf – die Hintergrundschleife,
+  /// [sendeBald] und die Oberfläche, jeder womöglich aus einer anderen
+  /// Fehlerzone. Ein geteiltes Future mit Fehler erreicht aber nur
+  /// Wartende aus der eigenen Zone; allen anderen bliebe er aus, sie
+  /// warteten für immer, und der Fehler (meist [KeineVerbindung]) stünde
+  /// als unbehandelt da. Darum endet der geteilte Lauf immer mit einem
+  /// Wert, und jeder Aufrufer wirft den Fehler in seiner eigenen Zone.
+  Future<void> sende() async {
+    final lauf = _sendelauf ??= _sende()
+        .then<(Object, StackTrace)?>(
+          (_) => null,
+          onError: (Object f, StackTrace s) => (f, s),
+        )
+        .whenComplete(() => _sendelauf = null);
+    if (await lauf case (final Object fehler, final StackTrace stapel)) {
+      Error.throwWithStackTrace(fehler, stapel);
+    }
+  }
 
   Future<void> _sende() async {
     while (true) {
