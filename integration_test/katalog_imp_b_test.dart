@@ -177,8 +177,9 @@ void main() {
       'IMP-115 Ordner: vorher ${vorher.relativePath}, '
       'nachher ${nachher.relativePath}',
     );
-    // Der Hinweis im Katalog: die Datei bleibt im alten Monatsordner.
-    expect(nachher.relativePath, vorher.relativePath);
+    // Behoben in #409: Die Datei zieht wie beim Datum von Hand in den
+    // Monatsordner des neuen Datums; ihr Inhalt bleibt, wie er war.
+    expect(nachher.relativePath, startsWith('originals/2024/11/'));
 
     await alleZurueck(tester);
     await openSection(tester, Hauptbereich.zeitleiste);
