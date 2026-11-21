@@ -3550,11 +3550,17 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: mergePeople überträgt nur Gesichter und Verwandtschaften
-  // (packages/kern/lib/db/abfragen/personen.dart:910–925).
+  // Behoben in #412: mergePeople überträgt auch Lebensdaten, Geschlecht und
+  // den Lebenslauf der aufgelösten Person.
   pruefung('PER-101 Lebensdaten und Lebenslauf beim Zusammenführen', (
     tester,
   ) async {
+    // Mit übertragenem Geburtsdatum blendet der Lebensdaten-Dialog seine
+    // Feldbeschriftung ein. Der Taktgeber des Prüfstands löst dabei
+    // gelegentlich ein Bild vor dem letzten aus (`elapsedInSeconds >= 0.0`
+    // in AnimationController._tick) – eine Frage des Prüfstands, nicht der
+    // App (wie in katalog_r2_sic_test.dart).
+    kennFehlerDulden('elapsedInSeconds >= 0.0');
     await start(tester);
     late String a, b;
     await tester.runAsync(() async {
@@ -3614,7 +3620,7 @@ void main() {
     expect(hochzeitSichtbar, isTrue);
     expect(verwaist, isEmpty);
     await finish(tester);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Datenschutz

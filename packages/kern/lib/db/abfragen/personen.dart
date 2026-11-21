@@ -943,13 +943,61 @@ extension PersonenAbfragen on AppDatabase {
   /// [keepPersonId] zugeordnet, anschließend wird die überflüssige
   /// Personen-Zeile gelöscht. Nützlich, wenn die Gesichtserkennung
   /// dieselbe reale Person versehentlich als zwei Personen angelegt hat.
+  ///
+  /// Mit den Gesichtern geht alles, was an der aufgelösten Person hing:
+  /// Lebensdaten und Geschlecht, wo die behaltene keine hat, der
+  /// Lebenslauf, Vorschläge der Wiedererkennung und die Rückmeldungen für
+  /// ihre Schwelle. Bis PER-101 gingen nur Gesichter und Verwandtschaften
+  /// mit; Geburtsdatum und Geschlecht fehlten danach, und der Lebenslauf
+  /// blieb unter der gelöschten Kennung verwaist liegen.
   Future<void> mergePeople({
     required String keepPersonId,
     required String removePersonId,
   }) async {
+    if (keepPersonId == removePersonId) return;
     await transaction(() async {
+      final behalten = await (select(
+        people,
+      )..where((t) => t.id.equals(keepPersonId))).getSingleOrNull();
+      final entfernen = await (select(
+        people,
+      )..where((t) => t.id.equals(removePersonId))).getSingleOrNull();
+      if (behalten != null && entfernen != null) {
+        // Die behaltene Person gilt; Lücken füllt die aufgelöste.
+        await (update(people)..where((t) => t.id.equals(keepPersonId))).write(
+          PeopleCompanion(
+            geburtsdatum: Value(
+              behalten.geburtsdatum ?? entfernen.geburtsdatum,
+            ),
+            sterbedatum: Value(behalten.sterbedatum ?? entfernen.sterbedatum),
+            geschlecht: Value(behalten.geschlecht ?? entfernen.geschlecht),
+            coverFaceCropPath: Value(
+              behalten.coverFaceCropPath ?? entfernen.coverFaceCropPath,
+            ),
+          ),
+        );
+      }
       await (update(faces)..where((t) => t.personId.equals(removePersonId)))
           .write(FacesCompanion(personId: Value(keepPersonId)));
+      await (update(faces)
+            ..where((t) => t.vorschlagPersonId.equals(removePersonId)))
+          .write(FacesCompanion(vorschlagPersonId: Value(keepPersonId)));
+      await (update(lebensereignisse)
+            ..where((t) => t.personId.equals(removePersonId)))
+          .write(LebensereignisseCompanion(personId: Value(keepPersonId)));
+      final rueckmeldungen =
+          await (update(faceMatchFeedback)
+                ..where((t) => t.personId.equals(removePersonId)))
+              .write(FaceMatchFeedbackCompanion(personId: Value(keepPersonId)));
+      if (rueckmeldungen > 0) {
+        await _aktualisiereSchwelle(
+          keepPersonId,
+          await faceSimilarityThresholdWert(),
+        );
+      }
+      await (update(appSettings)
+            ..where((t) => t.stammbaumPerson.equals(removePersonId)))
+          .write(AppSettingsCompanion(stammbaumPerson: Value(keepPersonId)));
       // Die Verwandtschaften der aufgelösten Person würden sonst ins Leere
       // zeigen: Kanten auf eine nicht mehr vorhandene Kennung erscheinen im
       // Stammbaum als namenlose Karte. Übertragen statt löschen – wer zwei

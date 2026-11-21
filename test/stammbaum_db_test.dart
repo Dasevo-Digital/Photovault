@@ -159,6 +159,43 @@ void main() {
     });
   });
 
+  test(
+    'Zusammenführen nimmt Lebensdaten und Lebenslauf mit (PER-101)',
+    () async {
+      await person('b', 'Person B', geburt: DateTime(1980, 4, 2));
+      await (db.update(db.people)..where((t) => t.id.equals('b'))).write(
+        const PeopleCompanion(geschlecht: Value('weiblich')),
+      );
+      await db.fuegeEreignisHinzu(
+        LebensereignisseCompanion.insert(
+          id: 'e1',
+          personId: 'b',
+          art: 'hochzeit',
+          datum: Value(DateTime(2005, 6, 1)),
+        ),
+      );
+      // Die behaltene Person hat schon ein Sterbedatum – das bleibt.
+      await (db.update(db.people)..where((t) => t.id.equals('mutter'))).write(
+        PeopleCompanion(sterbedatum: Value(DateTime(2040))),
+      );
+
+      await db.mergePeople(keepPersonId: 'mutter', removePersonId: 'b');
+
+      final a = await (db.select(
+        db.people,
+      )..where((t) => t.id.equals('mutter'))).getSingle();
+      expect(a.geburtsdatum, DateTime(1980, 4, 2));
+      expect(a.geschlecht, 'weiblich');
+      expect(a.sterbedatum, DateTime(2040));
+      final ereignisse = await db.select(db.lebensereignisse).get();
+      expect([for (final e in ereignisse) e.personId], ['mutter']);
+      expect(
+        await (db.select(db.people)..where((t) => t.id.equals('b'))).get(),
+        isEmpty,
+      );
+    },
+  );
+
   test('Lebensdaten lassen sich setzen und wieder löschen', () async {
     await db.setzeLebensdaten(
       'opa',
