@@ -9578,6 +9578,10 @@ class AppTexteDe extends AppTexte {
       'Unter dieser Adresse antwortet kein Server.';
 
   @override
+  String get serverGeradeNichtErreichbar =>
+      'Der Server ist gerade nicht erreichbar.';
+
+  @override
   String get serverKeinPhotoVault =>
       'Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.';
 

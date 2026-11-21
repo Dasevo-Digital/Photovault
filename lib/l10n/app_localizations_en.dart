@@ -9529,6 +9529,10 @@ class AppTexteEn extends AppTexte {
   String get serverNichtErreichbar => 'No server responds at this address.';
 
   @override
+  String get serverGeradeNichtErreichbar =>
+      'The server cannot be reached right now.';
+
+  @override
   String get serverKeinPhotoVault =>
       'A server responds there, but not a Photo Vault server of a matching version.';
 

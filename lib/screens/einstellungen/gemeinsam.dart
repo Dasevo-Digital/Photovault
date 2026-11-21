@@ -7,6 +7,8 @@ import 'package:cryptography/cryptography.dart'
     show SecretBoxAuthenticationError;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
 
 import '../../l10n/app_localizations.dart';
@@ -93,6 +95,10 @@ String fehlertext(BuildContext context, Object fehler) {
       ursache ?? '',
     ),
     TokenablageFehler() => t.serverTokenSpeichernFehler,
+    // Der Server sagt den Grund als `{"fehler": …}`; roh stand sonst das
+    // JSON da bzw. „KeineVerbindung(ClientException …)“ (SIC-132, SIC-137).
+    KeineVerbindung() => t.serverGeradeNichtErreichbar,
+    final Serverfehler f => grundAus(f) ?? t.serverFehler,
     _ => '$fehler',
   };
 }

@@ -6092,6 +6092,7 @@
   "serverPasskeySeite": "Angemeldet. Zurück zu Photo Vault – dieses Fenster lässt sich schliessen.",
   "serverPasskeyAbgebrochen": "Die Anmeldung mit Passkey wurde nicht abgeschlossen.",
   "serverNichtErreichbar": "Unter dieser Adresse antwortet kein Server.",
+  "serverGeradeNichtErreichbar": "Der Server ist gerade nicht erreichbar.",
   "serverKeinPhotoVault": "Dort antwortet ein Server, aber kein Photo-Vault-Server in passender Fassung.",
   "serverNurHttps": "Ohne Verschlüsselung (http://) nur im eigenen Netz – für eine Adresse im Internet bitte https:// verwenden.",
   "serverAppZuAlt": "Der Server ist neuer als diese App – bitte Photo Vault aktualisieren. Bis dahin gleicht nichts ab.",

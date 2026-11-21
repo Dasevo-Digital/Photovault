@@ -6,6 +6,7 @@ import 'package:kern/abgleich/oidc_verknuepfung.dart';
 import 'package:kern/abgleich/verbindung.dart';
 
 import '../l10n/app_localizations.dart';
+import 'einstellungen/gemeinsam.dart' show fehlertext;
 import '../services/meldungsdienst.dart';
 import '../services/platform/webseite_oeffnen.dart';
 import '../theme/app_spacing.dart';
@@ -62,7 +63,7 @@ class _ServerEigenesKontoScreenState extends State<ServerEigenesKontoScreen> {
         _fehler = null;
       });
     } catch (x) {
-      if (mounted) setState(() => _fehler = '$x');
+      if (mounted) setState(() => _fehler = fehlertext(context, x));
     }
   }
 
@@ -283,10 +284,8 @@ class _PasswortDialogState extends State<_PasswortDialog> {
       if (!mounted) return;
       Navigator.pop(context);
       melde.hinweis(t.serverPasswortGeaendert);
-    } on Serverfehler catch (f) {
-      setState(() => _meldung = f.text.isEmpty ? '${f.status}' : f.text);
     } catch (x) {
-      setState(() => _meldung = '$x');
+      if (mounted) setState(() => _meldung = fehlertext(context, x));
     } finally {
       if (mounted) setState(() => _laeuft = false);
     }

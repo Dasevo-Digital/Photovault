@@ -59,6 +59,13 @@ void main() {
         }(),
         ('POST', '/api/v1/konto/passwort') => () {
           final k = jsonDecode(r.body) as Map;
+          if (k['alt'] == 'falsches passwort') {
+            return http.Response(
+              jsonEncode({'fehler': 'Passwort oder Code stimmt nicht'}),
+              403,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }
           expect(k['code'], '123456', reason: 'mit TOTP der Code');
           return json({'ok': true});
         }(),
@@ -132,6 +139,51 @@ void main() {
     await tester.pumpAndSettle();
     expect(anfragen, contains('POST /api/v1/konto/passwort'));
     expect(find.byType(AlertDialog), findsNothing);
+  });
+
+  // SIC-132: Die Ablehnung des Servers stand als rohes JSON da.
+  testWidgets('Passwort ändern: die Ablehnung des Servers als Satz', (
+    tester,
+  ) async {
+    final t = await zeige(tester);
+    await tester.tap(find.text(t.serverPasswortAendern));
+    await tester.pumpAndSettle();
+    final felder = find.byType(TextField);
+    await tester.enterText(felder.at(0), 'falsches passwort');
+    await tester.enterText(felder.at(1), 'ein neues langes passwort');
+    await tester.enterText(felder.at(2), 'ein neues langes passwort');
+    await tester.tap(find.text(t.serverAendern));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Passwort oder Code stimmt nicht'), findsOneWidget);
+    expect(find.textContaining('{'), findsNothing);
+  });
+
+  // SIC-137: Ohne Server stand die rohe Ausnahme da,
+  // „KeineVerbindung(ClientException with SocketException: …)“.
+  testWidgets('ohne Server ein verständlicher Satz', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: ServerEigenesKontoScreen(
+          verbindung: Serververbindung(
+            Uri.parse('http://server/'),
+            'token',
+            client: MockClient(
+              (_) async => throw http.ClientException('Connection refused'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(
+      tester.element(find.byType(ServerEigenesKontoScreen)),
+    );
+    expect(find.text(t.serverGeradeNichtErreichbar), findsOneWidget);
+    expect(find.textContaining('KeineVerbindung'), findsNothing);
   });
 
   testWidgets('die Verknüpfung steht nur da, wo der Server einen Anbieter '

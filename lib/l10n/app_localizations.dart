@@ -14647,6 +14647,12 @@ abstract class AppTexte {
   /// **'Unter dieser Adresse antwortet kein Server.'**
   String get serverNichtErreichbar;
 
+  /// No description provided for @serverGeradeNichtErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server ist gerade nicht erreichbar.'**
+  String get serverGeradeNichtErreichbar;
+
   /// No description provided for @serverKeinPhotoVault.
   ///
   /// In de, this message translates to:

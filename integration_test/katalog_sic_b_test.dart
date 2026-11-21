@@ -1731,8 +1731,7 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Die Ablehnung des Servers erscheint roh als JSON
-  // (lib/screens/server_eigenes_konto_screen.dart:266).
+  // Behoben in #415: Der Dialog zeigt den Grund über fehlertext (grundAus).
   testWidgets('SIC-132 Ablehnung des Servers als Satz', (tester) async {
     await startApp(tester);
     await _netz(tester, () => _konto('A132'));
@@ -1764,7 +1763,7 @@ void main() {
     expect(text, isNot(startsWith('{')), reason: 'rohes JSON: $text');
     expect(int.tryParse(text), isNull, reason: 'nur eine Statuszahl');
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('SIC-148 SIC-137 Konten und Konto ohne Server', (tester) async {
     await startApp(tester);
@@ -1812,8 +1811,8 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: Ohne Server zeigt „Mein Konto“ die rohe Ausnahme
-  // (lib/screens/server_eigenes_konto_screen.dart:55).
+  // Behoben in #415: „Mein Konto“ übersetzt KeineVerbindung über
+  // fehlertext.
   testWidgets('SIC-137 Fehlertext ohne Server verständlich', (tester) async {
     await startApp(tester);
     await _netz(tester, () => _konto('A137'));
@@ -1841,7 +1840,7 @@ void main() {
     expect(texte, isNot(contains('KeineVerbindung')));
     expect(texte, isNot(contains('Exception')));
     await finish(tester);
-  }, skip: true);
+  });
 
   testWidgets('SIC-158 SIC-161 SIC-168 SIC-171 SIC-175 Abgleich mit einem '
       'zweiten Gerät', (tester) async {
