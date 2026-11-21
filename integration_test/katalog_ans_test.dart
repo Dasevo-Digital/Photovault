@@ -3312,16 +3312,11 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: „Erkannten Text hervorheben“ zeigt keine Kästen. Die Kästen
-  // brauchen die Masse des Bildes (asset_viewer_screen.dart:2012,
-  // `widget.textZeigen && masse != null && _stellen.isNotEmpty`), gesetzt
-  // werden sie aber nur, wenn Drittel-Raster oder Gesichter eingeschaltet
-  // werden (_masseSicherstellen/_gesichterLaden, :1663, :1698–1700, :1752);
-  // didUpdateWidget ruft für textZeigen nichts auf. Nur mit erkanntem Text
-  // allein bleibt das Foto ohne Kästen und ohne Hinweis.
+  // Behoben in #410: Die Seite holt die Bildmasse jetzt für jede Ebene, die
+  // sie braucht (Drittel-Raster, Textkästen, Rahmen zum Nachtragen), nicht nur
+  // für Raster und Gesichter.
   testWidgets(
     'ANS-053 Kästen über dem erkannten Text, Klick kopiert die Zeile',
-    skip: true,
     (tester) async {
       await startApp(
         tester,

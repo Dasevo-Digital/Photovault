@@ -1709,14 +1709,18 @@ class _AssetPageState extends State<_AssetPage> {
     if (_brauchtMasse(widget)) unawaited(_masseSicherstellen());
   }
 
-  /// Raster und Textkästen brauchen die Masse des Bildes so wie die
-  /// Gesichtsrahmen – beide unabhängig davon, ob die Gesichter an sind.
+  /// Raster, Textkästen und der Rahmen zum Nachtragen brauchen die Masse
+  /// des Bildes so wie die Gesichtsrahmen – unabhängig davon, ob die
+  /// Gesichter an sind. Die Gesichtsrahmen holen sie in [_gesichterLaden]
+  /// mit.
   ///
-  /// Früher holte nur das Raster die Masse selbst; „Erkannten Text
-  /// hervorheben“ allein zeigte deshalb keine Rahmen, erst zusammen mit
-  /// „Gesichter zeigen“.
+  /// Eine Ebene, die hier fehlt, erscheint nie: Früher holte nur das
+  /// Raster die Masse selbst; „Erkannten Text hervorheben“ allein zeigte
+  /// deshalb keine Rahmen, erst zusammen mit „Gesichter zeigen“.
   bool _brauchtMasse(_AssetPage w) =>
-      w.drittelRaster || (w.textZeigen && _stellen.isNotEmpty);
+      w.drittelRaster ||
+      (w.textZeigen && _stellen.isNotEmpty) ||
+      w.gesichtAufziehen;
 
   /// Nur mit den Massen ist das Kind der Zoomfläche genau das Foto, und
   /// ein Drittel des Fotos liegt nicht auf einem Drittel des Fensters samt
