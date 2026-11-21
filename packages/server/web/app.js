@@ -5539,6 +5539,17 @@ let offen = -1;
 let vollLauf = 0;
 // Das Foto, dessen volle Auflösung noch kommen kann (siehe ladeVoll).
 let vollOffen = null;
+// Der Wecker nach dem Verweilen. Er gilt nur dem Foto, für das er gestellt
+// wurde: Weiterblättern und Schliessen löschen ihn (vollZuruecksetzen).
+// Bis 3.67 lief er weiter und lud dann das nächste Foto, sobald es da war –
+// beim Blättern unter 400 ms jedes.
+let vollUhr = null;
+function vollZuruecksetzen() {
+  vollLauf++;
+  vollOffen = null;
+  clearTimeout(vollUhr);
+  vollUhr = null;
+}
 function holeVoll(a) {
   const lauf = vollLauf;
   const bild = $('bild');
@@ -5556,7 +5567,8 @@ function holeVoll(a) {
     // Erst nach kurzem Verweilen, wie in der Handy-App (#266): Wer mit den
     // Pfeiltasten durch HEIC oder RAW blättert, stiess sonst für jedes Foto
     // eine Wandlung am Server an.
-    setTimeout(ladeVoll, 400);
+    clearTimeout(vollUhr);
+    vollUhr = setTimeout(() => { vollUhr = null; if (lauf === vollLauf) ladeVoll(); }, 400);
   }, { once: true });
 }
 
@@ -5588,7 +5600,7 @@ function oeffne(i) {
   $('video-hinweis').hidden = true;
   video.controls = true;
   video.onended = null;
-  vollLauf++;
+  vollZuruecksetzen();
   if (a.art === 'video') {
     bild.hidden = true;
     video.hidden = false;
@@ -6094,6 +6106,7 @@ $('info').addEventListener('click', () => setzeAngabenOffen(!angabenOffen));
 
 function schliesse() {
   $('betrachter').hidden = true;
+  vollZuruecksetzen();
   liveAus();
   videoLauf++;
   $('video').pause();
