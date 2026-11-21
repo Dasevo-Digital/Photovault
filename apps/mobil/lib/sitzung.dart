@@ -551,7 +551,10 @@ class Sitzung extends ChangeNotifier {
       final neu = await Serversicherungsstand.hole(a.verbindung);
       final vorher = serversicherung;
       serversicherung = neu;
-      if (vorher?.stufe != neu?.stufe || vorher?.ende != neu?.ende) {
+      if (vorher?.stufe != neu?.stufe ||
+          vorher?.ende != neu?.ende ||
+          vorher?.laeuft != neu?.laeuft ||
+          vorher?.letzterErfolg != neu?.letzterErfolg) {
         notifyListeners();
       }
     } on KeineVerbindung {

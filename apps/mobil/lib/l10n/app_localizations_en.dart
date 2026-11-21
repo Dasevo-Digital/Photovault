@@ -1231,6 +1231,9 @@ class AppTexteEn extends AppTexte {
   String get verwAuswertungRuht => 'Analysis: nothing pending';
 
   @override
+  String get verwAuswertungStartet => 'Analysis running …';
+
+  @override
   String verwAuswertungLaeuft(
     String stufe,
     int nr,

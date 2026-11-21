@@ -1927,6 +1927,12 @@ abstract class AppTexte {
   /// **'Auswertung: nichts offen'**
   String get verwAuswertungRuht;
 
+  /// No description provided for @verwAuswertungStartet.
+  ///
+  /// In de, this message translates to:
+  /// **'Auswertung läuft …'**
+  String get verwAuswertungStartet;
+
   /// No description provided for @verwAuswertungLaeuft.
   ///
   /// In de, this message translates to:

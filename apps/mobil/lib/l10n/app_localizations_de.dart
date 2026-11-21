@@ -1234,6 +1234,9 @@ class AppTexteDe extends AppTexte {
   String get verwAuswertungRuht => 'Auswertung: nichts offen';
 
   @override
+  String get verwAuswertungStartet => 'Auswertung läuft …';
+
+  @override
   String verwAuswertungLaeuft(
     String stufe,
     int nr,

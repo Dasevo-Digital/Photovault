@@ -476,6 +476,7 @@
   "einstSchwelle": "Face recognition threshold",
   "einstSchwelleText": "How similar a face must be to be suggested for a person. Higher means more cautious.",
   "verwAuswertungRuht": "Analysis: nothing pending",
+  "verwAuswertungStartet": "Analysis running …",
   "verwAuswertungLaeuft": "Analysis running: {stufe} ({nr}/{von}), {erledigt} of {gesamt}",
   "verwAnstossen": "Start analysis",
   "verwJetztSichern": "Back up now",

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:abgleich_ui/abgleichsuebersicht.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +12,7 @@ import 'package:kern/unterstuetzen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 import 'eigenes_konto.dart';
@@ -241,13 +244,46 @@ class _KontenZugangState extends State<_KontenZugang> {
 
   Map<String, Object?>? _auswertung;
 
-  Future<void> _ladeAuswertung() async {
+  /// Wie oft die Zeilen nach dem Anstossen nachsehen.
+  static const _nachsehen = Duration(seconds: 3);
+
+  Timer? _auswertungUhr;
+  Timer? _sicherungUhr;
+
+  /// Lädt den Stand der Auswertung. Läuft sie, sieht die Zeile wieder nach,
+  /// bis sie fertig ist; [mindestens] so oft auch dann, wenn sie noch nicht
+  /// läuft – gleich nach dem Anstossen hat der Server oft noch keinen
+  /// Stand. Vorher kam er genau einmal, direkt nach dem POST, und die
+  /// Zeile blieb bei „Auswertung: nichts offen“.
+  Future<void> _ladeAuswertung({int mindestens = 0}) async {
     try {
       final a = await widget.verbindung.hole('api/v1/auswertung');
-      if (mounted) setState(() => _auswertung = a);
+      if (!mounted) return;
+      setState(() => _auswertung = a);
+      if (a['laeuft'] == true || mindestens > 0) {
+        _auswertungUhr?.cancel();
+        _auswertungUhr = Timer(
+          _nachsehen,
+          () => _ladeAuswertung(mindestens: mindestens - 1),
+        );
+      }
     } catch (_) {
       // Ohne Modelle gibt es keine Auswertung – dann bleibt die Zeile weg.
     }
+  }
+
+  /// Nach „Jetzt sichern“: den Stand der Server-Sicherung nachsehen, bis
+  /// der Lauf vorbei ist. Sonst stand oben der alte Zeitpunkt, bis die
+  /// Sitzung nach einer Viertelstunde wieder fragte.
+  Future<void> _ladeSicherung(DateTime? vorher, [int runde = 0]) async {
+    await widget.sitzung.pruefeServersicherung();
+    if (!mounted) return;
+    final s = widget.sitzung.serversicherung;
+    final vorbei = s == null || (!s.laeuft && s.ende != vorher);
+    // Höchstens eine Viertelstunde, dann übernimmt die Sitzung.
+    if (vorbei || _nachsehen * runde > const Duration(minutes: 15)) return;
+    _sicherungUhr?.cancel();
+    _sicherungUhr = Timer(_nachsehen, () => _ladeSicherung(vorher, runde + 1));
   }
 
   @override
@@ -258,20 +294,30 @@ class _KontenZugangState extends State<_KontenZugang> {
     });
   }
 
-  Future<void> _poste(String pfad) async {
+  @override
+  void dispose() {
+    _auswertungUhr?.cancel();
+    _sicherungUhr?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _poste(String pfad, Future<void> Function() danach) async {
+    final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
     try {
       await widget.verbindung.schicke(pfad, const <String, Object?>{});
     } catch (x) {
-      bote.showSnackBar(SnackBar(content: Text('$x')));
+      bote.showSnackBar(SnackBar(content: Text(fehlertext(t, x))));
+      return;
     }
-    await _ladeAuswertung();
+    await danach();
   }
 
   String _auswertungText(AppTexte t) {
     final a = _auswertung!;
     final stand = (a['stand'] as Map?)?.cast<String, Object?>();
-    if (a['laeuft'] != true || stand == null) return t.verwAuswertungRuht;
+    if (a['laeuft'] != true) return t.verwAuswertungRuht;
+    if (stand == null) return t.verwAuswertungStartet;
     int zahl(String k) => (stand[k] as num?)?.toInt() ?? 0;
     return t.verwAuswertungLaeuft(
       '${stand['stufe']}',
@@ -308,7 +354,10 @@ class _KontenZugangState extends State<_KontenZugang> {
                     leading: const Icon(Icons.auto_awesome_outlined),
                     title: Text(_auswertungText(t)),
                     trailing: TextButton(
-                      onPressed: () => _poste('api/v1/auswertung'),
+                      onPressed: () => _poste(
+                        'api/v1/auswertung',
+                        () => _ladeAuswertung(mindestens: 3),
+                      ),
                       child: Text(t.verwAnstossen),
                     ),
                   ),
@@ -318,7 +367,13 @@ class _KontenZugangState extends State<_KontenZugang> {
                   ListTile(
                     leading: const Icon(Icons.backup_table_outlined),
                     title: Text(t.verwJetztSichern),
-                    onTap: () => _poste('api/v1/sicherung/jetzt'),
+                    onTap: () {
+                      final vorher = widget.sitzung.serversicherung?.ende;
+                      _poste(
+                        'api/v1/sicherung/jetzt',
+                        () => _ladeSicherung(vorher),
+                      );
+                    },
                   ),
               ],
             ),

@@ -726,6 +726,7 @@
   "einstSchwelle": "Schwelle der Gesichtserkennung",
   "einstSchwelleText": "Wie ähnlich ein Gesicht sein muss, um einer Person vorgeschlagen zu werden. Höher heisst vorsichtiger.",
   "verwAuswertungRuht": "Auswertung: nichts offen",
+  "verwAuswertungStartet": "Auswertung läuft …",
   "verwAuswertungLaeuft": "Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}",
   "@verwAuswertungLaeuft": {
     "placeholders": {
