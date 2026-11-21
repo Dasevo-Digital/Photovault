@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
@@ -115,6 +115,8 @@ void main() {
 
     await tester.tap(find.byTooltip(de.karteAnsicht));
     await warte(tester);
+    // Das Menü fängt erst nach seiner Einblendung Klicks an.
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text(de.karteTopografie).last);
     await warte(tester);
 
@@ -124,6 +126,64 @@ void main() {
         .last
         .markers;
     expect(fotomarker, hasLength(3), reason: 'einzeln, nicht wie bei Stufe 6');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('der Pin des Globus springt in die schon benutzte helle Karte, '
+      'Zoom 16 auf der Gruppe', (tester) async {
+    // flutter_map behält bei einem schon benutzten Steuerer die alte
+    // Kamera; initialCenter/initialZoom wirkten nicht mehr.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (aufruf) async => wurzel.path,
+        );
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            null,
+          ),
+    );
+    await db.setzeKartenansicht('hell');
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: MapScreen(library: library),
+      ),
+    );
+    await warte(tester);
+    MapController steuerung() =>
+        tester.widget<FlutterMap>(find.byType(FlutterMap)).mapController!;
+    expect(steuerung().camera.zoom, lessThan(10));
+
+    await tester.tap(find.byTooltip(de.karteAnsicht));
+    await warte(tester);
+    // Das Menü fängt erst nach seiner Einblendung Klicks an.
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(find.text(de.karteGlobus).last);
+    await warte(tester);
+    await tester.pump(const Duration(seconds: 1));
+    final pin = find.byWidgetPredicate(
+      (w) => w.runtimeType.toString() == '_GlobePin',
+    );
+    expect(pin, findsOneWidget);
+    await tester.tap(pin, warnIfMissed: false);
+    await warte(tester);
+
+    expect(find.byType(FlutterMap), findsOneWidget);
+    final kamera = steuerung().camera;
+    expect(kamera.zoom, 16);
+    expect(kamera.center.latitude, closeTo(47.0, 0.001));
+    expect(kamera.center.longitude, closeTo(11.002, 0.001));
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump(const Duration(seconds: 1));
