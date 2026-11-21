@@ -208,6 +208,9 @@ class TeilenTexteEn extends TeilenTexte {
   String get kommentarFehler => 'That did not work. Please try again later.';
 
   @override
+  String get fehlerAllgemein => 'That did not work.';
+
+  @override
   String get kommentareHinweis =>
       'Everyone the album is shared with sees the comments.';
 

@@ -157,13 +157,7 @@ class _CollageseiteState extends State<Collageseite> {
       });
     } on Object catch (e) {
       if (!mounted || nummer != _auftrag) return;
-      setState(
-        () => _fehler = switch (e) {
-          Serverfehler(:final text) => text,
-          KeineVerbindung() => teilenTexte(context).geteiltOffline,
-          _ => '$e',
-        },
-      );
+      setState(() => _fehler = teilenFehlertext(context, e));
     } finally {
       if (mounted && nummer == _auftrag) setState(() => _zeichnet = false);
     }
@@ -182,11 +176,7 @@ class _CollageseiteState extends State<Collageseite> {
       if (!mounted) return;
       setState(() {
         _speichert = false;
-        _fehler = switch (e) {
-          Serverfehler(:final text) => text,
-          KeineVerbindung() => teilenTexte(context).geteiltOffline,
-          _ => '$e',
-        };
+        _fehler = teilenFehlertext(context, e);
       });
     }
   }

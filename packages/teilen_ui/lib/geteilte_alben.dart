@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 
@@ -31,6 +32,18 @@ export 'regeln.dart';
 // sein Ordner beim nächsten Blick auf die Albenliste.
 
 String _k(String s) => Uri.encodeComponent(s);
+
+/// Was die Oberfläche zu einem Fehler sagt – nie die rohe Antwort des
+/// Servers wie `{"fehler":"Gerade erst abgelehnt – später wieder."}` und
+/// nie die Ausnahme selbst. Nennt der Server einen Grund, steht der da.
+String teilenFehlertext(BuildContext context, Object fehler) {
+  final t = teilenTexte(context);
+  return switch (fehler) {
+    KeineVerbindung() => t.geteiltOffline,
+    Serverfehler() => grundAus(fehler) ?? t.fehlerAllgemein,
+    _ => t.fehlerAllgemein,
+  };
+}
 
 /// Die Texte dieses Pakets – ohne dass die App sie anmelden muss: in der
 /// Sprache, die gerade gilt.
@@ -1187,7 +1200,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
     try {
       await schritt();
     } on Serverfehler catch (e) {
-      if (mounted) setState(() => _fehler = e.text);
+      if (mounted) setState(() => _fehler = teilenFehlertext(context, e));
       return;
     } on KeineVerbindung {
       if (mounted) {
@@ -1748,7 +1761,7 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
       );
       if (r.statusCode != 204) throw Serverfehler(r.statusCode, r.body);
     } on Serverfehler catch (e) {
-      if (mounted) setState(() => _fehler = e.text);
+      if (mounted) setState(() => _fehler = teilenFehlertext(context, e));
       return;
     } on KeineVerbindung {
       if (mounted) {

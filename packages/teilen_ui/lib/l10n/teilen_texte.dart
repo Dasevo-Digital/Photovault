@@ -410,6 +410,12 @@ abstract class TeilenTexte {
   /// **'Das hat nicht geklappt. Bitte später noch einmal versuchen.'**
   String get kommentarFehler;
 
+  /// No description provided for @fehlerAllgemein.
+  ///
+  /// In de, this message translates to:
+  /// **'Das hat nicht geklappt.'**
+  String get fehlerAllgemein;
+
   /// No description provided for @kommentareHinweis.
   ///
   /// In de, this message translates to:

@@ -212,6 +212,9 @@ class TeilenTexteDe extends TeilenTexte {
       'Das hat nicht geklappt. Bitte später noch einmal versuchen.';
 
   @override
+  String get fehlerAllgemein => 'Das hat nicht geklappt.';
+
+  @override
   String get kommentareHinweis =>
       'Alle, mit denen das Album geteilt ist, sehen die Kommentare.';
 

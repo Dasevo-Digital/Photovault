@@ -199,7 +199,7 @@ class _NachlassblattState extends State<_Nachlassblatt> {
     try {
       await schritt();
     } on Serverfehler catch (e) {
-      if (mounted) setState(() => _fehler = e.text);
+      if (mounted) setState(() => _fehler = teilenFehlertext(context, e));
       return;
     } on KeineVerbindung {
       if (mounted) {
