@@ -907,6 +907,7 @@
   "kammerVerwerfenText": "Staging has no trash. Discarded photos then only exist where they came from – on the memory card, for instance. Photos from the timeline stay in the trash until it expires.",
   "kammerFreigegeben": "{anzahl, plural, =1{1 photo moved into the library} other{{anzahl} photos moved into the library}}",
   "@kammerFreigegeben": {"placeholders": {"anzahl": {"type": "int"}}},
+  "kammerNichtErreichbar": "Server not reachable",
   "kammerFehler": "Staging: {fehler}",
   "@kammerFehler": {"placeholders": {"fehler": {"type": "String"}}},
   "kammerServerAlt": "The server does not know staging yet. Update it to the new version.",

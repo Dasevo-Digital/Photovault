@@ -4411,6 +4411,12 @@ abstract class AppTexte {
   /// **'{anzahl, plural, =1{1 Foto in die Bibliothek übernommen} other{{anzahl} Fotos in die Bibliothek übernommen}}'**
   String kammerFreigegeben(int anzahl);
 
+  /// No description provided for @kammerNichtErreichbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Server nicht erreichbar'**
+  String get kammerNichtErreichbar;
+
   /// No description provided for @kammerFehler.
   ///
   /// In de, this message translates to:

@@ -24,6 +24,7 @@ void main() {
   late List<Map<String, Object?>> urteile;
   late int stufe;
   late List<Object?> ziele;
+  late bool erreichbar;
 
   final jpeg = img.encodeJpg(img.Image(width: 8, height: 6));
 
@@ -40,6 +41,7 @@ void main() {
 
   Fotokammerdienst dienst() {
     final client = MockClient((r) async {
+      if (!erreichbar) throw http.ClientException('Verbindung abgewiesen');
       final pfad = r.url.path;
       anfragen.add('${r.method} $pfad');
       http.Response json(Object? o) => http.Response(
@@ -122,6 +124,7 @@ void main() {
     urteile = [];
     stufe = 4;
     ziele = [];
+    erreichbar = true;
   });
 
   Future<void> zeige(WidgetTester tester, Fotokammerdienst? d) async {
@@ -142,6 +145,21 @@ void main() {
   testWidgets('ohne Server ein Hinweis statt der Kammer', (tester) async {
     await zeige(tester, null);
     expect(find.textContaining('Photo Vault Server'), findsOneWidget);
+  });
+
+  testWidgets('ohne erreichbaren Server ein Fehler mit „Neu laden“ '
+      '(BEA-162)', (tester) async {
+    // Kein veralteter Server: Der Fehler steht da, lesbar, und „Neu laden“
+    // versucht es noch einmal.
+    erreichbar = false;
+    await zeige(tester, dienst());
+    expect(find.text('Fotokammer: Server nicht erreichbar'), findsOneWidget);
+    expect(find.textContaining('Aktualisiere ihn'), findsNothing);
+    expect(find.textContaining('KeineVerbindung'), findsNothing);
+    erreichbar = true;
+    await tester.tap(find.text('Neu laden'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('6 Fotos · '), findsOneWidget);
   });
 
   testWidgets('zeigt die Kammer und fragt nur nach vorhandenen Bildern', (

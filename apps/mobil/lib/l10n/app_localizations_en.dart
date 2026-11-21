@@ -2872,6 +2872,9 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get kammerNichtErreichbar => 'Server not reachable';
+
+  @override
   String kammerFehler(String fehler) {
     return 'Staging: $fehler';
   }

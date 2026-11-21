@@ -7415,13 +7415,10 @@ void _serverTests() {
   );
 
   // BEA-162, zweiter Teil: Server nicht erreichbar.
-  // Befund: Ist der Server nicht erreichbar, zeigt die Fotokammer „Der Server
-  // kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.“
-  // ohne „Neu laden“ statt „Fotokammer: <Fehler>“ mit „Neu laden“. Zweimal
-  // reproduziert. Fotokammerdienst.stufe() schluckt jeden Fehler und gibt 0
-  // zurück (packages/abgleich_ui/lib/fotokammer_dienst.dart:232-237); der
-  // Bildschirm wertet 0 als veralteten Server
-  // (lib/screens/fotokammer_screen.dart:152, 590).
+  // Behoben in #411: Fotokammerdienst.stufe() reicht den Verbindungsfehler
+  // durch, statt 0 zu melden; die Fotokammer zeigt „Fotokammer: Server
+  // nicht erreichbar“ mit „Neu laden“ statt „Der Server kennt die
+  // Fotokammer noch nicht“.
   testWidgets('BEA-162 Befund Mitserver Fotokammer ohne erreichbaren Server', (
     tester,
   ) async {
@@ -7458,7 +7455,7 @@ void _serverTests() {
     expect(fehler, findsWidgets);
     expect(find.text(de.kammerNeuLaden), findsWidgets);
     await abschluss(tester);
-  }, skip: true);
+  }, skip: ohneServer);
 
   testWidgets(
     'BEA-169 Mitserver Fotos aus der Zeitleiste zurück in die Fotokammer',

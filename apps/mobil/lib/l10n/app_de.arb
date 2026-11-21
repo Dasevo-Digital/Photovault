@@ -1426,6 +1426,7 @@
   "kammerVerwerfenText": "Die Fotokammer hat keinen Papierkorb. Verworfene Fotos liegen danach nur noch dort, woher sie kamen – etwa auf der Speicherkarte. Fotos aus der Zeitleiste bleiben bis zum Ablauf im Papierkorb.",
   "kammerFreigegeben": "{anzahl, plural, =1{1 Foto in die Bibliothek übernommen} other{{anzahl} Fotos in die Bibliothek übernommen}}",
   "@kammerFreigegeben": {"placeholders": {"anzahl": {"type": "int"}}},
+  "kammerNichtErreichbar": "Server nicht erreichbar",
   "kammerFehler": "Fotokammer: {fehler}",
   "@kammerFehler": {"placeholders": {"fehler": {"type": "String"}}},
   "kammerServerAlt": "Der Server kennt die Fotokammer noch nicht. Aktualisiere ihn auf die neue Fassung.",

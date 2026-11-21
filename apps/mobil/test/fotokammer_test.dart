@@ -17,6 +17,7 @@ void main() {
   late List<List<String>> verworfen;
   late List<Map<String, Object?>> urteile;
   late int stufe;
+  late bool erreichbar;
 
   final jpeg = img.encodeJpg(img.Image(width: 8, height: 6));
 
@@ -35,6 +36,7 @@ void main() {
       Uri.parse('http://server/'),
       'x',
       client: MockClient((r) async {
+        if (!erreichbar) throw http.ClientException('Verbindung abgewiesen');
         final pfad = r.url.path;
         http.Response json(Object? o) => http.Response(
           jsonEncode(o),
@@ -85,6 +87,7 @@ void main() {
     verworfen = [];
     urteile = [];
     stufe = 4;
+    erreichbar = true;
   });
 
   Future<void> zeige(WidgetTester tester) async {
@@ -103,6 +106,16 @@ void main() {
   }
 
   Finder kachel(int i) => find.byType(GestureDetector).at(i);
+
+  testWidgets('ohne erreichbaren Server ein lesbarer Fehler (BEA-162)', (
+    tester,
+  ) async {
+    // Kein veralteter Server und kein Name einer Ausnahme.
+    erreichbar = false;
+    await zeige(tester);
+    expect(find.text('Fotokammer: Server nicht erreichbar'), findsOneWidget);
+    expect(find.textContaining('KeineVerbindung'), findsNothing);
+  });
 
   testWidgets('langes Drücken wählt aus, Freigeben schickt die Auswahl', (
     tester,

@@ -3,8 +3,18 @@ import 'dart:typed_data';
 
 import 'package:abgleich_ui/fotokammer_dienst.dart';
 import 'package:flutter/material.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/verbindung.dart';
 
 import '../l10n/app_localizations.dart';
+
+/// Was bei der Kammer schiefging, als Satz statt als Name einer Ausnahme
+/// („KeineVerbindung(…)“, BEA-162).
+String _fehlertext(AppTexte t, Object fehler) => switch (fehler) {
+  KeineVerbindung() => t.kammerNichtErreichbar,
+  final Serverfehler f => grundAus(f) ?? t.fehlerAllgemein,
+  _ => t.fehlerAllgemein,
+};
 
 /// Die Fotokammer am Handy (#350): unterwegs sichten, was schon auf dem
 /// Server liegt, aber noch nicht in der Bibliothek.
@@ -57,7 +67,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     } on Object catch (e) {
       if (mounted) {
         setState(() {
-          _fehler = '$e';
+          _fehler = _fehlertext(AppTexte.of(context), e);
           _lage = _Lage.fehler;
         });
       }
@@ -77,7 +87,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
     try {
       await was();
     } on Object catch (e) {
-      if (mounted) _melde(t.kammerFehler('$e'));
+      if (mounted) _melde(t.kammerFehler(_fehlertext(t, e)));
     } finally {
       if (mounted) setState(() => _arbeitet = false);
       _auswahl.clear();
@@ -129,7 +139,7 @@ class _FotokammerSeiteState extends State<FotokammerSeite> {
       stand = await _d.listeNachUrteilen();
     } on Object catch (e) {
       if (mounted) setState(() => _arbeitet = false);
-      _melde(t.kammerFehler('$e'));
+      _melde(t.kammerFehler(_fehlertext(t, e)));
       return;
     }
     if (!mounted) return;
@@ -407,7 +417,9 @@ class _KammerbetrachterState extends State<_Kammerbetrachter> {
       await widget.dienst.sichten([e.id], sterne: sterne, abgelehnt: abgelehnt);
     } on Object catch (x) {
       if (mounted) setState(() => widget.eintraege[i] = e);
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$x'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(_fehlertext(t, x)))),
+      );
     }
   }
 

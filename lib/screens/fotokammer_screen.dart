@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart' show kDoubleTapTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/konten.dart' show grundAus;
+import 'package:kern/abgleich/verbindung.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/fotokammer_dienst.dart';
@@ -15,6 +17,14 @@ import '../widgets/selection_action_bar.dart' show confirmDialog;
 import '../widgets/star_rating.dart';
 import 'home_shell.dart' show Hauptbereich;
 
+/// Was bei der Kammer schiefging, als Satz statt als Name einer Ausnahme
+/// („KeineVerbindung(…)“, BEA-162).
+String kammerFehlertext(AppTexte t, Object fehler) => switch (fehler) {
+  KeineVerbindung() => t.importFehlerKeineVerbindung,
+  final Serverfehler f => grundAus(f) ?? t.serverFehler,
+  _ => t.serverFehler,
+};
+
 /// Legt [ids] aus der Zeitleiste zurück in die Fotokammer (#337) – nach
 /// einer Rückfrage, die sagt, was dabei geschieht. Gibt zurück, ob etwas
 /// hineinkam.
@@ -27,8 +37,15 @@ Future<bool> inDieFotokammer(
   if (d == null || ids.isEmpty) return false;
   final t = AppTexte.of(context);
   final bote = ScaffoldMessenger.of(context);
-  if (!await d.moeglich(stufe: 2)) {
-    bote.showSnackBar(SnackBar(content: Text(t.kammerServerAlt)));
+  try {
+    if (!await d.moeglich(stufe: 2)) {
+      bote.showSnackBar(SnackBar(content: Text(t.kammerServerAlt)));
+      return false;
+    }
+  } on Object catch (e) {
+    bote.showSnackBar(
+      SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+    );
     return false;
   }
   if (!context.mounted) return false;
@@ -72,7 +89,9 @@ Future<bool> inDieFotokammer(
     );
     return r.neu > 0;
   } on Object catch (e) {
-    bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+    bote.showSnackBar(
+      SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+    );
     return false;
   }
 }
@@ -165,7 +184,7 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     } on Object catch (e) {
       if (mounted) {
         setState(() {
-          _fehler = '$e';
+          _fehler = kammerFehlertext(AppTexte.of(context), e);
           _lage = _Lage.fehler;
         });
       }
@@ -210,7 +229,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
         ),
       );
     } on Object catch (e) {
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+      );
     } finally {
       if (mounted) setState(() => _arbeit = null);
       _auswahl.clear();
@@ -246,7 +267,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     try {
       await d.verwerfen(_auswahl.toList());
     } on Object catch (e) {
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+      );
     } finally {
       if (mounted) setState(() => _arbeit = null);
       _auswahl.clear();
@@ -275,7 +298,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
       stand = await d.listeNachUrteilen();
     } on Object catch (e) {
       if (mounted) setState(() => _arbeit = null);
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+      );
       return;
     }
     if (!mounted) return;
@@ -336,7 +361,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
         SnackBar(content: Text(t.kammerFreigegeben(r.neu + r.schonDa))),
       );
     } on Object catch (e) {
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+      );
     } finally {
       if (mounted) setState(() => _arbeit = null);
       _auswahl.clear();
@@ -402,7 +429,9 @@ class _FotokammerScreenState extends State<FotokammerScreen> {
     try {
       await d.sichten(ids, abgelehnt: true);
     } on Object catch (e) {
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$e'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, e)))),
+      );
     }
     await _lade();
   }
@@ -959,7 +988,9 @@ mixin _Urteil<T extends StatefulWidget> on State<T> {
       );
     } on Object catch (x) {
       if (mounted) setState(() => _urteilsliste[i] = e);
-      bote.showSnackBar(SnackBar(content: Text(t.kammerFehler('$x'))));
+      bote.showSnackBar(
+        SnackBar(content: Text(t.kammerFehler(kammerFehlertext(t, x)))),
+      );
     }
   }
 }

@@ -2882,6 +2882,9 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get kammerNichtErreichbar => 'Server nicht erreichbar';
+
+  @override
   String kammerFehler(String fehler) {
     return 'Fotokammer: $fehler';
   }

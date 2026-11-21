@@ -229,13 +229,13 @@ class Fotokammerdienst {
   Future<bool> moeglich({int stufe = 1}) async => await this.stufe() >= stufe;
 
   /// Was der Server von der Kammer kennt; 0, wenn gar nichts.
+  ///
+  /// Ist er nicht zu erreichen oder lehnt er ab, kommt der Fehler durch.
+  /// Bis BEA-162 hiess jeder Fehler hier 0, und ein abgeschalteter Server
+  /// galt als veraltet – ohne „Neu laden“.
   Future<int> stufe() async {
-    try {
-      final z = await verbindung.hole('api/v1/zustand');
-      return (z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0;
-    } on Object {
-      return 0;
-    }
+    final z = await verbindung.hole('api/v1/zustand');
+    return (z['funktionen'] as Map?)?['fotokammer'] as int? ?? 0;
   }
 
   /// Merkt das Urteil über [ids] am Server.
