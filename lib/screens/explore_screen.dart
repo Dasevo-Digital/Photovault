@@ -9,6 +9,7 @@ import '../l10n/app_localizations.dart';
 import 'package:kern/services/rasterstufen.dart';
 import 'package:kern/services/rueckblick.dart';
 import 'package:kern/services/search_filters.dart';
+import 'package:kern/services/sortierung.dart' show Rastersortierung;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
@@ -181,7 +182,12 @@ class ExploreScreen extends StatelessWidget {
             // und deshalb die einzige, die beim Ziehen am Fenster neu
             // abonniert werden muss.
             anzahlImStrom: true,
-            strom: (anzahl) => library.db.watchTimeline(limit: anzahl),
+            // Nach der Importzeit, nicht nach dem Aufnahmedatum: Ein
+            // gerade eingelesenes Foto von 2001 stand sonst hinten.
+            strom: (anzahl) => library.db.watchTimeline(
+              limit: anzahl,
+              sortierung: Rastersortierung.importNeu,
+            ),
             leerHinweis: AppTexte.of(context).erkundenKeineFotos,
             kachel: (context, gezeigt, index) => _Fotokachel(
               library: library,

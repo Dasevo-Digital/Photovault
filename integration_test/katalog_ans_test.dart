@@ -6358,50 +6358,43 @@ void main() {
     await finish(tester);
   });
 
-  // Befund: „Zuletzt hinzugefügte Fotos“ ordnet nach dem Aufnahmedatum,
-  // nicht nach der Importzeit – explore_screen.dart:184
-  // `library.db.watchTimeline(limit: anzahl)` ohne
-  // Rastersortierung.importNeu. Ein zuletzt importiertes altes Foto steht
-  // hinten bzw. gar nicht in der Reihe.
-  testWidgets(
-    'ANS-123 Zuletzt importiertes altes Foto steht vorn',
-    skip: true,
-    (tester) async {
-      await startApp(
-        tester,
-        fotos: [
-          for (var i = 0; i < 4; i++)
-            testfoto('neu$i.jpg', datum: DateTime(2025, 5, 1 + i)),
-        ],
-      );
-      await echt(
-        () => Future<void>.delayed(const Duration(milliseconds: 1100)),
-      );
-      await importiereDirekt(tester, [
-        testfoto('altimport.jpg', datum: DateTime(2001, 1, 1)),
-      ]);
-      await openSection(tester, Hauptbereich.rueckblick);
-      final rolle = rolleIn(ExploreScreen);
-      await rolleZu(tester, find.text(de.erkundenLetzteFotos), in_: rolle);
-      final reihe = find.descendant(
-        of: find
-            .ancestor(
-              of: find.text(de.erkundenLetzteFotos),
-              matching: find.byType(Column),
-            )
-            .first,
-        matching: find.byType(AssetThumbnailTile),
-      );
-      await waitFor(tester, reihe);
-      final namen = [
-        for (final e in reihe.evaluate())
-          (e.widget as AssetThumbnailTile).asset.originalFileName,
-      ];
-      print('ANS-123: Zuletzt hinzugefügt → $namen');
-      expect(namen.first, 'altimport.jpg');
-      await finish(tester);
-    },
-  );
+  // Behoben in #410: Der Streifen „Zuletzt hinzugefügte Fotos“ fragt die
+  // Zeitleiste nach der Importzeit sortiert ab (Rastersortierung.importNeu).
+  testWidgets('ANS-123 Zuletzt importiertes altes Foto steht vorn', (
+    tester,
+  ) async {
+    await startApp(
+      tester,
+      fotos: [
+        for (var i = 0; i < 4; i++)
+          testfoto('neu$i.jpg', datum: DateTime(2025, 5, 1 + i)),
+      ],
+    );
+    await echt(() => Future<void>.delayed(const Duration(milliseconds: 1100)));
+    await importiereDirekt(tester, [
+      testfoto('altimport.jpg', datum: DateTime(2001, 1, 1)),
+    ]);
+    await openSection(tester, Hauptbereich.rueckblick);
+    final rolle = rolleIn(ExploreScreen);
+    await rolleZu(tester, find.text(de.erkundenLetzteFotos), in_: rolle);
+    final reihe = find.descendant(
+      of: find
+          .ancestor(
+            of: find.text(de.erkundenLetzteFotos),
+            matching: find.byType(Column),
+          )
+          .first,
+      matching: find.byType(AssetThumbnailTile),
+    );
+    await waitFor(tester, reihe);
+    final namen = [
+      for (final e in reihe.evaluate())
+        (e.widget as AssetThumbnailTile).asset.originalFileName,
+    ];
+    print('ANS-123: Zuletzt hinzugefügt → $namen');
+    expect(namen.first, 'altimport.jpg');
+    await finish(tester);
+  });
 
   testWidgets(
     'ANS-125 ANS-126 ANS-127 Erinnerungen: letzte zwei Wochen, Reisen, merken, '
