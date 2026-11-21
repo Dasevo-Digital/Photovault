@@ -98,6 +98,10 @@ class AssetViewerScreen extends StatefulWidget {
   /// schnellen Durchlauf frisch importierter oder noch unbewerteter Fotos.
   final bool cullingMode;
 
+  /// Wo die Arbeitskopien für darktable liegen. Ohne Angabe der übliche
+  /// Ordner ([DarktableBruecke.standard]); ein Test gibt einen eigenen.
+  final DarktableBruecke? darktable;
+
   const AssetViewerScreen({
     super.key,
     required this.assets,
@@ -109,6 +113,7 @@ class AssetViewerScreen extends StatefulWidget {
     this.onDelete,
     this.onLock,
     this.cullingMode = false,
+    this.darktable,
   });
 
   @override
@@ -546,7 +551,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     );
   }
 
-  final _darktable = DarktableBruecke.standard();
+  late final _darktable = widget.darktable ?? DarktableBruecke.standard();
 
   /// Nur Fotos, und nichts aus dem gesperrten Ordner: Dessen Klartext hat
   /// in einem fremden Programm nichts zu suchen.
@@ -571,6 +576,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         ], bewertungImmer: true),
       );
       if (!mounted) return;
+      // Jetzt liegt eine Arbeitskopie bereit: Das Menü muss „Ergebnis aus
+      // darktable übernehmen“ zeigen, und das fragt es beim Aufbau
+      // (BEA-152).
+      setState(() {});
       if (gestartet) {
         melde.hinweis(t.darktableGeoeffnet);
       } else {
