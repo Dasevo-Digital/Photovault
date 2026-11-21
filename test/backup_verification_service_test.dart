@@ -116,4 +116,81 @@ void main() {
     expect(ende.erfolgreich, isTrue);
     expect(ende.gueltig, 1);
   });
+  // SIC-061: Die Gründe standen als feste deutsche Sätze in einer
+  // FormatException und gingen so in die Oberfläche, auch in die englische.
+  group('ein Ordner ohne taugliches Dateiverzeichnis', () {
+    Future<Object?> fehlerFuer(Directory ordner) async {
+      try {
+        await BackupPruefdienst().pruefe(ordner.path).drain<void>();
+      } catch (e) {
+        return e;
+      }
+      return null;
+    }
+
+    Directory ordner(String name, [String? metadaten]) {
+      final o = Directory(p.join(temp.path, name))..createSync();
+      if (metadaten != null) {
+        File(p.join(o.path, 'metadata.json')).writeAsStringSync(metadaten);
+      }
+      return o;
+    }
+
+    test('fehlt', () async {
+      expect(
+        await fehlerFuer(ordner('leer')),
+        isA<BackupManifestFehler>().having(
+          (f) => f.problem,
+          'problem',
+          Manifestproblem.fehlt,
+        ),
+      );
+    });
+
+    test('kein Objekt oder kein JSON', () async {
+      for (final (name, inhalt) in [('liste', '[]'), ('kaputt', '{nicht')]) {
+        expect(
+          await fehlerFuer(ordner(name, inhalt)),
+          isA<BackupManifestFehler>().having(
+            (f) => f.problem,
+            'problem',
+            Manifestproblem.unlesbar,
+          ),
+          reason: name,
+        );
+      }
+    });
+
+    test('ohne Dateien', () async {
+      expect(
+        await fehlerFuer(ordner('ohne', '{"assets": []}')),
+        isA<BackupManifestFehler>().having(
+          (f) => f.problem,
+          'problem',
+          Manifestproblem.leer,
+        ),
+      );
+    });
+  });
+
+  // SIC-065: Eine falsche Passphrase kam als roher
+  // SecretBoxAuthenticationError in der Oberfläche an.
+  test('eine falsche Passphrase meldet sich als PassphraseFalsch', () async {
+    final backup = Directory(p.join(temp.path, 'PhotoVault-Backup'))
+      ..createSync();
+    final schluessel = await VaultCrypto.createMasterKey('richtig-genug');
+    await File(p.join(backup.path, 'vault.key')).writeAsString(
+      jsonEncode({
+        'kdfSalt': base64Encode(schluessel.kdfSalt),
+        'nonce': base64Encode(schluessel.nonce),
+        'wrapped': base64Encode(schluessel.wrapped),
+      }),
+    );
+    await expectLater(
+      BackupPruefdienst()
+          .pruefe(backup.path, passphrase: 'falsch-genug')
+          .drain<void>(),
+      throwsA(isA<PassphraseFalsch>()),
+    );
+  });
 }

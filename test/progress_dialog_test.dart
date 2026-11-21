@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
+import 'package:cryptography/cryptography.dart';
 import 'package:photo_vault/services/backup_koordinator.dart';
+import 'package:photo_vault/services/backup_verification_service.dart';
+import 'package:photo_vault/services/vault_crypto.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/progress_dialog.dart';
 
@@ -10,10 +13,14 @@ import 'package:photo_vault/widgets/progress_dialog.dart';
 void main() {
   final de = lookupAppTexte(const Locale('de'));
 
-  Future<void> zeige(WidgetTester tester, Stream<String> strom) async {
+  Future<void> zeige(
+    WidgetTester tester,
+    Stream<String> strom, {
+    String sprache = 'de',
+  }) async {
     await tester.pumpWidget(
       MaterialApp(
-        locale: const Locale('de'),
+        locale: Locale(sprache),
         localizationsDelegates: AppTexte.localizationsDelegates,
         supportedLocales: AppTexte.supportedLocales,
         theme: buildLightTheme(),
@@ -61,5 +68,33 @@ void main() {
       find.text(de.fortschrittFehlgeschlagen('eigener Satz')),
       findsOneWidget,
     );
+  });
+  // SIC-061, SIC-065: Prüffehler und falsche Passphrase kamen als feste
+  // deutsche Sätze bzw. roher Fehler der Entschlüsselung an – auch in der
+  // englischen Oberfläche.
+  testWidgets('Prüffehler und falsche Passphrase erscheinen übersetzt', (
+    tester,
+  ) async {
+    final en = lookupAppTexte(const Locale('en'));
+    for (final (fehler, text) in <(Object, String)>[
+      (
+        const BackupManifestFehler(Manifestproblem.fehlt),
+        en.backupManifestFehlt,
+      ),
+      (
+        const BackupManifestFehler(Manifestproblem.unlesbar),
+        en.backupManifestUnlesbar,
+      ),
+      (const BackupManifestFehler(Manifestproblem.leer), en.backupManifestLeer),
+      (const PassphraseFalsch(), en.passphraseFalsch),
+      (SecretBoxAuthenticationError(), en.entschluesselnFehlgeschlagen),
+    ]) {
+      await zeige(tester, Stream<String>.error(fehler), sprache: 'en');
+      expect(
+        find.text(en.fortschrittFehlgeschlagen(text)),
+        findsOneWidget,
+        reason: '$fehler',
+      );
+    }
   });
 }

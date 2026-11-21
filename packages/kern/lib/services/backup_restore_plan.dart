@@ -34,7 +34,7 @@ class RestorePlaner {
     if (schluessel == null && await keyFile.exists()) {
       if (passphrase == null) throw const BackupBrauchtPassphrase();
       final j = jsonDecode(await keyFile.readAsString()) as Map;
-      schluessel = await VaultCrypto.unwrapMasterKey(
+      schluessel = await VaultCrypto.unwrapMitPassphrase(
         passphrase,
         kdfSalt: base64Decode(j['kdfSalt'] as String),
         nonce: base64Decode(j['nonce'] as String),

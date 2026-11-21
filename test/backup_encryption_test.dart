@@ -87,7 +87,9 @@ void main() {
       final targetImport = ImportService(targetDb, targetPaths);
       final targetBackup = BackupService(targetDb, targetPaths);
 
-      // Falscher Passphrase schlägt fehl.
+      // Falscher Passphrase schlägt fehl – als eigener Fall, den die
+      // Oberfläche übersetzen kann (SIC-065), nicht als roher
+      // SecretBoxAuthenticationError.
       await expectLater(
         targetBackup
             .restoreFromBackup(
@@ -96,7 +98,7 @@ void main() {
               passphrase: 'falsches-passwort',
             )
             .drain<void>(),
-        throwsA(anything),
+        throwsA(isA<PassphraseFalsch>()),
       );
       expect(await targetDb.select(targetDb.assets).get(), isEmpty);
 

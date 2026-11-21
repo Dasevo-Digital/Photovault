@@ -1422,14 +1422,10 @@ void main() {
     await fertig(tester);
   });
 
-  // Befund: Die Fehler der Backup-Prüfung stehen als fertige deutsche
-  // Sätze im Dienst (lib/services/backup_verification_service.dart:118,
-  // 224, 233) und gehen über den Rückfall '$fehler' in fehlertext
-  // (lib/screens/einstellungen/gemeinsam.dart:83) unübersetzt und mit
-  // „FormatException:“ davor in die Oberfläche – auch in der englischen.
+  // Behoben in #415: Der Prüfdienst wirft BackupManifestFehler, fehlertext
+  // übersetzt ihn.
   testWidgets(
     'SIC-061 Befund: Fehler der Backup-Prüfung in der englischen Oberfläche',
-    skip: true,
     (tester) async {
       await starteApp(tester, sprache: 'en');
       final leer = ordner('leer');
@@ -1829,12 +1825,10 @@ void main() {
     },
   );
 
-  // Befund: Bei falscher Passphrase steht der rohe Fehler der
-  // Entschlüsselung im Fenster (Rückfall '$fehler' in fehlertext,
-  // lib/screens/einstellungen/gemeinsam.dart:83).
+  // Behoben in #415: Eine falsche Passphrase kommt als PassphraseFalsch
+  // an und erscheint als „Falsche Passphrase.“.
   testWidgets(
     'SIC-065 Befund: falsche Passphrase beim Wiederherstellen, lesbare Meldung',
-    skip: true,
     (tester) async {
       await starteApp(tester);
       await importiereDirekt(tester, [testfoto('w.jpg')]);

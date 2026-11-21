@@ -2299,6 +2299,10 @@
   },
   "backupPassphraseNoetig": "Dieses Backup ist verschlüsselt – eine Passphrase wird benötigt.",
   "backupOrdnerFehlt": "Im gewählten Ordner liegt kein Backup.",
+  "backupManifestFehlt": "Im Ordner fehlt das Dateiverzeichnis eines Backups (metadata.json) – er enthält kein Backup von Photo Vault.",
+  "backupManifestUnlesbar": "Das Dateiverzeichnis des Backups (metadata.json) ist beschädigt oder hat kein gültiges Format.",
+  "backupManifestLeer": "Das Backup enthält keine Dateien, die sich prüfen ließen.",
+  "entschluesselnFehlgeschlagen": "Eine verschlüsselte Datei ließ sich nicht entschlüsseln – sie ist beschädigt oder gehört zu einem anderen Schlüssel.",
   "downloadPruefsummeFehler": "Prüfsumme von {datei} stimmt nicht mit der erwarteten SHA-256 überein (erhalten {erhalten}, erwartet {erwartet}) – Download verworfen. Die Datei am Server hat sich möglicherweise geändert oder wurde beim Transfer verändert.",
   "@downloadPruefsummeFehler": {
     "placeholders": {

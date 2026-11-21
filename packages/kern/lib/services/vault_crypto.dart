@@ -116,6 +116,27 @@ class VaultCrypto {
     );
   }
 
+  /// Wie [unwrapMasterKey], für eine eingegebene Passphrase: Passt sie
+  /// nicht, kommt [PassphraseFalsch] statt des rohen
+  /// [SecretBoxAuthenticationError].
+  static Future<SecretKey> unwrapMitPassphrase(
+    String passphrase, {
+    required List<int> kdfSalt,
+    required List<int> nonce,
+    required List<int> wrapped,
+  }) async {
+    try {
+      return await unwrapMasterKey(
+        passphrase,
+        kdfSalt: kdfSalt,
+        nonce: nonce,
+        wrapped: wrapped,
+      );
+    } on SecretBoxAuthenticationError {
+      throw const PassphraseFalsch();
+    }
+  }
+
   /// Entpackt den Master-Key mit [pin]. Wirft [SecretBoxAuthenticationError],
   /// wenn der PIN falsch ist (GCM-Authentifizierung schlägt fehl) – das ist
   /// zugleich die einzige PIN-Prüfung der App, es gibt keinen separat
@@ -531,4 +552,14 @@ class VaultCrypto {
     }
     return true;
   }
+}
+
+/// Die eingegebene Passphrase passt nicht zum Schlüssel.
+///
+/// Eigene Klasse statt des [SecretBoxAuthenticationError] von unten: Die
+/// Oberfläche übersetzt den Fall. Vorher stand beim Wiederherstellen mit
+/// falscher Passphrase „SecretBoxAuthenticationError: SecretBox has wrong
+/// message authentication code (MAC)“ im Fenster (SIC-065).
+class PassphraseFalsch implements Exception {
+  const PassphraseFalsch();
 }

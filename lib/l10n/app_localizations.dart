@@ -6855,6 +6855,30 @@ abstract class AppTexte {
   /// **'Im gewählten Ordner liegt kein Backup.'**
   String get backupOrdnerFehlt;
 
+  /// No description provided for @backupManifestFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Ordner fehlt das Dateiverzeichnis eines Backups (metadata.json) – er enthält kein Backup von Photo Vault.'**
+  String get backupManifestFehlt;
+
+  /// No description provided for @backupManifestUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Dateiverzeichnis des Backups (metadata.json) ist beschädigt oder hat kein gültiges Format.'**
+  String get backupManifestUnlesbar;
+
+  /// No description provided for @backupManifestLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Backup enthält keine Dateien, die sich prüfen ließen.'**
+  String get backupManifestLeer;
+
+  /// No description provided for @entschluesselnFehlgeschlagen.
+  ///
+  /// In de, this message translates to:
+  /// **'Eine verschlüsselte Datei ließ sich nicht entschlüsseln – sie ist beschädigt oder gehört zu einem anderen Schlüssel.'**
+  String get entschluesselnFehlgeschlagen;
+
   /// No description provided for @downloadPruefsummeFehler.
   ///
   /// In de, this message translates to:

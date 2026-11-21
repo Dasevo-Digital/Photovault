@@ -53,6 +53,33 @@ class BackupOrdnerFehlt implements Exception {
   const BackupOrdnerFehlt();
 }
 
+/// Was am Dateiverzeichnis (`metadata.json`) eines Backups nicht stimmt.
+enum Manifestproblem {
+  /// Es fehlt – der Ordner enthält kein Backup von Photo Vault.
+  fehlt,
+
+  /// Es lässt sich nicht lesen: kein JSON, kein Objekt, nicht zu
+  /// entschlüsseln.
+  unlesbar,
+
+  /// Es nennt keine einzige Datei mit Prüfsumme.
+  leer,
+}
+
+/// Das Dateiverzeichnis eines Backups taugt nicht für die Prüfung.
+///
+/// Eigene Klasse statt einer FormatException mit deutschem Satz: Die
+/// Sätze gingen roh und mit „FormatException:“ davor in die Oberfläche,
+/// auch in der englischen (SIC-061).
+class BackupManifestFehler implements Exception {
+  const BackupManifestFehler(this.problem);
+
+  final Manifestproblem problem;
+
+  @override
+  String toString() => 'BackupManifestFehler(${problem.name})';
+}
+
 /// Prüft, ob ein Backup tatsächlich wiederherstellbare Originaldateien
 /// enthält, ohne die geöffnete Bibliothek anzufassen.
 class BackupPruefdienst {
@@ -96,7 +123,7 @@ class BackupPruefdienst {
       if (passphrase == null) throw const BackupPruefungBrauchtPassphrase();
       final envelope =
           jsonDecode(await keyDatei.readAsString()) as Map<String, dynamic>;
-      schluessel = await VaultCrypto.unwrapMasterKey(
+      schluessel = await VaultCrypto.unwrapMitPassphrase(
         passphrase,
         kdfSalt: base64Decode(envelope['kdfSalt'] as String),
         nonce: base64Decode(envelope['nonce'] as String),
@@ -115,9 +142,7 @@ class BackupPruefdienst {
             roh['checksum'] as String: roh['backupRelativePath'] as String?,
       };
       if (erwartet.isEmpty) {
-        throw const FormatException(
-          'Das Backup enthält kein lesbares Dateimanifest.',
-        );
+        throw const BackupManifestFehler(Manifestproblem.leer);
       }
 
       var erledigt = 0;
@@ -221,16 +246,23 @@ class BackupPruefdienst {
   ) async {
     final quelle = File(p.join(wurzel, 'metadata.json'));
     if (!await quelle.exists()) {
-      throw const FormatException('metadata.json fehlt im Backup.');
+      throw const BackupManifestFehler(Manifestproblem.fehlt);
     }
-    File zuLesen = quelle;
-    if (schluessel != null) {
-      zuLesen = File(p.join(temp.path, 'metadata.json'));
-      await VaultCrypto.decryptFile(quelle, zuLesen, schluessel);
+    final Object? daten;
+    try {
+      File zuLesen = quelle;
+      if (schluessel != null) {
+        zuLesen = File(p.join(temp.path, 'metadata.json'));
+        await VaultCrypto.decryptFile(quelle, zuLesen, schluessel);
+      }
+      daten = jsonDecode(await zuLesen.readAsString());
+    } on FormatException {
+      throw const BackupManifestFehler(Manifestproblem.unlesbar);
+    } on SecretBoxAuthenticationError {
+      throw const BackupManifestFehler(Manifestproblem.unlesbar);
     }
-    final daten = jsonDecode(await zuLesen.readAsString());
     if (daten is! Map<String, dynamic>) {
-      throw const FormatException('metadata.json hat kein gültiges Format.');
+      throw const BackupManifestFehler(Manifestproblem.unlesbar);
     }
     return daten;
   }

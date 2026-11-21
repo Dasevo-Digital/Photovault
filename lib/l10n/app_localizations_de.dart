@@ -4130,6 +4130,22 @@ class AppTexteDe extends AppTexte {
   String get backupOrdnerFehlt => 'Im gewählten Ordner liegt kein Backup.';
 
   @override
+  String get backupManifestFehlt =>
+      'Im Ordner fehlt das Dateiverzeichnis eines Backups (metadata.json) – er enthält kein Backup von Photo Vault.';
+
+  @override
+  String get backupManifestUnlesbar =>
+      'Das Dateiverzeichnis des Backups (metadata.json) ist beschädigt oder hat kein gültiges Format.';
+
+  @override
+  String get backupManifestLeer =>
+      'Das Backup enthält keine Dateien, die sich prüfen ließen.';
+
+  @override
+  String get entschluesselnFehlgeschlagen =>
+      'Eine verschlüsselte Datei ließ sich nicht entschlüsseln – sie ist beschädigt oder gehört zu einem anderen Schlüssel.';
+
+  @override
   String downloadPruefsummeFehler(
     String datei,
     String erhalten,

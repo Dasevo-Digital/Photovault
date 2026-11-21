@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../services/native_image_converter.dart';
 import '../services/export_service.dart';
 import '../services/secure_share_service.dart';
+import '../services/vault_crypto.dart' show PassphraseFalsch;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
@@ -163,6 +164,9 @@ class _ToolsScreenState extends State<ToolsScreen> {
       if (mounted) {
         melde.warnung(AppTexte.of(context).sicherTeilenImportAbgelaufen);
       }
+    } on PassphraseFalsch {
+      // Statt „SecretBoxAuthenticationError: … (MAC)“ in der Meldung.
+      if (mounted) melde.warnung(AppTexte.of(context).passphraseFalsch);
     } catch (error) {
       if (mounted) {
         melde.warnung(

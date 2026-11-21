@@ -213,7 +213,7 @@ class SecureShareService {
       if (keyData['format'] != 1) {
         throw const FormatException('Unbekanntes Austauschformat.');
       }
-      final key = await VaultCrypto.unwrapMasterKey(
+      final key = await VaultCrypto.unwrapMitPassphrase(
         passphrase,
         kdfSalt: base64Decode(keyData['kdfSalt'] as String),
         nonce: base64Decode(keyData['nonce'] as String),

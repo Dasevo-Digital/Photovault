@@ -4101,6 +4101,22 @@ class AppTexteEn extends AppTexte {
       'The selected folder does not contain a backup.';
 
   @override
+  String get backupManifestFehlt =>
+      'The folder has no backup file index (metadata.json) – it does not contain a Photo Vault backup.';
+
+  @override
+  String get backupManifestUnlesbar =>
+      'The backup file index (metadata.json) is damaged or not in a valid format.';
+
+  @override
+  String get backupManifestLeer =>
+      'The backup contains no files that could be checked.';
+
+  @override
+  String get entschluesselnFehlgeschlagen =>
+      'An encrypted file could not be decrypted – it is damaged or belongs to a different key.';
+
+  @override
   String downloadPruefsummeFehler(
     String datei,
     String erhalten,

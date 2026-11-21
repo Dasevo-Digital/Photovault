@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import '../../services/backup_koordinator.dart';
+import 'package:cryptography/cryptography.dart'
+    show SecretBoxAuthenticationError;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
@@ -13,6 +15,7 @@ import '../../services/backup_service.dart';
 import '../../services/backup_verification_service.dart';
 import '../../services/geo_data_download_service.dart';
 import '../../services/groessentext.dart';
+import '../../services/vault_crypto.dart' show PassphraseFalsch;
 import '../../services/library_location.dart';
 import '../../services/meldungsdienst.dart';
 import '../../services/serversperre.dart';
@@ -56,6 +59,15 @@ String fehlertext(BuildContext context, Object fehler) {
       ),
     BackupPruefungBrauchtPassphrase() => t.backupPassphraseNoetig,
     BackupOrdnerFehlt() => t.backupOrdnerFehlt,
+    BackupManifestFehler(problem: Manifestproblem.fehlt) =>
+      t.backupManifestFehlt,
+    BackupManifestFehler(problem: Manifestproblem.unlesbar) =>
+      t.backupManifestUnlesbar,
+    BackupManifestFehler(problem: Manifestproblem.leer) => t.backupManifestLeer,
+    PassphraseFalsch() => t.passphraseFalsch,
+    // Nach einer richtigen Passphrase: eine Datei, die sich mit dem
+    // Schlüssel nicht öffnen lässt.
+    SecretBoxAuthenticationError() => t.entschluesselnFehlgeschlagen,
     AktualisierungsFehler(
       problem: Aktualisierungsproblem.keineVeroeffentlichungen,
     ) =>
