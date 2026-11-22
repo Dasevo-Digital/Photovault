@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
 import '../services/xmp_reader.dart';
+import 'package:kern/berechne.dart';
 import 'package:kern/services/xmp_regionen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
@@ -121,6 +122,28 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
     ]);
   }
 
+  /// Die Datei, in der nach eingebettetem XMP gesucht wird – nur, wenn sie
+  /// schon hier liegt.
+  ///
+  /// Mit Server ist eine Bibliothek hier nur eine Kopie, deren Originale
+  /// erst beim Ansehen kommen. Über `bereit` holte der Bildschirm gleich
+  /// beim Öffnen jedes fehlende Original samt Videos vom Server, ohne dass
+  /// jemand einen Ordner gewählt hatte. Für die Beilagen eines Servers ist
+  /// die Ordnerwahl da. Ein extern eingebundenes Original liegt dagegen
+  /// hier; ist sein Datenträger abgezogen, fehlt nur diese eine Aufnahme.
+  Future<String?> _hierLiegendesOriginal(AssetData asset) async {
+    final pfade = widget.library.paths;
+    try {
+      if (pfade.istReferenziert(asset.relativePath)) {
+        return (await pfade.bereit(asset.relativePath)).path;
+      }
+      final datei = pfade.absolute(asset.relativePath);
+      return await datei.exists() ? datei.path : null;
+    } on Object {
+      return null;
+    }
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -132,25 +155,41 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
       final ausOrdner = _ordner == null
           ? null
           : await _beilagenImOrdner(_ordner!, assets);
+      final pfade = widget.library.paths;
+      final quellen = <XmpQuelle>[];
+      final kandidaten = <AssetData>[];
       for (final asset in assets) {
         if (asset.isTrashed || asset.isLocked) continue;
-        final pfade = widget.library.paths;
-        final sidecarFile = ausOrdner != null
-            ? ausOrdner[asset.id]
-            : neuesteXmpBeilage([
-                for (final k in pfade.xmpSidecarPfade(asset.relativePath))
-                  pfade.absolute(k),
-              ]);
-        var fields = sidecarFile == null ? null : parseXmpFile(sidecarFile);
-        if (fields != null) {
-          sidecarsFound++;
-        } else if (ausOrdner == null) {
-          fields = parseEingebettetesXmp(
-            (await widget.library.paths.bereit(asset.relativePath)),
-          );
-          if (fields != null) eingebettetFound++;
+        if (ausOrdner != null) {
+          final beilage = ausOrdner[asset.id];
+          if (beilage == null) continue;
+          quellen.add((id: asset.id, beilagen: [beilage.path], datei: null));
+        } else {
+          quellen.add((
+            id: asset.id,
+            beilagen: [
+              for (final k in pfade.xmpSidecarPfade(asset.relativePath))
+                pfade.absolute(k).path,
+            ],
+            datei: await _hierLiegendesOriginal(asset),
+          ));
         }
-        if (fields == null) continue;
+        kandidaten.add(asset);
+      }
+      if (!mounted) return;
+      final gefunden = await berechne(leseXmpQuellen, quellen);
+      if (!mounted) return;
+
+      for (final asset in kandidaten) {
+        if (!mounted) return;
+        final fund = gefunden[asset.id];
+        if (fund == null) continue;
+        final fields = fund.felder;
+        if (fund.eingebettet) {
+          eingebettetFound++;
+        } else {
+          sidecarsFound++;
+        }
 
         if (fields.abgelehnt) {
           diffs.add(
@@ -362,12 +401,28 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
           );
         }
     }
+    if (!mounted) return;
     setState(() => _diffs = _diffs.where((d) => d != diff).toList());
   }
 
-  Future<void> _applyAll() async {
-    for (final diff in List<_XmpDiff>.from(_diffs)) {
-      await _apply(diff);
+  /// Ob gerade übernommen wird. Solange sind alle Knöpfe zum Übernehmen
+  /// gesperrt: Ein zweiter Klick auf „Alle übernehmen“ startete sonst einen
+  /// zweiten Durchgang über dieselbe Liste.
+  bool _uebernimmt = false;
+
+  /// Übernimmt [diffs] der Reihe nach – auch, wenn der Bildschirm
+  /// inzwischen verlassen wurde: Wer „Alle übernehmen“ gewählt hat, will
+  /// alle. Bisher warf das erste `setState` danach, und der Rest blieb
+  /// still liegen.
+  Future<void> _uebernimm(Iterable<_XmpDiff> diffs) async {
+    if (_uebernimmt) return;
+    setState(() => _uebernimmt = true);
+    try {
+      for (final diff in diffs.toList()) {
+        await _apply(diff);
+      }
+    } finally {
+      if (mounted) setState(() => _uebernimmt = false);
     }
   }
 
@@ -403,18 +458,18 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
             // Ohne eigene Farbe: Fest weiss stand der Text im hellen
             // Erscheinungsbild weiss auf der hellen Leiste (IMP-107).
             TextButton(
-              onPressed: _applyAll,
+              onPressed: _uebernimmt ? null : () => _uebernimm(_diffs),
               child: Text(AppTexte.of(context).xmpAlleUebernehmen),
             ),
           IconButton(
             icon: const Icon(Icons.folder_open_outlined),
             tooltip: AppTexte.of(context).xmpOrdnerWaehlen,
-            onPressed: _loading ? null : _ordnerWaehlen,
+            onPressed: _loading || _uebernimmt ? null : _ordnerWaehlen,
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: AppTexte.of(context).xmpErneutEinlesen,
-            onPressed: _loading ? null : _load,
+            onPressed: _loading || _uebernimmt ? null : _load,
           ),
         ],
       ),
@@ -468,7 +523,7 @@ class _XmpImportScreenState extends State<XmpImportScreen> {
             title: Text(diff.asset.originalFileName),
             subtitle: Text(_diffZeile(AppTexte.of(context), diff)),
             trailing: TextButton(
-              onPressed: () => _apply(diff),
+              onPressed: _uebernimmt ? null : () => _uebernimm([diff]),
               child: Text(AppTexte.of(context).allgUebernehmen),
             ),
           ),

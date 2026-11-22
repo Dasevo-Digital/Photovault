@@ -398,6 +398,46 @@ String? xmpAusBytes(Uint8List bytes) {
   return null;
 }
 
+/// Wo für eine Aufnahme nach XMP gesucht wird: die möglichen Beilagen und,
+/// falls keine davon trägt, die Datei selbst. [datei] ist `null`, wenn sie
+/// nicht hier liegt oder nicht durchsucht werden soll.
+typedef XmpQuelle = ({String id, List<String> beilagen, String? datei});
+
+/// Was [leseXmpQuellen] je Aufnahme gefunden hat.
+typedef XmpFund = ({XmpFields felder, bool eingebettet});
+
+/// Liest für jede Quelle die neueste vorhandene Beilage, sonst das in die
+/// Datei eingebettete Paket.
+///
+/// Nur Dateiarbeit und ohne Flutter, damit es in einem eigenen Isolate
+/// laufen kann: Je Aufnahme ohne Beilage wird bis zu [xmpSuchtiefe]
+/// gelesen, bei Tausenden Fotos sind das Gigabyte. Im Isolat der
+/// Oberfläche stand das Fenster dabei minutenlang still.
+///
+/// Eine unlesbare Datei überspringt nur sich selbst, nicht den ganzen Lauf.
+Map<String, XmpFund> leseXmpQuellen(List<XmpQuelle> quellen) {
+  final ergebnis = <String, XmpFund>{};
+  for (final q in quellen) {
+    try {
+      final beilage = neuesteXmpBeilage([for (final b in q.beilagen) File(b)]);
+      final ausBeilage = beilage == null ? null : parseXmpFile(beilage);
+      if (ausBeilage != null) {
+        ergebnis[q.id] = (felder: ausBeilage, eingebettet: false);
+        continue;
+      }
+      final datei = q.datei;
+      if (datei == null) continue;
+      final eingebettet = parseEingebettetesXmp(File(datei));
+      if (eingebettet != null) {
+        ergebnis[q.id] = (felder: eingebettet, eingebettet: true);
+      }
+    } on Object {
+      // Kaputte Beilage oder nicht lesbare Datei: weiter mit der nächsten.
+    }
+  }
+  return ergebnis;
+}
+
 /// Umkehrung von `_xmpLabelName` in xmp_writer.dart. `null` bei einem
 /// unbekannten Label-Namen (z.B. eine in Lightroom frei vergebene
 /// zusätzliche Farbe, die photo_vaults feste 5er-Palette nicht kennt) statt
