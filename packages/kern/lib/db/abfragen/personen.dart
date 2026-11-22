@@ -554,13 +554,17 @@ extension PersonenAbfragen on AppDatabase {
     for (final f in sicher) {
       jePerson.putIfAbsent(f.vorschlagPersonId!, () => []).add(f.id);
     }
+    var uebernommen = 0;
     for (final MapEntry(key: person, value: ids) in jePerson.entries) {
+      // Ein Vorschlag kann auf eine inzwischen gelöschte Person zeigen.
+      if (!await personGibtEs(person)) continue;
       await assignFacesToPerson(ids, person);
       await (update(faces)..where((t) => t.id.isIn(ids))).write(
         const FacesCompanion(automatischZugeordnet: Value(true)),
       );
+      uebernommen += ids.length;
     }
-    return sicher.length;
+    return uebernommen;
   }
 
   /// Die offenen Gesichter mit Vorschlag samt Einbettung – der Stoff für
@@ -621,6 +625,7 @@ extension PersonenAbfragen on AppDatabase {
           .fold(0.0, (a, b) => a > b ? a : b);
       if (bester < ab) continue;
       final ids = [for (final f in offen) f.id];
+      if (!await personGibtEs(person)) continue;
       await assignFacesToPerson(ids, person);
       await (update(faces)..where((t) => t.id.isIn(ids))).write(
         const FacesCompanion(automatischZugeordnet: Value(true)),
@@ -709,10 +714,26 @@ extension PersonenAbfragen on AppDatabase {
         ),
       );
 
+  /// Ob es die Person [personId] (noch) gibt.
+  Future<bool> personGibtEs(String personId) async =>
+      await (selectOnly(people)
+            ..addColumns([people.id])
+            ..where(people.id.equals(personId)))
+          .getSingleOrNull() !=
+      null;
+
+  /// Ordnet [faceIds] der Person [personId] zu.
+  ///
+  /// Gibt es die Person nicht mehr (auf einem anderen Gerät gelöscht oder
+  /// zusammengeführt), wirft das [StateError] `pv_person_fehlt`, statt die
+  /// Gesichter einer Kennung ohne Person zu geben – sie wären danach in
+  /// keiner Ansicht mehr zu finden. Am Server wird der Befehl damit
+  /// abgelehnt und auf dem Gerät zum Fall.
   Future<void> assignFacesToPerson(
     List<String> faceIds,
     String personId,
   ) async {
+    if (!await personGibtEs(personId)) throw StateError('pv_person_fehlt');
     // Wer einem beiseitegelegten Gesicht einen Namen gibt, hat es damit
     // zurückgeholt – sonst verschwände es unmittelbar nach dem Benennen
     // wieder aus der Personenansicht.
@@ -962,7 +983,10 @@ extension PersonenAbfragen on AppDatabase {
       final entfernen = await (select(
         people,
       )..where((t) => t.id.equals(removePersonId))).getSingleOrNull();
-      if (behalten != null && entfernen != null) {
+      // Ohne die behaltene Person gingen Gesichter und Lebenslauf an eine
+      // Kennung, die es nicht gibt – lieber ablehnen (wie beim Zuordnen).
+      if (behalten == null) throw StateError('pv_person_fehlt');
+      if (entfernen != null) {
         // Die behaltene Person gilt; Lücken füllt die aufgelöste.
         await (update(people)..where((t) => t.id.equals(keepPersonId))).write(
           PeopleCompanion(
