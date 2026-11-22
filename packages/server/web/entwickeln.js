@@ -140,14 +140,25 @@ void main() {
 }`;
 
 // Kopie auf den Bildschirm – hier und nur hier steht das Bild auf dem Kopf.
+// Dabei der Zuschnitt vom Rechner (#429): ein Ausschnitt des ganzen
+// gerechneten Bilds, danach Vierteldrehungen im Uhrzeigersinn – dieselbe
+// Reihenfolge wie schneideEntwicklung (packages/kern/lib/services/
+// bildzuschnitt.dart).
 const ENTW_ZEIGEN = `#version 300 es
 precision highp float;
 uniform vec2 uSize;
+uniform vec4 uZuschnitt;
+uniform float uDrehungen;
 uniform sampler2D uBild;
 out vec4 fragColor;
 void main() {
   vec2 uv = gl_FragCoord.xy / uSize;
-  fragColor = texture(uBild, vec2(uv.x, 1.0 - uv.y));
+  vec2 s = vec2(uv.x, 1.0 - uv.y);
+  vec2 c = s;
+  if (uDrehungen > 2.5) c = vec2(1.0 - s.y, s.x);
+  else if (uDrehungen > 1.5) c = vec2(1.0 - s.x, 1.0 - s.y);
+  else if (uDrehungen > 0.5) c = vec2(s.y, 1.0 - s.x);
+  fragColor = texture(uBild, uZuschnitt.xy + c * uZuschnitt.zw);
 }`;
 
 // Die Regler wie am Rechner (bedienfelder.dart), mit Spaltennamen der
@@ -258,7 +269,12 @@ function entwZeichne(k, prog, ziel, breite, hoehe, setze) {
     gl.uniform1i(prog.orte[name], einheit);
     einheit++;
   };
-  setze((name, wert) => gl.uniform1f(prog.orte[name], wert), bild, (name, a, b) => gl.uniform2f(prog.orte[name], a, b));
+  setze(
+    (name, wert) => gl.uniform1f(prog.orte[name], wert),
+    bild,
+    (name, a, b) => gl.uniform2f(prog.orte[name], a, b),
+    (name, a, b, c, d) => gl.uniform4f(prog.orte[name], a, b, c, d),
+  );
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 
@@ -318,6 +334,51 @@ function entwRaeumeAuf(weg) {
   weg.length = 0;
 }
 
+// Der Zuschnitt aus develop_settings.crop_json: Anteile des ganzen Bilds
+// (l, o, b, h) und Vierteldrehungen (d), geprüft wie Bildzuschnitt in
+// bildzuschnitt.dart. Was sich nicht lesen lässt, gilt auch am Rechner
+// nicht – dann das ganze Bild.
+const ENTW_GANZ = { l: 0, o: 0, b: 1, h: 1, d: 0 };
+function entwZuschnittAus(text) {
+  if (!text) return ENTW_GANZ;
+  try {
+    const j = JSON.parse(text);
+    const z = { l: Number(j.l), o: Number(j.o), b: Number(j.b), h: Number(j.h), d: j.d };
+    const gut = [z.l, z.o, z.b, z.h].every(Number.isFinite) && z.l >= 0 && z.o >= 0 && z.b > 0 && z.h > 0
+      && z.l + z.b <= 1.0000001 && z.o + z.h <= 1.0000001 && Number.isInteger(z.d) && z.d >= 0 && z.d <= 3;
+    return gut ? z : ENTW_GANZ;
+  } catch (_) {
+    return ENTW_GANZ;
+  }
+}
+const entwGanz = (z) => z.l === 0 && z.o === 0 && z.b === 1 && z.h === 1 && z.d === 0;
+
+// Der Ausschnitt in Pixeln eines Bilds von breite × hoehe – gerundet und
+// begrenzt wie _schneide in bildzuschnitt.dart.
+function entwAusschnitt(z, breite, hoehe) {
+  const x = Math.min(Math.max(Math.round(z.l * breite), 0), breite - 1);
+  const y = Math.min(Math.max(Math.round(z.o * hoehe), 0), hoehe - 1);
+  const w = Math.min(Math.max(Math.round(z.b * breite), 1), breite - x);
+  const h = Math.min(Math.max(Math.round(z.h * hoehe), 1), hoehe - y);
+  return { x, y, w, h };
+}
+
+// Schneidet die fertig gerechnete Fläche zu und dreht sie.
+function entwSchneide(quelle, z) {
+  if (entwGanz(z)) return quelle;
+  const { x, y, w, h } = entwAusschnitt(z, quelle.width, quelle.height);
+  const ziel = document.createElement('canvas');
+  const quer = z.d % 2 === 1;
+  ziel.width = quer ? h : w;
+  ziel.height = quer ? w : h;
+  const g = ziel.getContext('2d');
+  if (z.d === 1) { g.translate(h, 0); g.rotate(Math.PI / 2); }
+  if (z.d === 2) { g.translate(w, h); g.rotate(Math.PI); }
+  if (z.d === 3) { g.translate(0, w); g.rotate(-Math.PI / 2); }
+  g.drawImage(quelle, x, y, w, h, 0, 0, w, h);
+  return ziel;
+}
+
 const ENTW_NEUTRAL = { exposure: 0, contrast: 0, highlights: 0, shadows: 0, temperature: null, tint: null, clarity: 0, sharpness: 0, noise_reduction: 0, vignette: 0 };
 
 // Auf den Bildschirm, in der Grösse der Leinwand.
@@ -325,13 +386,19 @@ function entwZeigeJetzt() {
   if (!entw || !entw.k) return;
   const { gl } = entw.k;
   const leinwand = $('entw-leinwand');
-  const { breite, hoehe } = entw.vorschau;
-  if (leinwand.width !== breite || leinwand.height !== hoehe) { leinwand.width = breite; leinwand.height = hoehe; }
+  // Gerechnet wird das ganze Bild, gezeigt der Ausschnitt.
+  const { breite, hoehe, zeigeB, zeigeH } = entw.vorschau;
+  if (leinwand.width !== zeigeB || leinwand.height !== zeigeH) { leinwand.width = zeigeB; leinwand.height = zeigeH; }
   const weg = [];
   try {
     const werte = entw.vergleich ? ENTW_NEUTRAL : entw.werte;
     const aus = entwRechne(entw.k, werte, breite, hoehe, weg);
-    entwZeichne(entw.k, entw.k.zeigen, null, breite, hoehe, (f, b) => b('uBild', aus.textur));
+    const z = entw.zuschnitt;
+    entwZeichne(entw.k, entw.k.zeigen, null, zeigeB, zeigeH, (f, b, f2, f4) => {
+      f4('uZuschnitt', z.l, z.o, z.b, z.h);
+      f('uDrehungen', z.d);
+      b('uBild', aus.textur);
+    });
   } finally {
     entwRaeumeAuf(weg);
   }
@@ -344,12 +411,23 @@ function entwZeige() {
   requestAnimationFrame(() => { entwGeplant = false; entwZeigeJetzt(); });
 }
 
+// Wie gross gerechnet (breite × hoehe, das ganze Bild) und gezeigt wird
+// (zeigeB × zeigeH, der Ausschnitt, gedreht): Der Ausschnitt passt in den
+// Rahmen, das ganze Bild bleibt höchstens 2048 Pixel.
 function entwVorschauGroesse() {
   const rahmen = $('entw-leinwand').parentElement.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const maxB = Math.max(200, rahmen.width * dpr), maxH = Math.max(200, (window.innerHeight - 140) * dpr);
-  const f = Math.min(1, maxB / entw.breite, maxH / entw.hoehe, 2048 / Math.max(entw.breite, entw.hoehe));
-  return { breite: Math.max(1, Math.round(entw.breite * f)), hoehe: Math.max(1, Math.round(entw.hoehe * f)) };
+  const z = entw.zuschnitt;
+  const sichtB = entw.breite * z.b, sichtH = entw.hoehe * z.h;
+  const [zeigB, zeigH] = z.d % 2 === 1 ? [sichtH, sichtB] : [sichtB, sichtH];
+  const f = Math.min(1, maxB / zeigB, maxH / zeigH, 2048 / Math.max(entw.breite, entw.hoehe));
+  return {
+    breite: Math.max(1, Math.round(entw.breite * f)),
+    hoehe: Math.max(1, Math.round(entw.hoehe * f)),
+    zeigeB: Math.max(1, Math.round(zeigB * f)),
+    zeigeH: Math.max(1, Math.round(zeigH * f)),
+  };
 }
 
 function entwFelder() {
@@ -414,6 +492,7 @@ async function zeigeEntwickeln(id) {
     d,
     geaendert: false,
     vergleich: false,
+    zuschnitt: entwZuschnittAus(e.crop_json),
     werte: {
       exposure: e.exposure ?? 0,
       contrast: e.contrast ?? 0,
@@ -454,6 +533,7 @@ async function zeigeEntwickeln(id) {
   const hinweise = [];
   if (d.quelle === 'vorschau') hinweise.push(t('Rohformat oder HEIC: Der Browser rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.'));
   if (e.tone_curve_json || e.color_mixer_json || e.lut_path) hinweise.push(t('Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.'));
+  if (!entwGanz(entw.zuschnitt)) hinweise.push(t('Der Zuschnitt vom Rechner gilt auch hier und bleibt erhalten.'));
   entw.masken = d.masken || 0;
   if (entw.masken) hinweise.push(t('Masken vom Rechner rechnet nur der Rechner: Hier fehlen sie im Bild.'));
   entwFehler(hinweise.join(' '));
@@ -478,10 +558,14 @@ async function entwSpeichern() {
     const pixel = new Uint8ClampedArray(entw.breite * entw.hoehe * 4);
     gl.readPixels(0, 0, entw.breite, entw.hoehe, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
     entwRaeumeAuf(weg);
-    const flaeche = document.createElement('canvas');
-    flaeche.width = entw.breite;
-    flaeche.height = entw.hoehe;
-    flaeche.getContext('2d').putImageData(new ImageData(pixel, entw.breite, entw.hoehe), 0, 0);
+    const ganz = document.createElement('canvas');
+    ganz.width = entw.breite;
+    ganz.height = entw.hoehe;
+    ganz.getContext('2d').putImageData(new ImageData(pixel, entw.breite, entw.hoehe), 0, 0);
+    // Wie am Rechner: erst das ganze Bild rechnen, dann zuschneiden und
+    // drehen. Vorher blieb der Zuschnitt in der Zeile, das neue Bild aber
+    // ungeschnitten.
+    const flaeche = entwSchneide(ganz, entw.zuschnitt);
     const jpeg = await new Promise((fertig) => flaeche.toBlob(fertig, 'image/jpeg', 0.92));
     if (!jpeg) throw new Error(t('Das Bild liess sich nicht kodieren.'));
     meldung.textContent = t('Lade hoch …');
@@ -506,6 +590,7 @@ async function entwSpeichern() {
         lens_correction_enabled: e.lens_correction_enabled ?? true,
         tone_curve_json: e.tone_curve_json ?? null,
         color_mixer_json: e.color_mixer_json ?? null,
+        crop_json: e.crop_json ?? null,
         updated_at: new Date().toISOString(),
       },
     });

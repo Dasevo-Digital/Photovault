@@ -1943,6 +1943,10 @@ class _Api {
               'lens_correction_enabled': e.lensCorrectionEnabled,
               'tone_curve_json': e.toneCurveJson,
               'color_mixer_json': e.colorMixerJson,
+              // Der Zuschnitt vom Rechner (#429): Der Browser schneidet das
+              // gerechnete Bild wie schneideEntwicklung und schickt ihn
+              // beim Speichern unverändert zurück.
+              'crop_json': e.cropJson,
             },
       if (!kurve.istNeutral)
         'kurve': base64Encode(packCurveLutForTexture(buildCurveLut(kurve))),

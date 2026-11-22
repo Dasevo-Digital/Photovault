@@ -1774,6 +1774,27 @@ void main() {
     },
   );
 
+  // #429: Der Browser kannte den Zuschnitt vom Rechner nicht, speicherte
+  // ein ungeschnittenes Bild und liess den Zuschnitt in der Zeile stehen.
+  test('Entwickeln: der Zuschnitt vom Rechner kommt mit und bleibt', () async {
+    final a = await ladeHoch(erikaToken, 'z1.jpg', 30);
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    const zuschnitt = '{"l":0.1,"o":0.2,"b":0.5,"h":0.6,"d":1}';
+    await db
+        .into(db.developSettings)
+        .insert(
+          DevelopSettingsCompanion.insert(
+            assetId: a,
+            cropJson: const Value(zuschnitt),
+            updatedAt: DateTime(2026, 11, 22),
+          ),
+        );
+    final d = await jsonAus(
+      await frag('GET', '/api/v1/entwickeln/$a', token: erikaToken),
+    );
+    expect((d['einstellungen']! as Map)['crop_json'], zuschnitt);
+  });
+
   test(
     'Lebensbaum: Anordnung aus dem Kern, Grad je Person, Optionen',
     () async {

@@ -662,6 +662,7 @@ const EN = {
   'Das Bild ist für diesen Browser zu gross.': 'The image is too large for this browser.',
   'Rohformat oder HEIC: Der Browser rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.': 'RAW or HEIC: the browser works from the preview (at most 2048 pixels). The computer edits at full size.',
   'Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.': 'Tone curve, color mixer and look from the computer apply and are kept.',
+  'Der Zuschnitt vom Rechner gilt auch hier und bleibt erhalten.': 'The crop from the computer applies here too and is kept.',
   'Rechne in voller Grösse ({b} × {h}) …': 'Rendering at full size ({b} × {h}) …',
   'Das Bild liess sich nicht kodieren.': 'The image could not be encoded.',
   'Lade hoch …': 'Uploading …',
