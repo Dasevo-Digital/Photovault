@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/backup_schnappschuss.dart';
 import 'package:kern/services/backup_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
@@ -133,6 +134,24 @@ void main() {
     expect(dienst.letzterLaufNeu, 1);
     expect(verschluesseltIn(a, 'PhotoVault-AutoBackup'), 4);
     expect(probe?.erfolgreich, isTrue, reason: '${probe?.fehler}');
+  });
+
+  test('automatisch, Stichprobe übersprungen: die Datenbank-Generation wird '
+      'trotzdem archiviert', () async {
+    final a = ordner('cloud-a');
+    // Kleiner als jedes verschlüsselte Original: Die Stichprobe fällt aus,
+    // wie bei einer Bibliothek aus lauter Dateien über 128 MB (#468).
+    dienst.autoProbeBudget = 1024;
+    BackupProbeErgebnis? probe;
+    await for (final f in dienst.performAutoBackup(a.path, schluessel)) {
+      probe = f.wiederherstellungsprobe ?? probe;
+    }
+
+    expect(probe?.uebersprungen, isTrue, reason: '${probe?.fehler}');
+    final generationen = await BackupSchnappschussSpeicher().generationen(
+      p.join(a.path, 'PhotoVault-AutoBackup'),
+    );
+    expect(generationen, hasLength(1));
   });
 
   test('Grenze: offen zählt nur, was im Ziel fehlt', () async {

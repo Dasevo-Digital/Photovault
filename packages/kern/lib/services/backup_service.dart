@@ -92,6 +92,12 @@ class BackupService {
   /// hat – nur die, die im Ziel noch fehlten.
   int letzterLaufNeu = 0;
 
+  /// Das Prüfbudget der Wiederherstellungsprobe nach einem automatischen
+  /// Lauf. Nur Tests setzen es herab – sonst bräuchte der Fall „kein
+  /// Original passt ins Budget“ Dateien über 128 MB.
+  @visibleForTesting
+  int autoProbeBudget = 128 * 1024 * 1024;
+
   /// Was im Ziel schon liegt, wird übersprungen (siehe [performBackup]).
   ///
   /// Nicht leer genügt: Geschrieben wird über eine Zwischendatei, die erst
@@ -1101,8 +1107,15 @@ class BackupService {
       final probe = await pruefeWiederherstellung(
         backupRoot.path,
         schluessel: encryptionKey,
+        maxBytes: autoProbeBudget,
       );
-      if (probe.erfolgreich) await _archiveAutoBackupGeneration(backupRoot);
+      // Auch bei übersprungener Stichprobe (kein Original passt ins
+      // Prüfbudget): Der Lauf gilt dann als gelungen, und ohne Generation
+      // fehlte ausgerechnet einer Bibliothek aus lauter grossen Dateien
+      // jeder ältere Datenbankstand.
+      if (probe.erfolgreich || probe.uebersprungen) {
+        await _archiveAutoBackupGeneration(backupRoot);
+      }
       yield BackupProgress(
         done,
         pending.length,
