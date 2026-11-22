@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
@@ -68,6 +69,41 @@ void main() {
       }),
     );
     expect((await dort.assetById('a1'))!.papierkorbAktion, isNotNull);
+  });
+
+  // Der Abgleich wendet unbestätigte Befehle noch einmal an, sobald
+  // Zeilen vom Server eine vorweggenommene berühren.
+  test('Duplikate zusammenführen lässt sich wiederholen', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    for (final (id, text) in [
+      ('a1', 'Am Hafen'),
+      ('a2', 'Mit Oma\n\nLübeck'),
+    ]) {
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: id,
+              originalFileName: '$id.jpg',
+              relativePath: 'originals/$id.jpg',
+              checksum: 'pruef-$id',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime.utc(2026, 7, 1),
+              importedAt: DateTime.utc(2026, 7, 2),
+              description: Value(text),
+            ),
+          );
+    }
+    final befehl = DuplikateZusammenfuehren(
+      behaltenId: 'a1',
+      duplikatIds: const ['a2'],
+    );
+    await db.fuehreAus(befehl);
+    final einmal = (await db.assetById('a1'))!.description;
+    expect(einmal, 'Am Hafen\n\nMit Oma\n\nLübeck');
+    await befehl.anwenden(db);
+    expect((await db.assetById('a1'))!.description, einmal);
   });
 
   // Ein Zeitpunkt ohne Zeitzone liest der Server in seiner eigenen – läuft

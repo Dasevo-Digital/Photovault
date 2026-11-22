@@ -430,16 +430,20 @@ extension AuswahlAbfragen on AppDatabase {
     var favorit = behalten.isFavorite;
     var bewertung = behalten.rating;
     var farbe = behalten.colorLabel;
-    final beschreibungen = <String>{
-      if (behalten.description?.trim().isNotEmpty == true)
-        behalten.description!.trim(),
-    };
+    final eigene = behalten.description?.trim() ?? '';
+    final beschreibungen = <String>{if (eigene.isNotEmpty) eigene};
     for (final kopie in kopien) {
       favorit = favorit || kopie.isFavorite;
       if (kopie.rating > bewertung) bewertung = kopie.rating;
       farbe ??= kopie.colorLabel;
-      if (kopie.description?.trim().isNotEmpty == true) {
-        beschreibungen.add(kopie.description!.trim());
+      final text = kopie.description?.trim() ?? '';
+      // Steht der Text schon als Absatz in der eigenen Beschreibung, kommt
+      // er nicht ein zweites Mal dazu. Das macht den Befehl wiederholbar:
+      // Der Abgleich wendet unbestätigte Befehle erneut an, und eine
+      // Kopie im Papierkorb trägt ihre Beschreibung weiter – vorher stand
+      // sie danach doppelt da.
+      if (text.isNotEmpty && !'\n\n$eigene\n\n'.contains('\n\n$text\n\n')) {
+        beschreibungen.add(text);
       }
     }
 
