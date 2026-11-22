@@ -5,8 +5,10 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
+import 'package:kern/services/geo_data_catalog.dart';
 import 'package:kern/services/reverse_geocoder.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:photo_vault/services/geo_data_download_service.dart';
 import 'package:photo_vault/state/library_state.dart';
 
 /// Die ganze Kette: Ortsname aus dem Lebenslauf zu einer Koordinate auf
@@ -78,6 +80,36 @@ void main() {
     lib.geocoder = null;
     await lib.trageEreignisorteNach();
     expect(await db.ereignisseMitKoordinate(), isEmpty);
+  });
+
+  // Der Nachtrag beim Start lief, bevor das Ortsverzeichnis geladen war,
+  // fand keinen Geocoder und kehrte zurück – er geschah nie (#433).
+  test('beim Start wird nachgetragen, sobald das Verzeichnis da ist', () async {
+    await ereignis('e1', ort: 'Berlin');
+    final geodaten = Directory(p.join(temp.path, 'geodata'))..createSync();
+    final vorlage = await geocoder();
+    expect(vorlage, isNotNull);
+    for (final (von, nach) in [
+      ('cities1000.txt', GeoDataCatalog.citiesFileName),
+      ('admin1.txt', GeoDataCatalog.admin1FileName),
+      ('countryInfo.txt', GeoDataCatalog.countryFileName),
+    ]) {
+      File(p.join(temp.path, von)).copySync(p.join(geodaten.path, nach));
+    }
+    lib.geoDataDownloadService = GeoDataDownloadService(geodaten.path);
+
+    lib.ladeOrtsverzeichnisBeimStart();
+    await lib.geoBereit;
+    for (var i = 0; i < 100; i++) {
+      if ((await db.ereignisseMitKoordinate()).isNotEmpty) break;
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+
+    expect(lib.geocoder, isNotNull);
+    expect(
+      (await db.ereignisseMitKoordinate()).single.ortBreite,
+      closeTo(52.524, 0.001),
+    );
   });
 
   test('ein bekannter Ort bekommt seine Koordinate', () async {

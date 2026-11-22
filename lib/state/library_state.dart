@@ -1034,19 +1034,7 @@ class LibraryState extends ChangeNotifier {
     setzeKarteHochaufloesend(await db.karteHochaufloesendWert());
     _maxGleichzeitig = await db.maxGleichzeitigeAufgaben();
     await _loadModelsIfPresent();
-    // Ohne `await`: siehe [geoBereit]. Das Lesen des GeoNames-Datensatzes
-    // kostet 376 ms, und das erste Bild braucht ihn nicht.
-    _geoLaeuft = _loadGeoDataIfPresent().then((_) {
-      if (geocoder != null) notifyListeners();
-    });
-    // Absichtlich ohne `await`: Bei einem grossen Stammbaum sind das
-    // viele einzelne Schreibvorgänge, und der Start soll nicht darauf
-    // warten. Die Ereignisse tauchen dann eben eine Sekunde später auf
-    // der Karte auf.
-    // Im verbundenen Betrieb schreibt nur der Server – Nachträge,
-    // Restaurierung, Sicherung, Papierkorb-Ablauf und der überwachte
-    // Ordner gehören dorthin oder kommen später als eigene Wege.
-    if (!verbunden) unawaited(trageEreignisorteNach());
+    ladeOrtsverzeichnisBeimStart();
     // Was bis 3.49.8 hinter einer Hauptversion im Papierkorb oder neben
     // einem gelöschten Live-Photo-Foto unsichtbar blieb (#254). Verbunden
     // erledigt das der Server.
@@ -1638,6 +1626,35 @@ class LibraryState extends ChangeNotifier {
       debugPrint('GeoNames-Datensatz konnte nicht geladen werden: $e');
       geocoder = null;
     }
+  }
+
+  /// Lädt beim Start das Ortsverzeichnis und trägt danach die
+  /// Ereignisorte nach.
+  ///
+  /// Ohne `await`: siehe [geoBereit]. Das Lesen des GeoNames-Datensatzes
+  /// kostet 376 ms, und das erste Bild braucht ihn nicht.
+  ///
+  /// **Der Nachtrag erst, wenn das Verzeichnis da ist (#433).** Bis
+  /// hierher lief er gleich nach dem Anstossen des Ladens, fand noch kein
+  /// [geocoder] und kehrte sofort zurück – der zugesagte Nachtrag beim
+  /// Start geschah nie. Auch er ohne `await`: Bei einem grossen Stammbaum
+  /// sind das viele einzelne Schreibvorgänge, und der Start soll nicht
+  /// darauf warten. Im verbundenen Betrieb schreibt nur der Server –
+  /// Nachträge, Restaurierung, Sicherung, Papierkorb-Ablauf und der
+  /// überwachte Ordner gehören dorthin oder kommen später als eigene Wege.
+  @visibleForTesting
+  void ladeOrtsverzeichnisBeimStart() {
+    _geoLaeuft = _loadGeoDataIfPresent().then((_) {
+      if (geocoder != null) notifyListeners();
+    });
+    if (verbunden) return;
+    unawaited(
+      _geoLaeuft
+          .then((_) => trageEreignisorteNach())
+          .catchError(
+            (Object e) => debugPrint('Ereignisorte nicht nachgetragen: $e'),
+          ),
+    );
   }
 
   /// Wird nach einem Download/Löschen des GeoNames-Datensatzes in den
