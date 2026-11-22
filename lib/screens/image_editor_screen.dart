@@ -121,6 +121,87 @@ _ImageEditResult? _cropImageIsolate(_CropArgs args) {
   return _encodeResult(cropped);
 }
 
+/// Was die Objektentfernung zum Rechnen braucht, siehe
+/// [retuscheVorbereiten].
+@visibleForTesting
+typedef Retuscheauftrag = ({
+  Uint8List bytes,
+  int breite,
+  int hoehe,
+  img.Image? automaske,
+  List<List<Offset>> striche,
+  List<List<Offset>> radiert,
+  double massstab,
+  int radius,
+});
+
+/// Dekodiert das Bild und baut die Maske der Retusche in Bildauflösung –
+/// über `compute()` in einem Hintergrund-Isolat.
+///
+/// Vorher lief beides im Isolat der Oberfläche: Das volle Original kann
+/// 48 MP haben, und die Maske entstand Punkt für Punkt. Das Fenster fror
+/// für Sekunden ein, und die Warteanzeige stand still (#434). Im
+/// Hauptisolat bleibt nur, was es braucht: die Rechnung des Modells über
+/// den Plattformkanal. Die beiden Bilder kommen ohne Kopie zurück.
+@visibleForTesting
+({img.Image bild, img.Image maske})? retuscheVorbereiten(Retuscheauftrag a) {
+  final bild = img.decodeImage(a.bytes);
+  if (bild == null) return null;
+  // Die Striche als Graustufenmaske in Bildauflösung – auf dem Vorschlag
+  // der Kratzersuche, falls es einen gibt.
+  final maske = img.Image(width: a.breite, height: a.hoehe);
+  final auto = a.automaske;
+  if (auto != null) {
+    final passend = auto.width == a.breite && auto.height == a.hoehe
+        ? auto
+        : img.copyResize(
+            auto,
+            width: a.breite,
+            height: a.hoehe,
+            interpolation: img.Interpolation.nearest,
+          );
+    for (final p in passend) {
+      if (p.r > 0) maske.setPixelRgb(p.x, p.y, 255, 255, 255);
+    }
+  }
+  void male(List<List<Offset>> striche, img.Color farbe) {
+    for (final strich in striche) {
+      for (final punkt in strich) {
+        img.fillCircle(
+          maske,
+          x: (punkt.dx / a.massstab).round(),
+          y: (punkt.dy / a.massstab).round(),
+          radius: a.radius,
+          color: farbe,
+        );
+      }
+    }
+  }
+
+  male(a.striche, img.ColorRgb8(255, 255, 255));
+  male(a.radiert, img.ColorRgb8(0, 0, 0));
+  return (bild: bild, maske: maske);
+}
+
+/// Die Maske als halbdurchsichtiges Rot in RGBA, in der Farbe der
+/// Pinselstriche – im Hintergrund, aus demselben Grund wie
+/// [retuscheVorbereiten].
+@visibleForTesting
+Uint8List rotePunkte(img.Image maske) {
+  final punkte = Uint8List(maske.width * maske.height * 4);
+  var i = 0;
+  for (final p in maske) {
+    if (p.r > 0) {
+      punkte[i] = 0xFF;
+      punkte[i + 1] = 0x52;
+      punkte[i + 2] = 0x52;
+      punkte[i + 3] = 0x99;
+    }
+    i += 4;
+  }
+  return punkte;
+}
+
 Kratzerfund _kratzerIsolate(Uint8List bytes) {
   final bild = img.decodeImage(bytes);
   if (bild == null) throw StateError('nicht dekodierbar');
@@ -439,18 +520,8 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
   }
 
   /// Die Maske als halbdurchsichtiges Rot, in der Farbe der Pinselstriche.
-  Future<ui.Image> _alsRoteFlaeche(img.Image maske) {
-    final punkte = Uint8List(maske.width * maske.height * 4);
-    var i = 0;
-    for (final p in maske) {
-      if (p.r > 0) {
-        punkte[i] = 0xFF;
-        punkte[i + 1] = 0x52;
-        punkte[i + 2] = 0x52;
-        punkte[i + 3] = 0x99;
-      }
-      i += 4;
-    }
+  Future<ui.Image> _alsRoteFlaeche(img.Image maske) async {
+    final punkte = await compute(rotePunkte, maske);
     final fertig = Completer<ui.Image>();
     ui.decodeImageFromPixels(
       punkte,
@@ -489,51 +560,21 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     setState(() => _processing = true);
     InpaintingService? dienst;
     try {
-      final decoded = img.decodeImage(bytes);
-      if (decoded == null) throw StateError('nicht dekodierbar');
-
-      // Die Striche als Graustufenmaske in Bildauflösung – auf dem
-      // Vorschlag der Kratzersuche, falls es einen gibt.
-      final maske = img.Image(width: w, height: h);
-      if (auto != null) {
-        final passend = auto.width == w && auto.height == h
-            ? auto
-            : img.copyResize(
-                auto,
-                width: w,
-                height: h,
-                interpolation: img.Interpolation.nearest,
-              );
-        for (final p in passend) {
-          if (p.r > 0) maske.setPixelRgb(p.x, p.y, 255, 255, 255);
-        }
-      }
-      final radius = (_pinselbreite / 2 / scale).clamp(1.0, 400.0);
-      for (final strich in striche) {
-        for (final punkt in strich) {
-          img.fillCircle(
-            maske,
-            x: (punkt.dx / scale).round(),
-            y: (punkt.dy / scale).round(),
-            radius: radius.round(),
-            color: img.ColorRgb8(255, 255, 255),
-          );
-        }
-      }
-      for (final strich in _radierStriche) {
-        for (final punkt in strich) {
-          img.fillCircle(
-            maske,
-            x: (punkt.dx / scale).round(),
-            y: (punkt.dy / scale).round(),
-            radius: radius.round(),
-            color: img.ColorRgb8(0, 0, 0),
-          );
-        }
-      }
+      final vorlage = await compute(retuscheVorbereiten, (
+        bytes: bytes,
+        breite: w,
+        hoehe: h,
+        automaske: auto,
+        striche: striche,
+        radiert: _radierStriche,
+        massstab: scale,
+        radius: (_pinselbreite / 2 / scale).clamp(1.0, 400.0).round(),
+      ));
+      if (vorlage == null) throw StateError('nicht dekodierbar');
+      if (!mounted) return;
 
       dienst = await InpaintingService.load(modelle);
-      final ergebnis = await dienst.entferne(decoded, maske);
+      final ergebnis = await dienst.entferne(vorlage.bild, vorlage.maske);
       if (ergebnis == null) {
         // Leere Maske. Frueher endete der Weg hier wortlos - und wortlos
         // nichts tun ist die Auskunft, die am teuersten zu deuten ist.
@@ -543,7 +584,7 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
         }
         return;
       }
-      final kodiert = _encodeResult(ergebnis)!;
+      final kodiert = (await compute(_encodeResult, ergebnis))!;
       if (!mounted) return;
       setState(() {
         _currentBytes = kodiert.bytes;
@@ -1024,11 +1065,13 @@ class _ImageEditorScreenState extends State<ImageEditorScreen> {
     setState(() => _processing = true);
     KolorierService? dienst;
     try {
-      final decoded = img.decodeImage(bytes);
+      // Dekodieren und Kodieren im Hintergrund, wie bei der Retusche
+      // (#434): Nur das Modell muss im Hauptisolat rechnen.
+      final decoded = await compute(img.decodeImage, bytes);
       if (decoded == null) throw StateError('nicht dekodierbar');
       dienst = await KolorierService.load(modelle);
       final ergebnis = await dienst.faerbe(decoded);
-      final kodiert = _encodeResult(ergebnis)!;
+      final kodiert = (await compute(_encodeResult, ergebnis))!;
       if (!mounted) return;
       setState(() {
         _currentBytes = kodiert.bytes;
