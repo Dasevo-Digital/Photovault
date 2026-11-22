@@ -125,6 +125,18 @@ void main() {
     }
   }
 
+  /// Taktet, bis [ziel] da ist – höchstens rund 15 s, mit echten Pausen
+  /// dazwischen. In der CI kam das Werkzeugmenü unter Last später als nach
+  /// festen Takten, und der Chip fehlte beim Tippen.
+  Future<void> taktebis(WidgetTester tester, Finder ziel) async {
+    for (var i = 0; i < 300 && ziel.evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 25));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 25)),
+      );
+    }
+  }
+
   /// Hochformatige Flaeche, querformatiges Bild - so stand es auf dem
   /// Schreibtisch, und genau so faellt die Fehlrechnung am staerksten aus.
   Future<void> zeige(
@@ -185,8 +197,9 @@ void main() {
 
   Future<void> werkzeug(WidgetTester tester, String name) async {
     await tester.tap(find.byIcon(Icons.auto_fix_high_outlined));
-    await takte(tester, 10);
-    await tester.tap(find.widgetWithText(ChoiceChip, name));
+    final chip = find.widgetWithText(ChoiceChip, name);
+    await taktebis(tester, chip);
+    await tester.tap(chip);
     await takte(tester, 10);
   }
 
