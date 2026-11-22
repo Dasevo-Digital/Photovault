@@ -1232,6 +1232,27 @@ void main() {
     expect(find.text('Nachnamen'), findsNothing);
   });
 
+  testWidgets('Menüpunkte mit Dialog enden mit Auslassungspunkten', (
+    tester,
+  ) async {
+    // PER-157: „Zierbaum als PDF“ öffnet wie „Tafel als PDF …“ einen
+    // Speichern-Dialog, trug die Punkte aber nicht.
+    await zeige(tester, 'kind');
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    for (final wert in ['tafel', 'zierbaum', 'gedcom', 'gedcom_import']) {
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byWidgetPredicate(
+            (w) => w is PopupMenuItem<String> && w.value == wert,
+          ),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(text.data, endsWith(' …'), reason: wert);
+    }
+  });
+
   testWidgets('so sieht die Familienstatistik aus', (tester) async {
     tester.view.physicalSize = const Size(1040, 900);
     tester.view.devicePixelRatio = 1.0;

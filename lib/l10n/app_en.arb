@@ -3175,7 +3175,7 @@
     }
   },
   "stammbaumKeineFamilienorte": "No photo from this family has a location.",
-  "stammbaumZierbaumDrucken": "Ornamental tree as PDF",
+  "stammbaumZierbaumDrucken": "Ornamental tree as PDF …",
   "stammbaumTafelDrucken": "Chart as PDF …",
   "stammbaumTafelFertig": "The chart has been written.",
   "stammbaumNichtGeschrieben": "The file could not be written there. Choose a different location.",

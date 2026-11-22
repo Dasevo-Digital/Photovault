@@ -6924,7 +6924,7 @@ class AppTexteEn extends AppTexte {
       'No photo from this family has a location.';
 
   @override
-  String get stammbaumZierbaumDrucken => 'Ornamental tree as PDF';
+  String get stammbaumZierbaumDrucken => 'Ornamental tree as PDF …';
 
   @override
   String get stammbaumTafelDrucken => 'Chart as PDF …';

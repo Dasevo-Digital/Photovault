@@ -10756,7 +10756,7 @@ abstract class AppTexte {
   /// No description provided for @stammbaumZierbaumDrucken.
   ///
   /// In de, this message translates to:
-  /// **'Zierbaum als PDF'**
+  /// **'Zierbaum als PDF …'**
   String get stammbaumZierbaumDrucken;
 
   /// No description provided for @stammbaumTafelDrucken.

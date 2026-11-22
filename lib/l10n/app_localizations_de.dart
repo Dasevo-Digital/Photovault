@@ -6962,7 +6962,7 @@ class AppTexteDe extends AppTexte {
       'Von dieser Familie ist kein Foto mit Ortsangabe vorhanden.';
 
   @override
-  String get stammbaumZierbaumDrucken => 'Zierbaum als PDF';
+  String get stammbaumZierbaumDrucken => 'Zierbaum als PDF …';
 
   @override
   String get stammbaumTafelDrucken => 'Tafel als PDF …';
