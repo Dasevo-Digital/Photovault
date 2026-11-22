@@ -194,9 +194,16 @@ class _PeopleScreenState extends State<PeopleScreen>
 
   /// Lädt alles neu – für den Start und nach Eingriffen, die die ganze
   /// Bestandsaufnahme umwerfen (Gruppierungslauf, Massenaktionen).
+  ///
+  /// Nach jedem Schritt wird geprüft, ob der Reiter noch steht: Ist er weg,
+  /// fragt er nicht weiter. Sonst lief die Kette nach dem Verlassen noch
+  /// Abfragen auf eine Datenbank, die inzwischen geschlossen sein kann
+  /// (Neustart nach dem Verlegen, Beenden).
   Future<void> _neuLaden() async {
     final faces = await widget.library.db.unassignedFaces();
+    if (!mounted) return;
     final unbenannt = await widget.library.db.unassignedFacesCount();
+    if (!mounted) return;
     // Nur gefragt, wenn das Raster leer bleibt: Die Zaehlung laeuft ueber
     // die ganze Bibliothek, und wer 4000 Gesichter vor sich hat, braucht
     // keine Erklaerung dafuer, dass keine da sind.
@@ -206,23 +213,24 @@ class _PeopleScreenState extends State<PeopleScreen>
             modell: widget.library.faceDetectionAvailable,
             offen: await widget.library.db.countFaceScan(onlyNew: true),
           );
-    if (mounted) {
-      setState(() {
-        _gesichtsstand = stand;
-        _unassignedFaces = faces;
-        _unbenannteAnzahl = unbenannt;
-      });
-    }
+    if (!mounted) return;
+    setState(() {
+      _gesichtsstand = stand;
+      _unassignedFaces = faces;
+      _unbenannteAnzahl = unbenannt;
+    });
     await _zaehlePersonen();
     await _ladeIgnorierte();
   }
 
   Future<void> _zaehlePersonen() async {
+    if (!mounted) return;
     final anzahl = await widget.library.db.countPeople();
     if (mounted) setState(() => _personenAnzahl = anzahl);
   }
 
   Future<void> _ladeIgnorierte() async {
+    if (!mounted) return;
     final ignoriert = await widget.library.db.ignoredFaces();
     final anzahl = await widget.library.db.ignoredFacesCount();
     if (!mounted) return;

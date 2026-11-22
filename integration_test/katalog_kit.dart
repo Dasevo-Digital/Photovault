@@ -243,7 +243,17 @@ void verlinkeModelle([List<String>? nur]) {
 
 /// Beendet die Prüfung: Datenbank schliessen, Widgetbaum leeren,
 /// Temp-Ordner löschen.
+///
+/// Vorher kommt die Oberfläche zur Ruhe: Ein Bildschirm kann nach dem
+/// letzten Klick noch eine Kette von Abfragen abarbeiten (der
+/// Personen-Reiter zählt nach dem Zuordnen die Personen nach). Schloss die
+/// Datenbank mittendrin, scheiterte die Prüfung an
+/// `ConnectionClosedException` aus dieser Kette, obwohl alles geprüft war
+/// (PER-108). Der Baum bleibt dabei stehen, bis die Datenbank zu ist –
+/// sein Abbau entsorgt auch den Bibliothekszustand, den [_beende] noch
+/// braucht.
 Future<void> finish(WidgetTester tester) async {
+  await settle(tester);
   await _beende();
   await tester.pumpWidget(const SizedBox());
   await tester.pump(const Duration(milliseconds: 200));
