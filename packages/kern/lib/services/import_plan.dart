@@ -93,6 +93,15 @@ class ImportPlan {
   int get originalBytes => eintraege
       .where((e) => e.art == ImportPlanArt.neu)
       .fold(0, (n, e) => n + e.angaben!.bytes);
+
+  /// Die Einträge nach ihrem Pfad – einmal je Lauf zu bilden (#434). Ein
+  /// `singleWhere` je Datei ging jedes Mal die ganze Liste durch; bei einem
+  /// Umzug mit 200 000 Dateien waren das Minuten auf dem Faden der
+  /// Oberfläche.
+  Map<String, ImportPlanEintrag> get nachPfad => {
+    for (final e in eintraege) e.pfad: e,
+  };
+
   Map<String, String> get pruefsummen => {
     for (final e in eintraege.where((e) => e.art == ImportPlanArt.neu))
       e.pfad: e.angaben!.pruefsumme,

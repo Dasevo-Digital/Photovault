@@ -28,6 +28,7 @@ class ImportKoordinator {
     if (pruefsummen != null && pfade.any((p) => !pruefsummen.containsKey(p))) {
       throw const FormatException('pv_import_auswahl');
     }
+    final nachPfad = plan?.nachPfad;
     var done = 0;
     yield ImportProgress(0, pfade.length);
     for (final pfad in pfade) {
@@ -35,7 +36,7 @@ class ImportKoordinator {
           plan.regelstand != await pruefung.aktuellerRegelstand()) {
         throw const FormatException('pv_import_regeln_geaendert');
       }
-      final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == pfad);
+      final eintrag = nachPfad?[pfad];
       final result = await importe.importFile(
         pfad,
         erwartetePruefsumme: pruefsummen?[pfad],

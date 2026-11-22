@@ -1474,6 +1474,7 @@ class LibraryState extends ChangeNotifier {
     }
     final tus = TusHochladen(a.verbindung);
     final pruefsummen = plan?.pruefsummen;
+    final nachPfad = plan?.nachPfad;
     var done = 0;
     // Gesetzt, wenn eine Datei auch nach allen neuen Versuchen am Server
     // vorbeiging: Dann bekommt jede weitere nur noch einen, bis wieder eine
@@ -1486,7 +1487,11 @@ class LibraryState extends ChangeNotifier {
       String? ausgang, aufnahme;
       Object? grund;
       try {
-        final eintrag = plan?.eintraege.singleWhere((e) => e.pfad == filePath);
+        final eintrag = nachPfad?[filePath];
+        if (plan != null &&
+            (eintrag == null || !pruefsummen!.containsKey(filePath))) {
+          throw const FormatException('pv_import_auswahl');
+        }
         if (eintrag != null &&
             ((await datei.stat()).size != eintrag.angaben!.bytes ||
                 await datei.lastModified() != eintrag.angaben!.geaendert)) {
@@ -1819,12 +1824,12 @@ class LibraryState extends ChangeNotifier {
       nachbearbeiten: nachbearbeitung.neueAufnahme,
       starteAnalyse: starteHintergrundanalyse,
     ).importiere(filePaths, plan: plan);
+    final nachPfad = plan?.nachPfad;
     await for (final f in laeufe) {
       if ((f.assetId, f.pfad) case (final id?, final pfad?)) {
         // Scheitert das, ist das Foto trotzdem da.
         try {
-          if (plan?.eintraege.singleWhere((e) => e.pfad == pfad).beilage ==
-              null) {
+          if (nachPfad?[pfad]?.beilage == null) {
             await beilageNeben(pfad)?.wendeAn(db, id);
           }
         } on Object catch (e) {
