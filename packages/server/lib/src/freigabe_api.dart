@@ -67,6 +67,10 @@ class Freigabeapi {
     Gastpruefung? pruefung,
     this.speicher,
     this.hoechstensBeitrag = 2 * 1024 * 1024 * 1024,
+    this.hoechstensOffeneBytes = Gastbeitraege.hoechstensOffeneBytes,
+    this.gleichzeitigJeAbsender = gastGleichzeitigJeAbsender,
+    this.gleichzeitigJeFreigabe = gastGleichzeitigJeFreigabe,
+    this.hoechstensInPruefung = gastHoechstensInPruefung,
   }) : bremse = bremse ?? Bremse(),
        pruefung = pruefung ?? Gastpruefung();
 
@@ -94,9 +98,34 @@ class Freigabeapi {
   /// Die grösste Datei, die ein Gast schicken darf.
   final int hoechstensBeitrag;
 
+  /// Höchstens so viele Bytes in offenen Beiträgen je Freigabe (siehe
+  /// [Gastbeitraege.hoechstensOffeneBytes]).
+  final int hoechstensOffeneBytes;
+
   /// Wie viele Dateien ein Absender in der Stunde schicken darf.
   static const beitraegeJeStunde = 300;
   final _jeAbsender = <String, List<DateTime>>{};
+
+  /// So viele Uploads eines Absenders zugleich. Die Seite schickt eine
+  /// Datei nach der anderen; mehr braucht nur, wer mit mehreren Geräten
+  /// hinter einem Anschluss sitzt (eine Feier im selben WLAN).
+  static const gastGleichzeitigJeAbsender = 6;
+
+  /// So viele Uploads zugleich auf einen Link. Mehr Gäste warten kurz:
+  /// Die Seite versucht es nach einer 503 von selbst wieder.
+  static const gastGleichzeitigJeFreigabe = 12;
+
+  /// Nichts Neues mehr annehmen, solange so viele Beiträge auf die
+  /// Prüfung warten – sie läuft einer nach dem anderen, und bis dahin
+  /// liegen die Rohdateien auf der Platte. Einige hundert Fotos einer
+  /// Feier passen hinein; wer mehr schickt, wartet, bis geprüft ist.
+  static const gastHoechstensInPruefung = 1000;
+
+  final int gleichzeitigJeAbsender;
+  final int gleichzeitigJeFreigabe;
+  final int hoechstensInPruefung;
+  final _laufendJeAbsender = <String, int>{};
+  final _laufendJeFreigabe = <String, int>{};
 
   /// Welche Beiträge gerade geprüft werden – nach einem Neustart wird
   /// der Rest wieder aufgenommen.
@@ -510,6 +539,13 @@ class Freigabeapi {
   /// Eine Datei von einem Gast: der Körper ist die Datei, `?name=` ihr
   /// Name, `?von=` der Name des Gastes, `?geaendert=` ihre Änderungszeit
   /// in Millisekunden. → 202 `{id}`; geprüft wird danach.
+  ///
+  /// **Grenzen (#426).** 503 mit `Retry-After`, solange der Absender oder
+  /// der Link schon genug gleichzeitig schickt oder zu viele Beiträge auf
+  /// die Prüfung warten; 429 bei zu vielen Dateien je Stunde oder zu
+  /// vielen offenen Beiträgen (Anzahl und Bytes) am Link; 507, wenn die
+  /// Datei samt allem, was gerade ankommt, den Platz unter
+  /// [Speicherwaechter.mindestFrei] drücken würde.
   Future<Response> beitrag(Request r, String link) async {
     // Nur aus der Seite der Freigabe: Ein Formular auf einer fremden
     // Seite soll niemandem Dateien unterschieben.
@@ -528,15 +564,28 @@ class Freigabeapi {
     if (speicher?.voll ?? false) {
       return _json({'fehler': 'Der Speicher ist voll.'}, status: 507);
     }
-    final adresse = absender.von(r);
-    if (_zuViele(adresse) ||
-        ablage.offen(f.id) >= Gastbeitraege.hoechstensOffen) {
-      return _json({'fehler': 'zu viele Dateien'}, status: 429);
-    }
     final laenge = int.tryParse(r.headers['content-length'] ?? '');
     if (laenge == null) return _json({'fehler': 'Länge fehlt'}, status: 411);
     if (laenge <= 0 || laenge > hoechstensBeitrag) {
       return _json({'fehler': 'Datei zu gross'}, status: 413);
+    }
+    final adresse = absender.von(r);
+    // Erst, was nur warten heisst (503, die Seite versucht es wieder) …
+    if ((_laufendJeAbsender[adresse] ?? 0) >= gleichzeitigJeAbsender ||
+        (_laufendJeFreigabe[f.id] ?? 0) >= gleichzeitigJeFreigabe) {
+      return _spaeter(5);
+    }
+    if (ablage.inPruefung() >= hoechstensInPruefung) return _spaeter(30);
+    // … dann, was erst der Besitzer wieder frei macht.
+    if (ablage.offen(f.id) >= Gastbeitraege.hoechstensOffen ||
+        ablage.offeneBytes(f.id) + laenge > hoechstensOffeneBytes ||
+        _zuViele(adresse)) {
+      return _json({'fehler': 'zu viele Dateien'}, status: 429);
+    }
+    // Der Platz für genau diese Datei, mit allem, was gerade ankommt.
+    final platz = speicher?.reserviere(laenge);
+    if (speicher != null && platz == null) {
+      return _json({'fehler': 'Der Speicher ist voll.'}, status: 507);
     }
     final q = r.url.queryParameters;
     final von = (q['von'] ?? '').trim();
@@ -548,9 +597,12 @@ class Freigabeapi {
       groesse: laenge,
       absender: adresse,
     );
+    _zaehle(_laufendJeAbsender, adresse, 1);
+    _zaehle(_laufendJeFreigabe, f.id, 1);
     final b = o.bibliothek;
     final ordner = _ordner(b, eintrag.id);
     final roh = File(p.join(ordner.path, 'eingang'));
+    var angekommen = false;
     try {
       await ordner.create(recursive: true);
       var geschrieben = 0;
@@ -569,13 +621,34 @@ class Freigabeapi {
         await _raeumeWeg(b, eintrag.id);
         return _json({'fehler': 'unvollständig'}, status: 400);
       }
+      angekommen = true;
     } catch (e) {
       await _raeumeWeg(b, eintrag.id);
       rethrow;
+    } finally {
+      _zaehle(_laufendJeAbsender, adresse, -1);
+      _zaehle(_laufendJeFreigabe, f.id, -1);
+      platz?.gib(geschrieben: angekommen);
     }
     final geaendert = int.tryParse(q['geaendert'] ?? '');
     unawaited(_pruefe(b, eintrag.id, roh, geaendert));
     return _json({'id': eintrag.id}, status: 202);
+  }
+
+  /// 503 mit `Retry-After`: gerade zu viel auf einmal, gleich wieder.
+  static Response _spaeter(int sekunden) => _json(
+    {'fehler': 'gerade zu viele Dateien auf einmal', 'warten': sekunden},
+    status: 503,
+    kopf: {'retry-after': '$sekunden'},
+  );
+
+  static void _zaehle(Map<String, int> zaehler, String wer, int um) {
+    final n = (zaehler[wer] ?? 0) + um;
+    if (n <= 0) {
+      zaehler.remove(wer);
+    } else {
+      zaehler[wer] = n;
+    }
   }
 
   Future<void> _pruefe(

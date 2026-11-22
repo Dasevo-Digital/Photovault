@@ -51,6 +51,12 @@ class Gastbeitraege {
   /// nichts mehr an, bis der Besitzer entschieden hat.
   static const hoechstensOffen = 2000;
 
+  /// Höchstens so viele Bytes in offenen Beiträgen je Freigabe (#426):
+  /// Eine Familie, die nach einer Feier einige hundert Fotos und ein paar
+  /// Videos schickt, bleibt weit darunter; wer den Link weitergereicht
+  /// bekam, füllt damit nicht die Platte.
+  static const hoechstensOffeneBytes = 20 * 1000 * 1000 * 1000;
+
   static final _zufall = Random.secure();
 
   /// Eine Kennung, die auch als Ordnername taugt.
@@ -118,6 +124,27 @@ class Gastbeitraege {
             'SELECT COUNT(*) AS n FROM gastbeitraege WHERE freigabe = ?',
             [freigabe],
           ).first['n']
+          as int;
+
+  /// Wie viele Bytes die Beiträge zu [freigabe] belegen, die noch
+  /// Dateien haben: in Prüfung (auch während sie noch ankommen) oder
+  /// bereit. Abgewiesene haben keine mehr.
+  int offeneBytes(String freigabe) =>
+      _sdb.db.select(
+            'SELECT coalesce(sum(groesse), 0) AS n FROM gastbeitraege '
+            "WHERE freigabe = ? AND zustand IN ('pruefung', 'bereit')",
+            [freigabe],
+          ).first['n']
+          as int;
+
+  /// Wie viele Beiträge aller Freigaben auf die Prüfung warten (oder noch
+  /// ankommen).
+  int inPruefung() =>
+      _sdb.db
+              .select(
+                "SELECT COUNT(*) AS n FROM gastbeitraege WHERE zustand = 'pruefung'",
+              )
+              .first['n']
           as int;
 
   /// Die Beiträge eines Kontos, die jüngsten zuerst.

@@ -76,9 +76,57 @@ class Speicherwaechter {
 
   /// `null`, solange nichts gemessen werden konnte (kein `df`).
   Speicherstufe? get stufe => _stufe;
-  bool get voll => _stufe == Speicherstufe.voll;
+
+  /// Voll nach der letzten Messung – oder weil laufende Uploads den Rest
+  /// schon zugesagt bekommen haben ([reserviere]).
+  bool get voll =>
+      _stufe == Speicherstufe.voll ||
+      (_stand != null && _stand!.frei - _reserviert < mindestFrei);
 
   Timer? _uhr;
+
+  /// Bytes, die laufende Uploads zugesagt bekamen und die noch keine
+  /// Messung sieht.
+  int _reserviert = 0;
+  int get reserviert => _reserviert;
+
+  /// Zusagen, deren Dateien fertig auf der Platte liegen: Sie fallen weg,
+  /// sobald eine Messung, die danach begann, sie mitzählt.
+  final _gemessenFrei = <int>[];
+  bool _messungGeplant = false;
+
+  /// Sagt [bytes] für einen Upload zu, wenn sie noch passen: frei nach der
+  /// letzten Messung, abzüglich aller laufenden Zusagen, und dann noch
+  /// [mindestFrei] übrig. `null`, wenn nicht.
+  ///
+  /// Vorher galt nur [voll] zu Beginn einer Anfrage – ein Wert, der bis zu
+  /// [takt] alt ist. Hundert gleichzeitige grosse Uploads bestanden alle
+  /// diese Prüfung, bevor die nächste Messung kam, und schrieben die
+  /// Platte voll; danach scheiterte jede Datenbank darauf.
+  ///
+  /// Ohne Messung (kein `df`) lässt sich nichts prüfen; dann gilt die
+  /// Zusage, gezählt wird trotzdem.
+  Speicherzusage? reserviere(int bytes) {
+    final s = _stand;
+    if (s != null && s.frei - _reserviert - bytes < mindestFrei) return null;
+    _reserviert += bytes;
+    return Speicherzusage._(this, bytes);
+  }
+
+  void _gib(int bytes, {required bool geschrieben}) {
+    if (!geschrieben) {
+      _reserviert -= bytes;
+      return;
+    }
+    // Die Datei liegt jetzt auf der Platte; die nächste Messung sieht sie.
+    _gemessenFrei.add(bytes);
+    if (_messungGeplant) return;
+    _messungGeplant = true;
+    Timer(Duration.zero, () {
+      _messungGeplant = false;
+      unawaited(pruefe());
+    });
+  }
 
   Speicherstufe stufeFuer(Speicherstand s) => s.frei < mindestFrei
       ? Speicherstufe.voll
@@ -87,9 +135,18 @@ class Speicherwaechter {
       : Speicherstufe.ausreichend;
 
   Future<void> pruefe() async {
+    // Was vor Beginn dieser Messung fertig geschrieben war, zählt sie mit.
+    final gesehen = [..._gemessenFrei];
+    _gemessenFrei.clear();
     final s = await _messung(ort);
-    if (s == null) return;
+    if (s == null) {
+      _gemessenFrei.addAll(gesehen);
+      return;
+    }
     _stand = s;
+    for (final b in gesehen) {
+      _reserviert -= b;
+    }
     final neu = stufeFuer(s);
     final vorher = _stufe;
     _stufe = neu;
@@ -127,4 +184,21 @@ class Speicherwaechter {
     'warnungAb': warnAnteil,
     'mindestFrei': mindestFrei,
   };
+}
+
+/// Eine Zusage von Platz für einen Upload ([Speicherwaechter.reserviere]).
+class Speicherzusage {
+  Speicherzusage._(this._waechter, this.bytes);
+  final Speicherwaechter _waechter;
+  final int bytes;
+  var _gegeben = false;
+
+  /// Gibt die Zusage zurück: [geschrieben], wenn die Datei auf der Platte
+  /// bleibt (dann erst nach der nächsten Messung), sonst sofort. Mehrmals
+  /// aufgerufen zählt nur das erste Mal.
+  void gib({required bool geschrieben}) {
+    if (_gegeben) return;
+    _gegeben = true;
+    _waechter._gib(bytes, geschrieben: geschrieben);
+  }
 }

@@ -104,7 +104,24 @@ $('teilen-von').addEventListener('change', () => {
   try { localStorage.setItem(VON_MERKER, $('teilen-von').value.trim()); } catch (_) { /* privat */ }
 });
 
-function schickeDatei(datei, zeile) {
+// 503 heisst: gerade zu viele auf einmal (#426) – nach Retry-After noch
+// einmal, eine Weile lang, statt die Datei aufzugeben.
+async function schickeDatei(datei, zeile) {
+  for (let versuch = 0; ; versuch++) {
+    const { status, warten } = await schickeDateiEinmal(datei, zeile);
+    if (status !== 503) return status;
+    if (versuch >= 40) {
+      zeile.stand.textContent = t('Hat nicht geklappt.');
+      zeile.li.classList.add('fehler');
+      zeile.balken.hidden = true;
+      return status;
+    }
+    zeile.stand.textContent = t('wartet …');
+    await new Promise((weiter) => setTimeout(weiter, Math.min(Math.max(warten, 2), 60) * 1000));
+  }
+}
+
+function schickeDateiEinmal(datei, zeile) {
   return new Promise((fertig) => {
     const q = new URLSearchParams({ name: datei.name, geaendert: String(datei.lastModified || '') });
     const von = $('teilen-von').value.trim();
@@ -116,6 +133,11 @@ function schickeDatei(datei, zeile) {
       if (e.lengthComputable) zeile.balken.value = e.loaded / e.total;
     });
     x.addEventListener('load', () => {
+      if (x.status === 503) {
+        zeile.balken.value = 0;
+        fertig({ status: 503, warten: Number(x.getResponseHeader('Retry-After')) || 5 });
+        return;
+      }
       const texte = {
         202: t('Hochgeladen – erscheint nach der Freigabe'),
         401: t('Bitte die Seite neu laden.'),
@@ -126,13 +148,13 @@ function schickeDatei(datei, zeile) {
       zeile.stand.textContent = texte[x.status] || t('Hat nicht geklappt.');
       zeile.li.classList.add(x.status === 202 ? 'fertig' : 'fehler');
       zeile.balken.hidden = true;
-      fertig(x.status);
+      fertig({ status: x.status });
     });
     x.addEventListener('error', () => {
       zeile.stand.textContent = t('Keine Verbindung zum Server.');
       zeile.li.classList.add('fehler');
       zeile.balken.hidden = true;
-      fertig(0);
+      fertig({ status: 0 });
     });
     x.send(datei);
   });

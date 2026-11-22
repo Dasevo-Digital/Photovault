@@ -510,13 +510,27 @@ class Teilungsapi {
     if (laenge <= 0 || laenge > hoechstensBeitrag) {
       return _json({'fehler': 'Datei zu gross'}, status: 413);
     }
+    // Der Platz für genau diese Datei, mit allem, was gerade ankommt
+    // (Speicherwaechter.reserviere) – nicht nur der Stand der letzten
+    // Messung.
+    final platz = speicher?.reserviere(laenge);
+    if (speicher != null && platz == null) {
+      return _json({'fehler': 'Der Speicher ist voll.'}, status: 507);
+    }
     final b = g.bereich.bibliothek;
     final q = r.url.queryParameters;
     // Ein Rest nach einem Absturz geht beim nächsten Öffnen der Bibliothek
     // (Bibliotheken.fuer).
-    final ordner = await (await Directory(
-      p.join(b.ordner.path, 'kontobeitraege'),
-    ).create(recursive: true)).createTemp('beitrag_');
+    final Directory ordner;
+    try {
+      ordner = await (await Directory(
+        p.join(b.ordner.path, 'kontobeitraege'),
+      ).create(recursive: true)).createTemp('beitrag_');
+    } catch (_) {
+      platz?.gib(geschrieben: false);
+      rethrow;
+    }
+    var importiert = false;
     try {
       final datei = File(
         p.join(ordner.path, Gastbeitraege.bereinigt(q['name'] ?? 'beitrag')),
@@ -545,6 +559,7 @@ class Teilungsapi {
       final ergebnis = await b.importe.importFile(datei.path);
       var aufnahme = ergebnis.assetId;
       if (ergebnis.outcome == ImportOutcome.imported && aufnahme != null) {
+        importiert = true;
         final ich = kontoVon(r);
         _dienst.vermerkeBeitrag(
           besitzer: g.teilung.besitzer,
@@ -588,6 +603,8 @@ class Teilungsapi {
       }, status: 201);
     } finally {
       await ordner.delete(recursive: true);
+      // Importiert liegt sie in der Bibliothek; sonst ist sie wieder weg.
+      platz?.gib(geschrieben: importiert);
     }
   }
 

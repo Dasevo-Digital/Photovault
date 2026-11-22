@@ -360,6 +360,41 @@ void main() {
     }
   });
 
+  // #426: Geprüft wurde nur, ob die letzte Messung „voll“ sagte – nicht,
+  // ob die Datei selbst noch Platz hat.
+  test('beitragen: die Datei selbst muss noch Platz haben', () async {
+    await urlaub();
+    var frei = 1 << 40;
+    final speicher = Speicherwaechter(
+      ordner,
+      mindestFrei: 1000000,
+      messung: (_) async => Speicherstand(gesamt: 1 << 41, frei: frei),
+    );
+    api = baueApi(
+      konten: konten,
+      bibliotheken: bibliotheken,
+      speicher: speicher,
+    );
+    await teile(max.id, beitragen: true);
+    final id = (await mitMir(maxToken)).single['id']! as String;
+    final bytes = jpeg(40);
+    Future<int> schicke() async => (await frag(
+      'POST',
+      '/api/v1/geteilt/$id/beitrag?name=see.jpg',
+      token: maxToken,
+      kopf: {'content-length': '${bytes.length}'},
+      inhalt: bytes,
+    )).statusCode;
+    frei = 1000000 + bytes.length - 1;
+    await speicher.pruefe();
+    expect(speicher.voll, isFalse);
+    expect(await schicke(), 507);
+    expect(speicher.reserviert, 0);
+    frei = 1000000 + bytes.length;
+    await speicher.pruefe();
+    expect(await schicke(), 201);
+  });
+
   test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
     final (strand, _, _) = await urlaub();
     await teile(max.id, beitragen: true);
