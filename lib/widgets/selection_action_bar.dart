@@ -1092,17 +1092,17 @@ Future<void> runBatchApplyPreset(
   if (!context.mounted) return;
 
   // Die Texte sind schon oben aufgelöst: Der Verlauf unten läuft lange
-  // nachdem dieser Kontext gültig war.
+  // nachdem dieser Kontext gültig war. Der Strom entsteht vor dem Dialog:
+  // Dessen Builder läuft bei jedem Neuaufbau der App erneut (#423).
+  final verlauf = _uebertragungsverlauf(
+    library.uebertrageEntwicklung(assetIds, vorgabe: werte),
+    t,
+  );
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => ProgressDialog(
-      title: t.auswUebertrageLaeuft,
-      stream: _uebertragungsverlauf(
-        library.uebertrageEntwicklung(assetIds, vorgabe: werte),
-        t,
-      ),
-    ),
+    builder: (context) =>
+        ProgressDialog(title: t.auswUebertrageLaeuft, stream: verlauf),
   );
 }
 
@@ -1165,15 +1165,19 @@ Future<void> runBatchPasteDevelop(
   if (bestaetigt != true || !context.mounted) return;
 
   // Vor dem Dialog auflösen: Der Verlauf unten läuft bei jedem Ereignis,
-  // also lange nachdem dieser Kontext gültig war.
+  // also lange nachdem dieser Kontext gültig war. Auch der Strom entsteht
+  // vorher: Der Builder des Dialogs läuft bei jedem Neuaufbau der App
+  // erneut (#423).
   final t = AppTexte.of(context);
+  final verlauf = _uebertragungsverlauf(
+    library.uebertrageEntwicklung(assetIds),
+    t,
+  );
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (context) => ProgressDialog(
-      title: t.auswUebertrageLaeuft,
-      stream: _uebertragungsverlauf(library.uebertrageEntwicklung(assetIds), t),
-    ),
+    builder: (context) =>
+        ProgressDialog(title: t.auswUebertrageLaeuft, stream: verlauf),
   );
 }
 

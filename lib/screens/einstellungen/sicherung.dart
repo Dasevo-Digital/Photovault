@@ -543,14 +543,17 @@ Future<void> _runBackup(Einstellungsstand stand) async {
   );
   if (destination == null || !context.mounted) return;
   final t = AppTexte.of(context);
+  // Vor dem Dialog: Dessen Builder läuft bei jedem Neuaufbau der App
+  // erneut, und ein dort erzeugter Strom finge von vorn an (#423).
+  final verlauf = stand.library
+      .runManualBackup(destination, encrypt: stand.encryptManualBackup)
+      .map((p) => backupZeile(t, p));
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => ProgressDialog(
       title: AppTexte.of(context).einstBackupSichertLaeuft,
-      stream: stand.library
-          .runManualBackup(destination, encrypt: stand.encryptManualBackup)
-          .map((p) => backupZeile(t, p)),
+      stream: verlauf,
     ),
   );
   stand.refresh();
@@ -585,25 +588,26 @@ Future<void> _runRestore(Einstellungsstand stand) async {
   if (auswahl == null || !context.mounted) return;
   final generation = auswahl.generation;
 
+  // Die Texte einmal hier holen und nicht im Rückruf des Stroms: Der
+  // läuft später, und der Prüfer nimmt den Kontext dann zu Recht nicht
+  // mehr an. Der Strom entsteht vor dem Dialog: Dessen Builder läuft bei
+  // jedem Neuaufbau der App erneut, und das Zurückschreiben des
+  // Erinnerungsfilters löst selbst einen aus (#423).
+  final t = AppTexte.of(context);
+  final verlauf = stand.library
+      .restoreFromBackup(
+        wurzel,
+        passphrase: passphrase,
+        generationSnapshotPath: generation?.snapshotPath,
+      )
+      .map((p) => _wiederherstellZeile(t, p));
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (dialogContext) {
-      // Die Texte einmal hier holen und nicht im Rückruf des Stroms: Der
-      // läuft später, und der Prüfer nimmt den Kontext dann zu Recht
-      // nicht mehr an.
-      final t = AppTexte.of(dialogContext);
-      return ProgressDialog(
-        title: t.einstBackupWiederherstellenLaeuft,
-        stream: stand.library
-            .restoreFromBackup(
-              wurzel,
-              passphrase: passphrase,
-              generationSnapshotPath: generation?.snapshotPath,
-            )
-            .map((p) => _wiederherstellZeile(t, p)),
-      );
-    },
+    builder: (dialogContext) => ProgressDialog(
+      title: t.einstBackupWiederherstellenLaeuft,
+      stream: verlauf,
+    ),
   );
   stand.refresh();
 }
@@ -743,18 +747,19 @@ Future<void> _pruefeBackup(Einstellungsstand stand) async {
   if (!context.mounted) return;
   final t = AppTexte.of(context);
   BackupPrueffortschritt? letzter;
+  // Vor dem Dialog: Dessen Builder läuft bei jedem Neuaufbau der App
+  // erneut (#423).
+  final verlauf = BackupPruefdienst()
+      .pruefe(wurzel, passphrase: passphrase)
+      .map((fortschritt) {
+        letzter = fortschritt;
+        return _backupPruefZeile(t, fortschritt);
+      });
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (dialog) => ProgressDialog(
-      title: t.einstBackupPruefungLaeuft,
-      stream: BackupPruefdienst().pruefe(wurzel, passphrase: passphrase).map((
-        fortschritt,
-      ) {
-        letzter = fortschritt;
-        return _backupPruefZeile(t, fortschritt);
-      }),
-    ),
+    builder: (dialog) =>
+        ProgressDialog(title: t.einstBackupPruefungLaeuft, stream: verlauf),
   );
   if (!context.mounted || letzter == null) return;
   if (letzter!.erfolgreich) {
@@ -838,23 +843,27 @@ Future<void> _runAutoBackupNow(Einstellungsstand stand) async {
   // warnt – der Text selbst ändert sich in dieser Zeit ohnehin nicht.
   final keineNeuen = AppTexte.of(context).einstBackupKeineNeuen;
   final t = AppTexte.of(context);
+  // Vor dem Dialog: Dessen Builder läuft bei jedem Neuaufbau der App
+  // erneut. Ein dort erzeugter Strom startete das Backup neu, das dann an
+  // der noch laufenden ersten Fassung scheiterte (#423).
+  final verlauf = stand.library
+      .runAutoBackupNow(destination)
+      .map(
+        (p) => p.total == 0 && p.wiederherstellungsprobe == null
+            ? keineNeuen
+            : backupZeile(t, p),
+      )
+      // Lesbar statt „PathAccessException … errno = 1“ (#211).
+      .handleError(
+        (Object _) => throw t.backupZielGesperrt,
+        test: (e) => e is BackupZielGesperrt,
+      );
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => ProgressDialog(
       title: AppTexte.of(context).einstBackupLaeuft,
-      stream: stand.library
-          .runAutoBackupNow(destination)
-          .map(
-            (p) => p.total == 0 && p.wiederherstellungsprobe == null
-                ? keineNeuen
-                : backupZeile(t, p),
-          )
-          // Lesbar statt „PathAccessException … errno = 1“ (#211).
-          .handleError(
-            (Object _) => throw t.backupZielGesperrt,
-            test: (e) => e is BackupZielGesperrt,
-          ),
+      stream: verlauf,
     ),
   );
   if (context.mounted) stand.reloadBackupSettings();
@@ -882,22 +891,24 @@ Future<void> _pruefeWiederherstellung(Einstellungsstand stand) async {
   final format = DateFormat.yMd(
     Localizations.localeOf(context).toString(),
   ).add_Hm();
+  // Vor dem Dialog: Dessen Builder läuft bei jedem Neuaufbau der App
+  // erneut, und die Probe beginnt schon beim Aufruf, nicht erst beim
+  // Abonnieren (#423).
+  final verlauf =
+      Stream.fromFuture(
+        stand.library.backupService.pruefeWiederherstellung(
+          wurzel,
+          passphrase: passphrase,
+        ),
+      ).map((r) {
+        ergebnis = r;
+        return backupProbeTextMit(t, r, format.format);
+      });
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
-    builder: (dialog) => ProgressDialog(
-      title: t.backupProbeTitel,
-      stream:
-          Stream.fromFuture(
-            stand.library.backupService.pruefeWiederherstellung(
-              wurzel,
-              passphrase: passphrase,
-            ),
-          ).map((r) {
-            ergebnis = r;
-            return backupProbeTextMit(t, r, format.format);
-          }),
-    ),
+    builder: (dialog) =>
+        ProgressDialog(title: t.backupProbeTitel, stream: verlauf),
   );
   if (context.mounted && ergebnis != null) {
     final text = backupProbeText(context, ergebnis!);

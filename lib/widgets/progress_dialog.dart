@@ -6,8 +6,23 @@ import '../theme/app_theme.dart';
 
 /// Zeigt den Fortschritt eines Streams (z.B. Backup, Restore, Gesichts-Scan)
 /// in einem nicht schließbaren Dialog mit Fortschrittsbalken und Text.
-class ProgressDialog extends StatelessWidget {
+///
+/// Das Fenster abonniert den Strom genau einmal, den aus dem ersten
+/// Aufbau. Der Builder von `showDialog` läuft nämlich bei jedem Neuaufbau
+/// der `MaterialApp` noch einmal (der Navigator meldet den Routen dann
+/// `changedExternalState`), und die App baut sie bei jeder Meldung des
+/// Bibliothekszustands neu – verbunden bei jedem Befehl. Als
+/// StatelessWidget mit `StreamBuilder(stream: stream)` kündigte das Fenster
+/// dann den laufenden Strom und abonnierte den frisch erzeugten: Die Arbeit
+/// begann von vorn, „Entwicklung übertragen“ wurde verbunden nie fertig,
+/// und eine Wiederherstellung mit Erinnerungsfilter stieß sich selbst
+/// immer wieder an (#423). Spätere Ströme übergeht es deshalb.
+class ProgressDialog extends StatefulWidget {
   final String title;
+
+  /// Der Strom, dessen Fortschritt das Fenster zeigt. Nur der aus dem
+  /// ersten Aufbau zählt; die Aufrufer erzeugen ihn trotzdem vor
+  /// `showDialog`, damit ein erneuter Builder-Lauf nichts anstößt.
   final Stream<String> stream;
 
   /// Macht aus einem Stream-Fehler einen lesbaren Satz.
@@ -28,9 +43,18 @@ class ProgressDialog extends StatelessWidget {
   });
 
   @override
+  State<ProgressDialog> createState() => _ProgressDialogState();
+}
+
+class _ProgressDialogState extends State<ProgressDialog> {
+  late final Stream<String> _strom = widget.stream;
+
+  @override
   Widget build(BuildContext context) {
+    final title = widget.title;
+    final fehlerText = widget.fehlerText;
     return StreamBuilder<String>(
-      stream: stream,
+      stream: _strom,
       builder: (context, snapshot) {
         final done = snapshot.connectionState == ConnectionState.done;
         final failed = snapshot.hasError;

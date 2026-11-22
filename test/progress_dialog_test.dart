@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
@@ -25,7 +27,13 @@ void main() {
         supportedLocales: AppTexte.supportedLocales,
         theme: buildLightTheme(),
         home: Scaffold(
-          body: ProgressDialog(title: 'Backup läuft', stream: strom),
+          // Jeder Aufruf ist ein neues Fenster: Ein bestehendes behält
+          // seinen ersten Strom (#423).
+          body: ProgressDialog(
+            key: UniqueKey(),
+            title: 'Backup läuft',
+            stream: strom,
+          ),
         ),
       ),
     );
@@ -96,5 +104,74 @@ void main() {
         reason: '$fehler',
       );
     }
+  });
+
+  // #423: Die App baut die MaterialApp bei jeder Meldung des
+  // Bibliothekszustands neu. Der Navigator lässt dann den Builder von
+  // showDialog noch einmal laufen; das Fenster kündigte daraufhin den
+  // laufenden Strom und abonnierte den neu erzeugten – die Arbeit begann
+  // von vorn und wurde verbunden nie fertig.
+  testWidgets('ein Neuaufbau der App bei offenem Fenster startet die Arbeit '
+      'nicht neu', (tester) async {
+    final neuaufbau = ValueNotifier<int>(0);
+    addTearDown(neuaufbau.dispose);
+    final weiter = Completer<void>();
+    var gestartet = 0;
+    var erzeugt = 0;
+    Stream<String> arbeit() async* {
+      gestartet++;
+      yield 'Foto 1 / 2';
+      await weiter.future;
+      yield 'Foto 2 / 2';
+    }
+
+    await tester.pumpWidget(
+      ValueListenableBuilder<int>(
+        valueListenable: neuaufbau,
+        builder: (context, stand, _) => MaterialApp(
+          locale: const Locale('de'),
+          localizationsDelegates: AppTexte.localizationsDelegates,
+          supportedLocales: AppTexte.supportedLocales,
+          theme: buildLightTheme(),
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  barrierDismissible: false,
+                  // Wie die alten Aufrufer: Der Strom entsteht im Builder.
+                  builder: (_) {
+                    erzeugt++;
+                    return ProgressDialog(title: 'Läuft', stream: arbeit());
+                  },
+                ),
+                child: const Text('los'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('los'));
+    // Kein pumpAndSettle: Der Fortschrittsbalken läuft endlos.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Foto 1 / 2'), findsOneWidget);
+    expect(gestartet, 1);
+
+    // Neuaufbau der App, während das Fenster offen ist.
+    neuaufbau.value++;
+    await tester.pump();
+    await tester.pump();
+    expect(erzeugt, greaterThan(1), reason: 'der Builder lief noch einmal');
+    expect(gestartet, 1, reason: 'die Arbeit darf nicht neu beginnen');
+    expect(find.text('Foto 1 / 2'), findsOneWidget);
+
+    weiter.complete();
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Foto 2 / 2'), findsOneWidget);
+    expect(find.text(de.allgSchliessen), findsOneWidget);
+    expect(gestartet, 1);
   });
 }
