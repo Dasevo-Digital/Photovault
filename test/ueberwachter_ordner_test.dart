@@ -18,13 +18,14 @@ void main() {
   late Directory beobachtet;
   late AppDatabase db;
   late LibraryState lib;
+  late StoragePaths paths;
   late _Zaehlend importe;
 
   setUp(() async {
     tempRoot = Directory.systemTemp.createTempSync('pv_watch_');
     beobachtet = Directory(p.join(tempRoot.path, 'kamera'))..createSync();
     db = AppDatabase(NativeDatabase.memory());
-    final paths = await StoragePaths.forTesting(
+    paths = await StoragePaths.forTesting(
       Directory(p.join(tempRoot.path, 'lib')),
     );
     importe = _Zaehlend(db, paths);
@@ -143,6 +144,49 @@ void main() {
     lege('a.jpg', 7);
     expect(await lib.pruefeUeberwachtenOrdner(), 1);
     expect(importe.gelesen, 3);
+  });
+
+  // Bis hierher lag der Stand nur im Speicher: Nach jedem Start las der
+  // Import jede Datei des Ordners ganz, und verbunden ging jede vollständig
+  // zum Server (#424).
+  test('Eingelesenes wird auch nach einem Neustart nicht gelesen', () async {
+    final stand = File(p.join(tempRoot.path, 'daten', 'ordner.json'));
+    lib.ordnerGesehenDatei = stand;
+    lege('a.jpg', 1);
+    lege('b.jpg', 2);
+    await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
+    expect(await lib.pruefeUeberwachtenOrdner(), 2);
+    expect(importe.gelesen, 2);
+
+    // Neustart: ein neuer Zustand für dieselbe Bibliothek.
+    LibraryState neu() => LibraryState()
+      ..db = db
+      ..paths = paths
+      ..importService = importe
+      ..ordnerGesehenDatei = stand;
+    expect(await neu().pruefeUeberwachtenOrdner(), 0);
+    expect(
+      importe.gelesen,
+      2,
+      reason: 'der erste Durchgang nach dem Start las bisher alles',
+    );
+
+    // Neues und Geändertes kommt weiter.
+    lege('c.jpg', 3);
+    lege('a.jpg', 8);
+    expect(await neu().pruefeUeberwachtenOrdner(), 2);
+    expect(importe.gelesen, 4);
+  });
+
+  test('ein unlesbarer Stand liest den Ordner einmal ganz', () async {
+    final stand = File(p.join(tempRoot.path, 'ordner.json'))
+      ..writeAsStringSync('{kaputt');
+    lib.ordnerGesehenDatei = stand;
+    lege('a.jpg', 1);
+    await db.setzeUeberwachtenOrdner(pfad: beobachtet.path);
+    expect(await lib.pruefeUeberwachtenOrdner(), 1);
+    await lib.pruefeUeberwachtenOrdner();
+    expect(importe.gelesen, 1);
   });
 
   test('eine eben geschriebene Datei wartet einen Durchgang', () async {

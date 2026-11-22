@@ -44,6 +44,7 @@ import 'package:kern/services/import_service.dart';
 import 'package:kern/services/import_koordinator.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/library_location.dart';
+import '../services/ordner_gesehen.dart';
 import '../services/rechnerzustand.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/model_download_service.dart';
@@ -961,6 +962,9 @@ class LibraryState extends ChangeNotifier {
     paths.referenzen = OriginalReferenzen(
       File(p.join(lokal.path, 'originalorte', '$ortKennung.json')),
     );
+    ordnerGesehenDatei = File(
+      p.join(lokal.path, 'ueberwachter_ordner', '$ortKennung.json'),
+    );
     try {
       await paths.referenzen!.laden();
       for (final e in paths.referenzen!.ordner.entries) {
@@ -1420,26 +1424,45 @@ class LibraryState extends ChangeNotifier {
                 await datei.lastModified() != eintrag.angaben!.geaendert)) {
           throw const FormatException('pv_import_quelle_geaendert');
         }
-        final beilage = eintrag?.beilage ?? beilageNeben(filePath);
-        final kopf = await tus.ladeBeharrlich(datei, 'api/v1/hochladen', {
-          'filename': p.basename(filePath),
-          if (beilage != null) 'xmp': beilage.alsText(),
-          if (plan != null) 'sha256': pruefsummen![filePath]!,
-          // In der Fotokammer greifen die Regeln erst beim Freigeben.
-          if (plan != null && !plan.kammer) 'regelstand': plan.regelstand,
-          if (plan?.kammer ?? false) 'kammer': '1',
-          'geaendert':
-              '${(eintrag?.angaben?.geaendert ?? await datei.lastModified()).millisecondsSinceEpoch}',
-        }, abstaende: gestoert ? const [] : TusHochladen.wiederholungsabstaende);
-        gestoert = false;
-        ausgang = kopf['pv-ausgang'];
-        aufnahme = kopf['pv-aufnahme'];
-        if (ausgang == 'failed') {
-          // Als Ausnahme, damit die Oberfläche bekannte Gründe übersetzt.
-          grund = switch (kopf['pv-fehler']) {
-            final String f => FormatException(Uri.decodeComponent(f)),
-            null => null,
-          };
+        // Ohne Plan erst hier die Prüfsumme (#424): Was die Kopie schon
+        // kennt – sie trägt die Prüfsummen des Servers –, braucht nicht
+        // hochzugehen. Bis hierher ging jede Datei ganz zum Server, und
+        // erst der verwarf sie als Dublette; der überwachte Ordner schickte
+        // so nach jedem Start alles noch einmal.
+        final summe =
+            pruefsummen?[filePath] ??
+            (await sha256.bind(datei.openRead()).first).toString();
+        if (plan == null && await db.checksumExists(summe)) {
+          ausgang = 'duplicateSkipped';
+        } else {
+          final beilage = eintrag?.beilage ?? beilageNeben(filePath);
+          final kopf = await tus.ladeBeharrlich(
+            datei,
+            'api/v1/hochladen',
+            {
+              'filename': p.basename(filePath),
+              if (beilage != null) 'xmp': beilage.alsText(),
+              'sha256': summe,
+              // In der Fotokammer greifen die Regeln erst beim Freigeben.
+              if (plan != null && !plan.kammer) 'regelstand': plan.regelstand,
+              if (plan?.kammer ?? false) 'kammer': '1',
+              'geaendert':
+                  '${(eintrag?.angaben?.geaendert ?? await datei.lastModified()).millisecondsSinceEpoch}',
+            },
+            abstaende: gestoert
+                ? const []
+                : TusHochladen.wiederholungsabstaende,
+          );
+          gestoert = false;
+          ausgang = kopf['pv-ausgang'];
+          aufnahme = kopf['pv-aufnahme'];
+          if (ausgang == 'failed') {
+            // Als Ausnahme, damit die Oberfläche bekannte Gründe übersetzt.
+            grund = switch (kopf['pv-fehler']) {
+              final String f => FormatException(Uri.decodeComponent(f)),
+              null => null,
+            };
+          }
         }
       } catch (e) {
         if (TusHochladen.voruebergehend(e)) gestoert = true;
@@ -3187,13 +3210,33 @@ class LibraryState extends ChangeNotifier {
   static const _ordnerRuhe = Duration(minutes: 2);
 
   /// Was im überwachten Ordner zuletzt lag, mit Grösse und Änderungszeit,
-  /// und ob es seither eingelesen ist (#252). Nur im Speicher: Nach einem
-  /// Start liest der erste Durchgang einmal alles.
-  final _ordnerGesehen =
-      <
-        String,
-        ({int groesse, DateTime geaendert, bool eingelesen, int fehlversuche})
-      >{};
+  /// und ob es seither eingelesen ist (#252).
+  ///
+  /// **Über den Neustart hinaus (#424).** Bis hierher nur im Speicher: Nach
+  /// jedem Start galt jede Datei als neu. Ohne Server las der Import einen
+  /// Ordner mit 20 GB dann einmal ganz, verbunden gingen die 20 GB zum
+  /// Server, nur damit der sie als Dubletten verwarf. Jetzt liest der erste
+  /// Durchgang den Stand aus [_ordnerGesehenAblage].
+  final _ordnerGesehen = <String, OrdnerEintrag>{};
+  var _ordnerGesehenGeladen = false;
+
+  /// Wo [_ordnerGesehen] liegt: im Datenordner, je Bibliothek unter ihrer
+  /// Standortkennung. Ohne (in Prüfständen) bleibt der Stand im Speicher.
+  OrdnerGesehenAblage? _ordnerGesehenAblage;
+  @visibleForTesting
+  set ordnerGesehenDatei(File datei) {
+    _ordnerGesehenAblage = OrdnerGesehenAblage(datei);
+    _ordnerGesehen.clear();
+    _ordnerGesehenGeladen = false;
+  }
+
+  Future<void> _merkeOrdnerGesehen() async {
+    try {
+      await _ordnerGesehenAblage?.schreibe(_ordnerGesehen);
+    } on Object catch (e) {
+      debugPrint('Stand des überwachten Ordners nicht gespeichert: $e');
+    }
+  }
 
   /// So oft versucht der Ordner eine Datei, deren Import scheiterte, in
   /// den folgenden Durchgängen noch einmal (#390). Danach gilt sie als
@@ -3226,6 +3269,15 @@ class LibraryState extends ChangeNotifier {
 
     _ordnerLaeuft = true;
     try {
+      if (!_ordnerGesehenGeladen) {
+        final ablage = _ordnerGesehenAblage;
+        if (ablage != null) {
+          _ordnerGesehen
+            ..clear()
+            ..addAll(await ablage.lies());
+        }
+        _ordnerGesehenGeladen = true;
+      }
       // Unter macOS erlischt der Zugriff auf einen fremden Ordner bei jedem
       // Programmstart und muss aus dem gespeicherten Merkmal wiederhergestellt
       // werden (siehe FolderAccess).
@@ -3249,6 +3301,7 @@ class LibraryState extends ChangeNotifier {
       final dateien = await importService.collectSupportedFilesInFolder(pfad);
       final jetzt = DateTime.now();
       final faellig = <String>[];
+      var veraendert = false;
       for (final d in dateien) {
         final FileStat st;
         try {
@@ -3262,6 +3315,7 @@ class LibraryState extends ChangeNotifier {
             vorher.groesse == st.size &&
             vorher.geaendert == st.modified;
         if (gleich && vorher.eingelesen) continue;
+        if (!gleich) veraendert = true;
         _ordnerGesehen[d] = (
           groesse: st.size,
           geaendert: st.modified,
@@ -3274,8 +3328,13 @@ class LibraryState extends ChangeNotifier {
       }
       // Verschwundenes vergessen – auch alles aus einem früheren Ordner.
       final da = dateien.toSet();
+      final vorherZahl = _ordnerGesehen.length;
       _ordnerGesehen.removeWhere((d, _) => !da.contains(d));
-      if (faellig.isEmpty) return 0;
+      if (_ordnerGesehen.length != vorherZahl) veraendert = true;
+      if (faellig.isEmpty) {
+        if (veraendert) await _merkeOrdnerGesehen();
+        return 0;
+      }
 
       var neue = 0;
       final gescheitert = <String>{};
@@ -3311,6 +3370,7 @@ class LibraryState extends ChangeNotifier {
           fehlversuche: fehl,
         );
       }
+      await _merkeOrdnerGesehen();
       return neue;
     } catch (e) {
       debugPrint('Überwachter Ordner konnte nicht geprüft werden: $e');
