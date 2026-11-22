@@ -570,16 +570,67 @@ extension AuswahlAbfragen on AppDatabase {
     _embeddingsGeneration++;
   });
 
-  /// Löscht die Datenbankzeile endgültig. Das eigentliche Löschen der Datei
-  /// auf der Festplatte übernimmt StoragePaths.
+  /// Löscht die Datenbankzeile endgültig, samt allem, was an ihr hängt.
+  /// Das eigentliche Löschen der Dateien übernimmt StoragePaths.
+  ///
+  /// SQLite prüft die Fremdschlüssel hier nicht (kein `foreign_keys`), es
+  /// räumt also nichts von selbst ab. Bis 3.67 blieben Gesichter,
+  /// Album-, Schlagwort-, Reise- und Aktivitätszuordnungen, Einbettungen,
+  /// Entwicklungsangaben und Masken einer gelöschten Aufnahme als Zeilen
+  /// ohne Foto liegen: Personen zählten Gesichter weg geworfener Fotos,
+  /// Titelbilder zeigten auf nichts, und jede Zeile ging mit dem Abgleich
+  /// auf alle Geräte.
   Future<void> deleteAssetRows(List<String> assetIds) => transaction(() async {
     for (final stueck in inStuecken(assetIds)) {
+      // Gesichter über [loescheGesichter]: Zeigt ein Profilbild auf einen
+      // ihrer Ausschnitte, übernimmt ein anderes Gesicht der Person.
+      final gesichter =
+          await (selectOnly(faces)
+                ..addColumns([faces.id])
+                ..where(faces.assetId.isIn(stueck)))
+              .map((z) => z.read(faces.id)!)
+              .get();
+      if (gesichter.isNotEmpty) await loescheGesichter(gesichter);
       await (delete(
         developVariantFiles,
       )..where((t) => t.assetId.isIn(stueck))).go();
       await (delete(
         developVariants,
       )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(albumAssets)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(assetTags)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(reiseAufnahmen)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        aktivitaetAufnahmen,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        imageEmbeddings,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        videoeinbettungen,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        verworfeneDokumente,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        beschriftungsvorschlaege,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(
+        developSettings,
+      )..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(developHistory)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(developMasks)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(videoTrims)..where((t) => t.assetId.isIn(stueck))).go();
+      await (delete(restoreJobs)..where((t) => t.assetId.isIn(stueck))).go();
+      // Verweise auf die Aufnahme leeren, statt ins Leere zu zeigen.
+      await (update(albums)..where((t) => t.coverAssetId.isIn(stueck))).write(
+        const AlbumsCompanion(coverAssetId: Value(null)),
+      );
+      await (update(reisen)..where((t) => t.titelbildAssetId.isIn(stueck)))
+          .write(const ReisenCompanion(titelbildAssetId: Value(null)));
+      await (update(assets)..where((t) => t.linkedAssetId.isIn(stueck))).write(
+        const AssetsCompanion(linkedAssetId: Value(null)),
+      );
       await (delete(assets)..where((t) => t.id.isIn(stueck))).go();
       // Ausnahmen der Duplikatsuche mit wegräumen. Sie würden sonst als
       // Zeilen ohne Foto liegen bleiben und niemandem mehr auffallen – ein
@@ -592,6 +643,71 @@ extension AuswahlAbfragen on AppDatabase {
       )..where((t) => t.assetId.isIn(stueck))).go();
     }
     _embeddingsGeneration++;
+  });
+
+  /// Räumt Zeilen weg, deren Aufnahme es nicht mehr gibt – Reste aus der
+  /// Zeit, als [deleteAssetRows] sie liegen liess. Läuft beim endgültigen
+  /// Löschen mit ([leerePapierkorb]); danach gibt es keine neuen mehr.
+  Future<void> raeumeVerwaisteZeilen() => transaction(() async {
+    final vorhanden = selectOnly(assets)..addColumns([assets.id]);
+    final gesichter =
+        await (selectOnly(faces)
+              ..addColumns([faces.id])
+              ..where(faces.assetId.isNotInQuery(vorhanden)))
+            .map((z) => z.read(faces.id)!)
+            .get();
+    if (gesichter.isNotEmpty) await loescheGesichter(gesichter);
+    await (delete(
+      albumAssets,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      assetTags,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      reiseAufnahmen,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      aktivitaetAufnahmen,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      imageEmbeddings,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      videoeinbettungen,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      verworfeneDokumente,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      beschriftungsvorschlaege,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      developSettings,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      developHistory,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      developMasks,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      videoTrims,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (delete(
+      restoreJobs,
+    )..where((t) => t.assetId.isNotInQuery(vorhanden))).go();
+    await (update(albums)..where(
+          (t) =>
+              t.coverAssetId.isNotNull() &
+              t.coverAssetId.isNotInQuery(vorhanden),
+        ))
+        .write(const AlbumsCompanion(coverAssetId: Value(null)));
+    await (update(reisen)..where(
+          (t) =>
+              t.titelbildAssetId.isNotNull() &
+              t.titelbildAssetId.isNotInQuery(vorhanden),
+        ))
+        .write(const ReisenCompanion(titelbildAssetId: Value(null)));
   });
 
   // --- Ausnahmen der Duplikatsuche --------------------------------------

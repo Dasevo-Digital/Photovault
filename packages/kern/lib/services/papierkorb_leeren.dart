@@ -127,6 +127,8 @@ Future<List<String>> leerePapierkorb(
     };
     final kennungen = [for (final a in kandidaten) a.id];
     await db.deleteAssetRows(kennungen);
+    // Reste aus älteren Fassungen gleich mit (siehe raeumeVerwaisteZeilen).
+    await db.raeumeVerwaisteZeilen();
     dateien.removeAll(await _nochGebraucht(db, dateien));
     return (kennungen, dateien);
   });
