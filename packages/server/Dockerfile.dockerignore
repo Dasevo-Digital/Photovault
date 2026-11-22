@@ -4,6 +4,8 @@
 !packages/kern
 !packages/server
 !third_party/onnxruntime_api
+# Feste Prüfsummen der ONNX Runtime (Stufe „ort“).
+!third_party/flutter_onnxruntime/onnxruntime-pruefsummen.txt
 # Vorlagenbilder und Schriften des Lebensbaums für die Weboberfläche.
 !assets/lebensbaum
 !assets/fonts

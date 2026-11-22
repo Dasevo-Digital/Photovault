@@ -261,6 +261,16 @@ docker buildx build -f packages/server/Dockerfile \
   --platform linux/amd64,linux/arm64 -t photo-vault-server .
 ```
 
+Die ONNX Runtime lädt der Bau aus der Freigabe von Microsoft; die ist seit
+22.11.2026 nicht mehr erreichbar. Liegen die Archive
+(`onnxruntime-linux-x64-1.28.3.tgz`, `onnxruntime-linux-aarch64-1.28.3.tgz`)
+woanders, nimmt der Bau sie mit `--build-arg ORT_QUELLE=<adresse des
+ordners>` oder aus einem lokalen Ordner mit `--build-context
+ort-archiv=<ordner>`. In beiden Fällen gilt ein Archiv nur, wenn seine Summe
+in `third_party/flutter_onnxruntime/onnxruntime-pruefsummen.txt` steht. Für
+die App unter Linux und Windows macht die Umgebungsvariable
+`PV_ONNXRUNTIME_QUELLE` dasselbe (Adresse oder `file://` auf einen Ordner).
+
 Starten, die Daten in einem eigenen Volume, nur auf dem eigenen Rechner
 erreichbar (davor gehört der Reverse Proxy):
 
