@@ -165,6 +165,14 @@ jobs:
           )
           print(next(g["udid"] for r in runtimes for g in geraete[r] if g["name"].startswith("iPhone")))
           ')
+          # Die Katalogprüfungen lesen die deutschen Texte, wie am lokalen
+          # Prüfsimulator; die Simulatoren der Runner stehen auf Englisch, und
+          # MOB-001 fand „Mit Server verbinden“ deshalb nie. Sprache setzen,
+          # dann neu starten, damit jede gestartete App sie übernimmt.
+          xcrun simctl bootstatus "$simulator" -b
+          xcrun simctl spawn "$simulator" defaults write -g AppleLanguages -array de-DE
+          xcrun simctl spawn "$simulator" defaults write -g AppleLocale -string de_DE
+          xcrun simctl shutdown "$simulator"
           xcrun simctl bootstatus "$simulator" -b
           set +e
           flutter test -d "$simulator" integration_test/katalog_mob_kurz_test.dart --reporter expanded 2>&1 | tee handy.log

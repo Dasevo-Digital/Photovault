@@ -11,16 +11,13 @@ let package = Package(
     // dasherized plugin name (it generates a dependency on "flutter-onnxruntime").
     .library(name: "flutter-onnxruntime", targets: ["flutter_onnxruntime"])
   ],
-  dependencies: [
-    // Pinned exactly so the vendored internal headers in
-    // Sources/flutter_onnxruntime_objc/vendor/ always match the resolved package.
-    // masicai fork pinning ORT 1.28.0 (fork tag 1.28.0). Microsoft's SPM repo has
-    // no 1.28.x tag, and its framework-format binary gets embedded by Xcode, which
-    // App Store Connect rejects (ITMS-90208, issue #71). The fork ships the same
-    // binary repackaged as a library-format xcframework, so keep it until upstream
-    // fixes the artifact format.
-    .package(url: "https://github.com/masicai/onnxruntime-swift-package-manager", exact: "1.28.0")
-  ],
+  // No package dependency: the ONNX Runtime Objective-C bindings and the binary
+  // live in this package (see ONNXRUNTIME-BINDINGS.md). The onnxruntime SPM
+  // package (masicai fork, tag 1.28.0) also declares an onnxruntime_extensions
+  // binary on download.onnxruntime.ai, which is no longer reachable; SwiftPM
+  // downloads every binary target of a dependency, so resolving failed on any
+  // machine without a cached copy.
+  dependencies: [],
   targets: [
     // Swift target. `import Flutter` resolves implicitly through the
     // Flutter tooling; do NOT declare a Flutter framework dependency here
@@ -29,7 +26,7 @@ let package = Package(
       name: "flutter_onnxruntime",
       dependencies: [
         "flutter_onnxruntime_objc",
-        .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager")
+        "OnnxRuntimeBindings"
       ],
       resources: [
         .process("PrivacyInfo.xcprivacy")
@@ -40,7 +37,7 @@ let package = Package(
     .target(
       name: "flutter_onnxruntime_objc",
       dependencies: [
-        .product(name: "onnxruntime", package: "onnxruntime-swift-package-manager")
+        "OnnxRuntimeBindings"
       ],
       cxxSettings: [
         // Make the vendored cxx_api.h resolve the ORT C/C++ API headers from
@@ -48,6 +45,25 @@ let package = Package(
         .define("SPM_BUILD"),
         .headerSearchPath("vendor")
       ]
+    ),
+    // ONNX Runtime Objective-C bindings, copied unchanged from the masicai fork
+    // of onnxruntime-swift-package-manager, tag 1.28.0 (objectivec/, without
+    // tests, docs and training). Module name and settings as in its manifest,
+    // so `import OnnxRuntimeBindings` and the vendored headers stay valid.
+    .target(
+      name: "OnnxRuntimeBindings",
+      dependencies: ["onnxruntime"],
+      cxxSettings: [
+        .define("SPM_BUILD")
+      ]
+    ),
+    // The same binary the fork pins: Microsoft's pod archive 1.28.0 repackaged
+    // as a library-format xcframework (App Store accepts it, issue #71).
+    // SwiftPM verifies the checksum.
+    .binaryTarget(
+      name: "onnxruntime",
+      url: "https://github.com/masicai/onnxruntime-swift-package-manager/releases/download/1.28.0/onnxruntime-libs-1.28.0.zip",
+      checksum: "7e031979787f2da0f3ff45d18431db93c4443033020b210413b287a855870c3c"
     )
   ],
   cxxLanguageStandard: .cxx17
