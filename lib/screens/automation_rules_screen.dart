@@ -220,6 +220,12 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
                           final rule = rules[index];
+                          // Erst sicher, wenn die Alben geladen sind –
+                          // sonst stünde es kurz an jeder Regel (IMP-024).
+                          final albumGeloescht =
+                              albumSnap.hasData &&
+                              rule.targetAlbumId != null &&
+                              albumNames[rule.targetAlbumId] == null;
                           final actionParts = <String>[
                             if (rule.targetAlbumId != null &&
                                 albumNames[rule.targetAlbumId] != null)
@@ -236,21 +242,42 @@ class _AutomationRulesScreenState extends State<AutomationRulesScreen> {
                                 ].join(', '),
                               ),
                           ];
+                          final fehler = Theme.of(context).colorScheme.error;
                           return Card(
                             child: ListTile(
-                              leading: Icon(switch (rule.triggerType) {
-                                'location' => Icons.location_on_outlined,
-                                'aiTag' => Icons.sell_outlined,
-                                'dateRange' => Icons.date_range_outlined,
-                                _ => Icons.rule_outlined,
-                              }),
+                              leading: albumGeloescht
+                                  ? Icon(
+                                      Icons.warning_amber_outlined,
+                                      color: fehler,
+                                    )
+                                  : Icon(switch (rule.triggerType) {
+                                      'location' => Icons.location_on_outlined,
+                                      'aiTag' => Icons.sell_outlined,
+                                      'dateRange' => Icons.date_range_outlined,
+                                      _ => Icons.rule_outlined,
+                                    }),
                               title: Text(rule.name),
-                              subtitle: Text(
-                                '${_ausloeserName(AppTexte.of(context), rule.triggerType)}'
-                                ' · ${_conditionSummary(rule)}'
-                                '${actionParts.isEmpty ? '' : '\n${actionParts.join(' · ')}'}',
+                              subtitle: Text.rich(
+                                TextSpan(
+                                  text:
+                                      '${_ausloeserName(AppTexte.of(context), rule.triggerType)}'
+                                      ' · ${_conditionSummary(rule)}'
+                                      '${actionParts.isEmpty ? '' : '\n${actionParts.join(' · ')}'}',
+                                  children: [
+                                    if (albumGeloescht)
+                                      TextSpan(
+                                        text:
+                                            '\n${AppTexte.of(context).regelZielalbumGeloescht}',
+                                        style: TextStyle(color: fehler),
+                                      ),
+                                  ],
+                                ),
                               ),
-                              isThreeLine: actionParts.isNotEmpty,
+                              isThreeLine:
+                                  actionParts.isNotEmpty || albumGeloescht,
+                              onTap: albumGeloescht
+                                  ? () => _editRule(existing: rule)
+                                  : null,
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [

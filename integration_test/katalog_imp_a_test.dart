@@ -1537,15 +1537,30 @@ void main() {
       )..where((t) => t.albumId.equals('album-a'))).go();
       await (db.delete(db.albums)..where((t) => t.id.equals('album-a'))).go();
     });
+    // Behoben in #464: Das fehlende Zielalbum fällt weg, das Foto bleibt
+    // wählbar, die Prüfung nennt die Regel, und die Liste der Regeln
+    // zeigt das gelöschte Zielalbum an.
     final jpg2 = testfoto('regel2.jpg', datum: DateTime(2021, 7, 8));
     await planMitDateien(tester, [jpg2]);
     final z2 = planzeilen(tester)['regel2.jpg']!;
-    expect(z2.text, contains(de.importPlanUngueltigeZiele));
-    expect(z2.waehlbar, isFalse);
-    expect(z2.gewaehlt, isFalse);
-    await planAbbrechen(tester);
+    expect(z2.text, contains(de.importPlanZielGeloescht('Regel JPG')));
+    expect(z2.text, isNot(contains('Alben:')));
+    expect(z2.waehlbar, isTrue);
+    expect(z2.gewaehlt, isTrue);
+    await tap(tester, find.text(de.importPlanRegeln));
+    await waitFor(tester, find.byType(AutomationRulesScreen));
+    await waitFor(tester, find.textContaining(de.regelZielalbumGeloescht));
+    await zurueck(tester);
+    await waitGone(tester, find.byType(AutomationRulesScreen));
+    await warteAufPlan(tester);
+    await starte(tester, 1);
+    await warteAufAbschluss(tester);
+    await schliesseBlatt(tester);
+    final j2 = await aufnahme(tester, 'regel2.jpg');
+    expect(await albenVon(tester, j2.id), isEmpty);
+    expect(j2.isFavorite, isTrue, reason: 'der Rest der Regel gilt');
 
-    // Hinweis: dasselbe bei einem Kamera-Preset mit gelöschtem Album.
+    // Dasselbe bei einem Kamera-Preset mit gelöschtem Album.
     await befehl(tester, const RegelLoeschen('r1'));
     await befehl(tester, AlbumAnlegen('album-b', 'Album B', DateTime.now()));
     await befehl(
@@ -1567,8 +1582,11 @@ void main() {
     final anders = testfoto('anders.jpg', kamera: 'Andere', modell: 'X');
     await planMitDateien(tester, [k, anders]);
     final z3 = planzeilen(tester);
-    expect(z3['kamera.jpg']!.text, contains(de.importPlanUngueltigeZiele));
-    expect(z3['kamera.jpg']!.waehlbar, isFalse);
+    expect(
+      z3['kamera.jpg']!.text,
+      contains(de.importPlanZielGeloescht('Testkamera T1')),
+    );
+    expect(z3['kamera.jpg']!.waehlbar, isTrue);
     expect(z3['anders.jpg']!.waehlbar, isTrue);
     await planAbbrechen(tester);
     await finish(tester);

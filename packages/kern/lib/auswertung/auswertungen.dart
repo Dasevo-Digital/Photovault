@@ -1423,8 +1423,10 @@ class Auswertungen {
         continue;
       }
 
-      if (rule.targetAlbumId != null) {
-        await db.fuehreAus(AlbumFuellen(rule.targetAlbumId!, [assetId]));
+      // Ein gelöschtes Zielalbum fällt weg, der Rest gilt (IMP-024).
+      if (rule.targetAlbumId case final album?
+          when await db.albumVorhanden(album)) {
+        await db.fuehreAus(AlbumFuellen(album, [assetId]));
       }
       if (rule.autoFavorite) {
         await db.fuehreAus(FavoritSetzen([assetId], true));

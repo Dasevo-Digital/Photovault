@@ -26,7 +26,7 @@ class ImportPlanEintrag {
     this.tags = const [],
     this.regeln = const [],
     this.favorit = false,
-    this.ungueltigeZiele = false,
+    this.regelnOhneZiel = const [],
     this.beilage,
     this.beilageZu,
   });
@@ -38,7 +38,15 @@ class ImportPlanEintrag {
   final ImportDateiangaben? angaben;
   final List<String> alben, tags, regeln;
   final List<String> albumIds, tagIds;
-  final bool favorit, ungueltigeZiele;
+  final bool favorit;
+
+  /// Regeln und Kameravorgaben, die hier zutreffen, deren Zielalbum oder
+  /// Schlagwort es aber nicht mehr gibt (IMP-024) – für den Hinweis in der
+  /// Prüfung. Das fehlende Ziel fällt weg, die übrigen Aktionen gelten,
+  /// und das Foto bleibt wählbar – wie beim nachträglichen Anwenden einer
+  /// Regel (`regelAnwenden`). Vorher war es gesperrt, und gesagt wurde nur
+  /// allgemein, dass „eine Regel“ auf ein fehlendes Ziel verweist.
+  final List<String> regelnOhneZiel;
   final Beilagenangaben? beilage;
   ImportPlanEintrag mitBeilage(Beilagenangaben? wert) => ImportPlanEintrag(
     pfad: pfad,
@@ -50,7 +58,7 @@ class ImportPlanEintrag {
     tags: tags,
     regeln: regeln,
     favorit: favorit,
-    ungueltigeZiele: ungueltigeZiele,
+    regelnOhneZiel: regelnOhneZiel,
     beilage: wert,
     beilageZu: beilageZu,
   );
@@ -212,8 +220,7 @@ class ImportPlanDienst {
     ImportPlanEintrag eintrag,
     String id,
   ) async {
-    if (eintrag.ungueltigeZiele ||
-        plan.regelstand != await aktuellerRegelstand()) {
+    if (plan.regelstand != await aktuellerRegelstand()) {
       throw const FormatException('pv_import_regeln_geaendert');
     }
     await eintrag.beilage?.wendeAn(db, id);
@@ -275,12 +282,22 @@ class ImportPlanDienst {
               : ImportPlanArt.neu;
           final zielAlben = <String>{},
               zielTags = <String>{},
-              treffen = <String>[];
+              treffen = <String>[],
+              ohneZiel = <String>[];
           var favorit = false;
-          void aktion(String? album, bool fav, List<String> tagIds) {
-            if (album != null) zielAlben.add(album);
+          void aktion(
+            String name,
+            String? album,
+            bool fav,
+            List<String> tagIds,
+          ) {
+            final fehlt =
+                (album != null && !alben.containsKey(album)) ||
+                tagIds.any((id) => !tags.containsKey(id));
+            if (fehlt) ohneZiel.add(name);
+            if (album != null && alben.containsKey(album)) zielAlben.add(album);
             favorit |= fav;
-            zielTags.addAll(tagIds);
+            zielTags.addAll(tagIds.where(tags.containsKey));
           }
 
           for (final k
@@ -293,7 +310,12 @@ class ImportPlanDienst {
                         k.cameraModel == a.modell,
                   )
                   .take(1)) {
-            aktion(k.targetAlbumId, k.autoFavorite, kameraTags[k.id] ?? []);
+            aktion(
+              '${k.cameraMake} ${k.cameraModel}',
+              k.targetAlbumId,
+              k.autoFavorite,
+              kameraTags[k.id] ?? [],
+            );
           }
           for (final r in regeln) {
             if (regelTrifftZu(
@@ -304,7 +326,12 @@ class ImportPlanDienst {
               dateiname: p.basename(pfad),
             )) {
               treffen.add(r.name);
-              aktion(r.targetAlbumId, r.autoFavorite, regelTags[r.id] ?? []);
+              aktion(
+                r.name,
+                r.targetAlbumId,
+                r.autoFavorite,
+                regelTags[r.id] ?? [],
+              );
             }
           }
           ergebnis.add(
@@ -324,9 +351,7 @@ class ImportPlanDienst {
                 for (final id in zielTags)
                   if (tags[id] != null) tags[id]!,
               ],
-              ungueltigeZiele:
-                  zielAlben.any((id) => !alben.containsKey(id)) ||
-                  zielTags.any((id) => !tags.containsKey(id)),
+              regelnOhneZiel: ohneZiel,
             ),
           );
         } on Object {

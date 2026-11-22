@@ -5121,7 +5121,16 @@
     }
   },
   "importPlanFavorit": "Mark as favorite",
-  "importPlanUngueltigeZiele": "A rule references a missing album or tag. Correct the rule before importing.",
+  "importPlanZielGeloescht": "Target album deleted ({namen}) – the photo comes in without that album.",
+  "@importPlanZielGeloescht": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "regelZielalbumGeloescht": "Target album deleted – edit the rule",
+  "presetZielalbumGeloescht": "Target album deleted – edit the preset",
   "importPlanStarten": "{anzahl, plural, =1{Import 1 file} other{Import {anzahl} files}}",
   "@importPlanStarten": {
     "placeholders": {

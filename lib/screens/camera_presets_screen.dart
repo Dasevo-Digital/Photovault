@@ -170,6 +170,11 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
                             albumName: preset.targetAlbumId != null
                                 ? albumNames[preset.targetAlbumId]
                                 : null,
+                            // Erst sicher, wenn die Alben geladen sind.
+                            albumGeloescht:
+                                albumSnap.hasData &&
+                                preset.targetAlbumId != null &&
+                                albumNames[preset.targetAlbumId] == null,
                             tagLabels: [
                               for (final id
                                   in presetTagIds[preset.id] ??
@@ -202,6 +207,10 @@ class _CameraPresetsScreenState extends State<CameraPresetsScreen> {
 class _CameraPresetTile extends StatelessWidget {
   final CameraPresetData preset;
   final String? albumName;
+
+  /// Das Zielalbum gibt es nicht mehr (IMP-024): Das Preset lässt es beim
+  /// Import weg und sagt es hier, statt still dazustehen.
+  final bool albumGeloescht;
   final List<String> tagLabels;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -210,6 +219,7 @@ class _CameraPresetTile extends StatelessWidget {
     super.key,
     required this.preset,
     required this.albumName,
+    this.albumGeloescht = false,
     required this.tagLabels,
     required this.onEdit,
     required this.onDelete,
@@ -223,11 +233,30 @@ class _CameraPresetTile extends StatelessWidget {
       if (preset.autoFavorite) t.presetFavorisieren,
       if (tagLabels.isNotEmpty) t.presetZeileTags(tagLabels.join(', ')),
     ];
+    final fehler = Theme.of(context).colorScheme.error;
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.camera_alt_outlined),
+        leading: albumGeloescht
+            ? Icon(Icons.warning_amber_outlined, color: fehler)
+            : const Icon(Icons.camera_alt_outlined),
         title: Text(_cameraDisplayName(preset.cameraMake, preset.cameraModel)),
-        subtitle: Text(parts.isEmpty ? t.presetKeineAktion : parts.join(' · ')),
+        subtitle: Text.rich(
+          TextSpan(
+            text: parts.isEmpty && !albumGeloescht
+                ? t.presetKeineAktion
+                : parts.join(' · '),
+            children: [
+              if (albumGeloescht)
+                TextSpan(
+                  text:
+                      '${parts.isEmpty ? '' : '\n'}'
+                      '${t.presetZielalbumGeloescht}',
+                  style: TextStyle(color: fehler),
+                ),
+            ],
+          ),
+        ),
+        onTap: albumGeloescht ? onEdit : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

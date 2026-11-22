@@ -6752,7 +6752,16 @@
     }
   },
   "importPlanFavorit": "Als Favorit markieren",
-  "importPlanUngueltigeZiele": "Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.",
+  "importPlanZielGeloescht": "Zielalbum gelöscht ({namen}) – das Foto kommt ohne dieses Album herein.",
+  "@importPlanZielGeloescht": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
+  "regelZielalbumGeloescht": "Zielalbum gelöscht – Regel bearbeiten",
+  "presetZielalbumGeloescht": "Zielalbum gelöscht – Preset bearbeiten",
   "importPlanStarten": "{anzahl, plural, =1{1 Datei importieren} other{{anzahl} Dateien importieren}}",
   "@importPlanStarten": {
     "placeholders": {

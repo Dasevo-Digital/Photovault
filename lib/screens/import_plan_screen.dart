@@ -92,7 +92,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
           ..clear()
           ..addAll(
             plan.eintraege
-                .where((e) => e.art == ImportPlanArt.neu && !e.ungueltigeZiele)
+                .where((e) => e.art == ImportPlanArt.neu)
                 .map((e) => e.pfad),
           );
       });
@@ -264,10 +264,7 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                         children: [
                           CheckboxListTile(
                             value: _auswahl.contains(e.pfad),
-                            onChanged:
-                                e.art != ImportPlanArt.neu ||
-                                    e.ungueltigeZiele ||
-                                    _bestaetigt
+                            onChanged: e.art != ImportPlanArt.neu || _bestaetigt
                                 ? null
                                 : (v) => setState(() {
                                     if (v ?? false) {
@@ -316,8 +313,10 @@ class _ImportPlanScreenState extends State<ImportPlanScreen> {
                                   t.umzugKonflikt,
                                   ...werte,
                                 ],
-                                if (e.ungueltigeZiele)
-                                  t.importPlanUngueltigeZiele,
+                                if (e.regelnOhneZiel.isNotEmpty)
+                                  t.importPlanZielGeloescht(
+                                    e.regelnOhneZiel.join(', '),
+                                  ),
                               ].join('\n'),
                             ),
                           ),

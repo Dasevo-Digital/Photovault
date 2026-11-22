@@ -10480,8 +10480,16 @@ class AppTexteEn extends AppTexte {
   String get importPlanFavorit => 'Mark as favorite';
 
   @override
-  String get importPlanUngueltigeZiele =>
-      'A rule references a missing album or tag. Correct the rule before importing.';
+  String importPlanZielGeloescht(String namen) {
+    return 'Target album deleted ($namen) – the photo comes in without that album.';
+  }
+
+  @override
+  String get regelZielalbumGeloescht => 'Target album deleted – edit the rule';
+
+  @override
+  String get presetZielalbumGeloescht =>
+      'Target album deleted – edit the preset';
 
   @override
   String importPlanStarten(int anzahl) {

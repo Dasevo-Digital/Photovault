@@ -16,6 +16,14 @@ extension AlbenAbfragen on AppDatabase {
 
   Future<void> createAlbum(AlbumsCompanion album) => into(albums).insert(album);
 
+  /// Ob es das Album [albumId] gibt – für Regeln und Kameravorgaben, deren
+  /// Zielalbum inzwischen gelöscht sein kann (IMP-024).
+  Future<bool> albumVorhanden(String albumId) async =>
+      await (select(
+        albums,
+      )..where((t) => t.id.equals(albumId))).getSingleOrNull() !=
+      null;
+
   Future<void> addAssetsToAlbum(String albumId, List<String> assetIds) async {
     await batch((b) {
       b.insertAllOnConflictUpdate(

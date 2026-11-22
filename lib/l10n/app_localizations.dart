@@ -16008,11 +16008,23 @@ abstract class AppTexte {
   /// **'Als Favorit markieren'**
   String get importPlanFavorit;
 
-  /// No description provided for @importPlanUngueltigeZiele.
+  /// No description provided for @importPlanZielGeloescht.
   ///
   /// In de, this message translates to:
-  /// **'Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.'**
-  String get importPlanUngueltigeZiele;
+  /// **'Zielalbum gelöscht ({namen}) – das Foto kommt ohne dieses Album herein.'**
+  String importPlanZielGeloescht(String namen);
+
+  /// No description provided for @regelZielalbumGeloescht.
+  ///
+  /// In de, this message translates to:
+  /// **'Zielalbum gelöscht – Regel bearbeiten'**
+  String get regelZielalbumGeloescht;
+
+  /// No description provided for @presetZielalbumGeloescht.
+  ///
+  /// In de, this message translates to:
+  /// **'Zielalbum gelöscht – Preset bearbeiten'**
+  String get presetZielalbumGeloescht;
 
   /// No description provided for @importPlanStarten.
   ///

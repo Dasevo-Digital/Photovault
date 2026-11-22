@@ -313,8 +313,12 @@ class Nachbearbeitung {
   }) async {
     final preset = await db.cameraPresetFor(cameraMake, cameraModel);
     if (preset == null) return;
-    if (preset.targetAlbumId != null) {
-      await db.fuehreAus(AlbumFuellen(preset.targetAlbumId!, [assetId]));
+    // Ein gelöschtes Zielalbum fällt weg, der Rest gilt (IMP-024). Vorher
+    // landete das Foto in einem Album, das es nicht gibt – eine Zeile, die
+    // nirgends zu sehen ist.
+    if (preset.targetAlbumId case final album?
+        when await db.albumVorhanden(album)) {
+      await db.fuehreAus(AlbumFuellen(album, [assetId]));
     }
     if (preset.autoFavorite) {
       await db.fuehreAus(FavoritSetzen([assetId], true));

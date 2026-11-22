@@ -10536,8 +10536,16 @@ class AppTexteDe extends AppTexte {
   String get importPlanFavorit => 'Als Favorit markieren';
 
   @override
-  String get importPlanUngueltigeZiele =>
-      'Eine Regel verweist auf ein fehlendes Album oder Schlagwort. Regel vor dem Import korrigieren.';
+  String importPlanZielGeloescht(String namen) {
+    return 'Zielalbum gelöscht ($namen) – das Foto kommt ohne dieses Album herein.';
+  }
+
+  @override
+  String get regelZielalbumGeloescht => 'Zielalbum gelöscht – Regel bearbeiten';
+
+  @override
+  String get presetZielalbumGeloescht =>
+      'Zielalbum gelöscht – Preset bearbeiten';
 
   @override
   String importPlanStarten(int anzahl) {
