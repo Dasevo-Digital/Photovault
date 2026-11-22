@@ -45,6 +45,7 @@ import 'package:kern/services/import_service.dart';
 import 'package:kern/services/import_koordinator.dart';
 import 'package:kern/services/raw_formats.dart';
 import '../services/klartextstand.dart';
+import '../services/kopie_neu_laden.dart';
 import '../services/library_location.dart';
 import '../services/ordner_gesehen.dart';
 import '../services/rechnerzustand.dart';
@@ -4043,6 +4044,47 @@ class LibraryState extends ChangeNotifier {
     await schliesseDatenbank();
     final root = await LibraryLocation.currentRoot();
     await eraseLibraryDataAt(root);
+  }
+
+  /// „Datenbank zurücksetzen“ in einer verbundenen Bibliothek (GRU-145):
+  /// leert nur die Kopie hier und baut sie aus einem frischen Abzug des
+  /// Servers neu auf. Verbindung und Anmeldung bleiben, auf dem Server
+  /// wird nichts gelöscht (siehe [ladeKopieNeu] in kopie_neu_laden.dart).
+  ///
+  /// Vorher lief hier dasselbe wie ohne Server: Datenbank und Ablage weg,
+  /// `verbindung.json` blieb – nach dem Neustart war die leere Bibliothek
+  /// weiter verbunden, ohne je einen Abzug bekommen zu haben.
+  ///
+  /// Wie [eraseLibraryCompletely] ist die Datenbank danach geschlossen;
+  /// die App muss neu starten. Ist der Server nicht erreichbar, scheitert
+  /// es, bevor etwas gelöscht ist.
+  Future<void> ladeKopieVomServerNeu() async {
+    final v = verbindung;
+    if (v == null) throw StateError('pv_nicht_verbunden');
+    final root = await LibraryLocation.currentRoot();
+    final s = Serververbindung(v.server, v.token);
+    try {
+      await ladeKopieNeu(
+        root,
+        holeAbzug: (ziel) => Abgleich.holeAbzug(s, ziel),
+        vorDemTausch: () async {
+          // Erst den Abgleich anhalten: Er schriebe sonst in die
+          // geschlossene Datenbank, sobald der Server antwortet.
+          for (final abo in _vorratAbos) {
+            unawaited(abo.cancel());
+          }
+          try {
+            await abgleich?.beende().timeout(const Duration(seconds: 3));
+            await beendeRechenhilfe().timeout(const Duration(seconds: 3));
+          } catch (e) {
+            debugPrint('Kopie neu laden: Abgleich – $e');
+          }
+          await schliesseDatenbank();
+        },
+      );
+    } finally {
+      s.schliesse();
+    }
   }
 
   /// Löscht eine einzelne Erkennung samt ihrem Ausschnitt auf der Platte.

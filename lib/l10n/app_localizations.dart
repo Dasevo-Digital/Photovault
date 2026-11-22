@@ -1920,6 +1920,36 @@ abstract class AppTexte {
   /// **'Zurücksetzen fehlgeschlagen'**
   String get einstResetFehlgeschlagen;
 
+  /// No description provided for @einstResetTextVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Bibliothek ist die Kopie einer Bibliothek auf dem Server. Zurücksetzen leert nur die Kopie auf diesem Rechner und lädt sie danach vom Server neu; auf dem Server wird nichts gelöscht.'**
+  String get einstResetTextVerbunden;
+
+  /// No description provided for @einstResetKurzVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Leert die lokale Kopie und lädt sie vom Server neu.'**
+  String get einstResetKurzVerbunden;
+
+  /// No description provided for @einstResetBestaetigenTextVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Leert die Kopie dieser Bibliothek auf diesem Rechner – Datenbank, Vorschauen und zwischengespeicherte Originale – und lädt sie vom Server neu. Auf dem Server wird nichts gelöscht. Verbindung und Anmeldung bleiben bestehen, ebenso der PIN des gesperrten Ordners und die Einstellungen dieses Rechners. Änderungen, die der Server noch nicht übernommen hat, gehen verloren.'**
+  String get einstResetBestaetigenTextVerbunden;
+
+  /// No description provided for @einstResetLaeuftVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Lade die Kopie vom Server neu …'**
+  String get einstResetLaeuftVerbunden;
+
+  /// No description provided for @einstResetFertigVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Kopie wurde vom Server neu geladen. Die App wird jetzt geschlossen – bitte danach wieder öffnen.'**
+  String get einstResetFertigVerbunden;
+
   /// No description provided for @einstUeberTitel.
   ///
   /// In de, this message translates to:

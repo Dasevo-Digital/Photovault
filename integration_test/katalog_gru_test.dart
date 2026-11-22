@@ -4085,10 +4085,12 @@ void main() {
     await ende(tester);
   }, timeout: _frist);
 
-  // Befund: „Datenbank zurücksetzen“ löscht verbindung.json nicht
-  // (LibraryState.eraseLibraryDataAt, lib/state/library_state.dart:3539) –
-  // die geleerte Bibliothek ist nach dem Neustart weiter mit dem Server
-  // verbunden.
+  // Behoben in #464: In einer verbundenen Bibliothek leert „Datenbank
+  // zurücksetzen“ nur die Kopie und lädt sie aus einem frischen Abzug des
+  // Servers neu (der Weg mit Server: katalog_r2_gru_server_test.dart). Die
+  // Rückfrage sagt das. Ist der Server nicht erreichbar, scheitert es,
+  // bevor etwas gelöscht ist – vorher blieb eine leere Datenbank zurück,
+  // die weiter als verbunden galt.
   testWidgets(
     'GRU-145 Verbundene Bibliothek: verbindung.json nach dem Zurücksetzen',
     (tester) async {
@@ -4098,22 +4100,39 @@ void main() {
       await importiere(tester, fotos(1));
       await neustart(tester, dazwischen: () => schreibeVerbindung(anker));
       expect(bibliothek.verbunden, isTrue);
-      await zuruecksetzenUeberUi(tester);
-      await waitFor(
+      melde.verlaufLeeren();
+      await einstellungen(tester);
+      await gruppe(tester, de.einstAbschnittGefahrenzone);
+      await zeigeInEinstellungen(tester, knopf(de.einstResetKnopf));
+      expect(find.text(de.einstResetKurzVerbunden), findsOneWidget);
+      await tippe(tester, knopf(de.einstResetKnopf));
+      await waitFor(tester, find.text(de.einstResetBestaetigenTextVerbunden));
+      expect(find.text(de.einstResetBestaetigenText), findsNothing);
+      await enter(
         tester,
-        find.text(de.einstNeustartTitel),
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        de.einstResetWort,
+      );
+      await tester.tap(knopf(de.einstResetEndgueltig).first);
+      await tester.pump();
+      await eventually(
+        tester,
+        () async => melde.verlauf.any(
+          (m) => m.text.startsWith(de.einstResetFehlgeschlagen),
+        ),
         timeout: const Duration(seconds: 60),
+        was: 'Zurücksetzen scheitert ohne Server',
       );
-      final bleibt = File(p.join(anker.path, 'verbindung.json')).existsSync();
-      await neustart(tester);
-      print(
-        'GRU-145: verbindung.json bleibt: $bleibt, danach verbunden: ${bibliothek.verbunden}',
-      );
-      expect(bleibt, isFalse);
-      expect(bibliothek.verbunden, isFalse);
+      expect(find.text(de.einstNeustartTitel), findsNothing);
+      expect(File(p.join(anker.path, 'verbindung.json')).existsSync(), isTrue);
+      expect(File(p.join(anker.path, 'library.sqlite')).existsSync(), isTrue);
+      expect(await datenbankOffen(), isTrue);
+      expect(await anzahlAufnahmen(), 1, reason: 'nichts gelöscht');
       await ende(tester);
     },
-    skip: true,
     timeout: _frist,
   );
 

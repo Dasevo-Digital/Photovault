@@ -9,52 +9,59 @@ import '../../widgets/typed_confirm_dialog.dart';
 import 'einstellungsstand.dart';
 import 'gemeinsam.dart';
 
-/// Die Gefahrenzone: die Bibliothek vollständig löschen.
+/// Die Gefahrenzone: die Bibliothek vollständig löschen – oder, in einer
+/// verbundenen Bibliothek, nur deren Kopie hier neu laden (GRU-145).
 class GefahrenzoneGruppe extends StatelessWidget {
   const GefahrenzoneGruppe(this.stand, {super.key});
 
   final Einstellungsstand stand;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-        child: Text(
-          AppTexte.of(context).einstResetText,
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ),
-      Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          side: BorderSide(
-            color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
-          ),
-        ),
-        child: ListTile(
-          leading: Icon(
-            Icons.warning_amber_outlined,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          title: Text(AppTexte.of(context).einstResetTitel),
-          subtitle: Text(AppTexte.of(context).einstResetKurz),
-          trailing: OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
+  Widget build(BuildContext context) {
+    final t = AppTexte.of(context);
+    final verbunden = stand.library.verbunden;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+          child: Text(
+            verbunden ? t.einstResetTextVerbunden : t.einstResetText,
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            onPressed: () => _resetDatabase(stand),
-            child: Text(AppTexte.of(context).einstResetKnopf),
           ),
         ),
-      ),
-    ],
-  );
+        Card(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.4),
+            ),
+          ),
+          child: ListTile(
+            leading: Icon(
+              Icons.warning_amber_outlined,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: Text(t.einstResetTitel),
+            subtitle: Text(
+              verbunden ? t.einstResetKurzVerbunden : t.einstResetKurz,
+            ),
+            trailing: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () => _resetDatabase(stand),
+              child: Text(t.einstResetKnopf),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 /// Fragt per Wort-Bestätigung nach (siehe [showTypedConfirmDialog], reicht
@@ -64,22 +71,33 @@ class GefahrenzoneGruppe extends StatelessWidget {
 /// Ladeanzeige-/Neustart-Ablauf wie das Verlegen des Speicherorts, da beide
 /// Fälle strukturell identisch sind: die laufende DB-Datei wird unter der
 /// offenen Verbindung weggenommen, ein Neustart ist deshalb zwingend.
+///
+/// Verbunden leert es nur die Kopie hier und lädt sie vom Server neu
+/// ([LibraryState.ladeKopieVomServerNeu]); die Rückfrage sagt das.
 Future<void> _resetDatabase(Einstellungsstand stand) async {
   final context = stand.kontext;
+  final t = AppTexte.of(context);
+  final verbunden = stand.library.verbunden;
   final confirmed = await showTypedConfirmDialog(
     context,
-    title: AppTexte.of(context).einstResetBestaetigenTitel,
-    message: AppTexte.of(context).einstResetBestaetigenText,
-    confirmationWord: AppTexte.of(context).einstResetWort,
-    confirmLabel: AppTexte.of(context).einstResetEndgueltig,
+    title: t.einstResetBestaetigenTitel,
+    message: verbunden
+        ? t.einstResetBestaetigenTextVerbunden
+        : t.einstResetBestaetigenText,
+    confirmationWord: t.einstResetWort,
+    confirmLabel: t.einstResetEndgueltig,
   );
   if (!confirmed || !context.mounted) return;
 
   await verlegeBibliothek(
     stand,
-    loadingText: AppTexte.of(context).einstResetLaeuft,
-    action: () => stand.library.eraseLibraryCompletely(),
-    restartMessage: AppTexte.of(context).einstResetFertig,
-    errorPrefix: AppTexte.of(context).einstResetFehlgeschlagen,
+    loadingText: verbunden ? t.einstResetLaeuftVerbunden : t.einstResetLaeuft,
+    action: verbunden
+        ? stand.library.ladeKopieVomServerNeu
+        : stand.library.eraseLibraryCompletely,
+    restartMessage: verbunden
+        ? t.einstResetFertigVerbunden
+        : t.einstResetFertig,
+    errorPrefix: t.einstResetFehlgeschlagen,
   );
 }

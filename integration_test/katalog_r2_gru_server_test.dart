@@ -27,6 +27,7 @@ import 'package:kern/db/database.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/screens/asset_viewer_screen.dart';
 import 'package:photo_vault/screens/fotokammer_screen.dart';
+import 'package:photo_vault/screens/settings_screen.dart';
 import 'package:photo_vault/screens/trash_screen.dart';
 import 'package:photo_vault/services/library_location.dart';
 import 'package:photo_vault/services/meldungsdienst.dart';
@@ -159,6 +160,70 @@ Future<void> erreichbar(WidgetTester tester) => eventually(
 
 void main() {
   lebenszeichen();
+
+  // Behoben in #464 (GRU-145): „Datenbank zurücksetzen“ in einer
+  // verbundenen Bibliothek leert nur die Kopie und lädt sie aus einem
+  // frischen Abzug des Servers neu; Verbindung, Anmeldung und PIN bleiben.
+  testWidgets(
+    'GRU-145 Verbundene Bibliothek: Zurücksetzen lädt die Kopie neu',
+    (tester) async {
+      filtereSemantik();
+      await starte(tester);
+      await importiere(tester, fotos(2, stamm: 'kopie'));
+      await mitDb(tester, () => bibliothek.setupVaultPin('12345678'));
+      await verbinde(tester, Uri.parse(serverAdresse));
+      final vorher = {for (final a in await aufnahmen(tester)) a.id};
+      expect(vorher, hasLength(2));
+      final ablage = Directory(p.join(bibliothek.paths.root.path, 'library'));
+      // Etwas, das nur in der Kopie steht und beim Neuladen verschwindet.
+      final rest = File(p.join(ablage.path, 'nur_hier.txt'))
+        ..writeAsStringSync('Rest');
+
+      await einstellungsgruppe(tester, de.einstAbschnittGefahrenzone);
+      await sichtbar(tester, knopf(de.einstResetKnopf), SettingsScreen);
+      expect(find.text(de.einstResetKurzVerbunden), findsOneWidget);
+      await tippe(tester, knopf(de.einstResetKnopf));
+      await waitFor(tester, find.text(de.einstResetBestaetigenTextVerbunden));
+      await enter(
+        tester,
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        de.einstResetWort,
+      );
+      await tester.tap(knopf(de.einstResetEndgueltig).first);
+      await tester.pump();
+      await waitFor(
+        tester,
+        find.text(de.einstResetFertigVerbunden),
+        timeout: const Duration(seconds: 90),
+      );
+      expect(rest.existsSync(), isFalse, reason: 'die Kopie ist geleert');
+      expect(
+        File(
+          p.join(bibliothek.paths.root.path, 'verbindung.json'),
+        ).existsSync(),
+        isTrue,
+      );
+
+      await neustart(tester);
+      expect(bibliothek.verbunden, isTrue, reason: 'Verbindung bleibt');
+      await erreichbar(tester);
+      expect(
+        {for (final a in await aufnahmen(tester)) a.id},
+        vorher,
+        reason: 'die Kopie kam vom Server zurück',
+      );
+      expect(
+        await mitDb(tester, bibliothek.db.hasPinSet),
+        isTrue,
+        reason: 'der PIN des Tresors bleibt auf dem Gerät',
+      );
+      await ende(tester);
+    },
+    timeout: frist,
+  );
 
   testWidgets('GRU-045 Zähler der Fotokammer am Symbol', (tester) async {
     filtereSemantik();

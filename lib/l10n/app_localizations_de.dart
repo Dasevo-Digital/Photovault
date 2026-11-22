@@ -1163,6 +1163,25 @@ class AppTexteDe extends AppTexte {
   String get einstResetFehlgeschlagen => 'Zurücksetzen fehlgeschlagen';
 
   @override
+  String get einstResetTextVerbunden =>
+      'Diese Bibliothek ist die Kopie einer Bibliothek auf dem Server. Zurücksetzen leert nur die Kopie auf diesem Rechner und lädt sie danach vom Server neu; auf dem Server wird nichts gelöscht.';
+
+  @override
+  String get einstResetKurzVerbunden =>
+      'Leert die lokale Kopie und lädt sie vom Server neu.';
+
+  @override
+  String get einstResetBestaetigenTextVerbunden =>
+      'Leert die Kopie dieser Bibliothek auf diesem Rechner – Datenbank, Vorschauen und zwischengespeicherte Originale – und lädt sie vom Server neu. Auf dem Server wird nichts gelöscht. Verbindung und Anmeldung bleiben bestehen, ebenso der PIN des gesperrten Ordners und die Einstellungen dieses Rechners. Änderungen, die der Server noch nicht übernommen hat, gehen verloren.';
+
+  @override
+  String get einstResetLaeuftVerbunden => 'Lade die Kopie vom Server neu …';
+
+  @override
+  String get einstResetFertigVerbunden =>
+      'Die Kopie wurde vom Server neu geladen. Die App wird jetzt geschlossen – bitte danach wieder öffnen.';
+
+  @override
   String get einstUeberTitel => 'Über diese App';
 
   @override

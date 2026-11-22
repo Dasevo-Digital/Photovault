@@ -1151,6 +1151,26 @@ class AppTexteEn extends AppTexte {
   String get einstResetFehlgeschlagen => 'Reset failed';
 
   @override
+  String get einstResetTextVerbunden =>
+      'This library is a copy of a library on the server. Resetting only empties the copy on this computer and then reloads it from the server; nothing is deleted on the server.';
+
+  @override
+  String get einstResetKurzVerbunden =>
+      'Empties the local copy and reloads it from the server.';
+
+  @override
+  String get einstResetBestaetigenTextVerbunden =>
+      'Empties the copy of this library on this computer – database, previews and cached originals – and reloads it from the server. Nothing is deleted on the server. The connection and sign-in stay, as do the PIN of the locked folder and this computer\'s settings. Changes the server has not received yet are lost.';
+
+  @override
+  String get einstResetLaeuftVerbunden =>
+      'Reloading the copy from the server …';
+
+  @override
+  String get einstResetFertigVerbunden =>
+      'The copy has been reloaded from the server. The app is closing now – please open it again.';
+
+  @override
   String get einstUeberTitel => 'About this app';
 
   @override
