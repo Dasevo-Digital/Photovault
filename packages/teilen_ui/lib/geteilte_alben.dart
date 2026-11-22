@@ -341,18 +341,37 @@ class _GeteilteAlbenState extends State<GeteilteAlben> {
     try {
       final d = await v.hole('api/v1/geteilt');
       // Ganze Bibliotheken zuerst (#293); ein Server vor 3.55 kennt sie
-      // nicht – dann eben nur die Alben.
-      final p = await v
-          .hole('api/v1/partner')
-          .catchError((Object _) => <String, Object?>{});
+      // nicht (404) – dann eben nur die Alben. Scheitert die Frage sonst
+      // (Zeitlimit im Mobilfunk, ein 5xx, das Netz dazwischen weg), bleiben
+      // die bekannten stehen (#454): Bis dahin galt das als „keine
+      // Partner“, und das Aufräumen unten löschte die Bilder der
+      // Partnerbibliothek – am Handy auch die der Partnerfotos in der
+      // Zeitleiste, die danach alle neu geladen wurden.
+      List<GeteiltesAlbum>? partner;
+      try {
+        final p = await v.hole('api/v1/partner');
+        partner = [
+          for (final x in (p['mitMir'] as List? ?? const []))
+            GeteiltesAlbum.partner((x as Map).cast<String, Object?>()),
+        ];
+      } on Serverfehler catch (f) {
+        if (f.status == 404) partner = const [];
+      } on Object {
+        // Unbekannt; siehe oben.
+      }
       final liste = [
-        for (final x in (p['mitMir'] as List? ?? const []))
-          GeteiltesAlbum.partner((x as Map).cast<String, Object?>()),
+        ...(partner ??
+            [
+              for (final a in _alben)
+                if (a.partner != null) a,
+            ]),
         for (final x in (d['alben'] as List? ?? const []))
           GeteiltesAlbum.aus((x as Map).cast<String, Object?>()),
       ];
       if (mounted) setState(() => _alben = liste);
-      await _raeumeAuf(liste);
+      // Nur mit vollständiger Antwort: Sonst hiesse fehlend nicht „nicht
+      // mehr geteilt“.
+      if (partner != null) await _raeumeAuf(liste);
     } on KeineVerbindung {
       // Offline: Was geteilt ist, kommt beim nächsten Öffnen.
     } on Serverfehler {

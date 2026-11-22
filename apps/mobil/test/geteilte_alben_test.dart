@@ -85,6 +85,65 @@ void main() {
     expect(find.text('von erika'), findsOneWidget);
   });
 
+  testWidgets('#454 scheitert nur die Frage nach den Partnern, bleiben '
+      'Partnerbibliothek und ihre Bilder auf dem Telefon', (tester) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_geteilt_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final bilder = Directory('${ordner.path}/partner-bert')..createSync();
+    File('${bilder.path}/a1.miniatur.s9').writeAsBytesSync([1, 2, 3]);
+    Directory('${ordner.path}/weg').createSync();
+    var partnerAntwort = json({
+      'mitMir': [
+        {'konto': 'bert', 'name': 'Bert', 'anzahl': 4},
+      ],
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: MockClient((r) async {
+        if (r.url.path == '/api/v1/geteilt') return json({'alben': []});
+        if (r.url.path == '/api/v1/partner') return partnerAntwort;
+        return http.Response('', 404);
+      }),
+    );
+    Widget liste() => app(
+      Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            GeteilteAlben(
+              zugang: Teilungszugang(verbindung: v, ablage: ordner),
+              raster: const SliverGridDelegateWithMaxCrossAxisExtent(
+                maxCrossAxisExtent: 200,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    Future<void> ruhe() async {
+      for (var i = 0; i < 5; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 30)),
+        );
+        await tester.pump();
+      }
+    }
+
+    await tester.pumpWidget(liste());
+    await ruhe();
+    expect(find.textContaining('Bert'), findsWidgets);
+    // Was nicht mehr geteilt ist, räumt die Liste weg …
+    expect(Directory('${ordner.path}/weg').existsSync(), isFalse);
+
+    // … aber ein 503 heisst nicht „keine Partner mehr“ (die Liste
+    // neu aufgebaut, wie beim nächsten Öffnen der Alben).
+    partnerAntwort = http.Response('', 503);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(liste());
+    await ruhe();
+    expect(File('${bilder.path}/a1.miniatur.s9').existsSync(), isTrue);
+  });
+
   testWidgets('ein Server ohne geteilte Alben: kein Abschnitt', (tester) async {
     final v = Serververbindung(
       Uri.parse('https://fotos.example/'),
