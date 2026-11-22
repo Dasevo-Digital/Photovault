@@ -174,9 +174,13 @@ void main() {
       await verbinde(tester, Uri.parse(serverAdresse));
       final vorher = {for (final a in await aufnahmen(tester)) a.id};
       expect(vorher, hasLength(2));
-      final ablage = Directory(p.join(bibliothek.paths.root.path, 'library'));
+      // Die Ablage (library/) liegt im Ordner der Bibliothek, neben
+      // library.sqlite und verbindung.json.
+      final ablage = bibliothek.paths.root;
+      final wurzel = ablage.parent;
       // Etwas, das nur in der Kopie steht und beim Neuladen verschwindet.
       final rest = File(p.join(ablage.path, 'nur_hier.txt'))
+        ..createSync(recursive: true)
         ..writeAsStringSync('Rest');
 
       await einstellungsgruppe(tester, de.einstAbschnittGefahrenzone);
@@ -200,12 +204,7 @@ void main() {
         timeout: const Duration(seconds: 90),
       );
       expect(rest.existsSync(), isFalse, reason: 'die Kopie ist geleert');
-      expect(
-        File(
-          p.join(bibliothek.paths.root.path, 'verbindung.json'),
-        ).existsSync(),
-        isTrue,
-      );
+      expect(File(p.join(wurzel.path, 'verbindung.json')).existsSync(), isTrue);
 
       await neustart(tester);
       expect(bibliothek.verbunden, isTrue, reason: 'Verbindung bleibt');

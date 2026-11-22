@@ -295,7 +295,9 @@ void main() {
         await tester.tapAt(const Offset(700, 40));
         await tester.pump(const Duration(milliseconds: 500));
         final vorher = gewaehlt(tester);
-        await tester.tapAt(tester.getCenter(zeile(de.navAlben).first));
+        // Links auf das Symbol: Die Mitte der eingeklappten Zeile läge
+        // über der Zeitleiste und öffnete womöglich ein Foto.
+        await leisteSchnell(tester, de.navAlben);
         await tester.pump(const Duration(milliseconds: 300));
         blaetternGing = gewaehlt(tester) != vorher;
         print('IMP-039: Klick auf „Alben“ während des Imports: $blaetternGing');
@@ -357,7 +359,9 @@ void main() {
         final blattWeg = find.text(de.importLaeuft).evaluate().isEmpty;
         final inDerLeiste = find.text(de.importAnzeigen).evaluate().isNotEmpty;
         final vorher = gewaehlt(tester);
-        await tester.tapAt(tester.getCenter(zeile(de.navAlben).first));
+        // Links auf das Symbol: Die Mitte der eingeklappten Zeile läge
+        // über der Zeitleiste und öffnete womöglich ein Foto.
+        await leisteSchnell(tester, de.navAlben);
         await tester.pump(const Duration(milliseconds: 500));
         final ging =
             gewaehlt(tester) != vorher &&
