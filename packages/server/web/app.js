@@ -2081,17 +2081,33 @@ function kommentarBereich(aufnahme) {
     const senden = el('button', 'knopf', t('Senden'));
     senden.type = 'submit';
     form.append(feld, senden);
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+    const sende = async () => {
       const text = feld.value.trim();
       if (!text) return;
       senden.disabled = true;
       try {
         await api(`${akt.basis}/kommentare`, { methode: 'POST', json: aufnahme ? { text, aufnahme } : { text } });
-      } catch (x) { meldung(x.message); senden.disabled = false; return; }
+      } finally { senden.disabled = false; }
+      feld.value = '';
       await ladeAktivitaet();
       zeichne();
+    };
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      sende().catch((x) => meldung(x.message));
     });
+    // Im Betrachter ein Entwurf wie die Beschreibung (#462) – nur dass er
+    // nie von selbst hinausgeht: Einen Kommentar sehen andere.
+    if (aufnahme) {
+      const entwurf = meldeEingabe({
+        art: 'kommentar', id: aufnahme, feld, selbst: false,
+        frage: 'Kommentar nicht gesendet – senden, verwerfen oder abbrechen?', sichernText: 'Senden',
+        geaendert: () => feld.value.trim() !== '',
+        sichern: sende,
+        verwerfen: () => { feld.value = ''; },
+      });
+      if (entwurf !== null) feld.value = entwurf;
+    }
     box.append(ul, form);
   };
   zeichne();
@@ -3388,6 +3404,12 @@ async function zeigeEinstellungen() {
     schwebeAn = an;
     if (!an) schwebeEnde();
     try { localStorage.setItem(SCHWEBE_MERKER, an ? '1' : '0'); } catch (_) { /* privat */ }
+    melde(t('Gespeichert.'));
+  }));
+  // Ebenso nur hier (#462); ausgeschaltet fragt der Betrachter nach.
+  ziel.append(zeile('Beschreibung beim Verlassen automatisch speichern', 'Eine geänderte Beschreibung im Betrachter wird gespeichert, sobald du das Feld verlässt, weiterblätterst, den Betrachter schliesst, einen Ort setzt oder die Seite wechselst. Ausgeschaltet fragt der Betrachter vorher nach. Gilt für diesen Browser.', beschreibungSelbst, (an) => {
+    beschreibungSelbst = an;
+    try { localStorage.setItem(BESCHREIBUNG_MERKER, an ? '1' : '0'); } catch (_) { /* privat */ }
     melde(t('Gespeichert.'));
   }));
   melde('');
@@ -5682,6 +5704,8 @@ function ladeVoll() {
 function oeffne(i) {
   if (!liste || i < 0 || i >= liste.aufnahmen.length) return;
   schwebeEnde();
+  // Was noch offen war, hat eingabenFreigeben() schon gespeichert oder verworfen.
+  eingaben.clear();
   offen = i;
   const a = liste.aufnahmen[i];
   const bild = $('bild'), video = $('video');
@@ -6018,6 +6042,116 @@ $('live').addEventListener('pointerup', (e) => { if (e.pointerType !== 'mouse') 
 $('live').addEventListener('pointercancel', liveAus);
 $('live').addEventListener('click', (e) => e.stopPropagation());
 
+// --- Ungespeicherte Eingaben im Betrachter (#462) -----------------------------
+//
+// Beschreibung und Kommentar stehen im Betrachter in freien Feldern. Was
+// darin noch nicht gespeichert war, ging still verloren, sobald man
+// weiterblätterte, schloss, einen Ort setzte oder die Seite wechselte: Jeder
+// dieser Wege zeichnete die Angaben neu oder schloss sie. Jetzt fragt jeder
+// Wechsel erst eingabenFreigeben(). Eine geänderte Beschreibung speichert
+// es, wenn die Einstellung das will (dann auch beim Verlassen des Felds),
+// sonst fragt es nach. Ein Kommentar geht nie von selbst hinaus – den sehen
+// andere. Zeichnen sich die Angaben für dasselbe Foto neu (Sterne,
+// Gesichter, Schlagwort, Ort), nimmt das neue Feld den Entwurf mit.
+
+const BESCHREIBUNG_MERKER = 'pv-beschreibung-speichern';
+let beschreibungSelbst = (() => { try { return localStorage.getItem(BESCHREIBUNG_MERKER) === '1'; } catch (_) { return false; } })();
+
+// `art:id` → { art, id, feld, selbst, frage, sichernText, geaendert(), sichern(), verwerfen() }
+const eingaben = new Map();
+const offeneEingaben = () => [...eingaben.values()].filter((e) => e.geaendert());
+
+// Meldet ein Feld an. Das Feld, das es für dasselbe Foto ersetzt, gibt
+// seinen Entwurf ab (null, wenn es keinen hatte).
+function meldeEingabe(e) {
+  const schluessel = `${e.art}:${e.id}`;
+  const vorher = eingaben.get(schluessel);
+  eingaben.set(schluessel, e);
+  return vorher && vorher.geaendert() ? vorher.feld.value : null;
+}
+
+const nichtGespeichert = (x) => t('Die Beschreibung ist nicht gespeichert: {grund}', { grund: x.message });
+
+// true, wenn der Wechsel weitergehen darf. Wer während einer Rückfrage
+// noch einmal fragt, bekommt dieselbe Antwort.
+let freigabe = null;
+function eingabenFreigeben() {
+  if (!offeneEingaben().length) return Promise.resolve(true);
+  if (!freigabe) freigabe = gibEingabenFrei().finally(() => { freigabe = null; });
+  return freigabe;
+}
+
+async function gibEingabenFrei() {
+  for (const e of offeneEingaben()) {
+    if (e.selbst && beschreibungSelbst) {
+      // Scheitert das Speichern, bleibt der Betrachter, wo er ist.
+      try { await e.sichern(); } catch (x) { meldung(nichtGespeichert(x), true); return false; }
+    } else if (!(await frageNachEingabe(e))) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Speichern, verwerfen oder abbrechen. Scheitert das Speichern, bleibt
+// die Frage mit dem Grund offen.
+function frageNachEingabe(e) {
+  const d = $('eingabe-dialog');
+  $('eingabe-frage').textContent = t(e.frage);
+  $('eingabe-meldung').textContent = '';
+  const sichern = $('eingabe-sichern');
+  sichern.textContent = t(e.sichernText);
+  sichern.disabled = false;
+  return new Promise((weiter) => {
+    let entschieden = false;
+    const fertig = (ok) => {
+      if (entschieden) return;
+      entschieden = true;
+      if (d.open) d.close();
+      weiter(ok);
+    };
+    // Esc schliesst wie Abbrechen. Das close einer vorigen Frage kommt erst
+    // nach, wenn diese schon offen ist – das zählt nicht.
+    d.onclose = () => { if (!d.open) fertig(false); };
+    $('eingabe-abbrechen').onclick = () => fertig(false);
+    $('eingabe-verwerfen').onclick = () => { e.verwerfen(); fertig(true); };
+    sichern.onclick = async () => {
+      sichern.disabled = true;
+      try { await e.sichern(); fertig(true); } catch (x) { $('eingabe-meldung').textContent = x.message; sichern.disabled = false; }
+    };
+    d.showModal();
+  });
+}
+
+// Schliesst jemand den Tab oder lädt neu, warnt der Browser.
+window.addEventListener('beforeunload', (e) => {
+  if (!offeneEingaben().length) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+// Blättern und Schliessen, wie Knöpfe, Tasten und Wischen es wollen.
+async function blaettere(schritt) {
+  if (!liste || !liste.aufnahmen[offen + schritt]) return;
+  if (!(await eingabenFreigeben()) || offen < 0) return;
+  oeffne(offen + schritt);
+}
+async function schliesseBetrachter() {
+  if (offen >= 0 && (await eingabenFreigeben())) schliesse();
+}
+
+// Ein Verweis aus den Angaben schliesst den Betrachter und geht hin. Mit
+// Strg/⌘ oder Umschalt öffnet er wie sonst einen neuen Tab.
+function verweisAusDemBetrachter(a) {
+  a.addEventListener('click', async (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (!(await eingabenFreigeben())) return;
+    schliesse();
+    location.hash = a.getAttribute('href');
+  });
+}
+
 // --- Angaben zur Aufnahme --------------------------------------------------
 // Dieselben Zeilen wie die Info-Ansicht des Rechners: Datum, Datei, Kamera,
 // Ort, Personen, Schlagwörter, Alben, Beschreibung, Bewertung, Serie.
@@ -6041,7 +6175,7 @@ function verweise(liste, ziel) {
   for (const x of liste) {
     const a = el('a', 'marke', x.name);
     a.href = `${ziel}/${encodeURIComponent(x.id)}`;
-    a.addEventListener('click', schliesse);
+    verweisAusDemBetrachter(a);
     box.append(a);
   }
   return box;
@@ -6060,6 +6194,43 @@ async function schlagwortUmbenennen(w) {
     return;
   }
   zeigeAngaben();
+}
+
+// Die Beschreibung – änderbar, über denselben Befehl wie am Rechner. Knopf,
+// Verlassen des Felds und jeder Wechsel speichern über sichern(); derselbe
+// Text geht dabei nur einmal hinaus.
+function beschreibungsfeld(a, gespeichert) {
+  const text = el('textarea');
+  text.placeholder = t('Beschreibung');
+  const knopf = el('button', 'speichern', t('Speichern'));
+  knopf.type = 'button';
+  let laeuft = null;
+  const eingabe = {
+    art: 'beschreibung', id: a.id, feld: text, selbst: true,
+    frage: 'Beschreibung nicht gespeichert – speichern, verwerfen oder abbrechen?', sichernText: 'Speichern',
+    geaendert: () => text.value !== gespeichert,
+    sichern() {
+      const wert = text.value;
+      if (laeuft && laeuft.wert === wert) return laeuft.fertig;
+      const fertig = befehl('beschreibungSetzen', { ids: [a.id], beschreibung: wert }).then(() => {
+        gespeichert = wert;
+        if (text.value === wert) knopf.textContent = t('Gespeichert');
+      }, (x) => { knopf.textContent = x.message; throw x; }).finally(() => { if (laeuft && laeuft.fertig === fertig) laeuft = null; });
+      laeuft = { wert, fertig };
+      return fertig;
+    },
+    verwerfen() { text.value = gespeichert; knopf.textContent = t('Speichern'); },
+  };
+  const entwurf = meldeEingabe(eingabe);
+  text.value = entwurf ?? gespeichert;
+  knopf.addEventListener('click', () => { eingabe.sichern().catch(() => { /* steht auf dem Knopf */ }); });
+  text.addEventListener('input', () => { knopf.textContent = t('Speichern'); });
+  text.addEventListener('blur', () => {
+    if (beschreibungSelbst && eingabe.geaendert()) eingabe.sichern().catch((x) => meldung(nichtGespeichert(x), true));
+  });
+  const box = el('div', 'beschreibung');
+  box.append(text, knopf);
+  return box;
 }
 
 async function zeigeAngaben() {
@@ -6107,7 +6278,7 @@ async function zeigeAngaben() {
   }
   const ortKnopf = el('button', 'marke', d.ort ? t('Ort ändern') : t('Ort setzen'));
   ortKnopf.type = 'button';
-  ortKnopf.addEventListener('click', () => ortDialog([a], Boolean(d.ort), zeigeAngaben));
+  ortKnopf.addEventListener('click', async () => { if (await eingabenFreigeben()) ortDialog([a], Boolean(d.ort), zeigeAngaben); });
   if (d.ort) {
     const name = [d.ort.stadt, d.ort.region, land(d.ort.land)].filter(Boolean).join(', ');
     const r = reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`);
@@ -6130,19 +6301,7 @@ async function zeigeAngaben() {
     teile.push(reihe('🏷', box));
   }
   if (d.alben.length) teile.push(reihe('📚', verweise(d.alben, '#/alben')));
-  // Beschreibung – änderbar, über denselben Befehl wie am Rechner.
-  const text = el('textarea');
-  text.value = d.beschreibung || '';
-  text.placeholder = t('Beschreibung');
-  const speichern = el('button', 'speichern', t('Speichern'));
-  speichern.type = 'button';
-  speichern.addEventListener('click', async () => {
-    try { await befehl('beschreibungSetzen', { ids: [a.id], beschreibung: text.value }); speichern.textContent = t('Gespeichert'); } catch (x) { speichern.textContent = x.message; }
-  });
-  text.addEventListener('input', () => { speichern.textContent = t('Speichern'); });
-  const beschr = el('div', 'beschreibung');
-  beschr.append(text, speichern);
-  teile.push(reihe('✎', beschr, d.kiBeschreibung ? t('Automatisch: {text}', { text: d.kiBeschreibung }) : null));
+  teile.push(reihe('✎', beschreibungsfeld(a, d.beschreibung || ''), d.kiBeschreibung ? t('Automatisch: {text}', { text: d.kiBeschreibung }) : null));
   // Bewertung
   const sterne = el('div', 'sterne');
   const male = (n) => { for (const [i, b] of [...sterne.children].entries()) b.classList.toggle('voll', i < n); };
@@ -6163,7 +6322,7 @@ async function zeigeAngaben() {
       ? t('{n} Varianten dieser Aufnahme', { n: d.serie.groesse })
       : t('Serie mit {n} Aufnahmen', { n: d.serie.groesse }));
     v.href = `#/serie/${encodeURIComponent(d.serie.id)}`;
-    v.addEventListener('click', schliesse);
+    verweisAusDemBetrachter(v);
     teile.push(reihe('⧉', v));
   }
   // Welche Formate ein Formatstapel hält, jedes zum Herunterladen (#374).
@@ -6189,9 +6348,9 @@ async function zeigeAngaben() {
 // „Entwicklung entfernen“ gehen mit history.back() zurück in die Liste.
 // Dort öffnet zeigeWeg dasselbe Foto wieder – mit der neuen Fassung.
 let zurueckInDenBetrachter = null;
-$('bearbeiten').addEventListener('click', () => {
+$('bearbeiten').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
-  if (!a || a.art === 'video') return;
+  if (!a || a.art === 'video' || !(await eingabenFreigeben())) return;
   zurueckInDenBetrachter = { id: a.id, weg: location.hash };
   location.hash = `#/entwickeln/${encodeURIComponent(a.id)}`;
 });
@@ -6215,6 +6374,7 @@ $('info').addEventListener('click', () => setzeAngabenOffen(!angabenOffen));
 
 function schliesse() {
   $('betrachter').hidden = true;
+  eingaben.clear();
   vollZuruecksetzen();
   liveAus();
   videoLauf++;
@@ -6252,13 +6412,14 @@ async function nimmAusListe(a, art) {
 $('weg').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
   if (a && a.konto) return;
+  if (!(await eingabenFreigeben())) return;
   if (a && fremdeListe()) { await entferneBeitrag(a); return; }
   if (!a || !confirm(t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.'))) return;
   try { await nimmAusListe(a, 'inDenPapierkorb'); } catch (x) { $('angaben').textContent = x.message; }
 });
 $('holen').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
-  if (!a) return;
+  if (!a || !(await eingabenFreigeben())) return;
   try { await nimmAusListe(a, 'ausDemPapierkorb'); meldung(t('{n} zurückgeholt', { n: 1 })); } catch (x) { $('angaben').textContent = x.message; }
 });
 
@@ -6333,11 +6494,11 @@ function wischEnde(dx, dy, dauer) {
   $('betrachter').style.removeProperty('background');
   setTimeout(() => m.classList.remove('gleitet'), 200);
   if (wisch.achse === 'seite') {
-    if (dx < -60 || tempoX < -0.5) oeffne(offen + 1);
-    else if (dx > 60 || tempoX > 0.5) oeffne(offen - 1);
+    if (dx < -60 || tempoX < -0.5) blaettere(1);
+    else if (dx > 60 || tempoX > 0.5) blaettere(-1);
   } else if (dy > 110 || tempoY > 0.9) {
     m.classList.remove('gleitet');
-    schliesse();
+    schliesseBetrachter();
   } else if (dy < -50 || tempoY < -0.7) {
     setzeAngabenOffen(true);
   }
@@ -6427,9 +6588,9 @@ figur.addEventListener('wheel', (e) => {
 // Doppelklick der Maus: dasselbe wie der Doppeltipp (der kommt schon über tippe).
 $('bild').draggable = false;
 
-$('zu').addEventListener('click', schliesse);
-$('zurueck').addEventListener('click', () => oeffne(offen - 1));
-$('vor').addEventListener('click', () => oeffne(offen + 1));
+$('zu').addEventListener('click', schliesseBetrachter);
+$('zurueck').addEventListener('click', () => blaettere(-1));
+$('vor').addEventListener('click', () => blaettere(1));
 $('favorit').addEventListener('click', async () => {
   const a = liste && liste.aufnahmen[offen];
   if (!a) return;
@@ -6789,7 +6950,7 @@ document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement && !$('diashow').hidden && dia.verliess) beendeDiashow();
   dia.verliess = !!document.fullscreenElement;
 });
-$('diashow-knopf').addEventListener('click', () => { if (liste && offen >= 0) starteDiashow(liste.aufnahmen, offen); });
+$('diashow-knopf').addEventListener('click', async () => { if (liste && offen >= 0 && (await eingabenFreigeben())) starteDiashow(liste.aufnahmen, offen); });
 $('auswahl-diashow').addEventListener('click', () => { const g = gewaehlte(); if (g.length) { starteDiashow(g, 0); } });
 
 // --- Tastenkürzel (Issue #169) ------------------------------------------------
@@ -6955,7 +7116,7 @@ async function setzeFarbe(ziele, farbe) {
 }
 
 async function inDenKorb(ziele) {
-  if (!ziele.length) return;
+  if (!ziele.length || !(await eingabenFreigeben())) return;
   if (!confirm(ziele.length === 1 ? t('Eine Aufnahme in den Papierkorb legen? Sie verschwindet überall – zurückholen geht am Rechner und hier im Papierkorb.') : t('{n} Aufnahmen in den Papierkorb legen? Sie verschwinden überall – zurückholen geht am Rechner und hier im Papierkorb.', { n: ziele.length }))) return;
   await befehl('inDenPapierkorb', { ids: ziele.map((a) => a.id) });
   const weg = new Set(ziele.map((a) => a.id));
@@ -7045,9 +7206,11 @@ document.addEventListener('keydown', async (e) => {
     if (offen >= 0) {
       if (strg) return;
       const a = liste.aufnahmen[offen];
-      if (taste === 'Escape') schliesse();
-      else if (taste === 'ArrowLeft') oeffne(offen - 1);
-      else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); oeffne(offen + 1); }
+      // Ohne preventDefault schlösse dieselbe Esc die Rückfrage gleich wieder,
+      // die schliesseBetrachter() öffnet.
+      if (taste === 'Escape') { e.preventDefault(); await schliesseBetrachter(); }
+      else if (taste === 'ArrowLeft') await blaettere(-1);
+      else if (taste === 'ArrowRight' || taste === ' ') { e.preventDefault(); await blaettere(1); }
       else if (taste === 'i' || taste === 'I') setzeAngabenOffen(!angabenOffen);
       // Im Papierkorb fehlen „♡“ und „🗑“ – also auch ihre Tasten (und die
       // Marken): Was dort liegt, wird zurückgeholt oder gelöscht.
@@ -7104,9 +7267,13 @@ document.addEventListener('keydown', async (e) => {
 // --- Wege ------------------------------------------------------------------
 
 let wegAbbruch = null;
+// Der Weg, den die Seite zeigt, und der, auf den eine Rückfrage wartet.
+let gezeigterWeg = location.hash;
+let wartenderWeg = null;
 
 async function zeigeWeg(art) {
   if (!sitzung) return;
+  gezeigterWeg = location.hash;
   if (wegAbbruch) wegAbbruch.abort();
   const abbruch = wegAbbruch = new AbortController();
   wegSignal = abbruch.signal;
@@ -7168,7 +7335,27 @@ async function zeigeWeg(art) {
     if (wegAbbruch === abbruch) { wegSignal = null; stillerLauf = false; }
   }
 }
-window.addEventListener('hashchange', zeigeWeg);
+
+// Ein Seitenwechsel aus dem Betrachter heraus – Verweis, Zurück im Browser,
+// Entwickeln – geht erst, wenn die Eingaben frei sind (#462). Bis dahin
+// steht in der Adresse wieder der gezeigte Weg; ein zweiter Wechsel während
+// der Rückfrage ändert nur das Ziel.
+const wegAdresse = (hash) => hash || `${location.pathname}${location.search}`;
+async function wegGewechselt() {
+  if (offen >= 0 && offeneEingaben().length) {
+    const erster = wartenderWeg === null;
+    wartenderWeg = location.hash;
+    history.replaceState(history.state, '', wegAdresse(gezeigterWeg));
+    if (!erster) return;
+    const frei = await eingabenFreigeben();
+    const ziel = wartenderWeg;
+    wartenderWeg = null;
+    if (!frei) return;
+    history.replaceState(history.state, '', wegAdresse(ziel));
+  }
+  zeigeWeg();
+}
+window.addEventListener('hashchange', wegGewechselt);
 
 // --- Von selbst aktuell (#329) ------------------------------------------------
 //

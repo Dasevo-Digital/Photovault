@@ -135,4 +135,182 @@ void main() {
       ),
     );
   });
+
+  group('ungespeicherte Eingaben im Betrachter (#462)', () {
+    /// Der Klick-Handler von [id]: eine Zeile oder bis zu seinem `});`.
+    String klick(String id) {
+      final beginn = app.indexOf("\$('$id').addEventListener('click'");
+      expect(beginn, isNonNegative, reason: id);
+      final zeile = app.substring(beginn, app.indexOf('\n', beginn));
+      if (zeile.endsWith('});')) return zeile;
+      return app.substring(beginn, app.indexOf('\n});', beginn));
+    }
+
+    test('Blättern, Schliessen, Ort setzen und Seitenwechsel fragen erst', () {
+      // Jeder dieser Wege zeichnete die Angaben neu oder schloss den
+      // Betrachter: Eine geänderte, nicht gespeicherte Beschreibung ging
+      // still verloren.
+      final blaettere = funktion('blaettere');
+      expect(blaettere, contains('await eingabenFreigeben()'));
+      expect(
+        'oeffne(offen'.allMatches(app).length,
+        'oeffne(offen'.allMatches(blaettere).length,
+        reason: 'Blättern nur über blaettere()',
+      );
+      expect(
+        funktion('schliesseBetrachter'),
+        contains('(await eingabenFreigeben())) schliesse();'),
+      );
+      expect(app, isNot(contains("addEventListener('click', schliesse)")));
+      expect(
+        app,
+        contains("\$('zu').addEventListener('click', schliesseBetrachter);"),
+      );
+      final wisch = funktion('wischEnde');
+      expect(wisch, isNot(contains('oeffne(')));
+      expect(wisch, isNot(contains('schliesse()')));
+      expect(wisch, contains('schliesseBetrachter()'));
+      // Die Tasten im Betrachter.
+      final tasten = app.substring(
+        app.indexOf('    if (offen >= 0) {\n      if (strg) return;'),
+        app.indexOf("else if (taste === 'i' || taste === 'I')"),
+      );
+      expect(tasten, isNot(contains('schliesse()')));
+      expect(tasten, isNot(contains('oeffne(')));
+      expect(tasten, contains('await blaettere(1)'));
+      // Dieselbe Esc schlösse sonst die Rückfrage gleich wieder.
+      expect(
+        tasten,
+        contains(
+          "if (taste === 'Escape') { e.preventDefault(); "
+          'await schliesseBetrachter(); }',
+        ),
+      );
+      // Ort setzen.
+      expect(
+        app,
+        contains(
+          'if (await eingabenFreigeben()) ortDialog([a], Boolean(d.ort), '
+          'zeigeAngaben);',
+        ),
+      );
+      // Verweise in den Angaben, Entwickeln, Diashow, Papierkorb.
+      final verweis = funktion('verweisAusDemBetrachter');
+      final frei = verweis.indexOf('await eingabenFreigeben()');
+      expect(frei, greaterThan(verweis.indexOf('e.preventDefault()')));
+      expect(verweis.indexOf('schliesse();'), greaterThan(frei));
+      expect(funktion('verweise'), contains('verweisAusDemBetrachter(a)'));
+      expect(funktion('zeigeAngaben'), contains('verweisAusDemBetrachter(v)'));
+      for (final id in ['bearbeiten', 'diashow-knopf', 'weg', 'holen']) {
+        expect(klick(id), contains('await eingabenFreigeben()'), reason: id);
+      }
+      expect(funktion('inDenKorb'), contains('await eingabenFreigeben()'));
+      // Seitenwechsel: Zurück im Browser, ein Verweis, eine neue Adresse.
+      expect(app, isNot(contains("addEventListener('hashchange', zeigeWeg)")));
+      expect(
+        app,
+        contains("window.addEventListener('hashchange', wegGewechselt);"),
+      );
+      final weg = funktion('wegGewechselt');
+      final zurueck = weg.indexOf(
+        "history.replaceState(history.state, '', wegAdresse(gezeigterWeg));",
+      );
+      expect(zurueck, isNonNegative);
+      expect(weg.indexOf('await eingabenFreigeben()'), greaterThan(zurueck));
+      expect(weg, contains('if (!frei) return;'));
+      expect(funktion('zeigeWeg'), contains('gezeigterWeg = location.hash;'));
+      // Und der Tab: Der Browser warnt, solange etwas offen ist.
+      final tab = app.indexOf("window.addEventListener('beforeunload'");
+      expect(tab, isNonNegative);
+      expect(
+        app.substring(tab, app.indexOf('\n});', tab)),
+        allOf(
+          contains('if (!offeneEingaben().length) return;'),
+          contains('e.preventDefault();'),
+        ),
+      );
+    });
+
+    test('mit der Einstellung wird gespeichert, sonst gefragt', () {
+      // Speichern-Knopf, Verlassen des Felds und jeder Wechsel gehen über
+      // denselben Befehl.
+      expect("befehl('beschreibungSetzen'".allMatches(app), hasLength(1));
+      final feld = funktion('beschreibungsfeld');
+      expect(feld, contains("befehl('beschreibungSetzen'"));
+      expect(feld, contains("text.addEventListener('blur'"));
+      expect(
+        feld,
+        contains(
+          'if (beschreibungSelbst && eingabe.geaendert()) eingabe.sichern()',
+        ),
+      );
+      // Ein neu gezeichnetes Feld für dasselbe Foto behält den Entwurf.
+      expect(feld, contains('text.value = entwurf ?? gespeichert;'));
+      final frei = funktion('gibEingabenFrei');
+      expect(frei, contains('if (e.selbst && beschreibungSelbst) {'));
+      // Scheitert das Speichern: Meldung, und es bleibt beim Alten.
+      expect(
+        frei,
+        contains(
+          'try { await e.sichern(); } catch (x) { '
+          'meldung(nichtGespeichert(x), true); return false; }',
+        ),
+      );
+      expect(frei, contains('!(await frageNachEingabe(e))'));
+      // Die Rückfrage: speichern, verwerfen oder abbrechen.
+      final frage = funktion('frageNachEingabe');
+      expect(frage, contains("\$('eingabe-verwerfen').onclick"));
+      expect(frage, contains("\$('eingabe-abbrechen').onclick"));
+      expect(frage, contains('await e.sichern(); fertig(true);'));
+      final html = File('web/index.html').readAsStringSync();
+      for (final id in [
+        'eingabe-dialog',
+        'eingabe-frage',
+        'eingabe-meldung',
+        'eingabe-abbrechen',
+        'eingabe-verwerfen',
+        'eingabe-sichern',
+      ]) {
+        expect(html, contains('id="$id"'), reason: id);
+      }
+      // Ein Kommentar geht nie von selbst hinaus.
+      expect(funktion('kommentarBereich'), contains('selbst: false'));
+      // Die Einstellung gilt für diesen Browser und ist zunächst aus.
+      expect(
+        app,
+        contains("localStorage.getItem(BESCHREIBUNG_MERKER) === '1'"),
+      );
+      final einstellungen = funktion('zeigeEinstellungen');
+      expect(
+        einstellungen,
+        contains("zeile('Beschreibung beim Verlassen automatisch speichern'"),
+      );
+      expect(
+        einstellungen,
+        contains("localStorage.setItem(BESCHREIBUNG_MERKER, an ? '1' : '0')"),
+      );
+    });
+
+    test('die neuen Texte gibt es auch auf Englisch', () {
+      final texte = File('web/texte.js').readAsStringSync();
+      final deutsch = <String>{
+        'Verwerfen',
+        'Abbrechen',
+        'Speichern',
+        'Senden',
+        'Die Beschreibung ist nicht gespeichert: {grund}',
+        for (final m in RegExp(
+          r"(?:frage|sichernText): '([^']+)'",
+        ).allMatches(app))
+          m[1]!,
+        for (final m in RegExp(
+          r"zeile\('(Beschreibung beim Verlassen[^']*)', '([^']+)'",
+        ).allMatches(app)) ...[m[1]!, m[2]!],
+      };
+      expect(deutsch, hasLength(9));
+      for (final d in deutsch) {
+        expect(texte, contains("  '$d': '"), reason: d);
+      }
+    });
+  });
 }

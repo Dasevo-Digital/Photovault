@@ -202,6 +202,12 @@ const EN = {
   'Grössere Kacheln': 'Larger tiles',
   'Videos beim Schweben abspielen': 'Play videos on hover',
   'Bleibt die Maus einen Augenblick über einem Video oder einem Live Photo stehen, läuft es in der Kachel an – ohne Ton und in Dauerschleife, bis der Zeiger weiterwandert. Es läuft immer nur eines. Gilt für diesen Browser.': 'When the mouse rests on a video or Live Photo for a moment, it starts playing in the tile – muted and looping until the pointer moves on. Only one plays at a time. Applies to this browser.',
+  // Ungespeicherte Eingaben im Betrachter (#462).
+  'Beschreibung beim Verlassen automatisch speichern': 'Save the description automatically when leaving',
+  'Eine geänderte Beschreibung im Betrachter wird gespeichert, sobald du das Feld verlässt, weiterblätterst, den Betrachter schliesst, einen Ort setzt oder die Seite wechselst. Ausgeschaltet fragt der Betrachter vorher nach. Gilt für diesen Browser.': 'A changed description in the viewer is saved as soon as you leave the field, go to another photo, close the viewer, set a place or switch pages. When off, the viewer asks first. Applies to this browser.',
+  'Beschreibung nicht gespeichert – speichern, verwerfen oder abbrechen?': 'Description not saved – save, discard or cancel?',
+  'Kommentar nicht gesendet – senden, verwerfen oder abbrechen?': 'Comment not sent – send, discard or cancel?',
+  'Die Beschreibung ist nicht gespeichert: {grund}': 'The description was not saved: {grund}',
   'Mehr': 'More',
   'Ignoriert': 'Ignored',
   'Alle unbenannten Gesichter ignorieren': 'Ignore all unnamed faces',
