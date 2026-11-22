@@ -396,6 +396,16 @@ class RestoreQueueService {
       } finally {
         _ablage = null;
       }
+    } on AufnahmeNichtAblegbar catch (e) {
+      // Während des Rechnens gesperrt oder gelöscht (#430): Das Ergebnis
+      // ist verworfen, nichts liegt im Klartext im gesperrten Foto.
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: e.gesperrt
+            ? RestaurierungsGrund.gesperrt.name
+            : RestaurierungsGrund.fotoWeg.name,
+      );
     } catch (e) {
       await _status(
         job.id,

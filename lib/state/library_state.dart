@@ -74,6 +74,7 @@ import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/original_referenzen.dart';
 import '../services/vault_crypto.dart';
 import '../services/tresor_dateiwechsel.dart';
+import '../services/tresorreihe.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
 import 'package:kern/abgleich/spuren_nachreichen.dart';
@@ -2407,7 +2408,19 @@ class LibraryState extends ChangeNotifier {
   /// Erzeugt Miniatur und Vorschau von [asset] neu – als Bild oder, mit
   /// [bild] `false`, als Video – und trägt sie ein. Scheitert es, bleibt
   /// es beim Eintrag im Protokoll; der Lauf geht weiter.
-  Future<void> _erzeugeVorschaubild(
+  ///
+  /// In der [inTresorreihe] und mit dem frischen Stand der Aufnahme (#430):
+  /// Die Liste stammt vom Beginn des Laufs. Wurde ein Foto seither
+  /// gesperrt, lagen sonst Miniatur und Vorschau im Klartext über den
+  /// verschlüsselten, und das Entsperren scheiterte an ihnen.
+  Future<void> _erzeugeVorschaubild(AssetData asset, {required bool bild}) =>
+      inTresorreihe(paths, () async {
+        final frisch = await db.assetById(asset.id);
+        if (frisch == null || frisch.isLocked) return;
+        await _erzeugeVorschaubildJetzt(frisch, bild: bild);
+      });
+
+  Future<void> _erzeugeVorschaubildJetzt(
     AssetData asset, {
     required bool bild,
   }) async {
@@ -3557,6 +3570,9 @@ class LibraryState extends ChangeNotifier {
           ),
         );
         getan++;
+      } on AufnahmeNichtAblegbar {
+        // Inzwischen gesperrt oder gelöscht (#430): fällt heraus wie die,
+        // die es schon zu Beginn waren.
       } catch (e) {
         // Gemeldet, nicht nur protokolliert (BEA-058): Ohne das zählte
         // ein Foto ohne Original als erledigt, und niemand erfuhr davon.
@@ -4212,13 +4228,10 @@ class LibraryState extends ChangeNotifier {
     // die verschlüsselte Beilage; ein Rollback braucht sie weiterhin.
   }
 
-  Future<void> _tresorWarteschlange = Future<void>.value();
-
-  Future<void> _mitTresorWarteschlange(Future<void> Function() arbeit) {
-    final lauf = _tresorWarteschlange.then((_) => arbeit());
-    _tresorWarteschlange = lauf.catchError((Object _) {});
-    return lauf;
-  }
+  /// Sperren und Entsperren laufen in derselben Reihe wie jedes Ablegen
+  /// von Dateien einer Aufnahme (siehe [inTresorreihe], #430).
+  Future<void> _mitTresorWarteschlange(Future<void> Function() arbeit) =>
+      inTresorreihe(paths, arbeit);
 
   /// Vor jedem anderen Bibliothekszugriff: Ein unterbrochenes Sperren
   /// fertigstellen oder ein nicht bestätigtes Entsperren zurücknehmen.

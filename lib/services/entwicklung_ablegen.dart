@@ -5,6 +5,8 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
 
+import 'tresorreihe.dart';
+
 /// Legt das gerenderte Ergebnis einer Entwicklung von [assetId] ab und
 /// trägt es mit [einstellungen] ein. Gibt den neuen Pfad zurück.
 ///
@@ -22,6 +24,15 @@ import 'package:path/path.dart' as p;
 /// nahm der Server die Datei nicht, als [EntwicklungNichtAbgelegt].
 /// Danach verschwindet die vorige Fassung hier; am Server bleibt sie
 /// liegen, bis verbundene Geräte dort Dateien löschen dürfen (#109).
+///
+/// **Nur in eine offene Aufnahme (#430).** Gerechnet wird mit dem Stand
+/// vom Beginn, und das dauert – bei einer Restaurierung Minuten. Wurde die
+/// Aufnahme inzwischen gesperrt oder gelöscht, wirft das Ablegen
+/// [AufnahmeNichtAblegbar] und schreibt nichts. Bis hierher lag die neue
+/// Datei dann im Klartext in einem gesperrten Foto, die verschlüsselte
+/// Fassung davor wurde gelöscht, und jedes Entsperren scheiterte an ihr.
+/// Prüfen, Schreiben und Eintragen laufen in der [inTresorreihe], damit
+/// kein Sperren dazwischenkommt.
 Future<String> legeEntwicklungAb({
   required AppDatabase db,
   required StoragePaths paths,
@@ -31,9 +42,10 @@ Future<String> legeEntwicklungAb({
 }) async => _lege(
   db: db,
   paths: paths,
+  assetId: assetId,
   ordner: 'developed',
-  vorher: (await db.assetById(assetId))?.developedRelativePath,
-  neu: paths.neuerEntwicklungspfad(assetId),
+  vorher: (a) => a.developedRelativePath,
+  neu: () => paths.neuerEntwicklungspfad(assetId),
   jpeg: jpeg,
   befehl: (neu) => EntwicklungSpeichern(assetId, einstellungen, neu),
 );
@@ -54,9 +66,10 @@ Future<String> legeRestaurierungAb({
 }) async => _lege(
   db: db,
   paths: paths,
+  assetId: assetId,
   ordner: 'restored',
-  vorher: (await db.assetById(assetId))?.restoredRelativePath,
-  neu: paths.neuerRestaurierungspfad(assetId),
+  vorher: (a) => a.restoredRelativePath,
+  neu: () => paths.neuerRestaurierungspfad(assetId),
   jpeg: jpeg,
   befehl: (neu) => RestaurierungSpeichern(assetId, neu),
   abgebrochen: abgebrochen,
@@ -65,13 +78,14 @@ Future<String> legeRestaurierungAb({
 Future<String> _lege({
   required AppDatabase db,
   required StoragePaths paths,
+  required String assetId,
   required String ordner,
-  required String? vorher,
-  required String neu,
+  required String? Function(AssetData aufnahme) vorher,
+  required String Function() neu,
   required Uint8List jpeg,
   required Befehl<void> Function(String neu) befehl,
   bool Function()? abgebrochen,
-}) async {
+}) => inTresorreihe(paths, () async {
   void pruefeAbbruch() {
     if (abgebrochen?.call() == true) {
       throw StateError('Das Speichern wurde beim Beenden abgebrochen.');
@@ -79,6 +93,32 @@ Future<String> _lege({
   }
 
   pruefeAbbruch();
+  final aufnahme = await db.assetById(assetId);
+  if (aufnahme == null || aufnahme.isLocked) {
+    throw AufnahmeNichtAblegbar(gesperrt: aufnahme != null);
+  }
+  return _schreibe(
+    db: db,
+    paths: paths,
+    ordner: ordner,
+    vorher: vorher(aufnahme),
+    neu: neu(),
+    jpeg: jpeg,
+    befehl: befehl,
+    pruefeAbbruch: pruefeAbbruch,
+  );
+});
+
+Future<String> _schreibe({
+  required AppDatabase db,
+  required StoragePaths paths,
+  required String ordner,
+  required String? vorher,
+  required String neu,
+  required Uint8List jpeg,
+  required Befehl<void> Function(String neu) befehl,
+  required void Function() pruefeAbbruch,
+}) async {
   final datei = paths.absolute(neu);
   await datei.parent.create(recursive: true);
   await datei.writeAsBytes(jpeg, flush: true);
@@ -103,6 +143,18 @@ Future<String> _lege({
     if (await alt.exists()) await alt.delete();
   }
   return neu;
+}
+
+/// Die Aufnahme ist inzwischen gesperrt ([gesperrt]) oder gelöscht; das
+/// Ergebnis ist verworfen, nichts ist geschrieben (#430).
+class AufnahmeNichtAblegbar implements Exception {
+  const AufnahmeNichtAblegbar({required this.gesperrt});
+
+  final bool gesperrt;
+
+  @override
+  String toString() =>
+      'pv_aufnahme_nicht_ablegbar: ${gesperrt ? 'gesperrt' : 'gelöscht'}';
 }
 
 /// Der Server (oder wer sonst [StoragePaths.ablege] ist) hat die Datei
