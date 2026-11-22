@@ -2276,6 +2276,9 @@ async function zeigeFreigaben() {
   const ul = $('freigaben');
   const d = await api('/api/v1/freigaben');
   ul.replaceChildren();
+  // Nach einem ersetzten server.schluessel: Die Freigaben stehen ohne Link
+  // da, damit man sie widerrufen kann (SRV-040); der Grund steht darüber.
+  if (d.hinweis) ul.append(el('li', 'fehler', t(d.hinweis)));
   if (!d.freigaben.length) ul.append(el('li', 'leise', t('Noch nichts geteilt.')));
   for (const x of d.freigaben) {
     const li = el('li');
@@ -2287,11 +2290,13 @@ async function zeigeFreigaben() {
       x.herunterladen ? t('Originale erlaubt') : null,
       x.hochladen ? (x.beitraege ? (x.beitraege === 1 ? t('1 Beitrag offen') : t('{n} Beiträge offen', { n: x.beitraege })) : t('Gäste dürfen hinzufügen')) : null,
       x.aufrufe === 1 ? t('1 Aufruf') : t('{n} Aufrufe', { n: x.aufrufe }),
+      x.link ? null : t('Link nicht mehr lesbar – neu anlegen'),
     ].filter(Boolean);
     li.append(el('span', null, `${x.titel} · ${teile.join(' · ')}`));
     const knoepfe = el('span', 'knoepfe');
     const kopieren = el('button', null, t('Kopieren'));
     kopieren.type = 'button';
+    kopieren.hidden = !x.link;
     kopieren.addEventListener('click', () => kopiere(x.link));
     const weg = el('button', null, t('Löschen'));
     weg.type = 'button';

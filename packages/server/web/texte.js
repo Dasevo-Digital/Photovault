@@ -110,6 +110,8 @@ const EN = {
   'unbegrenzt': 'unlimited',
   'mit Passwort': 'with password',
   'Originale erlaubt': 'originals allowed',
+  'Link nicht mehr lesbar – neu anlegen': 'link can no longer be read – create a new one',
+  'Einige Links lassen sich mit dem jetzigen server.schluessel nicht mehr lesen – die Datei ist verloren gegangen oder ersetzt worden. Die alte zurücklegen, sonst diese Freigaben löschen und neu anlegen.': 'Some links can no longer be read with the current server.schluessel – the file was lost or replaced. Put the old one back, otherwise delete these shares and create them again.',
   '1 Aufruf': '1 view',
   '{n} Aufrufe': '{n} views',
   'Löschen': 'Delete',

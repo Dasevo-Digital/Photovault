@@ -1908,6 +1908,13 @@ class AppTexteEn extends AppTexte {
   String get linkNochNichts => 'Nothing shared yet.';
 
   @override
+  String get linkNichtLesbar => 'Link can no longer be read – create a new one';
+
+  @override
+  String get linksNichtLesbarHinweis =>
+      'Some links can no longer be read with the server’s current key (server.schluessel) – the file was lost or replaced. Put the old one back, otherwise delete these shares and create them again.';
+
+  @override
   String linkAnzahl(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,

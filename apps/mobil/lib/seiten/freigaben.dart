@@ -276,6 +276,10 @@ class GeteilteLinks extends StatefulWidget {
 class _GeteilteLinksState extends State<GeteilteLinks> {
   List<Map<String, Object?>>? _liste;
 
+  /// Der Server kann Links nicht mehr lesen (ersetzter server.schluessel,
+  /// SRV-040) – die Freigaben stehen trotzdem da, zum Löschen.
+  var _unlesbar = false;
+
   @override
   void initState() {
     super.initState();
@@ -286,12 +290,13 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
     try {
       final d = await widget.verbindung.hole('api/v1/freigaben');
       if (!mounted) return;
-      setState(
-        () => _liste = [
+      setState(() {
+        _liste = [
           for (final x in (d['freigaben'] as List? ?? const []))
             (x as Map).cast<String, Object?>(),
-        ],
-      );
+        ];
+        _unlesbar = d['hinweis'] != null;
+      });
     } catch (_) {
       // Ohne Verbindung bleibt der Abschnitt leer.
     }
@@ -350,6 +355,14 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
         ),
+        if (_unlesbar)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              t.linksNichtLesbarHinweis,
+              style: TextStyle(color: farben.error),
+            ),
+          ),
         if (liste.isEmpty)
           ListTile(
             leading: const Icon(Icons.link_off_rounded),
@@ -360,7 +373,9 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
           ),
         for (final x in liste)
           ListTile(
-            leading: const Icon(Icons.link_rounded),
+            leading: Icon(
+              x['link'] is String ? Icons.link_rounded : Icons.link_off_rounded,
+            ),
             title: Text('${x['titel']}'),
             subtitle: Text(
               [
@@ -377,6 +392,7 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                       ? t.linkBeitraegeOffen(x['beitraege'] as int)
                       : t.linkGaesteDuerfen,
                 t.linkAufrufe(x['aufrufe'] as int? ?? 0),
+                if (x['link'] is! String) t.linkNichtLesbar,
               ].join(' · '),
               style: TextStyle(color: farben.onSurfaceVariant),
             ),
@@ -393,8 +409,11 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                 }
               },
               itemBuilder: (context) => [
-                PopupMenuItem(value: 'kopieren', child: Text(t.linkKopieren)),
-                PopupMenuItem(value: 'teilen', child: Text(t.linkTeilen)),
+                // Ohne lesbaren Link bleibt nur das Löschen.
+                if (x['link'] is String) ...[
+                  PopupMenuItem(value: 'kopieren', child: Text(t.linkKopieren)),
+                  PopupMenuItem(value: 'teilen', child: Text(t.linkTeilen)),
+                ],
                 PopupMenuItem(value: 'loeschen', child: Text(t.linkLoeschen)),
               ],
             ),

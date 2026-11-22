@@ -3055,6 +3055,18 @@ abstract class AppTexte {
   /// **'Noch nichts geteilt.'**
   String get linkNochNichts;
 
+  /// No description provided for @linkNichtLesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Link nicht mehr lesbar – neu anlegen'**
+  String get linkNichtLesbar;
+
+  /// No description provided for @linksNichtLesbarHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Einige Links lassen sich mit dem jetzigen Schlüssel des Servers (server.schluessel) nicht mehr lesen – die Datei ist verloren gegangen oder ersetzt worden. Die alte zurücklegen, sonst diese Freigaben löschen und neu anlegen.'**
+  String get linksNichtLesbarHinweis;
+
   /// No description provided for @linkAnzahl.
   ///
   /// In de, this message translates to:

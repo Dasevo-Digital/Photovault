@@ -1053,6 +1053,8 @@
   "linkOhneServer": "Ohne Verbindung zum Server gibt es keinen Link.",
   "linkGeteilte": "Geteilte Links",
   "linkNochNichts": "Noch nichts geteilt.",
+  "linkNichtLesbar": "Link nicht mehr lesbar – neu anlegen",
+  "linksNichtLesbarHinweis": "Einige Links lassen sich mit dem jetzigen Schlüssel des Servers (server.schluessel) nicht mehr lesen – die Datei ist verloren gegangen oder ersetzt worden. Die alte zurücklegen, sonst diese Freigaben löschen und neu anlegen.",
   "linkAnzahl": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
   "@linkAnzahl": {
     "placeholders": {"n": {"type": "int"}}

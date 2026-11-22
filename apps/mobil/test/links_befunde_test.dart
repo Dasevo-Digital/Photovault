@@ -90,4 +90,72 @@ void main() {
     // Ein Name, der nur wie ein Bereich anfängt, ist keine Adresse darin.
     expect(nurImHeimnetz('https://10.example.de/teilen/x'), isFalse);
   });
+
+  testWidgets('SRV-040 Links, die der Server nicht mehr lesen kann: der '
+      'Hinweis, kein Kopieren, Löschen bleibt', (tester) async {
+    final geloescht = <String>[];
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      'token',
+      client: MockClient((r) async {
+        if (r.method == 'DELETE') {
+          geloescht.add(r.url.path);
+          return http.Response(jsonEncode({'geloescht': true}), 200);
+        }
+        return switch (r.url.path) {
+          '/api/v1/freigaben' => http.Response(
+            jsonEncode({
+              'freigaben': [
+                {
+                  'id': 'f1',
+                  'titel': 'Sommer',
+                  'link': null,
+                  'linkUnlesbar': true,
+                  'anzahl': 3,
+                  'aufrufe': 0,
+                },
+              ],
+              'hinweis': 'Einige Links lassen sich … nicht mehr lesen.',
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          ),
+          _ => http.Response(jsonEncode({'beitraege': []}), 200),
+        };
+      }),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: GeteilteLinks(verbindung: verbindung),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text(t0.linksNichtLesbarHinweis), findsOneWidget);
+    expect(find.text('Sommer'), findsOneWidget);
+    expect(find.textContaining(t0.linkNichtLesbar), findsOneWidget);
+    expect(find.textContaining('null'), findsNothing);
+
+    await tester.tap(find.byType(PopupMenuButton<String>));
+    await tester.pumpAndSettle();
+    expect(find.text(t0.linkKopieren), findsNothing);
+    expect(find.text(t0.linkTeilen), findsNothing);
+    await tester.tap(find.text(t0.linkLoeschen));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, t0.linkLoeschen));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(geloescht, ['/api/v1/freigaben/f1']);
+  });
 }

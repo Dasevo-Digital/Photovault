@@ -677,6 +677,8 @@
   "linkOhneServer": "Without a connection to the server there is no link.",
   "linkGeteilte": "Shared links",
   "linkNochNichts": "Nothing shared yet.",
+  "linkNichtLesbar": "Link can no longer be read – create a new one",
+  "linksNichtLesbarHinweis": "Some links can no longer be read with the server’s current key (server.schluessel) – the file was lost or replaced. Put the old one back, otherwise delete these shares and create them again.",
   "linkAnzahl": "{n, plural, =1{1 photo} other{{n} photos}}",
   "linkAbgelaufen": "expired",
   "linkBis": "until {datum}",

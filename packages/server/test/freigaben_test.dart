@@ -452,13 +452,84 @@ void main() {
         Tresorschluessel(List.filled(32, 7)),
       ).lege(konto: erika.id, titel: 'Sommer', aufnahmen: ['a1']);
       final neu = Freigabedienst(sdb, Tresorschluessel(List.filled(32, 9)));
-      await expectLater(
-        neu.von(erika.id),
-        throwsA(isA<SchluesselPasstNicht>()),
-      );
+      final liste = await neu.von(erika.id);
+      expect(liste.map((x) => x.freigabe.titel), ['Sommer']);
+      expect(liste.single.link, isNull);
       expect(neu.ohneLinkVon(erika.id).map((f) => f.titel), ['Sommer']);
     },
   );
+
+  // SRV-040: Die Liste antwortete dann mit 500 und einem Satz – keine
+  // Freigabe liess sich mehr widerrufen.
+  test('ersetzter Schlüssel: Liste ohne Link, Hinweis, widerrufen geht, '
+      'neue Links sind lesbar', () async {
+    final a = await ladeHoch('a.jpg', 10);
+    final alt = await teile({
+      'titel': 'Sommer',
+      'ids': [a],
+    });
+    final anders = Kontodienst(
+      sdb,
+      Tresorschluessel(List.filled(32, 9)),
+      passwort: const Passwort(speicher: 64, durchgaenge: 1),
+      totpPflicht: false,
+    );
+    final api2 = baueApi(konten: anders, bibliotheken: bibliotheken);
+    final token = anders.meldeAn(erika.id, 'Telefon', 'y').token;
+    Future<Response> frag2(
+      String methode,
+      String pfad, {
+      Object? inhalt,
+    }) async => api2(
+      Request(
+        methode,
+        Uri.parse('http://fotos.example$pfad'),
+        headers: {
+          'authorization': 'Bearer $token',
+          'content-type': 'application/json',
+        },
+        body: inhalt == null ? null : jsonEncode(inhalt),
+      ),
+    );
+
+    final r = await frag2('GET', '/api/v1/freigaben');
+    expect(r.statusCode, 200);
+    final d = await jsonAus(r);
+    final eintrag = (d['freigaben']! as List).single as Map;
+    expect(eintrag['titel'], 'Sommer');
+    expect(eintrag['link'], isNull);
+    expect(eintrag['linkUnlesbar'], isTrue);
+    expect(eintrag['anzahl'], 1);
+    expect(d['hinweis'], contains('server.schluessel'));
+
+    // Ein neuer Link entsteht mit dem neuen Schlüssel und ist lesbar.
+    final neu = await frag2(
+      'POST',
+      '/api/v1/freigaben',
+      inhalt: {
+        'titel': 'Herbst',
+        'ids': [a],
+      },
+    );
+    expect(neu.statusCode, 201);
+    final beide =
+        (await jsonAus(await frag2('GET', '/api/v1/freigaben')))['freigaben']!
+            as List;
+    expect(beide.map((x) => (x as Map)['titel']), ['Herbst', 'Sommer']);
+    expect((beide.first as Map)['link'], contains('/teilen/'));
+    expect((beide.first as Map).containsKey('linkUnlesbar'), isFalse);
+
+    // Der alte lässt sich widerrufen; danach fehlt auch der Hinweis.
+    expect(
+      (await frag2('DELETE', '/api/v1/freigaben/${alt['id']}')).statusCode,
+      200,
+    );
+    final danach = await jsonAus(await frag2('GET', '/api/v1/freigaben'));
+    expect((danach['freigaben']! as List).map((x) => (x as Map)['titel']), [
+      'Herbst',
+    ]);
+    expect(danach.containsKey('hinweis'), isFalse);
+  });
 }
 
 /// Zählt, wie viele Prüfungen zugleich rechnen.

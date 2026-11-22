@@ -67,7 +67,8 @@ Zwischenspeicher der Karten (höchstens 1 GB, siehe unten), darf fehlen.
 Fehlt der Schlüssel, legt der Server einen neuen an. Fotos, Konten und
 Passwörter bleiben; nicht mehr lesbar sind dann die TOTP-Einrichtungen
 (`konto totp-zuruecksetzen`, die Wiederherstellungscodes gelten weiter),
-die Adressen der Freigabe-Links (neu anlegen), der Schlüssel der
+die Adressen der Freigabe-Links (die Freigaben stehen ohne Link in der
+Liste und lassen sich löschen; neu anlegen), der Schlüssel der
 Serversicherung und das Geheimnis der Aussensicherung (beide neu
 einrichten).
 

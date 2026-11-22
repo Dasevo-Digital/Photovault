@@ -1914,6 +1914,13 @@ class AppTexteDe extends AppTexte {
   String get linkNochNichts => 'Noch nichts geteilt.';
 
   @override
+  String get linkNichtLesbar => 'Link nicht mehr lesbar – neu anlegen';
+
+  @override
+  String get linksNichtLesbarHinweis =>
+      'Einige Links lassen sich mit dem jetzigen Schlüssel des Servers (server.schluessel) nicht mehr lesen – die Datei ist verloren gegangen oder ersetzt worden. Die alte zurücklegen, sonst diese Freigaben löschen und neu anlegen.';
+
+  @override
   String linkAnzahl(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,

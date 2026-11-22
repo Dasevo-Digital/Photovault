@@ -160,18 +160,28 @@ class Freigabedienst {
   );
 
   /// Die Freigaben eines Kontos, die jüngste zuerst, mit ihrem Link.
-  Future<List<({Freigabe freigabe, String link})>> von(String konto) async {
+  ///
+  /// `link` ist `null`, wenn er sich mit dem jetzigen `server.schluessel`
+  /// nicht mehr entschlüsseln lässt ([SchluesselPasstNicht]): Die Freigabe
+  /// gilt weiter (gesucht wird über den Prüfwert), nur zeigen lässt sich
+  /// ihr Link nicht mehr. Vorher scheiterte daran die ganze Liste, und
+  /// widerrufen liess sich nichts mehr.
+  Future<List<({Freigabe freigabe, String? link})>> von(String konto) async {
     final zeilen = _sdb.db.select(
       'SELECT * FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
       [konto],
     );
-    return [
-      for (final z in zeilen)
-        (
-          freigabe: _aus(z),
-          link: utf8.decode(await _tresor.entschluessele(z['link']! as String)),
-        ),
-    ];
+    final liste = <({Freigabe freigabe, String? link})>[];
+    for (final z in zeilen) {
+      String? link;
+      try {
+        link = utf8.decode(await _tresor.entschluessele(z['link']! as String));
+      } on SchluesselPasstNicht {
+        link = null;
+      }
+      liste.add((freigabe: _aus(z), link: link));
+    }
+    return liste;
   }
 
   /// Die Freigaben eines Kontos ohne ihren Link, die jüngste zuerst.

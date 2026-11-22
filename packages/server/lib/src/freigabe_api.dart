@@ -23,7 +23,6 @@ import 'dateiantwort.dart';
 import 'freigaben.dart';
 import 'gastbeitraege.dart';
 import 'gastpruefung.dart';
-import 'konten/tresorschluessel.dart' show SchluesselPasstNicht;
 import 'konten/bremse.dart';
 import 'speicher.dart';
 import 'teilbilder.dart';
@@ -152,7 +151,7 @@ class Freigabeapi {
   Future<Map<String, Object?>> _alsJson(
     Request r,
     Freigabe f,
-    String link,
+    String? link,
     AppDatabase db, {
     Map<String, int>? gezaehlt,
   }) async {
@@ -169,7 +168,10 @@ class Freigabeapi {
     return {
       'id': f.id,
       'titel': f.titel,
-      'link': '${_basis(r)}/teilen/$link',
+      // Nach einem ersetzten server.schluessel nicht mehr zu lesen: Die
+      // Freigabe steht trotzdem da, damit man sie widerrufen kann.
+      'link': link == null ? null : '${_basis(r)}/teilen/$link',
+      if (link == null) 'linkUnlesbar': true,
       'art': f.album != null ? 'album' : 'auswahl',
       if (f.album != null) 'album': f.album,
       'anzahl': anzahl,
@@ -253,24 +255,31 @@ class Freigabeapi {
     return _json(await _alsJson(r, f.freigabe, f.link, db), status: 201);
   }
 
-  /// Die Freigaben des Kontos.
+  /// Die Freigaben des Kontos: `{freigaben: [...], hinweis?}`.
+  ///
+  /// Lässt sich ein Link mit dem jetzigen `server.schluessel` nicht mehr
+  /// lesen, steht die Freigabe mit `link: null` und `linkUnlesbar: true`
+  /// da – widerrufen lässt sie sich weiter – und [linksUnlesbar] als
+  /// `hinweis` darüber. Vorher antwortete die ganze Liste mit 500.
   Future<Response> liste(Request r) async {
     final konto = kontoVon(r);
     final db = (await bibliotheken.fuer(konto.id)).bibliothek.db;
-    final List<({Freigabe freigabe, String link})> alle;
-    try {
-      alle = await dienst.von(konto.id);
-    } on SchluesselPasstNicht catch (e) {
-      return _json({'fehler': 'Die Links der Freigaben: $e'}, status: 500);
-    }
+    final alle = await dienst.von(konto.id);
     final gezaehlt = <String, int>{};
     return _json({
       'freigaben': [
         for (final x in alle)
           await _alsJson(r, x.freigabe, x.link, db, gezaehlt: gezaehlt),
       ],
+      if (alle.any((x) => x.link == null)) 'hinweis': linksUnlesbar,
     });
   }
+
+  /// Der Hinweis über der Liste, wenn Links nicht mehr zu lesen sind.
+  static const linksUnlesbar =
+      'Einige Links lassen sich mit dem jetzigen server.schluessel nicht '
+      'mehr lesen – die Datei ist verloren gegangen oder ersetzt worden. '
+      'Die alte zurücklegen, sonst diese Freigaben löschen und neu anlegen.';
 
   Future<Response> loeschen(Request r, String id) async {
     final konto = kontoVon(r).id;
@@ -850,9 +859,13 @@ class Freigabeapi {
           'fehler': 'Import gescheitert: ${ergebnis.error}',
         }, status: 500);
       }
-      final album = (await dienst.von(
-        x.konto,
-      )).where((f) => f.freigabe.id == x.freigabe).firstOrNull?.freigabe.album;
+      // Ohne den Link: Den braucht es hier nicht, und nach einem
+      // ersetzten server.schluessel liesse er sich nicht lesen.
+      final album = dienst
+          .ohneLinkVon(x.konto)
+          .where((f) => f.id == x.freigabe)
+          .firstOrNull
+          ?.album;
       if (album != null) {
         await b.db.fuehreAus(
           AlbumFuellen(album, [await b.db.sichtbareFassung(aufnahme)]),

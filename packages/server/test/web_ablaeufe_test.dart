@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:photo_vault_server/src/freigabe_api.dart' show Freigabeapi;
 import 'package:test/test.dart';
 
 /// Abläufe der Weboberfläche, die am Quelltext von `web/app.js` geprüft
@@ -312,5 +313,25 @@ void main() {
         expect(texte, contains("  '$d': '"), reason: d);
       }
     });
+  });
+
+  test('SRV-040 Freigaben ohne lesbaren Link: Hinweis, kein Kopieren, '
+      'Löschen bleibt', () {
+    // Nach einem ersetzten server.schluessel antwortete die Liste mit 500;
+    // jetzt kommen die Freigaben mit `link: null` und einem `hinweis`.
+    final f = funktion('zeigeFreigaben');
+    expect(
+      f,
+      contains("if (d.hinweis) ul.append(el('li', 'fehler', t(d.hinweis)))"),
+    );
+    expect(
+      f,
+      contains("x.link ? null : t('Link nicht mehr lesbar – neu anlegen')"),
+    );
+    expect(f, contains('kopieren.hidden = !x.link;'));
+    expect(f, contains("el('button', null, t('Löschen'))"));
+    final texte = File('web/texte.js').readAsStringSync();
+    expect(texte, contains("  'Link nicht mehr lesbar – neu anlegen': '"));
+    expect(texte, contains("  '${Freigabeapi.linksUnlesbar}': '"));
   });
 }
