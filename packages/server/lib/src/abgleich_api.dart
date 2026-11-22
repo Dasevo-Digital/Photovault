@@ -38,12 +38,32 @@ class Abgleichsapi {
   Abgleichsapi(
     this.bibliotheken, {
     this.takt = const Duration(milliseconds: 500),
+    this.abzugsordner,
+    this.ohneLeser = const Duration(minutes: 1),
   });
 
   final Bibliotheken bibliotheken;
 
   /// Wie oft eine wartende Abfrage nachsieht, ob sich etwas getan hat.
   final Duration takt;
+
+  /// Wo die Abzüge entstehen; sonst im Systemtemp.
+  final Directory? abzugsordner;
+
+  /// So lange darf eine Antwort mit einem Abzug warten, bis jemand sie
+  /// liest; danach gibt sie ihre Kopie frei.
+  final Duration ohneLeser;
+
+  /// Höchstens so viele Abzüge je Bibliothek zugleich. Gleichzeitige
+  /// Anfragen auf denselben Stand teilen sich einen; ein zweiter entsteht
+  /// nur, wenn sich in der Zwischenzeit etwas geändert hat.
+  static const hoechstensAbzuege = 2;
+
+  /// Die Abzüge, die gerade ausgeliefert werden, je Bibliothek.
+  final _abzuege = <String, List<_Abzug>>{};
+
+  /// Je Bibliothek nur ein `VACUUM INTO` zugleich.
+  final _abzugReihe = <String, Future<void>>{};
 
   final _dateiwechsel = <String, Future<void>>{};
 
@@ -186,34 +206,116 @@ class Abgleichsapi {
   /// Die ganze Bibliothek als SQLite-Datei – der Anfang einer Kopie. Ihr
   /// eigenes Protokoll reist mit; dessen höchste Nummer ist der Stand, ab
   /// dem das Gerät weiterliest.
+  ///
+  /// **Eine Kopie für alle, die gleichzeitig fragen (#436).** Vorher legte
+  /// jede Anfrage ihre eigene volle Kopie an, die erst verschwand, wenn
+  /// ihre Antwort ganz gelesen war. N gleichzeitige Anfragen – ein Gerät,
+  /// das hängt, oder eines, das es darauf anlegt – füllten so das
+  /// Systemtemp mit N Bibliotheken, und die Vacuums hielten die Datenbank
+  /// des Kontos nacheinander auf. Jetzt entsteht je Bibliothek nur ein
+  /// Abzug zugleich; wer fragt, während einer auf demselben Stand
+  /// ausgeliefert wird, bekommt denselben. Mehr als [hoechstensAbzuege]
+  /// gibt es nicht (503). Liest niemand die Antwort, gibt sie ihre Kopie
+  /// nach [ohneLeser] frei.
   Future<Response> abzug(Request anfrage) async {
     final b = await _bib(anfrage);
     // shelf_router nimmt HEAD mit; der Körper liefe nie, und nur er räumt auf.
     if (anfrage.method == 'HEAD') return Response.ok(null);
-    final tmp = await Directory.systemTemp.createTemp('pv_abzug_');
-    final datei = File(p.join(tmp.path, 'library.sqlite'));
-    try {
-      await b.db.customStatement('VACUUM INTO ?', [datei.path]);
-    } catch (_) {
-      await tmp.delete(recursive: true);
-      rethrow;
+    final kopie = await _abzugFuer(b);
+    if (kopie == null) {
+      return Response(
+        503,
+        body: jsonEncode({'fehler': 'pv_abzug_belegt'}),
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+          'retry-after': '30',
+        },
+      );
     }
-    Stream<List<int>> undWeg() async* {
-      try {
-        yield* datei.openRead();
-      } finally {
-        await tmp.delete(recursive: true);
-      }
+    StreamSubscription<List<int>>? abo;
+    var frei = false;
+    late final Timer wache;
+    void gibFrei() {
+      if (frei) return;
+      frei = true;
+      wache.cancel();
+      unawaited(kopie.gibFrei());
     }
 
+    wache = Timer(ohneLeser, gibFrei);
+    late final StreamController<List<int>> aus;
+    aus = StreamController<List<int>>(
+      onListen: () {
+        wache.cancel();
+        abo = kopie.datei.openRead().listen(
+          aus.add,
+          onError: aus.addError,
+          onDone: () {
+            unawaited(aus.close());
+            gibFrei();
+          },
+        );
+      },
+      onPause: () => abo?.pause(),
+      onResume: () => abo?.resume(),
+      onCancel: () async {
+        await abo?.cancel();
+        gibFrei();
+      },
+    );
     return Response.ok(
-      undWeg(),
+      aus.stream,
       headers: {
         'content-type': 'application/vnd.sqlite3',
-        'content-length': '${await datei.length()}',
+        'content-length': '${kopie.laenge}',
         'cache-control': 'no-store',
       },
     );
+  }
+
+  /// Der Abzug von [b] für eine weitere Antwort: ein laufender auf dem
+  /// jetzigen Stand oder ein neuer; `null`, wenn schon
+  /// [hoechstensAbzuege] laufen. Je Bibliothek eins nach dem anderen.
+  Future<_Abzug?> _abzugFuer(Bibliothek b) {
+    final schluessel = b.ordner.path;
+    final lauf = (_abzugReihe[schluessel] ?? Future<void>.value()).then((
+      _,
+    ) async {
+      final stand = await b.protokoll.stand();
+      final laufend = _abzuege[schluessel] ?? const <_Abzug>[];
+      for (final k in laufend) {
+        if (k.stand == stand && k.nimm()) return k;
+      }
+      if (laufend.length >= hoechstensAbzuege) return null;
+      final tmp = await (abzugsordner ?? Directory.systemTemp).createTemp(
+        'pv_abzug_',
+      );
+      final datei = File(p.join(tmp.path, 'library.sqlite'));
+      try {
+        await b.db.customStatement('VACUUM INTO ?', [datei.path]);
+      } catch (_) {
+        await tmp.delete(recursive: true);
+        rethrow;
+      }
+      final neu = _Abzug(stand, tmp, datei, await datei.length(), () {
+        final liste = _abzuege[schluessel];
+        liste?.removeWhere((x) => x.ordner.path == tmp.path);
+        if (liste != null && liste.isEmpty) _abzuege.remove(schluessel);
+      })..nimm();
+      _abzuege.putIfAbsent(schluessel, () => []).add(neu);
+      return neu;
+    });
+    final weiter = lauf.then<void>((_) {}, onError: (_) {});
+    _abzugReihe[schluessel] = weiter;
+    unawaited(
+      weiter.then((_) {
+        if (identical(_abzugReihe[schluessel], weiter)) {
+          _abzugReihe.remove(schluessel);
+        }
+      }),
+    );
+    return lauf;
   }
 
   /// Befehle: einzeln (`{art, werte}`) oder im Stapel
@@ -424,3 +526,32 @@ Object? ergebnisAlsJson(Object? e) => switch (e) {
   List() => [for (final x in e) ergebnisAlsJson(x)],
   _ => e.toString(),
 };
+
+/// Ein Abzug einer Bibliothek, den eine oder mehrere Antworten ausliefern.
+class _Abzug {
+  _Abzug(this.stand, this.ordner, this.datei, this.laenge, this._weg);
+
+  /// Der Stand des Protokolls, als er entstand.
+  final int stand;
+  final Directory ordner;
+  final File datei;
+  final int laenge;
+  final void Function() _weg;
+  var _nutzer = 0;
+  var _geloescht = false;
+
+  /// Eine weitere Antwort liefert ihn aus – `false`, wenn er schon weg ist.
+  bool nimm() {
+    if (_geloescht) return false;
+    _nutzer++;
+    return true;
+  }
+
+  /// Eine Antwort ist fertig; die letzte löscht ihn.
+  Future<void> gibFrei() async {
+    if (--_nutzer > 0 || _geloescht) return;
+    _geloescht = true;
+    _weg();
+    if (await ordner.exists()) await ordner.delete(recursive: true);
+  }
+}
