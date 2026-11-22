@@ -4375,6 +4375,14 @@ const gb = (b) => `${(b / 1073741824).toFixed(1)} GB`;
 // Die Stufen der Sicherung (Sicherungsstufe am Server) als Text. t(sv.stufe)
 // zeigte im Deutschen den Namen selbst, etwa „nichtEingerichtet“.
 const sicherungStufen = { aus: 'aus', nichtEingerichtet: 'nicht eingerichtet', zielFehlt: 'Ziel fehlt', fehler: 'gescheitert', veraltet: 'veraltet', ok: 'in Ordnung' };
+// Was der Server als Code meldet, in Worten – wie in der App am Rechner.
+// Roh stand dort „gescheitert · pv_probe_unlesbar“, auch wenn nur die
+// Stichprobe ausgefallen war, weil kein Original ins Prüfbudget passt.
+function sicherungsfehlerText(fehler) {
+  return fehler.startsWith('pv_probe_') ? t('Die Wiederherstellungsprobe war nicht erfolgreich – ein Teil der Sicherung ließ sich nicht probeweise zurückholen.') : fehler;
+}
+// Gelungen, mit Hinweis (SIC-057). Ein unbekannter Code bleibt weg.
+const sicherungsHinweise = { pv_probe_stichprobe_zu_gross: 'Stichprobe übersprungen – kein Original passt in das Prüfbudget von 128 MB.' };
 async function zeigeVerwaltung() {
   const ul = $('server-stand');
   ul.replaceChildren();
@@ -4385,7 +4393,7 @@ async function zeigeVerwaltung() {
   } catch (_) { /* kein Speicherwächter */ }
   try {
     const sv = await api('/api/v1/sicherung');
-    zeile(t('Sicherung: {stufe}', { stufe: t(sicherungStufen[sv.stufe] || sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sv.fehler : ''));
+    zeile(t('Sicherung: {stufe}', { stufe: t(sicherungStufen[sv.stufe] || sv.stufe) }) + (sv.letzterErfolg ? ' · ' + t('zuletzt {datum}', { datum: datumZeit.format(new Date(sv.letzterErfolg)) }) : '') + (sv.naechster ? ' · ' + t('nächste {datum}', { datum: datumZeit.format(new Date(sv.naechster)) }) : '') + (sv.fehler ? ' · ' + sicherungsfehlerText(sv.fehler) : '') + (sicherungsHinweise[sv.hinweis] ? ' · ' + t(sicherungsHinweise[sv.hinweis]) : ''));
     $('sicherung-jetzt').hidden = sv.stufe === 'aus' || sv.stufe === 'nichtEingerichtet';
     zeigeAussen(sv.ausserHaus, sv.stufe);
   } catch (_) { $('sicherung-jetzt').hidden = true; $('aussen').hidden = true; }

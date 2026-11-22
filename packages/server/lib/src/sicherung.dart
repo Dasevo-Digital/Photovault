@@ -10,6 +10,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/backup_fotokammer.dart';
 import 'package:kern/services/backup_service.dart';
+import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/vault_crypto.dart';
 import 'package:path/path.dart' as p;
 
@@ -65,7 +66,9 @@ class Serversicherung {
     this.um = (stunde: 3, minute: 30),
     this.nachDemLauf,
     DateTime Function()? uhr,
-  }) : _uhr = uhr ?? DateTime.now;
+    BackupService Function(AppDatabase db, StoragePaths pfade)? dienst,
+  }) : _uhr = uhr ?? DateTime.now,
+       _dienst = dienst ?? BackupService.new;
 
   final Directory daten;
 
@@ -82,6 +85,9 @@ class Serversicherung {
   /// in jedem Fall einwandfrei, nur vielleicht nicht vollständig.
   final Future<void> Function()? nachDemLauf;
   final DateTime Function() _uhr;
+
+  /// Wer eine Bibliothek sichert – in Tests ersetzbar.
+  final BackupService Function(AppDatabase db, StoragePaths pfade) _dienst;
 
   static const markeName = 'PHOTOVAULT-SICHERUNGSZIEL.json';
   static const _veraltetNach = Duration(hours: 36);
@@ -232,7 +238,7 @@ class Serversicherung {
     if (ziel == null || !eingerichtet) return;
     final beginn = _uhr();
     final ergebnis = <Map<String, Object?>>[];
-    String? fehler;
+    String? fehler, hinweis;
     try {
       if (!_markeDa) {
         throw StateError(
@@ -286,7 +292,7 @@ class Serversicherung {
                   entfernt: 0,
                 );
               });
-          final dienst = BackupService(b.db, b.pfade);
+          final dienst = _dienst(b.db, b.pfade);
           var gesamt = 0, fehlgeschlagen = 0;
           BackupProbeErgebnis? probe;
           await for (final f in dienst.performAutoBackup(
@@ -300,7 +306,15 @@ class Serversicherung {
             probe = f.wiederherstellungsprobe ?? probe;
           }
           fehlgeschlagen += kammer.gescheitert;
-          if (fehlgeschlagen == 0 && probe?.erfolgreich == true) {
+          // Passt kein Original ins Prüfbudget der Probe (128 MB), wurde
+          // nichts geprüft und nichts ist gescheitert: Der Lauf gilt als
+          // gelungen, mit Hinweis – wie das automatische Backup am Rechner
+          // (SIC-057). Vorher scheiterte hier jeder Lauf einer Bibliothek
+          // nur aus grossen Videos, und die Apps meldeten
+          // „pv_probe_unlesbar“.
+          final uebersprungen = probe?.uebersprungen ?? false;
+          if (fehlgeschlagen == 0 &&
+              (probe?.erfolgreich == true || uebersprungen)) {
             await b.db.setLastAutoBackupAt(_uhr());
           }
           ergebnis.add({
@@ -314,7 +328,9 @@ class Serversicherung {
             'fehlgeschlagen': fehlgeschlagen,
             'wiederherstellungsprobe': probe?.alsJson(),
           });
-          if (probe != null && !probe.erfolgreich) {
+          if (uebersprungen) {
+            hinweis ??= 'pv_probe_stichprobe_zu_gross';
+          } else if (probe != null && !probe.erfolgreich) {
             fehler ??= 'pv_probe_unlesbar';
           }
           if (fehlgeschlagen > 0) {
@@ -327,6 +343,10 @@ class Serversicherung {
         }
       }
       if (kontofehler.isNotEmpty) fehler = kontofehler.join('; ');
+    } on StateError catch (e) {
+      // Der Satz selbst, ohne „Bad state:“ davor – die Weboberfläche zeigt
+      // ihn so, wie er hier steht.
+      fehler = e.message;
     } catch (e) {
       fehler = '$e';
     }
@@ -339,6 +359,9 @@ class Serversicherung {
       'ende': ende.toUtc().toIso8601String(),
       'ok': fehler == null,
       'fehler': ?fehler,
+      // Gelungen, aber mit etwas, das ein Verwalter wissen sollte – als
+      // Code, die Apps und die Weboberfläche sagen es in ihrer Sprache.
+      'hinweis': ?hinweis,
       'konten': ergebnis,
       'letzterErfolg': fehler == null
           ? ende.toUtc().toIso8601String()
@@ -349,6 +372,8 @@ class Serversicherung {
       fehler == null
           ? 'Sicherung fertig nach ${ende.difference(beginn).inSeconds} s: '
                 '$neu neue Dateien'
+                '${hinweis == null ? '' : ' (Stichprobe übersprungen: kein '
+                          'Original passt ins Prüfbudget)'}'
           : 'Sicherung gescheitert: $fehler',
     );
     final danach = nachDemLauf;

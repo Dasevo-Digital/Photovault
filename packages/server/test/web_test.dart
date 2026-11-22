@@ -193,6 +193,34 @@ void main() {
     }
   });
 
+  test('Codes der Sicherung stehen in der Verwaltung in Worten', () {
+    // Roh stand dort „Sicherung: gescheitert · pv_probe_unlesbar“ – auch
+    // als nur die Stichprobe ausfiel, weil kein Original ins Prüfbudget
+    // passt (SIC-057). Das zählt jetzt als gelungen, mit Hinweis.
+    final app = File('web/app.js').readAsStringSync();
+    final texte = File('web/texte.js').readAsStringSync();
+    expect(app, isNot(contains("' · ' + sv.fehler")));
+    expect(app, contains('sicherungsfehlerText(sv.fehler)'));
+    final fehler = RegExp(
+      r"fehler\.startsWith\('pv_probe_'\) \? t\('([^']+)'\)",
+    ).firstMatch(app)?[1];
+    expect(fehler, isNotNull);
+    final hinweise = RegExp(
+      r'const sicherungsHinweise = \{([^}]*)\}',
+    ).firstMatch(app)?[1];
+    expect(hinweise, isNotNull);
+    final eintraege = {
+      for (final m in RegExp(r"(\w+): '([^']+)'").allMatches(hinweise!))
+        m[1]!: m[2]!,
+    };
+    // Den Code schreibt Serversicherung in den Stand.
+    expect(eintraege.keys, contains('pv_probe_stichprobe_zu_gross'));
+    expect(app, contains('t(sicherungsHinweise[sv.hinweis])'));
+    for (final text in [fehler!, ...eintraege.values]) {
+      expect(texte, contains("'$text':"), reason: 'Englisch für „$text“');
+    }
+  });
+
   final proxy = _ip([10, 0, 0, 5]);
   final proxyNetz = '${_ip([10, 0, 0, 0])}/8';
   const fremd = '203.0.113.9';

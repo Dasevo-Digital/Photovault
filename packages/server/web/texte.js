@@ -881,6 +881,8 @@ const EN = {
   '„{name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.': 'Remove “{name}”? The library stays on the server.',
   'Speicher: {frei} frei von {gesamt}': 'Storage: {frei} free of {gesamt}',
   'Sicherung: {stufe}': 'Backup: {stufe}',
+  'Die Wiederherstellungsprobe war nicht erfolgreich – ein Teil der Sicherung ließ sich nicht probeweise zurückholen.': 'The restore test was not successful – part of the backup could not be restored as a test.',
+  'Stichprobe übersprungen – kein Original passt in das Prüfbudget von 128 MB.': 'Sample skipped – no original fits within the 128 MB sampling budget.',
   'Auswertung: nichts offen': 'Analysis: nothing pending',
   'Auswertung läuft: {stufe} ({nr}/{von}), {erledigt} von {gesamt}': 'Analysis running: {stufe} ({nr}/{von}), {erledigt} of {gesamt}',
   'Protokoll': 'Protocol',

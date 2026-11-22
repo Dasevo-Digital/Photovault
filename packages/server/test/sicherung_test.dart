@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
+import 'package:cryptography/cryptography.dart' show SecretKey;
 import 'package:image/image.dart' as img;
+import 'package:kern/abgleich/sicherung.dart' show Serversicherungsstand;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/backup_service.dart';
 import 'package:kern/services/import_service.dart';
@@ -27,13 +29,17 @@ void main() {
   late Serversicherung sicherung;
   var jetzt = DateTime(2026, 10, 15, 3, 30);
 
-  Serversicherung neu({bool ohneZiel = false}) => Serversicherung(
+  Serversicherung neu({
+    bool ohneZiel = false,
+    BackupService Function(AppDatabase db, StoragePaths pfade)? dienst,
+  }) => Serversicherung(
     daten: Directory('${ordner.path}/daten'),
     ziel: ohneZiel ? null : nas,
     tresor: tresor,
     konten: konten,
     bibliotheken: bibliotheken,
     uhr: () => jetzt,
+    dienst: dienst,
   );
 
   Future<void> foto(String name, int farbe) async {
@@ -159,6 +165,38 @@ void main() {
   );
 
   test(
+    'passt kein Original ins Prüfbudget der Probe, gelingt der Lauf mit Hinweis',
+    () async {
+      // Wie am Rechner (SIC-057): Vorher galt der Lauf als gescheitert,
+      // „Letzter Erfolg“ blieb stehen, und die Weboberfläche zeigte
+      // „gescheitert · pv_probe_unlesbar“ – bei einer Bibliothek nur aus
+      // grossen Videos jede Nacht.
+      sicherung.beende();
+      sicherung = neu(dienst: _OhneStichprobe.new);
+      await sicherung.einrichten(passphrase);
+      await sicherung.jetzt();
+      final stand = await sicherung.stand();
+      expect(stand['ok'], isTrue);
+      expect(stand['stufe'], Sicherungsstufe.ok.name);
+      expect(stand.containsKey('fehler'), isFalse);
+      expect(stand['hinweis'], 'pv_probe_stichprobe_zu_gross');
+      expect(stand['letzterErfolg'], jetzt.toUtc().toIso8601String());
+      final konto = (stand['konten']! as List).single as Map;
+      expect(konto['neu'], 2, reason: 'gesichert ist trotzdem alles');
+      // Ein Erfolg der Probe ist es nicht: geprüft wurde nichts.
+      expect((konto['wiederherstellungsprobe'] as Map)['erfolgreich'], isFalse);
+      final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+      expect((await db.backupSettingsRow())!.lastAutoBackupAt, jetzt);
+
+      // So sehen es die Apps: keine Warnung, die Probe als übersprungen.
+      final inDerApp = Serversicherungsstand.ausJson(stand);
+      expect(inDerApp.warnt, isFalse);
+      expect(inDerApp.fehler, isNull);
+      expect(inDerApp.proben.single.uebersprungen, isTrue);
+    },
+  );
+
+  test(
     'eine gekürzte Sicherungsdatei wird beim nächsten Lauf erneuert',
     () async {
       await sicherung.einrichten(passphrase);
@@ -211,7 +249,10 @@ void main() {
     await sicherung.jetzt();
     expect(nas.listSync(), isEmpty, reason: 'nichts auf die eigene Platte');
     expect(await sicherung.stufe(), Sicherungsstufe.zielFehlt);
-    expect('${(await sicherung.stand())['fehler']}', contains('Kennmarke'));
+    final fehler = '${(await sicherung.stand())['fehler']}';
+    expect(fehler, contains('Kennmarke'));
+    // Die Weboberfläche zeigt den Satz, wie er ist.
+    expect(fehler, isNot(startsWith('Bad state')));
 
     await sicherung.zielNeu();
     await sicherung.jetzt();
@@ -651,4 +692,44 @@ void main() {
     expect((await frag('POST', 'sicherung/jetzt', erika)).statusCode, 202);
     await sicherung.jetzt();
   });
+}
+
+/// Sichert wie immer, meldet aber, dass kein Original ins Prüfbudget der
+/// Wiederherstellungsprobe passte – das gäbe sonst erst eine Datei über
+/// 128 MB.
+class _OhneStichprobe extends BackupService {
+  _OhneStichprobe(super.db, super.pfade);
+
+  @override
+  Stream<BackupProgress> performAutoBackup(
+    String destinationRootPath,
+    SecretKey encryptionKey, {
+    int maxBytesPerRun = 0,
+    bool markieren = true,
+  }) async* {
+    await for (final f in super.performAutoBackup(
+      destinationRootPath,
+      encryptionKey,
+      maxBytesPerRun: maxBytesPerRun,
+      markieren: markieren,
+    )) {
+      final probe = f.wiederherstellungsprobe;
+      yield probe == null
+          ? f
+          : BackupProgress(
+              f.done,
+              f.total,
+              wiederherstellungsprobe: BackupProbeErgebnis(
+                am: probe.am,
+                erfolgreich: false,
+                originale: 0,
+                gesamt: probe.gesamt,
+                datenbank: false,
+                letzterErfolg: probe.letzterErfolg,
+                fehler: 'pv_probe_stichprobe_zu_gross',
+                position: probe.position,
+              ),
+            );
+    }
+  }
 }
