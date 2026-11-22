@@ -83,4 +83,18 @@ void main() {
     expect(neu, isNonNegative);
     expect(nach.indexOf('await starte();'), greaterThan(neu));
   });
+
+  test('eine Seite der Zeitleiste von vor dem Leeren ändert nichts mehr', () {
+    // leeren() liess die laufende Anfrage stehen: Die nächste Ansicht
+    // bekam sie als ihre erste Seite, und hole() schrieb Lesezeichen und
+    // Liste der alten Ordnung in die neue.
+    final beginn = app.indexOf('const zeitleiste = {');
+    final ende = app.indexOf('  async holeSeite(', beginn);
+    final z = app.substring(beginn, ende);
+    expect(z, contains('leeren() { this.stand++; this.lauf = null;'));
+    final hole = z.substring(z.indexOf('async hole()'));
+    final pruefung = hole.indexOf('if (stand !== this.stand) return d;');
+    expect(pruefung, isNonNegative);
+    expect(hole.indexOf('this.weiter = d.weiter'), greaterThan(pruefung));
+  });
 }

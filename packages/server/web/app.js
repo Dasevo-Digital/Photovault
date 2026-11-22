@@ -1055,15 +1055,26 @@ const zeitleiste = {
   geladen: [],
   // Grössere Seiten, solange die Leiste zu einem fernen Monat springt.
   seite: 200,
-  leeren() { this.weiter = undefined; this.geladen = []; zeitleistenmonate.liste = null; },
+  // Zählt jedes Leeren. Eine Seite, die vorher angefragt wurde, gehört zur
+  // alten Ordnung: Sie lief sonst weiter, und die nächste Ansicht bekam sie
+  // als ihre erste – nach dem Umstellen auf „Name“ standen die neuesten
+  // Fotos oben, und das Lesezeichen der alten Ordnung blätterte weiter.
+  stand: 0,
+  leeren() { this.stand++; this.lauf = null; this.weiter = undefined; this.geladen = []; zeitleistenmonate.liste = null; },
   // Läuft schon eine Anfrage, gilt ihre Antwort auch für den zweiten Aufrufer.
   // Sonst käme nach Fotos, Favoriten, Fotos dieselbe Seite doppelt.
   lauf: null,
   mehr() {
-    return (this.lauf ??= this.hole().finally(() => { this.lauf = null; }));
+    if (!this.lauf) {
+      const lauf = this.hole().finally(() => { if (this.lauf === lauf) this.lauf = null; });
+      this.lauf = lauf;
+    }
+    return this.lauf;
   },
   async hole() {
+    const stand = this.stand;
     const d = await this.holeSeite(this.weiter, this.seite);
+    if (stand !== this.stand) return d;
     this.weiter = d.weiter;
     this.geladen.push(...d.aufnahmen);
     return d;
