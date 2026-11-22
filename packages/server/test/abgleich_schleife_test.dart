@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:http/http.dart' as http;
 import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/spuren_nachreichen.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
@@ -349,6 +350,80 @@ void main() {
       await a.empfange();
       expect((await holeAufnahme(db, 'a1')).description, 'Mole');
       expect((await holeAufnahme(s, 'a1')).description, 'Mole');
+    });
+  });
+
+  group('Spuren nachreichen', () {
+    SpurAnlegen spur(String id) => SpurAnlegen(
+      id: id,
+      name: '$id.gpx',
+      quelle: '$id.gpx',
+      laengeKm: 2.4,
+      aufstieg: 110,
+      abstieg: 0,
+      angelegtAm: DateTime.utc(2026, 8, 2),
+      punkte: [
+        (
+          breite: 51.80,
+          laenge: 10.60,
+          hoehe: 300.0,
+          zeit: DateTime.utc(2026, 8, 1, 9),
+        ),
+        (
+          breite: 51.81,
+          laenge: 10.62,
+          hoehe: 410.0,
+          zeit: DateTime.utc(2026, 8, 1, 10),
+        ),
+      ],
+    );
+
+    test('eine anderswo gelöschte Spur kommt nicht zurück', () async {
+      final s = await serverDb();
+      await s.fuehreAus(spur('weg'));
+      // Der Rechner war zu, als ein anderes Gerät die Spur löschte.
+      final (db, a) = await geraet('Rechner', _Weiche());
+      expect((await db.alleSpuren()).map((x) => x.id), ['weg']);
+      await s.fuehreAus(const SpurLoeschen('weg'));
+
+      expect(await spurenNachreichen(a), 0);
+      await a.sende();
+      expect(await s.alleSpuren(), isEmpty, reason: 'nicht neu angelegt');
+      expect(await db.alleSpuren(), isEmpty);
+    });
+
+    test('eine Spur mit eigenem Befehl in der Warteschlange geht nicht '
+        'doppelt', () async {
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Rechner', weiche);
+      await db.fuehreAus(spur('neu'));
+      expect(await spurenNachreichen(a), 0);
+      expect(
+        (await db
+                .customSelect('SELECT count(*) AS n FROM pv_ausgang')
+                .getSingle())
+            .read<int>('n'),
+        1,
+      );
+    });
+
+    test('der Altbestand wird einmal durchgesehen', () async {
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Rechner', weiche);
+      final gefragt = <String>[];
+      weiche.eingriff = (r, weiter) {
+        gefragt.add(r.url.path);
+        return weiter();
+      };
+      expect(await spurenNachreichen(a), 0);
+      expect(gefragt, contains('/api/v1/spuren'));
+      gefragt.clear();
+      expect(await spurenNachreichen(a), 0);
+      // Gemerkt in der Kopie, also auch nach einem Neustart.
+      final nachStart = Abgleich(db, a.verbindung);
+      await nachStart.richteEin();
+      expect(await spurenNachreichen(nachStart), 0);
+      expect(gefragt, isEmpty);
     });
   });
 }

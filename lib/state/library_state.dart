@@ -1195,12 +1195,13 @@ class LibraryState extends ChangeNotifier {
         unawaited(_pruefeKarte(s));
       }
       if (z.erreichbar && !z.schemaAnders) {
-        // Einmal je Start: Spuren, die bis 3.37 nur hier angelegt wurden,
-        // dem Server nachreichen (siehe spurenNachreichen).
+        // Spuren, die bis 3.37 nur hier angelegt wurden, dem Server
+        // nachreichen – erst nach dem Abholen und nur einmal je Kopie
+        // (siehe spurenNachreichen).
         if (!_spurenGeprueft) {
           _spurenGeprueft = true;
           unawaited(
-            spurenNachreichen(db, s).catchError((Object e) {
+            spurenNachreichen(a).catchError((Object e) {
               _spurenGeprueft = false;
               debugPrint('Spuren nachreichen: $e');
               return 0;

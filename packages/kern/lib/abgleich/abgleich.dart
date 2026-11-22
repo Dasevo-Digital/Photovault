@@ -257,6 +257,16 @@ class Abgleich {
     await db.customStatement(
       'INSERT OR IGNORE INTO pv_abgleich (id, stand) VALUES (0, 0)',
     );
+    if (!{
+      for (final r
+          in await db.customSelect('PRAGMA table_info(pv_abgleich)').get())
+        r.read<String>('name'),
+    }.contains('spuren_nachgereicht')) {
+      await db.customStatement(
+        'ALTER TABLE pv_abgleich ADD COLUMN '
+        'spuren_nachgereicht INTEGER NOT NULL DEFAULT 0',
+      );
+    }
     await db.customStatement(
       'CREATE TABLE IF NOT EXISTS pv_ausgang ('
       'nr INTEGER PRIMARY KEY AUTOINCREMENT, '
@@ -517,6 +527,21 @@ class Abgleich {
               .customSelect('SELECT stand FROM pv_abgleich WHERE id = 0')
               .getSingle())
           .read<int>('stand');
+
+  /// Ob diese Kopie ihren Altbestand an Spuren schon durchgesehen hat
+  /// (siehe `spurenNachreichen`).
+  Future<bool> spurenNachgereicht() async =>
+      (await db
+              .customSelect(
+                'SELECT spuren_nachgereicht FROM pv_abgleich WHERE id = 0',
+              )
+              .getSingle())
+          .read<int>('spuren_nachgereicht') !=
+      0;
+
+  Future<void> merkeSpurenNachgereicht() => db.customStatement(
+    'UPDATE pv_abgleich SET spuren_nachgereicht = 1 WHERE id = 0',
+  );
 
   /// Fragt den Server nach seinem Schema, solange es nicht als passend
   /// bekannt ist, und wirft [AbgleichsschemaAnders], wenn es nicht passt.

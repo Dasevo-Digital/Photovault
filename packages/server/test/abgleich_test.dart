@@ -381,7 +381,7 @@ void main() {
     await a.richteEin();
     geraete.add((db, a));
 
-    expect(await spurenNachreichen(db, v), 1, reason: '„dort“ kennt er');
+    expect(await spurenNachreichen(a), 1, reason: '„dort“ kennt er');
     await a.sende();
     final aufDemServer = {for (final x in await s.alleSpuren()) x.id: x};
     expect(aufDemServer.keys, unorderedEquals(['dort', 'hier']));
@@ -389,7 +389,7 @@ void main() {
     expect((await s.punkteDerSpur('hier')).map((x) => x.hoehe), [300, 410]);
 
     await a.empfange();
-    expect(await spurenNachreichen(db, v), 0);
+    expect(await spurenNachreichen(a), 0);
     expect(await ausstehend(db), 0);
     expect((await db.punkteDerSpur('hier')).length, 2, reason: 'unverändert');
   });
