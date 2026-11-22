@@ -10434,7 +10434,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String backupProbeZuGross(String wann) {
-    return '$wann: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.';
+    return '$wann: Stichprobe übersprungen – kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.';
   }
 
   @override

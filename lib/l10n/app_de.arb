@@ -6658,7 +6658,7 @@
       }
     }
   },
-  "backupProbeZuGross": "{wann}: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.",
+  "backupProbeZuGross": "{wann}: Stichprobe übersprungen – kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.",
   "@backupProbeZuGross": {
     "placeholders": {
       "wann": {

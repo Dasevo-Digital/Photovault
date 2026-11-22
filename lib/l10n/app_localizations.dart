@@ -15855,7 +15855,7 @@ abstract class AppTexte {
   /// No description provided for @backupProbeZuGross.
   ///
   /// In de, this message translates to:
-  /// **'{wann}: Kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.'**
+  /// **'{wann}: Stichprobe übersprungen – kein Original passt in das Prüfbudget von 128 MB. Die vollständige Dateiprüfung kann unabhängig davon gestartet werden.'**
   String backupProbeZuGross(String wann);
 
   /// No description provided for @importPlanTitel.

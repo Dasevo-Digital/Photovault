@@ -18,6 +18,13 @@ class _Sicherung extends BackupService {
   Completer<void>? freigabe;
   bool? markiert;
   int? budget;
+  BackupProbeErgebnis probe = BackupProbeErgebnis(
+    am: DateTime(2026),
+    erfolgreich: true,
+    originale: 0,
+    gesamt: 0,
+    datenbank: true,
+  );
   @override
   Stream<BackupProgress> performAutoBackup(
     String ziel,
@@ -30,17 +37,7 @@ class _Sicherung extends BackupService {
     budget = maxBytesPerRun;
     if (!gestartet.isCompleted) gestartet.complete();
     await freigabe?.future;
-    yield BackupProgress(
-      0,
-      0,
-      wiederherstellungsprobe: BackupProbeErgebnis(
-        am: DateTime(2026),
-        erfolgreich: true,
-        originale: 0,
-        gesamt: 0,
-        datenbank: true,
-      ),
-    );
+    yield BackupProgress(0, 0, wiederherstellungsprobe: probe);
   }
 }
 
@@ -133,6 +130,54 @@ void main() {
       expect(service.markiert, isFalse);
       expect(service.budget, 7 * 1024 * 1024);
       expect(warnungen.last, isNull);
+    },
+  );
+  test(
+    'passt kein Original ins Prüfbudget, gilt das automatische Backup als gelungen',
+    () async {
+      // SIC-057: Vorher scheiterte jeder Lauf mit „Bad state:
+      // pv_probe_stichprobe_zu_gross“, und „Letzter Lauf“ blieb leer.
+      service.probe = BackupProbeErgebnis(
+        am: DateTime(2026),
+        erfolgreich: false,
+        originale: 0,
+        gesamt: 1,
+        datenbank: true,
+        fehler: 'pv_probe_stichprobe_zu_gross',
+      );
+      await backup.setupBackupPassphrase('synthetische-koordinator-passphrase');
+      await db.setLastAutoBackupAt(jetzt.subtract(const Duration(days: 2)));
+      await backup.runAutoBackupIfDue();
+      expect(service.aufrufe, 1);
+      expect((await db.backupSettingsRow())!.lastAutoBackupAt, jetzt);
+      expect(warnungen.last, isNull);
+
+      final zeilen = await backup
+          .runAutoBackupNow('${temp.path}/ziel')
+          .toList();
+      expect(zeilen.single.wiederherstellungsprobe?.uebersprungen, isTrue);
+      expect(warnungen.last, isNull);
+    },
+  );
+  test(
+    'eine gescheiterte Probe lässt das automatische Backup scheitern',
+    () async {
+      service.probe = BackupProbeErgebnis(
+        am: DateTime(2026),
+        erfolgreich: false,
+        originale: 0,
+        gesamt: 1,
+        datenbank: true,
+        fehler: 'pv_probe_metadaten',
+      );
+      await backup.setupBackupPassphrase('synthetische-koordinator-passphrase');
+      await db.setLastAutoBackupAt(jetzt.subtract(const Duration(days: 2)));
+      await backup.runAutoBackupIfDue();
+      expect(warnungen.last?.grund, Backuphindernis.fehlgeschlagen);
+      expect(
+        (await db.backupSettingsRow())!.lastAutoBackupAt,
+        jetzt.subtract(const Duration(days: 2)),
+      );
     },
   );
   test('Importkoordinator unterscheidet Import, Dublette und Fehler', () async {

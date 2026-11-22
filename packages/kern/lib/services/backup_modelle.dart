@@ -157,6 +157,16 @@ class BackupProbeErgebnis {
   final int position;
   final bool? passphraseGeprueft;
 
+  /// Die Stichprobe fiel aus, weil kein Original ins Prüfbudget passt.
+  ///
+  /// Das ist kein Befund über die Sicherung: Geprüft wurde nichts, also
+  /// ist auch nichts gescheitert. Ein automatisches Backup zählt dann als
+  /// gelungen (SIC-057) – eine Bibliothek nur aus grossen Videos kam sonst
+  /// nie zu einem „Letzten Lauf“. Ein Erfolg der Probe ist es trotzdem
+  /// nicht; [erfolgreich] und [letzterErfolg] bleiben, wie sie sind.
+  bool get uebersprungen =>
+      !erfolgreich && fehler == 'pv_probe_stichprobe_zu_gross';
+
   Map<String, Object?> alsJson() => {
     'format': 1,
     'am': am.toUtc().toIso8601String(),

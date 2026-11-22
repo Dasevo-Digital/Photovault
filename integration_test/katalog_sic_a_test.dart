@@ -2068,9 +2068,7 @@ void main() {
       melde.verlauf.any(
         (m) =>
             m.art == Meldungsart.warnung &&
-            m.text.contains(
-              'Kein Original passt in das Prüfbudget von 128 MB.',
-            ),
+            satzMuster(de.backupProbeZuGross('\u0001')).hasMatch(m.text),
       ),
       isTrue,
     );
@@ -2094,10 +2092,17 @@ void main() {
       timeout: const Duration(minutes: 10),
     );
     await schliesseLauf(tester, de.einstBackupLaeuft);
+    final letzterNurGross = (await tester.runAsync(
+      () => bibliothek.db.backupSettingsRow(),
+    ))?.lastAutoBackupAt;
     print(
       'SIC-057 automatisch: fehler=${nurGross.fehler}, ende=„${nurGross.ende}“, '
-      'letzter Lauf=${(await tester.runAsync(() => bibliothek.db.backupSettingsRow()))?.lastAutoBackupAt}',
+      'letzter Lauf=$letzterNurGross',
     );
+    // Behoben in #464: übersprungene Stichprobe, gelungener Lauf.
+    expect(nurGross.fehler, isFalse, reason: nurGross.ende);
+    expect(nurGross.ende, matches(satzMuster(de.backupProbeZuGross('\u0001'))));
+    expect(letzterNurGross, isNotNull);
 
     // Drei kleine, ältere Fotos dazu.
     final klein = [
@@ -2246,17 +2251,12 @@ void main() {
     await fertig(tester);
   });
 
-  // Befund (Zusatz zu SIC-057): Passt kein Original ins Prüfbudget von
-  // 128 MB, gilt die Probe als gescheitert
-  // (packages/kern/lib/services/backup_probe.dart:159), und das automatische
-  // Backup wirft danach (lib/services/backup_koordinator.dart:160-168): Das
-  // Fenster zeigt „Fehlgeschlagen: Bad state: pv_probe_stichprobe_zu_gross“,
-  // „Letzter Lauf“ bleibt leer. Eine Bibliothek nur aus grossen Videos käme
-  // so nie zu einem gelungenen automatischen Backup. Siehe auch die Ausgabe
-  // „SIC-057 automatisch“ im Test „SIC-057 SIC-033 …“.
+  // Behoben in #464: Passt kein Original ins Prüfbudget von 128 MB, gilt
+  // die Stichprobe als übersprungen und das automatische Backup als
+  // gelungen – mit dem Hinweis „Stichprobe übersprungen …“ statt „Bad
+  // state: pv_probe_stichprobe_zu_gross“, und „Letzter Lauf“ steht.
   testWidgets(
     'SIC-057 Zusatz: automatisches Backup, wenn kein Original ins Prüfbudget passt',
-    skip: true,
     (tester) async {
       await starteApp(tester);
       await importiereDirekt(tester, [
@@ -2279,6 +2279,8 @@ void main() {
       ))!.lastAutoBackupAt;
       print('SIC-057 Zusatz: $lauf, letzter Lauf: $letzter');
       expect(lauf.fehler, isFalse, reason: lauf.ende);
+      expect(lauf.ende, matches(satzMuster(de.backupProbeZuGross('\u0001'))));
+      expect(lauf.ende, isNot(contains('pv_probe')));
       expect(letzter, isNotNull);
       await fertig(tester);
     },

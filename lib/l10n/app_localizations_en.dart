@@ -10378,7 +10378,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String backupProbeZuGross(String wann) {
-    return '$wann: no original fits within the 128 MB sampling budget. A full file verification can still be run.';
+    return '$wann: sample skipped – no original fits within the 128 MB sampling budget. A full file verification can still be run.';
   }
 
   @override

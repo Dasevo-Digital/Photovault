@@ -165,7 +165,9 @@ class BackupKoordinator {
         )) {
           if (f.wiederherstellungsprobe case final probe?) {
             meldeProbe(probe);
-            if (!probe.erfolgreich) {
+            // Übersprungen heisst: nichts geprüft, nichts gescheitert. Die
+            // Zeile mit dem Hinweis geht unten durch (SIC-057).
+            if (!probe.erfolgreich && !probe.uebersprungen) {
               meldeWarnung((
                 grund: Backuphindernis.fehlgeschlagen,
                 letzterLauf: null,
@@ -249,7 +251,11 @@ class BackupKoordinator {
         zusatzAusfaelle = f.zusatzdateienOffen ?? zusatzAusfaelle;
         if (f.wiederherstellungsprobe case final probe?) {
           meldeProbe(probe);
-          if (!probe.erfolgreich) {
+          // Passt kein Original ins Prüfbudget, ist die Sicherung trotzdem
+          // vollständig. Vorher scheiterte hier jeder Lauf mit „Bad state:
+          // pv_probe_stichprobe_zu_gross“, und „Letzter Lauf“ blieb leer
+          // (SIC-057).
+          if (!probe.erfolgreich && !probe.uebersprungen) {
             throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
           }
         }

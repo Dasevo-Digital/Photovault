@@ -5034,7 +5034,7 @@
       }
     }
   },
-  "backupProbeZuGross": "{wann}: no original fits within the 128 MB sampling budget. A full file verification can still be run.",
+  "backupProbeZuGross": "{wann}: sample skipped – no original fits within the 128 MB sampling budget. A full file verification can still be run.",
   "@backupProbeZuGross": {
     "placeholders": {
       "wann": {
