@@ -386,6 +386,7 @@ class Anmeldungsapi {
         rueckweg: rueckweg ?? Uri(),
         appPruefwert: q['pruefwert'] ?? '',
         appZustand: q['zustand'],
+        absender: absender.von(anfrage),
       );
       return Response.found(ziel, headers: {'cache-control': 'no-store'});
     } on OidcFehler catch (f) {
@@ -409,6 +410,7 @@ class Anmeldungsapi {
         appPruefwert: '${k?['pruefwert'] ?? ''}',
         appZustand: k?['zustand'] as String?,
         kontoId: kontoVon(anfrage).id,
+        absender: 'konto:${kontoVon(anfrage).id}',
       );
       return _json({'adresse': ziel.toString()});
     } on OidcFehler catch (f) {

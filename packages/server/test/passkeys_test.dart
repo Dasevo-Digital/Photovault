@@ -63,7 +63,8 @@ void main() {
       bool verfaelschen = false,
       Map<String, Object?>? optionen,
     }) => geraet.anmelden(
-      optionen ?? konten.passkeys.anmeldeoptionen(rp: 'localhost'),
+      optionen ??
+          konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'x'),
       origin,
       merkmale: merkmale,
       verfaelschen: verfaelschen,
@@ -90,7 +91,10 @@ void main() {
       anmelden(origin: 'http://localhost:9999'),
       'andere Seite als die, die fragt',
     );
-    final einmal = konten.passkeys.anmeldeoptionen(rp: 'localhost');
+    final einmal = konten.passkeys.anmeldeoptionen(
+      rp: 'localhost',
+      absender: 'x',
+    );
     expect(
       await konten.passkeys.pruefeAnmeldung(
         herkunft: herkunft,
@@ -104,7 +108,7 @@ void main() {
     );
     await abgewiesen(
       _Geraet.es256().anmelden(
-        konten.passkeys.anmeldeoptionen(rp: 'localhost'),
+        konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'x'),
         herkunft,
         konto: konto.id,
       ),
@@ -135,7 +139,7 @@ void main() {
     Future<String> mit(int zaehler) async => konten.passkeys.pruefeAnmeldung(
       herkunft: herkunft,
       antwort: await geraet.anmeldenAsync(
-        konten.passkeys.anmeldeoptionen(rp: 'localhost'),
+        konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'x'),
         herkunft,
         zaehler: zaehler,
         konto: konto.id,
@@ -148,6 +152,70 @@ void main() {
       reason: 'kopierter Schlüssel',
     );
     expect(konten.passkeys.von(konto.id).single.name, 'Passkey');
+  });
+
+  // #426: Jede Anfrage ohne Anmeldung legte eine Herausforderung ab, ohne
+  // Deckel. Jetzt höchstens 20 je Absender und 10 000 insgesamt; eine Flut
+  // von einer Adresse verdrängt keine fremde.
+  test('Herausforderungen sind gedeckelt, je Absender und insgesamt', () async {
+    final geraet = _Geraet.es256();
+    await konten.passkeys.lege(
+      kontoId: konto.id,
+      herkunft: herkunft,
+      antwort: geraet.anlegen(
+        konten.passkeys.anlegeoptionen(
+          kontoId: konto.id,
+          kontoName: konto.name,
+          rp: 'localhost',
+          servername: 'Photo Vault',
+        ),
+        herkunft,
+      ),
+      name: '',
+    );
+    final echt = konten.passkeys.anmeldeoptionen(
+      rp: 'localhost',
+      absender: 'ich',
+    );
+    for (var i = 0; i < 100; i++) {
+      konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'flut');
+    }
+    expect(konten.passkeys.offen, 1 + Passkeys.hoechstensJeAbsender);
+    expect(
+      await konten.passkeys.pruefeAnmeldung(
+        herkunft: herkunft,
+        antwort: geraet.anmelden(echt, herkunft, konto: konto.id),
+      ),
+      konto.id,
+    );
+    final verdraengt = konten.passkeys.anmeldeoptionen(
+      rp: 'localhost',
+      absender: 'ich',
+    );
+    for (var i = 0; i < Passkeys.hoechstensOffen + 50; i++) {
+      konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'a$i');
+    }
+    expect(konten.passkeys.offen, Passkeys.hoechstensOffen);
+    // Nach einer Flut von sehr vielen Adressen ist die älteste verdrängt;
+    // eine neue gilt wieder.
+    await expectLater(
+      konten.passkeys.pruefeAnmeldung(
+        herkunft: herkunft,
+        antwort: geraet.anmelden(verdraengt, herkunft, konto: konto.id),
+      ),
+      throwsA(isA<PasskeyFehler>()),
+    );
+    expect(
+      await konten.passkeys.pruefeAnmeldung(
+        herkunft: herkunft,
+        antwort: geraet.anmelden(
+          konten.passkeys.anmeldeoptionen(rp: 'localhost', absender: 'ich'),
+          herkunft,
+          konto: konto.id,
+        ),
+      ),
+      konto.id,
+    );
   });
 
   test('nur über HTTPS oder auf diesem Rechner', () {

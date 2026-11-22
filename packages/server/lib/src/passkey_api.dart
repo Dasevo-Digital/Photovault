@@ -51,6 +51,7 @@ class Passkeyapi {
       return _json({
         'optionen': _passkeys.anmeldeoptionen(
           rp: Passkeys.rpAus(anfrage.headers['origin']),
+          absender: absender.von(anfrage),
         ),
       });
     } on PasskeyFehler catch (f) {

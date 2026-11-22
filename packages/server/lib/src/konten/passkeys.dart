@@ -30,6 +30,8 @@ import 'package:cryptography/cryptography.dart' as kr;
 import 'package:pointycastle/export.dart' as pc;
 import 'package:sqlite3/sqlite3.dart';
 
+import '../kurzablage.dart';
+
 // --- CBOR -------------------------------------------------------------------
 
 /// Liest einen CBOR-Wert (RFC 8949) – nur, was in WebAuthn vorkommt:
@@ -278,10 +280,9 @@ class Passkey {
 enum _Zweck { anlegen, anmelden }
 
 class _Herausforderung {
-  _Herausforderung(this.zweck, this.rp, this.ablauf, {this.konto});
+  _Herausforderung(this.zweck, this.rp, {this.konto});
   final _Zweck zweck;
   final String rp;
-  final DateTime ablauf;
   final String? konto;
 }
 
@@ -296,13 +297,34 @@ class PasskeyFehler implements Exception {
 /// Passkeys anlegen, prüfen, auflisten und entfernen. Die Herausforderungen
 /// liegen nur im Speicher und gelten fünf Minuten.
 class Passkeys {
-  Passkeys(this._db, {DateTime Function()? uhr}) : _uhr = uhr ?? DateTime.now;
+  Passkeys(this._db, {DateTime Function()? uhr})
+    : _uhr = uhr ?? DateTime.now,
+      _offen = Kurzablage(
+        dauer: _dauer,
+        insgesamt: hoechstensOffen,
+        jeAbsender: hoechstensJeAbsender,
+        uhr: uhr,
+      );
 
   final Database _db;
   final DateTime Function() _uhr;
-  final _offen = <String, _Herausforderung>{};
+
+  /// Die offenen Herausforderungen. Jede Anfrage ohne Anmeldung legt eine
+  /// an; darum gedeckelt (siehe [Kurzablage]).
+  final Kurzablage<_Herausforderung> _offen;
 
   static const _dauer = Duration(minutes: 5);
+
+  /// So viele offene Herausforderungen zugleich: weit mehr, als echte
+  /// Anmeldungen in fünf Minuten brauchen, und doch nur einige MB.
+  static const hoechstensOffen = 10000;
+
+  /// So viele je Absender: Wer die Anmeldeseite mehrmals öffnet, hat
+  /// mehrere offen; mehr als 20 in fünf Minuten braucht niemand.
+  static const hoechstensJeAbsender = 20;
+
+  /// Wie viele Herausforderungen gerade offen sind (für Prüfstände).
+  int get offen => _offen.length;
 
   /// Die Kennung des Servers für WebAuthn (`rp.id`) aus der Herkunft der
   /// Seite – der Hostname, unter dem der Browser ihn sieht. Nur über HTTPS
@@ -319,18 +341,21 @@ class Passkeys {
     return u.host;
   }
 
-  String _neu(_Zweck zweck, String rp, {String? konto}) {
-    _raeumeAuf();
+  String _neu(
+    _Zweck zweck,
+    String rp, {
+    required String absender,
+    String? konto,
+  }) {
     final r = Random.secure();
     final roh = Uint8List.fromList(List.generate(32, (_) => r.nextInt(256)));
     final h = _b64(roh);
-    _offen[h] = _Herausforderung(zweck, rp, _uhr().add(_dauer), konto: konto);
+    _offen.lege(
+      h,
+      _Herausforderung(zweck, rp, konto: konto),
+      absender: absender,
+    );
     return h;
-  }
-
-  void _raeumeAuf() {
-    final jetzt = _uhr();
-    _offen.removeWhere((_, h) => h.ablauf.isBefore(jetzt));
   }
 
   /// Die Vorgaben für `navigator.credentials.create`.
@@ -340,7 +365,12 @@ class Passkeys {
     required String rp,
     required String servername,
   }) => {
-    'challenge': _neu(_Zweck.anlegen, rp, konto: kontoId),
+    'challenge': _neu(
+      _Zweck.anlegen,
+      rp,
+      konto: kontoId,
+      absender: 'konto:$kontoId',
+    ),
     'rp': {'id': rp, 'name': servername},
     'user': {
       'id': _b64(utf8.encode(kontoId)),
@@ -367,8 +397,14 @@ class Passkeys {
   /// Die Vorgaben für `navigator.credentials.get` – ohne Liste erlaubter
   /// Schlüssel: Das Gerät bietet an, was es für diesen Server hat, und
   /// sagt mit `userHandle`, zu welchem Konto er gehört.
-  Map<String, Object?> anmeldeoptionen({required String rp}) => {
-    'challenge': _neu(_Zweck.anmelden, rp),
+  ///
+  /// [absender] ist die Adresse der Anfrage: Je Absender bleiben höchstens
+  /// [hoechstensJeAbsender] Herausforderungen offen.
+  Map<String, Object?> anmeldeoptionen({
+    required String rp,
+    required String absender,
+  }) => {
+    'challenge': _neu(_Zweck.anmelden, rp, absender: absender),
     'rpId': rp,
     'timeout': _dauer.inMilliseconds,
     'userVerification': 'required',
@@ -546,7 +582,6 @@ class Passkeys {
     String herkunft,
     _Zweck zweck,
   ) {
-    _raeumeAuf();
     if (client['type'] != typ) throw const PasskeyFehler('Falsche Antwortart.');
     if (client['origin'] != herkunft) {
       throw const PasskeyFehler('Die Antwort kam von einer anderen Seite.');
@@ -554,7 +589,8 @@ class Passkeys {
     if (client['crossOrigin'] == true) {
       throw const PasskeyFehler('Die Antwort kam von einer anderen Seite.');
     }
-    final h = _offen.remove(client['challenge']);
+    final c = client['challenge'];
+    final h = c is String ? _offen.nimm(c) : null;
     if (h == null || h.zweck != zweck) {
       throw const PasskeyFehler(
         'Die Anfrage ist abgelaufen. Bitte neu beginnen.',

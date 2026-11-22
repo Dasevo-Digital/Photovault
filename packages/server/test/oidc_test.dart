@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:kern/abgleich/oidc_verknuepfung.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/oidc.dart' show OidcAbsicht;
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:test/test.dart';
@@ -273,6 +274,35 @@ void main() {
     final token = r['token']! as String;
     expect(konten.pruefeToken(token, 'x')!.konto.id, erika.id);
     expect((r['geraet']! as Map)['name'], 'Pixel');
+  });
+
+  // #426: Ab 1000 angefangenen Anmeldungen wurden alle verworfen – auch
+  // die echten. Wer die Startadresse oft genug aufrief, sperrte so jeden
+  // aus, der nur über OIDC hineinkommt.
+  test('viele angefangene Anmeldungen verdrängen keine echte', () async {
+    await verknuepfe('nutzer-17');
+    final echt = await starteAnmeldung();
+    for (var i = 0; i < 1500; i++) {
+      await oidc.beginne(
+        absicht: OidcAbsicht.anmelden,
+        geraet: 'x',
+        rueckweg: rueckweg,
+        appPruefwert: Oidc.s256(pruefer),
+        absender: 'flut$i',
+      );
+    }
+    // Einer, der immer wieder neu beginnt, verdrängt nur seine eigenen.
+    for (var i = 0; i < 50; i++) {
+      await oidc.beginne(
+        absicht: OidcAbsicht.anmelden,
+        geraet: 'x',
+        rueckweg: rueckweg,
+        appPruefwert: Oidc.s256(pruefer),
+        absender: 'einer',
+      );
+    }
+    final zurApp = await zurueck(echt, 'nutzer-17');
+    expect(zurApp.queryParameters['code'], isNotNull, reason: '$zurApp');
   });
 
   test('ein gesperrtes Konto bleibt auch über OIDC zu (#402)', () async {

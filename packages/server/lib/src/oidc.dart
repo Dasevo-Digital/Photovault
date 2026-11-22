@@ -5,6 +5,8 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 
+import 'kurzablage.dart';
+
 /// Wie der Server mit einem OIDC-Anbieter spricht (Authentik, Keycloak,
 /// Pocket ID …).
 class OidcEinstellungen {
@@ -83,7 +85,6 @@ class _Lauf {
     required this.appZustand,
     required this.nonce,
     required this.pruefer,
-    required this.ablauf,
     this.kontoId,
   });
 
@@ -94,7 +95,6 @@ class _Lauf {
   final String? appZustand;
   final String nonce;
   final String pruefer;
-  final DateTime ablauf;
   final String? kontoId;
 }
 
@@ -128,14 +128,31 @@ class _Code {
 class Oidc {
   Oidc(this.e, {DateTime Function()? uhr, HttpClient? client})
     : _uhr = uhr ?? DateTime.now,
-      _http = client ?? HttpClient();
+      _http = client ?? HttpClient(),
+      _laeufe = Kurzablage(
+        dauer: _laufDauer,
+        insgesamt: hoechstensLaeufe,
+        jeAbsender: hoechstensJeAbsender,
+        uhr: uhr,
+      );
 
   final OidcEinstellungen e;
   final DateTime Function() _uhr;
   final HttpClient _http;
 
-  final _laeufe = <String, _Lauf>{};
+  /// Die angefangenen Anmeldungen. Jeder Aufruf der Startadresse legt
+  /// eine an, ohne Anmeldung; darum gedeckelt (siehe [Kurzablage]).
+  final Kurzablage<_Lauf> _laeufe;
   final _codes = <String, _Code>{};
+
+  /// So viele angefangene Anmeldungen zugleich – einige MB. Wer echte
+  /// Anmeldungen verdrängen will, müsste in den paar Sekunden beim
+  /// Anbieter Tausende neue anfangen.
+  static const hoechstensLaeufe = 10000;
+
+  /// So viele je Absender: Einer, der mehrmals neu beginnt, verdrängt nur
+  /// seine eigenen.
+  static const hoechstensJeAbsender = 10;
 
   Map<String, Object?>? _entdeckt;
   DateTime? _entdecktAm;
@@ -177,12 +194,15 @@ class Oidc {
         rueckweg.userInfo.isEmpty;
   }
 
-  /// Der Weg zum Anbieter für eine neue Anmeldung.
+  /// Der Weg zum Anbieter für eine neue Anmeldung. [absender] ist die
+  /// Adresse der Anfrage (oder das Konto beim Verknüpfen): Je Absender
+  /// bleiben höchstens [hoechstensJeAbsender] Anmeldungen offen.
   Future<Uri> beginne({
     required OidcAbsicht absicht,
     required String geraet,
     required Uri rueckweg,
     required String appPruefwert,
+    required String absender,
     String? appZustand,
     String? kontoId,
   }) async {
@@ -198,16 +218,19 @@ class Oidc {
     final zustand = _zufall(32);
     final nonce = _zufall(32);
     final pruefer = _zufall(64);
-    _laeufe[zustand] = _Lauf(
-      absicht: absicht,
-      geraet: geraet,
-      rueckweg: rueckweg,
-      appPruefwert: appPruefwert,
-      appZustand: appZustand,
-      nonce: nonce,
-      pruefer: pruefer,
-      ablauf: _uhr().add(_laufDauer),
-      kontoId: kontoId,
+    _laeufe.lege(
+      zustand,
+      _Lauf(
+        absicht: absicht,
+        geraet: geraet,
+        rueckweg: rueckweg,
+        appPruefwert: appPruefwert,
+        appZustand: appZustand,
+        nonce: nonce,
+        pruefer: pruefer,
+        kontoId: kontoId,
+      ),
+      absender: absender,
     );
     final ziel = Uri.parse(d['authorization_endpoint']! as String);
     return ziel.replace(
@@ -231,7 +254,7 @@ class Oidc {
   Future<Uri> zurueck(Map<String, String> parameter) async {
     _raeumeAuf();
     final zustand = parameter['state'];
-    final lauf = zustand == null ? null : _laeufe.remove(zustand);
+    final lauf = zustand == null ? null : _laeufe.nimm(zustand);
     if (lauf == null) {
       throw OidcFehler(
         'unbekannt',
@@ -441,9 +464,8 @@ class Oidc {
 
   void _raeumeAuf() {
     final jetzt = _uhr();
-    _laeufe.removeWhere((_, l) => l.ablauf.isBefore(jetzt));
+    _laeufe.raeumeAuf();
     _codes.removeWhere((_, c) => c.ablauf.isBefore(jetzt));
-    if (_laeufe.length > 1000) _laeufe.clear();
   }
 
   /// PKCE S256: base64url(SHA-256(pruefer)) ohne Auffüllzeichen.
