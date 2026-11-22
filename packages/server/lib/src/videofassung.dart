@@ -57,17 +57,42 @@ class Videofassungen {
 
   /// Die fertige Fassung – oder `null`, dann ist sie angestossen (oder
   /// gescheitert, siehe [gescheitert]).
+  ///
+  /// [gast]: Der Abruf kommt über einen geteilten Link. Solche Abrufe
+  /// stossen höchstens [hoechstensFuerGaeste] Umwandlungen zugleich an;
+  /// darüber bleibt es bei `null`, und der Besucher fragt später wieder.
+  /// Die Reihe gehört allen Konten: Ein Besucher, der jedes Video eines
+  /// grossen Albums abrief, stellte vorher Stunden an Umwandlungen vor die
+  /// Videos, die die Besitzer selbst gerade ansehen wollten.
   Future<File?> bereit(
     Directory zwischenspeicher,
     String id,
-    File original,
-  ) async {
+    File original, {
+    bool gast = false,
+  }) async {
     final datei = ziel(zwischenspeicher, id);
     if (await _aktuell(datei, original)) return datei;
     if (gescheitert.contains(datei.path)) return null;
+    if (gast && !_laufend.containsKey(datei.path)) {
+      if (_fuerGaeste.length >= hoechstensFuerGaeste) return null;
+      _fuerGaeste.add(datei.path);
+      unawaited(
+        erzeuge(
+          zwischenspeicher,
+          id,
+          original,
+        ).whenComplete(() => _fuerGaeste.remove(datei.path)),
+      );
+      return null;
+    }
     unawaited(erzeuge(zwischenspeicher, id, original));
     return null;
   }
+
+  /// Wie viele Umwandlungen Abrufe über geteilte Links höchstens zugleich
+  /// in der Reihe haben (siehe [bereit]).
+  static const hoechstensFuerGaeste = 2;
+  final _fuerGaeste = <String>{};
 
   /// Fassungen, die sich nicht erzeugen liessen – bis zum Neustart nicht
   /// noch einmal versucht.

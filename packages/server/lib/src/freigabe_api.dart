@@ -476,7 +476,7 @@ class Freigabeapi {
         if (q == null || !await q.exists()) return Response.notFound(null);
         final name = a.trimmedRelativePath != null ? '${a.id}-gekuerzt' : a.id;
         final abspielbar = Directory(p.join(b.ordner.path, 'abspielbar'));
-        final fertig = await video.bereit(abspielbar, name, q);
+        final fertig = await video.bereit(abspielbar, name, q, gast: true);
         if (fertig != null) {
           return r.url.queryParameters['pruefen'] != null
               ? _json({'bereit': true})

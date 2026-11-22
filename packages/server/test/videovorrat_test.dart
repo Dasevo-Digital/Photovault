@@ -74,6 +74,37 @@ void main() {
     skip: Platform.isWindows ? 'ohne sh' : false,
   );
 
+  test(
+    'Abrufe über Links stellen höchstens zwei Umwandlungen vor die Besitzer',
+    () async {
+      // Die Reihe gehört allen Konten. Ein Besucher, der jedes Video eines
+      // grossen geteilten Albums abrief, stellte jedes davon vor die
+      // Videos, die ein Besitzer gerade ansehen wollte.
+      final f = fassungen();
+      for (var i = 0; i < 5; i++) {
+        expect(
+          await f.bereit(speicher, 'gast$i', original, gast: true),
+          isNull,
+        );
+      }
+      await f.erzeuge(speicher, 'eigen', original);
+      final s = Videofassungen.stand;
+      expect(protokoll.readAsLinesSync(), [
+        'gast0.s$s',
+        'gast1.s$s',
+        'eigen.s$s',
+      ]);
+      // Ist wieder ein Platz frei, kommt der nächste Abruf dran.
+      expect(await f.bereit(speicher, 'gast2', original, gast: true), isNull);
+      await f.erzeuge(speicher, 'gast2', original);
+      expect(
+        await f.bereit(speicher, 'gast2', original, gast: true),
+        isNotNull,
+      );
+    },
+    skip: Platform.isWindows ? 'ohne sh' : false,
+  );
+
   group('was einen Vorrat lohnt', () {
     late AppDatabase db;
     setUp(() => db = AppDatabase(NativeDatabase.memory()));
