@@ -43,6 +43,7 @@ import '../services/geo_data_download_service.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/import_koordinator.dart';
 import 'package:kern/services/raw_formats.dart';
+import '../services/klartextstand.dart';
 import '../services/library_location.dart';
 import '../services/ordner_gesehen.dart';
 import '../services/rechnerzustand.dart';
@@ -4557,46 +4558,12 @@ class LibraryState extends ChangeNotifier {
   @visibleForTesting
   int zwischenspeicherGrenze = hoechstensImZwischenspeicher;
 
-  /// Wirft die ältesten Stücke weg, bis der Zwischenspeicher wieder unter
-  /// [zwischenspeicherGrenze] liegt.
-  ///
-  /// Nach der Zugriffszeit, nicht nach der Schreibzeit: Ein Bild, das
-  /// beim Blättern mehrfach gebraucht wird, soll nicht deshalb weichen,
-  /// weil es früh entschlüsselt wurde. Ein weggeworfenes Stück ist kein
-  /// Verlust – der nächste Zugriff entschlüsselt es erneut.
-  ///
-  /// [behalte] ist die Datei, die gerade entschlüsselt wurde. Sie weicht
-  /// nie: Ein Video über der Grenze war sonst das letzte Stück, das noch
-  /// zu löschen blieb, und die Ansicht bekam einen Pfad, unter dem nichts
-  /// mehr lag.
-  Future<void> _kuerzeZwischenspeicher(
-    Directory cacheDir, {
-    String? behalte,
-  }) async {
-    final stuecke = <(File, DateTime, int)>[];
-    var summe = 0;
-    await for (final e in cacheDir.list(followLinks: false)) {
-      if (e is! File) continue;
-      try {
-        final st = await e.stat();
-        summe += st.size;
-        if (e.path != behalte) stuecke.add((e, st.accessed, st.size));
-      } on FileSystemException {
-        // Ein anderer Durchgang war schneller – dann zählt es nicht mehr.
-      }
-    }
-    if (summe <= zwischenspeicherGrenze) return;
-    stuecke.sort((a, b) => a.$2.compareTo(b.$2));
-    for (final (datei, _, groesse) in stuecke) {
-      if (summe <= zwischenspeicherGrenze) break;
-      try {
-        await datei.delete();
-        summe -= groesse;
-      } on FileSystemException {
-        // Schon weg oder gerade in Benutzung – dann eben das nächste.
-      }
-    }
-  }
+  /// Was in den Klartext-Ordnern liegt, je Ordner einmal eingelesen
+  /// (siehe [Klartextstand], #434).
+  final _klartextStaende = <String, Future<Klartextstand>>{};
+
+  Future<Klartextstand> _klartextstand(Directory ordner) => _klartextStaende
+      .putIfAbsent(ordner.path, () => Klartextstand.lies(ordner));
 
   /// Entschlüsselt eine gesperrte Datei in den Zwischenspeicher (nur beim
   /// ersten Zugriff, danach aus dem Cache) und gibt sie zurück. Setzt
@@ -4617,7 +4584,10 @@ class LibraryState extends ChangeNotifier {
     final ausweich = await _klartextAusweichOrdner();
     for (final o in [ordner, ?ausweich]) {
       final schon = File(p.join(o.path, safeName));
-      if (await schon.exists()) return schon;
+      if (await schon.exists()) {
+        unawaited(_klartextStaende[o.path]?.then((s) => s.beruehre(safeName)));
+        return schon;
+      }
     }
     try {
       return await _entschluesseleNach(ordner, relativePath, safeName, key);
@@ -4666,10 +4636,12 @@ class LibraryState extends ChangeNotifier {
     } finally {
       if (await teil.exists()) await teil.delete();
     }
-    // Nur nach einem echten Zulauf, nicht bei jedem Treffer: Das
-    // Durchzählen kostet einen Systemaufruf je Stück, und ein Treffer
-    // soll billig bleiben.
-    await _kuerzeZwischenspeicher(cacheDir, behalte: target.path);
+    // Nur nach einem echten Zulauf, nicht bei jedem Treffer. Gezählt wird
+    // im Stand, nicht auf der Platte; die Datei, die eben entstand, und die
+    // zuletzt herausgegebenen weichen nicht.
+    final stand = await _klartextstand(cacheDir);
+    stand.vermerke(safeName, await target.length());
+    await stand.kuerze(zwischenspeicherGrenze);
     return target;
   }
 
@@ -4715,6 +4687,7 @@ class LibraryState extends ChangeNotifier {
     ]) {
       if (await dir.exists()) await dir.delete(recursive: true);
     }
+    _klartextStaende.clear();
     // Aus demselben Grund wie beim Sperren: Die Dateien sind weg, die
     // daraus dekodierten Bilder lägen sonst weiter im Arbeitsspeicher.
     // Der Bildspeicher fasst 100 MiB – so viel Klartext bliebe nach dem
