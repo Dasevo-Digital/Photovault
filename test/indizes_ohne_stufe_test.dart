@@ -26,6 +26,24 @@ void main() {
     );
   });
 
+  test('die Fotos eines Schlagworts kommen aus einem Index', () async {
+    // Die Suche am Handy und im Browser fragt je Wort nach den Fotos der
+    // passenden Schlagwörter, das Aufräumen unbenutzter Schlagwörter je
+    // Kandidat, ob ihn noch ein Foto trägt. Der Primärschlüssel beginnt
+    // mit asset_id; beide Fragen lasen die ganze Tabelle.
+    final suche = await plan(
+      "SELECT asset_id FROM asset_tags WHERE tag_id IN ('t1', 't2')",
+    );
+    expect(suche, contains('idx_asset_tags_tag'));
+    expect(suche, isNot(contains('SCAN')));
+    final aufraeumen = await plan(
+      "SELECT id FROM tags t WHERE id IN ('t1') AND NOT EXISTS "
+      '(SELECT 1 FROM asset_tags a WHERE a.tag_id = t.id)',
+    );
+    expect(aufraeumen, contains('idx_asset_tags_tag'));
+    expect(aufraeumen, isNot(contains('SCAN')));
+  });
+
   test('ein zweites Öffnen legt nichts doppelt an', () async {
     await db.indizesOhneStufe();
     final n = await db

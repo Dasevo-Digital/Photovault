@@ -200,6 +200,15 @@ extension Migrationsschritte on AppDatabase {
       'CREATE INDEX IF NOT EXISTS idx_assets_linked_asset_id '
       'ON assets (linked_asset_id) WHERE linked_asset_id IS NOT NULL',
     );
+    // Die Fotos eines Schlagworts: Die Suche am Handy und im Browser fragt
+    // je Wort `tag_id IN (…)`, das Aufräumen unbenutzter Schlagwörter je
+    // Kandidat, ob ihn noch ein Foto trägt. Der Primärschlüssel beginnt
+    // mit `asset_id` und hilft dabei nicht – jede dieser Fragen las die
+    // ganze Tabelle, mit KI-Schlagwörtern bis zu fünf Zeilen je Foto.
+    await customStatement(
+      'CREATE INDEX IF NOT EXISTS idx_asset_tags_tag '
+      'ON asset_tags (tag_id, asset_id)',
+    );
   }
 
   Future<void> _createIndicesV55(Migrator m) async {
