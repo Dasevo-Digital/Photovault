@@ -1319,4 +1319,55 @@ void main() {
     expect(gesendet.last['vorlage'], 'gross_links');
     expect(gespeichert, true);
   });
+
+  testWidgets('#454 „Automatisch füllen“: lehnt der Server ab, steht sein '
+      'Grund da und nicht seine rohe Antwort', (tester) async {
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: MockClient((r) async {
+        if (r.url.path == '/api/v1/personen') {
+          return json({
+            'personen': [
+              {'id': 'p1', 'name': 'Anna', 'anzahl': 3},
+            ],
+          });
+        }
+        if (r.method == 'PUT' && r.url.path == '/api/v1/alben/a1/regel') {
+          return json({'fehler': 'Person unbekannt'}, 422);
+        }
+        return http.Response('', 404);
+      }),
+    );
+    await tester.pumpWidget(
+      app(
+        Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => albumAutomatischFuellen(
+                context,
+                v,
+                albumId: 'a1',
+                titel: 'Urlaub',
+                vorher: const Regel(personen: [Regelperson('p1', 'Anna')]),
+              ),
+              child: const Text('regel'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('regel'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Person unbekannt'), findsOneWidget);
+    expect(find.textContaining('{'), findsNothing);
+  });
 }

@@ -323,12 +323,11 @@ class _RegelblattState extends State<_Regelblatt> {
       if (mounted) Navigator.of(context).pop(a);
     } on _Hinweis catch (h) {
       if (mounted) setState(() => _fehler = h.text);
-    } on Serverfehler catch (e) {
-      if (mounted) setState(() => _fehler = e.text);
-    } on KeineVerbindung {
-      if (mounted) {
-        setState(() => _fehler = teilenTexte(context).geteiltOffline);
-      }
+    } on Object catch (e) {
+      // Der Grund des Servers als Satz, nicht seine rohe Antwort
+      // (`{"fehler": …}`, #454) – und auch eine Antwort, die kein JSON ist
+      // (ein Proxy, ein WLAN mit Anmeldeseite), gibt eine Meldung.
+      if (mounted) setState(() => _fehler = teilenFehlertext(context, e));
     } finally {
       if (mounted) setState(() => _arbeitet = false);
     }
