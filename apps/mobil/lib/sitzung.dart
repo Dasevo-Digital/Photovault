@@ -10,7 +10,6 @@ import 'dart:io';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/retry.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/dateibeschaffung.dart';
 import 'package:kern/abgleich/kachelumleitung.dart';
@@ -29,6 +28,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import 'gemeinsam.dart';
+import 'kachelnetz.dart';
 import 'offline_alben.dart';
 import 'partnerfotos.dart';
 import 'seiten/als_jpeg.dart' show raeumeJpegKopienAuf;
@@ -272,9 +272,10 @@ class Sitzung extends ChangeNotifier {
         unawaited(_pruefeKammer());
       }
       // Ob der Server die Kacheln holt (#180), bei jeder Rückkehr des
-      // Servers neu: Wer offline gestartet ist, holte sonst bis zum Ende
-      // des Prozesses alles selbst bei OpenStreetMap, und nach einem
-      // Wechsel auf einen älteren Server bliebe die Karte leer.
+      // Servers neu: Wer offline gestartet ist, bliebe sonst bis zum Ende
+      // des Prozesses ohne Karte (das Telefon holt sie nie selbst, #469),
+      // und nach einem Wechsel auf einen älteren Server hielte es ihn für
+      // fähig.
       // Antwortet der Server darauf mit einem Fehler, nicht bei jeder
       // weiteren Meldung gleich wieder, sondern höchstens einmal je Minute
       // (#382).
@@ -575,18 +576,19 @@ class Sitzung extends ChangeNotifier {
   String? serverfassung;
 
   /// Ob der Server die Kartenkacheln holt und vorhält (#180) – aus
-  /// demselben `/api/v1/zustand`. Ein Server bis 3.66 kann es nicht; dann
-  /// holt das Telefon sie wie bisher selbst bei OpenStreetMap.
+  /// demselben `/api/v1/zustand`. Ein Server bis 3.66 kann es nicht, einer
+  /// mit abgeschalteten Karten ebenso; dann bleibt die Karte leer, bis auf
+  /// das, was schon auf dem Telefon liegt, und sagt das (#469).
   bool kartenUeberServer = false;
 
   http.Client? _kachelnetz;
 
-  /// Über diesen Client holt die Karte ihre Kacheln: beim Server, sobald
-  /// er es kann ([kartenUeberServer]), sonst beim Anbieter. Einer für die
-  /// ganze Sitzung – die Karte baut ihre Schicht bei jedem Zoomen neu, und
-  /// ein eigener Client je Schicht bliebe jedes Mal offen liegen.
-  http.Client get kachelnetz => _kachelnetz ??= Kachelumleitung(
-    RetryClient(http.Client()),
+  /// Über diesen Client holen Karte und Landschaft ihre Kacheln – **nur**
+  /// beim Server, sobald er es kann ([kartenUeberServer]), nie beim
+  /// Anbieter (siehe [handyKachelnetz]). Einer für die ganze Sitzung – die
+  /// Karte baut ihre Schicht bei jedem Zoomen neu, und ein eigener Client
+  /// je Schicht bliebe jedes Mal offen liegen.
+  http.Client get kachelnetz => _kachelnetz ??= handyKachelnetz(
     server: () => kartenUeberServer ? abgleich?.verbindung : null,
   );
 

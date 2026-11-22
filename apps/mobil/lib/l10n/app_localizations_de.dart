@@ -106,6 +106,10 @@ class AppTexteDe extends AppTexte {
   String get karteLeer => 'Noch keine Aufnahmen mit Ort.';
 
   @override
+  String get karteNurUeberServer =>
+      'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.';
+
+  @override
   String karteFotos(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,
@@ -2009,6 +2013,10 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get gelaendeVideoErstellen => 'Video erstellen';
+
+  @override
+  String get gelaendeNurUeberServer =>
+      'Am Telefon kommen Karten nur über den Server. Höhendaten, Luftbild und manche Kartenarten liefert er nicht – davon ist nur zu sehen, was schon auf dem Telefon liegt.';
 
   @override
   String get bibRueckblick => 'Rückblick';

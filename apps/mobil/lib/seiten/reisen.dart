@@ -554,6 +554,7 @@ class _Routenkarte extends StatelessWidget {
                 TextSourceAttribution('OpenStreetMap contributors'),
               ],
             ),
+            Kartenhinweis(sitzung: sitzung),
           ],
         ),
       ),

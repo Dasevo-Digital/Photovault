@@ -112,6 +112,7 @@ class _KarteState extends State<Karte> {
         const SimpleAttributionWidget(
           source: Text('OpenStreetMap contributors'),
         ),
+        Kartenhinweis(sitzung: widget.sitzung),
       ],
     );
   }
@@ -170,21 +171,94 @@ class _Punkt extends StatelessWidget {
 /// und im Farbton zurückgedreht, so bleibt Wasser blau und Grün grün, nur
 /// hell wird dunkel. Kein zweiter Kartendienst, kein Schlüssel.
 ///
-/// Geholt über den eigenen Server, wenn er es kann (#180, siehe
-/// [Sitzung.kachelnetz]). Die Adresse bleibt die von OpenStreetMap: So
-/// gilt der Kachelspeicher des Telefons für beide Wege, auch ohne Netz.
-Widget kartenkacheln(BuildContext context, Sitzung sitzung) {
-  final kacheln = TileLayer(
-    urlTemplate: osmKachelUrl,
-    userAgentPackageName: 'de.dasevo.photovault',
-    tileProvider: NetworkTileProvider(httpClient: sitzung.kachelnetz),
+/// Geholt nur über den eigenen Server (#180, #469, siehe
+/// [Sitzung.kachelnetz]); liefert er keine, bleibt die Karte leer bis auf
+/// das, was schon auf dem Telefon liegt ([Kartenhinweis]). Die Adresse
+/// bleibt die von OpenStreetMap: So gilt der Kachelspeicher des Telefons
+/// auch ohne Netz.
+///
+/// Liefert der Server wieder Kacheln, wird die Schicht neu gebaut und lädt
+/// gleich, was vorher abgewiesen wurde – sonst blieben diese Stellen leer,
+/// bis man die Karte verschiebt.
+Widget kartenkacheln(BuildContext context, Sitzung sitzung) =>
+    ListenableBuilder(
+      listenable: sitzung,
+      builder: (context, _) {
+        final kacheln = TileLayer(
+          key: ValueKey(sitzung.kartenUeberServer),
+          urlTemplate: osmKachelUrl,
+          userAgentPackageName: 'de.dasevo.photovault',
+          tileProvider: NetworkTileProvider(httpClient: sitzung.kachelnetz),
+        );
+        return Theme.of(context).brightness == Brightness.dark
+            ? ColorFiltered(
+                colorFilter: const ColorFilter.matrix(_dunkleKarte),
+                child: kacheln,
+              )
+            : kacheln;
+      },
+    );
+
+/// Ein Satz oben auf der Karte, solange der Server keine Kacheln liefert
+/// (#469) – sonst sähe die leere Karte kaputt aus. Gehört in jede Karte,
+/// die [kartenkacheln] zeigt.
+class Kartenhinweis extends StatelessWidget {
+  const Kartenhinweis({super.key, required this.sitzung});
+
+  final Sitzung sitzung;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: sitzung,
+    builder: (context, _) => sitzung.kartenUeberServer
+        ? const SizedBox.shrink()
+        : Hinweisband(AppTexte.of(context).karteNurUeberServer),
   );
-  return Theme.of(context).brightness == Brightness.dark
-      ? ColorFiltered(
-          colorFilter: const ColorFilter.matrix(_dunkleKarte),
-          child: kacheln,
-        )
-      : kacheln;
+}
+
+/// Ein kurzer Hinweis oben mittig über einer Karte oder Landschaft. Er
+/// nimmt keine Berührung an, damit die Karte darunter bedienbar bleibt.
+class Hinweisband extends StatelessWidget {
+  const Hinweisband(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final farben = Theme.of(context).colorScheme;
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Material(
+            color: farben.surface.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.cloud_off_outlined,
+                    size: 16,
+                    color: farben.onSurface,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      text,
+                      style: TextStyle(fontSize: 12, color: farben.onSurface),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 const _dunkleKarte = <double>[

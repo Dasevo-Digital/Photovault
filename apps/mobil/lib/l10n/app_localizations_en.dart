@@ -106,6 +106,10 @@ class AppTexteEn extends AppTexte {
   String get karteLeer => 'No photos with a location yet.';
 
   @override
+  String get karteNurUeberServer =>
+      'Map tiles come from your server, which isn\'t providing any right now.';
+
+  @override
   String karteFotos(int n) {
     String _temp0 = intl.Intl.pluralLogic(
       n,
@@ -2003,6 +2007,10 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get gelaendeVideoErstellen => 'Create video';
+
+  @override
+  String get gelaendeNurUeberServer =>
+      'On the phone, maps only come through your server. It doesn\'t provide elevation data, aerial imagery or some map types – of those, only what\'s already stored on the phone is shown.';
 
   @override
   String get bibRueckblick => 'Memories';

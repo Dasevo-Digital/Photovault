@@ -265,6 +265,12 @@ abstract class AppTexte {
   /// **'Noch keine Aufnahmen mit Ort.'**
   String get karteLeer;
 
+  /// No description provided for @karteNurUeberServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.'**
+  String get karteNurUeberServer;
+
   /// No description provided for @karteFotos.
   ///
   /// In de, this message translates to:
@@ -3186,6 +3192,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Video erstellen'**
   String get gelaendeVideoErstellen;
+
+  /// No description provided for @gelaendeNurUeberServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Am Telefon kommen Karten nur über den Server. Höhendaten, Luftbild und manche Kartenarten liefert er nicht – davon ist nur zu sehen, was schon auf dem Telefon liegt.'**
+  String get gelaendeNurUeberServer;
 
   /// No description provided for @bibRueckblick.
   ///

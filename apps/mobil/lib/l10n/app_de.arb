@@ -35,6 +35,7 @@
   "albenLeer": "Noch keine Alben.",
   "personenLeer": "Noch keine benannten Personen. Ein Gesicht benennst du unter „Ohne Namen“ oder im Betrachter mit „Gesichter zeigen“.",
   "karteLeer": "Noch keine Aufnahmen mit Ort.",
+  "karteNurUeberServer": "Die Karte kommt über den Server. Er liefert gerade keine Kacheln.",
   "karteFotos": "{n, plural, =1{1 Aufnahme} other{{n} Aufnahmen}}",
   "@karteFotos": {
     "placeholders": {
@@ -1091,6 +1092,7 @@
   "@spurProfilBeschreibung": {"placeholders": {"km": {"type": "String"}, "tief": {"type": "int"}, "hoch": {"type": "int"}, "auf": {"type": "int"}}},
   "gelaendeOeffnen": "Gelände ansehen",
   "gelaendeVideoErstellen": "Video erstellen",
+  "gelaendeNurUeberServer": "Am Telefon kommen Karten nur über den Server. Höhendaten, Luftbild und manche Kartenarten liefert er nicht – davon ist nur zu sehen, was schon auf dem Telefon liegt.",
   "bibRueckblick": "Rückblick",
   "bibKalender": "Kalender",
   "rbFamilientage": "Familientage",

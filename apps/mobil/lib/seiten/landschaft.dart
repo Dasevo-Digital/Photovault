@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gelaende/flugvideo.dart';
 import 'package:gelaende/gelaende_screen.dart';
+import 'package:gelaende/gelaendekacheln.dart' show gelaendeKachelUrl;
 import 'package:intl/intl.dart';
+import 'package:kern/abgleich/kachelumleitung.dart' show serverKachelpfad;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/wanderobjekte.dart';
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +16,7 @@ import 'package:share_plus/share_plus.dart';
 import '../bilder.dart';
 import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
+import 'karte.dart' show Hinweisband;
 
 /// Die Landschaft unter einer Spur und der Flug darüber – derselbe
 /// Bildschirm wie am Rechner (`packages/gelaende`), mit dem, was nur das
@@ -34,61 +37,96 @@ Future<void> oeffneLandschaft(
   final uhrzeit = DateFormat.Hm(
     Localizations.localeOf(context).toLanguageTag(),
   );
+  final landschaft = GelaendeScreen(
+    titel: titel,
+    // Wie die Karte: nur über den eigenen Server (#180, #469).
+    kachelnetz: sitzung.kachelnetz,
+    auflage: auflage,
+    stimmung: stimmung,
+    beimStimmungswechsel: db.setzeGelaendeStimmung,
+    beimKartenwechsel: db.setzeGelaendeKarte,
+    wanderobjekte:
+        ({
+          required double sued,
+          required double west,
+          required double nord,
+          required double ost,
+        }) => _wanderobjekte(
+          sitzung,
+          sued: sued,
+          west: west,
+          nord: nord,
+          ost: ost,
+        ),
+    fotos: [
+      for (final a in aufnahmen)
+        if (a.latitude != null &&
+            a.longitude != null &&
+            a.thumbnailRelativePath != null)
+          (
+            breite: a.latitude!,
+            laenge: a.longitude!,
+            bild: BibliotheksBild(sitzung.paths, a.thumbnailRelativePath!),
+            unterschrift: uhrzeit.format(a.fileCreatedAt.toLocal()),
+          ),
+    ],
+    spur: [
+      for (final p in punkte)
+        (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe, zeit: p.zeit),
+    ],
+    videoschreiber: Platform.isIOS ? const HandyVideoschreiber() : null,
+    videoWeiter: AppTexte.of(context).gelaendeVideoErstellen,
+    videoZiel: (_, dateiname) async =>
+        File('${(await getTemporaryDirectory()).path}/$dateiname'),
+    // Fertig heisst am Handy: weitergeben – in die Fotos sichern, in
+    // eine Nachricht, wohin auch immer. Danach liegt die Datei nur noch
+    // im Zwischenspeicher, den iOS selbst aufräumt.
+    beiVideoFertig: (ziel) async {
+      await SharePlus.instance.share(
+        ShareParams(files: [XFile(ziel.path, mimeType: 'video/mp4')]),
+      );
+    },
+  );
   await Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => GelaendeScreen(
-        titel: titel,
-        // Wie die Karte: verbunden über den eigenen Server (#180).
-        kachelnetz: sitzung.kachelnetz,
-        auflage: auflage,
-        stimmung: stimmung,
-        beimStimmungswechsel: db.setzeGelaendeStimmung,
-        beimKartenwechsel: db.setzeGelaendeKarte,
-        wanderobjekte:
-            ({
-              required double sued,
-              required double west,
-              required double nord,
-              required double ost,
-            }) => _wanderobjekte(
-              sitzung,
-              sued: sued,
-              west: west,
-              nord: nord,
-              ost: ost,
-            ),
-        fotos: [
-          for (final a in aufnahmen)
-            if (a.latitude != null &&
-                a.longitude != null &&
-                a.thumbnailRelativePath != null)
-              (
-                breite: a.latitude!,
-                laenge: a.longitude!,
-                bild: BibliotheksBild(sitzung.paths, a.thumbnailRelativePath!),
-                unterschrift: uhrzeit.format(a.fileCreatedAt.toLocal()),
+      builder: (_) => Stack(
+        fit: StackFit.expand,
+        children: [
+          landschaft,
+          // Unter der Titelleiste, damit Zurück und Menü frei bleiben.
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.only(top: kToolbarHeight),
+              child: ListenableBuilder(
+                listenable: sitzung,
+                builder: (context, _) => landschaftUeberServer(sitzung)
+                    ? const SizedBox.shrink()
+                    : Hinweisband(AppTexte.of(context).gelaendeNurUeberServer),
               ),
+            ),
+          ),
         ],
-        spur: [
-          for (final p in punkte)
-            (breite: p.breite, laenge: p.laenge, hoehe: p.hoehe, zeit: p.zeit),
-        ],
-        videoschreiber: Platform.isIOS ? const HandyVideoschreiber() : null,
-        videoWeiter: AppTexte.of(context).gelaendeVideoErstellen,
-        videoZiel: (_, dateiname) async =>
-            File('${(await getTemporaryDirectory()).path}/$dateiname'),
-        // Fertig heisst am Handy: weitergeben – in die Fotos sichern, in
-        // eine Nachricht, wohin auch immer. Danach liegt die Datei nur noch
-        // im Zwischenspeicher, den iOS selbst aufräumt.
-        beiVideoFertig: (ziel) async {
-          await SharePlus.instance.share(
-            ShareParams(files: [XFile(ziel.path, mimeType: 'video/mp4')]),
-          );
-        },
       ),
     ),
   );
 }
+
+/// Ob die Landschaft alles, was sie braucht, über den eigenen Server
+/// bekommt: die Kacheln der Karte und die Höhendaten. Das Telefon holt
+/// beides nie selbst beim Anbieter (#469, siehe [Sitzung.kachelnetz]).
+/// Die Höhen reicht der Server nicht weiter; solange das so ist, sagt die
+/// Landschaft, dass sie davon nur zeigt, was schon auf dem Telefon liegt.
+bool landschaftUeberServer(Sitzung sitzung) =>
+    sitzung.kartenUeberServer && serverKachelpfad(_hoehenkachel) != null;
+
+/// Eine Höhenkachel, an der sich ablesen lässt, ob der Server die Quelle
+/// der Höhen weiterreicht.
+final _hoehenkachel = Uri.parse(
+  gelaendeKachelUrl
+      .replaceFirst('{z}', '0')
+      .replaceFirst('{x}', '0')
+      .replaceFirst('{y}', '0'),
+);
 
 /// Gipfel, Hütten und Quellen fragt das Handy beim Server: Der fragt
 /// Overpass höchstens einmal je Ausschnitt und merkt es sich für Browser
