@@ -16,9 +16,23 @@ import 'geteilt_rechner.dart';
 import 'search_screen.dart';
 import '../widgets/einfuegbares_menue.dart';
 
-class AlbumsScreen extends StatelessWidget {
+class AlbumsScreen extends StatefulWidget {
   final LibraryState library;
   const AlbumsScreen({super.key, required this.library});
+
+  @override
+  State<AlbumsScreen> createState() => _AlbumsScreenState();
+}
+
+class _AlbumsScreenState extends State<AlbumsScreen> {
+  LibraryState get library => widget.library;
+
+  /// Zählt jede Rückkehr aus einem Album mit. Die Kacheln holen ihr
+  /// Titelbild nur einmal, und der Strom der Alben liest nur die Tabelle
+  /// der Alben – was im Album geschah (Fotos hinzugefügt, das Titelbild
+  /// gelöscht), meldet er nicht. Vorher blieb so das Platzhaltersymbol
+  /// stehen oder ein Foto aus dem Papierkorb (#433).
+  int _stand = 0;
 
   Future<void> _createAlbum(BuildContext context) async {
     final name = await showDialog<String>(
@@ -106,6 +120,7 @@ class AlbumsScreen extends StatelessWidget {
                     ),
                   ),
                 );
+                if (mounted) setState(() => _stand++);
               }
 
               return CustomScrollView(
@@ -138,7 +153,11 @@ class AlbumsScreen extends StatelessWidget {
                     _Kachelfeld(
                       anzahl: albums.length,
                       bauen: (context, i) => _Albumkachel(
+                        // Nach dem Album und nicht nach der Stelle: Ein neues
+                        // Album oben verschob sonst alle Titelbilder (#433).
+                        key: ValueKey(albums[i].id),
                         album: albums[i],
+                        stand: _stand,
                         library: library,
                         onTippen: () =>
                             oeffneAlbum(albums[i].id, albums[i].name),
@@ -312,10 +331,16 @@ class _Albumkachel extends StatefulWidget {
   final LibraryState library;
   final VoidCallback onTippen;
 
+  /// Siehe [_AlbumsScreenState._stand]: Ändert er sich, holt die Kachel
+  /// ihr Titelbild neu.
+  final int stand;
+
   const _Albumkachel({
+    super.key,
     required this.album,
     required this.library,
     required this.onTippen,
+    this.stand = 0,
   });
 
   @override
@@ -336,7 +361,8 @@ class _AlbumkachelState extends State<_Albumkachel> {
     // Ein neu gesetztes Titelbild soll ankommen, ohne dass man den
     // Bildschirm verlässt.
     if (alt.album.coverAssetId != widget.album.coverAssetId ||
-        alt.album.id != widget.album.id) {
+        alt.album.id != widget.album.id ||
+        alt.stand != widget.stand) {
       _titelbild = widget.library.db.albumTitelbild(widget.album);
     }
   }

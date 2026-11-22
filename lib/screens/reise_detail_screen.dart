@@ -66,6 +66,9 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   List<({SpurenData spur, List<SpurpunkteData> punkte})> _spuren = const [];
   bool _laedt = true;
 
+  /// Zählt jedes [_laden] mit; siehe [Aktivitaetszeile.stand].
+  int _stand = 0;
+
   @override
   void initState() {
     super.initState();
@@ -94,6 +97,7 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       _spuren = spuren;
       if (frisch != null) _reise = frisch;
       _laedt = false;
+      _stand++;
     });
   }
 
@@ -747,6 +751,11 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
                               ),
                             for (final k in _aktivitaeten)
                               Aktivitaetszeile(
+                                // Nach der Aktivität und nicht nach der
+                                // Stelle: Fiel eine weg, behielt die Zeile
+                                // darunter das Bild der entfernten (#433).
+                                key: ValueKey(k.id),
+                                stand: _stand,
                                 aktivitaet: k,
                                 library: widget.library,
                                 // In der Liste einer Reise wäre der Name

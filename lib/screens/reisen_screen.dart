@@ -49,6 +49,12 @@ class _ReisenScreenState extends State<ReisenScreen> {
   Map<String, Ortsbezug> _orte = const {};
   bool _laedt = true;
 
+  /// Zählt jedes [_laden] mit. Die Kacheln holen ihr Titelbild nur einmal;
+  /// ändert sich der Stand, holen sie es neu – ein in der Reise gewähltes
+  /// Titelbild oder neu zugeordnete Aufnahmen kamen sonst erst nach
+  /// einem Neustart des Bildschirms an (#433).
+  int _stand = 0;
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +116,7 @@ class _ReisenScreenState extends State<ReisenScreen> {
       _fortschritt = fortschritt;
       _orte = orte;
       _laedt = false;
+      _stand++;
     });
   }
 
@@ -497,6 +504,7 @@ class _ReisenScreenState extends State<ReisenScreen> {
                         Reisekachel(
                           key: ValueKey(r.id),
                           reise: r,
+                          stand: _stand,
                           library: widget.library,
                           ort: ortszeile(
                             t,
@@ -653,6 +661,12 @@ class Reisekachel extends StatefulWidget {
   final VoidCallback onTippen;
   final List<Kachelbefehl> befehle;
 
+  /// Der Stand der Liste, aus der die Kachel stammt. Ändert er sich, holt
+  /// die Kachel ihr Titelbild neu – die erste Aufnahme kann nach dem
+  /// Bearbeiten der Reise eine andere sein, ohne dass sich an [reise]
+  /// etwas ändert.
+  final int stand;
+
   const Reisekachel({
     super.key,
     required this.reise,
@@ -660,6 +674,7 @@ class Reisekachel extends StatefulWidget {
     required this.ort,
     required this.onTippen,
     this.befehle = const [],
+    this.stand = 0,
   });
 
   @override
@@ -667,7 +682,20 @@ class Reisekachel extends StatefulWidget {
 }
 
 class _ReisekachelState extends State<Reisekachel> {
-  late final Future<AssetData?> _titelbild = _hole();
+  late Future<AssetData?> _titelbild = _hole();
+
+  @override
+  void didUpdateWidget(Reisekachel alt) {
+    super.didUpdateWidget(alt);
+    // Vorher einmal geholt und nie wieder: Ein in der Reise gewähltes
+    // Titelbild kam in der Liste nicht an (#433). Bis das neue da ist,
+    // bleibt das alte stehen (FutureBuilder behält seine Daten).
+    if (alt.reise.titelbildAssetId != widget.reise.titelbildAssetId ||
+        alt.reise.id != widget.reise.id ||
+        alt.stand != widget.stand) {
+      _titelbild = _hole();
+    }
+  }
 
   Future<AssetData?> _hole() async {
     final id = widget.reise.titelbildAssetId;

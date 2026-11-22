@@ -160,8 +160,13 @@ class ExploreScreen extends StatelessWidget {
             // Bereits nach createdAt absteigend sortiert -> die ersten N
             // sind die zuletzt angelegten Alben.
             strom: (_) => library.db.watchAlbums(),
-            kachel: (context, gezeigt, index) =>
-                _AlbumPreviewTile(library: library, album: gezeigt[index]),
+            // Nach dem Album und nicht nach der Stelle: Ein neues Album
+            // vorn verschob sonst alle Vorschaubilder um eine Kachel (#433).
+            kachel: (context, gezeigt, index) => _AlbumPreviewTile(
+              key: ValueKey(gezeigt[index].id),
+              library: library,
+              album: gezeigt[index],
+            ),
           ),
           // Der einzige Abschnitt, der auch leer stehen bleibt: Eine
           // Bibliothek ganz ohne Fotos ist eine Auskunft, kein Zufall.
@@ -919,34 +924,55 @@ class _Aktivitaetskachel extends StatelessWidget {
 class _AlbumPreviewTile extends StatefulWidget {
   final LibraryState library;
   final AlbumData album;
-  const _AlbumPreviewTile({required this.library, required this.album});
+  const _AlbumPreviewTile({
+    super.key,
+    required this.library,
+    required this.album,
+  });
 
   @override
   State<_AlbumPreviewTile> createState() => _AlbumPreviewTileState();
 }
 
 class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
-  // Kein eigenes Cover-Feld gepflegt – als Vorschau dient stattdessen das
-  // zuletzt hinzugefügte Foto des Albums. Diese Kachel wird pro Album einmal
-  // in einer horizontalen Liste erzeugt – ein inline in build() erzeugtes
-  // Future würde hier bei jedem Rebuild ERNEUT pro sichtbarem Album
-  // abgefragt (statt einmal beim Erzeugen der Kachel).
-  late final Future<List<AssetData>> _assetsFuture = widget.library.db
-      .assetsInAlbumOnce(widget.album.id);
+  // Dasselbe Titelbild wie im Albenreiter: das gewählte, sonst das neueste
+  // Foto. Vorher holte die Kachel alle Fotos des Albums und nahm das
+  // neueste – ein gewähltes Titelbild kam hier nie an. Einmal beim
+  // Erzeugen geholt und nicht in build(): Ein dort erzeugtes Future fragte
+  // bei jedem Neuaufbau erneut je sichtbarem Album.
+  late Future<AssetData?> _titelbild = _hole();
+
+  Future<AssetData?> _hole() => widget.library.db.albumTitelbild(widget.album);
+
+  @override
+  void didUpdateWidget(_AlbumPreviewTile alt) {
+    super.didUpdateWidget(alt);
+    if (alt.album.coverAssetId != widget.album.coverAssetId ||
+        alt.album.id != widget.album.id) {
+      _titelbild = _hole();
+    }
+  }
+
+  Future<void> _oeffnen() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AlbumDetailScreen(
+          library: widget.library,
+          albumId: widget.album.id,
+          albumName: widget.album.name,
+        ),
+      ),
+    );
+    // Was im Album geschah, meldet der Strom der Alben nicht: Er liest nur
+    // deren Tabelle (#433).
+    if (mounted) setState(() => _titelbild = _hole());
+  }
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => AlbumDetailScreen(
-            library: widget.library,
-            albumId: widget.album.id,
-            albumName: widget.album.name,
-          ),
-        ),
-      ),
+      onTap: _oeffnen,
       child: SizedBox(
         width: 120,
         child: Column(
@@ -955,18 +981,10 @@ class _AlbumPreviewTileState extends State<_AlbumPreviewTile> {
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                child: FutureBuilder<List<AssetData>>(
-                  future: _assetsFuture,
+                child: FutureBuilder<AssetData?>(
+                  future: _titelbild,
                   builder: (context, snapshot) {
-                    final assets = snapshot.data ?? [];
-                    final cover = assets.isEmpty
-                        ? null
-                        : assets.reduce(
-                            (a, b) => a.fileCreatedAt.isAfter(b.fileCreatedAt)
-                                ? a
-                                : b,
-                          );
-                    final thumbPath = cover?.thumbnailRelativePath;
+                    final thumbPath = snapshot.data?.thumbnailRelativePath;
                     return Container(
                       color: Theme.of(
                         context,

@@ -44,6 +44,9 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
   Map<String, Ortsbezug> _orte = const {};
   bool _laedt = true;
 
+  /// Zählt jedes [_laden] mit; siehe [Aktivitaetskachel.stand].
+  int _stand = 0;
+
   @override
   void initState() {
     super.initState();
@@ -118,6 +121,7 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       _reisenamen = {for (final r in reisen) r.id: r.name};
       _orte = orte;
       _laedt = false;
+      _stand++;
     });
   }
 
@@ -283,6 +287,7 @@ class _AktivitaetenScreenState extends State<AktivitaetenScreen> {
       Aktivitaetskachel(
         key: ValueKey(k.id),
         aktivitaet: k,
+        stand: _stand,
         library: widget.library,
         reisename: mitReisename ? _reisenamen[k.reiseId] : null,
         ort: ortszeile(
@@ -662,6 +667,12 @@ class Aktivitaetskachel extends StatefulWidget {
   final VoidCallback onTippen;
   final List<Kachelbefehl> befehle;
 
+  /// Der Stand der Liste, aus der die Kachel stammt. Ändert er sich, holt
+  /// die Kachel ihr Bild neu: Nach dem Bearbeiten der Aktivität kann die
+  /// erste Aufnahme eine andere sein, ohne dass sich an [aktivitaet]
+  /// etwas ändert (#433).
+  final int stand;
+
   const Aktivitaetskachel({
     super.key,
     required this.aktivitaet,
@@ -670,6 +681,7 @@ class Aktivitaetskachel extends StatefulWidget {
     required this.ort,
     required this.onTippen,
     this.befehle = const [],
+    this.stand = 0,
   });
 
   @override
@@ -678,9 +690,21 @@ class Aktivitaetskachel extends StatefulWidget {
 
 class _AktivitaetskachelState extends State<Aktivitaetskachel> {
   /// Einmal beim Anlegen geholt und nicht in `build` – sonst liefe die
-  /// Abfrage bei jedem Neuaufbau erneut.
-  late final Future<AssetData?> _bild = widget.library.db
-      .ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+  /// Abfrage bei jedem Neuaufbau erneut. Neu geholt nur, wenn sich der
+  /// [Aktivitaetskachel.stand] ändert.
+  late Future<AssetData?> _bild = _hole();
+
+  Future<AssetData?> _hole() =>
+      widget.library.db.ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+
+  @override
+  void didUpdateWidget(Aktivitaetskachel alt) {
+    super.didUpdateWidget(alt);
+    if (alt.aktivitaet.id != widget.aktivitaet.id ||
+        alt.stand != widget.stand) {
+      _bild = _hole();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -726,12 +750,16 @@ class Aktivitaetszeile extends StatefulWidget {
 
   final VoidCallback onTippen;
 
+  /// Siehe [Aktivitaetskachel.stand].
+  final int stand;
+
   const Aktivitaetszeile({
     super.key,
     required this.aktivitaet,
     required this.library,
     required this.reisename,
     required this.onTippen,
+    this.stand = 0,
   });
 
   @override
@@ -740,9 +768,21 @@ class Aktivitaetszeile extends StatefulWidget {
 
 class _AktivitaetszeileState extends State<Aktivitaetszeile> {
   /// Einmal beim Anlegen der Zeile geholt und nicht in `build` – sonst
-  /// liefe die Abfrage bei jedem Neuaufbau erneut.
-  late final Future<AssetData?> _bild = widget.library.db
-      .ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+  /// liefe die Abfrage bei jedem Neuaufbau erneut. Neu geholt nur, wenn
+  /// sich der [Aktivitaetszeile.stand] ändert.
+  late Future<AssetData?> _bild = _hole();
+
+  Future<AssetData?> _hole() =>
+      widget.library.db.ersteAufnahmeDerAktivitaet(widget.aktivitaet.id);
+
+  @override
+  void didUpdateWidget(Aktivitaetszeile alt) {
+    super.didUpdateWidget(alt);
+    if (alt.aktivitaet.id != widget.aktivitaet.id ||
+        alt.stand != widget.stand) {
+      _bild = _hole();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

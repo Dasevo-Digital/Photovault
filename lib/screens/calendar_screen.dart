@@ -52,6 +52,10 @@ class CalendarScreen extends StatelessWidget {
           itemBuilder: (context, index) {
             final year = years[index];
             return _YearCard(
+              // Nach dem Jahr und nicht nach der Stelle: Fällt ein Jahr weg
+              // oder kommt eins dazu, behielte die Kachel an Stelle 3 sonst
+              // das Titelbild ihres Vorgängers (#433).
+              key: ValueKey(year),
               titel: '$year',
               assetCount: countByYear[year]!,
               library: library,
@@ -91,6 +95,7 @@ class _YearCard extends StatefulWidget {
   final Future<AssetData?> Function() titelbild;
 
   const _YearCard({
+    super.key,
     required this.titel,
     required this.assetCount,
     required this.library,
@@ -103,7 +108,19 @@ class _YearCard extends StatefulWidget {
 }
 
 class _YearCardState extends State<_YearCard> {
-  late final Future<AssetData?> _coverFuture = widget.titelbild();
+  late Future<AssetData?> _coverFuture = widget.titelbild();
+
+  @override
+  void didUpdateWidget(_YearCard alt) {
+    super.didUpdateWidget(alt);
+    // Kam eine Aufnahme dazu oder ging eine weg, kann das neueste Foto
+    // ein anderes sein – vorher blieb das Titelbild stehen, auch eines,
+    // das längst im Papierkorb lag (#433). Bis das neue da ist, bleibt
+    // das alte stehen (FutureBuilder behält seine Daten).
+    if (alt.assetCount != widget.assetCount) {
+      _coverFuture = widget.titelbild();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -240,6 +257,7 @@ class MonatsuebersichtScreen extends StatelessWidget {
             itemBuilder: (context, i) {
               final monat = monate[i];
               return _YearCard(
+                key: ValueKey(monat),
                 titel: monat == 0
                     ? t.datierungTitel
                     : DateFormat.MMMM(sprache).format(DateTime(jahr, monat)),
