@@ -1,7 +1,10 @@
 import 'dart:convert';
+
+import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
 import '../db/database.dart';
 import 'bildzuschnitt.dart';
+import 'weissabgleich.dart';
 
 class Entwicklungsstand {
   const Entwicklungsstand(
@@ -14,8 +17,19 @@ class Entwicklungsstand {
   final DevelopSettingsData einstellungen;
   final List<DevelopMaskData> masken;
   final Map<String, String> dateien;
+
+  /// Die Fassung, die [encode] schreibt.
+  ///
+  /// 2 seit #466: Die Temperatur heisst „höher ist wärmer“. Ein Stand der
+  /// Fassung 1 trägt sie noch in der früheren Bedeutung; [decode] rechnet
+  /// ihn beim Lesen um. Die gespeicherten Zeilen bleiben, wie sie sind – so
+  /// trägt jeder Stand selbst, was seine Zahlen bedeuten, und eine Sicherung
+  /// von früher liest sich genauso wie die Datenbank. Eine ältere App lehnt
+  /// Fassung 2 ab, statt sie falsch zu zeigen.
+  static const fassung = 2;
+
   String encode() => jsonEncode({
-    'fassung': 1,
+    'fassung': fassung,
     'original': originalSha256,
     'einstellungen': einstellungen.toJson(),
     'masken': [for (final m in masken) m.toJson()],
@@ -27,17 +41,21 @@ class Entwicklungsstand {
       throw const FormatException('pv_variante_umfang');
     }
     final j = jsonDecode(text) as Map;
-    if (j['fassung'] != 1 || !_hash(j['original'])) {
+    final gelesen = j['fassung'];
+    if ((gelesen != 1 && gelesen != fassung) || !_hash(j['original'])) {
       throw const FormatException('pv_variante_format');
     }
-    final settings = DevelopSettingsData.fromJson(
+    final frueher = gelesen == 1;
+    var settings = DevelopSettingsData.fromJson(
       (j['einstellungen'] as Map).cast<String, dynamic>(),
     );
     Bildzuschnitt.aus(settings.cropJson);
-    final masken = [
+    var masken = [
       for (final m in j['masken'] as List)
         DevelopMaskData.fromJson((m as Map).cast<String, dynamic>()),
     ];
+    // Prüfen wie gespeichert, danach umrechnen: Die Grenzen unten gelten
+    // für jede Fassung.
     final dateien = (j['dateien'] as Map).cast<String, String>();
     if (masken.length > 100 || dateien.length > 256) {
       throw const FormatException('pv_variante_umfang');
@@ -93,6 +111,17 @@ class Entwicklungsstand {
           throw const FormatException('pv_variante_regler');
         }
       }
+    }
+    if (frueher) {
+      double? umgerechnet(double? t) =>
+          t == null ? null : temperaturAusFruehererBedeutung(t);
+      settings = settings.copyWith(
+        temperature: Value(umgerechnet(settings.temperature)),
+      );
+      masken = [
+        for (final m in masken)
+          m.copyWith(temperature: Value(umgerechnet(m.temperature))),
+      ];
     }
     return Entwicklungsstand(
       j['original'] as String,

@@ -37,8 +37,8 @@ uniform sampler2D uTexture, uCurveLut, uColorCube;
 out vec4 fragColor;
 ${ENTW_FARBRAUM}
 vec3 whiteBalanceGain(float kelvin, float tint) {
-  float t = clamp(kelvin, 2000.0, 12000.0) / 6500.0;
-  return vec3(pow(1.0 / t, 0.55), 1.0 - clamp(tint, -100.0, 100.0) / 400.0, pow(t, 0.55));
+  float t = clamp(kelvin, 2000.0, 21125.0) / 6500.0;
+  return vec3(pow(t, 0.55), 1.0 - clamp(tint, -100.0, 100.0) / 400.0, pow(1.0 / t, 0.55));
 }
 vec3 tonwertkurve(vec3 c) {
   return vec3(
@@ -168,7 +168,12 @@ const ENTW_REGLER = [
   { spalte: 'contrast', name: 'Kontrast', min: -1, max: 1, schritt: 0.01 },
   { spalte: 'highlights', name: 'Lichter', min: -1, max: 1, schritt: 0.01 },
   { spalte: 'shadows', name: 'Schatten', min: -1, max: 1, schritt: 0.01 },
-  { spalte: 'temperature', name: 'Farbtemperatur', min: 2000, max: 12000, schritt: 50, vorgabe: 6500, wb: true },
+  // Höher ist wärmer, wie in Lightroom (#466). Die Grenzen sind temperaturMin
+  // und temperaturMax aus weissabgleich.dart: um 6500 K gespiegelt, damit
+  // auch eine früher gespeicherte starke Erwärmung (bis 21125 K) einstellbar
+  // bleibt. Schritte von 25 K, damit beide Grenzen und 6500 K auf einer
+  // Stufe liegen.
+  { spalte: 'temperature', name: 'Farbtemperatur', min: 2000, max: 21125, schritt: 25, vorgabe: 6500, wb: true, verlauf: true },
   { spalte: 'tint', name: 'Tönung', min: -100, max: 100, schritt: 1, wb: true },
   { spalte: 'clarity', name: 'Klarheit', min: -1, max: 1, schritt: 0.01 },
   { spalte: 'sharpness', name: 'Schärfe', min: 0, max: 1, schritt: 0.01 },
@@ -430,6 +435,18 @@ function entwVorschauGroesse() {
   };
 }
 
+// Der Farbverlauf unter dem Temperaturregler: links blau, an 6500 K neutral,
+// rechts gelb – wie am Rechner und auf dem Handy (temperaturregler.dart).
+function entwTemperaturverlauf(r) {
+  const neutral = ((6500 - r.min) / (r.max - r.min)) * 100;
+  const v = el('div', 'entw-verlauf');
+  v.style.height = '4px';
+  v.style.borderRadius = '2px';
+  v.style.marginTop = '2px';
+  v.style.background = `linear-gradient(to right, #3d7be0, #dcdcdc ${neutral.toFixed(1)}%, #e8b830)`;
+  return v;
+}
+
 function entwFelder() {
   const ziel = $('entw-felder');
   ziel.replaceChildren();
@@ -457,6 +474,7 @@ function entwFelder() {
     const oben = el('div', 'entw-oben');
     oben.append(kopf, zahl);
     zeile.append(oben, regler);
+    if (r.verlauf) zeile.append(entwTemperaturverlauf(r));
     if (r.wb) { wbRegler.push({ regler, zeile, r }); regler.disabled = kasten.checked; zeile.classList.toggle('aus', kasten.checked); }
     ziel.append(zeile);
   }

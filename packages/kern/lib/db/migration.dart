@@ -1557,5 +1557,80 @@ extension Migrationsschritte on AppDatabase {
         'CREATE INDEX IF NOT EXISTS idx_assets_kalender ON assets(is_trashed,is_locked,coalesce(datum_von,file_created_at))',
       );
     }
+    if (from < 102) {
+      await _kehreTemperaturUm();
+    }
   }
+
+  /// Die Tabellen, deren Spalte `temperature` eine Farbtemperatur trägt.
+  /// Entwicklungsvarianten speichern sie im JSON ihres Stands; der trägt
+  /// eine eigene Fassung und wird beim Lesen umgerechnet (siehe
+  /// [Entwicklungsstand.decode]).
+  static const temperaturTabellen = [
+    'develop_settings',
+    'develop_history',
+    'develop_presets',
+    'develop_masks',
+  ];
+
+  /// Schritt 102 (#466): Die Temperatur heisst jetzt wie in Lightroom
+  /// „höher ist wärmer“; bis 101 hiess sie „höher ist kühler“. Jede
+  /// gespeicherte Zahl wird so umgerechnet, dass das Bild gleich bleibt
+  /// ([temperaturAusFruehererBedeutung]).
+  ///
+  /// **Genau einmal.** Die Umrechnung ist nicht wiederholbar – ein zweiter
+  /// Lauf drehte die Wirkung zurück. drift schreibt die neue Schemastufe aber
+  /// erst nach allen Schritten und ohne Transaktion; bräche die App
+  /// dazwischen ab, liefe der Schritt beim nächsten Start noch einmal. Darum
+  /// stehen Umrechnung und Stufe 102 in einer Transaktion: Entweder ist
+  /// beides geschehen oder nichts.
+  ///
+  /// **Jede Datenbank für sich.** Server, Rechner und Handy rechnen ihre
+  /// Kopie beim Aufstufen selbst um, mit derselben bitgleichen Rechnung. Auf
+  /// dem Server schreibt das Protokoll die Änderungen mit, und die Kopien
+  /// holen danach dieselben Zahlen, die sie schon haben. Solange Server und
+  /// Kopie verschiedene Stufen haben, gleicht nichts ab
+  /// (`AbgleichsschemaAnders`): Eine App mit Stufe 101 meldet „App zu alt“,
+  /// statt neue Zahlen mit der alten Rechnung zu zeigen.
+  ///
+  /// Befehle, die eine verbundene Kopie noch nicht hinausgeschickt hat,
+  /// liegen verschlüsselt in `pv_ausgang`; den Schlüssel kennt nur der
+  /// Abgleich. Für ihn bleibt die Marke `pv_weissabgleich_umkehr`, siehe
+  /// `Abgleich.richteEin`.
+  Future<void> _kehreTemperaturUm() => transaction(() async {
+    for (final tabelle in temperaturTabellen) {
+      final zeilen = await customSelect(
+        'SELECT rowid AS zeile, temperature FROM $tabelle '
+        'WHERE temperature IS NOT NULL',
+      ).get();
+      if (zeilen.isEmpty) continue;
+      await batch((b) {
+        for (final z in zeilen) {
+          b.customStatement(
+            'UPDATE $tabelle SET temperature = ? WHERE rowid = ?',
+            [
+              temperaturAusFruehererBedeutung(
+                (z.data['temperature'] as num).toDouble(),
+              ),
+              z.data['zeile'],
+            ],
+          );
+        }
+      });
+    }
+    final warteschlange = await customSelect(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+      "AND name IN ('pv_ausgang', 'pv_abgleichsfaelle')",
+    ).get();
+    if (warteschlange.isNotEmpty) {
+      await customStatement(
+        'CREATE TABLE IF NOT EXISTS pv_weissabgleich_umkehr '
+        '(id INTEGER PRIMARY KEY CHECK (id = 0))',
+      );
+      await customStatement(
+        'INSERT OR IGNORE INTO pv_weissabgleich_umkehr (id) VALUES (0)',
+      );
+    }
+    await customStatement('PRAGMA user_version = 102');
+  });
 }

@@ -15,6 +15,7 @@ import 'abgleichsplan.dart';
 import 'protokoll.dart';
 import 'befehlsbasis.dart';
 import 'abgleichsfall.dart';
+import 'weissabgleich_umkehr.dart';
 import 'package:cryptography/cryptography.dart';
 
 export 'abgleichsfall.dart';
@@ -340,8 +341,83 @@ class Abgleich {
         }
       }
     });
+    await _kehreWarteschlangeUm();
     db.umleitung = vorwegnehmen;
     await _melde();
+  }
+
+  /// Was vor Schema 102 in der Warteschlange und unter den Fällen lag, trägt
+  /// die Temperatur noch in der früheren Bedeutung (#466). Die Migration
+  /// hat die Zeilen der Kopie umgerechnet, kommt an diese Einträge aber
+  /// nicht heran – sie sind mit dem Schlüssel des Abgleichs verschlüsselt.
+  /// Sie hinterlässt die Marke `pv_weissabgleich_umkehr`; hier werden die
+  /// Einträge umgerechnet ([auftragInHeutigerBedeutung]) und die Marke in
+  /// derselben Transaktion entfernt, also genau einmal.
+  ///
+  /// Neue Befehle kann es bis hierher nicht geben: Erst danach lenkt
+  /// [richteEin] sie in die Warteschlange.
+  Future<void> _kehreWarteschlangeUm() async {
+    final marke = await db
+        .customSelect(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' "
+          "AND name = 'pv_weissabgleich_umkehr'",
+        )
+        .getSingleOrNull();
+    if (marke == null) return;
+    try {
+      await _fallschluessel();
+    } on TokenablageFehler {
+      // Ohne Schlüssel geht ohnehin nichts hinaus; die Marke bleibt für
+      // den nächsten Start.
+      return;
+    }
+    await db.transaction(() async {
+      for (final r
+          in await db
+              .customSelect(
+                'SELECT nr, befehl, basis FROM pv_ausgang '
+                'WHERE bestaetigt IS NULL',
+              )
+              .get()) {
+        final Map<String, Object?> alt;
+        try {
+          alt = await _leseAuftrag(r.read<String>('befehl'));
+        } on Object {
+          continue; // Unlesbar: wird beim Senden zum Fall, wie bisher.
+        }
+        final neu = auftragInHeutigerBedeutung(
+          alt,
+          basisSpalte: jsonDecode(r.read<String>('basis')) as List,
+        );
+        await db.customStatement(
+          'UPDATE pv_ausgang SET befehl = ?, basis = ? WHERE nr = ?',
+          [
+            await _verpackeFall(neu.auftrag),
+            jsonEncode(neu.basisSpalte),
+            r.read<int>('nr'),
+          ],
+        );
+      }
+      for (final r
+          in await db
+              .customSelect('SELECT kennung, inhalt FROM pv_abgleichsfaelle')
+              .get()) {
+        final Map<String, Object?> alt;
+        try {
+          alt = await _leseAuftrag(r.read<String>('inhalt'));
+        } on Object {
+          continue;
+        }
+        await db.customStatement(
+          'UPDATE pv_abgleichsfaelle SET inhalt = ? WHERE kennung = ?',
+          [
+            await _verpackeFall(auftragInHeutigerBedeutung(alt).auftrag),
+            r.read<String>('kennung'),
+          ],
+        );
+      }
+      await db.customStatement('DROP TABLE pv_weissabgleich_umkehr');
+    });
   }
 
   /// Gleicht im Hintergrund ab, bis [beende].

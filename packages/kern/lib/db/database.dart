@@ -19,6 +19,7 @@ import '../befehle/befehl.dart';
 export '../befehle/befehl.dart';
 import '../services/erinnerungsfilter.dart';
 import '../services/entwicklungsvariante.dart';
+import '../services/weissabgleich.dart' show temperaturAusFruehererBedeutung;
 import 'package:crypto/crypto.dart' show sha256;
 import '../services/ki_vokabular_vorgabe.dart' show defaultAiTagVocabulary;
 import '../services/aktivitaeten.dart' show istBekannteArt;
@@ -400,7 +401,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => aktuelleSchemaVersion;
 
-  static const aktuelleSchemaVersion = 101;
+  static const aktuelleSchemaVersion = 102;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

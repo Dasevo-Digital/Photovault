@@ -9,8 +9,10 @@ import 'package:kern/services/bildzuschnitt.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/entwicklungswerte.dart';
+import 'package:kern/services/weissabgleich.dart';
 import 'package:path/path.dart' as p;
 import 'package:zierbild/entwickeln_rechnung.dart';
+import 'package:zierbild/temperaturregler.dart';
 
 import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
@@ -65,13 +67,16 @@ final List<_Regler> _regler = [
     vorgabe: 0,
     weissabgleich: false,
   ),
+  // Höher ist wärmer, wie in Lightroom (#466); der Bereich ist der des
+  // Rechners (weissabgleich.dart). Schritte von 25 K, damit beide Grenzen
+  // und 6500 K genau auf einer Stufe liegen.
   (
     spalte: 'temperature',
     name: (t) => t.entwTemperatur,
-    min: 2000,
-    max: 12000,
-    schritt: 50,
-    vorgabe: 6500,
+    min: temperaturMin,
+    max: temperaturMax,
+    schritt: 25,
+    vorgabe: neutraleTemperatur,
     weissabgleich: true,
   ),
   (
@@ -639,12 +644,21 @@ class _Reglerzeile extends StatelessWidget {
               ),
             ),
           ),
-          Slider(
-            value: wert.clamp(r.min, r.max),
-            min: r.min,
-            max: r.max,
-            divisions: ((r.max - r.min) / r.schritt).round(),
-            onChanged: aus ? null : setze,
+          SliderTheme(
+            // Beim Temperaturregler zeigt die Spur, wohin er das Bild
+            // verschiebt: links blauer, rechts gelber.
+            data: SliderTheme.of(context).copyWith(
+              trackShape: r.spalte == 'temperature'
+                  ? TemperaturSpur(min: r.min, max: r.max)
+                  : null,
+            ),
+            child: Slider(
+              value: wert.clamp(r.min, r.max),
+              min: r.min,
+              max: r.max,
+              divisions: ((r.max - r.min) / r.schritt).round(),
+              onChanged: aus ? null : setze,
+            ),
           ),
         ],
       ),

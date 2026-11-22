@@ -4,6 +4,7 @@ import 'cube_lut.dart';
 import 'develop_color.dart';
 import 'storage_paths.dart';
 import 'bildzuschnitt.dart';
+import 'weissabgleich.dart';
 
 /// Regler-Werte des DevelopScreen für [NativeImageConverter.developImage] –
 /// unveränderlich, damit sich ein Satz Einstellungen einfach speichern/
@@ -13,9 +14,11 @@ import 'bildzuschnitt.dart';
 /// Reglern gibt es hier keinen sinnvollen neutralen Zahlenwert.
 class DevelopAdjustments {
   final double exposure; // -3..3 EV
-  /// 2000..12000, null = Weißabgleich der Kamera. Eine Verschiebung, kein
-  /// Messwert: 6500 ändert nichts, höher ist kühler, tiefer wärmer – bei RAW
-  /// wie bei allem anderen, auf jedem Gerät (#356).
+  /// Kelvin in [temperaturMin]..[temperaturMax], null = Weißabgleich der
+  /// Kamera. Eine Verschiebung, kein Messwert: 6500 ändert nichts, höher ist
+  /// wärmer, tiefer kühler wie in Lightroom (#466) – bei RAW wie bei allem
+  /// anderen, auf jedem Gerät (#356). Die Rechnung steht in
+  /// [weissabgleichFaktoren].
   final double? temperature;
 
   /// -100..100, null = Weißabgleich der Kamera. Höher ist magenta, tiefer

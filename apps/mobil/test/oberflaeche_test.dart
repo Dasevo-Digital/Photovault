@@ -28,7 +28,9 @@ import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/kartengruppen.dart';
 import 'package:kern/services/stammbaum.dart' show Verwandtenkreis;
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/services/weissabgleich.dart';
 import 'package:zierbild/lebensbaum_flaeche.dart';
+import 'package:zierbild/temperaturregler.dart';
 import 'package:zierbild/zierbaum_schild.dart';
 import 'package:photo_vault_mobil/app_sperre.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
@@ -3942,6 +3944,38 @@ void main() {
     expect(find.byType(Slider), findsNWidgets(10));
     expect(find.text(t.entwBelichtung), findsOneWidget);
     expect(find.text(t.entwAutoWeiss), findsOneWidget);
+    // Die Temperatur wie am Rechner (#466): höher ist wärmer, die Spur
+    // zeigt links blau und rechts gelb, und 6500 K liegt auf einer Stufe.
+    final temperatur = find.descendant(
+      of: find.ancestor(
+        of: find.text(t.entwTemperatur),
+        matching: find.byType(Column),
+      ),
+      matching: find.byType(Slider),
+    );
+    final regler = tester.widget<Slider>(temperatur.first);
+    expect(regler.min, temperaturMin);
+    expect(regler.max, temperaturMax);
+    expect(
+      (neutraleTemperatur - regler.min) /
+          (regler.max - regler.min) *
+          regler.divisions!,
+      closeTo(180, 1e-9),
+    );
+    expect(
+      tester
+          .widget<SliderTheme>(
+            find
+                .ancestor(
+                  of: temperatur.first,
+                  matching: find.byType(SliderTheme),
+                )
+                .first,
+          )
+          .data
+          .trackShape,
+      isA<TemperaturSpur>(),
+    );
     expect(find.byType(RawImage), findsOneWidget);
     // Belichtung nach rechts ziehen.
     await tester.drag(find.byType(Slider).first, const Offset(200, 0));

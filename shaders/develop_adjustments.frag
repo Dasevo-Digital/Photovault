@@ -18,7 +18,7 @@
 // "overlapping use of location 0" zwischen vec2 und sampler2D.
 uniform vec2 uSize;
 uniform float uExposure;    // EV, -3 … +3
-uniform float uTemperature; // Kelvin, 2000 … 12000
+uniform float uTemperature; // Kelvin, 2000 … 21125, höher ist wärmer
 uniform float uTint;        // -100 … +100
 uniform float uContrast;    // -1 … +1
 uniform float uShadows;     // -1 … +1
@@ -59,15 +59,18 @@ vec3 linearToSrgb(vec3 c) {
              step(vec3(0.0031308), c));
 }
 
-// Kelvin -> RGB-Faktoren, bezogen auf 6500 K als neutral: Wärmer (< 6500)
-// hebt Rot und senkt Blau, kühler umgekehrt. Dieselbe Rechnung steht in
-// ImageConverter.swift und entwickeln.js, damit eine gespeicherte Zahl auf
-// jedem Gerät dasselbe Bild ergibt (#356).
+// Kelvin -> RGB-Faktoren, bezogen auf 6500 K als neutral. Die Zahl ist die
+// Lichtfarbe, die ausgeglichen wird, wie in Lightroom (#466): Unter 6500 K
+// senkt sie Rot und hebt Blau (das Bild wird kühler), darüber umgekehrt.
+// Dieselbe Rechnung steht in ImageConverter.swift, entwickeln.js und als
+// weissabgleichFaktoren in weissabgleich.dart, damit eine gespeicherte Zahl
+// auf jedem Gerät dasselbe Bild ergibt (#356). Die Grenzen sind
+// temperaturMin und temperaturMax aus weissabgleich.dart.
 vec3 whiteBalanceGain(float kelvin, float tint) {
-  float t = clamp(kelvin, 2000.0, 12000.0) / 6500.0;
+  float t = clamp(kelvin, 2000.0, 21125.0) / 6500.0;
   // Exponent gedämpft, damit die Enden des Reglers nicht überzeichnen.
-  float r = pow(1.0 / t, 0.55);
-  float b = pow(t, 0.55);
+  float r = pow(t, 0.55);
+  float b = pow(1.0 / t, 0.55);
   // Tint verschiebt zwischen Grün (negativ) und Magenta (positiv).
   float g = 1.0 - clamp(tint, -100.0, 100.0) / 400.0;
   return vec3(r, g, b);

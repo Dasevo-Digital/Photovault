@@ -1051,8 +1051,12 @@ class ImageConverterChannel: NSObject {
     /// Objektivkorrektur entfällt hier – die betrifft nur RAW-Rohdaten.
     /// Der Weißabgleich, auf allen Wegen dieselbe Rechnung (#356): wie
     /// `whiteBalanceGain` in develop_adjustments.frag und in entwickeln.js,
-    /// in linearem Licht. 6500 K und Farbstich 0 ändern nichts, höher ist
-    /// kühler, ein höherer Farbstich magenta.
+    /// in linearem Licht. 6500 K und Farbstich 0 ändern nichts, ein höherer
+    /// Farbstich ist magenta. Die Temperatur ist die Lichtfarbe, die
+    /// ausgeglichen wird, wie in Lightroom (#466): höher ist wärmer, tiefer
+    /// kühler. Bis Schema 101 galt es andersherum; die Datenbank rechnet die
+    /// gespeicherten Werte beim Aufstufen um. Die Grenzen sind
+    /// `temperaturMin`/`temperaturMax` aus weissabgleich.dart.
     ///
     /// Bis 3.63 lief das hier über `CITemperatureAndTint` und bei RAW über
     /// `neutralTemperature`. Dieselbe gespeicherte Zahl ergab dadurch je nach
@@ -1061,12 +1065,12 @@ class ImageConverterChannel: NSObject {
         guard let temperature = a.temperature, let f = CIFilter(name: "CIColorMatrix") else {
             return input
         }
-        let t = Double(min(max(temperature, 2000), 12000)) / 6500
+        let t = Double(min(max(temperature, 2000), 21125)) / 6500
         let tint = Double(min(max(a.tint ?? 0, -100), 100))
         f.setValue(input, forKey: kCIInputImageKey)
-        f.setValue(CIVector(x: CGFloat(pow(1 / t, 0.55)), y: 0, z: 0, w: 0), forKey: "inputRVector")
+        f.setValue(CIVector(x: CGFloat(pow(t, 0.55)), y: 0, z: 0, w: 0), forKey: "inputRVector")
         f.setValue(CIVector(x: 0, y: CGFloat(1 - tint / 400), z: 0, w: 0), forKey: "inputGVector")
-        f.setValue(CIVector(x: 0, y: 0, z: CGFloat(pow(t, 0.55)), w: 0), forKey: "inputBVector")
+        f.setValue(CIVector(x: 0, y: 0, z: CGFloat(pow(1 / t, 0.55)), w: 0), forKey: "inputBVector")
         return f.outputImage ?? input
     }
 

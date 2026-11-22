@@ -21,6 +21,7 @@ import 'import_service.dart';
 import 'storage_paths.dart';
 import 'vault_crypto.dart';
 import 'varianten_sicherung.dart';
+import 'weissabgleich.dart' show temperaturAusFruehererBedeutung;
 
 class BackupWiederhersteller {
   BackupWiederhersteller(this._db, this._paths);
@@ -530,6 +531,12 @@ class BackupWiederhersteller {
         final albenHier = {
           for (final a in await _db.select(_db.albums).get()) a.id,
         };
+        // Eine Sicherung vor Schema 102 trägt die Temperatur in der
+        // früheren Bedeutung (höher = kühler, #466). Die Zielbibliothek ist
+        // schon aufgestuft; ihre Migration sieht diese Zeilen nie.
+        final temperaturFrueher =
+            (quelle.select('PRAGMA user_version').single.values.single as int) <
+            102;
         for (final tabelle in uebernommeneTabellen) {
           final erlaubt = zielSpalten[tabelle];
           if (erlaubt == null) continue;
@@ -579,6 +586,11 @@ class BackupWiederhersteller {
                   wert =
                       _albumZuordnung[wert] ??
                       (albenHier.contains(wert) ? wert : null);
+                case (_, 'temperature')
+                    when temperaturFrueher &&
+                        wert is num &&
+                        Migrationsschritte.temperaturTabellen.contains(tabelle):
+                  wert = temperaturAusFruehererBedeutung(wert.toDouble());
               }
               if (ueberspringen) break;
               werte.add(wert);

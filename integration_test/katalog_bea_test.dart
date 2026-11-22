@@ -7794,9 +7794,9 @@ void _serverTests() {
 // ===========================================================================
 
 void _befundTests() {
-  // Befund: Bei 4000 K wird das Bild wärmer (Blau minus Rot sinkt um rund
-  // 25), nicht kühler. ImageConverter.swift:1027 legt fest „höher ist
-  // kühler“ – entgegen der üblichen Kelvin-Bedeutung und dem Katalog.
+  // Behoben in #466: Die Temperatur heisst wie in Lightroom „höher ist
+  // wärmer“ – 4000 K macht das Bild kühler (bläulicher). Gespeicherte Werte
+  // rechnet die Migration auf Schema 102 so um, dass Fotos gleich bleiben.
   testWidgets('BEA-005 Befund: 4000 K macht das Bild wärmer statt kühler', (
     tester,
   ) async {
@@ -7816,7 +7816,7 @@ void _befundTests() {
       greaterThan(blau0 + 8),
     );
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Behoben in #411: „Zurücksetzen“ löscht mit Einstellungen und
   // Entwicklungsdatei auch die Masken samt Dateien, wie „Original

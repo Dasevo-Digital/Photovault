@@ -29,6 +29,7 @@ import '../services/farbverwaltung.dart';
 import 'farbverwaltung_screen.dart';
 import 'arbeitsvorschauen_screen.dart';
 import 'package:kern/services/weissabgleich.dart';
+import 'package:zierbild/temperaturregler.dart';
 import '../services/develop_render.dart';
 import '../services/entwicklung_ablegen.dart';
 import '../services/entwicklungsverlauf.dart';

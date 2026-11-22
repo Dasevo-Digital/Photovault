@@ -91,7 +91,7 @@ void main() {
             .data
             .values
             .single,
-        101,
+        db.schemaVersion,
       );
     },
   );

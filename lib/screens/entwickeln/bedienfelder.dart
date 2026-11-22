@@ -27,8 +27,15 @@ mixin _Bedienfelder on _EntwickelnBasis {
     /// des Ziehens passiert **gar nichts**. Der Regler bewegte sich, das
     /// Bild nicht.
     bool imShader = true,
+
+    /// Eine eigene Spur statt der Füllung bis zum Knopf – beim
+    /// Temperaturregler der Verlauf seiner Wirkung ([TemperaturSpur]).
+    /// `null` lässt die gewohnte. Das Thema legt sich um die ganze Zeile:
+    /// Der Regler bleibt so unmittelbar unter der Spalte mit seiner
+    /// Beschriftung, wie ihn die Katalogprüfungen suchen.
+    SliderTrackShape? spur,
   }) {
-    return Padding(
+    final zeile = Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.xs),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -94,6 +101,11 @@ mixin _Bedienfelder on _EntwickelnBasis {
           ),
         ],
       ),
+    );
+    if (spur == null) return zeile;
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(trackShape: spur),
+      child: zeile,
     );
   }
 
@@ -1064,10 +1076,11 @@ mixin _Bedienfelder on _EntwickelnBasis {
     _slider(
       AppTexte.of(context).entwTemperatur,
       _temperature,
-      2000,
-      12000,
+      temperaturMin,
+      temperaturMax,
       (v) => setState(() => _temperature = v),
       enabled: !_autoWhiteBalance,
+      spur: const TemperaturSpur(),
     ),
     _slider(
       AppTexte.of(context).entwTint,
@@ -1252,11 +1265,12 @@ mixin _Bedienfelder on _EntwickelnBasis {
     _slider(
       AppTexte.of(context).entwTemperatur,
       _maskTemperature,
-      2000,
-      12000,
+      temperaturMin,
+      temperaturMax,
       (v) => setState(() => _maskTemperature = v),
       enabled: !_maskAutoWhiteBalance,
       imShader: false,
+      spur: const TemperaturSpur(),
     ),
     _slider(
       AppTexte.of(context).entwTint,
