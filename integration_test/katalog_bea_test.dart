@@ -1960,6 +1960,8 @@ Future<void> strich(WidgetTester tester, Rect r, List<Offset> punkte) async {
   await settle(tester);
 }
 
+/// Die Datei der [index]-ten **gespeicherten** Maske. Masken gelten erst
+/// mit „Speichern“ (BEA-046); vorher kennt die Datenbank sie nicht.
 Future<Uint8List> maskenDatei(
   WidgetTester tester,
   String assetId,
@@ -1967,6 +1969,15 @@ Future<Uint8List> maskenDatei(
 ) async {
   final masken = await lauf(tester, () => bibliothek.db.masksForAsset(assetId));
   return datei(masken[index].maskRelativePath).readAsBytesSync();
+}
+
+/// Alle Maskendateien der Bibliothek – auch die einer Sitzung, die noch
+/// nicht gespeichert ist.
+List<File> maskendateien() {
+  final ordner = Directory(p.join(bibliothek.paths.root.path, 'masks'));
+  return ordner.existsSync()
+      ? ordner.listSync().whereType<File>().toList()
+      : <File>[];
 }
 
 void _maskenTests() {
@@ -2053,15 +2064,16 @@ void _maskenTests() {
       await tap(tester, find.widgetWithText(OutlinedButton, de.allgAbbrechen));
       expect(find.text(de.entwMaskeErstellen), findsNothing);
       expect(find.text(de.entwBelichtung), findsWidgets);
+      // Masken gelten erst mit „Speichern“ (BEA-046): In der Sitzung steht
+      // die eine Maske samt Datei, die Datenbank kennt sie noch nicht.
+      expect(maskenChip(1), findsOneWidget);
+      expect(maskenChip(2), findsNothing, reason: 'Abbrechen legt nichts an');
+      final dateien = maskendateien();
+      expect(dateien, hasLength(1));
       expect(
         await lauf(tester, () => bibliothek.db.masksForAsset(ids[0])),
-        hasLength(1),
+        isEmpty,
       );
-      final maske = (await lauf(
-        tester,
-        () => bibliothek.db.masksForAsset(ids[0]),
-      )).single;
-      expect(datei(maske.maskRelativePath).existsSync(), isTrue);
       await tap(
         tester,
         find.descendant(of: maskenChip(1), matching: find.byIcon(Icons.close)),
@@ -2069,11 +2081,11 @@ void _maskenTests() {
       await renderAbwarten(tester);
       expect(maskenChip(1), findsNothing);
       expect(find.byType(AlertDialog), findsNothing, reason: 'ohne Rückfrage');
+      expect(dateien.single.existsSync(), isFalse, reason: 'Datei gleich weg');
       expect(
         await lauf(tester, () => bibliothek.db.masksForAsset(ids[0])),
         isEmpty,
       );
-      expect(datei(maske.maskRelativePath).existsSync(), isFalse);
       expect(
         find.text(de.entwMaskenHinweis),
         findsNothing,
@@ -2081,17 +2093,16 @@ void _maskenTests() {
       );
       v = vorschau(tester);
       expect((mittel(v, x1: 0.4) - mittel(v, x0: 0.6)).abs(), lessThan(8));
-      // Hinweis: Anlegen wirkt sofort, auch ohne Speichern.
+      // Ohne Speichern zurück: Es bleibt nichts – weder in der Datenbank
+      // noch als Datei (BEA-046).
       await ellipseMaske(tester, sv);
+      expect(maskendateien(), hasLength(1));
       await zurueck(tester);
-      final ohneSpeichern = await lauf(
-        tester,
-        () => bibliothek.db.masksForAsset(ids[0]),
+      expect(
+        await lauf(tester, () => bibliothek.db.masksForAsset(ids[0])),
+        isEmpty,
       );
-      beobachtung(
-        'BEA-033/046',
-        'Maske angelegt, dann ohne Speichern zurück: ${ohneSpeichern.length} Maske(n) in der Datenbank',
-      );
+      expect(maskendateien(), isEmpty, reason: 'keine verwaiste Maskendatei');
       expect(
         await lauf(tester, () => bibliothek.db.developSettingsForAsset(ids[0])),
         isNull,
@@ -2131,13 +2142,22 @@ void _maskenTests() {
       );
       await tap(tester, find.widgetWithText(FilledButton, de.allgFertig));
       await waitFor(tester, maskenChip(2), timeout: _lang);
+      expect(
+        await lauf(tester, () => bibliothek.db.masksForAsset(ids[1])),
+        isEmpty,
+        reason: 'erst mit „Speichern“',
+      );
+      await entwSpeichern(tester);
       final formen = await lauf(
         tester,
         () => bibliothek.db.masksForAsset(ids[1]),
       );
       expect(formen, hasLength(2));
       expect(formen.every((m) => m.shapeDefinitionJson != null), isTrue);
-      await zurueck(tester);
+      expect(
+        formen.every((m) => datei(m.maskRelativePath).existsSync()),
+        isTrue,
+      );
 
       // BEA-025
       await oeffneEntwickeln(tester, ids[2]);
@@ -2250,10 +2270,10 @@ void _maskenTests() {
       });
       await tap(tester, find.widgetWithText(FilledButton, de.allgFertig));
       await waitFor(tester, maskenChip(1), timeout: _lang);
+      await entwSpeichern(tester);
       var m = klein(await maskenDatei(tester, ids[0], 0), breite: 90);
       expect(mittel(m, x0: 0.4, y0: 0.4, x1: 0.6, y1: 0.6), greaterThan(180));
       expect(mittel(m, x1: 0.2, y1: 0.2), lessThan(60));
-      await zurueck(tester);
 
       // BEA-027
       await oeffneEntwickeln(tester, ids[1]);
@@ -2279,6 +2299,7 @@ void _maskenTests() {
       expect(fertigKnopf(tester).onPressed, isNotNull);
       await tap(tester, find.widgetWithText(FilledButton, de.allgFertig));
       await waitFor(tester, maskenChip(1), timeout: _lang);
+      await entwSpeichern(tester);
       m = klein(await maskenDatei(tester, ids[1], 0), breite: 90);
       expect(
         mittel(m, x0: 0.6),
@@ -2286,16 +2307,21 @@ void _maskenTests() {
         reason: 'helle Hälfte gewählt',
       );
       expect(mittel(m, x1: 0.4), lessThan(60), reason: 'dunkle Hälfte nicht');
-      await zurueck(tester);
 
       // BEA-031: Form einer Ellipse nachträglich bearbeiten.
       await oeffneEntwickeln(tester, ids[2]);
       await ellipseMaske(tester, sv, x0: 0.1, y0: 0.1, x1: 0.4, y1: 0.5);
       await setzeRegler(tester, de.entwBelichtung, 1);
+      await entwSpeichern(tester);
       final vorher = (await lauf(
         tester,
         () => bibliothek.db.masksForAsset(ids[2]),
       )).single;
+      expect(vorher.exposure, 1);
+      // Die gespeicherte Form wieder öffnen.
+      await oeffneEntwickeln(tester, ids[2]);
+      await tap(tester, maskenChip(1));
+      expect(reglerWert(tester, de.entwBelichtung), 1);
       await tap(tester, find.text(de.entwFormBearbeiten));
       expect(find.text(de.entwMaskeErstellen), findsOneWidget);
       expect(
@@ -2316,6 +2342,22 @@ void _maskenTests() {
       await ziehe(tester, punktIn(r, 0.5, 0.4), punktIn(r, 0.9, 0.9));
       await tap(tester, find.widgetWithText(FilledButton, de.allgFertig));
       await waitGone(tester, find.text(de.entwMaskeErstellen), timeout: _lang);
+      expect(maskenChip(1), findsOneWidget);
+      expect(maskenChip(2), findsNothing);
+      expect(
+        reglerWert(tester, de.entwBelichtung),
+        1,
+        reason: 'Reglerwerte bleiben',
+      );
+      // Bis zum Speichern gilt in der Datenbank die alte Form.
+      expect(
+        (await lauf(
+          tester,
+          () => bibliothek.db.masksForAsset(ids[2]),
+        )).single.shapeDefinitionJson,
+        vorher.shapeDefinitionJson,
+      );
+      await entwSpeichern(tester);
       var masken = await lauf(
         tester,
         () => bibliothek.db.masksForAsset(ids[2]),
@@ -2326,22 +2368,26 @@ void _maskenTests() {
         masken.single.shapeDefinitionJson,
         isNot(vorher.shapeDefinitionJson),
       );
-      expect(maskenChip(1), findsOneWidget);
-      expect(maskenChip(2), findsNothing);
+      expect(masken.single.exposure, 1, reason: 'Reglerwerte bleiben');
+      expect(datei(masken.single.maskRelativePath).existsSync(), isTrue);
       expect(
-        reglerWert(tester, de.entwBelichtung),
-        1,
-        reason: 'Reglerwerte bleiben',
+        datei(vorher.maskRelativePath).existsSync(),
+        isFalse,
+        reason: 'die alte Datei ist mit dem Speichern weg',
       );
       final ellipseJson = masken.single.shapeDefinitionJson;
 
       // BEA-032: Typwechsel legt eine neue Maske an.
+      await oeffneEntwickeln(tester, ids[2]);
+      await tap(tester, maskenChip(1));
       await tap(tester, find.text(de.entwFormBearbeiten));
       await tap(tester, find.widgetWithText(ChoiceChip, de.entwFormRechteck));
       r = entwBildRechteck(tester, sv);
       await ziehe(tester, punktIn(r, 0.1, 0.6), punktIn(r, 0.4, 0.9));
       await tap(tester, find.widgetWithText(FilledButton, de.allgFertig));
       await waitFor(tester, maskenChip(2), timeout: _lang);
+      expect(maskenChip(1), findsOneWidget);
+      await entwSpeichern(tester);
       masken = await lauf(tester, () => bibliothek.db.masksForAsset(ids[2]));
       expect(masken, hasLength(2));
       expect(
@@ -2349,7 +2395,6 @@ void _maskenTests() {
         ellipseJson,
         reason: 'Maske 1 unverändert',
       );
-      expect(maskenChip(1), findsOneWidget);
       await abschluss(tester);
     },
   );
