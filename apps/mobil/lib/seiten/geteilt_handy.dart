@@ -25,6 +25,8 @@ Teilungszugang? teilungszugang(Sitzung sitzung) {
     // Fotos von Partnern stehen am Telefon in der Zeitleiste (#299).
     zeitleisteMischt: true,
     partnerGeaendert: () => unawaited(sitzung.ladePartnerfotos()),
+    // originFile legt Kopien in den Zwischenspeicher von photo_manager.
+    nachBeitraegen: () async => sitzung.sicherung?.raeumeFotokopienAuf(),
   );
 }
 

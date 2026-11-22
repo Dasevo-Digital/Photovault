@@ -31,8 +31,10 @@ import 'package:path_provider/path_provider.dart';
 import 'gemeinsam.dart';
 import 'offline_alben.dart';
 import 'partnerfotos.dart';
+import 'seiten/als_jpeg.dart' show raeumeJpegKopienAuf;
 import 'sicherung/dienst.dart';
 import 'sicherung/gedaechtnis.dart';
+import 'sicherung/photo_manager_rolle.dart';
 
 enum Sitzungszustand { laedt, abgemeldet, bereit, fehler }
 
@@ -145,6 +147,7 @@ class Sitzung extends ChangeNotifier {
 
   /// Öffnet die Kopie, wenn es eine gibt; sonst geht es zur Anmeldung.
   Future<void> starte() async {
+    unawaited(raeumeJpegKopienAuf());
     final ordner = await _ordner();
     final v = await Verbindungsdatei.lies(ordner);
     if (v == null ||
@@ -656,6 +659,14 @@ class Sitzung extends ChangeNotifier {
     verbindung = null;
     abgleichszustand = null;
     await Gemeinsam.loesche();
+    // Kopien zum Teilen und aus der Fotomediathek gehören zum alten Konto
+    // (#437).
+    await raeumeJpegKopienAuf();
+    try {
+      await PhotoManagerRolle().aufraeumen();
+    } on Object {
+      // Ohne Telefon (Tests) oder ohne Plugin: nichts zu räumen.
+    }
     final ordner = await _ordner();
     if (await ordner.exists()) {
       await _bewahreSicherung(ordner);

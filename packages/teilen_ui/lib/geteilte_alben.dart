@@ -89,6 +89,7 @@ class Teilungszugang {
     this.video,
     this.zeitleisteMischt = false,
     this.partnerGeaendert,
+    this.nachBeitraegen,
   });
 
   final Serververbindung verbindung;
@@ -108,6 +109,11 @@ class Teilungszugang {
   /// Wer die Dateien zum Beitragen wählt – die Fotomediathek am Telefon,
   /// der Dateidialog am Rechner. Ohne gibt es keinen Knopf dafür.
   final Future<List<Beitragsdatei>> Function(BuildContext context)? waehle;
+
+  /// Läuft, wenn die gewählten Dateien hochgeladen sind (oder es nicht
+  /// mehr versucht wird): Am Telefon räumt es die Kopien weg, die die
+  /// Fotomediathek dafür bereitgestellt hat (#437).
+  final Future<void> Function()? nachBeitraegen;
 
   /// Ohne zeigt ein Video nur ein Zeichen.
   final Videobauer? video;
@@ -676,6 +682,11 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
         // „Lade 1 von 1 hoch …“ blieb für immer stehen (SIC-196).
         meldung = t.geteiltFehler(d.name);
       }
+    }
+    try {
+      await widget.zugang.nachBeitraegen?.call();
+    } on Object {
+      // Aufräumen ist Beiwerk; das Ergebnis zählt.
     }
     weg.pop();
     await dialog;

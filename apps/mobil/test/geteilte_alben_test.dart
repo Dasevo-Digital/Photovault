@@ -123,6 +123,7 @@ void main() {
       ..writeAsBytesSync(List.filled(64, 7));
     final eingang = <Uri>[];
     var gesendet = 0;
+    final aufgeraeumt = <int>[];
     var aufnahmen = <Map<String, Object?>>[
       {
         'id': 'a1',
@@ -187,6 +188,7 @@ void main() {
                 datei: () async => foto,
               ),
             ],
+            nachBeitraegen: () async => aufgeraeumt.add(gesendet),
           ),
         ),
       ),
@@ -217,6 +219,8 @@ void main() {
     );
     expect(gesendet, 64);
     expect(find.text('1 Aufnahme hinzugefügt'), findsOneWidget);
+    // Danach, nicht vorher: Die Kopie aus der Fotomediathek kann weg (#437).
+    expect(aufgeraeumt, [64]);
   });
 
   testWidgets('nur ansehen: kein Knopf zum Hinzufügen', (tester) async {

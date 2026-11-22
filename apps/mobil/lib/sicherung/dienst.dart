@@ -314,6 +314,27 @@ class Sicherungsdienst extends ChangeNotifier {
     verbindung: _verbindung,
   );
 
+  /// Räumt die Kopien weg, die photo_manager ausserhalb eines Laufs
+  /// bereitgestellt hat – etwa für Beiträge zu geteilten Alben (#437).
+  /// Sonst blieben sie liegen, bis der nächste Lauf aufräumt, bei
+  /// ausgeschalteter Sicherung bis das System es tut.
+  ///
+  /// Nur mit der Sperre: Der Zwischenspeicher gehört allen Läufen, und wer
+  /// sie hält, lädt womöglich gerade aus ihm hoch. Der räumt danach selbst
+  /// auf.
+  Future<void> raeumeFotokopienAuf() async {
+    if (_beendet || _laeuft) return;
+    const wer = 'aufraeumen';
+    if (!_stand.sperre(wer, dauer: const Duration(minutes: 1))) return;
+    try {
+      await _rolle(const []).aufraeumen();
+    } on MissingPluginException {
+      // in Tests ohne Telefon
+    } finally {
+      if (!_beendet) _stand.gibFrei(wer);
+    }
+  }
+
   /// Aufnahmen auch aus der Fotomediathek löschen (#205) – über alle
   /// Alben, nicht nur die gesicherten.
   Telefonloeschung loeschung(AppDatabase db) =>

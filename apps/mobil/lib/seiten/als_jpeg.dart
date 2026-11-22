@@ -67,6 +67,27 @@ Future<Teilart?> frageTeilart(
   );
 }
 
+/// Woran die Ordner der JPEG-Kopien zu erkennen sind.
+const _jpegOrdner = 'pv_jpeg_';
+
+/// Löscht die JPEG-Kopien früherer Teilvorgänge (#437) – beim Start und
+/// beim Abmelden. Gleich nach dem Teilen geht es nicht: Die empfangende
+/// App liest die Dateien womöglich erst später. Liegen blieben so
+/// Hunderte MB, nach dem Abmelden auch Fotos des vorigen Kontos.
+/// [in_] ist für Tests; sonst der Ordner für Temporäres.
+Future<void> raeumeJpegKopienAuf({Directory? in_}) async {
+  final wurzel = in_ ?? Directory.systemTemp;
+  try {
+    await for (final e in wurzel.list(followLinks: false)) {
+      if (e is Directory && p.basename(e.path).startsWith(_jpegOrdner)) {
+        await e.delete(recursive: true);
+      }
+    }
+  } on FileSystemException {
+    // Beim nächsten Mal.
+  }
+}
+
 /// Holt die Fotos [aufnahmen] als JPEG vom Server – gewandelt wird dort,
 /// mit der Bearbeitung (`GET /api/v1/aufnahmen/<id>/jpeg`) – und teilt sie.
 /// Videos bleiben aussen vor, wie im Browser.
@@ -77,7 +98,7 @@ Future<void> teileAlsJpeg(
 ) async {
   final verbindung = sitzung.abgleich?.verbindung;
   if (verbindung == null) throw KeineVerbindung('ohne Server');
-  final ordner = await Directory.systemTemp.createTemp('pv_jpeg_');
+  final ordner = await Directory.systemTemp.createTemp(_jpegOrdner);
   final dateien = <XFile>[];
   final namen = <String>[];
   for (final a in aufnahmen) {
