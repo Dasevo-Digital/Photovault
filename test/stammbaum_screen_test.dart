@@ -15,7 +15,9 @@ import 'package:photo_vault/widgets/lebensbaum_ansicht.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/familienstatistik_screen.dart';
+import 'package:photo_vault/screens/lebenslauf_screen.dart';
 import 'package:photo_vault/screens/stammbaum_screen.dart';
+import 'package:kern/services/lebenslauf.dart';
 import 'package:photo_vault/widgets/faecher_ansicht.dart';
 import 'package:photo_vault/widgets/familien_zeitleiste.dart';
 import 'package:photo_vault/services/backup_service.dart';
@@ -1648,6 +1650,50 @@ void main() {
       await waehle(tester, 'baumUnten', '3');
       expect(find.text('Opa'), findsOneWidget);
     });
+  });
+
+  // Der Lebenslauf aus dem Kartenmenü schreibt Ereignisse selbst. Danach las
+  // der Stammbaum nichts neu: Die Zeitleiste zeigte das neue Ereignis nicht
+  // (und gelöschte weiter), bis der Stammbaum neu geöffnet wurde.
+  testWidgets('nach dem Lebenslauf zeigt die Zeitleiste das neue Ereignis', (
+    tester,
+  ) async {
+    // Breit genug, dass die Ansichtsleiste ganz hineinpasst.
+    tester.view.physicalSize = const Size(1600, 1200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await zeige(tester, 'kind');
+    final maus = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await maus.down(tester.getCenter(find.text('Vater').first));
+    await maus.up();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lebenslauf …'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LebenslaufScreen), findsOneWidget);
+
+    await db.fuehreAus(
+      EreignisHinzufuegen((
+        id: 'hochzeit',
+        personId: 'vater',
+        art: ereignisartZuText(Ereignisart.hochzeit),
+        datum: DateTime(1960, 6, 1),
+        ort: null,
+        notiz: null,
+      )),
+    );
+    Navigator.of(tester.element(find.byType(LebenslaufScreen))).pop();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Zeitleiste'));
+    await tester.pumpAndSettle();
+    final zeile = tester
+        .widget<FamilienZeitleiste>(find.byType(FamilienZeitleiste))
+        .zeilen
+        .singleWhere((z) => z.personId == 'vater');
+    expect(zeile.marken.map((m) => m.art), contains(Ereignisart.hochzeit));
   });
 }
 

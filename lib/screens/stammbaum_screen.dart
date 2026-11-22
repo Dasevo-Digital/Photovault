@@ -961,6 +961,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
                 LebenslaufScreen(library: widget.library, person: person),
           ),
         );
+        // Der Lebenslauf schreibt Ereignisse selbst; Zeitleiste und
+        // Familienstatistik lesen sie nur hier.
+        await _laden();
       case 'fotos':
         await Navigator.of(context).push(
           MaterialPageRoute(
