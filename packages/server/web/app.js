@@ -1205,7 +1205,10 @@ async function zeigePapierkorb() {
     kopf = el('div', 'reisekopf');
     const leeren = el('button', 'knopf', t('Papierkorb leeren'));
     leeren.type = 'button';
-    leeren.addEventListener('click', () => endgueltigLoeschen(null, d.aufnahmen.length));
+    // Genau die gezeigten Aufnahmen, nicht „alles, was gerade drin liegt“:
+    // Die Rückfrage nennt ihre Zahl, und was ein anderes Gerät inzwischen
+    // in den Papierkorb gelegt hat, hat hier niemand gesehen.
+    leeren.addEventListener('click', () => endgueltigLoeschen(d.aufnahmen));
     kopf.append(leeren);
   }
   zeigeListe({ aufnahmen: d.aufnahmen, papierkorb: true, kopf }, t('Papierkorb'));
@@ -1221,12 +1224,12 @@ function papierkorbEnde(geschehen) {
   $('ende').textContent = [geschehen, leer ? t('Der Papierkorb ist leer.') : ''].filter(Boolean).join(' · ');
 }
 
-// Löscht [aufnahmen] endgültig – ohne sie den ganzen Papierkorb (#296).
-async function endgueltigLoeschen(aufnahmen, anzahl) {
-  const n = aufnahmen ? aufnahmen.length : anzahl;
+// Löscht [aufnahmen] endgültig (#296) – immer mit ihren Kennungen.
+async function endgueltigLoeschen(aufnahmen) {
+  const n = aufnahmen.length;
   if (!confirm(n === 1 ? t('Eine Aufnahme endgültig löschen? Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.') : t('{n} Aufnahmen endgültig löschen? Das lässt sich nicht rückgängig machen und gilt auf allen Geräten.', { n }))) return;
   try {
-    const r = await api('/api/v1/papierkorb/leeren', { methode: 'POST', json: aufnahmen ? { ids: aufnahmen.map((a) => a.id) } : { alle: true } });
+    const r = await api('/api/v1/papierkorb/leeren', { methode: 'POST', json: { ids: aufnahmen.map((a) => a.id) } });
     auswahlAufheben();
     await zeigePapierkorb();
     papierkorbEnde(t('{n} endgültig gelöscht', { n: r.geloescht }));
@@ -3281,7 +3284,24 @@ async function zeigeEinstellungen() {
   const tageBox = el('div', 'regler');
   tageBox.append(el('span', null, t('nach')), tage, el('span', null, t('Tagen')));
   let leeren = e.papierkorbLeeren;
-  tage.addEventListener('change', () => sende('papierkorbFristSetzen', { an: leeren, tage: Number(tage.value) }));
+  // Nur ganze Tage von 1 bis 3650: Ein geleertes Feld gab Number('') = 0,
+  // und eine Frist von 0 Tagen leerte am Server den ganzen Papierkorb
+  // endgültig. Was nicht passt, nimmt das Feld zurück.
+  let tageGesendet = e.papierkorbTage;
+  const fristTage = () => {
+    const n = Number(tage.value);
+    return tage.value.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= 3650 ? n : null;
+  };
+  tage.addEventListener('change', () => {
+    const n = fristTage();
+    if (n === null) {
+      tage.value = tageGesendet;
+      melde(t('Die Frist liegt zwischen 1 und 3650 Tagen.'));
+      return;
+    }
+    tageGesendet = n;
+    sende('papierkorbFristSetzen', { an: leeren, tage: n });
+  });
   // Dieselbe Skala wie am Rechner (Werkzeuge → Gesichtserkennung): Die
   // Ähnlichkeit von SFace liegt für dieselbe Person meist zwischen 0,5 und
   // 0,8. Bis 3.51 stand hier 0,8 bis 0,99 mit 0,9 als Vorgabe – damit
@@ -3290,7 +3310,7 @@ async function zeigeEinstellungen() {
   const vorschlagRegler = regler(0.6, 0.9, 0.05, vorschlaegeAb, (v) => t('ab {p}', { p: `${Math.round(v * 100)} %` }), (v) => { vorschlaegeAb = v; if (vorschlaegeAn) sende('vorschlaegeAutomatischSetzen', { ab: v }); });
   let vorschlaegeAn = e.vorschlaegeAb != null;
   ziel.replaceChildren(
-    zeile('Papierkorb automatisch leeren', 'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.', leeren, (an) => { leeren = an; sende('papierkorbFristSetzen', { an, tage: Number(tage.value) }); }, tageBox),
+    zeile('Papierkorb automatisch leeren', 'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.', leeren, (an) => { leeren = an; sende('papierkorbFristSetzen', { an, tage: tageGesendet }); }, tageBox),
     zeile('Sichere Vorschläge automatisch übernehmen', 'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.', vorschlaegeAn, (an) => { vorschlaegeAn = an; sende('vorschlaegeAutomatischSetzen', { ab: an ? vorschlaegeAb : null }); }, vorschlagRegler),
     zeile('KI-Auswertung nach dem Import automatisch nachholen', 'Neue Aufnahmen werden gleich ausgewertet: Gesichter, Bildinhalt, Text, Schlagwörter.', e.auswertenNachImport, (an) => sende('auswertenNachImportSetzen', { an })),
     zeile('Gleiche Aufnahme in mehreren Formaten stapeln', 'Liegt ein Foto zugleich als HEIC und JPG oder als RAW und JPG vor, zeigt die Zeitleiste nur eine Fassung. Die anderen bleiben dahinter erhalten. Ausschalten zeigt sie wieder einzeln.', e.formateStapeln, (an) => sende('formateStapelnSetzen', { an })),

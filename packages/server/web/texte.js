@@ -786,6 +786,7 @@ const EN = {
   'Löscht Aufnahmen im Papierkorb nach Ablauf der Frist endgültig – unwiderruflich.': 'Permanently deletes items in the trash after the period – irreversibly.',
   'nach': 'after',
   'Tagen': 'days',
+  'Die Frist liegt zwischen 1 und 3650 Tagen.': 'The period must be between 1 and 3650 days.',
   'ab {p}': 'from {p}',
   'Sichere Vorschläge automatisch übernehmen': 'Accept confident suggestions automatically',
   'Wiedererkannte Gesichter ab dieser Sicherheit werden ohne Rückfrage zugeordnet und dabei gekennzeichnet, ebenso ganze Gruppen, in denen jedes Gesicht auf dieselbe Person zeigt; unsichere bleiben Vorschläge.': 'Recognised faces at or above this confidence are assigned without asking and marked as such, as are whole groups in which every face points to the same person; uncertain ones remain suggestions.',

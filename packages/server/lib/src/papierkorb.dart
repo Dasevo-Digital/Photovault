@@ -78,6 +78,16 @@ class Papierkorbablauf {
         final db = bereich.bibliothek.db;
         final frist = await db.trashSettingsRow();
         if (frist == null || !frist.autoDeleteEnabled) continue;
+        // Unter einem Tag hiesse: alles sofort endgültig weg. So eine Zahl
+        // ist keine Absicht – die Weboberfläche schickte für ein geleertes
+        // Feld eine 0, und eine negative Frist liegt sogar in der Zukunft.
+        if (frist.autoDeleteAfterDays < 1) {
+          protokoll(
+            'Papierkorb von ${k.name}: Frist von '
+            '${frist.autoDeleteAfterDays} Tagen ungültig, nichts gelöscht',
+          );
+          continue;
+        }
         final jetzt = _uhr();
         final weg = await leereImBereich(
           bereich,

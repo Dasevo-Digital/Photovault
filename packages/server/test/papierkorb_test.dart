@@ -234,4 +234,24 @@ void main() {
     expect((await b.db.assetsByIds([frisch])).single.isTrashed, isTrue);
     expect((await b.db.trashSettingsRow())!.lastPurgeAt, isNotNull);
   });
+
+  test('eine Frist unter einem Tag löscht nichts', () async {
+    // Die Weboberfläche schickte für ein geleertes Feld „nach … Tagen“
+    // eine 0 – und der Ablauf leerte daraufhin den ganzen Papierkorb.
+    final eben = await ladeHoch('eben.jpg', 80);
+    await befehl('inDenPapierkorb', {
+      'ids': [eben],
+    });
+    final b = await bib();
+    final ablauf = Papierkorbablauf(konten: konten, bibliotheken: bibliotheken);
+    for (final tage in [0, -1]) {
+      await befehl('papierkorbFristSetzen', {'an': true, 'tage': tage});
+      await ablauf.pruefe();
+      expect(
+        (await b.db.assetsByIds([eben])).single.isTrashed,
+        isTrue,
+        reason: '$tage Tage',
+      );
+    }
+  });
 }
