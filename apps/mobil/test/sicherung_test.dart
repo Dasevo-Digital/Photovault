@@ -1,13 +1,16 @@
 import 'dart:io';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:kern/db/database.dart';
+import 'package:photo_vault_mobil/lokal/geraetefoto.dart';
 import 'package:photo_vault_mobil/lokal/ungesichert.dart';
 import 'package:photo_vault_mobil/sicherung/freigabe.dart';
 import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
@@ -853,6 +856,66 @@ void main() {
       final z = await zeile('IMG_0702.JPG');
       expect(await original(z['id'] as String), bearbeitung.readAsBytesSync());
       expect((z['serie'] as Map)['groesse'], 2);
+    });
+
+    test('am Rechner bearbeitet: der Betrachter nimmt nicht mehr das Foto '
+        'vom Telefon (#437)', () async {
+      Future<AssetData> amServer(String id) async => AssetData.fromJson(
+        (await telefon.hole('api/v1/aufnahmen/$id')).cast<String, Object?>(),
+      );
+      final roh = server.jpeg('IMG_0704.JPG', 170);
+      final roh2 = server.jpeg('IMG_0705.JPG', 0);
+      final bearbeitung = server.jpeg('IMG_0705_bearbeitet.jpg', 250);
+      rolle
+        ..foto('k', roh)
+        ..bearbeitetesFoto('l', roh2, bearbeitung);
+      await lauf().laufe();
+      final k = (await zeile('IMG_0704.JPG'))['id'] as String;
+      final l = (await zeile('IMG_0705.JPG'))['id'] as String;
+
+      // Was das Telefon sicherte, ist, was der Server zeigt – auch eine
+      // Bearbeitung aus der Fotos-App.
+      for (final id in [k, l]) {
+        final a = await amServer(id);
+        expect(stand.gesichertAls(id)!.pruefsumme, a.checksum);
+        expect(
+          Geraetefotos.zeigtDasselbe(a, stand.gesichertAls(id)!.pruefsumme),
+          isTrue,
+        );
+      }
+
+      // Am Rechner zugeschnitten: dieselbe Aufnahme, eine neue Datei (in
+      // anderer Grösse, damit sie keinem Foto der anderen Tests gleicht).
+      final zuschnitt =
+          File(p.join(server.ordner.path, 'eingang', 'IMG_0704.jpg'))
+            ..writeAsBytesSync(
+              img.encodeJpg(
+                img.fill(
+                  img.Image(width: 40, height: 30),
+                  color: img.ColorRgb8(170, 120, 85),
+                ),
+              ),
+            );
+      await TusHochladen(telefon).lade(zuschnitt, 'api/v1/hochladen', {
+        'filename': 'IMG_0704.jpg',
+        'bearbeitungVon': (await amServer(k)).checksum,
+      });
+      final nachher = await amServer(k);
+      expect(nachher.id, k);
+      expect(
+        Geraetefotos.zeigtDasselbe(nachher, stand.gesichertAls(k)!.pruefsumme),
+        isFalse,
+      );
+      // Ein Eintrag von vor 0.20 ohne Prüfsumme: Der Variantenstapel
+      // verrät die Bearbeitung.
+      expect(Geraetefotos.zeigtDasselbe(nachher, null), isFalse);
+      expect(
+        Geraetefotos.zeigtDasselbe(
+          await amServer(k).then((a) => a.copyWith(stackId: const Value(null))),
+          null,
+        ),
+        isTrue,
+      );
     });
 
     test(

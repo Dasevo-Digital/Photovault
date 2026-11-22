@@ -162,8 +162,9 @@ class Sicherungsdienst extends ChangeNotifier {
   };
 
   /// Siehe [Sicherungsstand.gesichertAls].
-  ({String lokal, int geaendert})? gesichertAls(String aufnahme) =>
-      _stand.gesichertAls(aufnahme);
+  ({String lokal, int geaendert, String? pruefsumme})? gesichertAls(
+    String aufnahme,
+  ) => _stand.gesichertAls(aufnahme);
 
   Laufbericht? get letzterLauf => _stand.letzterLauf;
   Map<String, String> get fehlgeschlagen => _stand.fehler;

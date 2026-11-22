@@ -235,6 +235,9 @@ class Sicherungslauf {
       var hoch = false;
       var endgueltig = false;
       String? aufnahme;
+      // Die Prüfsumme der Datei, die [aufnahme] wurde – für den Betrachter
+      // (siehe `Geraetefotos`).
+      String? sichtbar;
       String? abgelehnt;
       // Die Prüfsumme des Originals: Eine bearbeitete Fassung (#271) nennt
       // sie, damit der Server sie über das Original legt.
@@ -247,7 +250,9 @@ class Sicherungslauf {
         final bearbeitet = f.teil == 'bearbeitet';
         final da = schonDa[summe];
         if (da != null) {
-          aufnahme = bearbeitet ? da : aufnahme ?? da;
+          if (bearbeitet || aufnahme == null) {
+            (aufnahme, sichtbar) = (da, summe);
+          }
           continue;
         }
         final Map<String, String> kopf;
@@ -303,9 +308,10 @@ class Sicherungslauf {
             endgueltig = true;
         }
         if (abgelehnt != null) break;
-        aufnahme = bearbeitet
-            ? kopf['pv-aufnahme'] ?? aufnahme
-            : aufnahme ?? kopf['pv-aufnahme'];
+        final neu = kopf['pv-aufnahme'];
+        if (neu != null && (bearbeitet || aufnahme == null)) {
+          (aufnahme, sichtbar) = (neu, summe);
+        }
       }
       if (abgelehnt != null) {
         if (endgueltig) {
@@ -328,6 +334,7 @@ class Sicherungslauf {
         aufnahme: aufnahme,
         serie: x.stapelserie,
         serientitel: x.serientitel,
+        pruefsumme: sichtbar,
       );
       aus[x.id] = hoch ? _Erfolg.hochgeladen : _Erfolg.vorhanden;
     }

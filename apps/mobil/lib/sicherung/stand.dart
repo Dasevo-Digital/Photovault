@@ -94,6 +94,13 @@ class Sicherungsstand {
           'ALTER TABLE erledigt ADD COLUMN serientitel INTEGER NOT NULL DEFAULT 0',
         );
     }
+    // Seit 0.20: die Prüfsumme des Teils, der die Aufnahme auf dem Server
+    // nennt (#437). Am Rechner bearbeitet, behält die Aufnahme ihre Kennung
+    // und bekommt eine neue Datei; nur so merkt der Betrachter, dass das
+    // Foto des Telefons nicht mehr dasselbe zeigt.
+    if (!spalten.contains('pruefsumme')) {
+      db.execute('ALTER TABLE erledigt ADD COLUMN pruefsumme TEXT');
+    }
     // Der Betrachter fragt je Foto, das er zeigt (siehe [gesichertAls]).
     db.execute(
       'CREATE INDEX IF NOT EXISTS erledigt_aufnahme ON erledigt (aufnahme)',
@@ -169,12 +176,14 @@ class Sicherungsstand {
     String? grund,
     String? serie,
     bool serientitel = false,
+    String? pruefsumme,
   }) {
     _db
       ..execute(
         'INSERT OR REPLACE INTO erledigt '
-        '(lokal, geaendert, ausgang, aufnahme, zeit, grund, serie, serientitel) '
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        '(lokal, geaendert, ausgang, aufnahme, zeit, grund, serie, serientitel, '
+        'pruefsumme) '
+        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
           lokal,
           _ms(geaendert),
@@ -184,6 +193,7 @@ class Sicherungsstand {
           grund,
           serie,
           if (serientitel) 1 else 0,
+          pruefsumme,
         ],
       )
       ..execute('DELETE FROM laufend WHERE lokal = ?', [lokal])
@@ -263,11 +273,15 @@ class Sicherungsstand {
     [kennung],
   );
 
-  /// Das Foto auf dem Telefon, das als [aufnahme] gesichert ist, und wann
-  /// es zuletzt geändert war; `null`, wenn es keins gibt.
-  ({String lokal, int geaendert})? gesichertAls(String aufnahme) {
+  /// Das Foto auf dem Telefon, das als [aufnahme] gesichert ist, wann es
+  /// zuletzt geändert war und die Prüfsumme der Datei, die damals die
+  /// Aufnahme wurde (`null` bei Einträgen von vor 0.20); `null`, wenn es
+  /// keins gibt.
+  ({String lokal, int geaendert, String? pruefsumme})? gesichertAls(
+    String aufnahme,
+  ) {
     final z = _db.select(
-      "SELECT lokal, geaendert FROM erledigt WHERE ausgang IN ('hochgeladen', 'vorhanden') "
+      "SELECT lokal, geaendert, pruefsumme FROM erledigt WHERE ausgang IN ('hochgeladen', 'vorhanden') "
       'AND aufnahme = ? LIMIT 1',
       [aufnahme],
     );
@@ -275,6 +289,7 @@ class Sicherungsstand {
     return (
       lokal: z.first['lokal'] as String,
       geaendert: z.first['geaendert'] as int,
+      pruefsumme: z.first['pruefsumme'] as String?,
     );
   }
 

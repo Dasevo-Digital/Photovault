@@ -12,6 +12,8 @@ import '../sicherung/dienst.dart';
 /// Welches Foto des Telefons zu einer Aufnahme gehört, weiss die Sicherung.
 /// Vom Server kommt es weiterhin, wenn
 /// - es dort entwickelt oder restauriert ist: gezeigt wird die neue Fassung;
+/// - es dort bearbeitet wurde (zugeschnitten, gedreht, retuschiert): Die
+///   Aufnahme behält ihre Kennung und bekommt eine neue Datei (#437);
 /// - es hier seit der Sicherung bearbeitet wurde: Die Gesichtsrahmen und alle
 ///   Angaben gehören zum Foto auf dem Server;
 /// - sein Original nur in iCloud liegt: Vom Server ist es dann schneller als
@@ -26,7 +28,7 @@ class Geraetefotos {
   Future<Bildquelle?> quelle(AssetData a, int kante) async {
     if (!kommtInFrage(a)) return null;
     final g = _sicherung.gesichertAls(a.id);
-    if (g == null) return null;
+    if (g == null || !zeigtDasselbe(a, g.pruefsumme)) return null;
     try {
       final e = await AssetEntity.fromId(g.lokal);
       if (e == null || e.type != AssetType.image) return null;
@@ -51,4 +53,14 @@ class Geraetefotos {
       a.type == 'IMAGE' &&
       a.restoredRelativePath == null &&
       a.developedRelativePath == null;
+
+  /// Ob die Datei auf dem Server noch die ist, die vom Telefon kam:
+  /// dieselbe Prüfsumme wie bei der Sicherung ([pruefsumme]). Am Rechner
+  /// oder im Browser bearbeitet, hat sie eine neue. Einträge von vor 0.20
+  /// kennen keine Prüfsumme; dann verrät der Variantenstapel die
+  /// Bearbeitung (das Original liegt als Variante dahinter, #248).
+  static bool zeigtDasselbe(AssetData a, String? pruefsumme) =>
+      pruefsumme == null
+      ? !istVariantenstapel(a.stackId)
+      : pruefsumme == a.checksum;
 }
