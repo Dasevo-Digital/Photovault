@@ -105,6 +105,40 @@ void main() {
     test('leere Eingabe liefert leere Cluster-Liste', () {
       expect(clusterFaces(const FaceClusterInput({}, 0.5)), isEmpty);
     });
+
+    test('eine grosse Gruppe kostet nicht mehr als der Vergleich selbst', () {
+      // Das eigene Kind auf zweitausend Fotos: eine Gruppe, in der jedes
+      // Gesicht jedem gleicht. Das Union-Find ohne Pfadverkürzung bildete
+      // dabei eine Kette, jede Suche lief sie ganz ab – der Aufwand wuchs
+      // mit der dritten Potenz der Gruppengrösse (gemessen 0,1 s bei 500,
+      // 5,6 s bei 2000 Gesichtern). Zweidimensional, damit der Vergleich
+      // selbst nichts kostet und nur die Verwaltung der Gruppen zählt.
+      final gleich = {
+        for (var i = 0; i < 2000; i++) 'g$i': Float32List.fromList([0.6, 0.8]),
+      };
+      final uhr = Stopwatch()..start();
+      final gruppen = clusterFaces(FaceClusterInput(gleich, 0.9));
+      uhr.stop();
+      expect(gruppen, hasLength(1));
+      expect(gruppen.single, hasLength(2000));
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 1)));
+    });
+
+    test('Gruppen bleiben dieselben, auch wenn sie zusammenwachsen', () {
+      // a–b und c–d finden sich zuerst getrennt; e gleicht b und d und
+      // verbindet beide Gruppen nachträglich.
+      final input = FaceClusterInput({
+        'a': Float32List.fromList([1.0, 0.0, 0.0]),
+        'b': Float32List.fromList([0.8, 0.6, 0.0]),
+        'c': Float32List.fromList([0.0, 0.0, 1.0]),
+        'd': Float32List.fromList([0.0, 0.6, 0.8]),
+        'e': Float32List.fromList([0.0, 1.0, 0.0]),
+        'f': Float32List.fromList([-1.0, 0.0, 0.0]),
+      }, 0.55);
+      expect(clusterFaces(input), [
+        ['a', 'b', 'c', 'd', 'e'],
+      ]);
+    });
   });
 
   group('meanNormalizedEmbedding', () {

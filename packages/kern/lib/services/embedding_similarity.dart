@@ -116,18 +116,7 @@ List<List<String>> findDuplicateGroups(DuplicateSearchParams params) {
     growable: false,
   );
 
-  final parent = List<int>.generate(n, (i) => i, growable: false);
-  int find(int x) {
-    while (parent[x] != x) {
-      x = parent[x];
-    }
-    return x;
-  }
-
-  void union(int a, int b) {
-    final ra = find(a), rb = find(b);
-    if (ra != rb) parent[ra] = rb;
-  }
+  final gruppen = _Gruppen(n);
 
   final ausnahmen = params.ausnahmen;
   final simd = _simdVektoren(vectors);
@@ -159,11 +148,11 @@ List<List<String>> findDuplicateGroups(DuplicateSearchParams params) {
           ausnahmen.contains(duplikatPaarSchluessel(ids[i], ids[j]))) {
         continue;
       }
-      union(i, j);
+      gruppen.vereine(i, j);
     }
   }
 
-  return _resolveClusters(parent, n, ids);
+  return _resolveClusters(gruppen, n, ids);
 }
 
 /// Wie [findDuplicateGroups], verlangt beim Zusammenfassen zusätzlich, dass
@@ -186,18 +175,7 @@ List<List<String>> findBurstGroups(BurstSearchParams params) {
     growable: false,
   );
 
-  final parent = List<int>.generate(n, (i) => i, growable: false);
-  int find(int x) {
-    while (parent[x] != x) {
-      x = parent[x];
-    }
-    return x;
-  }
-
-  void union(int a, int b) {
-    final ra = find(a), rb = find(b);
-    if (ra != rb) parent[ra] = rb;
-  }
+  final gruppen = _Gruppen(n);
 
   // **Hier ist die Zeit der Vorfilter, nicht die Zufallsprojektion.**
   // Eine Serie verlangt ohnehin, dass zwei Aufnahmen höchstens
@@ -227,11 +205,11 @@ List<List<String>> findBurstGroups(BurstSearchParams params) {
       vectors[j],
       params.threshold,
     )) {
-      union(i, j);
+      gruppen.vereine(i, j);
     }
   }
 
-  return _resolveClusters(parent, n, ids);
+  return _resolveClusters(gruppen, n, ids);
 }
 
 /// Alle Indexpaare, deren Zeitstempel höchstens [maxGap] auseinanderliegen.
@@ -265,17 +243,41 @@ List<int> zeitnachbarPaare(List<DateTime?> zeitstempel, Duration maxGap) {
   return paare;
 }
 
-List<List<String>> _resolveClusters(List<int> parent, int n, List<String> ids) {
-  int find(int x) {
-    while (parent[x] != x) {
-      x = parent[x];
+/// Union-Find mit Pfadhalbierung und Vereinigung nach Grösse.
+///
+/// Ohne beides bildete eine grosse Gruppe – eine lange Serie, viele
+/// gleiche Bildschirmfotos – eine Kette, und jede Suche lief sie ganz ab;
+/// der Aufwand wuchs mit der Gruppengrösse statt nur mit der Zahl der
+/// Vergleiche (dasselbe wie bei `clusterFaces`).
+class _Gruppen {
+  _Gruppen(int n)
+    : _eltern = List<int>.generate(n, (i) => i, growable: false),
+      _groesse = List<int>.filled(n, 1, growable: false);
+
+  final List<int> _eltern;
+  final List<int> _groesse;
+
+  int wurzel(int x) {
+    while (_eltern[x] != x) {
+      _eltern[x] = _eltern[_eltern[x]];
+      x = _eltern[x];
     }
     return x;
   }
 
+  void vereine(int a, int b) {
+    var ra = wurzel(a), rb = wurzel(b);
+    if (ra == rb) return;
+    if (_groesse[ra] > _groesse[rb]) (ra, rb) = (rb, ra);
+    _eltern[ra] = rb;
+    _groesse[rb] += _groesse[ra];
+  }
+}
+
+List<List<String>> _resolveClusters(_Gruppen gruppen, int n, List<String> ids) {
   final clusters = <int, List<int>>{};
   for (var i = 0; i < n; i++) {
-    clusters.putIfAbsent(find(i), () => []).add(i);
+    clusters.putIfAbsent(gruppen.wurzel(i), () => []).add(i);
   }
   return clusters.values
       .where((g) => g.length >= 2)

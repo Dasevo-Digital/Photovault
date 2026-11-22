@@ -56,17 +56,28 @@ List<List<String>> clusterFaces(FaceClusterInput input) {
     growable: false,
   );
 
+  // Union-Find mit Pfadhalbierung und Vereinigung nach Grösse. Ohne beides
+  // bildete eine grosse Gruppe – das eigene Kind auf Tausenden Fotos, wo
+  // jedes Gesicht jedem gleicht – eine Kette, und jede Suche lief sie ganz
+  // ab: Der Aufwand wuchs mit der dritten Potenz der Gruppengrösse statt
+  // mit der Zahl der Vergleiche (gemessen 5,6 s für eine Gruppe aus 2000
+  // Gesichtern, fast alles davon in der Suche).
   final parent = List<int>.generate(n, (i) => i, growable: false);
+  final groesse = List<int>.filled(n, 1, growable: false);
   int find(int x) {
     while (parent[x] != x) {
+      parent[x] = parent[parent[x]];
       x = parent[x];
     }
     return x;
   }
 
   void union(int a, int b) {
-    final ra = find(a), rb = find(b);
-    if (ra != rb) parent[ra] = rb;
+    var ra = find(a), rb = find(b);
+    if (ra == rb) return;
+    if (groesse[ra] > groesse[rb]) (ra, rb) = (rb, ra);
+    parent[ra] = rb;
+    groesse[rb] += groesse[ra];
   }
 
   final paareGesamt = n * (n - 1) / 2;

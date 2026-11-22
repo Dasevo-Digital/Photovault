@@ -379,6 +379,25 @@ void main() {
       final alsPaare = {for (final p in paare) (p ~/ n, p % n)};
       expect(alsPaare, {(0, 1), (0, 2), (1, 2)});
     });
+
+    test('eine grosse Serie kostet nicht mehr als ihre Paare', () {
+      // Die ungestellte Kamerauhr von oben, mit gleichem Bild: eine einzige
+      // Serie aus 3000 Aufnahmen. Das Union-Find ohne Pfadverkürzung
+      // bildete eine Kette, und jede der Million Vereinigungen lief sie
+      // ab. Zweidimensional, damit der Vergleich nichts kostet.
+      const n = 3000;
+      final gleich = DateTime(2001, 1, 1);
+      final einbettungen = {
+        for (var i = 0; i < n; i++) 'f$i': Float32List.fromList([0.6, 0.8]),
+      };
+      final zeiten = {for (var i = 0; i < n; i++) 'f$i': gleich};
+      final uhr = Stopwatch()..start();
+      final gefunden = findBurstGroups(BurstSearchParams(einbettungen, zeiten));
+      uhr.stop();
+      expect(gefunden, hasLength(1));
+      expect(gefunden.single, hasLength(n));
+      expect(uhr.elapsed, lessThan(const Duration(milliseconds: 800)));
+    });
   });
 }
 
