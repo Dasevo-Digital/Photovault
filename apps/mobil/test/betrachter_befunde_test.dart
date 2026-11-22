@@ -118,4 +118,94 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
   });
+
+  testWidgets('#454 „Unbenannte löschen“ trifft kein inzwischen benanntes '
+      'Gesicht', (tester) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_betrachter_bef_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await tester.runAsync(() async {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'g1',
+          originalFileName: 'g1.jpg',
+          relativePath: 'originals/g1.jpg',
+          checksum: 'pruef-g1',
+          type: 'IMAGE',
+          fileCreatedAt: DateTime(2025),
+          importedAt: DateTime(2026),
+        ),
+      );
+      await db
+          .into(db.people)
+          .insert(PeopleCompanion.insert(id: 'anna', name: 'Anna'));
+      await db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: 'f1',
+              assetId: 'g1',
+              boxX: 0.1,
+              boxY: 0.1,
+              boxW: 0.2,
+              boxH: 0.2,
+            ),
+          );
+    });
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Betrachter(sitzung: sitzung, zeilen: [_zeile('g1')], start: 0),
+      ),
+    );
+    Future<void> ruhe() async {
+      for (var i = 0; i < 3; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+      }
+    }
+
+    await ruhe();
+    final t = AppTexte.of(tester.element(find.byType(Betrachter)));
+    // Rahmen einblenden: Erst dann bietet das Menü „Unbenannte löschen“.
+    await tester.tap(find.byTooltip(t.betrachterMehr));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(t.betrachterGesichterZeigen));
+    await tester.pumpAndSettle();
+    await ruhe();
+
+    // Das Gesicht wird benannt, ohne dass der Betrachter neu zählt – in
+    // den Angaben oder auf einem anderen Gerät.
+    await tester.runAsync(
+      () => db.fuehreAus(const GesichterZuordnen(['f1'], 'anna')),
+    );
+
+    await tester.tap(find.byTooltip(t.betrachterMehr));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining(t.betrachterUnbenannteLoeschen(1)));
+    await tester.pump();
+    await ruhe();
+    await tester.pumpAndSettle();
+    // Vor der Korrektur kam hier die Rückfrage, und das Gesicht ging weg.
+    if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+      await tester.tap(find.text(t.gesichterLoeschen));
+      await tester.pump();
+      await ruhe();
+    }
+    final f = await tester.runAsync(() => db.facesForAsset('g1'));
+    expect(f!.map((x) => (x.id, x.personId)), [('f1', 'anna')]);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+  });
 }

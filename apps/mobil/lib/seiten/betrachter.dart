@@ -268,17 +268,30 @@ class _BetrachterState extends State<Betrachter> {
     if (mounted) Navigator.of(context).pop();
   }
 
-  Future<void> _angaben() => zeigeAngaben(context, widget.sitzung, _aktuell);
+  /// In den Angaben lassen sich Gesichter benennen: danach Rahmen und
+  /// Zahlen im Menü neu (#454).
+  Future<void> _angaben() async {
+    await zeigeAngaben(context, widget.sitzung, _aktuell);
+    if (mounted) _gesichterNeu();
+  }
+
+  /// Die unbenannten Gesichter von [id], wie sie **jetzt** in der Kopie
+  /// stehen – nicht wie beim letzten Zählen (#454): Inzwischen kann eines
+  /// benannt sein (in den Angaben, auf einem anderen Gerät), und die
+  /// Aktionen unten träfen sonst ein benanntes Gesicht.
+  Future<List<FaceData>> _unbenannteVon(String id) async => [
+    for (final f in await _db.facesForAsset(id))
+      if (f.personId == null) f,
+  ];
 
   /// Die unbenannten Gesichter dieses Fotos auf einmal ignorieren – wie
   /// im Menü der Gesichtsansicht am Rechner (#192).
   Future<void> _unbenannteIgnorieren() async {
     final ids = [
-      for (final f in _hier)
-        if (f.personId == null && !f.isIgnored) f.id,
+      for (final f in await _unbenannteVon(_aktuell))
+        if (!f.isIgnored) f.id,
     ];
-    if (ids.isEmpty) return;
-    await _db.fuehreAus(GesichterBeiseitelegen(ids, true));
+    if (ids.isNotEmpty) await _db.fuehreAus(GesichterBeiseitelegen(ids, true));
     if (mounted) _gesichterNeu();
   }
 
@@ -286,15 +299,17 @@ class _BetrachterState extends State<Betrachter> {
   /// Erkennung lauter Fehlgriffe gefunden hat.
   Future<void> _unbenannteLoeschen() async {
     final t = AppTexte.of(context);
-    final ids = [
-      for (final f in _hier)
-        if (f.personId == null) f.id,
-    ];
-    if (ids.isEmpty) return;
+    final id = _aktuell;
+    final vorher = await _unbenannteVon(id);
+    if (!mounted) return;
+    if (vorher.isEmpty) {
+      _gesichterNeu();
+      return;
+    }
     final ja = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        content: Text(t.betrachterUnbenannteLoeschenFrage(ids.length)),
+        content: Text(t.betrachterUnbenannteLoeschenFrage(vorher.length)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -308,7 +323,13 @@ class _BetrachterState extends State<Betrachter> {
       ),
     );
     if (ja != true) return;
-    await _db.fuehreAus(GesichterLoeschen(ids));
+    // Während die Frage stand, kann eines benannt worden sein.
+    final gefragt = {for (final f in vorher) f.id};
+    final ids = [
+      for (final f in await _unbenannteVon(id))
+        if (gefragt.contains(f.id)) f.id,
+    ];
+    if (ids.isNotEmpty) await _db.fuehreAus(GesichterLoeschen(ids));
     if (mounted) _gesichterNeu();
   }
 
