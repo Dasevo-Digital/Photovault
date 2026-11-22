@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:kern/abgleich/abgleich.dart' show Abgleichszustand;
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -136,6 +137,27 @@ class Sicherungsdienst extends ChangeNotifier {
     _vomServerAbgemeldet = ja;
     if (!_beendet) notifyListeners();
   }
+
+  /// Wie es um den Abgleich steht (die Sitzung reicht jede Meldung weiter).
+  void meldeAbgleich(Abgleichszustand? z) {
+    final vorher = freigabeMoeglich;
+    _abgleich = z;
+    if (vorher != freigabeMoeglich && !_beendet) notifyListeners();
+    meldeAbgemeldet(z?.abgemeldet ?? false);
+  }
+
+  Abgleichszustand? _abgleich;
+
+  /// Ob „Speicher freigeben“ gerade angeboten wird (#425): nur, solange der
+  /// Abgleich läuft – der Server antwortet, dieses Telefon ist angemeldet,
+  /// und das Schema passt. Steht er still, lässt sich nicht verlässlich
+  /// prüfen, was auf dem Server noch liegt. Die eigentliche Bestätigung
+  /// gibt der Server selbst ([Speicherfreigabe.kandidaten]).
+  bool get freigabeMoeglich => switch (_abgleich) {
+    final z? =>
+      z.erreichbar && !z.ungeklaert && !z.abgemeldet && !z.schemaAnders,
+    null => false,
+  };
 
   /// Siehe [Sicherungsstand.gesichertAls].
   ({String lokal, int geaendert})? gesichertAls(String aufnahme) =>
@@ -278,12 +300,13 @@ class Sicherungsdienst extends ChangeNotifier {
 
   Future<void> oeffneEinstellungen() => PhotoManager.openSetting();
 
-  /// Speicher auf dem Telefon freigeben – mit der Kopie [db] als Beleg,
-  /// dass die Aufnahmen auf dem Server noch da sind.
+  /// Speicher auf dem Telefon freigeben – mit der Kopie [db] und dem
+  /// Server als Beleg, dass die Aufnahmen dort noch da sind.
   Speicherfreigabe freigabe(AppDatabase db) => Speicherfreigabe(
     stand: _stand,
-    rolle: PhotoManagerRolle(alben: einstellungen.alben),
+    rolle: _rolle(einstellungen.alben),
     db: db,
+    verbindung: _verbindung,
   );
 
   /// Aufnahmen auch aus der Fotomediathek löschen (#205) – über alle

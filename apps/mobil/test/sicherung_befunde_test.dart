@@ -2,9 +2,12 @@
 // Issue #418): je Befund ein Test, der ohne die Korrektur scheitert.
 import 'dart:io';
 
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kern/abgleich/abgleich.dart' show Abgleichszustand;
+import 'package:kern/db/database.dart';
 import 'package:photo_manager/photo_manager.dart' show PermissionState;
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/seiten/sicherung.dart';
@@ -119,5 +122,53 @@ void main() {
     )..zugriff = Zugriff.erlaubt;
     await d.zaehleUngesicherte();
     expect([for (final l in d.ungesichert!) l.id], ['a1', 'a2', 'a3']);
+  });
+
+  testWidgets('#425 „Speicher freigeben“ nur, solange der Abgleich läuft', (
+    tester,
+  ) async {
+    final d = _dienst(const Sicherungseinstellungen(an: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    await tester.pumpWidget(_app(Sicherungsseite(dienst: d, db: db)));
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Sicherungsseite)));
+    ListTile punkt() => tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text(t.sicherungFreigeben),
+        matching: find.byType(ListTile),
+      ),
+    );
+
+    Future<void> melde(Abgleichszustand? z) async {
+      d.meldeAbgleich(z);
+      await tester.pumpAndSettle();
+    }
+
+    // Noch keine Antwort vom Server.
+    expect(punkt().enabled, isFalse);
+    expect(find.text(t.sicherungFreigebenGesperrt), findsOneWidget);
+
+    await melde(const Abgleichszustand(erreichbar: true, ausstehend: 0));
+    expect(punkt().enabled, isTrue);
+    expect(find.text(t.sicherungFreigebenHinweis), findsOneWidget);
+
+    // Offline, abgemeldet, anderes Schema: Die Kopie kann veraltet sein.
+    for (final z in const [
+      Abgleichszustand(erreichbar: false, ausstehend: 0),
+      Abgleichszustand(erreichbar: true, ausstehend: 0, abgemeldet: true),
+      Abgleichszustand(
+        erreichbar: true,
+        ausstehend: 0,
+        serverSchema: 99,
+        hierSchema: 98,
+      ),
+      Abgleichszustand(erreichbar: false, ausstehend: 0, ungeklaert: true),
+    ]) {
+      await melde(const Abgleichszustand(erreichbar: true, ausstehend: 0));
+      await melde(z);
+      expect(punkt().enabled, isFalse);
+      expect(find.text(t.sicherungFreigebenGesperrt), findsOneWidget);
+    }
   });
 }

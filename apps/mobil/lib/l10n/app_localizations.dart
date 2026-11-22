@@ -1267,6 +1267,18 @@ abstract class AppTexte {
   /// **'Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.'**
   String get sicherungFreigebenHinweis;
 
+  /// No description provided for @sicherungFreigebenGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Geht nur, solange der Abgleich mit dem Server läuft. Sonst lässt sich nicht prüfen, ob die Aufnahmen dort noch liegen.'**
+  String get sicherungFreigebenGesperrt;
+
+  /// No description provided for @sicherungFreigebenUngeprueft.
+  ///
+  /// In de, this message translates to:
+  /// **'Nichts gelöscht: Der Server konnte nicht bestätigen, was er noch hat. {grund}'**
+  String sicherungFreigebenUngeprueft(String grund);
+
   /// No description provided for @sicherungFreigebenSucht.
   ///
   /// In de, this message translates to:

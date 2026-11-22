@@ -431,6 +431,15 @@
   },
   "sicherungFreigeben": "Speicher freigeben",
   "sicherungFreigebenHinweis": "Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.",
+  "sicherungFreigebenGesperrt": "Geht nur, solange der Abgleich mit dem Server läuft. Sonst lässt sich nicht prüfen, ob die Aufnahmen dort noch liegen.",
+  "sicherungFreigebenUngeprueft": "Nichts gelöscht: Der Server konnte nicht bestätigen, was er noch hat. {grund}",
+  "@sicherungFreigebenUngeprueft": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "sicherungFreigebenSucht": "Sucht gesicherte Aufnahmen …",
   "sicherungFreigebenNichts": "Nichts freizugeben: Was auf dem Server liegt, ist schon vom Telefon – oder noch nicht gesichert.",
   "sicherungFreigebenTitel": "{n, plural, =1{1 Aufnahme vom Telefon löschen?} other{{n} Aufnahmen vom Telefon löschen?}}",

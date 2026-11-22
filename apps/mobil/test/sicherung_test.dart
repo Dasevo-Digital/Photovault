@@ -8,6 +8,7 @@ import 'dart:math';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kern/abgleich/papierkorb.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
@@ -327,7 +328,12 @@ void main() {
           ),
         );
       }
-      final f = Speicherfreigabe(stand: stand, rolle: rolle, db: db);
+      final f = Speicherfreigabe(
+        stand: stand,
+        rolle: rolle,
+        db: db,
+        verbindung: telefon,
+      );
       expect(await f.kandidaten(), unorderedEquals(['f1', 'f2']));
 
       // Seit der Sicherung bearbeitet: bleibt.
@@ -344,6 +350,62 @@ void main() {
         isNot(contains('f2')),
       );
       expect(await f.kandidaten(), isEmpty);
+    },
+  );
+
+  test(
+    'Speicher freigeben: am Server gelöscht, die Kopie weiss es noch nicht – '
+    'bleibt auf dem Telefon (#425)',
+    () async {
+      rolle.foto('v1', server.jpeg('IMG_0601.JPG', 61));
+      rolle.foto('v2', server.jpeg('IMG_0602.JPG', 62));
+      rolle.foto('v3', server.jpeg('IMG_0603.JPG', 63));
+      await lauf().laufe();
+      final amServer = {for (final a in await aufServer()) a['name']: a['id']};
+      String id(String name) => amServer[name]! as String;
+      // Die Kopie hat zuletzt vor dem Löschen abgeglichen: Sie führt alle
+      // drei als vorhanden, nicht im Papierkorb.
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+      for (final name in ['IMG_0601.JPG', 'IMG_0602.JPG', 'IMG_0603.JPG']) {
+        await db.insertAsset(
+          AssetsCompanion.insert(
+            id: id(name),
+            originalFileName: name,
+            relativePath: 'originals/$name',
+            checksum: 'pruef-$name',
+            type: 'IMAGE',
+            fileCreatedAt: DateTime(2025),
+            importedAt: DateTime(2026),
+          ),
+        );
+      }
+      // Am Rechner: eine in den Papierkorb und endgültig gelöscht, eine
+      // nur in den Papierkorb.
+      await telefon.schicke(
+        'api/v1/befehle',
+        InDenPapierkorb([id('IMG_0601.JPG'), id('IMG_0602.JPG')]).alsJson(),
+      );
+      await leereServerpapierkorb(telefon, ids: [id('IMG_0601.JPG')]);
+
+      final f = Speicherfreigabe(
+        stand: stand,
+        rolle: rolle,
+        db: db,
+        verbindung: telefon,
+      );
+      expect(await f.kandidaten(), ['v3']);
+
+      // Ohne Antwort des Servers geht gar nichts.
+      final weg = Serververbindung(Uri.parse('http://localhost:1/'), 'pv1_x');
+      addTearDown(weg.schliesse);
+      final ohne = Speicherfreigabe(
+        stand: stand,
+        rolle: rolle,
+        db: db,
+        verbindung: weg,
+      );
+      await expectLater(ohne.kandidaten(), throwsA(isA<KeineVerbindung>()));
     },
   );
 
@@ -410,7 +472,12 @@ void main() {
       expect(await stapel.bilde(alle), 0);
 
       // Speicher freigeben: nur das Foto ausserhalb der Serie.
-      final f = Speicherfreigabe(stand: stand, rolle: rolle, db: db);
+      final f = Speicherfreigabe(
+        stand: stand,
+        rolle: rolle,
+        db: db,
+        verbindung: telefon,
+      );
       expect(await f.kandidaten(), ['f1']);
     },
   );

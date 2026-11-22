@@ -333,6 +333,15 @@
   },
   "sicherungFreigeben": "Free up space",
   "sicherungFreigebenHinweis": "Delete backed-up photos from this phone – they stay on the server.",
+  "sicherungFreigebenGesperrt": "Only available while syncing with the server works. Otherwise there is no way to check that the photos are still there.",
+  "sicherungFreigebenUngeprueft": "Nothing deleted: the server could not confirm what it still has. {grund}",
+  "@sicherungFreigebenUngeprueft": {
+    "placeholders": {
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
   "sicherungFreigebenSucht": "Looking for backed-up photos …",
   "sicherungFreigebenNichts": "Nothing to free up: what is on the server is already off the phone – or not backed up yet.",
   "sicherungFreigebenTitel": "{n, plural, =1{Delete 1 photo from this phone?} other{Delete {n} photos from this phone?}}",

@@ -800,6 +800,15 @@ class AppTexteDe extends AppTexte {
       'Gesicherte Aufnahmen vom Telefon löschen – auf dem Server bleiben sie.';
 
   @override
+  String get sicherungFreigebenGesperrt =>
+      'Geht nur, solange der Abgleich mit dem Server läuft. Sonst lässt sich nicht prüfen, ob die Aufnahmen dort noch liegen.';
+
+  @override
+  String sicherungFreigebenUngeprueft(String grund) {
+    return 'Nichts gelöscht: Der Server konnte nicht bestätigen, was er noch hat. $grund';
+  }
+
+  @override
   String get sicherungFreigebenSucht => 'Sucht gesicherte Aufnahmen …';
 
   @override

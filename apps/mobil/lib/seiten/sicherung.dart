@@ -6,6 +6,7 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:photo_manager/photo_manager.dart';
 
+import '../fehlertext.dart';
 import '../l10n/app_localizations.dart';
 import '../sicherung/dienst.dart';
 import '../sicherung/photo_manager_rolle.dart';
@@ -27,7 +28,22 @@ class Sicherungsseite extends StatelessWidget {
     final bote = ScaffoldMessenger.of(context);
     bote.showSnackBar(SnackBar(content: Text(t.sicherungFreigebenSucht)));
     final f = dienst.freigabe(db);
-    final ids = await f.kandidaten();
+    final List<String> ids;
+    try {
+      ids = await f.kandidaten();
+    } on Exception catch (fehler) {
+      // Ohne Bestätigung des Servers bleibt alles auf dem Telefon (#425).
+      bote
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              t.sicherungFreigebenUngeprueft(fehlertext(t, fehler)),
+            ),
+          ),
+        );
+      return;
+    }
     bote.hideCurrentSnackBar();
     if (!context.mounted) return;
     if (ids.isEmpty) {
@@ -129,7 +145,14 @@ class Sicherungsseite extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.cleaning_services_outlined),
                   title: Text(t.sicherungFreigeben),
-                  subtitle: Text(t.sicherungFreigebenHinweis),
+                  // Steht der Abgleich still, lässt sich nicht prüfen, was
+                  // auf dem Server noch liegt (#425).
+                  enabled: dienst.freigabeMoeglich,
+                  subtitle: Text(
+                    dienst.freigabeMoeglich
+                        ? t.sicherungFreigebenHinweis
+                        : t.sicherungFreigebenGesperrt,
+                  ),
                   onTap: () => _freigeben(context, db!),
                 ),
               if (e.an && db != null)

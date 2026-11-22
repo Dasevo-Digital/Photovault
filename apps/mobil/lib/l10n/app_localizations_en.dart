@@ -798,6 +798,15 @@ class AppTexteEn extends AppTexte {
       'Delete backed-up photos from this phone – they stay on the server.';
 
   @override
+  String get sicherungFreigebenGesperrt =>
+      'Only available while syncing with the server works. Otherwise there is no way to check that the photos are still there.';
+
+  @override
+  String sicherungFreigebenUngeprueft(String grund) {
+    return 'Nothing deleted: the server could not confirm what it still has. $grund';
+  }
+
+  @override
   String get sicherungFreigebenSucht => 'Looking for backed-up photos …';
 
   @override

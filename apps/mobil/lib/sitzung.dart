@@ -226,7 +226,7 @@ class Sitzung extends ChangeNotifier {
     _abo = a.zustand.listen((z) {
       final vorher = abgleichszustand;
       abgleichszustand = z;
-      sicherung?.meldeAbgemeldet(z.abgemeldet);
+      sicherung?.meldeAbgleich(z);
       if (vorher != null && z.faelle > vorher.faelle) {
         letzteNeueFaelle = z.faelle - vorher.faelle;
         neueFaelle.value++;
@@ -272,7 +272,7 @@ class Sitzung extends ChangeNotifier {
       server: v.server,
       token: v.token,
       kopie: db,
-    )..meldeAbgemeldet(abgleichszustand?.abgemeldet ?? false);
+    )..meldeAbgleich(abgleichszustand);
     _setze(Sitzungszustand.bereit);
     unawaited(d.starte());
     unawaited(pruefeServerspeicher());
