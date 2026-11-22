@@ -10,7 +10,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart' show TableUpdateQuery, Value;
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -857,6 +857,9 @@ class LibraryState extends ChangeNotifier {
       }
     }
 
+    for (final abo in _vorratAbos) {
+      unawaited(abo.cancel());
+    }
     await mitFrist('Abgleich', () async => abgleich?.beende());
     await mitFrist('Rechenhilfe', beendeRechenhilfe);
     if (_datenbankGeoeffnet) {
@@ -1143,7 +1146,6 @@ class LibraryState extends ChangeNotifier {
 
   /// Hält die Kopie mit dem Server gleich; nur im verbundenen Betrieb.
   Abgleich? abgleich;
-  Vorrat? _vorrat;
   StreamSubscription<Abgleichszustand>? _abgleichsAbo;
 
   /// Wie es um den Abgleich steht – für die Anzeige.
@@ -1175,7 +1177,7 @@ class LibraryState extends ChangeNotifier {
     );
     await a.richteEin();
     final beschaffung = Dateibeschaffung(paths, s)..binde();
-    _vorrat = Vorrat(db, beschaffung);
+    _richteVorratEin(Vorrat(db, beschaffung), a.zustand);
     _abgleichsAbo = a.zustand.listen((z) {
       final vorher = _abgleichszustand;
       _abgleichszustand = z;
@@ -1192,7 +1194,6 @@ class LibraryState extends ChangeNotifier {
         unawaited(_pruefeKarte(s));
       }
       if (z.erreichbar && !z.schemaAnders) {
-        unawaited(_vorrat?.fuelle().catchError((_) => 0));
         // Einmal je Start: Spuren, die bis 3.37 nur hier angelegt wurden,
         // dem Server nachreichen (siehe spurenNachreichen).
         if (!_spurenGeprueft) {
@@ -1263,6 +1264,46 @@ class LibraryState extends ChangeNotifier {
       debugPrint('Zwischenspeicher nicht begrenzt: $e');
     }
   }
+
+  /// Füllt den Vorrat an Miniaturen und Gesichtsausschnitten, wenn der
+  /// Server erreichbar wird und wenn sich Aufnahmen, Gesichter oder
+  /// Personen ändern – nicht bei jeder Zustandsmeldung (#434).
+  ///
+  /// Der Abgleich meldet seinen Zustand nach jeder Runde, im Leerlauf
+  /// etwa alle 25 Sekunden. Bis hierher füllte jede Meldung: Bei 30 000
+  /// Fotos und 60 000 Gesichtern las das jedes Mal die Tabellen und sah
+  /// rund 90 000 Dateien auf der Platte nach – Dauerlast auf dem Faden der
+  /// Oberfläche.
+  void _richteVorratEin(Vorrat vorrat, Stream<Abgleichszustand> zustand) {
+    var bereit = false;
+    void fuelle() =>
+        unawaited(vorrat.fuelle().then<void>((_) {}, onError: (Object _) {}));
+    for (final abo in _vorratAbos) {
+      unawaited(abo.cancel());
+    }
+    _vorratAbos = [
+      zustand.listen((z) {
+        final jetzt = z.erreichbar && !z.schemaAnders;
+        if (jetzt && !bereit) fuelle();
+        bereit = jetzt;
+      }),
+      db
+          .tableUpdates(
+            TableUpdateQuery.onAllTables([db.assets, db.faces, db.people]),
+          )
+          .listen((_) {
+            if (bereit) fuelle();
+          }),
+    ];
+  }
+
+  List<StreamSubscription<Object?>> _vorratAbos = const [];
+
+  @visibleForTesting
+  void richteVorratEinFuerTests(
+    Vorrat vorrat,
+    Stream<Abgleichszustand> zustand,
+  ) => _richteVorratEin(vorrat, zustand);
 
   /// Wie die Sicherung des Servers steht (Issue #125) – nur für
   /// Verwalter; sonst `null`.
@@ -4949,6 +4990,9 @@ class LibraryState extends ChangeNotifier {
     _vorratsDb?.einbettungsvorratLeeren();
     _speicherUhr?.cancel();
     unawaited(_abgleichsAbo?.cancel());
+    for (final abo in _vorratAbos) {
+      unawaited(abo.cancel());
+    }
     unawaited(abgleich?.beende());
     if (verbunden) setzeKachelserver(null);
     unawaited(beendeRechenhilfe());

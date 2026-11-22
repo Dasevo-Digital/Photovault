@@ -89,6 +89,11 @@ class Vorrat {
   Future<int>? _lauf;
   bool _nochmal = false;
 
+  /// Was schon da ist – es wird nicht bei jedem Lauf wieder auf der
+  /// Platte nachgesehen (#434). Bei 30 000 Fotos und 60 000 Gesichtern
+  /// waren das sonst je Lauf rund 90 000 Dateisystemaufrufe.
+  final _vorhanden = <String>{};
+
   /// Füllt den Vorrat auf; ein Aufruf während eines Laufs hängt einen
   /// weiteren an. Gibt zurück, wie viele Dateien geholt wurden.
   Future<int> fuelle() {
@@ -120,10 +125,17 @@ class Vorrat {
               .get())
         z.read<String>('p'),
     ];
+    // Was nicht mehr in der Datenbank steht, braucht keiner zu merken.
+    _vorhanden.retainAll(pfade.toSet());
     final fehlt = <String>[];
     for (final p in pfade) {
+      if (_vorhanden.contains(p)) continue;
       try {
-        if (!await beschaffung.paths.absolute(p).exists()) fehlt.add(p);
+        if (await beschaffung.paths.absolute(p).exists()) {
+          _vorhanden.add(p);
+        } else {
+          fehlt.add(p);
+        }
       } on ArgumentError {
         // Ein unbrauchbarer Pfad in der Datenbank – nicht unser Thema.
       }
@@ -135,6 +147,7 @@ class Vorrat {
         final p = fehlt[i++];
         try {
           await beschaffung.hole(p);
+          _vorhanden.add(p);
           geholt++;
         } on Serverfehler catch (f) {
           protokoll('Vorrat: $p – $f');
