@@ -571,19 +571,24 @@ class Abgleich {
       final bis = a['bis']! as int;
       if (zeilen.isNotEmpty || bis != stand) {
         var weg = const <String>{};
-        final tabellen = await db.transaction(() async {
-          if (bis <= await _stand()) return <String>{};
-          weg = await _dateienGeloeschter(zeilen);
-          final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
-          await db.customStatement(
-            'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
-            [bis],
-          );
-          if (await _beruehrtOffenes(zeilen)) {
-            t.addAll(await _wendeOffeneAn());
-          }
-          return t;
-        });
+        // Eine Seite ist älter, wenn ein anderer Lauf den Stand schon
+        // weiter gerückt hat; dann bleibt sie liegen. Eingereiht hinter
+        // ein laufendes [gleicheAn] (siehe dort).
+        final tabellen = await _nacheinander(
+          () => db.transaction(() async {
+            if (bis <= await _stand()) return <String>{};
+            weg = await _dateienGeloeschter(zeilen);
+            final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
+            await db.customStatement(
+              'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
+              [bis],
+            );
+            if (await _beruehrtOffenes(zeilen)) {
+              t.addAll(await _wendeOffeneAn());
+            }
+            return t;
+          }),
+        );
         _meldeAenderung(tabellen);
         await _raeumeAuf(weg);
       }
@@ -647,10 +652,52 @@ class Abgleich {
     return tabellen;
   }
 
+  /// Reiht [arbeit] hinter die vorige ein – für das Anwenden einer Seite
+  /// in [empfange] und für [gleicheAn] samt seiner Anfrage.
+  ///
+  /// Jeder Wartende wartet auf ein eigenes Signal aus seiner eigenen Zone,
+  /// und das trägt nie einen Fehler: Ein geteiltes Future erreichte mit
+  /// einem Fehler nur Wartende aus der Zone, in der es entstand (siehe
+  /// [sende]). Ist niemand dran, wird gar nicht gewartet.
+  Future<T> _nacheinander<T>(Future<T> Function() arbeit) async {
+    if (_dran) {
+      final signal = Completer<void>();
+      _wartende.add(signal);
+      await signal.future;
+    }
+    _dran = true;
+    try {
+      return await arbeit();
+    } finally {
+      // Der Nächste übernimmt, ohne dass dazwischen ein anderer
+      // hineinkommt.
+      if (_wartende.isEmpty) {
+        _dran = false;
+      } else {
+        _wartende.removeAt(0).complete();
+      }
+    }
+  }
+
+  bool _dran = false;
+  final _wartende = <Completer<void>>[];
+
   /// Gleicht die Zeilen bestätigter Befehle mit dem Server ab, sobald das
   /// Protokoll bis zu ihrer Bestätigung abgeholt ist (siehe Klasse).
+  ///
+  /// **Nacheinander.** Die Antwort des Servers trägt keinen Stand. Holte
+  /// ein zweiter Lauf – Ziehen zum Aktualisieren, das Empfangen nach dem
+  /// Hochladen – während der Anfrage eine neuere Fassung derselben Zeile
+  /// ab und rückte den Stand vor, schrieb dieser Lauf danach die ältere
+  /// darüber, und die Zeile blieb hier veraltet, bis sie sich am Server
+  /// wieder änderte. Darum laufen Anfrage und Anwenden hier am Stück, und
+  /// das Anwenden einer Seite in [empfange] wartet darauf.
   Future<void> gleicheAn() async {
     await _pruefeSchema();
+    await _nacheinander(_gleicheAn);
+  }
+
+  Future<void> _gleicheAn() async {
     final stand = await _stand();
     final fertig = [
       for (final z
@@ -668,9 +715,9 @@ class Abgleich {
     // Zeilen, die ein noch offener Befehl ebenfalls vorweggenommen hat,
     // bleiben, wie sie sind – sonst verschwände dessen Wirkung, bis er
     // bestätigt ist.
-    final offen = await _schluesselVon(
-      'SELECT nr FROM pv_ausgang WHERE bestaetigt IS NULL OR bestaetigt > $stand',
-    );
+    final nochOffen =
+        'SELECT nr FROM pv_ausgang WHERE bestaetigt IS NULL OR bestaetigt > $stand';
+    final offen = await _schluesselVon(nochOffen);
     final pruefen = <Map<String, Object?>>[];
     final gesehen = <String>{};
     for (final z
@@ -700,8 +747,18 @@ class Abgleich {
     }
     var weg = const <String>{};
     final tabellen = await db.transaction(() async {
-      weg = await _dateienGeloeschter(zeilen);
-      final t = await protokoll.frei(() => protokoll.wendeAn(zeilen));
+      // Was ein Befehl während der Anfrage vorweggenommen hat, bleibt
+      // ebenso – darum hier noch einmal gelesen, in der Transaktion.
+      final jetztOffen = await _schluesselVon(nochOffen);
+      final anwenden = [
+        for (final z in zeilen)
+          if (!jetztOffen.contains(
+            '${z.tabelle}\u0000${jsonEncode(z.schluessel)}',
+          ))
+            z,
+      ];
+      weg = await _dateienGeloeschter(anwenden);
+      final t = await protokoll.frei(() => protokoll.wendeAn(anwenden));
       await db.customStatement(
         'DELETE FROM pv_aenderungen WHERE ausgang IN ($liste)',
       );

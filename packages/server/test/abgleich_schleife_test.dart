@@ -271,4 +271,84 @@ void main() {
       expect(w.abgleich, isEmpty);
     });
   });
+
+  group('Angleichen und ein zweites Empfangen zugleich', () {
+    /// Hält die Antwort auf die erste Anfrage nach einzelnen Zeilen zurück,
+    /// bis `frei` eintritt – mit dem Stand, den der Server beim Lesen hatte.
+    ({Completer<void> angehalten, Completer<void> frei}) halteZeilenAn(
+      _Weiche weiche,
+    ) {
+      final angehalten = Completer<void>(), frei = Completer<void>();
+      var erstes = true;
+      weiche.eingriff = (r, weiter) async {
+        if (!r.url.path.endsWith('/abgleich/zeilen') || !erstes) {
+          return weiter();
+        }
+        erstes = false;
+        final antwort = await weiter();
+        final koerper = await antwort.stream.toBytes();
+        angehalten.complete();
+        await frei.future;
+        return http.StreamedResponse(
+          Stream.value(koerper),
+          antwort.statusCode,
+          headers: antwort.headers,
+        );
+      };
+      return (angehalten: angehalten, frei: frei);
+    }
+
+    test('ein älterer Zeilenstand landet nicht über einem neueren', () async {
+      final s = await serverDb();
+      await aufnahme(s, 'a1');
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Telefon', weiche);
+      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Hafen'));
+      await a.sende();
+      final halt = halteZeilenAn(weiche);
+
+      // Die Schleife gleicht den bestätigten Befehl an und wartet auf die
+      // Zeile vom Server.
+      final erstes = a.empfange();
+      await halt.angehalten.future;
+      // Inzwischen ändert jemand die Zeile, und ein direkter Aufruf (Ziehen
+      // zum Aktualisieren) holt das ab.
+      await s.fuehreAus(const BeschreibungSetzen(['a1'], 'Strand'));
+      final zweites = a.empfange();
+      await Future.any([
+        zweites,
+        Future<void>.delayed(const Duration(seconds: 1)),
+      ]);
+      halt.frei.complete();
+      await erstes;
+      await zweites;
+      expect((await holeAufnahme(db, 'a1')).description, 'Strand');
+      expect((await holeAufnahme(s, 'a1')).description, 'Strand');
+    });
+
+    test('was ein Befehl während der Anfrage vorwegnimmt, bleibt', () async {
+      final s = await serverDb();
+      await aufnahme(s, 'a1');
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Telefon', weiche);
+      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Hafen'));
+      await a.sende();
+      final halt = halteZeilenAn(weiche);
+
+      final lauf = a.empfange();
+      await halt.angehalten.future;
+      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Mole'));
+      halt.frei.complete();
+      await lauf;
+      expect(
+        (await holeAufnahme(db, 'a1')).description,
+        'Mole',
+        reason: 'der neue Befehl ist noch nicht gesendet',
+      );
+      await a.sende();
+      await a.empfange();
+      expect((await holeAufnahme(db, 'a1')).description, 'Mole');
+      expect((await holeAufnahme(s, 'a1')).description, 'Mole');
+    });
+  });
 }
