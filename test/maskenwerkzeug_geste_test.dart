@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:photo_vault/services/library_location.dart';
 
 import 'package:drift/drift.dart' show Value;
@@ -11,6 +13,8 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/develop_screen.dart';
+import 'package:photo_vault/services/segmentation_service.dart';
+import 'package:kern/services/modell_halter.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 
@@ -34,6 +38,26 @@ import 'package:photo_vault/theme/app_theme.dart';
 /// Zweiter, kleinerer Fehler an derselben Stelle: Das Bild sitzt in
 /// einem `Padding` von [AppSpacing.lg]; die Umrechnung wusste davon
 /// nichts und war auch bei passender Flaeche um diesen Rand verschoben.
+/// Eine Segmentierung, deren Einbettung erst rechnet, wenn [tor] offen ist.
+class _Segmentierung implements SegmentationService {
+  final tor = Completer<void>();
+
+  @override
+  Future<SamImageEmbedding> encodeImage(img.Image decoded) async {
+    await tor.future;
+    return SamImageEmbedding(
+      embeddings: Float32List(1),
+      positionalEmbeddings: Float32List(1),
+      scale: 1,
+      originalWidth: decoded.width,
+      originalHeight: decoded.height,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -103,7 +127,10 @@ void main() {
 
   /// Hochformatige Flaeche, querformatiges Bild - so stand es auf dem
   /// Schreibtisch, und genau so faellt die Fehlrechnung am staerksten aus.
-  Future<void> zeige(WidgetTester tester) async {
+  Future<void> zeige(
+    WidgetTester tester, {
+    ModellHalter<SegmentationService>? segmentation,
+  }) async {
     tester.view.physicalSize = const Size(1400, 2600);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
@@ -118,7 +145,12 @@ void main() {
           localizationsDelegates: AppTexte.localizationsDelegates,
           supportedLocales: AppTexte.supportedLocales,
           theme: buildDarkTheme(),
-          home: DevelopScreen(asset: foto, db: db, paths: paths),
+          home: DevelopScreen(
+            asset: foto,
+            db: db,
+            paths: paths,
+            segmentation: segmentation,
+          ),
         ),
       );
       for (var i = 0; i < 20; i++) {
@@ -299,5 +331,99 @@ void main() {
       expect(automatik(tester), isTrue);
       await abbauen(tester);
     });
+  });
+
+  // Das Rasterisieren auf Originalauflösung dauert Sekunden, und solange
+  // blieb „Fertig“ bedienbar: Ein zweiter Klick legte dieselbe Maske ein
+  // zweites Mal an.
+  testWidgets('zweimal „Fertig“ legt die Maske nur einmal an', (tester) async {
+    await zeige(tester);
+    await werkzeug(tester, 'Rechteck');
+    await ziehe(tester);
+    final fertig = find.ancestor(
+      of: find.text('Fertig'),
+      matching: find.byType(FilledButton),
+    );
+    await tester.tap(fertig);
+    await tester.tap(fertig);
+    // Das Rasterisieren läuft in einem eigenen Isolat.
+    await tester.runAsync(() async {
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await takte(tester, 10);
+    expect(find.text('Maske 1'), findsOneWidget);
+    await abbauen(tester);
+  });
+
+  // Wer zwischen „KI“ und einem anderen Werkzeug wechselte, solange die
+  // Einbettung noch rechnete, startete einen zweiten Durchgang. Beide
+  // liehen das Modell, zurückgegeben wurde es beim Schliessen nur einmal –
+  // und das Segmentierungsmodell blieb bis zum Programmende geladen.
+  testWidgets('Werkzeugwechsel während der Einbettung leiht nur einmal', (
+    tester,
+  ) async {
+    final dienst = _Segmentierung();
+    final halter = ModellHalter<SegmentationService>(
+      name: 'SAM',
+      installiert: true,
+      laden: () async => dienst,
+      entsorgen: (_) async {},
+    );
+    await zeige(tester, segmentation: halter);
+    await tester.tap(find.byIcon(Icons.auto_fix_high_outlined));
+    await takte(tester, 10);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Pinsel'));
+    await takte(tester, 5);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'KI'));
+    await takte(tester, 5);
+    dienst.tor.complete();
+    await tester.runAsync(() async {
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    await abbauen(tester);
+    expect(halter.nutzer, 0, reason: 'offene Leihen nach dem Schliessen');
+  });
+
+  // Bis die kleine Fassung für die Helligkeitsmaske da war, las und
+  // dekodierte jeder Aufruf das volle Original noch einmal – bei jeder
+  // Reglerbewegung und jedem Werkzeugwechsel ein eigener Durchgang.
+  testWidgets('die Helligkeitsmaske lädt ihr Foto nur einmal', (tester) async {
+    await zeige(tester);
+    // Ab hier liegt das Original nicht mehr da und wird „geholt“ – so lässt
+    // sich zählen, wie oft die Maske es anfordert.
+    final original = File(paths.absolute('originals/a1.jpg').path);
+    final inhalt = original.readAsBytesSync();
+    original.deleteSync();
+    final tor = Completer<void>();
+    var geholt = 0;
+    paths.beschaffe = (pfad) async {
+      geholt++;
+      await tor.future;
+      if (!original.existsSync()) original.writeAsBytesSync(inhalt);
+    };
+    await werkzeug(tester, 'Helligkeit');
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Pinsel'));
+    await takte(tester, 5);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Helligkeit'));
+    await takte(tester, 5);
+    await tester.runAsync(() async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      tor.complete();
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 25));
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+    });
+    expect(geholt, 1);
+    await abbauen(tester);
   });
 }

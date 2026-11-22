@@ -315,24 +315,36 @@ mixin _Masken on _EntwickelnBasis {
 
   img.Image? _kleineMaskenquelle;
 
+  /// Das Laden von [_kleineMaskenquelle], solange es läuft.
+  ///
+  /// Geteilt: Jede Reglerbewegung fragt nach der kleinen Fassung, und bis
+  /// sie da war, dekodierte bisher jede Bewegung das volle Original noch
+  /// einmal – bei einem 48-MP-Foto Dutzende Dekodierungen zu je über
+  /// 100 MB nebeneinander.
+  Future<img.Image?>? _kleineMaskenquelleLaedt;
+
+  Future<img.Image?> _ladeKleineMaskenquelle() =>
+      _kleineMaskenquelleLaedt ??= () async {
+        try {
+          final bytes = await (await _maskenQuelle()).readAsBytes();
+          final klein = await compute(_kleineFassung, bytes);
+          if (klein == null) _kleineMaskenquelleLaedt = null;
+          return _kleineMaskenquelle = klein;
+        } on Object {
+          // Beim nächsten Mal noch einmal versuchen.
+          _kleineMaskenquelleLaedt = null;
+          return null;
+        }
+      }();
+
   /// Zeichnet die Helligkeitsauswahl über das Bild. Auf einer kleinen
   /// Fassung, das läuft bei jeder Reglerbewegung.
   @override
   Future<void> _zeigeHelligkeit() async {
     final shape = _draftShape;
     if (shape is! LuminanceRangeShape) return;
-    var klein = _kleineMaskenquelle;
-    if (klein == null) {
-      try {
-        final bytes = await (await _maskenQuelle()).readAsBytes();
-        final ganz = await compute(decodeImageBytes, bytes);
-        if (ganz == null) return;
-        klein = _kleineMaskenquelle = img.copyResize(ganz, width: 320);
-      } on Object {
-        return;
-      }
-    }
-    if (!mounted) return;
+    final klein = _kleineMaskenquelle ?? await _ladeKleineMaskenquelle();
+    if (klein == null || !mounted) return;
     // Der Regler kann weitergezogen sein, während das Foto geladen wurde.
     final jetzt = _draftShape;
     if (jetzt is! LuminanceRangeShape) return;
@@ -435,7 +447,18 @@ mixin _Masken on _EntwickelnBasis {
   /// RAW-Original: das `image`-Paket kann RAW nicht dekodieren, die
   /// Vorschau ist für die interaktive Punktauswahl auflösungsmäßig mehr
   /// als ausreichend).
-  Future<void> _ensureEmbedding() async {
+  ///
+  /// Ein laufender Durchgang wird geteilt: Wer während des Ladens abbricht
+  /// und neu beginnt oder zwischen den Werkzeugen hin- und herwechselt,
+  /// startete sonst einen zweiten. Beide liehen das Modell, zurückgegeben
+  /// wurde es in [dispose] nur einmal – das Segmentierungsmodell (101 MB)
+  /// blieb dann bis zum Programmende geladen.
+  Future<void> _ensureEmbedding() => _einbettungLaeuft ??= _berechneEinbettung()
+      .whenComplete(() => _einbettungLaeuft = null);
+
+  Future<void>? _einbettungLaeuft;
+
+  Future<void> _berechneEinbettung() async {
     final halter = widget.segmentation;
     final previewBytes = _previewBytes;
     if (halter == null || previewBytes == null || _embedding != null) return;
@@ -942,8 +965,14 @@ mixin _Masken on _EntwickelnBasis {
   };
 
   @override
-  Future<void> _commitCurrentMask() =>
-      _maskFormType == _MaskFormType.aiSelect ? _commitMask() : _commitShape();
+  Future<void> _commitCurrentMask() async {
+    // Das Rasterisieren dauert Sekunden. Ein zweites „Fertig“ in dieser
+    // Zeit legte dieselbe Maske ein zweites Mal an.
+    if (_computingMask) return;
+    await (_maskFormType == _MaskFormType.aiSelect
+        ? _commitMask()
+        : _commitShape());
+  }
 
   /// Rasterisiert [_draftShape] auf die tatsächliche Original-Bildauflösung
   /// (Muster: maskToOriginalResolution in segmentation_service.dart nutzt für
@@ -963,6 +992,9 @@ mixin _Masken on _EntwickelnBasis {
       return;
     }
     final name = AppTexte.of(context).entwMaskeNummer(_masks.length + 1);
+    // Vor dem ersten await: Welche Maske umgeformt wird, steht mit dem
+    // Klick fest, nicht erst nach dem Rasterisieren.
+    final umgeformt = _editingMaskId;
     setState(() => _computingMask = true);
     // Der Quellpfad wird nur von den Formen gebraucht, die Bildpunkte
     // auswerten; die anderen fassen die Datei gar nicht an.
@@ -984,7 +1016,7 @@ mixin _Masken on _EntwickelnBasis {
       height,
       quellPfad,
     ));
-    var editingId = _editingMaskId;
+    var editingId = umgeformt;
 
     // Verteidigung gegen eine seit dem Öffnen des Editors zwischenzeitlich
     // gelöschte Maske (z.B. über einen anderen Weg entfernt) – ohne diese
@@ -1059,4 +1091,11 @@ mixin _Masken on _EntwickelnBasis {
     _selectMask(committedMask);
     _scheduleRerender();
   }
+}
+
+/// Dekodiert [bytes] und verkleinert gleich im Isolat auf die Breite der
+/// Helligkeitsvorschau – zurück kommt nur die kleine Fassung.
+img.Image? _kleineFassung(Uint8List bytes) {
+  final ganz = decodeImageBytes(bytes);
+  return ganz == null ? null : img.copyResize(ganz, width: 320);
 }

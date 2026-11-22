@@ -420,7 +420,7 @@ mixin _Bedienfelder on _EntwickelnBasis {
                     avatar: Icon(symbol, size: 15),
                     selected: _maskFormType == typ,
                     visualDensity: VisualDensity.compact,
-                    onSelected: bedienbar
+                    onSelected: bedienbar && !_computingMask
                         ? (_) => _switchMaskFormType(typ)
                         : null,
                   ),
@@ -433,14 +433,18 @@ mixin _Bedienfelder on _EntwickelnBasis {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _cancelMaskCreation,
+                  // Während eine Form gerechnet wird, entstünde sie nach
+                  // dem Abbrechen trotzdem.
+                  onPressed: _computingMask ? null : _cancelMaskCreation,
                   child: Text(AppTexte.of(context).allgAbbrechen),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: FilledButton(
-                  onPressed: _canCommitShape ? _commitCurrentMask : null,
+                  onPressed: _canCommitShape && !_computingMask
+                      ? _commitCurrentMask
+                      : null,
                   child: Text(AppTexte.of(context).allgFertig),
                 ),
               ),
