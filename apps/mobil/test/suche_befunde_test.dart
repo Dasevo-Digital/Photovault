@@ -1,6 +1,8 @@
 // Suche und intelligente Alben: behobene Befunde aus dem Prüfkatalog der
 // Handy-App (MOB, Issue #418): je Befund ein Test, der ohne die Korrektur
 // scheitert.
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/native.dart';
@@ -157,6 +159,70 @@ void main() {
     expect(find.textContaining('Filter:'), findsNothing);
     expect(_raster(tester), isEmpty);
     expect(find.text(t.sucheTextOderFilter), findsOneWidget);
+    await _abbauen(tester);
+  });
+
+  testWidgets('#454 die späte Antwort einer Suche nach Bildinhalt ersetzt '
+      'nicht die Treffer der inzwischen gewählten Textsuche', (tester) async {
+    final antwort = Completer<http.Response>();
+    final (sitzung, _) = await _sitzung(tester, [
+      'strand',
+      'berg',
+    ], (r) => antwort.future);
+    await tester.pumpWidget(_app(Suche(sitzung: sitzung)));
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Suche)));
+    await tester.enterText(find.byType(TextField), 'strand');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pump();
+    // Der Server rechnet noch; inzwischen „Text“.
+    await tester.tap(find.text(t.sucheText));
+    await _ruhe(tester);
+    expect(_raster(tester), ['strand']);
+
+    // Jetzt kommt der Vektor – ohne Einbettungen in der Kopie trifft die
+    // Suche nach Inhalt nichts.
+    antwort.complete(
+      http.Response(
+        jsonEncode({'vektor': List.filled(8, 0.5)}),
+        200,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
+    await _ruhe(tester);
+    await _ruhe(tester);
+    expect(_raster(tester), ['strand']);
+    expect(find.text(t.sucheNichts), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    await _abbauen(tester);
+  });
+
+  testWidgets('#454 die Filter bieten auch Personen an, die nach dem ersten '
+      'Öffnen dazukamen', (tester) async {
+    final (sitzung, db) = await _sitzung(tester, [
+      's1',
+    ], (_) async => http.Response('{}', 404));
+    await tester.runAsync(
+      () => db.fuehreAus(const PersonAnlegen('anna', 'Anna')),
+    );
+    await tester.pumpWidget(_app(Suche(sitzung: sitzung)));
+    await tester.pumpAndSettle();
+    final t = AppTexte.of(tester.element(find.byType(Suche)));
+    await tester.tap(find.byTooltip(t.sucheFilter));
+    await _ruhe(tester);
+    expect(find.text('Anna'), findsOneWidget);
+    expect(find.text('Bert'), findsNothing);
+    Navigator.of(tester.element(find.text('Anna'))).pop();
+    await _ruhe(tester);
+
+    // Auf einem anderen Gerät oder in „Ohne Namen“ benannt.
+    await tester.runAsync(
+      () => db.fuehreAus(const PersonAnlegen('bert', 'Bert')),
+    );
+    await _ruhe(tester);
+    await tester.tap(find.byTooltip(t.sucheFilter));
+    await _ruhe(tester);
+    expect(find.text('Bert'), findsOneWidget);
     await _abbauen(tester);
   });
 }

@@ -55,12 +55,26 @@ class _SucheState extends State<Suche> {
   StreamSubscription<Set<TableUpdate>>? _aenderungen;
   Timer? _nachzuegler;
 
+  /// Zählt jede Suche (#454): Nur die jüngste schreibt Treffer, Hinweis
+  /// und Ladeanzeige. Eine Suche nach Bildinhalt wartet auf den Server; wer
+  /// inzwischen auf „Text“ umschaltete oder Filter setzte, bekam sonst die
+  /// späten Treffer der alten Suche unter Feld und Filtern der neuen, und
+  /// der Ladebalken verschwand mit der ersten fertigen.
+  var _lauf = 0;
+
   @override
   void initState() {
     super.initState();
     _aenderungen = _db
-        .tableUpdates(TableUpdateQuery.onTable(_db.assets))
-        .listen((_) {
+        .tableUpdates(TableUpdateQuery.onAllTables([_db.assets, _db.people]))
+        .listen((aenderungen) {
+          // Personen, Orte und Kameras der Filter frisch holen, wenn sie
+          // das nächste Mal gebraucht werden: Die Seite lebt so lange wie
+          // die App, und neue Personen fehlten sonst bis zum Neustart.
+          _auswahl = null;
+          if (!aenderungen.any((a) => a.table == _db.assets.actualTableName)) {
+            return;
+          }
           _nachzuegler?.cancel();
           _nachzuegler = Timer(
             const Duration(milliseconds: 400),
@@ -75,7 +89,9 @@ class _SucheState extends State<Suche> {
     final bleiben = (await _db.nochSuchbar([
       for (final z in treffer) z.id,
     ])).toSet();
-    if (!mounted || bleiben.length == treffer.length) return;
+    // Inzwischen neu gesucht: Die alte Liste darf die neue nicht ersetzen.
+    if (!mounted || !identical(_treffer, treffer)) return;
+    if (bleiben.length == treffer.length) return;
     setState(() {
       _treffer = [
         for (final z in treffer)
@@ -96,47 +112,62 @@ class _SucheState extends State<Suche> {
     final t = AppTexte.of(context);
     final text = _feld.text.trim();
     if (text.isEmpty && _filter.leer) {
+      // Auch eine noch laufende Suche schreibt danach nichts mehr.
+      _lauf++;
       setState(() {
         _treffer = null;
         _hinweis = t.sucheTextOderFilter;
+        _laeuft = false;
       });
       return;
     }
+    final nummer = ++_lauf;
     setState(() {
       _laeuft = true;
       _hinweis = null;
     });
+    final filter = _filter;
+    final art = _art;
+    String? hinweis;
+    List<Rasterzeile>? treffer;
     try {
-      final inhalt = text.isNotEmpty && _art == _Art.inhalt;
+      final inhalt = text.isNotEmpty && art == _Art.inhalt;
       Float32List? vektor;
       if (inhalt) {
         try {
           vektor = await widget.sitzung.textvektor(text);
-          if (vektor == null) _hinweis = t.sucheKeinModell;
+          if (vektor == null) hinweis = t.sucheKeinModell;
         } on KeineVerbindung {
           // Den Suchtext bettet nur der Server ein. Ohne ihn hiess es
           // „Die Suche hat nicht geklappt.“, obwohl die Textsuche in der
           // Kopie sofort Treffer hat.
-          _hinweis = t.sucheInhaltOhneServer;
+          hinweis = t.sucheInhaltOhneServer;
         }
+        if (nummer != _lauf) return;
       }
       // Ohne Modell oder ohne Server nach Inhalt: im Text suchen.
       // Kennungen und schlanke Zeilen statt voller (#186): Das Raster
       // braucht nur, was eine Kachel zeigt – an 36.000 Treffern 196 statt
       // 470 ms.
-      _treffer = await _db.rasterzeilenFuer(
+      treffer = await _db.rasterzeilenFuer(
         await suchlaufKennungen(
           _db,
           text: text,
           art: vektor != null ? Suchart.inhalt : Suchart.text,
-          filter: _filter,
+          filter: filter,
           vektor: vektor,
         ),
       );
     } catch (_) {
-      _hinweis = t.sucheFehler;
+      hinweis = t.sucheFehler;
     } finally {
-      if (mounted) setState(() => _laeuft = false);
+      if (mounted && nummer == _lauf) {
+        setState(() {
+          if (treffer != null) _treffer = treffer;
+          _hinweis = hinweis;
+          _laeuft = false;
+        });
+      }
     }
   }
 
@@ -340,12 +371,28 @@ class _Filterblatt extends StatefulWidget {
 
 class _FilterblattState extends State<_Filterblatt> {
   late final _personen = {...widget.filter.personen};
-  late String? _land = widget.filter.land;
-  late String? _stadt = widget.filter.stadt;
+  // Land, Stadt und Kamera nur, wenn es sie in der (frisch geholten)
+  // Auswahl noch gibt – sonst stünde ein Wert in der Liste, den sie nicht
+  // anbietet.
+  late String? _land =
+      widget.auswahl.orte.any((o) => o.land == widget.filter.land)
+      ? widget.filter.land
+      : null;
+  late String? _stadt =
+      widget.auswahl.orte
+              .where((o) => o.land == _land)
+              .firstOrNull
+              ?.staedte
+              .contains(widget.filter.stadt) ??
+          false
+      ? widget.filter.stadt
+      : null;
   late DateTime? _von = widget.filter.von;
   late DateTime? _bis = widget.filter.bis;
   late MediaTypeFilter _art = widget.filter.art;
-  late String? _kamera = widget.filter.kamera;
+  late String? _kamera = widget.auswahl.kameras.contains(widget.filter.kamera)
+      ? widget.filter.kamera
+      : null;
   late bool _favoriten = widget.filter.favoriten;
   late bool _ohneAlbum = widget.filter.ohneAlbum;
   late Aufnahmeherkunft _herkunft = widget.filter.herkunft;
