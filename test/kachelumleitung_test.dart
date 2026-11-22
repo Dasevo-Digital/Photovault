@@ -110,6 +110,42 @@ void main() {
       },
     );
 
+    test(
+      'verbunden ohne Kacheln vom Server: nichts beim Anbieter (IMP-122)',
+      () async {
+        ziel = null;
+        netz = Kachelumleitung(
+          fang,
+          server: () => ziel,
+          nurUeberServer: () => true,
+        );
+        for (final adresse in [
+          'https://tile.openstreetmap.org/3/4/2.png',
+          'https://tile.opentopomap.org/17/1/131071.png',
+        ]) {
+          await expectLater(
+            netz.get(Uri.parse(adresse)),
+            throwsA(isA<KachelNurUeberServer>()),
+          );
+        }
+        expect(fang.anfragen, isEmpty, reason: 'kein Abruf beim Anbieter');
+        // Was der Server ohnehin nicht holt, geht weiter wie bisher.
+        await netz.get(
+          Uri.parse(
+            'https://a.basemaps.cartocdn.com/dark_all/3/4/2.png?key=abc',
+          ),
+        );
+        expect(fang.anfragen, hasLength(1));
+        // Liefert er Kacheln, gehen sie über ihn.
+        ziel = server;
+        await netz.get(Uri.parse('https://tile.openstreetmap.org/3/4/2.png'));
+        expect(
+          fang.adressen.last,
+          'http://heimserver.test/fotos/api/v1/karte/osm/3/4/2.png',
+        );
+      },
+    );
+
     test('nur ein Server mit `funktionen.karte` liefert Kacheln', () {
       expect(
         serverLiefertKacheln({

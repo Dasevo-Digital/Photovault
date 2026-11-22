@@ -7091,6 +7091,10 @@ class AppTexteEn extends AppTexte {
   String get karteStandortSuche => 'Determining location …';
 
   @override
+  String get karteNurUeberServer =>
+      'Map tiles come from your server, which isn\'t providing any right now.';
+
+  @override
   String get weltkarteKlickMarkiert => 'A click marks';
 
   @override

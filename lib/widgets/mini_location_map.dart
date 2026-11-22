@@ -572,15 +572,37 @@ Client? _kachelNetz;
 
 Serververbindung? _kachelserver;
 
+/// Ob die Bibliothek mit einem Server verbunden ist – dann kommen
+/// OpenStreetMap- und OpenTopoMap-Kacheln nur über ihn (IMP-122).
+bool _kartenVerbunden = false;
+
 /// Der eigene Server, über den OpenStreetMap- und OpenTopoMap-Kacheln
-/// kommen (#180) – `null` heisst: direkt beim Anbieter.
+/// kommen (#180) – `null` heisst: Er liefert (noch) keine.
 ///
 /// Modulweit aus demselben Grund wie der CARTO-Schlüssel: Es ist eine
 /// app-weite Angabe, und [buildMapTileLayer] wird ohne jeden Zustand
 /// aufgerufen. Gesetzt wird er erst, wenn der verbundene Server die
-/// Fähigkeit meldet (`LibraryState`); eine lokale Bibliothek und ein
-/// Server bis 3.66 holen weiter selbst.
-void setzeKachelserver(Serververbindung? server) => _kachelserver = server;
+/// Fähigkeit meldet (`LibraryState`).
+///
+/// [verbunden] sagt, ob es überhaupt einen Server gibt. Eine lokale
+/// Bibliothek holt ihre Kacheln selbst. Eine verbundene holt sie **nie**
+/// beim Anbieter, auch nicht, solange ihr Server keine meldet (kurz nach
+/// dem Start, ein Server mit abgeschalteten Karten oder bis 3.66): Dann
+/// bleibt die Karte leer, bis auf das, was schon auf der Platte liegt,
+/// und sagt das ([kachelnNurUeberServer]). Sonst sähe der Anbieter
+/// gerade dann die Orte der Fotos, wenn man ihn über den Server meiden
+/// will.
+void setzeKachelserver(Serververbindung? server, {bool verbunden = false}) {
+  _kachelserver = server;
+  _kartenVerbunden = verbunden || server != null;
+  kachelnNurUeberServer.value = _kartenVerbunden && server == null;
+}
+
+/// Ob die Karten gerade auf den eigenen Server warten: verbunden, aber er
+/// liefert keine Kacheln. Jede Karte zeigt das mit einem kurzen Hinweis
+/// (siehe [buildMapAttribution]) und lädt neu, sobald es sich ändert
+/// (siehe [Kachelschicht]).
+final kachelnNurUeberServer = ValueNotifier<bool>(false);
 
 /// Der Client, über den alle Kacheln kommen: mit Wiederholungen und mit
 /// gedeckelter Zahl gleichzeitiger Verbindungen ([kachelVerbindungen]).
@@ -613,6 +635,7 @@ Client kachelNetzClient() => _kachelNetz ??= Offlinerueckfall(
       delay: kachelWartezeit,
     ),
     server: () => _kachelserver,
+    nurUeberServer: () => _kartenVerbunden,
   ),
   // Ganz aussen: erst wenn alle Wiederholungen durch sind, wird auf
   // die Platte zurueckgefallen. Siehe [Offlinerueckfall].
@@ -1008,6 +1031,24 @@ class _KachelschichtState extends State<Kachelschicht> {
   Timer? _uhr;
   Timer? _stille;
 
+  @override
+  void initState() {
+    super.initState();
+    kachelnNurUeberServer.addListener(_serverGewechselt);
+  }
+
+  /// Liefert der Server jetzt Kacheln, gleich neu laden – nicht erst beim
+  /// nächsten Nachfassen, das bis zu 45 Sekunden entfernt sein kann.
+  void _serverGewechselt() {
+    if (kachelnNurUeberServer.value || !mounted) return;
+    _uhr?.cancel();
+    _uhr = null;
+    _stufe = 0;
+    final anbieter = kachelAnbieterFuerTest ?? kartenKachelAnbieter();
+    if (anbieter is Nachfassanbieter) anbieter.vergissFehlschlaege();
+    setState(() => _runde++);
+  }
+
   void _kachelGescheitert() {
     // Ein neuer Fehler heisst: der letzte Anlauf hat nicht geholfen.
     _stille?.cancel();
@@ -1036,6 +1077,7 @@ class _KachelschichtState extends State<Kachelschicht> {
 
   @override
   void dispose() {
+    kachelnNurUeberServer.removeListener(_serverGewechselt);
     _uhr?.cancel();
     _stille?.cancel();
     super.dispose();
@@ -1075,7 +1117,70 @@ double kartenHoechsteStufe(BuildContext context, {Kartenstil? stil}) =>
 /// über und wurde abgeschnitten; ausgerechnet die Namensnennung war damit
 /// unvollständig. Hier steht sie klein, umbricht bei Bedarf und ist auf
 /// zwei Drittel der Breite begrenzt, damit sie die Karte nicht zudeckt.
+///
+/// Mit ihr kommt der Hinweis, wenn die Karte auf den eigenen Server wartet
+/// ([kachelnNurUeberServer]): Die Namensnennung steht in jeder Karte, also
+/// erreicht er so alle, ohne dass eine vergessen werden kann.
 Widget buildMapAttribution(BuildContext context, {Kartenstil? stil}) {
+  return Stack(
+    children: [
+      _namensnennung(context, stil),
+      ValueListenableBuilder<bool>(
+        valueListenable: kachelnNurUeberServer,
+        builder: (context, wartet, _) =>
+            wartet ? const _KartenHinweis() : const SizedBox.shrink(),
+      ),
+    ],
+  );
+}
+
+/// Ein Satz oben auf der Karte, dass ihre Kacheln über den Server kommen
+/// und gerade ausbleiben – sonst sähe die leere Karte kaputt aus.
+class _KartenHinweis extends StatelessWidget {
+  const _KartenHinweis();
+
+  @override
+  Widget build(BuildContext context) {
+    final farben = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: farben.surface.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.cloud_off_outlined,
+                  size: 16,
+                  color: farben.onSurface,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  child: Text(
+                    AppTexte.of(context).karteNurUeberServer,
+                    style: TextStyle(fontSize: 12, color: farben.onSurface),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Widget _namensnennung(BuildContext context, Kartenstil? stil) {
   final gewaehlt = stil ?? _ausTheme(context);
   return Align(
     alignment: Alignment.bottomRight,

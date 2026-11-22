@@ -4379,6 +4379,7 @@
   "karteStandortZeigen": "Mein Standort",
   "karteStandortNichtErmittelbar": "Standort nicht ermittelbar. Prüfe unter Systemeinstellungen → Datenschutz & Sicherheit → Ortungsdienste, ob Photo Vault fragen darf.",
   "karteStandortSuche": "Standort wird ermittelt …",
+  "karteNurUeberServer": "Die Karte kommt über den Server. Er liefert gerade keine Kacheln.",
   "weltkarteKlickMarkiert": "Ein Klick markiert",
   "weltkarteMarkeWeggenommen": "„{name}“ ist nicht mehr markiert.",
   "@weltkarteMarkeWeggenommen": {

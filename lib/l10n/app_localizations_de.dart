@@ -7128,6 +7128,10 @@ class AppTexteDe extends AppTexte {
   String get karteStandortSuche => 'Standort wird ermittelt …';
 
   @override
+  String get karteNurUeberServer =>
+      'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.';
+
+  @override
   String get weltkarteKlickMarkiert => 'Ein Klick markiert';
 
   @override

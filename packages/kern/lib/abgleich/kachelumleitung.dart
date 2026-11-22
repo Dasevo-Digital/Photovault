@@ -69,7 +69,7 @@ String? serverKachelpfad(Uri kachel) {
 /// Das Token geht nur an den eigenen Server und nur mit einer umgelenkten
 /// Kachel.
 class Kachelumleitung extends http.BaseClient {
-  Kachelumleitung(this._innen, {required this.server});
+  Kachelumleitung(this._innen, {required this.server, this.nurUeberServer});
 
   final http.Client _innen;
 
@@ -77,12 +77,25 @@ class Kachelumleitung extends http.BaseClient {
   /// [serverLiefertKacheln]); sonst `null`.
   final Serververbindung? Function() server;
 
+  /// Ob die Kacheln der [serverKartenquellen] **nur** über den eigenen
+  /// Server kommen dürfen – so, solange die Bibliothek mit einem verbunden
+  /// ist (IMP-122).
+  ///
+  /// Meldet der Server dann (noch) keine Kacheln – er ist älter, die
+  /// Karten sind dort abgeschaltet, oder die Fähigkeit ist kurz nach dem
+  /// Start noch nicht erfragt –, wird nicht beim Anbieter nachgeholt,
+  /// sondern [KachelNurUeberServer] geworfen. Für das Gerät ist das wie
+  /// kein Netz: Was auf der Platte liegt, bleibt zu sehen. Ohne Angabe
+  /// geht es wie bisher direkt.
+  final bool Function()? nurUeberServer;
+
   @override
   Future<http.StreamedResponse> send(http.BaseRequest anfrage) async {
     final s = server();
-    final pfad = s == null || anfrage.method != 'GET'
-        ? null
-        : serverKachelpfad(anfrage.url);
+    final pfad = anfrage.method != 'GET' ? null : serverKachelpfad(anfrage.url);
+    if (s == null && pfad != null && (nurUeberServer?.call() ?? false)) {
+      throw KachelNurUeberServer(anfrage.url);
+    }
     if (s == null || pfad == null) return _innen.send(anfrage);
     final umgelenkt =
         http.AbortableRequest(
@@ -120,4 +133,12 @@ class Kachelumleitung extends http.BaseClient {
 
   @override
   void close() => _innen.close();
+}
+
+/// Eine Kachel, die nur über den eigenen Server kommen darf, der sie gerade
+/// nicht liefert (siehe [Kachelumleitung.nurUeberServer]). Abgerufen wurde
+/// nichts.
+class KachelNurUeberServer extends http.ClientException {
+  KachelNurUeberServer(Uri adresse)
+    : super('Tiles only via the own server', adresse);
 }

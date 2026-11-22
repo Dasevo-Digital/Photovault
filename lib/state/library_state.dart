@@ -1063,8 +1063,9 @@ class LibraryState extends ChangeNotifier {
     // Die Kopie einer Bibliothek auf dem Server? Dann gleich hier den
     // Abgleich einrichten – vor allem anderen, das schreiben könnte.
     verbindung = await Verbindungsdatei.lies(bibliothek);
-    // Bis der Server sich meldet, holt die Karte selbst (#180).
-    setzeKachelserver(null);
+    // Bis der Server sich meldet, bleibt die Karte einer verbundenen
+    // Bibliothek leer; nur eine lokale holt selbst (#180, IMP-122).
+    setzeKachelserver(null, verbunden: verbunden);
     if (verbunden) await _verbinde();
     modelProcessingState = ModelProcessingState(paths.modelProcessingStateFile);
     _outdatedModelPipelines = await modelProcessingState!.initialize(
@@ -4928,14 +4929,15 @@ class LibraryState extends ChangeNotifier {
 
   /// Einmal je Start, sobald der Server erreichbar ist: Holt er die
   /// Kartenkacheln (#180)? Dann gehen sie über ihn, und OpenStreetMap
-  /// sieht diesen Rechner nicht mehr. Ein Server bis 3.66 kann es nicht;
-  /// dann bleibt es beim Anbieter direkt.
+  /// sieht diesen Rechner nicht mehr. Ein Server bis 3.66 oder einer mit
+  /// abgeschalteten Karten kann es nicht; dann bleibt die Karte leer,
+  /// statt beim Anbieter zu holen (IMP-122).
   var _karteGeprueft = false;
 
   Future<void> _pruefeKarte(Serververbindung s) async {
     try {
       final z = await s.hole('api/v1/zustand');
-      setzeKachelserver(serverLiefertKacheln(z) ? s : null);
+      setzeKachelserver(serverLiefertKacheln(z) ? s : null, verbunden: true);
     } on KeineVerbindung {
       _karteGeprueft = false;
     } on Serverfehler {
@@ -5050,7 +5052,7 @@ class LibraryState extends ChangeNotifier {
       unawaited(abo.cancel());
     }
     unawaited(abgleich?.beende());
-    if (verbunden) setzeKachelserver(null);
+    if (verbunden) setzeKachelserver(null, verbunden: false);
     unawaited(beendeRechenhilfe());
     _fortschritt.dispose();
     super.dispose();

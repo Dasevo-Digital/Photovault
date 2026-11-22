@@ -11041,6 +11041,12 @@ abstract class AppTexte {
   /// **'Standort wird ermittelt …'**
   String get karteStandortSuche;
 
+  /// No description provided for @karteNurUeberServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.'**
+  String get karteNurUeberServer;
+
   /// No description provided for @weltkarteKlickMarkiert.
   ///
   /// In de, this message translates to:
