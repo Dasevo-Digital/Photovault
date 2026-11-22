@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import 'model_catalog.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 import 'whisper_mel.dart';
 
 /// Was die Spracherkennung aus einem Video gehört hat.
@@ -159,20 +159,18 @@ class WhisperService {
   static bool isAvailable(String modelsDir) =>
       dateien.every((n) => ModelCatalog.dateiVollstaendig(modelsDir, n));
 
-  static Future<WhisperService> load(String modelsDir) async {
-    final ort = OnnxRuntime();
-    return WhisperService._(
-      await ort.createSession(
-        '$modelsDir/whisper_encoder.onnx',
-        options: modelloptionen(),
-      ),
-      await ort.createSession(
-        '$modelsDir/whisper_decoder.onnx',
-        options: modelloptionen(),
-      ),
-      await WhisperVokabular.lade('$modelsDir/whisper_vocab.json'),
-    );
-  }
+  /// Über [sitzungenLaden]: Scheitert der Decoder oder das Vokabular,
+  /// bleibt der Encoder nicht offen liegen.
+  static Future<WhisperService> load(String modelsDir) =>
+      sitzungenLaden((oeffne) async {
+        final encoder = await oeffne('$modelsDir/whisper_encoder.onnx');
+        final decoder = await oeffne('$modelsDir/whisper_decoder.onnx');
+        return WhisperService._(
+          encoder,
+          decoder,
+          await WhisperVokabular.lade('$modelsDir/whisper_vocab.json'),
+        );
+      });
 
   /// Transkribiert 16-kHz-Mono-PCM ([pcm], 16 Bit). `null`, wenn nichts
   /// darin als Sprache durchgeht.

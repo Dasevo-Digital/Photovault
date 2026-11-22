@@ -5,7 +5,7 @@ import 'dart:ui' show Offset;
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/services/model_catalog.dart';
-import 'package:kern/services/modellthreads.dart';
+import 'package:kern/services/modell_laden.dart';
 
 /// SAMs Standard-Vorverarbeitung (ImageNet-Mittel/Standardabweichung,
 /// längste Kante auf 1024px, danach quadratisch aufgefüllt) – exakt gegen
@@ -83,18 +83,17 @@ class SegmentationService {
 
   static bool isAvailable(String modelsDir) => _filesPresent(modelsDir);
 
-  static Future<SegmentationService> load(String modelsDir) async {
-    final ort = OnnxRuntime();
-    final visionSession = await ort.createSession(
-      '$modelsDir/sam_vision_encoder.onnx',
-      options: modelloptionen(),
-    );
-    final decoderSession = await ort.createSession(
+  /// Über [sitzungenLaden]: Scheitert der Decoder, bleibt der Encoder
+  /// nicht offen liegen.
+  static Future<SegmentationService> load(String modelsDir) => sitzungenLaden((
+    oeffne,
+  ) async {
+    final visionSession = await oeffne('$modelsDir/sam_vision_encoder.onnx');
+    final decoderSession = await oeffne(
       '$modelsDir/sam_prompt_mask_decoder.onnx',
-      options: modelloptionen(),
     );
     return SegmentationService._(visionSession, decoderSession);
-  }
+  });
 
   /// Skaliert [decoded] auf die längste Kante [_samInputSize] und komponiert
   /// es in die obere linke Ecke einer [_samInputSize]x[_samInputSize]

@@ -8,7 +8,7 @@ import 'package:image/image.dart' as img;
 import 'face_postprocess.dart';
 import 'jpeg_ohne_angaben.dart';
 import 'model_catalog.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 
 export 'face_postprocess.dart' show DetectedFace;
 
@@ -57,21 +57,17 @@ class FaceEngineService {
   static bool isRecognitionAvailable(String modelsDir) =>
       ModelCatalog.dateiVollstaendig(modelsDir, 'face_recognition_sface.onnx');
 
+  /// Über [sitzungenLaden]: Scheitert die Wiedererkennung, bleibt die
+  /// Erkennung nicht offen liegen.
   static Future<FaceEngineService?> load(String modelsDir) async {
     if (!isDetectionAvailable(modelsDir)) return null;
-    final ort = OnnxRuntime();
-    final detector = await ort.createSession(
-      '$modelsDir/face_detection_yunet.onnx',
-      options: modelloptionen(),
-    );
-    OrtSession? recognizer;
-    if (isRecognitionAvailable(modelsDir)) {
-      recognizer = await ort.createSession(
-        '$modelsDir/face_recognition_sface.onnx',
-        options: modelloptionen(),
-      );
-    }
-    return FaceEngineService._(detector, recognizer);
+    return sitzungenLaden((oeffne) async {
+      final detector = await oeffne('$modelsDir/face_detection_yunet.onnx');
+      final recognizer = isRecognitionAvailable(modelsDir)
+          ? await oeffne('$modelsDir/face_recognition_sface.onnx')
+          : null;
+      return FaceEngineService._(detector, recognizer);
+    });
   }
 
   bool get canEmbed => _recognizer != null;

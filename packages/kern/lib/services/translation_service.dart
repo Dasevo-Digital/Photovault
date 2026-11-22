@@ -4,7 +4,7 @@ import 'package:onnxruntime_api/onnxruntime_api.dart';
 
 import 'marian_tokenizer.dart';
 import 'model_catalog.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 
 /// Welche Richtung ein [TranslationService] übersetzt.
 enum Uebersetzungsrichtung {
@@ -74,24 +74,19 @@ class TranslationService {
     return true;
   }
 
+  /// Über [sitzungenLaden]: Scheitert der Decoder oder das Vokabular,
+  /// bleibt der Encoder nicht offen liegen.
   static Future<TranslationService> load(
     String modelsDir,
     Uebersetzungsrichtung richtung,
-  ) async {
-    final ort = OnnxRuntime();
-    final encoder = await ort.createSession(
-      '$modelsDir/${richtung.encoderDatei}',
-      options: modelloptionen(),
-    );
-    final decoder = await ort.createSession(
-      '$modelsDir/${richtung.decoderDatei}',
-      options: modelloptionen(),
-    );
+  ) => sitzungenLaden((oeffne) async {
+    final encoder = await oeffne('$modelsDir/${richtung.encoderDatei}');
+    final decoder = await oeffne('$modelsDir/${richtung.decoderDatei}');
     final tokenizer = await MarianTokenizer.loadFromFile(
       '$modelsDir/$_vokabularDatei',
     );
     return TranslationService._(encoder, decoder, tokenizer, richtung);
-  }
+  });
 
   /// Übersetzt [text]. Leere Eingabe ergibt leere Ausgabe, ohne das Modell
   /// überhaupt zu bemühen.

@@ -5,7 +5,7 @@ import 'package:image/image.dart' as img;
 
 import 'bart_tokenizer.dart';
 import 'model_catalog.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 
 /// Bildvorverarbeitung laut `preprocessor_config.json` des Exports:
 /// 768×768, ImageNet-Statistik, **kein** mittiger Zuschnitt
@@ -116,31 +116,25 @@ class FlorenceCaptioningService {
   static bool isAvailable(String modelsDir) =>
       dateien.every((n) => ModelCatalog.dateiVollstaendig(modelsDir, n));
 
-  static Future<FlorenceCaptioningService> load(String modelsDir) async {
-    final ort = OnnxRuntime();
-    return FlorenceCaptioningService._(
-      await ort.createSession(
-        '$modelsDir/florence_vision.onnx',
-        options: modelloptionen(),
-      ),
-      await ort.createSession(
-        '$modelsDir/florence_embed.onnx',
-        options: modelloptionen(),
-      ),
-      await ort.createSession(
-        '$modelsDir/florence_encoder.onnx',
-        options: modelloptionen(),
-      ),
-      await ort.createSession(
-        '$modelsDir/florence_decoder.onnx',
-        options: modelloptionen(),
-      ),
-      await BartTokenizer.loadFromFiles(
-        vocabJsonPath: '$modelsDir/florence_vocab.json',
-        mergesTxtPath: '$modelsDir/florence_merges.txt',
-      ),
-    );
-  }
+  /// Über [sitzungenLaden]: Scheitert ein späterer Teil, bleiben die schon
+  /// geöffneten nicht offen liegen.
+  static Future<FlorenceCaptioningService> load(String modelsDir) =>
+      sitzungenLaden((oeffne) async {
+        final vision = await oeffne('$modelsDir/florence_vision.onnx');
+        final embed = await oeffne('$modelsDir/florence_embed.onnx');
+        final encoder = await oeffne('$modelsDir/florence_encoder.onnx');
+        final decoder = await oeffne('$modelsDir/florence_decoder.onnx');
+        return FlorenceCaptioningService._(
+          vision,
+          embed,
+          encoder,
+          decoder,
+          await BartTokenizer.loadFromFiles(
+            vocabJsonPath: '$modelsDir/florence_vocab.json',
+            mergesTxtPath: '$modelsDir/florence_merges.txt',
+          ),
+        );
+      });
 
   Float32List _pixel(img.Image decoded) {
     final skaliert = img.copyResize(

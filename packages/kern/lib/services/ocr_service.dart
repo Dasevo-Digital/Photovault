@@ -15,7 +15,7 @@ import 'model_catalog.dart';
 import 'model_processing_state.dart';
 import 'onnx_hardswish.dart';
 import 'textstellen.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 
 /// Texterkennung ohne Betriebssystem-Hilfe – zwei ONNX-Modelle aus der
 /// PaddleOCR-Familie, dieselbe Zerlegung wie dort: erst finden, dann lesen.
@@ -184,22 +184,18 @@ class OcrService {
     return tabelle;
   }
 
-  static Future<OcrService> load(String modelsDir) async {
-    final ort = OnnxRuntime();
-    final erkennung = await ort.createSession(
-      '$modelsDir/$erkennungsDatei',
-      options: modelloptionen(),
-    );
-    final lesung = await ort.createSession(
-      await lesemodellPfad(modelsDir),
-      options: modelloptionen(),
-    );
-    final tabelle = zeichenAusKonfig(
-      await File('$modelsDir/$zeichenDatei').readAsString(encoding: utf8),
-    );
-    // Leerplatz vorn, Leerzeichen hinten – genau so zählt PaddleOCR.
-    return OcrService._(erkennung, lesung, ['', ...tabelle, ' ']);
-  }
+  /// Über [sitzungenLaden]: Scheitert das Lesemodell oder die
+  /// Zeichentabelle, bleibt das Erkennungsmodell nicht offen liegen.
+  static Future<OcrService> load(String modelsDir) =>
+      sitzungenLaden((oeffne) async {
+        final erkennung = await oeffne('$modelsDir/$erkennungsDatei');
+        final lesung = await oeffne(await lesemodellPfad(modelsDir));
+        final tabelle = zeichenAusKonfig(
+          await File('$modelsDir/$zeichenDatei').readAsString(encoding: utf8),
+        );
+        // Leerplatz vorn, Leerzeichen hinten – genau so zählt PaddleOCR.
+        return OcrService._(erkennung, lesung, ['', ...tabelle, ' ']);
+      });
 
   Future<void> dispose() async {
     await _erkennung.close();

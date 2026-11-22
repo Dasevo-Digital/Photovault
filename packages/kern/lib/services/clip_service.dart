@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 
 import 'clip_tokenizer.dart';
 import 'model_catalog.dart';
-import 'modellthreads.dart';
+import 'modell_laden.dart';
 
 /// Mittelwert/Standardabweichung, mit denen CLIP-Modelle trainiert wurden
 /// (Standard für alle offiziellen OpenAI-CLIP-Checkpoints).
@@ -117,9 +117,9 @@ class ClipService {
   /// mit Dateipfaden eines fremden Bauservers zu lesen und keinen
   /// Hinweis, was zu tun ist. [ClipService.isAvailable] kann das nicht
   /// abfangen: Ob ein Modell lädt, weiss man erst, wenn man es lädt.
-  static Future<OrtSession> _sitzung(OnnxRuntime ort, String pfad) async {
+  static Future<OrtSession> _sitzung(SitzungOeffnen oeffne, String pfad) async {
     try {
-      return await ort.createSession(pfad, options: modelloptionen());
+      return await oeffne(pfad);
     } catch (fehler) {
       throw ModellUnbrauchbar(p.basename(pfad), fehler);
     }
@@ -130,26 +130,30 @@ class ClipService {
   /// Der jeweils nicht angeforderte Encoder bleibt ungeladen, und die
   /// zugehörige Methode wirft dann einen erklärenden Fehler statt still
   /// Unsinn zu liefern.
+  ///
+  /// Über [sitzungenLaden]: Scheitert ein späterer Teil (etwa der
+  /// Tokenizer), bleiben die schon geöffneten Encoder nicht offen liegen.
   static Future<ClipService> load(
     String modelsDir, {
     bool bild = true,
     bool text = true,
-  }) async {
+  }) {
     assert(bild || text, 'Ein ClipService ohne Encoder wäre nutzlos.');
-    final ort = OnnxRuntime();
-    final imageSession = bild
-        ? await _sitzung(ort, '$modelsDir/clip_image_encoder.onnx')
-        : null;
-    final textSession = text
-        ? await _sitzung(ort, '$modelsDir/clip_text_encoder.onnx')
-        : null;
-    final tokenizer = text
-        ? await ClipTokenizer.loadFromFiles(
-            vocabJsonPath: '$modelsDir/vocab.json',
-            mergesTxtPath: '$modelsDir/merges.txt',
-          )
-        : null;
-    return ClipService._(imageSession, textSession, tokenizer);
+    return sitzungenLaden((oeffne) async {
+      final imageSession = bild
+          ? await _sitzung(oeffne, '$modelsDir/clip_image_encoder.onnx')
+          : null;
+      final textSession = text
+          ? await _sitzung(oeffne, '$modelsDir/clip_text_encoder.onnx')
+          : null;
+      final tokenizer = text
+          ? await ClipTokenizer.loadFromFiles(
+              vocabJsonPath: '$modelsDir/vocab.json',
+              mergesTxtPath: '$modelsDir/merges.txt',
+            )
+          : null;
+      return ClipService._(imageSession, textSession, tokenizer);
+    });
   }
 
   /// Berechnet das Bild-Embedding eines bereits dekodierten Fotos. Nimmt
