@@ -249,7 +249,7 @@ void main() {
       const DateinameSetzen('a1', 'IMG_0001.JPG'),
       InDenPapierkorb(['a2']),
       const AusDemPapierkorb(['a2']),
-      const DuplikateZusammenfuehren(behaltenId: 'a1', duplikatIds: ['a2']),
+      DuplikateZusammenfuehren(behaltenId: 'a1', duplikatIds: ['a2']),
       const DuplikatgruppeIgnorieren(['a1', 'a2']),
       const DuplikatgruppeAufheben(['a1', 'a2']),
       const DuplikatAusnahmenLoeschen(),

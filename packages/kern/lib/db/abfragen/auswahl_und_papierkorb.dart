@@ -381,17 +381,21 @@ extension AuswahlAbfragen on AppDatabase {
   /// unterschiedlichen entscheidet [beschreibungenVerbinden], ob beide
   /// lesbar bleiben sollen. Die ganze Operation ist eine Transaktion, damit
   /// nie eine halbe Metadatenübernahme neben noch sichtbaren Kopien steht.
+  ///
+  /// [aktion] und [zeit] gehen an [moveToTrash] (siehe dort).
   Future<void> fuehreDuplikateZusammen({
     required String behaltenId,
     required List<String> duplikatIds,
     bool beschreibungenVerbinden = true,
+    String? aktion,
+    DateTime? zeit,
   }) => transaction(() async {
     final ids = await _uebertrageAngaben(
       behaltenId,
       duplikatIds,
       beschreibungenVerbinden: beschreibungenVerbinden,
     );
-    if (ids.isNotEmpty) await moveToTrash(ids);
+    if (ids.isNotEmpty) await moveToTrash(ids, aktion: aktion, zeit: zeit);
   });
 
   /// Bringt Schlagwörter, Alben, Favorit, Sterne, Farbe und Beschreibung

@@ -2,23 +2,38 @@ part of 'befehl.dart';
 
 /// Duplikate in einer Aufnahme zusammenführen: [behaltenId] bleibt, die
 /// anderen gehen in den Papierkorb, ihre Angaben gehen mit.
+///
+/// Zeitpunkt und Aktion des Papierkorbs bringt der Befehl mit wie
+/// [InDenPapierkorb] (#395): Zog jede Kopie sie selbst, standen auf Gerät
+/// und Server verschiedene Werte, und ein Zurückholen aus dem Papierkorb
+/// vor dem Abgleich passte am Server nicht mehr.
 final class DuplikateZusammenfuehren extends Befehl<void> {
-  const DuplikateZusammenfuehren({
+  DuplikateZusammenfuehren({
     required this.behaltenId,
     required this.duplikatIds,
     this.beschreibungenVerbinden = true,
-  });
+    String? aktion,
+    DateTime? zeit,
+  }) : aktion = aktion ?? const Uuid().v4(),
+       zeit = zeit ?? DateTime.now();
 
   static DuplikateZusammenfuehren aus(Map<String, Object?> w) =>
       DuplikateZusammenfuehren(
         behaltenId: w['behaltenId']! as String,
         duplikatIds: _kennungen(w['duplikatIds']),
         beschreibungenVerbinden: w['beschreibungenVerbinden']! as bool,
+        aktion: w['aktion'] as String?,
+        zeit: switch (w['zeit']) {
+          final String z => DateTime.tryParse(z),
+          _ => null,
+        },
       );
 
   final String behaltenId;
   final List<String> duplikatIds;
   final bool beschreibungenVerbinden;
+  final String aktion;
+  final DateTime zeit;
 
   @override
   String get art => 'duplikateZusammenfuehren';
@@ -28,6 +43,8 @@ final class DuplikateZusammenfuehren extends Befehl<void> {
     'behaltenId': behaltenId,
     'duplikatIds': duplikatIds,
     'beschreibungenVerbinden': beschreibungenVerbinden,
+    'aktion': aktion,
+    'zeit': zeit.toUtc().toIso8601String(),
   };
 
   @override
@@ -35,6 +52,8 @@ final class DuplikateZusammenfuehren extends Befehl<void> {
     behaltenId: behaltenId,
     duplikatIds: duplikatIds,
     beschreibungenVerbinden: beschreibungenVerbinden,
+    aktion: aktion,
+    zeit: zeit,
   );
 }
 

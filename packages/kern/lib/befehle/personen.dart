@@ -250,7 +250,10 @@ final class ZuordnungZuruecknehmen extends Befehl<void> {
     'personId': personId,
     'personWarNeu': personWarNeu,
     'titelbildVorher': titelbildVorher,
-    'rueckmeldungenSeit': rueckmeldungenSeit?.toIso8601String(),
+    // In UTC wie die Zeitpunkte der anderen Befehle: Ohne Zeitzone las
+    // ein Server in UTC die Ortszeit des Geräts als UTC, löschte seine
+    // Rückmeldungen nicht, und der Abgleich brachte sie zurück.
+    'rueckmeldungenSeit': rueckmeldungenSeit?.toUtc().toIso8601String(),
     'allgemeineSchwelle': allgemeineSchwelle,
   };
 
