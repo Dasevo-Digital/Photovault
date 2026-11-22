@@ -1785,7 +1785,7 @@ void _entwickelnTests() {
         tester,
         find.descendant(
           of: find.byType(AlertDialog),
-          matching: find.text(de.allgLoeschen),
+          matching: find.text(de.einstZuruecksetzen),
         ),
       );
       await waitGone(tester, find.byType(DevelopScreen), timeout: _lang);
@@ -7843,7 +7843,7 @@ void _befundTests() {
       tester,
       find.descendant(
         of: find.byType(AlertDialog),
-        matching: find.text(de.allgLoeschen),
+        matching: find.text(de.einstZuruecksetzen),
       ),
     );
     await waitGone(tester, find.byType(DevelopScreen), timeout: _lang);
