@@ -1,16 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:cryptography/cryptography.dart';
 import 'package:drift/drift.dart' show Variable;
-import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:uuid/uuid.dart';
-import '../berechne.dart';
 import '../db/database.dart';
 import '../protokoll.dart';
-import 'asset_display_path.dart';
 import 'aufnahmedatum.dart';
 import 'backup_fotokammer.dart';
 import 'beilagenangaben.dart';
@@ -19,8 +15,8 @@ import 'backup_manifest.dart';
 import 'backup_modelle.dart';
 import 'backup_restore_plan.dart';
 import 'backup_schnappschuss.dart';
-import 'blur_detection.dart';
 import 'face_engine_service.dart';
+import 'gesichtsausschnitte.dart';
 import 'import_service.dart';
 import 'storage_paths.dart';
 import 'vault_crypto.dart';
@@ -638,30 +634,26 @@ class BackupWiederhersteller {
   }
 
   /// Zeichnet die Gesichtsausschnitte neu, die mit dem Schnappschuss
-  /// zurückkamen.
+  /// zurückkamen (siehe [zeichneAusschnitteNeu]).
   ///
   /// **Warum sie nicht in der Sicherung liegen.** Gesichert werden die
   /// Originale, nichts Abgeleitetes – Miniaturen, Vorschauen und
   /// Ausschnitte entstehen beim Import neu. Der Ausschnitt aber ist das,
   /// was man in der Personenübersicht *sieht*: Ohne ihn kämen zwar alle
   /// Namen zurück, die Übersicht wäre aber eine Wand aus leeren Kacheln.
-  ///
-  /// **Kein Modell nötig.** Der Kasten steht in der wiederhergestellten
-  /// Zeile; [FaceEngineService.cropFaceImage] ist eine reine Bildoperation.
-  /// Es wird also nicht neu erkannt (das ergäbe andere Gesichter und damit
-  /// Doppelungen), sondern nur nachgezeichnet.
-  ///
-  /// Ein Foto wird höchstens einmal dekodiert, auch wenn mehrere Gesichter
-  /// darauf sind.
   Stream<BackupProgress> _zeichneAusschnitteNach() async* {
     // Gefragt wird die Platte, nicht die Spalte: `cropRelativePath` steht
     // auch bei den zurückgespielten Zeilen da, nur die Datei dahinter fehlt.
-    final nachAsset = <String, List<FaceData>>{};
+    final nachAsset = <String, List<Ausschnittsstelle>>{};
     for (final g in await _db.select(_db.faces).get()) {
       final pfad = g.cropRelativePath;
       if (pfad == null) continue;
       if (await _paths.absolute(pfad).exists()) continue;
-      nachAsset.putIfAbsent(g.assetId, () => []).add(g);
+      nachAsset.putIfAbsent(g.assetId, () => []).add((
+        id: g.id,
+        kasten: DetectedFace(g.boxX, g.boxY, g.boxW, g.boxH, 1.0),
+        ausschnitt: pfad,
+      ));
     }
     if (nachAsset.isEmpty) return;
 
@@ -671,34 +663,13 @@ class BackupWiederhersteller {
       try {
         final asset = await _db.assetById(eintrag.key);
         if (asset != null) {
-          final datei = _paths.absolute(lesbarerPfad(asset));
-          if (await datei.exists()) {
-            final bild = await berechne(_dekodiere, await datei.readAsBytes());
-            if (bild != null) {
-              for (final gesicht in eintrag.value) {
-                final ausschnitt = FaceEngineService.cropFaceImage(
-                  bild,
-                  DetectedFace(
-                    gesicht.boxX,
-                    gesicht.boxY,
-                    gesicht.boxW,
-                    gesicht.boxH,
-                    1.0,
-                  ),
-                );
-                final ziel = _paths.faceRelativePath(gesicht.id);
-                await FaceEngineService.saveFaceCrop(
-                  ausschnitt,
-                  _paths.absolute(ziel),
-                );
-                await _db.setzeGesichtsausschnitt(
-                  gesicht.id,
-                  ziel,
-                  schaerfe: gesichtsschaerfe(ausschnitt),
-                );
-              }
-            }
-          }
+          await zeichneAusschnitteNeu(
+            _db,
+            _paths,
+            asset,
+            eintrag.value,
+            ziel: (g) => _paths.faceRelativePath(g.id),
+          );
         }
       } catch (e) {
         // Je Foto abgesichert: Eine Datei, die sich nicht lesen lässt, darf
@@ -1030,13 +1001,5 @@ class BackupWiederhersteller {
             )
           : SerieBilden(stapel, ids, titel),
     );
-  }
-}
-
-img.Image? _dekodiere(Uint8List bytes) {
-  try {
-    return img.decodeImage(bytes);
-  } catch (_) {
-    return null;
   }
 }

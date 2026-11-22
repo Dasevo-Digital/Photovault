@@ -4108,6 +4108,23 @@ class AppTexteEn extends AppTexte {
   String get backupAusschnitteNeu => 'Redrawing face crops …';
 
   @override
+  String get ausschnitteFarbigLauf => 'Redrawing grey face crops in colour';
+
+  @override
+  String get ausschnitteFarbigLeer => 'There were no grey face crops.';
+
+  @override
+  String ausschnitteFarbigFertig(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl grey face crops were redrawn in colour.',
+      one: 'One grey face crop was redrawn in colour.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get einstBackupManuellHinweis =>
       'A backup with a passphrase also carries an encrypted snapshot of the database – people, family tree, trips, activities and saved searches come back when you restore. Without a passphrase the backup holds only the originals and the sidecars beside them (description, stars, colour label, location, tags, albums, series and variants, Live Photo pairs, captions written by hand); everything else could not be restored afterwards.';
 

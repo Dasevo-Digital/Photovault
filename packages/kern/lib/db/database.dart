@@ -281,8 +281,14 @@ Iterable<List<T>> inStuecken<T>(Iterable<T> alle, {int groesse = 10000}) sync* {
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
-  /// Wer erfährt, dass ein Befehl ausgeführt wurde.
-  final befehlsbeobachter = <void Function(Befehl<Object?> befehl)>[];
+  /// Wer erfährt, dass ein Befehl ausgeführt wurde – und was er lieferte.
+  ///
+  /// Mit dem Ergebnis, weil der Server danach die Ausschnitte gelöschter
+  /// Gesichter von der Platte räumt: Ihr Pfad steht nach dem Befehl in
+  /// keiner Zeile mehr, und aus der Kennung lässt er sich nicht ableiten,
+  /// seit neu gezeichnete Ausschnitte einen eigenen Namen tragen (#459).
+  final befehlsbeobachter =
+      <void Function(Befehl<Object?> befehl, Object? ergebnis)>[];
 
   /// Im verbundenen Betrieb (Issue #86, Stufe 2): Statt einen Befehl nur
   /// anzuwenden, nimmt der Abgleich ihn vorweg und stellt ihn in die
@@ -296,7 +302,7 @@ class AppDatabase extends _$AppDatabase {
     final u = umleitung;
     final ergebnis = u == null ? await befehl.anwenden(this) : await u(befehl);
     for (final beobachter in befehlsbeobachter) {
-      beobachter(befehl);
+      beobachter(befehl, ergebnis);
     }
     return ergebnis;
   }

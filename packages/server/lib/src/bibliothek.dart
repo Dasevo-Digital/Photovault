@@ -34,15 +34,16 @@ class Bibliothek {
   ) {
     // Gelöschte Erkennungen: Die Zeile nimmt der Befehl, den Ausschnitt
     // räumt der Server hier auf – Geräte schicken nur den Befehl (#191).
-    db.befehlsbeobachter.add((befehl) {
-      final weg = switch (befehl) {
-        GesichtLoeschen(:final gesichtId) => [gesichtId],
-        GesichterLoeschen(:final gesichtIds) => gesichtIds,
+    // Den Pfad liefert der Befehl: Ein neu gezeichneter Ausschnitt heisst
+    // anders als `faces/<id>.jpg` (#459) und blieb sonst liegen.
+    db.befehlsbeobachter.add((befehl, ergebnis) {
+      final weg = switch ((befehl, ergebnis)) {
+        (GesichtLoeschen(), final String pfad) => [pfad],
+        (GesichterLoeschen(), final List<String> liste) => liste,
         _ => const <String>[],
       };
-      for (final id in weg) {
-        final datei = pfade.absolute(pfade.faceRelativePath(id));
-        datei.delete().catchError((Object _) => datei);
+      for (final pfad in weg) {
+        pfade.deletePermanently(pfad).catchError((Object _) {});
       }
     });
     final modellstand = ModelProcessingState(pfade.modelProcessingStateFile);

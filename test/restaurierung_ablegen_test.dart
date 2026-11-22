@@ -35,7 +35,7 @@ void main() {
     // Wie in einer verbundenen Kopie: Jede Datei geht zum Server, und
     // jeder Befehl auch.
     paths.ablege = (relativ) async => abgelegt.add(relativ);
-    db.befehlsbeobachter.add((b) => befehle.add(b.art));
+    db.befehlsbeobachter.add((b, _) => befehle.add(b.art));
     await db.insertAsset(
       AssetsCompanion.insert(
         id: 'a',

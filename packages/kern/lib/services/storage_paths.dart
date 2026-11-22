@@ -22,7 +22,7 @@ import 'original_referenzen.dart';
 ///     trimmed/{assetId}.mp4          (nur mit Video-Zuschnitt, siehe VideoTrimScreen)
 ///     masks/{maskId}.png             (KI-Objektmasken, siehe MaskEditor)
 ///     luts/{name}.cube               (importierte Farbtabellen)
-///     faces/{faceId}.jpg
+///     faces/{faceId}.jpg            (neu gezeichnet faces/{faceId}-2.jpg, #459)
 ///     trash/{assetId}.{ext}          (physisch verschoben bis "Papierkorb leeren")
 ///   library.sqlite
 class StoragePaths {
@@ -166,8 +166,12 @@ class StoragePaths {
     '$assetId-${DateTime.now().microsecondsSinceEpoch}.mp4',
   );
 
-  String faceRelativePath(String faceId) =>
-      p.posix.join('faces', '$faceId.jpg');
+  /// [zusatz] hängt an den Namen an (`-2`), wenn ein Ausschnitt neu
+  /// gezeichnet wird (#459) – aus demselben Grund wie bei
+  /// [thumbnailRelativePath]: Verbundene Geräte halten Ausschnitte unter
+  /// ihrem Namen vor.
+  String faceRelativePath(String faceId, [String zusatz = '']) =>
+      p.posix.join('faces', '$faceId$zusatz.jpg');
   String vaultMetadataRelativePath(String assetId) =>
       p.posix.join('vault_metadata', '$assetId.pvm');
 

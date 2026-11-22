@@ -203,6 +203,7 @@ extension Abgleichsfaelle on Abgleich {
     if ((z['funktionen'] as Map?)?['konfliktpruefung'] != 1) {
       throw const AbgleichsserverZuAlt();
     }
+    Object? ergebnis;
     await db.transaction(() async {
       final nochDa = await db
           .customSelect(
@@ -211,7 +212,7 @@ extension Abgleichsfaelle on Abgleich {
           )
           .getSingleOrNull();
       if (nochDa == null) throw const AbgleichsstandGeaendert();
-      await _stelleEin(Befehl.ausJson(fall.befehl));
+      ergebnis = await _stelleEin(Befehl.ausJson(fall.befehl));
       await db.customStatement(
         'DELETE FROM pv_abgleichsfaelle WHERE kennung = ?',
         [fall.kennung],
@@ -219,7 +220,7 @@ extension Abgleichsfaelle on Abgleich {
     });
     final befehl = Befehl.ausJson(fall.befehl);
     for (final beobachter in db.befehlsbeobachter) {
-      beobachter(befehl);
+      beobachter(befehl, ergebnis);
     }
     await _melde();
     sendeBald();

@@ -4,6 +4,7 @@ import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/bildnachlauf.dart';
+import 'package:kern/services/gesichtsausschnitte.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/speicher_rueckgabe.dart';
 
@@ -248,6 +249,52 @@ class Auswertungsdienst {
         abbrechen: () => _beendet,
       ),
     );
+    // Grau abgelegte Gesichtsausschnitte farbig neu (#459). Die Geräte
+    // bekommen sie über den Abgleich: neuer Name in der Zeile, neue Datei.
+    await _etappe(nachlaufFarbigeAusschnitte, 'Gesichtsausschnitte', (
+      ab,
+    ) async {
+      final r = await erneuereGraueAusschnitte(
+        db,
+        bibliothek.pfade,
+        ab: ab,
+        frist: const Duration(minutes: 2),
+        abbrechen: () => _beendet,
+      );
+      return (neu: r.neu, weiter: r.weiter);
+    });
+    await _wartendeAusschnitte();
+  }
+
+  /// Was der Nachlauf der Ausschnitte überspringen musste (Papierkorb,
+  /// fehlendes Original), bei jedem Lauf noch einmal – nur diese Gesichter,
+  /// und ohne Bild nur ein Blick in die Datenbank.
+  Future<void> _wartendeAusschnitte() async {
+    final db = bibliothek.db;
+    if (_beendet ||
+        await db.aufgabeFertigAm(nachlaufFarbigeAusschnitte) == null) {
+      return;
+    }
+    final offen = await offeneAusschnitte(bibliothek.pfade);
+    if (offen.isEmpty) return;
+    try {
+      // Auch hier mit Frist: Was danach noch wartet, steht weiter in der
+      // Liste und kommt beim nächsten Lauf dran.
+      final r = await erneuereGraueAusschnitte(
+        db,
+        bibliothek.pfade,
+        nur: offen,
+        frist: const Duration(minutes: 2),
+        abbrechen: () => _beendet,
+      );
+      if (r.neu > 0) {
+        protokoll(
+          'Nachlauf Gesichtsausschnitte: ${r.neu} neu, ${r.offen} warten',
+        );
+      }
+    } catch (e) {
+      protokoll('Nachlauf Gesichtsausschnitte gescheitert: $e');
+    }
   }
 
   /// Ein Nachlauf, der Stunden dauert, immer nur für kurze Zeit: Neue

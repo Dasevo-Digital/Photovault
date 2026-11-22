@@ -1460,6 +1460,16 @@
     }
   },
   "backupAusschnitteNeu": "Redrawing face crops …",
+  "ausschnitteFarbigLauf": "Redrawing grey face crops in colour",
+  "ausschnitteFarbigLeer": "There were no grey face crops.",
+  "ausschnitteFarbigFertig": "{anzahl, plural, =1{One grey face crop was redrawn in colour.} other{{anzahl} grey face crops were redrawn in colour.}}",
+  "@ausschnitteFarbigFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstBackupManuellHinweis": "A backup with a passphrase also carries an encrypted snapshot of the database – people, family tree, trips, activities and saved searches come back when you restore. Without a passphrase the backup holds only the originals and the sidecars beside them (description, stars, colour label, location, tags, albums, series and variants, Live Photo pairs, captions written by hand); everything else could not be restored afterwards.",
   "backupNichtGesichert": "{anzahl} file(s) could not be backed up – they will be retried on the next run",
   "backupPassphraseNoetig": "This backup is encrypted – a passphrase is needed.",

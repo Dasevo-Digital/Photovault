@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/gesichtsausschnitte.dart'
+    show nachlaufFarbigeAusschnitte;
 import 'package:kern/services/search_filters.dart';
 import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:zierbild/bibliothek_eintraege.dart';
@@ -383,8 +385,46 @@ class _HomeShellState extends State<HomeShell> {
     widget.library.backupwarnung.addListener(_backupGeaendert);
     widget.library.neueFaelle.addListener(_neueFaelle);
     widget.library.kammerErinnerung.addListener(_kammerErinnern);
+    widget.library.ausschnitteFarbigFaellig.addListener(_ausschnitteFarbig);
     // Der erste Lauf beim Start kann schon vor diesem Bildschirm fertig sein.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _backupGeaendert());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _backupGeaendert();
+      _ausschnitteFarbig();
+    });
+  }
+
+  /// Reiht den Nachlauf für die grau abgelegten Gesichtsausschnitte ein
+  /// (#459), sobald die Bibliothek ihn meldet – hier, weil erst hier die
+  /// Sprache für die Zeile in der Aufgabenleiste bekannt ist. Am Ende ein
+  /// Hinweis, wie viele neu sind.
+  void _ausschnitteFarbig() {
+    final library = widget.library;
+    if (!mounted || !library.ausschnitteFarbigFaellig.value) return;
+    library.ausschnitteFarbigFaellig.value = false;
+    final t = AppTexte.of(context);
+    final abweisung = library.reiheAufgabeEin(
+      schluessel: nachlaufFarbigeAusschnitte,
+      titel: t.ausschnitteFarbigLauf,
+      leermeldung: t.ausschnitteFarbigLeer,
+      strom: library.erneuereGraueAusschnitteLauf,
+    );
+    if (abweisung != null) return;
+    // Eine Runde später: `beendet` setzt der Lauf erst, nachdem sein
+    // Abschluss gemeldet ist.
+    library
+        .lauf(nachlaufFarbigeAusschnitte)
+        ?.abschluss
+        .then(
+          (_) => Future<void>(() {
+            final lauf = library.lauf(nachlaufFarbigeAusschnitte);
+            if (lauf == null) return;
+            final neu = lauf.getan ?? 0;
+            if (mounted && lauf.erfolgreich && neu > 0) {
+              melde.hinweis(t.ausschnitteFarbigFertig(neu));
+            }
+            library.verwerfeLauf(nachlaufFarbigeAusschnitte);
+          }),
+        );
   }
 
   /// Was zuletzt zum automatischen Backup gemeldet wurde (#207) – je
@@ -743,6 +783,7 @@ class _HomeShellState extends State<HomeShell> {
     widget.library.backupwarnung.removeListener(_backupGeaendert);
     widget.library.neueFaelle.removeListener(_neueFaelle);
     widget.library.kammerErinnerung.removeListener(_kammerErinnern);
+    widget.library.ausschnitteFarbigFaellig.removeListener(_ausschnitteFarbig);
     _tresor.schweige();
     _lebenslauf.dispose();
     _seite.dispose();

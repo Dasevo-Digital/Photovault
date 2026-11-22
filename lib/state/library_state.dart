@@ -19,6 +19,7 @@ import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import 'package:kern/services/ai_tagging_service.dart';
 import 'package:kern/services/bildnachlauf.dart';
+import 'package:kern/services/gesichtsausschnitte.dart';
 import 'package:kern/services/bildsuche.dart';
 import '../services/xmp_reader.dart';
 import '../services/backup_service.dart';
@@ -422,6 +423,81 @@ class LibraryState extends ChangeNotifier {
         // Beim nächsten Start noch einmal.
       }
     }
+  }
+
+  /// Ob die grau abgelegten Gesichtsausschnitte (#459) noch farbig neu
+  /// entstehen müssen. Die Oberfläche reiht dann die Aufgabe ein (siehe
+  /// [erneuereGraueAusschnitteLauf]) – erst sie kennt die Sprache für die
+  /// Zeile in der Aufgabenleiste.
+  final ausschnitteFarbigFaellig = ValueNotifier<bool>(false);
+
+  /// Ohne Server einmal je Bibliothek: die grau abgelegten
+  /// Gesichtsausschnitte farbig neu (siehe [erneuereGraueAusschnitte]).
+  /// Verbunden tut es der Server, und die Kopie bekommt sie über den
+  /// Abgleich.
+  ///
+  /// Danach nur noch, was dabei warten musste (gesperrt, im Papierkorb,
+  /// Original nicht da) – still und nur für diese Gesichter; solange sie
+  /// weiter warten, kostet es einen Blick in die Datenbank.
+  Future<void> _pruefeGraueAusschnitte() async {
+    try {
+      if (await db.aufgabeFertigAm(nachlaufFarbigeAusschnitte) == null) {
+        ausschnitteFarbigFaellig.value = true;
+        return;
+      }
+      final offen = await offeneAusschnitte(paths);
+      if (offen.isEmpty) return;
+      await erneuereGraueAusschnitte(
+        db,
+        paths,
+        nur: offen,
+        abbrechen: () => _beendet,
+      );
+    } catch (e) {
+      debugPrint('Gesichtsausschnitte: $e');
+    }
+  }
+
+  /// Der Lauf der Aufgabe [nachlaufFarbigeAusschnitte] für
+  /// [reiheAufgabeEin]: im Hintergrund, mit Fortschritt in der
+  /// Aufgabenleiste und dort abzubrechen. Erst ein ganzer Lauf vermerkt die
+  /// Aufgabe als erledigt (siehe [_fuehreAus]); ein abgebrochener beginnt
+  /// beim nächsten Start von vorn und übergeht, was schon neu ist.
+  Stream<ImportProgress> erneuereGraueAusschnitteLauf() {
+    var abgebrochen = false;
+    var zuletzt = (0, 0);
+    // Erfüllt, sobald die Arbeit steht – das Kündigen wartet darauf, nicht
+    // auf das Schliessen des Stroms (das seinerseits aufs Kündigen wartet).
+    final angehalten = Completer<void>();
+    late final StreamController<ImportProgress> strom;
+    strom = StreamController<ImportProgress>(
+      onListen: () async {
+        try {
+          final r = await erneuereGraueAusschnitte(
+            db,
+            paths,
+            abbrechen: () => abgebrochen || _beendet,
+            fortschritt: (erledigt, gesamt) {
+              zuletzt = (erledigt, gesamt);
+              strom.add(ImportProgress(erledigt, gesamt));
+            },
+          );
+          // Beim Beenden der App angehalten: nicht als erledigt vermerken.
+          if (r.weiter != null) throw StateError('pv_abgebrochen');
+          strom.add(ImportProgress(zuletzt.$1, zuletzt.$2, getan: r.neu));
+        } catch (e, st) {
+          strom.addError(e, st);
+        } finally {
+          angehalten.complete();
+          await strom.close();
+        }
+      },
+      onCancel: () {
+        abgebrochen = true;
+        return angehalten.future;
+      },
+    );
+    return strom.stream;
   }
 
   /// Exakte Rangfolge auf allen Einbettungen – und warum hier kein
@@ -1050,6 +1126,7 @@ class LibraryState extends ChangeNotifier {
       );
     }
     if (!verbunden) unawaited(_bildnachlaeufe());
+    if (!verbunden) unawaited(_pruefeGraueAusschnitte());
     await clearDecryptCache();
 
     // Crash-Safety: ein Restaurierungs-Auftrag, der beim letzten Beenden

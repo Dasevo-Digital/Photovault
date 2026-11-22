@@ -4138,6 +4138,25 @@ class AppTexteDe extends AppTexte {
       'Gesichtsausschnitte werden neu gezeichnet …';
 
   @override
+  String get ausschnitteFarbigLauf =>
+      'Graue Gesichtsausschnitte werden farbig neu gezeichnet';
+
+  @override
+  String get ausschnitteFarbigLeer =>
+      'Es gab keine grauen Gesichtsausschnitte.';
+
+  @override
+  String ausschnitteFarbigFertig(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl graue Gesichtsausschnitte wurden farbig neu gezeichnet.',
+      one: 'Ein grauer Gesichtsausschnitt wurde farbig neu gezeichnet.',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get einstBackupManuellHinweis =>
       'Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben, Serien und Varianten, Paare der Live Photos, eigene Bildbeschreibungen); alles Übrige liesse sich danach nicht wiederherstellen.';
 

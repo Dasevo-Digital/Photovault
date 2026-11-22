@@ -367,16 +367,29 @@ extension PersonenAbfragen on AppDatabase {
       assets.isLocked.equals(false);
 
   /// Trägt einen neu gezeichneten Ausschnitt samt seiner Schärfe ein.
+  ///
+  /// Liegt er unter einem neuen Pfad (#459), ziehen die Profilbilder mit,
+  /// die auf den alten zeigten – sie zeigten sonst auf eine Datei, die es
+  /// nicht mehr gibt.
   Future<void> setzeGesichtsausschnitt(
     String faceId,
     String pfad, {
     double? schaerfe,
-  }) => (update(faces)..where((f) => f.id.equals(faceId))).write(
-    FacesCompanion(
-      cropRelativePath: Value(pfad),
-      schaerfe: schaerfe == null ? const Value.absent() : Value(schaerfe),
-    ),
-  );
+  }) => transaction(() async {
+    final alt = (await (select(
+      faces,
+    )..where((f) => f.id.equals(faceId))).getSingleOrNull())?.cropRelativePath;
+    await (update(faces)..where((f) => f.id.equals(faceId))).write(
+      FacesCompanion(
+        cropRelativePath: Value(pfad),
+        schaerfe: schaerfe == null ? const Value.absent() : Value(schaerfe),
+      ),
+    );
+    if (alt == null || alt == pfad) return;
+    await (update(people)..where((t) => t.coverFaceCropPath.equals(alt))).write(
+      PeopleCompanion(coverFaceCropPath: Value(pfad)),
+    );
+  });
 
   Future<void> setzeGesichtsschaerfe(String faceId, double wert) =>
       (update(faces)..where((f) => f.id.equals(faceId))).write(

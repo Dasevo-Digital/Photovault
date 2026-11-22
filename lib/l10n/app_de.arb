@@ -2303,6 +2303,16 @@
     }
   },
   "backupAusschnitteNeu": "Gesichtsausschnitte werden neu gezeichnet …",
+  "ausschnitteFarbigLauf": "Graue Gesichtsausschnitte werden farbig neu gezeichnet",
+  "ausschnitteFarbigLeer": "Es gab keine grauen Gesichtsausschnitte.",
+  "ausschnitteFarbigFertig": "{anzahl, plural, =1{Ein grauer Gesichtsausschnitt wurde farbig neu gezeichnet.} other{{anzahl} graue Gesichtsausschnitte wurden farbig neu gezeichnet.}}",
+  "@ausschnitteFarbigFertig": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "einstBackupManuellHinweis": "Eine Sicherung mit Passphrase nimmt zusätzlich einen verschlüsselten Schnappschuss der Datenbank mit – Personen, Stammbaum, Reisen, Aktivitäten und gespeicherte Suchen kommen damit beim Wiederherstellen zurück. Ohne Passphrase enthält die Sicherung nur die Originale und die Beilagen daneben (Beschreibung, Sterne, Farbmarke, Ort, Schlagwörter, Alben, Serien und Varianten, Paare der Live Photos, eigene Bildbeschreibungen); alles Übrige liesse sich danach nicht wiederherstellen.",
   "backupNichtGesichert": "{anzahl} Datei(en) konnten nicht gesichert werden – sie werden beim nächsten Lauf erneut versucht",
   "@backupNichtGesichert": {

@@ -6861,6 +6861,24 @@ abstract class AppTexte {
   /// **'Gesichtsausschnitte werden neu gezeichnet …'**
   String get backupAusschnitteNeu;
 
+  /// No description provided for @ausschnitteFarbigLauf.
+  ///
+  /// In de, this message translates to:
+  /// **'Graue Gesichtsausschnitte werden farbig neu gezeichnet'**
+  String get ausschnitteFarbigLauf;
+
+  /// No description provided for @ausschnitteFarbigLeer.
+  ///
+  /// In de, this message translates to:
+  /// **'Es gab keine grauen Gesichtsausschnitte.'**
+  String get ausschnitteFarbigLeer;
+
+  /// No description provided for @ausschnitteFarbigFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Ein grauer Gesichtsausschnitt wurde farbig neu gezeichnet.} other{{anzahl} graue Gesichtsausschnitte wurden farbig neu gezeichnet.}}'**
+  String ausschnitteFarbigFertig(int anzahl);
+
   /// No description provided for @einstBackupManuellHinweis.
   ///
   /// In de, this message translates to:

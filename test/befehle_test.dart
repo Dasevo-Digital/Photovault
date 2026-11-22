@@ -743,7 +743,7 @@ void main() {
 
     test('jeder ausgeführte Befehl wird gemeldet, nach der Wirkung', () async {
       final gemeldet = <String>[];
-      db.befehlsbeobachter.add((b) async {
+      db.befehlsbeobachter.add((b, _) async {
         gemeldet.add('${b.art}:${(await aufnahme('a1')).rating}');
       });
       await db.fuehreAus(const BewertungSetzen(['a1'], 3));
