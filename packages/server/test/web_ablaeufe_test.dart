@@ -44,4 +44,29 @@ void main() {
       contains('endgueltigLoeschen(d.aufnahmen)'),
     );
   });
+
+  test(
+    'nach einem Fehler beim Nachladen geht es erst nach einer Pause weiter',
+    () {
+      // Die Fehlermeldung steht in #ende, das damit sichtbar blieb; das
+      // finally rief ladeMehr sofort wieder auf – Hunderte Anfragen je
+      // Sekunde, solange der Server weg war oder 503 sagte.
+      final lade = funktion('ladeMehr');
+      final sofort = lade.indexOf('setTimeout(ladeMehr)');
+      expect(sofort, isNonNegative);
+      expect(lade.substring(0, sofort), contains('if (!gescheitert)'));
+      expect(lade, contains('2 ** l.fehlversuche'));
+      expect(lade, contains('liste.fehlversuche = 0'));
+    },
+  );
+
+  test('die Suche zählt erst nach einem gelungenen Abruf weiter', () {
+    // `pos` rückte vor der Anfrage vor: Jeder Fehlschlag übersprang 300
+    // Treffer, und offline lief die Liste bis zum Ende aller Kennungen.
+    final abruf = app.indexOf("await api('/api/v1/aufnahmen/liste'");
+    expect(abruf, isNonNegative);
+    final mehr = app.lastIndexOf('const mehr = async () => {', abruf);
+    final weiter = app.indexOf('pos += stueck.length', mehr);
+    expect(weiter, greaterThan(abruf));
+  });
 }

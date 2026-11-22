@@ -943,15 +943,18 @@ async function ladeMehr() {
   if (!liste || !liste.mehr || liste.laedt || stillerLauf) return;
   const nr = ansichtNr;
   liste.laedt = true;
+  let gescheitert = false;
   try {
     const d = await liste.mehr();
     if (nr !== ansichtNr) return;
+    liste.fehlversuche = 0;
     haengeAn(d.aufnahmen);
     if (!d.weiter) {
       liste.mehr = null;
       $('ende').textContent = liste.aufnahmen.length ? anzahlText(liste.aufnahmen.length) : t('Noch keine Aufnahmen.');
     }
   } catch (x) {
+    gescheitert = true;
     if (nr === ansichtNr) $('ende').textContent = x.message;
   } finally {
     if (nr === ansichtNr) {
@@ -959,7 +962,19 @@ async function ladeMehr() {
       // Füllt eine Seite den Schirm nicht, bleibt #ende sichtbar, und der
       // Beobachter meldet keinen neuen Wechsel.
       const r = $('ende').getBoundingClientRect();
-      if (liste.mehr && r.height && r.top < innerHeight) setTimeout(ladeMehr);
+      if (liste.mehr && r.height && r.top < innerHeight) {
+        if (!gescheitert) {
+          setTimeout(ladeMehr);
+        } else {
+          // Nach einem Fehler nicht sofort wieder: Die Meldung steht in
+          // #ende, das bleibt sichtbar – und während der Server neu
+          // startet oder 503 sagt, gingen sonst Hunderte Anfragen je
+          // Sekunde hinaus. Mit wachsender Pause bis zu einer Minute.
+          const l = liste;
+          l.fehlversuche = (l.fehlversuche || 0) + 1;
+          setTimeout(() => { if (liste === l && nr === ansichtNr) ladeMehr(); }, Math.min(60000, 1000 * 2 ** l.fehlversuche));
+        }
+      }
     }
   }
 }
@@ -3964,8 +3979,10 @@ $('form-suche').addEventListener('submit', async (e) => {
     let pos = d.aufnahmen.length;
     const mehr = async () => {
       const stueck = ids.slice(pos, pos + 300);
-      pos += stueck.length;
       const s = await api('/api/v1/aufnahmen/liste', { methode: 'POST', json: { ids: stueck } });
+      // Erst nach dem Erfolg weiter: Ein gescheiterter Abruf übersprang
+      // sonst 300 Treffer still.
+      pos += stueck.length;
       return { aufnahmen: s.aufnahmen, weiter: pos < ids.length ? 'mehr' : null };
     };
     zeigeListe({ aufnahmen: d.aufnahmen, suche: true, mehr: pos < ids.length ? mehr : null });
