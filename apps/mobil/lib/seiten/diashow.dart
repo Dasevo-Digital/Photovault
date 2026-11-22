@@ -13,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:zierbild/zierschrift.dart';
 
+import '../app_sperre.dart';
 import '../bilder.dart';
 import '../einfuegbares_menue.dart';
 import '../l10n/app_localizations.dart';
@@ -68,6 +69,12 @@ Future<int?> zeigeDiashow(
   return zuletzt == null ? null : zeilen.indexOf(zuletzt);
 }
 
+/// Hält das Display an oder lässt es wieder dunkel werden (in Tests
+/// ersetzbar).
+@visibleForTesting
+Future<void> Function(bool an) diashowWachHalten = (an) =>
+    WakelockPlus.toggle(enable: an);
+
 class Diashow extends StatefulWidget {
   const Diashow({
     super.key,
@@ -92,23 +99,34 @@ class _DiashowState extends State<Diashow> {
   Timer? _takt;
   Timer? _knoepfeAus;
   int _lauf = 0;
+  late final VoidCallback _sperreAus;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    WakelockPlus.enable().catchError((_) {});
+    _wachHalten(true);
+    // Hinter der App-Sperre hält die Show an (#437): Sonst blätterte sie
+    // dort weiter, lud Bilder, und das Telefon sperrte sich nie selbst.
+    _sperreAus = beimVerdecken(widget.sitzung.appSperre, () {
+      if (_laeuft) _pause();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => _zeige(_index));
   }
 
   @override
   void dispose() {
+    _sperreAus();
     _takt?.cancel();
     _knoepfeAus?.cancel();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    WakelockPlus.disable().catchError((_) {});
+    _wachHalten(false);
     super.dispose();
   }
+
+  /// Das Display bleibt nur an, solange die Show läuft.
+  static void _wachHalten(bool an) =>
+      unawaited(diashowWachHalten(an).catchError((_) {}));
 
   Future<ImageProvider> _fuer(Rasterzeile z) async {
     final a = await widget.sitzung.db.assetById(z.id);
@@ -155,6 +173,8 @@ class _DiashowState extends State<Diashow> {
   void _pause() {
     setState(() => _laeuft = !_laeuft);
     _takt?.cancel();
+    // Angehalten darf das Telefon wieder dunkel werden und sich sperren.
+    _wachHalten(_laeuft);
     if (_laeuft) _takt = Timer(diashowTakt, () => _zeige(_index + 1));
   }
 
@@ -184,6 +204,8 @@ class _DiashowState extends State<Diashow> {
           _Videoangaben(anzahl: fotos.length, gesamt: widget.fotos.length),
     );
     if (angaben == null || !mounted) return;
+    // Während das Video entsteht, bleibt das Display an.
+    _wachHalten(true);
     final stand = ValueNotifier<double?>(null);
     var abgebrochen = false;
     final navigator = Navigator.of(context);
@@ -253,6 +275,7 @@ class _DiashowState extends State<Diashow> {
     } finally {
       navigator.pop();
       stand.dispose();
+      if (mounted) _wachHalten(_laeuft);
     }
     if (!mounted) return;
     switch (ergebnis.ausgang) {

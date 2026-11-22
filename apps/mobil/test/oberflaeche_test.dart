@@ -30,6 +30,7 @@ import 'package:kern/services/stammbaum.dart' show Verwandtenkreis;
 import 'package:kern/services/storage_paths.dart';
 import 'package:zierbild/lebensbaum_flaeche.dart';
 import 'package:zierbild/zierbaum_schild.dart';
+import 'package:photo_vault_mobil/app_sperre.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
 import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/lokal/lokalbetrachter.dart';
@@ -1597,6 +1598,77 @@ void main() {
     await tester.tap(find.byTooltip('Diashow beenden'));
     await tester.pumpAndSettle();
     expect(zurueck, 3);
+  });
+
+  testWidgets('Diashow: angehalten oder hinter der App-Sperre darf das '
+      'Display ausgehen (#437)', (tester) async {
+    final wach = <bool>[];
+    final vorher = diashowWachHalten;
+    diashowWachHalten = (an) async => wach.add(an);
+    addTearDown(() => diashowWachHalten = vorher);
+    final (sitzung, _) = await sitzungMit(tester, ['w1', 'w2', 'w3']);
+    final sperre = AppSperre(
+      an: true,
+      pruefe: (_) async => true,
+      verfuegbar: () async => true,
+      laufzeit: () async => 0,
+      abdecken: (_) async {},
+      beiSperre: () async {},
+      android: false,
+    );
+    expect(await tester.runAsync(() => sperre.entsperre('x')), isTrue);
+    sitzung.appSperre = sperre;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
+        supportedLocales: AppTexte.supportedLocales,
+        home: Diashow(
+          sitzung: sitzung,
+          fotos: [_zeile('w1', 0, 0), _zeile('w2', 0, 0), _zeile('w3', 0, 0)],
+        ),
+      ),
+    );
+    Future<void> warte(String stand) async {
+      for (var i = 0; i < 40 && find.text(stand).evaluate().isEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    Future<void> knopf(String tooltip) async {
+      await tester.tap(find.byType(GestureDetector).first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byTooltip(tooltip));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await warte('1 / 3');
+    expect(wach, [true]);
+    await knopf('Anhalten');
+    expect(wach.last, isFalse, reason: 'angehalten');
+    await tester.pump(const Duration(seconds: 5));
+    await knopf('Weiter');
+    expect(wach.last, isTrue);
+
+    // Die App geht weg, die Sperre deckt sie ab: Die Show hält an.
+    sperre.lebenslauf(AppLifecycleState.inactive);
+    await tester.pump();
+    expect(wach.last, isFalse, reason: 'hinter der Sperre');
+    await tester.pump(diashowTakt * 2);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 100)),
+    );
+    await tester.pump();
+    expect(find.text('1 / 3'), findsOneWidget, reason: 'blättert nicht');
+
+    await tester.pumpWidget(const SizedBox());
+    expect(wach.last, isFalse);
   });
 
   testWidgets('Orte: Länder mit Städten, ein Tipp zeigt die Aufnahmen', (
