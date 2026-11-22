@@ -11,6 +11,7 @@ import '../state/hintergrundlauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../services/vorschaubild_zaehlung.dart';
 import '../services/meldungsdienst.dart';
 
 /// Eine Aktion innerhalb einer [_TaskCard] – startet einen der
@@ -958,7 +959,7 @@ List<Aufgabe> _aufgaben(
     beschreibung: t.aufgVorschauText,
     // Auch Miniaturen, deren Datei fehlt (IMP-135) – dieselbe Liste wie
     // der Lauf „Fehlende“.
-    offeneZahl: () async => (await library.aufnahmenOhneVorschaubild()).length,
+    offeneZahl: () => zahlOhneVorschaubild(library.db, library.paths),
     aktionen: [
       Aufgabenaktion(
         modus: Aufgabenmodus.alle,
