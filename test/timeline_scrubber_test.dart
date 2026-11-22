@@ -411,4 +411,70 @@ void main() {
       expect(tester.takeException(), isNull, reason: 'Höhe $hoehe');
     }
   });
+
+  // Ein Klick setzte die Stelle wie ein Ziehen, zurückgesetzt wurde sie aber
+  // nur am Ende eines Ziehens. Nach einem Klick blieben Linie, Beschriftung
+  // und Vorlesewert an der angeklickten Stelle stehen, während das Raster
+  // mit dem Mausrad längst woanders war.
+  testWidgets('nach einem Klick folgt die Leiste wieder dem Scrollen', (
+    tester,
+  ) async {
+    final b = _bibliothek();
+    final steuerung = ScrollController();
+    addTearDown(steuerung.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Row(
+            children: [
+              Expanded(
+                child: ListView(
+                  controller: steuerung,
+                  children: const [SizedBox(height: 20000)],
+                ),
+              ),
+              SizedBox(
+                width: 64,
+                height: 600,
+                child: TimelineScrubber(
+                  orderedKeys: b.keys,
+                  groups: b.groups,
+                  controller: steuerung,
+                  gridWidth: 800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    String? vorlesewert() => tester
+        .widget<Semantics>(
+          find
+              .descendant(
+                of: find.byType(TimelineScrubber),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        )
+        .properties
+        .value;
+    final oben = vorlesewert();
+
+    final leiste = tester.getRect(find.byType(TimelineScrubber));
+    await tester.tapAt(
+      Offset(leiste.center.dx, leiste.top + leiste.height * 0.8),
+    );
+    await tester.pump();
+    expect(steuerung.offset, greaterThan(0), reason: 'der Klick springt');
+    expect(vorlesewert(), isNot(oben));
+
+    steuerung.jumpTo(0);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(vorlesewert(), oben);
+  });
 }

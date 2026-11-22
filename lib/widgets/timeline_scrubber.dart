@@ -261,6 +261,12 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
     setState(() => _dragFraction = fraction);
   }
 
+  /// Ende eines Ziehens oder Klicks: Ab hier folgt die Marke wieder der
+  /// Scrollposition.
+  void _loslassen() {
+    if (_dragFraction != null) setState(() => _dragFraction = null);
+  }
+
   String _labelFor(int key) {
     final sprache = Localizations.localeOf(context).toString();
     final a = widget.groups[key]!.first;
@@ -361,8 +367,14 @@ class _TimelineScrubberState extends State<TimelineScrubber> {
                 _handleDrag(d.localPosition.dy, trackHeight),
             onVerticalDragUpdate: (d) =>
                 _handleDrag(d.localPosition.dy, trackHeight),
-            onVerticalDragEnd: (_) => setState(() => _dragFraction = null),
+            onVerticalDragEnd: (_) => _loslassen(),
+            onVerticalDragCancel: _loslassen,
             onTapDown: (d) => _handleDrag(d.localPosition.dy, trackHeight),
+            // Ein Klick setzt die Stelle wie ein Ziehen und muss sie genauso
+            // wieder freigeben – sonst klebte die Marke an der angeklickten
+            // Stelle, während das Raster mit dem Mausrad weiterläuft.
+            onTapUp: (_) => _loslassen(),
+            onTapCancel: _loslassen,
             child: DecoratedBox(
               decoration: const BoxDecoration(color: _leistenGrund),
               child: Stack(
