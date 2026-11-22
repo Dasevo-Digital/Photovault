@@ -75,6 +75,19 @@ class Abgleichszustand {
   bool get appZuAlt => (serverSchema ?? 0) > (hierSchema ?? 0);
 }
 
+/// Server und Kopie haben verschiedene Schemastände: Bis App oder Server
+/// aktualisiert sind, gleicht nichts ab – weder die Schleife noch ein
+/// direkter Aufruf von [Abgleich.sende], [Abgleich.empfange] oder
+/// [Abgleich.gleicheAn].
+class AbgleichsschemaAnders implements Exception {
+  const AbgleichsschemaAnders(this.server, this.hier);
+  final int server;
+  final int hier;
+
+  @override
+  String toString() => 'AbgleichsschemaAnders(server: $server, hier: $hier)';
+}
+
 /// Hält die Kopie einer Bibliothek auf einem Gerät mit dem Server gleich.
 ///
 /// **Lesen:** Die Kopie ist eine gewöhnliche Bibliothek (dasselbe Schema
@@ -135,6 +148,17 @@ class Abgleich {
   /// ihn als Wert (siehe [sende]).
   Future<(Object, StackTrace)?>? _sendelauf;
   bool _serverOhneKonfliktpruefung = false;
+
+  /// Ob der Server zuletzt dasselbe Schema gemeldet hat wie diese Kopie
+  /// (siehe [_pruefeSchema]).
+  bool _schemaPasst = false;
+
+  /// Das Schema des Servers, wenn es nicht passt – dann bleibt es dabei,
+  /// bis die App neu startet, und auch der Zustand sagt es weiter.
+  int? _serverSchema;
+
+  /// Der Server hat das Gerät abgemeldet; der Zustand sagt es weiter.
+  bool _abgemeldet = false;
   Completer<void>? _wecker;
 
   /// Tritt mit [beende] ein und bricht die wartende Abfrage ab – sonst
@@ -381,6 +405,7 @@ class Abgleich {
   }
 
   Future<void> _sende() async {
+    await _pruefeSchema();
     while (true) {
       final offen = await db
           .customSelect(
@@ -493,9 +518,35 @@ class Abgleich {
               .getSingle())
           .read<int>('stand');
 
+  /// Fragt den Server nach seinem Schema, solange es nicht als passend
+  /// bekannt ist, und wirft [AbgleichsschemaAnders], wenn es nicht passt.
+  ///
+  /// Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten es hier
+  /// nicht gibt (oder umgekehrt): [Protokoll.wendeAn] übernähme nur die
+  /// Spalten, die es hier gibt, und der Stand rückte trotzdem vor – die
+  /// übrigen fehlten hier auch nach dem Update, bis sich die Zeile wieder
+  /// ändert. Geprüft wurde früher nur in der Schleife; Ziehen zum
+  /// Aktualisieren, das Empfangen nach dem Hochladen und der
+  /// Konfliktdialog glichen trotzdem ab.
+  Future<void> _pruefeSchema() async {
+    if (_schemaPasst) return;
+    if (_serverSchema case final s?) {
+      throw AbgleichsschemaAnders(s, db.schemaVersion);
+    }
+    final stand = await verbindung.hole('api/v1/abgleich/stand');
+    final schema = stand['schema'];
+    if (schema is int && schema != db.schemaVersion) {
+      _serverSchema = schema;
+      await _melde(erreichbar: true);
+      throw AbgleichsschemaAnders(schema, db.schemaVersion);
+    }
+    _schemaPasst = true;
+  }
+
   /// Holt die Änderungen seit dem eigenen Stand – mit [warten] als Long-Poll
   /// – und wendet sie an; danach [gleicheAn].
   Future<void> empfange({Duration warten = Duration.zero}) async {
+    await _pruefeSchema();
     var stand = await _stand();
     var w = warten;
     while (true) {
@@ -599,6 +650,7 @@ class Abgleich {
   /// Gleicht die Zeilen bestätigter Befehle mit dem Server ab, sobald das
   /// Protokoll bis zu ihrer Bestätigung abgeholt ist (siehe Klasse).
   Future<void> gleicheAn() async {
+    await _pruefeSchema();
     final stand = await _stand();
     final fertig = [
       for (final z
@@ -718,11 +770,16 @@ class Abgleich {
           if (!geprueft) {
             // Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten
             // es hier nicht gibt (oder umgekehrt) – dann lieber gar nicht.
-            final stand = await verbindung.hole('api/v1/abgleich/stand');
-            final schema = stand['schema'];
+            // Der Gerätestand geht auch dann an den Server: Dort steht,
+            // welches Gerät zu alt ist.
+            AbgleichsschemaAnders? anders;
+            try {
+              await _pruefeSchema();
+            } on AbgleichsschemaAnders catch (f) {
+              anders = f;
+            }
             await meldeGeraetestand();
-            if (schema is int && schema != db.schemaVersion) {
-              await _melde(erreichbar: true, serverSchema: schema);
+            if (anders != null) {
               _laeuft = false;
               return;
             }
@@ -738,6 +795,10 @@ class Abgleich {
           _pause = const Duration(seconds: 2);
           _selbstAbgebrochen = false;
           await _melde(erreichbar: true);
+        } on AbgleichsschemaAnders {
+          // Ein direkter Aufruf hat es zuerst bemerkt.
+          _laeuft = false;
+          return;
         } on KeineVerbindung {
           if (!_laeuft) return;
           warten = Duration.zero;
@@ -746,17 +807,24 @@ class Abgleich {
             _selbstAbgebrochen = false;
             continue;
           }
+          // Nach einem Aussetzer noch einmal nach dem Schema fragen: Ein
+          // Server, der neu startet, ist womöglich eine neue Fassung.
+          geprueft = false;
+          _schemaPasst = false;
           await _melde(erreichbar: false);
           await _schlafe(_pause);
           _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
         } on Serverfehler catch (f) {
           if (f.abgemeldet) {
-            await _melde(erreichbar: true, abgemeldet: true);
+            _abgemeldet = true;
+            await _melde(erreichbar: true);
             _laeuft = false;
             return;
           }
           if (!_laeuft) return;
           warten = Duration.zero;
+          geprueft = false;
+          _schemaPasst = false;
           meldung.protokoll('Abgleich: $f');
           await _schlafe(_pause);
           _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
@@ -821,12 +889,13 @@ class Abgleich {
     }
   }
 
-  Future<void> _melde({
-    bool? erreichbar,
-    bool abgemeldet = false,
-    int? serverSchema,
-  }) async {
+  /// Schemastand und Abmeldung merkt sich der Abgleich selbst: Als
+  /// Parameter fielen sie beim nächsten [_melde] ohne sie wieder weg – ein
+  /// neuer Befehl genügte, und „App zu alt“ oder „abgemeldet“ verschwand
+  /// aus der Anzeige.
+  Future<void> _melde({bool? erreichbar}) async {
     if (_zustand.isClosed) return;
+    final serverSchema = _serverSchema;
     final n =
         (await db
                 .customSelect(
@@ -844,7 +913,7 @@ class Abgleich {
               .read<int>('n'),
       serverOhneKonfliktpruefung: _serverOhneKonfliktpruefung,
       abgelehnt: List.unmodifiable(_abgelehnt),
-      abgemeldet: abgemeldet,
+      abgemeldet: _abgemeldet,
       serverSchema: serverSchema,
       hierSchema: serverSchema == null ? null : db.schemaVersion,
       ungeklaert: erreichbar == null && _letzter.ungeklaert,

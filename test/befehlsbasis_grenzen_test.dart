@@ -144,6 +144,13 @@ void main() {
       addTearDown(db.close);
       final stapel = <int>[];
       final client = MockClient((r) async {
+        // Gesendet wird erst, wenn das Schema passt (#427).
+        if (r.url.path.endsWith('/abgleich/stand')) {
+          return http.Response(
+            jsonEncode({'stand': 0, 'schema': db.schemaVersion}),
+            200,
+          );
+        }
         if (r.url.path.endsWith('/zustand')) {
           return http.Response(
             jsonEncode({

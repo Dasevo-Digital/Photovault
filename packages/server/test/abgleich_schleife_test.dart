@@ -166,4 +166,109 @@ void main() {
     );
     await a.beende();
   });
+
+  group('anderes Schema beim Server', () {
+    /// Lässt den Server ein Schema höher melden, sobald [an] gilt, und
+    /// schreibt mit, was das Gerät sonst fragt.
+    ({List<String> abgleich, void Function(bool) schalte}) hoeher(
+      _Weiche weiche,
+      AppDatabase db, {
+      bool an = true,
+    }) {
+      final abgleich = <String>[];
+      var hoeher = an;
+      weiche.eingriff = (r, weiter) async {
+        final pfad = r.url.path;
+        if (pfad.endsWith('/abgleich/stand') && hoeher) {
+          return _antwort({'stand': 0, 'schema': db.schemaVersion + 1});
+        }
+        if (pfad.contains('/abgleich/aenderungen') ||
+            pfad.contains('/abgleich/zeilen') ||
+            pfad.endsWith('/befehle')) {
+          abgleich.add(pfad);
+        }
+        return weiter();
+      };
+      return (abgleich: abgleich, schalte: (an) => hoeher = an);
+    }
+
+    test('direkte Aufrufe ohne laufende Schleife gleichen nichts ab', () async {
+      final s = await serverDb();
+      await aufnahme(s, 'a1');
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Telefon', weiche);
+      final w = hoeher(weiche, db);
+
+      // Ziehen zum Aktualisieren auf einem Gerät mit zu alter App.
+      await s.fuehreAus(const BewertungSetzen(['a1'], 4));
+      await expectLater(a.empfange(), throwsA(isA<AbgleichsschemaAnders>()));
+      expect((await holeAufnahme(db, 'a1')).rating, isNot(4));
+      expect(a.zustandJetzt.serverSchema, db.schemaVersion + 1);
+
+      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'hier'));
+      expect(
+        a.zustandJetzt.schemaAnders,
+        isTrue,
+        reason: 'ein neuer Befehl lässt den Hinweis stehen',
+      );
+      await expectLater(a.sende(), throwsA(isA<AbgleichsschemaAnders>()));
+      await expectLater(a.gleicheAn(), throwsA(isA<AbgleichsschemaAnders>()));
+      expect((await holeAufnahme(s, 'a1')).description, isNull);
+      expect(w.abgleich, isEmpty, reason: 'weder geholt noch geschickt');
+    });
+
+    test('hat die Schleife angehalten, gleicht auch ein direkter Aufruf '
+        'nichts ab', () async {
+      final s = await serverDb();
+      await aufnahme(s, 'a1');
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Rechner', weiche);
+      final w = hoeher(weiche, db);
+      a.starte();
+      await bis(() => a.zustandJetzt.schemaAnders);
+      expect(a.zustandJetzt.schemaAnders, isTrue);
+
+      // Am Rechner geht etwas hoch, danach holt er die neuen Aufnahmen.
+      await s.fuehreAus(const BewertungSetzen(['a1'], 4));
+      await expectLater(a.empfange(), throwsA(isA<AbgleichsschemaAnders>()));
+      expect((await holeAufnahme(db, 'a1')).rating, isNot(4));
+      expect(w.abgleich, isEmpty);
+    });
+
+    test('nach einem Aussetzer fragt die Schleife noch einmal nach dem '
+        'Schema', () async {
+      final s = await serverDb();
+      await aufnahme(s, 'a1');
+      final weiche = _Weiche();
+      final (db, a) = await geraet('Telefon', weiche);
+      final w = hoeher(weiche, db, an: false);
+      final innen = weiche.eingriff!;
+      a.starte();
+      await bis(() => a.zustandJetzt.erreichbar);
+      await s.fuehreAus(const BewertungSetzen(['a1'], 2));
+      await bis(() async => (await holeAufnahme(db, 'a1')).rating == 2);
+      expect((await holeAufnahme(db, 'a1')).rating, 2);
+
+      // Der Server startet mit einer neuen Fassung neu: Die Verbindung
+      // reisst einmal ab, danach meldet er ein höheres Schema.
+      var abgerissen = false;
+      weiche.eingriff = (r, weiter) async {
+        if (!abgerissen) {
+          abgerissen = true;
+          w.schalte(true);
+          throw http.ClientException('neu gestartet');
+        }
+        return innen(r, weiter);
+      };
+      a.jetzt();
+      await bis(() => a.zustandJetzt.schemaAnders);
+      expect(a.zustandJetzt.schemaAnders, isTrue);
+      w.abgleich.clear();
+      await s.fuehreAus(const BewertungSetzen(['a1'], 5));
+      a.jetzt();
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      expect((await holeAufnahme(db, 'a1')).rating, 2);
+      expect(w.abgleich, isEmpty);
+    });
+  });
 }
