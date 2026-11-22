@@ -31,7 +31,7 @@ mixin _Vorschau on _EntwickelnBasis {
   /// dieselbe Lehre wie bei der Beschneidungswarnung.
   bool get _zeigeTrennstrich => trennstrichZeigen(
     eingeschaltet: _trennstrich != null,
-    originalDa: _originalPreviewBytes != null,
+    originalDa: _vorherBytes != null,
     shaderLaeuft: _zeigeShaderVorschau,
   );
 
@@ -372,7 +372,11 @@ mixin _Vorschau on _EntwickelnBasis {
         _error = AppTexte.of(context).entwVorschauFehlt;
       }
     });
-    if (bytes != null) unawaited(_recomputeHistogram());
+    if (bytes != null) {
+      unawaited(_recomputeHistogram());
+      // Ein neuer Zuschnitt braucht auch ein neues Vorher-Bild.
+      unawaited(_vorherZuschneiden());
+    }
   }
 
   /// Rechnet **waehrend** des Ziehens nativ – fuer die Regler, die der
@@ -465,7 +469,11 @@ mixin _Vorschau on _EntwickelnBasis {
   /// cached sie – für das Gedrückt-Halten-"Vorher"-Bild. Kein zusätzlicher
   /// nativer Aufruf bei wiederholtem Halten.
   Future<void> _ensureOriginalPreviewLoaded() async {
-    if (_originalPreviewBytes != null || _loadingOriginalPreview) return;
+    if (_originalPreviewBytes != null) {
+      unawaited(_vorherZuschneiden());
+      return;
+    }
+    if (_loadingOriginalPreview) return;
     _loadingOriginalPreview = true;
     final sourceFile = await _originalOderMeldung();
     if (sourceFile == null) {
@@ -482,9 +490,64 @@ mixin _Vorschau on _EntwickelnBasis {
     if (bytes == null) return;
     try {
       final farbig = await _farbanzeigen(bytes);
-      if (mounted) setState(() => _originalPreviewBytes = farbig);
+      if (!mounted) return;
+      setState(() {
+        _originalRoh = bytes;
+        _originalPreviewBytes = farbig;
+      });
+      unawaited(_vorherZuschneiden());
     } on Object {
       if (mounted) setState(() => _error = AppTexte.of(context).farbraumFehler);
+    }
+  }
+
+  /// Das Vorher-Bild so, wie die Vorschau gerade zu sehen ist: mit
+  /// demselben Zuschnitt und derselben Drehung. `null`, solange es noch
+  /// gerechnet wird.
+  ///
+  /// Gerendert wird das Vorher-Bild ohne Zuschnitt – es dient zugleich
+  /// als Grundlage der Shader-Vorschau, und die läuft nur ohne Zuschnitt.
+  /// Neben einer beschnittenen oder gedrehten Vorschau verglich der
+  /// Trennstrich deshalb zwei verschiedene Ausschnitte, und das
+  /// Gedrückthalten zeigte plötzlich das ganze Foto (#465).
+  Uint8List? get _vorherBytes {
+    final aus = _originalPreviewBytes;
+    if (aus == null || _vorschauZuschnitt.istGanz) return aus;
+    final z = _vorherImAusschnitt;
+    return z != null &&
+            identical(z.aus, aus) &&
+            z.zuschnitt.json == _vorschauZuschnitt.json
+        ? z.bytes
+        : null;
+  }
+
+  /// Schneidet das Vorher-Bild zu wie die gezeigte Vorschau – mit
+  /// derselben Rechnung ([schneideEntwicklung], also
+  /// [schneideBild]) und vor der Farbanzeige, wie beim Render der
+  /// Vorschau.
+  Future<void> _vorherZuschneiden() async {
+    final roh = _originalRoh;
+    final aus = _originalPreviewBytes;
+    final z = _vorschauZuschnitt;
+    if (roh == null || aus == null || z.istGanz) return;
+    final schon = _vorherImAusschnitt;
+    if (schon != null &&
+        identical(schon.aus, aus) &&
+        schon.zuschnitt.json == z.json) {
+      return;
+    }
+    try {
+      final bytes = await _farbanzeigen(await schneideEntwicklung(roh, z));
+      if (!mounted ||
+          !identical(_originalPreviewBytes, aus) ||
+          _vorschauZuschnitt.json != z.json) {
+        return;
+      }
+      setState(
+        () => _vorherImAusschnitt = (aus: aus, zuschnitt: z, bytes: bytes),
+      );
+    } on Object {
+      // Ohne Vorher-Bild bleibt der Vergleich aus, wie solange es lädt.
     }
   }
 
@@ -521,7 +584,7 @@ mixin _Vorschau on _EntwickelnBasis {
     }
 
     return VorherNachherVergleich(
-      original: _originalPreviewBytes!,
+      original: _vorherBytes!,
       bearbeitet: _previewBytes!,
       seitenverhaeltnis: verhaeltnis,
       anteil: _trennstrich!,

@@ -197,6 +197,17 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   /// damit wiederholtes Halten keine erneute native Konvertierung auslöst.
   Uint8List? _originalPreviewBytes;
   bool _loadingOriginalPreview = false;
+
+  /// Dasselbe neutrale Bild, wie es aus dem Renderer kommt: vor der
+  /// Farbanzeige und unbeschnitten. Daraus entsteht das Vorher-Bild im
+  /// Ausschnitt der Vorschau (siehe `_vorherBytes`).
+  Uint8List? _originalRoh;
+
+  /// Das Vorher-Bild im Zuschnitt [zuschnitt], geschnitten aus [aus] (dem
+  /// damaligen [_originalPreviewBytes]) – damit es nach einem neuen
+  /// Zuschnitt oder neuen Farbeinstellungen nicht stehen bleibt.
+  ({Uint8List aus, Bildzuschnitt zuschnitt, Uint8List bytes})?
+  _vorherImAusschnitt;
   bool _showingOriginal = false;
 
   /// Position des Vorher/Nachher-Trennstrichs, 0…1 auf dem dargestellten
@@ -760,9 +771,8 @@ class _DevelopScreenState extends _EntwickelnBasis
                                           ? _buildTrennstrichVergleich()
                                           : Image.memory(
                                               (_showingOriginal &&
-                                                      _originalPreviewBytes !=
-                                                          null)
-                                                  ? _originalPreviewBytes!
+                                                      _vorherBytes != null)
+                                                  ? _vorherBytes!
                                                   : _previewBytes!,
                                               gaplessPlayback: true,
                                               fit: BoxFit.contain,
@@ -808,7 +818,7 @@ class _DevelopScreenState extends _EntwickelnBasis
                                     // sähe der Knopf wirkungslos aus -
                                     // und man suchte den Fehler dort.
                                     if (_trennstrich != null &&
-                                        _originalPreviewBytes == null)
+                                        _vorherBytes == null)
                                       Positioned(
                                         top: 8,
                                         child: Container(

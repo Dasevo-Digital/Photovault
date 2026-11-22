@@ -19,6 +19,8 @@ import 'package:photo_vault/services/library_location.dart';
 import 'package:photo_vault/services/segmentation_service.dart';
 import 'package:photo_vault/services/vector_mask_service.dart';
 import 'package:photo_vault/theme/app_theme.dart';
+import 'package:photo_vault/widgets/develop_preview.dart'
+    show VorherNachherVergleich;
 
 /// **Masken, Pipetten und Graupunkt bei zugeschnittenem Foto (#457).**
 ///
@@ -440,5 +442,54 @@ void main() {
     // Bläulich getroffen: Der Regler muss unter 6500 K stehen.
     expect(temperatur.value, lessThan(6500));
     await abbauen(tester);
+  });
+
+  group('Vorher und Nachher im selben Ausschnitt (#465)', () {
+    double seitenverhaeltnis(Uint8List bytes) {
+      final b = img.decodeImage(bytes)!;
+      return b.width / b.height;
+    }
+
+    testWidgets('gedrückt halten zeigt das Original im Zuschnitt', (
+      tester,
+    ) async {
+      await zeige(tester, hochkant);
+      final bild = find.descendant(
+        of: find.byType(DevelopScreen),
+        matching: find.byType(Image),
+      );
+      final griff = await tester.startGesture(tester.getCenter(bild.first));
+      await tester.pump(const Duration(milliseconds: 600));
+      // Rendern und Zuschneiden des Vorher-Bildes, noch gedrückt.
+      await warte(tester, 40);
+      expect(find.text('Original'), findsOneWidget);
+      final gezeigt =
+          (tester.widget<Image>(bild.first).image as MemoryImage).bytes;
+      // Hochformat 2:3 wie die Vorschau, nicht das Querformat 2:1 des
+      // ganzen Fotos.
+      expect(seitenverhaeltnis(gezeigt), closeTo(2 / 3, 0.02));
+      await griff.up();
+      await tester.pump();
+      await abbauen(tester);
+    });
+
+    testWidgets('der Trennstrich vergleicht denselben Ausschnitt', (
+      tester,
+    ) async {
+      await zeige(tester, hochkant);
+      await tester.tap(
+        find.byTooltip('Vorher/Nachher nebeneinander (Strich zum Ziehen)'),
+      );
+      await warte(tester, 40);
+      final vergleich = tester.widget<VorherNachherVergleich>(
+        find.byType(VorherNachherVergleich),
+      );
+      expect(seitenverhaeltnis(vergleich.original), closeTo(2 / 3, 0.02));
+      expect(
+        seitenverhaeltnis(vergleich.original),
+        closeTo(seitenverhaeltnis(vergleich.bearbeitet), 0.01),
+      );
+      await abbauen(tester);
+    });
   });
 }
