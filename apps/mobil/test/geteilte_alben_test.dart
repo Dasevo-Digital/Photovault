@@ -1464,4 +1464,133 @@ void main() {
     expect(find.text('Geteilt von erika'), findsOneWidget);
     expect(find.text('1 Aufnahme hinzugefügt'), findsOneWidget);
   });
+
+  testWidgets('WEB-087 WEB-167 mit Ort oder ohne: beim Teilen und danach, '
+      'für ein Album und die ganze Bibliothek (#463)', (tester) async {
+    // Ein Telefon: die Blätter von unten, schmal.
+    tester.view.physicalSize = const Size(360, 780);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final album = <Map<String, Object?>>[];
+    final partner = <Map<String, Object?>>[];
+    final koerper = <String, List<Object?>>{};
+    final client = MockClient((r) async {
+      if (r.method == 'PUT') {
+        final k = r.body.isEmpty ? null : jsonDecode(r.body);
+        (koerper[r.url.path] ??= []).add(k);
+        if (r.url.path == '/api/v1/alben/urlaub/teilungen/k-max') {
+          final m = k as Map;
+          album
+            ..clear()
+            ..add({
+              'id': 's1',
+              'konto': 'k-max',
+              'name': 'max',
+              'beitragen': m['beitragen'],
+              'mitOrt': m['mitOrt'],
+            });
+          return json(album.single);
+        }
+        if (r.url.path == '/api/v1/partner/k-max') {
+          final alt = partner.isEmpty ? null : partner.single;
+          partner
+            ..clear()
+            ..add({
+              'konto': 'k-max',
+              'name': 'max',
+              'mitOrt': (k as Map?)?['mitOrt'] ?? alt?['mitOrt'] ?? false,
+            });
+          return http.Response('', 204);
+        }
+      }
+      return switch (r.url.path) {
+        '/api/v1/konten/andere' => json({
+          'konten': [
+            {'id': 'k-max', 'name': 'max'},
+          ],
+        }),
+        '/api/v1/alben/urlaub/teilungen' => json({'teilungen': album}),
+        '/api/v1/partner' => json({'meine': partner, 'mitMir': []}),
+        _ => http.Response('', 404),
+      };
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    Future<void> warte() async {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> waehle(String alt, String neu) async {
+      await tester.tap(find.text(alt).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(neu).last);
+      await warte();
+    }
+
+    await tester.pumpWidget(
+      app(
+        Scaffold(
+          body: Builder(
+            builder: (context) => Column(
+              children: [
+                TextButton(
+                  onPressed: () => mitKontenTeilen(
+                    context,
+                    v,
+                    albumId: 'urlaub',
+                    titel: 'Urlaub',
+                  ),
+                  child: const Text('album'),
+                ),
+                TextButton(
+                  onPressed: () => bibliothekTeilen(context, v),
+                  child: const Text('bibliothek'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    // Ein Album: beim Teilen „Mit Ort“ wählen, danach wieder „Ohne Ort“.
+    await tester.tap(find.text('album'));
+    await warte();
+    expect(find.textContaining('„Mit Ort“'), findsOneWidget);
+    await waehle('Ohne Ort', 'Mit Ort');
+    await tester.tap(find.widgetWithText(FilledButton, 'Teilen'));
+    await warte();
+    expect(koerper['/api/v1/alben/urlaub/teilungen/k-max'], [
+      {'beitragen': false, 'mitOrt': true},
+    ]);
+    expect(find.text('Mit Ort'), findsOneWidget);
+    await waehle('Mit Ort', 'Ohne Ort');
+    expect(koerper['/api/v1/alben/urlaub/teilungen/k-max']!.last, {
+      'beitragen': false,
+      'mitOrt': false,
+    });
+    expect(tester.takeException(), isNull, reason: 'schmal ohne Überlauf');
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    // Die ganze Bibliothek: freigeben mit Ort, danach nur den Ort ändern.
+    await tester.tap(find.text('bibliothek'));
+    await warte();
+    await waehle('Ohne Ort', 'Mit Ort');
+    await tester.tap(find.widgetWithText(FilledButton, 'Teilen'));
+    await warte();
+    expect(koerper['/api/v1/partner/k-max'], [
+      {'mitOrt': true},
+    ]);
+    await waehle('Mit Ort', 'Ohne Ort');
+    expect(koerper['/api/v1/partner/k-max']!.last, {'mitOrt': false});
+    expect(find.text('Ohne Ort'), findsOneWidget);
+    expect(tester.takeException(), isNull, reason: 'schmal ohne Überlauf');
+  });
 }

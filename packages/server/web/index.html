@@ -370,8 +370,13 @@
     <ul id="partner" class="teilungsliste"></ul>
     <div id="partner-neu" class="teilungszeile">
       <select id="partner-wahl" aria-label="Konto"></select>
+      <select id="partner-ort" aria-label="Ort">
+        <option value="">Ohne Ort</option>
+        <option value="1">Mit Ort</option>
+      </select>
       <button type="button" id="partner-hinzu">Teilen</button>
     </div>
+    <p class="leise klein">„Mit Ort“: Die Originale lassen sich unverändert herunterladen, samt Aufnahmeort. „Ohne Ort“: Alle Fotos kommen ohne Ortsangaben, Aufnahmezeit und Kamera bleiben.</p>
     <h3>Nachlasskontakt</h3>
     <p class="leise klein">Ein Nachlasskontakt kann Zugang zu deiner Bibliothek verlangen – etwa, wenn dir etwas zustösst. Widersprichst du nicht innerhalb der Frist, sieht er danach deine ganze Bibliothek unter „Geteilt mit mir“, nur zum Ansehen und Herunterladen. Die Anfrage steht im Browser, am Handy und am Rechner.</p>
     <ul id="nachlass-meine" class="teilungsliste"></ul>
@@ -598,9 +603,14 @@
         <option value="">Ansehen</option>
         <option value="1">Beitragen</option>
       </select>
+      <select id="konten-ort" aria-label="Ort">
+        <option value="">Ohne Ort</option>
+        <option value="1">Mit Ort</option>
+      </select>
       <button type="button" id="konten-hinzu">Teilen</button>
     </div>
     <p class="leise klein">Wer beitragen darf, legt Fotos und Videos direkt in dieses Album. Sie kommen in deine Bibliothek.</p>
+    <p class="leise klein">„Mit Ort“: Die Originale lassen sich unverändert herunterladen, samt Aufnahmeort. „Ohne Ort“: Alle Fotos kommen ohne Ortsangaben, Aufnahmezeit und Kamera bleiben.</p>
     <p id="konten-meldung" class="fehler"></p>
     <menu>
       <button type="submit">Schliessen</button>

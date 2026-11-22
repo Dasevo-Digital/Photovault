@@ -12,6 +12,7 @@ class Albumteilung {
     required this.empfaenger,
     required this.beitragen,
     required this.angelegt,
+    this.mitOrt = false,
   });
 
   final String id;
@@ -25,6 +26,11 @@ class Albumteilung {
   /// das Album nur.
   final bool beitragen;
   final DateTime angelegt;
+
+  /// Ob der Empfänger den Ort bekommt (#463): die Originale, wie sie
+  /// sind, und den Ort in den Zeilen. Sonst Bilder und Zeilen ohne Ort
+  /// (siehe `jpegOhneOrt`); Vorgabe, auch für ältere Teilungen.
+  final bool mitOrt;
 }
 
 /// Ein Kommentar in einem geteilten Album (#297) – zum Album selbst
@@ -60,6 +66,7 @@ class Partnerfreigabe {
     required this.personen,
     required this.inZeitleiste,
     required this.angelegt,
+    this.mitOrt = false,
   });
 
   final String besitzer;
@@ -75,6 +82,11 @@ class Partnerfreigabe {
   /// Der Partner will die Fotos in seiner eigenen Zeitleiste sehen.
   final bool inZeitleiste;
   final DateTime angelegt;
+
+  /// Ob der Partner den Ort bekommt (#463), wie bei [Albumteilung.mitOrt].
+  /// Gilt der Zugang als Nachlasskontakt, zeigt die Freigabe alles, auch
+  /// den Ort.
+  final bool mitOrt;
 
   bool get eingeschraenkt => ab != null || personen != null;
 }
@@ -114,15 +126,18 @@ class Albumteilungen {
     empfaenger: z['empfaenger']! as String,
     beitragen: z['beitragen'] == 1,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
+    mitOrt: z['mit_ort'] == 1,
   );
 
   /// Teilt [album] von [besitzer] mit [empfaenger] – oder ändert, ob er
-  /// beitragen darf, wenn es schon geteilt ist.
+  /// beitragen darf, wenn es schon geteilt ist. [mitOrt]: ob er den Ort
+  /// bekommt; `null` lässt es, wie es ist (neu: ohne Ort).
   Albumteilung teile({
     required String besitzer,
     required String album,
     required String empfaenger,
     required bool beitragen,
+    bool? mitOrt,
   }) {
     if (besitzer == empfaenger) {
       throw ArgumentError('mit sich selbst teilen');
@@ -134,9 +149,10 @@ class Albumteilungen {
     }
     _sdb.db.execute(
       'INSERT INTO albumteilungen (id, besitzer, album, empfaenger, '
-      'beitragen, angelegt) VALUES (?, ?, ?, ?, ?, ?) '
+      'beitragen, angelegt, mit_ort) VALUES (?, ?, ?, ?, ?, ?, ?) '
       'ON CONFLICT (besitzer, album, empfaenger) '
-      'DO UPDATE SET beitragen = excluded.beitragen',
+      'DO UPDATE SET beitragen = excluded.beitragen'
+      '${mitOrt == null ? '' : ', mit_ort = excluded.mit_ort'}',
       [
         _kennung(),
         besitzer,
@@ -144,6 +160,7 @@ class Albumteilungen {
         empfaenger,
         beitragen ? 1 : 0,
         _uhr().millisecondsSinceEpoch,
+        (mitOrt ?? false) ? 1 : 0,
       ],
     );
     return vonAlbum(
@@ -452,15 +469,23 @@ class Albumteilungen {
 
   // --- Partnerfreigabe (#293) -----------------------------------------------
 
-  /// [besitzer] lässt [partner] seine ganze Bibliothek sehen.
-  void partnerSetzen(String besitzer, String partner) {
+  /// [besitzer] lässt [partner] seine ganze Bibliothek sehen. [mitOrt]:
+  /// ob der Partner den Ort bekommt; `null` lässt es, wie es ist (neu: ohne
+  /// Ort).
+  void partnerSetzen(String besitzer, String partner, {bool? mitOrt}) {
     if (besitzer == partner) throw ArgumentError('mit sich selbst teilen');
     _sdb.db.execute(
-      'INSERT INTO partnerfreigaben (besitzer, partner, angelegt) '
-      'VALUES (?, ?, ?) ON CONFLICT (besitzer, partner) DO UPDATE SET '
+      'INSERT INTO partnerfreigaben (besitzer, partner, angelegt, mit_ort) '
+      'VALUES (?, ?, ?, ?) ON CONFLICT (besitzer, partner) DO UPDATE SET '
       // Von Hand freigegeben: bleibt, auch wenn ein Nachlasszugang geht.
-      'nachlass = 0',
-      [besitzer, partner, _uhr().millisecondsSinceEpoch],
+      'nachlass = 0'
+      '${mitOrt == null ? '' : ', mit_ort = excluded.mit_ort'}',
+      [
+        besitzer,
+        partner,
+        _uhr().millisecondsSinceEpoch,
+        (mitOrt ?? false) ? 1 : 0,
+      ],
     );
   }
 
@@ -528,6 +553,7 @@ class Albumteilungen {
     },
     inZeitleiste: z['in_zeitleiste'] == 1,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
+    mitOrt: z['mit_ort'] == 1 || z['nachlass_frei'] == 1,
   );
 
   /// Die Freigabe von [besitzer] für [partner], wenn es sie gibt.

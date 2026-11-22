@@ -266,6 +266,24 @@ abstract class TeilenTexte {
   /// **'Beitragen'**
   String get kontenBeitragen;
 
+  /// No description provided for @kontenOhneOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Ort'**
+  String get kontenOhneOrt;
+
+  /// No description provided for @kontenMitOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Mit Ort'**
+  String get kontenMitOrt;
+
+  /// No description provided for @kontenOrtHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'„Mit Ort“: Die Originale lassen sich unverändert herunterladen, samt Aufnahmeort. „Ohne Ort“: Alle Fotos kommen ohne Ortsangaben, Aufnahmezeit und Kamera bleiben.'**
+  String get kontenOrtHinweis;
+
   /// No description provided for @kontenNiemand.
   ///
   /// In de, this message translates to:

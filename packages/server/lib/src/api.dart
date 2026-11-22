@@ -59,6 +59,7 @@ import 'fassung.dart';
 import 'freigabe_api.dart';
 import 'konten/kontodienst.dart';
 import 'nachlass.dart';
+import 'ohne_ort.dart';
 import 'konten_api.dart';
 import 'gastpruefung.dart';
 import 'kartenkacheln.dart';
@@ -1101,8 +1102,11 @@ class _Api {
         for (final e in seite)
           if (e.von case final p?)
             {
-              ...partnerzeileAlsJson(e.z),
-              if (mehr[e.z.id] case final l?) ...listenangabenAlsJson(l),
+              ...partnerzeileAlsJson(e.z, mitOrt: p.freigabe.mitOrt),
+              if (mehr[e.z.id] case final l?)
+                ...(p.freigabe.mitOrt
+                    ? listenangabenAlsJson(l)
+                    : zeileOhneOrt(listenangabenAlsJson(l))),
               'konto': p.freigabe.besitzer,
               'von': p.name,
             }
@@ -2589,16 +2593,30 @@ class _Api {
 
   /// Die Auslieferung zu [datei] für eine schon gefundene Aufnahme – auch
   /// für Alben, die ein anderes Konto teilt (#105).
+  ///
+  /// **[ohneOrt] (#463):** für ein anderes Konto, dem der Besitzer den Ort
+  /// nicht gibt. Bilder kommen dann ohne Ortsangaben ([_ohneOrt]); das
+  /// Original eines Fotos kommt als JPEG mit Aufnahmezeit und Kamera, wie
+  /// `jpeg` (ein unverändertes Original trüge den Ort im EXIF); ein Video
+  /// nur als Fassung ohne Metadaten (`abspielbar`) – `wiedergabe` sagt 404,
+  /// solange sie fehlt, und die Spieler holen sie dann selbst.
   Future<Response> dateiAus(
     Request anfrage,
     Kontobereich bereich,
     AssetData a,
-    String art,
-  ) async {
+    String art, {
+    bool ohneOrt = false,
+  }) async {
     final b = bereich.bibliothek;
     if (art == 'abspielbar') return _abspielbar(anfrage, b, a);
     if (art == 'jpeg') return _alsJpeg(anfrage, b, a);
-    if (art == 'voll') return _voll(anfrage, b, a);
+    if (ohneOrt && (art == 'original' || art == 'wiedergabe')) {
+      if (a.type == 'VIDEO') {
+        return _videoOhneOrt(anfrage, b, a, herunterladen: art == 'original');
+      }
+      if (art == 'original') return _alsJpeg(anfrage, b, a);
+    }
+    if (art == 'voll') return _voll(anfrage, b, a, ohneOrt: ohneOrt);
     final relativ = switch (art) {
       'miniatur' => a.thumbnailRelativePath,
       // Was der Betrachter zeigt – wie in den Apps: restauriert,
@@ -2624,7 +2642,105 @@ class _Api {
     if (!p.isWithin(b.pfade.root.path, datei.path) || !await datei.exists()) {
       return Response.notFound(null);
     }
-    return dateiAntwort(anfrage, datei);
+    return ohneOrt
+        ? _ohneOrt(anfrage, b, a, datei)
+        : dateiAntwort(anfrage, datei);
+  }
+
+  /// [datei] (ein Bild) ohne Ortsangaben (#463). Ein JPEG verliert nur den
+  /// GPS-Teil, XMP, IPTC und angehängte Bilder ([jpegOhneOrt]) – nichts wird
+  /// neu gerechnet, Drehung und Farbprofil bleiben. GIF und BMP tragen kein
+  /// EXIF und gehen, wie sie sind. Alles andere (PNG, WebP, HEIC …) und ein
+  /// JPEG, das sich nicht lesen lässt, wird gewandelt wie für `voll` – der
+  /// Wandler streift alle Angaben ab – und aufgehoben wie dort.
+  Future<Response> _ohneOrt(
+    Request anfrage,
+    Bibliothek b,
+    AssetData a,
+    File datei,
+  ) async {
+    final kopf = await datei
+        .openRead(0, 4)
+        .fold(<int>[], (alle, teil) => alle..addAll(teil));
+    bool beginnt(List<int> vorne) =>
+        kopf.length >= vorne.length &&
+        Iterable.generate(vorne.length).every((i) => kopf[i] == vorne[i]);
+    if (beginnt(const [0x47, 0x49, 0x46, 0x38]) ||
+        beginnt(const [0x42, 0x4D])) {
+      return dateiAntwort(anfrage, datei);
+    }
+    if (beginnt(const [0xFF, 0xD8])) {
+      final stand = await datei.lastModified();
+      final groesse = await datei.length();
+      final etag =
+          '"${stand.millisecondsSinceEpoch.toRadixString(36)}-'
+          '${groesse.toRadixString(36)}-o"';
+      final kopfzeilen = {
+        'content-type': 'image/jpeg',
+        'etag': etag,
+        'cache-control': 'private, max-age=86400',
+      };
+      if (etagPasst(anfrage, etag)) {
+        return Response.notModified(headers: kopfzeilen);
+      }
+      try {
+        final bytes = jpegOhneOrt(await datei.readAsBytes());
+        return Response.ok(
+          bytes,
+          headers: {...kopfzeilen, 'content-length': '${bytes.length}'},
+        );
+      } on FormatException {
+        // Gewandelt wie alles andere.
+      }
+    }
+    final fertig = await vollbilder.bereit(
+      Directory(p.join(b.ordner.path, 'vollbild')),
+      a.id,
+      datei,
+      () => _wandle(b, a, datei, maxDimension: null),
+    );
+    if (fertig == null) {
+      return _json({'fehler': 'nicht umwandelbar'}, status: 422);
+    }
+    return dateiAntwort(anfrage, fertig);
+  }
+
+  /// Ein Video ohne Ort (#463): nur die Fassung ohne Metadaten, wie
+  /// `abspielbar`. Mit [herunterladen] als Anhang `<Name>.mp4`, sonst – für
+  /// `wiedergabe` – 404, solange sie fehlt: Die Spieler fragen dann von
+  /// selbst nach `abspielbar` und warten.
+  Future<Response> _videoOhneOrt(
+    Request anfrage,
+    Bibliothek b,
+    AssetData a, {
+    required bool herunterladen,
+  }) async {
+    final quelle = b.pfade.absolute(a.trimmedRelativePath ?? a.relativePath);
+    if (!p.isWithin(b.pfade.root.path, quelle.path) || !await quelle.exists()) {
+      return Response.notFound(null);
+    }
+    final speicher = Directory(p.join(b.ordner.path, 'abspielbar'));
+    final name = a.trimmedRelativePath != null ? '${a.id}-gekuerzt' : a.id;
+    final fertig = await videofassungen.bereit(speicher, name, quelle);
+    if (fertig == null) {
+      if (!herunterladen) return Response.notFound(null);
+      return videofassungen.gescheitert.contains(
+            Videofassungen.ziel(speicher, name).path,
+          )
+          ? _json({'bereit': false, 'fehler': 'nicht umwandelbar'}, status: 422)
+          : _json({'bereit': false}, status: 202);
+    }
+    final antwort = await dateiAntwort(anfrage, fertig);
+    if (!herunterladen) return antwort;
+    final datei = '${p.basenameWithoutExtension(a.originalFileName)}.mp4';
+    final einfach = datei.replaceAll(RegExp(r'[^A-Za-z0-9._ -]'), '_');
+    return antwort.change(
+      headers: {
+        'content-disposition':
+            'attachment; filename="$einfach"; '
+            "filename*=UTF-8''${Uri.encodeComponent(datei)}",
+      },
+    );
   }
 
   /// Das Foto in voller Auflösung für den Betrachter (#256) – im Browser
@@ -2636,14 +2752,23 @@ class _Api {
   /// hinaus; alles andere als JPEG in Originalgrösse, ohne Angaben und
   /// damit ohne Ort (siehe [Vollbilder]). `422`, wenn es sich nicht wandeln
   /// lässt.
-  Future<Response> _voll(Request anfrage, Bibliothek b, AssetData a) async {
+  Future<Response> _voll(
+    Request anfrage,
+    Bibliothek b,
+    AssetData a, {
+    bool ohneOrt = false,
+  }) async {
     if (a.type != 'IMAGE') return Response.notFound(null);
     final relativ = vollbildQuelle(a);
     final quelle = b.pfade.absolute(relativ);
     if (!p.isWithin(b.pfade.root.path, quelle.path) || !await quelle.exists()) {
       return Response.notFound(null);
     }
-    if (istDirektAnzeigbar(relativ)) return dateiAntwort(anfrage, quelle);
+    if (istDirektAnzeigbar(relativ)) {
+      return ohneOrt
+          ? _ohneOrt(anfrage, b, a, quelle)
+          : dateiAntwort(anfrage, quelle);
+    }
     final fertig = await vollbilder.bereit(
       Directory(p.join(b.ordner.path, 'vollbild')),
       a.id,

@@ -399,4 +399,59 @@ void main() {
       expect(texte, contains("  '$d': '"), reason: d);
     }
   });
+
+  test('WEB-087 WEB-167 Mit Ort oder ohne: beim Teilen und danach, für '
+      'Alben und die ganze Bibliothek', () {
+    final teilungen = funktion('zeigeTeilungen');
+    expect(teilungen, contains('const ort = ortWahl(z.mitOrt'));
+    expect(
+      teilungen,
+      contains("teileMit(z.konto, recht.value === '1', ort.value === '1')"),
+    );
+    expect(
+      funktion('teileMit'),
+      contains("{ methode: 'PUT', json: { beitragen, mitOrt } }"),
+    );
+    expect(
+      app,
+      contains(
+        "teileMit(konto, \$('konten-recht').value === '1', "
+        "\$('konten-ort').value === '1')",
+      ),
+    );
+    final partner = funktion('zeigePartner');
+    expect(partner, contains('const ort = ortWahl(k.mitOrt'));
+    // Allein `mitOrt`: Die Einschränkung bleibt am Server, wie sie ist.
+    expect(
+      partner,
+      contains("{ methode: 'PUT', json: { mitOrt: ort.value === '1' } }"),
+    );
+    expect(
+      app,
+      contains("json: { mitOrt: \$('partner-ort').value === '1' } }"),
+    );
+    // Ohne Ort kommt ein JPEG (oder MP4): der Name dazu.
+    expect(app, contains("\$('laden').download = ladename(a);"));
+    expect(app, contains("a.art === 'video' ? 'mp4' : 'jpg'"));
+
+    final index = File('web/index.html').readAsStringSync();
+    for (final id in ['konten-ort', 'partner-ort']) {
+      expect(index, contains('<select id="$id" aria-label="Ort">'));
+    }
+    final texte = File('web/texte.js').readAsStringSync();
+    final deutsch = {
+      for (final m in RegExp(
+        r"t\('([^']+)'",
+      ).allMatches(funktion('ortWahl') + teilungen + partner))
+        m[1]!,
+      for (final m in RegExp(
+        r'<p class="leise klein">(„Mit Ort“[^<]+)</p>',
+      ).allMatches(index))
+        m[1]!,
+    };
+    expect(deutsch, containsAll(['Ohne Ort', 'Mit Ort', 'Ort für {name}']));
+    for (final d in deutsch) {
+      expect(texte, contains("  '$d': '"), reason: d);
+    }
+  });
 }

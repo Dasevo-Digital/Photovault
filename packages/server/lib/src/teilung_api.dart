@@ -33,14 +33,25 @@ Response _json(Object? daten, {int status = 200}) => Response(
 );
 
 /// Liefert eine Datei einer Aufnahme aus – dieselbe Auslieferung wie für
-/// die eigenen Aufnahmen (`/api/v1/aufnahmen/<id>/<art>`).
+/// die eigenen Aufnahmen (`/api/v1/aufnahmen/<id>/<art>`). Mit [ohneOrt]
+/// ohne den Ort (#463): siehe `dateiAus` in api.dart.
 typedef Aufnahmedatei =
     Future<Response> Function(
       Request anfrage,
       Kontobereich bereich,
       AssetData aufnahme,
-      String art,
-    );
+      String art, {
+      bool ohneOrt,
+    });
+
+/// Eine Zeile für ein anderes Konto ohne den Ort (#463): ohne Koordinaten,
+/// Stadt und Land, dafür `ohneOrt`, damit die Oberfläche weiss, dass die
+/// Dateien ohne Ort kommen (das Original als JPEG, siehe `dateiAus`).
+Map<String, Object?> zeileOhneOrt(Map<String, Object?> j) => j
+  ..remove('ort')
+  ..remove('stadt')
+  ..remove('land')
+  ..['ohneOrt'] = true;
 
 /// Alben zwischen Konten teilen (#105).
 ///
@@ -52,6 +63,12 @@ typedef Aufnahmedatei =
 /// Aufnahmen – die Konten eines Servers kennen sich. Gesperrte Aufnahmen
 /// und der Papierkorb des Besitzers kommen nie dazu. Persönliche Marken
 /// des Besitzers (Favorit, Bewertung, Farbe) bleiben bei ihm.
+///
+/// **Der Ort (#463):** Je Teilung entscheidet der Besitzer, ob der
+/// Empfänger den Ort bekommt. Ohne diese Erlaubnis – die Vorgabe – fehlt er
+/// in den Zeilen, und jede Datei kommt ohne ihn: Bilder ohne GPS im EXIF,
+/// das Original als JPEG mit Aufnahmezeit und Kamera, Videos nur als
+/// Fassung ohne Metadaten. Dasselbe gilt für die Partnerfreigabe.
 ///
 /// **Beiträge:** Was ein Empfänger mit Recht zum Beitragen schickt, kommt
 /// ohne Prüfung und ohne Rückfrage in die Bibliothek des Besitzers und ins
@@ -114,12 +131,13 @@ class Teilungsapi {
       'konto': k.id,
       'name': k.name,
       'beitragen': t.beitragen,
+      'mitOrt': t.mitOrt,
       'angelegt': t.angelegt.toUtc().toIso8601String(),
     };
   }
 
   /// Mit wem [album] geteilt ist, nach Namen: `{teilungen: [{id, konto,
-  /// name, beitragen, angelegt}]}`.
+  /// name, beitragen, mitOrt, angelegt}]}`.
   Future<Response> vonAlbum(Request r, String album) async {
     if (await _eigenesAlbum(r, album) == null) {
       return _json({'fehler': 'Album unbekannt'}, status: 404);
@@ -132,7 +150,8 @@ class Teilungsapi {
     });
   }
 
-  /// `{beitragen}` → teilt [album] mit [empfaenger] oder ändert sein Recht.
+  /// `{beitragen, mitOrt?}` → teilt [album] mit [empfaenger] oder ändert
+  /// sein Recht. Fehlt `mitOrt`, bleibt es, wie es war (neu: ohne Ort).
   Future<Response> teile(Request r, String album, String empfaenger) async {
     final ich = kontoVon(r).id;
     if (await _eigenesAlbum(r, album) == null) {
@@ -148,12 +167,14 @@ class Teilungsapi {
       return _json({'fehler': 'kein JSON'}, status: 400);
     }
     final beitragen = k is Map && k['beitragen'] == true;
+    final mitOrt = k is Map ? k['mitOrt'] : null;
     try {
       final t = _dienst.teile(
         besitzer: ich,
         album: album,
         empfaenger: empfaenger,
         beitragen: beitragen,
+        mitOrt: mitOrt is bool ? mitOrt : null,
       );
       return _json(_empfaengerJson(t));
     } on StateError catch (e) {
@@ -414,7 +435,7 @@ class Teilungsapi {
   }
 
   /// Was mit dem Konto geteilt ist: `{alben: [{id, name, besitzer,
-  /// beitragen, anzahl, titelbild?, titelstand?}]}` – `id` ist die
+  /// beitragen, mitOrt, anzahl, titelbild?, titelstand?}]}` – `id` ist die
   /// Kennung der Teilung, nicht die des Albums.
   ///
   /// Je Besitzer einmal Alben, Anzahlen und Titelbilder: Vorher rechnete
@@ -459,6 +480,7 @@ class Teilungsapi {
           'name': album.name,
           'besitzer': konten.konto(t.besitzer)?.name ?? '',
           'beitragen': t.beitragen,
+          'mitOrt': t.mitOrt,
           'anzahl': anzahlen[album.id] ?? 0,
           if (bild != null) 'titelbild': bild.id,
           if (bild != null) 'titelstand': bildstand(Rasterzeile.aus(bild)),
@@ -470,10 +492,11 @@ class Teilungsapi {
     });
   }
 
-  /// Ein geteiltes Album: `{album: {id, name, besitzer, beitragen},
-  /// aufnahmen: [...]}` – die Zeilen wie im eigenen Raster, ohne die
-  /// Marken des Besitzers, dazu `von`, wenn ein anderes Konto sie
-  /// beigetragen hat, und `eigene`, wenn es dieses war.
+  /// Ein geteiltes Album: `{album: {id, name, besitzer, beitragen,
+  /// mitOrt}, aufnahmen: [...]}` – die Zeilen wie im eigenen Raster, ohne
+  /// die Marken des Besitzers und ohne Erlaubnis ohne den Ort
+  /// ([zeileOhneOrt]), dazu `von`, wenn ein anderes Konto sie beigetragen
+  /// hat, und `eigene`, wenn es dieses war.
   Future<Response> album(Request r, String id) async {
     final g = await _geteilt(r, id);
     if (g == null) return _json({'fehler': 'unbekannt'}, status: 404);
@@ -483,20 +506,19 @@ class Teilungsapi {
       aufnahmen.map((a) => a.id),
     );
     final ich = kontoVon(r).id;
+    final mitOrt = g.teilung.mitOrt;
     return _json({
       'album': {
         'id': id,
         'name': g.album.name,
         'besitzer': konten.konto(g.teilung.besitzer)?.name ?? '',
         'beitragen': g.teilung.beitragen,
+        'mitOrt': mitOrt,
       },
       'aufnahmen': [
         for (final a in aufnahmen)
           {
-            ...zeileAlsJson(Rasterzeile.aus(a))
-              ..remove('favorit')
-              ..remove('bewertung')
-              ..remove('farbe'),
+            ...partnerzeileAlsJson(Rasterzeile.aus(a), mitOrt: mitOrt),
             if (von[a.id] case final b?) 'von': b.name,
             if (von[a.id]?.konto == ich) 'eigene': true,
           },
@@ -525,7 +547,7 @@ class Teilungsapi {
             ))
             .get();
     if (drin.isEmpty) return Response.notFound(null);
-    return datei(r, g.bereich, a, art);
+    return datei(r, g.bereich, a, art, ohneOrt: !g.teilung.mitOrt);
   }
 
   /// Eine Aufnahme ins geteilte Album legen: der Körper ist die Datei,
@@ -780,10 +802,10 @@ class Teilungsapi {
   // Die Einschränkung gilt für alles, auch für jede einzelne Datei – nicht
   // nur für die Liste.
 
-  /// `{meine: [{konto, name, ab?, personen?: [{id, name}]}], mitMir:
-  /// [{konto, name, anzahl, titelbild?, titelstand?, inZeitleiste,
-  /// eingeschraenkt}]}` – wen dieses Konto seine Bibliothek sehen lässt,
-  /// und wessen Bibliothek es sieht.
+  /// `{meine: [{konto, name, ab?, personen?: [{id, name}], mitOrt}],
+  /// mitMir: [{konto, name, anzahl, titelbild?, titelstand?, inZeitleiste,
+  /// eingeschraenkt, mitOrt}]}` – wen dieses Konto seine Bibliothek sehen
+  /// lässt, und wessen Bibliothek es sieht.
   Future<Response> partner(Request r) async {
     // Was als Nachlass fällig ist, gilt vor dem Nachsehen (#300).
     konten.nachlass.gibFaelligeFrei();
@@ -818,6 +840,7 @@ class Teilungsapi {
         if (t != null) 'titelstand': bildstand(t),
         'inZeitleiste': f.inZeitleiste,
         'eingeschraenkt': f.eingeschraenkt,
+        'mitOrt': f.mitOrt,
       });
     }
     final meine = <Map<String, Object?>>[];
@@ -843,6 +866,7 @@ class Teilungsapi {
         // Zusammengeführt oder gelöscht: Die Einschränkung gilt weiter.
         if (f.personen case final ps?)
           'fehlend': ps.where((p) => !da.containsKey(p)).length,
+        'mitOrt': f.mitOrt,
       });
     }
     return _json({'meine': meine, 'mitMir': mitMir});
@@ -851,7 +875,9 @@ class Teilungsapi {
   /// Lässt [konto] die eigene Bibliothek sehen. Mit `{ab?, personen?}` im
   /// Körper nur ab diesem Tag und nur mit diesen Personen (#299) – das
   /// gilt dann auch für eine schon bestehende Freigabe. Ohne Körper bleibt
-  /// eine bestehende, wie sie ist.
+  /// eine bestehende, wie sie ist; ein leerer hebt die Einschränkung auf.
+  /// `mitOrt` (#463) sagt, ob [konto] den Ort bekommt; allein im Körper
+  /// ändert es nur das, fehlt es, bleibt es, wie es war (neu: ohne Ort).
   Future<Response> partnerSetzen(Request r, String konto) async {
     final ich = kontoVon(r).id;
     if (konto == ich || konten.konto(konto) == null) {
@@ -870,7 +896,18 @@ class Teilungsapi {
     }
     DateTime? ab;
     List<String>? personen;
-    if (k != null) {
+    final mitOrt = k?['mitOrt'];
+    if (mitOrt != null && mitOrt is! bool) {
+      return _json({'fehler': 'mitOrt unlesbar'}, status: 400);
+    }
+    // Ein Körper setzt die Einschränkung (ein leerer hebt sie auf) – nur
+    // einer, der allein `mitOrt` ändert, lässt sie, wie sie ist.
+    final einschraenken =
+        k != null &&
+        (k.containsKey('ab') ||
+            k.containsKey('personen') ||
+            !k.containsKey('mitOrt'));
+    if (einschraenken) {
       final tag = _tagAus(k['ab']);
       if (tag.fehler) return _json({'fehler': 'Datum unlesbar'}, status: 400);
       ab = tag.tag;
@@ -889,8 +926,8 @@ class Teilungsapi {
         }
       }
     }
-    _dienst.partnerSetzen(ich, konto);
-    if (k != null) {
+    _dienst.partnerSetzen(ich, konto, mitOrt: mitOrt as bool?);
+    if (einschraenken) {
       _dienst.partnerEinschraenken(ich, konto, ab: ab, personen: personen);
     }
     return Response(204);
@@ -942,7 +979,9 @@ class Teilungsapi {
     final liste = await partnerzeilen(db, f, anzahl: anzahl, nach: ab);
     return _json({
       'name': konten.konto(konto)?.name ?? '',
-      'aufnahmen': [for (final z in liste) partnerzeileAlsJson(z)],
+      'aufnahmen': [
+        for (final z in liste) partnerzeileAlsJson(z, mitOrt: f.mitOrt),
+      ],
       'weiter': liste.length < anzahl
           ? null
           : '${liste.last.sortierZeitpunkt.millisecondsSinceEpoch}~${liste.last.id}',
@@ -980,7 +1019,7 @@ class Teilungsapi {
           .getSingleOrNull();
       if (drin == null) return Response.notFound(null);
     }
-    return datei(r, bereich, a, art);
+    return datei(r, bereich, a, art, ohneOrt: !f.mitOrt);
   }
 }
 
@@ -1049,12 +1088,19 @@ Future<List<Rasterzeile>> partnerzeilen(
   return [for (final z in zeilen) Rasterzeile.ausZeile(z)];
 }
 
-/// Eine Zeile aus der Bibliothek eines Partners – ohne die persönlichen
-/// Marken des Besitzers.
-Map<String, Object?> partnerzeileAlsJson(Rasterzeile z) => zeileAlsJson(z)
-  ..remove('favorit')
-  ..remove('bewertung')
-  ..remove('farbe');
+/// Eine Zeile aus der Bibliothek eines anderen Kontos – einer geteilten
+/// oder einem geteilten Album – ohne die persönlichen Marken des Besitzers
+/// und ohne [mitOrt] auch ohne den Ort ([zeileOhneOrt]).
+Map<String, Object?> partnerzeileAlsJson(
+  Rasterzeile z, {
+  required bool mitOrt,
+}) {
+  final j = zeileAlsJson(z)
+    ..remove('favorit')
+    ..remove('bewertung')
+    ..remove('farbe');
+  return mitOrt ? j : zeileOhneOrt(j);
+}
 
 /// Wo ein Kommentar hingehört: das Album von [besitzer].
 class _Ort {

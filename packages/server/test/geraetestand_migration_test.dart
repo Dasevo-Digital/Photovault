@@ -90,7 +90,10 @@ void main() {
     alt.close();
     final neu = Serverdatenbank.oeffne(file);
     addTearDown(neu.db.close);
-    expect(neu.db.select('PRAGMA user_version').single.values.single, 13);
+    expect(
+      neu.db.select('PRAGMA user_version').single.values.single,
+      Serverdatenbank.schema,
+    );
     final f = neu.db.select('SELECT * FROM freigaben').single;
     expect(f['titel'], 'Feier');
     expect(f['fehlversuche'], 0);

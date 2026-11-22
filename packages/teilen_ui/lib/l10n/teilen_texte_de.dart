@@ -122,6 +122,16 @@ class TeilenTexteDe extends TeilenTexte {
   String get kontenBeitragen => 'Beitragen';
 
   @override
+  String get kontenOhneOrt => 'Ohne Ort';
+
+  @override
+  String get kontenMitOrt => 'Mit Ort';
+
+  @override
+  String get kontenOrtHinweis =>
+      '„Mit Ort“: Die Originale lassen sich unverändert herunterladen, samt Aufnahmeort. „Ohne Ort“: Alle Fotos kommen ohne Ortsangaben, Aufnahmezeit und Kamera bleiben.';
+
+  @override
   String get kontenNiemand => 'Mit niemandem geteilt.';
 
   @override

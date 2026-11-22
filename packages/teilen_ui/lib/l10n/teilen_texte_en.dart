@@ -121,6 +121,16 @@ class TeilenTexteEn extends TeilenTexte {
   String get kontenBeitragen => 'Contribute';
 
   @override
+  String get kontenOhneOrt => 'Without location';
+
+  @override
+  String get kontenMitOrt => 'With location';
+
+  @override
+  String get kontenOrtHinweis =>
+      '“With location”: the originals can be downloaded unchanged, including where they were taken. “Without location”: all photos come without location details; capture time and camera remain.';
+
+  @override
   String get kontenNiemand => 'Not shared with anyone.';
 
   @override

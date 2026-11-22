@@ -1168,11 +1168,33 @@ Future<void> mitKontenTeilen(
 }
 
 class _Empfaenger {
-  const _Empfaenger(this.konto, this.name, this.beitragen);
+  const _Empfaenger(this.konto, this.name, this.beitragen, this.mitOrt);
 
   final String konto;
   final String name;
   final bool beitragen;
+
+  /// Ob das Konto den Ort bekommt (#463): die Originale unverändert.
+  final bool mitOrt;
+}
+
+/// „Ohne Ort“ oder „Mit Ort“ für ein anderes Konto (#463) – wie im
+/// Browser (web/app.js, ortWahl). Mit Ort lädt es die Originale unverändert,
+/// sonst kommen alle Bilder ohne Ortsangaben.
+Widget _ortWahl(BuildContext context, bool wert, ValueChanged<bool> neu) {
+  final t = teilenTexte(context);
+  // Breit wie der Platz, den es bekommt: schmal wird der Text gekürzt,
+  // statt die Zeile zu sprengen.
+  return DropdownButton<bool>(
+    value: wert,
+    isExpanded: true,
+    underline: const SizedBox.shrink(),
+    items: [
+      DropdownMenuItem(value: false, child: Text(t.kontenOhneOrt)),
+      DropdownMenuItem(value: true, child: Text(t.kontenMitOrt)),
+    ],
+    onChanged: (w) => w == null ? null : neu(w),
+  );
 }
 
 class _KontenBlatt extends StatefulWidget {
@@ -1195,6 +1217,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
   List<(String, String)> _andere = const [];
   String? _neu;
   var _neuBeitragen = false;
+  var _neuMitOrt = false;
   String? _fehler;
 
   String get _pfad => 'api/v1/alben/${_k(widget.albumId)}/teilungen';
@@ -1215,7 +1238,12 @@ class _KontenBlattState extends State<_KontenBlatt> {
       final geteilt = [
         for (final x in (d['teilungen'] as List? ?? const []))
           if (x case {'konto': final konto, 'name': final name})
-            _Empfaenger('$konto', '$name', x['beitragen'] == true),
+            _Empfaenger(
+              '$konto',
+              '$name',
+              x['beitragen'] == true,
+              x['mitOrt'] == true,
+            ),
       ];
       final schon = {for (final g in geteilt) g.konto};
       setState(() {
@@ -1250,15 +1278,18 @@ class _KontenBlattState extends State<_KontenBlatt> {
     await _lade();
   }
 
-  Future<void> _teile(String konto, bool beitragen) => _aendere(() async {
-    final r = await widget.verbindung.anfrage(
-      'PUT',
-      '$_pfad/${_k(konto)}',
-      kopf: {'content-type': 'application/json'},
-      inhalt: '{"beitragen":$beitragen}'.codeUnits,
-    );
-    if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);
-  });
+  Future<void> _teile(String konto, bool beitragen, bool mitOrt) =>
+      _aendere(() async {
+        final r = await widget.verbindung.anfrage(
+          'PUT',
+          '$_pfad/${_k(konto)}',
+          kopf: {'content-type': 'application/json'},
+          inhalt: utf8.encode(
+            jsonEncode({'beitragen': beitragen, 'mitOrt': mitOrt}),
+          ),
+        );
+        if (r.statusCode != 200) throw Serverfehler(r.statusCode, r.body);
+      });
 
   Future<void> _entferne(String konto) => _aendere(() async {
     final r = await widget.verbindung.anfrage('DELETE', '$_pfad/${_k(konto)}');
@@ -1304,8 +1335,20 @@ class _KontenBlattState extends State<_KontenBlatt> {
               for (final g in geteilt)
                 Row(
                   children: [
-                    Expanded(child: Text(g.name)),
-                    recht(g.beitragen, (w) => _teile(g.konto, w)),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(g.name),
+                          _ortWahl(
+                            context,
+                            g.mitOrt,
+                            (w) => _teile(g.konto, g.beitragen, w),
+                          ),
+                        ],
+                      ),
+                    ),
+                    recht(g.beitragen, (w) => _teile(g.konto, w, g.mitOrt)),
                     IconButton(
                       tooltip: t.entfernen,
                       icon: const Icon(Icons.close),
@@ -1313,7 +1356,7 @@ class _KontenBlattState extends State<_KontenBlatt> {
                     ),
                   ],
                 ),
-              if (_andere.isNotEmpty)
+              if (_andere.isNotEmpty) ...[
                 Row(
                   children: [
                     Expanded(
@@ -1332,16 +1375,28 @@ class _KontenBlattState extends State<_KontenBlatt> {
                       _neuBeitragen,
                       (w) => setState(() => _neuBeitragen = w),
                     ),
+                  ],
+                ),
+                // Schmal passt nicht alles in eine Zeile: der Ort darunter.
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ortWahl(
+                        context,
+                        _neuMitOrt,
+                        (w) => setState(() => _neuMitOrt = w),
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: _neu == null
                           ? null
-                          : () => _teile(_neu!, _neuBeitragen),
+                          : () => _teile(_neu!, _neuBeitragen, _neuMitOrt),
                       child: Text(t.kontenTeilenKnopf),
                     ),
                   ],
-                )
-              else if (geteilt.isEmpty)
+                ),
+              ] else if (geteilt.isEmpty)
                 Text(t.kontenKeineAnderen),
             ],
             if (_fehler case final f?)
@@ -1355,6 +1410,11 @@ class _KontenBlattState extends State<_KontenBlatt> {
             const SizedBox(height: 12),
             Text(
               t.kontenBeitragenHinweis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              t.kontenOrtHinweis,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -1751,9 +1811,10 @@ class _PartnerBlatt extends StatefulWidget {
 }
 
 class _PartnerBlattState extends State<_PartnerBlatt> {
-  List<(String, String, Regel)>? _meine;
+  List<(String, String, Regel, bool)>? _meine;
   List<(String, String)> _andere = const [];
   String? _neu;
+  var _neuMitOrt = false;
   String? _fehler;
 
   @override
@@ -1772,7 +1833,12 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
       final meine = [
         for (final x in (d['meine'] as List? ?? const []))
           if (x case {'konto': final konto, 'name': final name})
-            ('$konto', '$name', Regel.aus(x.cast<String, Object?>())),
+            (
+              '$konto',
+              '$name',
+              Regel.aus(x.cast<String, Object?>()),
+              x['mitOrt'] == true,
+            ),
       ];
       final schon = {for (final m in meine) m.$1};
       setState(() {
@@ -1792,11 +1858,17 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
     }
   }
 
-  Future<void> _aendere(String methode, String konto) async {
+  /// Freigeben (`PUT`), mit [mitOrt] auch den Ort (#463) – allein
+  /// geschickt, lässt es die Einschränkung, wie sie ist –, oder aufheben.
+  Future<void> _aendere(String methode, String konto, {bool? mitOrt}) async {
     try {
       final r = await widget.verbindung.anfrage(
         methode,
         'api/v1/partner/${_k(konto)}',
+        kopf: mitOrt == null ? const {} : {'content-type': 'application/json'},
+        inhalt: mitOrt == null
+            ? null
+            : utf8.encode(jsonEncode({'mitOrt': mitOrt})),
       );
       if (r.statusCode != 204) throw Serverfehler(r.statusCode, r.body);
     } on Serverfehler catch (e) {
@@ -1837,7 +1909,7 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(t.kontenNiemand),
                 ),
-              for (final (konto, name, regel) in meine)
+              for (final (konto, name, regel, mitOrt) in meine)
                 Row(
                   children: [
                     Expanded(
@@ -1850,6 +1922,11 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
                                 ? t.partnerGanz
                                 : regelText(context, regel),
                             style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          _ortWahl(
+                            context,
+                            mitOrt,
+                            (w) => _aendere('PUT', konto, mitOrt: w),
                           ),
                         ],
                       ),
@@ -1877,31 +1954,41 @@ class _PartnerBlattState extends State<_PartnerBlatt> {
                     ),
                   ],
                 ),
-              if (_andere.isNotEmpty)
+              if (_andere.isNotEmpty) ...[
+                DropdownButton<String>(
+                  isExpanded: true,
+                  value: _neu,
+                  items: [
+                    for (final (id, name) in _andere)
+                      DropdownMenuItem(value: id, child: Text(name)),
+                  ],
+                  onChanged: (w) => setState(() => _neu = w),
+                ),
                 Row(
                   children: [
                     Expanded(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: _neu,
-                        items: [
-                          for (final (id, name) in _andere)
-                            DropdownMenuItem(value: id, child: Text(name)),
-                        ],
-                        onChanged: (w) => setState(() => _neu = w),
+                      child: _ortWahl(
+                        context,
+                        _neuMitOrt,
+                        (w) => setState(() => _neuMitOrt = w),
                       ),
                     ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: _neu == null
                           ? null
-                          : () => _aendere('PUT', _neu!),
+                          : () => _aendere('PUT', _neu!, mitOrt: _neuMitOrt),
                       child: Text(t.kontenTeilenKnopf),
                     ),
                   ],
-                )
-              else if (meine.isEmpty)
+                ),
+              ] else if (meine.isEmpty)
                 Text(t.kontenKeineAnderen),
+              const SizedBox(height: 12),
+              Text(
+                t.kontenOrtHinweis,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             ],
             if (_fehler case final f?)
               Padding(

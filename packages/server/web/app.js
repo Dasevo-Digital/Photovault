@@ -1817,14 +1817,17 @@ async function zeigeTeilungen() {
     recht.append(new Option(t('Ansehen'), ''), new Option(t('Beitragen'), '1'));
     recht.value = z.beitragen ? '1' : '';
     recht.setAttribute('aria-label', t('Recht von {name}', { name: z.name }));
-    recht.addEventListener('change', () => teileMit(z.konto, recht.value === '1'));
+    // Ob {name} den Ort bekommt (#463) – Vorgabe ohne.
+    const ort = ortWahl(z.mitOrt, t('Ort für {name}', { name: z.name }));
+    recht.addEventListener('change', () => teileMit(z.konto, recht.value === '1', ort.value === '1'));
+    ort.addEventListener('change', () => teileMit(z.konto, recht.value === '1', ort.value === '1'));
     const weg = el('button', 'knopf', t('Entfernen'));
     weg.type = 'button';
     weg.addEventListener('click', async () => {
       try { await api(`${pfad}/${encodeURIComponent(z.konto)}`, { methode: 'DELETE' }); } catch (x) { $('konten-meldung').textContent = x.message; return; }
       await zeigeTeilungen();
     });
-    zeile.append(el('span', 'name', z.name), recht, weg);
+    zeile.append(el('span', 'name', z.name), recht, ort, weg);
     zeilen.append(zeile);
   }
   if (!teilungen.teilungen.length) zeilen.append(el('li', 'leise', t('Mit niemandem geteilt.')));
@@ -1836,9 +1839,20 @@ async function zeigeTeilungen() {
   if (!andere.konten.length) zeilen.append(el('li', 'leise', t('Auf diesem Server gibt es kein weiteres Konto.')));
 }
 
-async function teileMit(konto, beitragen) {
+// „Ohne Ort“ oder „Mit Ort“ für ein anderes Konto (#463): Mit Ort lädt es
+// die Originale unverändert, sonst kommen alle Bilder ohne Ort.
+function ortWahl(mitOrt, beschriftung) {
+  const ort = el('select');
+  ort.append(new Option(t('Ohne Ort'), ''), new Option(t('Mit Ort'), '1'));
+  ort.value = mitOrt ? '1' : '';
+  ort.title = t('Mit Ort: Originale unverändert, samt Aufnahmeort. Ohne Ort: Fotos ohne Ortsangaben, Aufnahmezeit und Kamera bleiben.');
+  if (beschriftung) ort.setAttribute('aria-label', beschriftung);
+  return ort;
+}
+
+async function teileMit(konto, beitragen, mitOrt) {
   try {
-    await api(`/api/v1/alben/${encodeURIComponent(kontenAlbum)}/teilungen/${encodeURIComponent(konto)}`, { methode: 'PUT', json: { beitragen } });
+    await api(`/api/v1/alben/${encodeURIComponent(kontenAlbum)}/teilungen/${encodeURIComponent(konto)}`, { methode: 'PUT', json: { beitragen, mitOrt } });
   } catch (x) { $('konten-meldung').textContent = x.message; return; }
   await zeigeTeilungen();
   // Die Karte in der Albenliste trägt das Kennzeichen erst nach dem Neuladen.
@@ -1846,7 +1860,7 @@ async function teileMit(konto, beitragen) {
 
 $('konten-hinzu').addEventListener('click', () => {
   const konto = $('konten-wahl').value;
-  if (konto) teileMit(konto, $('konten-recht').value === '1');
+  if (konto) teileMit(konto, $('konten-recht').value === '1', $('konten-ort').value === '1');
 });
 
 // --- Partnerfreigabe (#293) -----------------------------------------------------
@@ -1870,7 +1884,14 @@ async function zeigePartner() {
     const eng = el('button', 'knopf', t('Einschränken …'));
     eng.type = 'button';
     eng.addEventListener('click', () => oeffneRegelDialog({ art: 'partner', konto: k.konto, name: k.name }, k.ab || k.personen ? k : null));
-    zeile.append(el('span', 'name', k.name), eng, weg);
+    // Ob {name} den Ort bekommt (#463); allein geschickt, bleibt die
+    // Einschränkung, wie sie ist.
+    const ort = ortWahl(k.mitOrt, t('Ort für {name}', { name: k.name }));
+    ort.addEventListener('change', async () => {
+      try { await api(`/api/v1/partner/${encodeURIComponent(k.konto)}`, { methode: 'PUT', json: { mitOrt: ort.value === '1' } }); } catch (x) { meldung(x.message); }
+      await zeigePartner();
+    });
+    zeile.append(el('span', 'name', k.name), ort, eng, weg);
     zeile.append(el('span', 'leise klein einschraenkung', k.ab || k.personen ? regelText(k) : t('Die ganze Bibliothek')));
     zeilen.append(zeile);
   }
@@ -1884,7 +1905,7 @@ async function zeigePartner() {
 $('partner-hinzu').addEventListener('click', async () => {
   const konto = $('partner-wahl').value;
   if (!konto) return;
-  try { await api(`/api/v1/partner/${encodeURIComponent(konto)}`, { methode: 'PUT' }); } catch (x) { meldung(x.message); return; }
+  try { await api(`/api/v1/partner/${encodeURIComponent(konto)}`, { methode: 'PUT', json: { mitOrt: $('partner-ort').value === '1' } }); } catch (x) { meldung(x.message); return; }
   await zeigePartner();
 });
 
@@ -5269,7 +5290,7 @@ async function teile(aufnahmen) {
       const r = await holen(aufnahmeUrl(a.id, 'original'), { credentials: 'same-origin' });
       if (!r.ok) throw new Error(t('Fehler {n}', { n: r.status }));
       const b = await r.blob();
-      dateien.push(new File([b], a.name || a.id, { type: b.type || 'application/octet-stream', lastModified: Date.parse(a.aufgenommen) || Date.now() }));
+      dateien.push(new File([b], ladename(a) || a.id, { type: b.type || 'application/octet-stream', lastModified: Date.parse(a.aufgenommen) || Date.now() }));
     }
   } catch (x) { meldung(x.message); return false; }
   if (!navigator.canShare({ files: dateien })) { meldung(t('Dieses Format kann der Browser nicht teilen.')); return false; }
@@ -5539,6 +5560,9 @@ const JPEG_GROESSEN = [
   { kante: 1024, text: 'JPEG – 1024 px' },
 ];
 const originalUrl = (id) => aufnahmeUrl(id, 'original');
+// Der Name des Originals – ohne den Ort (#463) schickt der Server ein Foto
+// als JPEG und ein Video als Fassung in MP4.
+const ladename = (a) => (a.ohneOrt ? `${(a.name || (a.art === 'video' ? 'Video' : 'Foto')).replace(/\.[^.]+$/, '')}.${a.art === 'video' ? 'mp4' : 'jpg'}` : a.name || '');
 const jpegUrl = (id, kante) => `${aufnahmeUrl(id, 'jpeg')}${kante ? `?kante=${kante}` : ''}`;
 const jpegName = (a) => `${(a.name || 'Foto').replace(/\.[^.]+$/, '')}.jpg`;
 
@@ -5813,7 +5837,7 @@ function oeffne(i) {
   $('angaben').textContent = `${aufnahmedatumText(a,datumZeit)} · ${a.name}${a.von ? ` · ${t('von {name}', { name: a.von })}` : ''}`;
   $('favorit').textContent = a.favorit ? '♥' : '♡';
   $('laden').href = aufnahmeUrl(a.id, 'original');
-  $('laden').download = a.name || '';
+  $('laden').download = ladename(a);
   $('betrachter').hidden = false;
   zeigeAngaben();
   if (i >= liste.aufnahmen.length - 20) ladeMehr();

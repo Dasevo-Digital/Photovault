@@ -156,4 +156,100 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
     expect(find.text(t.geteiltFehler('kaputt.jpg')), findsOneWidget);
   });
+
+  testWidgets('#463 am Rechner: „Mit Ort“ in beiden Dialogen, ohne Überlauf', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(600, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final gesendet = <Object?>[];
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: MockClient((r) async {
+        if (r.method == 'PUT') {
+          gesendet.add(jsonDecode(r.body));
+          return http.Response('', 204);
+        }
+        final body = switch (r.url.path) {
+          '/api/v1/alben/urlaub/teilungen' => {
+            'teilungen': [
+              {
+                'id': 's1',
+                'konto': 'k-max',
+                'name': 'Maximilian Mustermann',
+                'beitragen': false,
+                'mitOrt': true,
+              },
+            ],
+          },
+          '/api/v1/partner' => {
+            'meine': [
+              {'konto': 'k-max', 'name': 'Maximilian Mustermann'},
+            ],
+            'mitMir': [],
+          },
+          _ => {
+            'konten': [
+              {'id': 'k-max', 'name': 'Maximilian Mustermann'},
+              {'id': 'k-eva', 'name': 'Eva'},
+            ],
+          },
+        };
+        return http.Response(
+          jsonEncode(body),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => Column(
+              children: [
+                TextButton(
+                  onPressed: () => mitKontenTeilen(
+                    context,
+                    v,
+                    albumId: 'urlaub',
+                    titel: 'Urlaub',
+                  ),
+                  child: const Text('album'),
+                ),
+                TextButton(
+                  onPressed: () => bibliothekTeilen(context, v),
+                  child: const Text('bibliothek'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final t = lookupTeilenTexte(const Locale('de'));
+    for (final (knopf, zeile, neu) in [
+      ('album', t.kontenMitOrt, t.kontenOhneOrt),
+      ('bibliothek', t.kontenOhneOrt, t.kontenOhneOrt),
+    ]) {
+      await tester.tap(find.text(knopf));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget, reason: knopf);
+      // Die Zeile des Kontos und die Wahl für ein neues.
+      expect(find.text(zeile), findsWidgets, reason: knopf);
+      expect(find.text(neu), findsWidgets, reason: knopf);
+      expect(find.text(t.kontenOrtHinweis), findsOneWidget, reason: knopf);
+      expect(tester.takeException(), isNull, reason: knopf);
+      await tester.tap(find.text(t.schliessen));
+      await tester.pumpAndSettle();
+    }
+  });
 }

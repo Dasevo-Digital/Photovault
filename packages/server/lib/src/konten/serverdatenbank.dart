@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 13;
+  static const schema = 14;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -377,6 +377,32 @@ class Serverdatenbank {
           }
         }
         db.execute('PRAGMA user_version = 13');
+        db.execute('COMMIT');
+      } on Object {
+        db.execute('ROLLBACK');
+        rethrow;
+      }
+    }
+    if (stand < 14) {
+      // Den Ort an andere Konten weitergeben (#463): je Albumteilung und je
+      // Partnerfreigabe. Ohne diese Erlaubnis bekommt der Empfänger Fotos
+      // ohne Ort; was schon geteilt ist, bleibt so – Vorgabe 0. Nur, was
+      // fehlt – wie Schritt 12.
+      db.execute('BEGIN');
+      try {
+        for (final tabelle in const ['albumteilungen', 'partnerfreigaben']) {
+          final spalten = db
+              .select('PRAGMA table_info($tabelle)')
+              .map((r) => r['name'])
+              .toSet();
+          if (spalten.isNotEmpty && !spalten.contains('mit_ort')) {
+            db.execute(
+              'ALTER TABLE $tabelle ADD COLUMN mit_ort INTEGER NOT NULL '
+              'DEFAULT 0',
+            );
+          }
+        }
+        db.execute('PRAGMA user_version = 14');
         db.execute('COMMIT');
       } on Object {
         db.execute('ROLLBACK');
