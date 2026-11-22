@@ -436,33 +436,37 @@ class Abgleich {
       final stapel = <Map<String, Object?>>[];
       var bytes = utf8.encode('{"befehle":[]}').length;
       for (final z in offen) {
-        final eintrag = <String, Object?>{
-          'kennung': z.read<String>('kennung'),
-          ...((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
-              .cast<String, Object?>(),
-          'basis': jsonDecode(z.read<String>('basis')),
-        };
+        final Map<String, Object?> eintrag;
+        try {
+          eintrag = <String, Object?>{
+            'kennung': z.read<String>('kennung'),
+            ...((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
+                .cast<String, Object?>(),
+            'basis': jsonDecode(z.read<String>('basis')),
+          };
+        } on TokenablageFehler {
+          // Ohne Schlüssel lässt sich gar nichts lesen – das liegt nicht
+          // an diesem Eintrag.
+          rethrow;
+        } on Object catch (e) {
+          // Ein Eintrag, der sich nicht mehr öffnen oder deuten lässt
+          // (anderer Schlüssel, beschädigt), hielt früher jede Runde hier
+          // an, und nichts Späteres ging mehr hinaus. Er bleibt so, wie
+          // er ist, als Fall erhalten; das Angleichen nimmt seine
+          // Vorwegnahme zurück.
+          meldung.protokoll('Abgleich: Befehl nicht lesbar: $e');
+          await _alsFall(z, 'pv_sync_unlesbar', z.read<String>('befehl'));
+          continue;
+        }
         final groesse = utf8.encode(jsonEncode(eintrag)).length;
         if (groesse > Abgleichsgrenzen.befehlBytes) {
           // Altbestand kann vor Einführung des Budgets entstanden sein.
           // Er bleibt als Fall erhalten und blockiert spätere Befehle nicht.
-          await db.transaction(() async {
-            await db.customStatement(
-              'UPDATE pv_ausgang SET bestaetigt = ?, ok = 0, fehler = ? WHERE kennung = ?',
-              [await _stand(), 'pv_sync_auswahl', z.read<String>('kennung')],
-            );
-            await db.customStatement(
-              'INSERT OR IGNORE INTO pv_abgleichsfaelle (kennung, am, grund, inhalt) VALUES (?, ?, ?, ?)',
-              [
-                z.read<String>('kennung'),
-                z.read<int>('angelegt'),
-                'pv_sync_auswahl',
-                await _verpackeFall(
-                  await _leseAuftrag(z.read<String>('befehl')),
-                ),
-              ],
-            );
-          });
+          await _alsFall(
+            z,
+            'pv_sync_auswahl',
+            await _verpackeFall(await _leseAuftrag(z.read<String>('befehl'))),
+          );
           continue;
         }
         if (bytes + groesse + 1 > Abgleichsgrenzen.stapelBytes) break;
@@ -519,6 +523,23 @@ class Abgleich {
       await _melde(erreichbar: true);
     }
   }
+
+  /// Nimmt den offenen Befehl [z] aus dem Senden: bestätigt mit `ok = 0`
+  /// und [grund], und als Fall mit [inhalt] in der Übersicht.
+  Future<void> _alsFall(
+    QueryRow z,
+    String grund,
+    String inhalt,
+  ) => db.transaction(() async {
+    await db.customStatement(
+      'UPDATE pv_ausgang SET bestaetigt = ?, ok = 0, fehler = ? WHERE kennung = ?',
+      [await _stand(), grund, z.read<String>('kennung')],
+    );
+    await db.customStatement(
+      'INSERT OR IGNORE INTO pv_abgleichsfaelle (kennung, am, grund, inhalt) VALUES (?, ?, ?, ?)',
+      [z.read<String>('kennung'), z.read<int>('angelegt'), grund, inhalt],
+    );
+  });
 
   // --- Lesen -------------------------------------------------------------
 

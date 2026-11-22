@@ -360,6 +360,52 @@ void main() {
     });
   });
 
+  test('ein Befehl, der sich nicht mehr lesen lässt, wird zum Fall und hält '
+      'die übrigen nicht auf', () async {
+    final s = await serverDb();
+    await aufnahme(s, 'a1');
+    await aufnahme(s, 'a2');
+    final (db, a) = await geraet('Telefon', _Weiche());
+    await db.fuehreAus(const BewertungSetzen(['a1'], 3));
+    await db.fuehreAus(const BewertungSetzen(['a2'], 4));
+    // Der erste Eintrag lässt sich mit dem Schlüssel des Geräts nicht mehr
+    // öffnen (etwa nach einem verlorenen Schlüssel).
+    final kaputt = jsonEncode({
+      'n': base64Encode(List.filled(12, 1)),
+      'c': base64Encode(utf8.encode('nicht lesbar')),
+      'm': base64Encode(List.filled(16, 2)),
+    });
+    await db.customStatement(
+      'UPDATE pv_ausgang SET befehl = ? WHERE nr = '
+      '(SELECT min(nr) FROM pv_ausgang)',
+      [kaputt],
+    );
+
+    await a.sende();
+    expect((await holeAufnahme(s, 'a2')).rating, 4, reason: 'gesendet');
+    expect((await holeAufnahme(s, 'a1')).rating, isNot(3));
+    final faelle = await a.faelle();
+    expect(faelle, hasLength(1));
+    expect(faelle.single.lesbar, isFalse);
+    expect(faelle.single.ausstehend, isFalse);
+    expect(
+      (await db
+              .customSelect('SELECT grund FROM pv_abgleichsfaelle')
+              .getSingle())
+          .read<String>('grund'),
+      'pv_sync_unlesbar',
+    );
+
+    // Das Angleichen nimmt die Vorwegnahme zurück.
+    await a.empfange();
+    expect((await holeAufnahme(db, 'a1')).rating, isNot(3));
+    expect((await holeAufnahme(db, 'a2')).rating, 4);
+    expect(a.zustandJetzt.ausstehend, 0);
+    // Und der Fall lässt sich verwerfen.
+    await a.behalteServerstand(faelle.single);
+    expect(await a.faelle(), isEmpty);
+  });
+
   test('das Angleichen fragt nicht nach, was das Protokoll schon '
       'brachte', () async {
     final s = await serverDb();
