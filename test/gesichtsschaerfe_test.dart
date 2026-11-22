@@ -73,6 +73,37 @@ void main() {
     test('winzige Bilder ergeben null statt einer Ausnahme', () {
       expect(gesichtsschaerfe(img.Image(width: 2, height: 2)), 0);
     });
+
+    test('der Ausschnitt behält seine Farben', () {
+      // Die Gesichtserkennung misst die Schärfe des Ausschnitts und legt
+      // ihn danach als JPEG ab. `img.grayscale` färbt in place, und ohne
+      // Verkleinern (160 Punkte) war das gemessene Bild der Ausschnitt
+      // selbst – jedes erkannte Gesicht wurde grau abgelegt.
+      final ausschnitt = _scharf(160);
+      for (final p in ausschnitt) {
+        p
+          ..r = 200
+          ..g = p.x.isEven ? 30 : 90
+          ..b = 30;
+      }
+      final vorher = img.Image.from(ausschnitt);
+      final wert = gesichtsschaerfe(ausschnitt);
+      expect(ausschnitt.getPixel(10, 10).r, 200);
+      expect(ausschnitt.getPixel(10, 10).b, 30);
+      for (final p in ausschnitt) {
+        final v = vorher.getPixel(p.x, p.y);
+        expect([p.r, p.g, p.b], [v.r, v.g, v.b]);
+      }
+      // Gemessen wird wie bisher: an der grauen Fassung.
+      expect(wert, computeBlurScore(img.grayscale(img.Image.from(vorher))));
+    });
+
+    test('grosse Bilder bleiben ebenso unberührt', () {
+      final bild = img.Image(width: 900, height: 600)
+        ..clear(img.ColorRgb8(200, 30, 30));
+      computeBlurScore(bild);
+      expect(bild.getPixel(5, 5).g, 30);
+    });
   });
 
   group('Das schärfste Gesicht zählt', () {

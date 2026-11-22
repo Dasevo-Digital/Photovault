@@ -55,6 +55,11 @@ double gesichtsschaerfe(img.Image ausschnitt) => computeBlurScore(ausschnitt);
 /// nimmt ein bereits dekodiertes [img.Image] entgegen, statt selbst von der
 /// Platte zu lesen, damit der Import-Pipeline dieselbe Dekodierung wie für
 /// Gesichtserkennung/CLIP wiederverwenden kann.
+///
+/// **[image] bleibt unberührt.** `img.grayscale` färbt in place; ohne
+/// Verkleinern war das gemessene Bild das übergebene selbst. Die
+/// Gesichtserkennung misst so jeden 160er-Ausschnitt und legt ihn danach
+/// als JPEG ab – grau. Deshalb wird dann eine Kopie grau gemacht.
 double computeBlurScore(img.Image image) {
   const targetLongEdge = 400;
   final longEdge = math.max(image.width, image.height);
@@ -66,7 +71,7 @@ double computeBlurScore(img.Image image) {
           height: (image.height * scale).round(),
           interpolation: img.Interpolation.average,
         )
-      : image;
+      : img.Image.from(image);
   final gray = img.grayscale(resized);
   final width = gray.width;
   final height = gray.height;
@@ -114,7 +119,8 @@ Uint8List renderFocusPeakingOverlayPng(
   img.Image image, {
   int threshold = _focusPeakingEdgeThreshold,
 }) {
-  final gray = img.grayscale(image);
+  // Auf einer Kopie, aus demselben Grund wie in [computeBlurScore].
+  final gray = img.grayscale(img.Image.from(image));
   final width = gray.width;
   final height = gray.height;
   final overlay = img.Image(width: width, height: height, numChannels: 4);

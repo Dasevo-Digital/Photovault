@@ -126,7 +126,9 @@ List<Staubverdacht> findeStaubverdacht(img.Image bild) {
           height: (bild.height * faktor).round(),
           interpolation: img.Interpolation.average,
         )
-      : bild;
+      // Eine Kopie: `img.grayscale` färbt in place, und [bild] gehört dem
+      // Aufrufer (siehe computeBlurScore).
+      : img.Image.from(bild);
   final grau = img.grayscale(klein);
   final breite = grau.width, hoehe = grau.height;
   if (breite < 32 || hoehe < 32) return const [];
