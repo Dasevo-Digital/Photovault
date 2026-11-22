@@ -155,13 +155,11 @@ void anmeldenTests() {
     await schreibe(tester, feld(de.anmeldenPasswort), passwort);
   }
 
-  // Befund: Über einen Zugang „von aussen“ zeigt die App statt „Das erste
-  // Konto lässt sich nur aus dem Heimnetz anlegen …“ die Meldung „Name,
-  // Passwort oder Code stimmt nicht.“: Der Server meldet `einrichten` nur
-  // ins Heimnetz (packages/server/lib/src/api.dart:193), die App versucht
-  // deshalb eine normale Anmeldung (apps/mobil/lib/seiten/anmelden.dart:125
-  // bis 141); anmeldenErstesNurHeimnetz (anmelden.dart:202) kommt nur bei
-  // einem 403 auf POST /api/v1/einrichten, den die App so nie schickt.
+  // Behoben in #463: Von aussen verrät der Server nicht, ob er schon
+  // eingerichtet ist (kein `einrichten` im Zustand, POST /api/v1/einrichten
+  // immer 403). Die App bietet „Neuer Server? Erstes Konto anlegen“ deshalb
+  // immer an; der Versuch endet mit dem Satz, dass das erste Konto nur aus
+  // dem Heimnetz geht.
   pruefung('MOB-013 Erstes Konto von aussen (zweimal)', (tester) async {
     final gezeigt = <String>[];
     for (var i = 0; i < 2; i++) {
@@ -179,8 +177,17 @@ void anmeldenTests() {
       );
       await tippe(
         tester,
-        find.widgetWithText(FilledButton, de.anmeldenAnmelden),
+        find.widgetWithText(TextButton, de.anmeldenNeuerServer),
       );
+      await warte(tester, feld(de.anmeldenPasswortWiederholen));
+      expect(
+        find.text(de.anmeldenErstesTextOffen('Verwalter')),
+        findsOneWidget,
+      );
+      await schreibe(tester, feld(de.anmeldenPasswortWiederholen), pw);
+      FocusManager.instance.primaryFocus?.unfocus();
+      await ruhe(tester, 400);
+      await tippe(tester, find.text(de.anmeldenErstesAnlegen));
       await warteWeg(tester, find.byType(LinearProgressIndicator));
       await ruhe(tester, 800);
       gezeigt.add(
@@ -197,7 +204,7 @@ void anmeldenTests() {
     }
     print('MOB-013 von aussen gezeigt: $gezeigt');
     expect(gezeigt, everyElement('heimnetz'));
-  }, skip: true);
+  });
 }
 
 // ======================================================================

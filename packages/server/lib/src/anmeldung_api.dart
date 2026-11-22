@@ -205,18 +205,23 @@ class Anmeldungsapi {
   /// Server zuerst erreicht, bekommt ihn. Von aussen – über den Proxy oder
   /// eine offene Portweiterleitung – soll das niemand sein. Danach geht der
   /// Weg zu; weitere Konten legt ein Verwalter an.
+  ///
+  /// **Von aussen immer 403**, auch wenn es schon Konten gibt: Ein 409
+  /// verriete jedem im Netz, ob der Server schon eingerichtet ist (wie
+  /// `einrichten` im Zustand, der dort ebenso fehlt). Erst im Heimnetz
+  /// zählt, ob es schon ein Konto gibt.
   Future<Response> einrichten(Request anfrage) async {
-    if (konten.eingerichtet) {
-      return _json({
-        'fehler': 'Der Server ist schon eingerichtet.',
-      }, status: 409);
-    }
     if (!absender.ausDemHeimnetz(anfrage)) {
       return _json({
         'fehler':
             'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht '
             'von aussen.',
       }, status: 403);
+    }
+    if (konten.eingerichtet) {
+      return _json({
+        'fehler': 'Der Server ist schon eingerichtet.',
+      }, status: 409);
     }
     final k = await _koerper(anfrage);
     final name = k?['name'], passwort = k?['passwort'];

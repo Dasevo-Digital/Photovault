@@ -6230,6 +6230,15 @@
       }
     }
   },
+  "serverErstesTextOffen": "Hat der Server noch kein Konto, wird mit dem Namen „{name}“ und dem Passwort von eben das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen. Das erste Konto lässt sich nur aus dem Heimnetz anlegen.",
+  "@serverErstesTextOffen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "serverNeuerServer": "Neuer Server? Erstes Konto anlegen",
   "serverPasswortWiederholen": "Passwort wiederholen",
   "serverErstesAnlegen": "Konto anlegen und anmelden",
   "serverPasswortUngleich": "Die beiden Passwörter stimmen nicht überein.",

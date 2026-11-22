@@ -24,7 +24,9 @@ enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, laden }
 ///
 /// Hat der Server noch kein Konto, legt diese Seite das erste an (nur aus
 /// dem Heimnetz) – mit Name und Passwort von eben, nach einer zweiten
-/// Eingabe des Passworts.
+/// Eingabe des Passworts. „Neuer Server? Erstes Konto anlegen“ führt immer
+/// dorthin: Von aussen meldet der Server nicht, ob er schon eingerichtet
+/// ist.
 class Anmelden extends StatefulWidget {
   const Anmelden({
     super.key,
@@ -62,6 +64,10 @@ class _AnmeldenState extends State<Anmelden> {
   var _schritt = _Schritt.eingabe;
   var _arbeitet = false;
   String? _fehler;
+
+  /// Ob der Server gemeldet hat, dass er noch kein Konto hat – sonst ist
+  /// das erste Konto ein Versuch (siehe [_neuerServer]).
+  var _erstesSicher = true;
   Uri? _server;
   Anmeldung? _anmeldung;
   String? _vorgang;
@@ -104,16 +110,18 @@ class _AnmeldenState extends State<Anmelden> {
     }
   }
 
-  Future<void> _anmelden() => _mitArbeit(() async {
+  /// Die Anmeldung an den eingegebenen Server samt seinem Zustand – oder
+  /// `null` mit einer Meldung, wenn dort keiner in passender Fassung ist.
+  Future<(Anmeldung, Map<String, Object?>)?> _verbinde() async {
     final t = AppTexte.of(context);
     final server = serveradresseAus(_adresse.text);
     if (server == null) {
       _fehler = t.anmeldenNichtErreichbar;
-      return;
+      return null;
     }
     if (!ohneTlsErlaubt(server)) {
       _fehler = t.anmeldenNurHttps;
-      return;
+      return null;
     }
     _anmeldung?.schliesse();
     final a = _anmeldung = widget.anmeldungFuer(server);
@@ -121,17 +129,32 @@ class _AnmeldenState extends State<Anmelden> {
     final z = await a.zustand();
     if (((z['protokoll'] as int?) ?? 0) < 2) {
       _fehler = t.anmeldenKeinServer;
-      return;
+      return null;
     }
+    return (a, z);
+  }
+
+  /// Weiter zum ersten Konto mit Name und Passwort von eben – wenn beide
+  /// taugen. [sicher]: Der Server hat gemeldet, dass er noch keines hat.
+  void _zumErstenKonto({required bool sicher}) {
+    final t = AppTexte.of(context);
+    if (!kontonameGueltig(_name.text)) {
+      _fehler = t.anmeldenNameUngueltig;
+    } else if (_passwort.text.length < passwortMindestlaenge) {
+      _fehler = t.anmeldenPasswortZuKurz(passwortMindestlaenge);
+    } else {
+      _erstesSicher = sicher;
+      _schritt = _Schritt.erstesKonto;
+    }
+  }
+
+  Future<void> _anmelden() => _mitArbeit(() async {
+    final v = await _verbinde();
+    if (v == null) return;
+    final (a, z) = v;
     if (z['einrichten'] == true) {
       // Noch kein Konto: Name und Passwort von eben werden das erste.
-      if (!kontonameGueltig(_name.text)) {
-        _fehler = t.anmeldenNameUngueltig;
-      } else if (_passwort.text.length < passwortMindestlaenge) {
-        _fehler = t.anmeldenPasswortZuKurz(passwortMindestlaenge);
-      } else {
-        _schritt = _Schritt.erstesKonto;
-      }
+      _zumErstenKonto(sicher: true);
       return;
     }
     _verarbeite(
@@ -141,6 +164,16 @@ class _AnmeldenState extends State<Anmelden> {
         geraet: _geraet.text.trim(),
       ),
     );
+  });
+
+  /// „Neuer Server? Erstes Konto anlegen“ – immer angeboten, nicht nur,
+  /// wenn der Zustand `einrichten` meldet: Von aussen verrät der Server
+  /// nicht, ob er schon eingerichtet ist, und sagt erst beim Anlegen, dass
+  /// das nur aus dem Heimnetz geht.
+  Future<void> _neuerServer() => _mitArbeit(() async {
+    final v = await _verbinde();
+    if (v == null) return;
+    _zumErstenKonto(sicher: v.$2['einrichten'] == true);
   });
 
   /// Mit Passkey statt Name und Passwort (#277), siehe
@@ -346,6 +379,11 @@ class _AnmeldenState extends State<Anmelden> {
         label: Text(t.anmeldenPasskey),
         onPressed: _arbeitet ? null : _mitPasskey,
       ),
+      const SizedBox(height: 8),
+      TextButton(
+        onPressed: _arbeitet ? null : _neuerServer,
+        child: Text(t.anmeldenNeuerServer),
+      ),
     ],
     _Schritt.erstesKonto => [
       Text(
@@ -353,7 +391,11 @@ class _AnmeldenState extends State<Anmelden> {
         style: Theme.of(context).textTheme.titleMedium,
       ),
       const SizedBox(height: 8),
-      Text(t.anmeldenErstesText(_name.text.trim())),
+      Text(
+        _erstesSicher
+            ? t.anmeldenErstesText(_name.text.trim())
+            : t.anmeldenErstesTextOffen(_name.text.trim()),
+      ),
       TextField(
         contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort2,

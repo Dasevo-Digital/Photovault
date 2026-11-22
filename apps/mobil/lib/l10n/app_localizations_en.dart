@@ -360,6 +360,14 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String anmeldenErstesTextOffen(String name) {
+    return 'If the server has no account yet, the first one will be created with the name “$name” and the password you just entered. It becomes the administrator and can add more accounts later. The first account can only be created from the home network.';
+  }
+
+  @override
+  String get anmeldenNeuerServer => 'New server? Create the first account';
+
+  @override
   String get anmeldenPasswortWiederholen => 'Repeat password';
 
   @override

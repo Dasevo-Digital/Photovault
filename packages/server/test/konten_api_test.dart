@@ -155,6 +155,49 @@ void main() {
       expect(konten.eingerichtet, isFalse);
     });
 
+    test(
+      'von aussen verrät die Antwort nicht, ob es schon Konten gibt',
+      () async {
+        final (status, j) = await frag(
+          'POST',
+          'einrichten',
+          von: draussen,
+          inhalt: erstes(),
+        );
+        expect(status, 403);
+        await frag('POST', 'einrichten', inhalt: erstes());
+        expect(konten.eingerichtet, isTrue);
+        // Eingerichtet: von aussen dieselbe Antwort wie vorher, kein 409.
+        final (danach, j2) = await frag(
+          'POST',
+          'einrichten',
+          von: draussen,
+          inhalt: erstes('max'),
+        );
+        expect(danach, 403);
+        expect(j2, j);
+        expect(
+          j2['fehler'],
+          'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, nicht '
+          'von aussen.',
+        );
+        expect(
+          (await frag(
+            'GET',
+            'zustand',
+            von: draussen,
+          )).$2.containsKey('einrichten'),
+          isFalse,
+        );
+        // Im Heimnetz bleibt es beim 409.
+        expect(
+          (await frag('POST', 'einrichten', inhalt: erstes('max'))).$1,
+          409,
+        );
+        expect(konten.alle(), hasLength(1));
+      },
+    );
+
     test('hinter dem vertrauten Proxy zählt der Absender dahinter', () async {
       baue(vertraut: [proxy]);
       expect(

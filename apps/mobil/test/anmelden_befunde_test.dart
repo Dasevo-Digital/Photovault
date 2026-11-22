@@ -139,4 +139,46 @@ void main() {
     expect(find.text(t.anmeldenNichtErreichbar), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('MOB-013 von aussen: „Neuer Server?“ führt zum ersten Konto, '
+      'der Server sagt, dass das nur aus dem Heimnetz geht', (tester) async {
+    // Von aussen fehlt `einrichten` im Zustand – ob der Server schon
+    // Konten hat, erfährt die App nicht.
+    final pfade = <String>[];
+    final t = await _anmeldeseite(
+      tester,
+      Sitzung(),
+      MockClient((r) async {
+        pfade.add(r.url.path);
+        return switch (r.url.path) {
+          '/api/v1/einrichten' => http.Response(
+            jsonEncode({
+              'fehler':
+                  'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, '
+                  'nicht von aussen.',
+            }),
+            403,
+          ),
+          _ => _photoVault(r),
+        };
+      }),
+    );
+    await tester.ensureVisible(find.text(t.anmeldenNeuerServer));
+    await tester.tap(find.text(t.anmeldenNeuerServer));
+    await tester.pumpAndSettle();
+    expect(find.text(t.anmeldenErstesTitel), findsOneWidget);
+    expect(find.text(t.anmeldenErstesTextOffen('anna')), findsOneWidget);
+    expect(pfade, isNot(contains('/api/v1/anmelden')));
+
+    await tester.enterText(
+      find.widgetWithText(TextField, t.anmeldenPasswortWiederholen),
+      'ein langes passwort',
+    );
+    await tester.tap(find.text(t.anmeldenErstesAnlegen));
+    await tester.pumpAndSettle();
+    expect(pfade, contains('/api/v1/einrichten'));
+    expect(find.text(t.anmeldenErstesNurHeimnetz), findsOneWidget);
+    expect(find.textContaining('fehler'), findsNothing, reason: 'kein JSON');
+    expect(tester.takeException(), isNull);
+  });
 }

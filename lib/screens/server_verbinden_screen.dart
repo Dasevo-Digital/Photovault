@@ -32,7 +32,9 @@ enum _Schritt { eingabe, erstesKonto, code, einrichten, codes, wahl }
 ///
 /// Hat der Server noch kein Konto, legt dieser Bildschirm das erste an
 /// (aus dem Heimnetz) – mit dem Namen und Passwort, die eben eingegeben
-/// wurden, nach einer zweiten Eingabe des Passworts.
+/// wurden, nach einer zweiten Eingabe des Passworts. „Neuer Server? Erstes
+/// Konto anlegen“ führt immer dorthin: Von aussen meldet der Server nicht,
+/// ob er schon eingerichtet ist.
 ///
 /// Beides endet mit einem Neustart: Datenbank, Pfade und Zwischenspeicher
 /// hängen an der Bibliothek, die beim Start geöffnet wurde.
@@ -64,6 +66,10 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
   var _schritt = _Schritt.eingabe;
   var _arbeitet = false;
   String? _fehler;
+
+  /// Ob der Server gemeldet hat, dass er noch kein Konto hat – sonst ist
+  /// das erste Konto ein Versuch (siehe [_neuerServer]).
+  var _erstesSicher = true;
 
   Uri? _server;
   Anmeldung? _anmeldung;
@@ -139,16 +145,18 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
     }
   });
 
-  Future<void> _anmelden() => _mitArbeit(() async {
+  /// Die Anmeldung an den eingegebenen Server samt seinem Zustand – oder
+  /// `null` mit einer Meldung, wenn dort keiner in passender Fassung ist.
+  Future<(Anmeldung, Map<String, Object?>)?> _verbinde() async {
     final t = AppTexte.of(context);
     final server = serveradresseAus(_adresse.text);
     if (server == null) {
       _fehler = t.serverNichtErreichbar;
-      return;
+      return null;
     }
     if (!ohneTlsErlaubt(server)) {
       _fehler = t.serverNurHttps;
-      return;
+      return null;
     }
     _anmeldung?.schliesse();
     final a = _anmeldung = widget.anmeldungFuer(server);
@@ -156,17 +164,32 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
     final zustand = await a.zustand();
     if (((zustand['protokoll'] as int?) ?? 0) < 2) {
       _fehler = t.serverKeinPhotoVault;
-      return;
+      return null;
     }
+    return (a, zustand);
+  }
+
+  /// Weiter zum ersten Konto mit Name und Passwort von eben – wenn beide
+  /// taugen. [sicher]: Der Server hat gemeldet, dass er noch keines hat.
+  void _zumErstenKonto({required bool sicher}) {
+    final t = AppTexte.of(context);
+    if (!kontonameGueltig(_name.text)) {
+      _fehler = t.serverNameUngueltig;
+    } else if (_passwort.text.length < passwortMindestlaenge) {
+      _fehler = t.serverPasswortZuKurz(passwortMindestlaenge);
+    } else {
+      _erstesSicher = sicher;
+      _schritt = _Schritt.erstesKonto;
+    }
+  }
+
+  Future<void> _anmelden() => _mitArbeit(() async {
+    final v = await _verbinde();
+    if (v == null) return;
+    final (a, zustand) = v;
     if (zustand['einrichten'] == true) {
       // Noch kein Konto: Name und Passwort von eben werden das erste.
-      if (!kontonameGueltig(_name.text)) {
-        _fehler = t.serverNameUngueltig;
-      } else if (_passwort.text.length < passwortMindestlaenge) {
-        _fehler = t.serverPasswortZuKurz(passwortMindestlaenge);
-      } else {
-        _schritt = _Schritt.erstesKonto;
-      }
+      _zumErstenKonto(sicher: true);
       return;
     }
     _verarbeite(
@@ -176,6 +199,16 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
         geraet: _geraet.text.trim(),
       ),
     );
+  });
+
+  /// „Neuer Server? Erstes Konto anlegen“ – immer angeboten, nicht nur,
+  /// wenn der Zustand `einrichten` meldet: Von aussen verrät der Server
+  /// nicht, ob er schon eingerichtet ist, und sagt erst beim Anlegen, dass
+  /// das nur aus dem Heimnetz geht.
+  Future<void> _neuerServer() => _mitArbeit(() async {
+    final v = await _verbinde();
+    if (v == null) return;
+    _zumErstenKonto(sicher: v.$2['einrichten'] == true);
   });
 
   Future<void> _erstesAnlegen() => _mitArbeit(() async {
@@ -196,6 +229,8 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
     } on Serverfehler catch (f) {
       switch (f.status) {
         case 403:
+          // Der Satz des Servers – derselbe, ob er schon Konten hat oder
+          // nicht. Übersetzt, nicht als rohe Antwort.
           _fehler = t.serverErstesNurHeimnetz;
         case 409:
           // Jemand war schneller (oder ein zweites Fenster): anmelden.
@@ -431,11 +466,20 @@ class _ServerVerbindenScreenState extends State<ServerVerbindenScreen> {
         label: Text(t.serverPasskey),
         onPressed: _arbeitet ? null : _mitPasskey,
       ),
+      const SizedBox(height: AppSpacing.sm),
+      TextButton(
+        onPressed: _arbeitet ? null : _neuerServer,
+        child: Text(t.serverNeuerServer),
+      ),
     ],
     _Schritt.erstesKonto => [
       Text(t.serverErstesTitel, style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: AppSpacing.sm),
-      Text(t.serverErstesText(_name.text.trim())),
+      Text(
+        _erstesSicher
+            ? t.serverErstesText(_name.text.trim())
+            : t.serverErstesTextOffen(_name.text.trim()),
+      ),
       TextField(
         contextMenuBuilder: einfuegbaresMenue,
         controller: _passwort2,

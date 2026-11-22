@@ -362,6 +362,14 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String anmeldenErstesTextOffen(String name) {
+    return 'Hat der Server noch kein Konto, wird mit dem Namen „$name“ und dem Passwort von eben das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen. Das erste Konto lässt sich nur aus dem Heimnetz anlegen.';
+  }
+
+  @override
+  String get anmeldenNeuerServer => 'Neuer Server? Erstes Konto anlegen';
+
+  @override
   String get anmeldenPasswortWiederholen => 'Passwort wiederholen';
 
   @override

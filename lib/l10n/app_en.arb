@@ -4762,6 +4762,15 @@
       }
     }
   },
+  "serverErstesTextOffen": "If the server has no account yet, the first one will be created with the name “{name}” and the password you just entered. It becomes the administrator and can add more accounts later. The first account can only be created from the home network.",
+  "@serverErstesTextOffen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "serverNeuerServer": "New server? Create the first account",
   "serverPasswortWiederholen": "Repeat password",
   "serverErstesAnlegen": "Create account and sign in",
   "serverPasswortUngleich": "The two passwords do not match.",

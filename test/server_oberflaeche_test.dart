@@ -195,6 +195,67 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('SIC-103 von aussen: „Neuer Server?“ führt zum ersten Konto, '
+      'der Server sagt, dass das nur aus dem Heimnetz geht', (tester) async {
+    // Von aussen fehlt `einrichten` im Zustand – ob der Server schon
+    // Konten hat, erfährt die App nicht.
+    final pfade = <String>[];
+    final client = MockClient((r) async {
+      pfade.add(r.url.path);
+      return switch (r.url.path) {
+        '/api/v1/zustand' => http.Response(
+          jsonEncode({
+            'dienst': 'photo-vault',
+            'protokoll': 2,
+            'anmeldung': {'totp': true, 'oidc': false},
+          }),
+          200,
+        ),
+        '/api/v1/einrichten' => http.Response(
+          jsonEncode({
+            'fehler':
+                'Das erste Konto lässt sich nur aus dem Heimnetz anlegen, '
+                'nicht von aussen.',
+          }),
+          403,
+        ),
+        _ => http.Response('{}', 404),
+      };
+    });
+    final t = await zeige(
+      tester,
+      (stand) => SizedBox(
+        height: 800,
+        child: ServerVerbindenScreen(
+          stand: stand,
+          anmeldungFuer: (s) => Anmeldung(s, client: client),
+        ),
+      ),
+    );
+    final felder = find.byType(TextField);
+    await tester.enterText(felder.at(0), 'http://127.0.0.1:8790');
+    await tester.enterText(felder.at(1), 'anna');
+    await tester.enterText(felder.at(2), 'ein langes passwort');
+    await tester.ensureVisible(find.text(t.serverNeuerServer));
+    await tester.tap(find.text(t.serverNeuerServer));
+    await tester.pumpAndSettle();
+    expect(find.text(t.serverErstesTitel), findsOneWidget);
+    // Ob der Server leer ist, weiss die App hier nicht.
+    expect(find.text(t.serverErstesTextOffen('anna')), findsOneWidget);
+    expect(pfade, isNot(contains('/api/v1/anmelden')));
+
+    await tester.enterText(
+      find.widgetWithText(TextField, t.serverPasswortWiederholen),
+      'ein langes passwort',
+    );
+    await tester.tap(find.text(t.serverErstesAnlegen));
+    await tester.pumpAndSettle();
+    expect(pfade, contains('/api/v1/einrichten'));
+    expect(find.text(t.serverErstesNurHeimnetz), findsOneWidget);
+    expect(find.textContaining('fehler'), findsNothing, reason: 'kein JSON');
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('Konten verwalten: Liste, Menü nur für andere, Anlegen', (
     tester,
   ) async {

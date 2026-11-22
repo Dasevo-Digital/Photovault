@@ -9719,6 +9719,14 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String serverErstesTextOffen(String name) {
+    return 'If the server has no account yet, the first one will be created with the name “$name” and the password you just entered. It becomes the administrator and can add more accounts later. The first account can only be created from the home network.';
+  }
+
+  @override
+  String get serverNeuerServer => 'New server? Create the first account';
+
+  @override
   String get serverPasswortWiederholen => 'Repeat password';
 
   @override

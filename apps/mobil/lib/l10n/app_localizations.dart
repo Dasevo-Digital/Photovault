@@ -661,6 +661,18 @@ abstract class AppTexte {
   /// **'Dieser Server hat noch kein Konto. Mit dem Namen „{name}“ und dem Passwort von eben wird das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen.'**
   String anmeldenErstesText(String name);
 
+  /// No description provided for @anmeldenErstesTextOffen.
+  ///
+  /// In de, this message translates to:
+  /// **'Hat der Server noch kein Konto, wird mit dem Namen „{name}“ und dem Passwort von eben das erste angelegt. Es wird Verwalter und kann später weitere Konten anlegen. Das erste Konto lässt sich nur aus dem Heimnetz anlegen.'**
+  String anmeldenErstesTextOffen(String name);
+
+  /// No description provided for @anmeldenNeuerServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuer Server? Erstes Konto anlegen'**
+  String get anmeldenNeuerServer;
+
   /// No description provided for @anmeldenPasswortWiederholen.
   ///
   /// In de, this message translates to:

@@ -728,7 +728,7 @@ Ohne Token gehen nur `zustand` und die Wege der Anmeldung.
 |---|---|
 | `GET /zustand` | Lebenszeichen; ob TOTP Pflicht und OIDC eingerichtet ist |
 | `POST /anmelden` | `{name, passwort, geraet}` → `{token}` oder `{schritt: totp \| totp_einrichten, vorgang, …}` |
-| `POST /einrichten` | wie `/anmelden`, legt aber zuerst das erste Konto an – nur ohne Konto und aus dem Heimnetz (sonst 409 bzw. 403); `zustand` meldet dann `einrichten: true` |
+| `POST /einrichten` | wie `/anmelden`, legt aber zuerst das erste Konto an – nur aus dem Heimnetz (von aussen immer 403, auch mit Konten) und nur ohne Konto (sonst 409); `zustand` meldet dann `einrichten: true` |
 | `POST /anmelden/totp` | `{vorgang, code}` – Code oder Wiederherstellungscode → `{token, geraet}` |
 | `GET /anmelden/oidc?geraet&rueckweg&pruefwert&zustand` | im Browser öffnen: weiter zum Anbieter |
 | `POST /anmelden/oidc/einloesen` | `{code, pruefer}` → `{token}` (Verknüpfen: mit Token → `{verknuepft}`) |
