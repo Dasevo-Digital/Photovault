@@ -98,50 +98,73 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
       if (frisch != null) _reise = frisch;
       _laedt = false;
       _stand++;
+      _ableiten();
     });
   }
+
+  // Was aus den Aufnahmen und Spuren folgt, einmal je [_laden] gerechnet
+  // und hier gehalten. Vorher waren es Getter: Jedes Antippen in der
+  // Auswahl und jedes Nachladen beim Scrollen rechnete sie neu, die
+  // Aufenthaltsorte mit Haversine über alle Aufnahmen und Gruppen, und
+  // [_nachId] baute je gebauter Kachel eine Map über alle Fotos. Die
+  // Routenkarte bekam dabei jedes Mal neue Listen und baute neu (#434).
 
   /// Die besuchten Orte, häufigste zuerst – aus den Aufnahmen selbst und
   /// nicht gespeichert: Wer eine Aufnahme aus der Reise nimmt, soll die
   /// Liste sofort ohne sie sehen.
-  List<String> get _orte {
+  List<String> _orte = const [];
+
+  Map<String, AssetData> _nachId = const {};
+
+  List<Routenpunkt> _route = const [];
+
+  /// Die Aufenthaltsorte – ein Pin je Ort statt einer je Aufnahme.
+  List<Aufenthaltsort> _orteMitBildern = const [];
+
+  List<Reisetag> _tage = const [];
+
+  List<List<({double breite, double laenge})>> _spurlinien = const [];
+
+  /// Rechnet die Felder oben aus [_aufnahmen] und [_spuren] neu.
+  void _ableiten() {
     final gezaehlt = <String, int>{};
     for (final a in _aufnahmen) {
       final ort = a.locationCity;
       if (ort == null || ort.isEmpty) continue;
       gezaehlt[ort] = (gezaehlt[ort] ?? 0) + 1;
     }
-    return gezaehlt.keys.toList()..sort((a, b) {
-      final z = gezaehlt[b]!.compareTo(gezaehlt[a]!);
-      return z != 0 ? z : a.compareTo(b);
-    });
+    _orte = gezaehlt.keys.toList()
+      ..sort((a, b) {
+        final z = gezaehlt[b]!.compareTo(gezaehlt[a]!);
+        return z != 0 ? z : a.compareTo(b);
+      });
+    _nachId = {for (final a in _aufnahmen) a.id: a};
+    _route = reiseroute([
+      for (final a in _aufnahmen)
+        if (a.latitude != null && a.longitude != null)
+          (breite: a.latitude!, laenge: a.longitude!, zeit: a.fileCreatedAt),
+    ]);
+    _orteMitBildern = aufenthaltsorte([
+      for (final a in _aufnahmen)
+        if (a.latitude != null && a.longitude != null)
+          (
+            id: a.id,
+            breite: a.latitude!,
+            laenge: a.longitude!,
+            zeit: a.fileCreatedAt,
+            stadt: a.locationCity,
+          ),
+    ]);
+    _tage = reisetage([
+      for (final a in _aufnahmen)
+        (id: a.id, zeit: a.fileCreatedAt, stadt: a.locationCity),
+    ]);
+    _spurlinien = [
+      for (final e in _spuren)
+        if (e.punkte.length > 1)
+          [for (final p in e.punkte) (breite: p.breite, laenge: p.laenge)],
+    ];
   }
-
-  Map<String, AssetData> get _nachId => {for (final a in _aufnahmen) a.id: a};
-
-  List<Routenpunkt> get _route => reiseroute([
-    for (final a in _aufnahmen)
-      if (a.latitude != null && a.longitude != null)
-        (breite: a.latitude!, laenge: a.longitude!, zeit: a.fileCreatedAt),
-  ]);
-
-  /// Die Aufenthaltsorte – ein Pin je Ort statt einer je Aufnahme.
-  List<Aufenthaltsort> get _orteMitBildern => aufenthaltsorte([
-    for (final a in _aufnahmen)
-      if (a.latitude != null && a.longitude != null)
-        (
-          id: a.id,
-          breite: a.latitude!,
-          laenge: a.longitude!,
-          zeit: a.fileCreatedAt,
-          stadt: a.locationCity,
-        ),
-  ]);
-
-  List<Reisetag> get _tage => reisetage([
-    for (final a in _aufnahmen)
-      (id: a.id, zeit: a.fileCreatedAt, stadt: a.locationCity),
-  ]);
 
   int get _naechte =>
       DateTime(_reise.bis.year, _reise.bis.month, _reise.bis.day)
@@ -477,12 +500,6 @@ class _ReiseDetailScreenState extends State<ReiseDetailScreen> {
   }
 
   /// Die Spuren als reine Linien – das ist alles, was die Karte braucht.
-  List<List<({double breite, double laenge})>> get _spurlinien => [
-    for (final e in _spuren)
-      if (e.punkte.length > 1)
-        [for (final p in e.punkte) (breite: p.breite, laenge: p.laenge)],
-  ];
-
   /// Eine GPX-Datei als Route an diese Reise hängen.
   ///
   /// **Dieselbe Rechnung wie bei einer Aktivität**, nur die andere

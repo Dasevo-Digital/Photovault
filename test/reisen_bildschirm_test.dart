@@ -415,6 +415,47 @@ void main() {
     );
   });
 
+  // #434: Route, Orte und Kachel-Zuordnung waren Getter und entstanden
+  // bei jedem Aufbau neu – die Routenkarte bekam jedes Mal neue Listen.
+  testWidgets('ein Neuaufbau rechnet Route und Orte nicht neu', (tester) async {
+    for (var i = 0; i < 4; i++) {
+      await db
+          .into(db.assets)
+          .insert(
+            AssetsCompanion.insert(
+              id: 'f$i',
+              originalFileName: 'f$i.jpg',
+              relativePath: 'originals/f$i.jpg',
+              checksum: 'pruef-f$i',
+              type: 'IMAGE',
+              fileCreatedAt: DateTime(2024, 6, 5, 14, i * 10),
+              importedAt: DateTime(2024),
+              latitude: const Value(43.77),
+              longitude: const Value(11.26),
+              locationCity: const Value('Firenze'),
+              locationCountry: const Value('Italy'),
+            ),
+          );
+    }
+    await zeige(tester);
+    await tester.tap(find.text('War eine Reise'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Übernehmen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Roma – Firenze'));
+    await tester.pumpAndSettle();
+
+    final vorher = tester.widget<Routenkarte>(find.byType(Routenkarte));
+    tester.element(find.byType(ReiseDetailScreen)).markNeedsBuild();
+    await tester.pump();
+    final nachher = tester.widget<Routenkarte>(find.byType(Routenkarte));
+    expect(identical(vorher, nachher), isFalse, reason: 'neu aufgebaut');
+    expect(identical(vorher.route, nachher.route), isTrue);
+    expect(identical(vorher.orte, nachher.orte), isTrue);
+    expect(identical(vorher.nachId, nachher.nachId), isTrue);
+    expect(identical(vorher.spuren, nachher.spuren), isTrue);
+  });
+
   testWidgets('ein langer Druck macht ein Bild zum Titelbild', (tester) async {
     await zeige(tester);
     await tester.tap(find.text('War eine Reise'));
