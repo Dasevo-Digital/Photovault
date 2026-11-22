@@ -80,6 +80,9 @@ class _GesichtImFotoState extends State<GesichtImFoto> {
   AssetData? _aufnahme;
   List<GesichtAufAufnahme> _gesichter = const [];
 
+  /// Die Aufnahme gibt es nicht mehr (inzwischen gelöscht).
+  var _fehlt = false;
+
   @override
   void initState() {
     super.initState();
@@ -90,12 +93,22 @@ class _GesichtImFotoState extends State<GesichtImFoto> {
     final db = widget.sitzung.db;
     final a = await db.assetById(widget.gesicht.assetId);
     final g = await gesichterDerAufnahme(db, widget.gesicht.assetId);
-    if (!mounted || a == null) return;
+    if (!mounted) return;
     setState(() {
       _aufnahme = a;
       _gesichter = g;
+      _fehlt = a == null;
     });
   }
+
+  /// Was hinter den Rahmen steht. Bei einem Video das Standbild (#454):
+  /// Gesichter aus Videos tragen die Kennung des Videos, und sein
+  /// Anzeigepfad ist der Film – der kam ganz vom Server, auch über
+  /// Mobilfunk, wurde ganz in den Speicher gelesen und liess sich dann
+  /// nicht als Bild zeigen. Wie im Browser, der dafür die Vorschau nimmt.
+  static String? _bild(AssetData a) => a.type == 'VIDEO'
+      ? a.previewRelativePath ?? a.thumbnailRelativePath
+      : displayRelativePath(a);
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +138,14 @@ class _GesichtImFotoState extends State<GesichtImFoto> {
       ),
       body: SafeArea(
         child: a == null
-            ? const Center(child: CircularProgressIndicator())
+            ? Center(
+                child: _fehlt
+                    ? Text(
+                        t.gesichtFotoFehlt,
+                        style: const TextStyle(color: Colors.white70),
+                      )
+                    : const CircularProgressIndicator(),
+              )
             : InteractiveViewer(
                 maxScale: 6,
                 child: Center(
@@ -135,19 +155,27 @@ class _GesichtImFotoState extends State<GesichtImFoto> {
                       builder: (context, c) => Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image(
-                            image: BibliotheksBild(
-                              widget.sitzung.paths,
-                              displayRelativePath(a),
-                            ),
-                            fit: BoxFit.fill,
-                            errorBuilder: (context, _, _) => Center(
+                          if (_bild(a) case final bild?)
+                            Image(
+                              image: BibliotheksBild(
+                                widget.sitzung.paths,
+                                bild,
+                              ),
+                              fit: BoxFit.fill,
+                              errorBuilder: (context, _, _) => Center(
+                                child: Text(
+                                  t.gesichtFotoFehlt,
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                              ),
+                            )
+                          else
+                            Center(
                               child: Text(
                                 t.gesichtFotoFehlt,
                                 style: const TextStyle(color: Colors.white70),
                               ),
                             ),
-                          ),
                           for (final (:gesicht, :person) in _gesichter)
                             _Rahmen(
                               gesicht: gesicht,

@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:photo_vault_mobil/bilder.dart';
 import 'package:photo_vault_mobil/l10n/app_localizations.dart';
+import 'package:photo_vault_mobil/seiten/gesicht_im_foto.dart';
 import 'package:photo_vault_mobil/seiten/personen.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
 
@@ -225,6 +227,65 @@ void main() {
     expect(find.text(t.gesichterOhneNamen), findsNothing);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
+  });
+
+  testWidgets('#454 „Im Foto zeigen“ bei einem Gesicht aus einem Video '
+      'zeigt das Standbild und holt nicht den Film', (tester) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_personen_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    late FaceData gesicht;
+    await tester.runAsync(() async {
+      await db.insertAsset(
+        AssetsCompanion.insert(
+          id: 'v1',
+          originalFileName: 'v1.mp4',
+          relativePath: 'originals/v1.mp4',
+          checksum: 'pruef-v1',
+          type: 'VIDEO',
+          fileCreatedAt: DateTime(2025),
+          importedAt: DateTime(2026),
+          previewRelativePath: const Value('previews/v1.jpg'),
+          thumbnailRelativePath: const Value('thumbnails/v1.jpg'),
+        ),
+      );
+      await db
+          .into(db.faces)
+          .insert(
+            FacesCompanion.insert(
+              id: 'fv',
+              assetId: 'v1',
+              boxX: 0.1,
+              boxY: 0.1,
+              boxW: 0.2,
+              boxH: 0.2,
+            ),
+          );
+      gesicht = (await db.facesForAsset('v1')).single;
+    });
+    final pfade = (await tester.runAsync(
+      () => StoragePaths.forTesting(ordner),
+    ))!;
+    final sitzung = Sitzung()
+      ..db = db
+      ..paths = pfade;
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: GesichtImFoto(sitzung: sitzung, gesicht: gesicht),
+      ),
+    );
+    await _bis(tester, () => find.byType(Image).evaluate().isNotEmpty);
+    final gezeigt = [
+      for (final w in tester.widgetList<Image>(find.byType(Image)))
+        if (w.image case BibliotheksBild(:final relativ)) relativ,
+    ];
+    expect(gezeigt, ['previews/v1.jpg']);
+    await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
   });
 }
