@@ -891,8 +891,9 @@ class _StammbaumScreenState extends State<StammbaumScreen> {
     final wo = Overlay.of(context).context.findRenderObject() as RenderBox;
     final wahl = await showMenu<String>(
       context: context,
+      // In Koordinaten des Overlays: siehe PeopleScreen._kontextmenue.
       position: RelativeRect.fromRect(
-        position & Size.zero,
+        wo.globalToLocal(position) & Size.zero,
         Offset.zero & wo.size,
       ),
       items: [

@@ -186,4 +186,60 @@ void main() {
 
     expect(await db.facesForAsset('a1'), isEmpty);
   });
+
+  // In der App liegt der Bildschirm im Navigator des Arbeitsbereichs, rechts
+  // der Seitenleiste und unter den Hinweisbändern. Das Menü bekam die
+  // Fensterstelle des Klicks, deutete sie aber im Overlay dieses
+  // Navigators – und stand um die Breite der Leiste daneben.
+  testWidgets('das Menü öffnet an der Stelle des Klicks', (tester) async {
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        theme: buildDarkTheme(),
+        home: Stack(
+          children: [
+            Positioned(
+              left: 248,
+              top: 40,
+              right: 0,
+              bottom: 0,
+              child: Navigator(
+                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                  builder: (_) =>
+                      Scaffold(body: PeopleScreen(library: library)),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(reiter('Unbenannte Gesichter'));
+    await tester.pumpAndSettle();
+
+    final stelle = tester.getCenter(find.byType(GridView).first);
+    await rechtsklick(tester, find.byType(GridView).first);
+    // Das Menü selbst, nicht der Text darin. Es setzt eine seiner beiden
+    // senkrechten Kanten an die Klickstelle – je nachdem, auf welcher
+    // Seite mehr Platz ist; die Höhe passt es dem Fenster an.
+    final menue = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Alle unbenannten Gesichter ignorieren'),
+            matching: find.byType(Material),
+          )
+          .last,
+    );
+    expect(
+      (menue.left - stelle.dx).abs() < 1 || (menue.right - stelle.dx).abs() < 1,
+      isTrue,
+      reason: 'Menü $menue, Klick bei $stelle',
+    );
+  });
 }

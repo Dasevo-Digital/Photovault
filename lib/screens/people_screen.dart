@@ -324,8 +324,12 @@ class _PeopleScreenState extends State<PeopleScreen>
     final wo = Overlay.of(context).context.findRenderObject() as RenderBox;
     final wahl = await showMenu<String>(
       context: context,
+      // In Koordinaten des Overlays, nicht des Fensters: Das Menü liegt im
+      // Navigator des Arbeitsbereichs, und der beginnt rechts der
+      // Seitenleiste und unter den Hinweisbändern. Mit der Fensterstelle
+      // stand es um die Breite der Leiste versetzt neben dem Klick.
       position: RelativeRect.fromRect(
-        position & Size.zero,
+        wo.globalToLocal(position) & Size.zero,
         Offset.zero & wo.size,
       ),
       items: [
