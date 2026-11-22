@@ -3,22 +3,52 @@ part of '../database.dart';
 /// Aufnahmen, Zeitleiste und die Datenströme, die einen Schwall aushalten.
 extension AufnahmenAbfragen on AppDatabase {
   Expression<bool> _kalenderjahr(Assets t, int jahr) =>
-      (t.datumVon.isNull() &
-          t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr)) &
-          t.fileCreatedAt.isSmallerThanValue(DateTime(jahr + 1))) |
-      (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr)) &
-          t.datumVon.isSmallerThanValue(DateTime.utc(jahr + 1)));
+      _kalendergrenze(
+        t,
+        [DateTime(jahr), DateTime.utc(jahr)],
+        [DateTime(jahr + 1), DateTime.utc(jahr + 1)],
+      ) &
+      ((t.datumVon.isNull() &
+              t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr)) &
+              t.fileCreatedAt.isSmallerThanValue(DateTime(jahr + 1))) |
+          (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr)) &
+              t.datumVon.isSmallerThanValue(DateTime.utc(jahr + 1))));
   Expression<bool> _kalendermonat(Assets t, int jahr, int monat) {
     if (monat == 0) {
       return _kalenderjahr(t, jahr) &
           t.datumGenauigkeit.isIn(['jahr', 'zeitraum']);
     }
-    return (t.datumVon.isNull() &
-            t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr, monat)) &
-            t.fileCreatedAt.isSmallerThanValue(DateTime(jahr, monat + 1))) |
-        (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr, monat)) &
-            t.datumVon.isSmallerThanValue(DateTime.utc(jahr, monat + 1)) &
-            t.datumGenauigkeit.isNotIn(['jahr', 'zeitraum']));
+    return _kalendergrenze(
+          t,
+          [DateTime(jahr, monat), DateTime.utc(jahr, monat)],
+          [DateTime(jahr, monat + 1), DateTime.utc(jahr, monat + 1)],
+        ) &
+        ((t.datumVon.isNull() &
+                t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr, monat)) &
+                t.fileCreatedAt.isSmallerThanValue(DateTime(jahr, monat + 1))) |
+            (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr, monat)) &
+                t.datumVon.isSmallerThanValue(DateTime.utc(jahr, monat + 1)) &
+                t.datumGenauigkeit.isNotIn(['jahr', 'zeitraum'])));
+  }
+
+  /// Eine grobe Grenze auf `coalesce(datum_von, file_created_at)`, die
+  /// Spalte von `idx_assets_kalender`: vom früheren der beiden Anfänge
+  /// (Ortszeit und UTC) bis zum späteren der beiden Enden.
+  ///
+  /// Die genaue Bedingung ist ein ODER über zwei Spalten – Ortszeit für
+  /// `file_created_at`, UTC für `datum_von` –, und die liess sich nicht als
+  /// Bereich im Index suchen: Seit der Datierung lief jedes Titelbild eines
+  /// älteren Jahres fast den ganzen Index samt Zeilenzugriffen ab. Die
+  /// Grenze trifft eine Obermenge; das ODER bleibt als Restfilter.
+  Expression<bool> _kalendergrenze(
+    Assets t,
+    List<DateTime> anfaenge,
+    List<DateTime> enden,
+  ) {
+    final datum = coalesce([t.datumVon, t.fileCreatedAt]);
+    final von = anfaenge.reduce((a, b) => a.isBefore(b) ? a : b);
+    final bis = enden.reduce((a, b) => a.isAfter(b) ? a : b);
+    return datum.isBiggerOrEqualValue(von) & datum.isSmallerThanValue(bis);
   }
 
   Future<AssetData?> assetById(String id) =>
@@ -529,8 +559,9 @@ extension AufnahmenAbfragen on AppDatabase {
   ///
   /// Dieselbe Bauart wie [watchAssetCountsByYear], nur mit `%m` statt
   /// `%Y` und einer Bereichsgrenze davor. Die Grenze steht als
-  /// gewöhnlicher Vergleich auf `file_created_at` und nicht als
-  /// `strftime`-Bedingung: So bleibt der Index nutzbar, während ein
+  /// gewöhnlicher Vergleich auf `coalesce(datum_von, file_created_at)`
+  /// ([_kalendergrenze]) und nicht als `strftime`-Bedingung: So bleibt
+  /// `idx_assets_kalender` nutzbar, während ein
   /// `strftime('%Y', …) = '2026'` ihn verwürfe.
   ///
   /// Der Schlüssel ist die Monatszahl 1..12. Die Grenzen sind Ortszeit,

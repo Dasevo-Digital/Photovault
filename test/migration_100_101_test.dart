@@ -28,6 +28,14 @@ void main() {
       await vorher.close();
       final raw = sqlite.sqlite3.open(f.path);
       raw.execute('DROP INDEX idx_assets_kalender');
+      // Der Index der Zeitleiste trägt die Spalten der Datierung erst seit
+      // #435; in Fassung 100 stand er ohne sie.
+      raw.execute('DROP INDEX idx_assets_sichtbar');
+      raw.execute(
+        'CREATE INDEX idx_assets_sichtbar ON assets ('
+        'is_trashed, is_locked, file_created_at DESC, id DESC, '
+        'type, linked_asset_id, stack_id, is_stack_cover, is_archived)',
+      );
       for (final c in [
         'datum_von',
         'datum_bis',

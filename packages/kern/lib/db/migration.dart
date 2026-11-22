@@ -153,19 +153,30 @@ extension Migrationsschritte on AppDatabase {
     // weg mit dem alten.
     //
     // Seit dem Archiv (#304) gehört `is_archived` dazu, sonst müsste jede
-    // Zählung der Zeitleiste wieder in die Zeilen greifen. Ein Index ohne
-    // die Spalte (von davor) wird deshalb ersetzt.
-    final spalten = await customSelect(
-      "SELECT name FROM pragma_index_info('idx_assets_sichtbar')",
-    ).get();
+    // Zählung der Zeitleiste wieder in die Zeilen greifen. Seit der
+    // Datierung ebenso `datum_von` und `datum_genauigkeit`: Jahr und Monat
+    // einer Aufnahme lesen sie, und ohne sie lasen die Zählungen des
+    // Kalenders wieder die ganze Tabelle. Ein Index ohne eine dieser
+    // Spalten (von davor) wird deshalb ersetzt.
+    final spalten = {
+      for (final z in await customSelect(
+        "SELECT name FROM pragma_index_info('idx_assets_sichtbar')",
+      ).get())
+        z.read<String>('name'),
+    };
     if (spalten.isNotEmpty &&
-        !spalten.any((z) => z.read<String>('name') == 'is_archived')) {
+        !spalten.containsAll(const [
+          'is_archived',
+          'datum_von',
+          'datum_genauigkeit',
+        ])) {
       await customStatement('DROP INDEX idx_assets_sichtbar');
     }
     await customStatement(
       'CREATE INDEX IF NOT EXISTS idx_assets_sichtbar ON assets ('
       'is_trashed, is_locked, file_created_at DESC, id DESC, '
-      'type, linked_asset_id, stack_id, is_stack_cover, is_archived)',
+      'type, linked_asset_id, stack_id, is_stack_cover, is_archived, '
+      'datum_von, datum_genauigkeit)',
     );
     await customStatement(
       'DROP INDEX IF EXISTS idx_assets_trashed_locked_created',
