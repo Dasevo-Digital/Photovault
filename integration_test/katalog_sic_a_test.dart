@@ -2124,13 +2124,10 @@ void main() {
         enabled: true,
         destination: zAuto.path,
       );
-      // Die Sicherung nimmt die Originale ohne feste Reihenfolge: Ohne
-      // Statistik wählt SQLite den Kalenderindex (älteste zuerst), mit ihr
-      // die Reihenfolge des Imports. Welche galt, ergab sich bisher aus dem
-      // Verlauf davor – seit das automatische Backup oben gelingt (#464),
-      // war es die andere. Die Erwartung unten – erst die beiden grossen,
-      // zuerst importierten Originale – braucht die Statistik.
-      await bibliothek.db.customStatement('ANALYZE');
+      // Die Sicherung nimmt die neuesten Aufnahmen zuerst (#468): erst die
+      // beiden grossen von 2024, dann die kleinen von 2020. Vorher hing die
+      // Reihenfolge an der Statistik von SQLite, und die Prüfung legte sie
+      // deshalb hier an.
     });
     await einstellungenNeu(tester);
     var auto = await autoGruppe(tester);

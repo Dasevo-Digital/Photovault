@@ -237,9 +237,20 @@ extension SicherungsAbfragen on AppDatabase {
   /// [Assets.backedUp] und [Assets.autoBackedUp]. Was davon schon da ist,
   /// sieht die Sicherung am Ziel nach (siehe `BackupService.performBackup`,
   /// #242).
-  Future<List<AssetData>> assetsFuerSicherung() => (select(
-    assets,
-  )..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))).get();
+  ///
+  /// **Die neuesten Aufnahmen zuerst** (Aufnahmedatum, bei Gleichstand die
+  /// Kennung). Mit einer Menge je Lauf kommt nur der Anfang der Liste ins
+  /// Ziel; ohne feste Reihenfolge entschied darüber SQLite – ohne Statistik
+  /// über den Kalenderindex die ältesten, mit ihr die Reihenfolge des
+  /// Imports. Gilt für die Sicherung von Hand und die automatische.
+  Future<List<AssetData>> assetsFuerSicherung() =>
+      (select(assets)
+            ..where((t) => t.isTrashed.equals(false) & t.isLocked.equals(false))
+            ..orderBy([
+              (t) => OrderingTerm.desc(coalesce([t.datumVon, t.fileCreatedAt])),
+              (t) => OrderingTerm.asc(t.id),
+            ]))
+          .get();
 
   Future<void> markAutoBackedUp(List<String> assetIds) => transaction(() async {
     for (final stueck in inStuecken(assetIds)) {
