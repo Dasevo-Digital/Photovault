@@ -120,7 +120,7 @@ void main() {
       'packages/kern/lib/auswertung/rechenhilfe.dart',
     ).readAsStringSync();
     final speichern = hilfe.substring(
-      hilfe.indexOf('Future<void> speichereGesichter('),
+      hilfe.indexOf('Future<bool> speichereGesichter('),
     );
     for (final schreibt in ['db.insertFace', 'db.markFacesScanned']) {
       expect(speichern, contains(schreibt), reason: 'umgezogen?');

@@ -25,6 +25,7 @@ import '../services/personenvorschlag.dart';
 import '../services/storage_paths.dart';
 import '../services/textstellen.dart';
 import '../services/translation_service.dart';
+import '../services/tresorreihe.dart';
 import '../services/videostandbilder.dart';
 import '../services/whisper_service.dart';
 import 'fortschritt.dart';
@@ -153,6 +154,34 @@ class Auswertungen {
 
   Future<void> _pipelineAktuell(String pipeline) async =>
       pipelineAktuell?.call(pipeline);
+
+  /// Legt ab, was für [assetId] errechnet wurde – nur, solange die
+  /// Aufnahme offen ist: weder gesperrt noch gelöscht noch im Papierkorb.
+  /// Gibt zurück, ob [ablegen] lief.
+  ///
+  /// **Mit dem Stand von jetzt, nicht vom Beginn des Laufs (#430).** Ein
+  /// Lauf rechnet mit der Liste, die er zu Beginn abfragte, und das
+  /// Dekodieren und Rechnen dauert. Wurde ein Foto in der Zwischenzeit
+  /// gesperrt, legte die Gesichtserkennung ihre Ausschnitte im Klartext in
+  /// das gesperrte Foto, und jedes spätere Entsperren scheiterte an ihnen;
+  /// Einbettungen, erkannter Text und Beschreibungen standen wieder in der
+  /// Datenbank, die das Sperren gerade geleert hatte. Für den Papierkorb gilt
+  /// dieselbe Regel wie bei der Auswahl jeder Stufe: Was dort liegt, wird
+  /// nicht ausgewertet. Verworfen wird nur, nichts vermerkt – kommt das Foto
+  /// zurück, sieht der nächste Lauf es wieder.
+  ///
+  /// Prüfen und Ablegen laufen in der [inTresorreihe], damit kein Sperren
+  /// dazwischenkommt. Am Server gibt es kein Sperren; dort kostet es eine
+  /// Abfrage je Ergebnis.
+  Future<bool> inOffeneAufnahme(
+    String assetId,
+    Future<void> Function() ablegen,
+  ) => inTresorreihe(paths, () async {
+    final a = await db.assetById(assetId);
+    if (a == null || a.isLocked || a.isTrashed) return false;
+    await ablegen();
+    return true;
+  });
 
   ModellHalter<FaceEngineService> get faceEngineHalter =>
       modelle.faceEngineHalter;
@@ -286,8 +315,9 @@ class Auswertungen {
         eyeState,
         auslassen: belegteBoxen,
       );
-      await speichereGesichter(asset, funde);
-      await _vermerke(asset.id, Ergebnisart.gesichter);
+      if (await speichereGesichter(asset, funde)) {
+        await _vermerke(asset.id, Ergebnisart.gesichter);
+      }
     } catch (e) {
       protokoll(
         'Gesichtserkennung fehlgeschlagen für ${asset.originalFileName}: $e',
@@ -546,6 +576,9 @@ class Auswertungen {
             } else {
               try {
                 final neue = <({double stelle, Uint8List vector})>[];
+                // Erst am Ende abgelegt, und nur in ein offenes Video
+                // (#430): Die Standbilder kosten Sekunden je Stelle.
+                final kiBegriffe = <String>{};
                 for (final stelle in stellen) {
                   final bild = await bildwerkzeuge.generateVideoThumbnail(
                     (await paths.bereit(video.relativePath)),
@@ -567,20 +600,14 @@ class Auswertungen {
                       vector: blobFromEmbeddingFloats(vektor),
                     ));
                     if (clipText != null) {
-                      for (final tag in await aiTaggingService.suggestTags(
-                        clipText,
-                        vektor,
-                        vokabular,
-                        insEnglische: insEnglische,
-                      )) {
-                        await db.fuehreAus(
-                          SchlagwortAnheften(
-                            [video.id],
-                            tag,
-                            quelle: Tagquelle.ki,
-                          ),
-                        );
-                      }
+                      kiBegriffe.addAll(
+                        await aiTaggingService.suggestTags(
+                          clipText,
+                          vektor,
+                          vokabular,
+                          insEnglische: insEnglische,
+                        ),
+                      );
                     }
                   }
                   if (gesichter != null) {
@@ -597,10 +624,17 @@ class Auswertungen {
                     );
                   }
                 }
-                // Auch mit leerer Liste vermerken: Ein Video, aus dem sich
-                // kein Standbild greifen lässt, ist angesehen worden.
-                await db.setzeVideoeinbettungen(video.id, neue);
-                await _vermerke(video.id, Ergebnisart.clip);
+                await inOffeneAufnahme(video.id, () async {
+                  for (final tag in kiBegriffe) {
+                    await db.fuehreAus(
+                      SchlagwortAnheften([video.id], tag, quelle: Tagquelle.ki),
+                    );
+                  }
+                  // Auch mit leerer Liste vermerken: Ein Video, aus dem sich
+                  // kein Standbild greifen lässt, ist angesehen worden.
+                  await db.setzeVideoeinbettungen(video.id, neue);
+                  await _vermerke(video.id, Ergebnisart.clip);
+                });
               } catch (e) {
                 protokoll(
                   'Standbilder fehlgeschlagen für ${video.originalFileName}: $e',
@@ -682,17 +716,20 @@ class Auswertungen {
             // als „Stellen" ablegen – sonst käme das Foto beim nächsten Lauf
             // nicht mehr dran, obwohl nichts zu holen war. Genau das
             // unterscheidet die beiden Fälle in `_ocrOffen` in der Datenbank.
-            await db.setOcrResult(
-              asset.id,
-              textAusStellen(stellen),
-              boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
-            );
-            await _vermerke(
-              asset.id,
-              Ergebnisart.texterkennung,
-              modell: ueberSystem ? 'Apple Vision' : null,
-              beschleuniger: ueberSystem ? 'System' : null,
-            );
+            final gefunden = stellen;
+            await inOffeneAufnahme(asset.id, () async {
+              await db.setOcrResult(
+                asset.id,
+                textAusStellen(gefunden),
+                boxen: gefunden.isEmpty ? null : textstellenNachJson(gefunden),
+              );
+              await _vermerke(
+                asset.id,
+                Ergebnisart.texterkennung,
+                modell: ueberSystem ? 'Apple Vision' : null,
+                beschleuniger: ueberSystem ? 'System' : null,
+              );
+            });
           }
         } on LesungLiefertNichts catch (e) {
           // NICHT als leeres Ergebnis speichern: Das Foto würde als
@@ -792,8 +829,10 @@ class Auswertungen {
               );
             }
           }
-          await db.setAiCaption(asset.id, caption, deutsch: deutsch);
-          await _vermerke(asset.id, Ergebnisart.bildbeschreibung);
+          await inOffeneAufnahme(asset.id, () async {
+            await db.setAiCaption(asset.id, caption, deutsch: deutsch);
+            await _vermerke(asset.id, Ergebnisart.bildbeschreibung);
+          });
         } catch (e) {
           failed = true;
           protokoll(
@@ -861,12 +900,14 @@ class Auswertungen {
               abbruch: abgebrochen,
             );
             if (abgebrochen()) break;
-            await db.setTranskript(
-              video.id,
-              text: gehoert?.text,
-              sprache: gehoert?.sprache,
-            );
-            await _vermerke(video.id, Ergebnisart.spracherkennung);
+            await inOffeneAufnahme(video.id, () async {
+              await db.setTranskript(
+                video.id,
+                text: gehoert?.text,
+                sprache: gehoert?.sprache,
+              );
+              await _vermerke(video.id, Ergebnisart.spracherkennung);
+            });
           }
         } catch (e) {
           failed = true;
@@ -974,11 +1015,11 @@ class Auswertungen {
                 }
                 if (brauchtEmbedding) {
                   try {
-                    await db.saveEmbedding(
-                      asset.id,
-                      await clip.embedImage(decoded),
-                    );
-                    await _vermerke(asset.id, Ergebnisart.clip);
+                    final vektor = await clip.embedImage(decoded);
+                    await inOffeneAufnahme(asset.id, () async {
+                      await db.saveEmbedding(asset.id, vektor);
+                      await _vermerke(asset.id, Ergebnisart.clip);
+                    });
                   } catch (e) {
                     protokoll(
                       'CLIP-Embedding fehlgeschlagen für ${asset.originalFileName}: $e',
@@ -1110,8 +1151,10 @@ class Auswertungen {
             throw Exception('Bild konnte nicht dekodiert werden.');
           }
           final embedding = await service.embedImage(decoded);
-          await db.saveEmbedding(asset.id, embedding);
-          await _vermerke(asset.id, Ergebnisart.clip);
+          await inOffeneAufnahme(asset.id, () async {
+            await db.saveEmbedding(asset.id, embedding);
+            await _vermerke(asset.id, Ergebnisart.clip);
+          });
         } catch (e) {
           failed = true;
           protokoll(
@@ -1169,15 +1212,16 @@ class Auswertungen {
       yield ImportProgress(0, assets.length);
       for (final asset in assets) {
         try {
-          var embedding = await db.embeddingForAsset(asset.id);
-          if (embedding == null) {
+          final vorhanden = await db.embeddingForAsset(asset.id);
+          final Float32List embedding;
+          if (vorhanden == null) {
             final decoded = await decodeAsset(asset);
             if (decoded == null) {
               throw Exception('Bild konnte nicht dekodiert werden.');
             }
             embedding = await clipBild.embedImage(decoded);
-            await db.saveEmbedding(asset.id, embedding);
-            await _vermerke(asset.id, Ergebnisart.clip);
+          } else {
+            embedding = vorhanden;
           }
           final tags = await aiTaggingService.suggestTags(
             clipText,
@@ -1185,29 +1229,38 @@ class Auswertungen {
             vocabulary,
             insEnglische: insEnglische,
           );
-          for (final tag in tags) {
-            // Als Vorschlag der Bilderkennung gekennzeichnet – damit er
-            // beim Sperren verschwindet und nach dem Entsperren neu
-            // berechnet wird (siehe [Tagquelle]). Eine bereits von Hand
-            // vergebene Zuordnung lässt `tagAsset` dabei unangetastet.
-            await db.fuehreAus(
-              SchlagwortAnheften([asset.id], tag, quelle: Tagquelle.ki),
-            );
-          }
-          if (tags.isNotEmpty) {
-            await applyAutomationRules(
-              asset.id,
-              aiTags: tags,
-              rules: automationRules,
-            );
-          }
-          // Auch bei LEERER Trefferliste vermerken: "kein Begriff passt" ist
-          // ein Ergebnis, kein offener Posten. Ohne diesen Vermerk bliebe das
-          // Foto für immer Kandidat und die Stufe lüde bei jedem Start erneut
-          // beide CLIP-Encoder, um wieder nichts zu finden (Audit-Fund).
-          // Bewusst NUR im Erfolgsfall – ein abgebrochener Durchlauf (siehe
-          // catch) soll erneut versucht werden.
-          await db.markAiTagsScanned([asset.id]);
+          // Erst gerechnet, dann alles auf einmal abgelegt – und nur in
+          // eine offene Aufnahme (#430).
+          await inOffeneAufnahme(asset.id, () async {
+            if (vorhanden == null) {
+              await db.saveEmbedding(asset.id, embedding);
+              await _vermerke(asset.id, Ergebnisart.clip);
+            }
+            for (final tag in tags) {
+              // Als Vorschlag der Bilderkennung gekennzeichnet – damit er
+              // beim Sperren verschwindet und nach dem Entsperren neu
+              // berechnet wird (siehe [Tagquelle]). Eine bereits von Hand
+              // vergebene Zuordnung lässt `tagAsset` dabei unangetastet.
+              await db.fuehreAus(
+                SchlagwortAnheften([asset.id], tag, quelle: Tagquelle.ki),
+              );
+            }
+            if (tags.isNotEmpty) {
+              await applyAutomationRules(
+                asset.id,
+                aiTags: tags,
+                rules: automationRules,
+              );
+            }
+            // Auch bei LEERER Trefferliste vermerken: "kein Begriff passt"
+            // ist ein Ergebnis, kein offener Posten. Ohne diesen Vermerk
+            // bliebe das Foto für immer Kandidat und die Stufe lüde bei
+            // jedem Start erneut beide CLIP-Encoder, um wieder nichts zu
+            // finden (Audit-Fund). Bewusst NUR im Erfolgsfall – ein
+            // abgebrochener Durchlauf (siehe catch) soll erneut versucht
+            // werden.
+            await db.markAiTagsScanned([asset.id]);
+          });
         } catch (e) {
           protokoll(
             'KI-Tagging fehlgeschlagen für ${asset.originalFileName}: $e',
@@ -1262,7 +1315,10 @@ class Auswertungen {
           try {
             final deutsch = await uebersetzer.translate(englisch);
             if (deutsch.trim().isNotEmpty) {
-              await db.setAiCaptionDe(asset.id, deutsch.trim());
+              await inOffeneAufnahme(
+                asset.id,
+                () => db.setAiCaptionDe(asset.id, deutsch.trim()),
+              );
             }
           } catch (e) {
             // Ein Satz, an dem sich das Modell verschluckt, darf den Lauf

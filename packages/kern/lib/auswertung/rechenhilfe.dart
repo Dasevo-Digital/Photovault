@@ -362,6 +362,10 @@ extension Rechnen on Auswertungen {
 extension Eintragen on Auswertungen {
   /// Trägt [e] für den Auftrag ein – nur, was noch offen ist: Hat der
   /// Server es inzwischen selbst gerechnet, gilt sein Ergebnis.
+  ///
+  /// Jedes Ergebnis nur in eine offene Aufnahme (siehe
+  /// [Auswertungen.inOffeneAufnahme]): Liegt sie inzwischen im Papierkorb
+  /// oder ist sie gelöscht, wird es verworfen.
   Future<void> trageEin(Rechenauftrag a, Rechenergebnis e) async {
     final asset = await db.assetById(a.aufnahme);
     if (asset == null) return;
@@ -381,12 +385,14 @@ extension Eintragen on Auswertungen {
       case Rechenart.texterkennung:
         final stellen = e.textstellen;
         if (stellen == null) return;
-        await db.setOcrResult(
-          asset.id,
-          textAusStellen(stellen),
-          boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
-        );
-        await vermerke(Ergebnisart.texterkennung);
+        await inOffeneAufnahme(asset.id, () async {
+          await db.setOcrResult(
+            asset.id,
+            textAusStellen(stellen),
+            boxen: stellen.isEmpty ? null : textstellenNachJson(stellen),
+          );
+          await vermerke(Ergebnisart.texterkennung);
+        });
       case Rechenart.bildbeschreibung:
         final beschreibung = e.beschreibung;
         if (beschreibung == null) return;
@@ -405,18 +411,23 @@ extension Eintragen on Auswertungen {
             }
           }
         }
-        await db.setAiCaption(asset.id, beschreibung, deutsch: deutsch);
-        await vermerke(Ergebnisart.bildbeschreibung);
+        await inOffeneAufnahme(asset.id, () async {
+          await db.setAiCaption(asset.id, beschreibung, deutsch: deutsch);
+          await vermerke(Ergebnisart.bildbeschreibung);
+        });
       case Rechenart.bildanalyse:
         if (e.schaerfe != null && asset.sharpnessScore == null) {
           await db.setSharpnessScore(asset.id, e.schaerfe!);
         }
         if (e.clip != null) {
-          await db.saveEmbedding(asset.id, e.clip!);
-          await vermerke(Ergebnisart.clip);
+          await inOffeneAufnahme(asset.id, () async {
+            await db.saveEmbedding(asset.id, e.clip!);
+            await vermerke(Ergebnisart.clip);
+          });
         }
-        if (e.gesichter != null && !asset.facesScanned) {
-          await speichereGesichter(asset, e.gesichter!);
+        if (e.gesichter != null &&
+            !asset.facesScanned &&
+            await speichereGesichter(asset, e.gesichter!)) {
           await vermerke(Ergebnisart.gesichter);
         }
     }
@@ -482,44 +493,49 @@ extension GesichterSpeichern on Auswertungen {
       DetectedFace(f.boxX, f.boxY, f.boxW, f.boxH, 1.0),
   ];
 
-  Future<void> speichereGesichter(
-    AssetData asset,
-    List<Gesichtsfund> funde,
-  ) async {
-    // Auch was ein anderer Rechner fand: Die Videohälfte eines Live Photos
-    // bekommt keine eigenen Gesichter (#226), eine von der Gesichtssuche
-    // ausgenommene Aufnahme ebenso wenig.
-    if (istLivePhotoVideo(asset) || asset.faceScanExcluded) {
-      await db.markFacesScanned([asset.id]);
-      return;
-    }
-    final belegt = await belegteGesichtsstellen(asset.id);
-    for (final f in funde) {
-      final box = DetectedFace(f.x, f.y, f.breite, f.hoehe, 1.0);
-      if (belegt.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
-        continue;
-      }
-      final faceId = const Uuid().v4();
-      final cropFile = paths.absolute(paths.faceRelativePath(faceId));
-      await cropFile.create(recursive: true);
-      await cropFile.writeAsBytes(f.ausschnitt);
-      await db.insertFace(
-        FacesCompanion.insert(
-          id: faceId,
-          assetId: asset.id,
-          boxX: f.x,
-          boxY: f.y,
-          boxW: f.breite,
-          boxH: f.hoehe,
-          cropRelativePath: Value(paths.faceRelativePath(faceId)),
-          embedding: f.merkmal != null
-              ? Value(blobFromEmbeddingFloats(f.merkmal!))
-              : const Value.absent(),
-          eyeOpenScore: f.augen != null ? Value(f.augen) : const Value.absent(),
-          schaerfe: Value(f.schaerfe),
-        ),
-      );
-    }
-    await db.markFacesScanned([asset.id]);
-  }
+  ///
+  /// Nur in eine offene Aufnahme (siehe [Auswertungen.inOffeneAufnahme],
+  /// #430): Gibt `false` zurück, wenn [asset] inzwischen gesperrt, gelöscht
+  /// oder im Papierkorb ist – dann ist nichts geschrieben, kein Ausschnitt
+  /// und kein Vermerk.
+  Future<bool> speichereGesichter(AssetData asset, List<Gesichtsfund> funde) =>
+      inOffeneAufnahme(asset.id, () async {
+        // Auch was ein anderer Rechner fand: Die Videohälfte eines Live Photos
+        // bekommt keine eigenen Gesichter (#226), eine von der Gesichtssuche
+        // ausgenommene Aufnahme ebenso wenig.
+        if (istLivePhotoVideo(asset) || asset.faceScanExcluded) {
+          await db.markFacesScanned([asset.id]);
+          return;
+        }
+        final belegt = await belegteGesichtsstellen(asset.id);
+        for (final f in funde) {
+          final box = DetectedFace(f.x, f.y, f.breite, f.hoehe, 1.0);
+          if (belegt.any((alt) => FacePostprocess.iou(alt, box) > 0.3)) {
+            continue;
+          }
+          final faceId = const Uuid().v4();
+          final cropFile = paths.absolute(paths.faceRelativePath(faceId));
+          await cropFile.create(recursive: true);
+          await cropFile.writeAsBytes(f.ausschnitt);
+          await db.insertFace(
+            FacesCompanion.insert(
+              id: faceId,
+              assetId: asset.id,
+              boxX: f.x,
+              boxY: f.y,
+              boxW: f.breite,
+              boxH: f.hoehe,
+              cropRelativePath: Value(paths.faceRelativePath(faceId)),
+              embedding: f.merkmal != null
+                  ? Value(blobFromEmbeddingFloats(f.merkmal!))
+                  : const Value.absent(),
+              eyeOpenScore: f.augen != null
+                  ? Value(f.augen)
+                  : const Value.absent(),
+              schaerfe: Value(f.schaerfe),
+            ),
+          );
+        }
+        await db.markFacesScanned([asset.id]);
+      });
 }

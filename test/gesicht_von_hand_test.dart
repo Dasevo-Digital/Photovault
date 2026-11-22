@@ -140,9 +140,8 @@ void main() {
   test(
     'ohne Modell entsteht das Gesicht trotzdem, nur ohne Einbettung',
     () async {
-      // Der wichtige Zweig: Der Ausschnitt liegt zu diesem Zeitpunkt bereits
-      // auf der Platte. Bräche das Anlegen hier ab, bliebe eine Datei ohne
-      // die Zeile zurück, die sie erklärt.
+      // Der wichtige Zweig: Ohne Einbettung bricht das Anlegen nicht ab –
+      // das Gesicht ist zugeordnet, taugt nur nicht zur Wiedererkennung.
       //
       // Gemeldet wird dabei NICHTS, und das ist richtig: `ModellHalter.mit`
       // gibt `null` zurück, wenn das Modell gar nicht installiert ist. Das
@@ -180,6 +179,35 @@ void main() {
     expect(id, isNull);
     expect(await db.facesForAsset('a1'), isEmpty);
     expect(paths.facesDir.listSync(), isEmpty);
+  });
+
+  // Abgelegt wird nur in eine Aufnahme, die dann noch offen ist (#430):
+  // Ein Ausschnitt im Klartext in einem gesperrten Foto liess jedes spätere
+  // Entsperren scheitern.
+  test('ein gesperrtes oder weggeworfenes Foto bekommt kein Gesicht', () async {
+    Future<void> pruefe() async {
+      final id = await gesichtVonHandAnlegen(
+        library: library,
+        assetId: 'a1',
+        bilddatei: foto,
+        kasten: const Rect.fromLTWH(0.25, 0.2, 0.3, 0.4),
+        neuerName: 'Person B',
+      );
+      expect(id, isNull);
+      expect(await db.facesForAsset('a1'), isEmpty);
+      expect(paths.facesDir.listSync(), isEmpty);
+      expect((await db.select(db.people).get()).map((p) => p.name), [
+        'Anna',
+      ], reason: 'auch keine neue Person');
+    }
+
+    await db.setAssetsLocked(['a1'], true);
+    await pruefe();
+    await db.setAssetsLocked(['a1'], false);
+    await (db.update(db.assets)..where((t) => t.id.equals('a1'))).write(
+      const AssetsCompanion(isTrashed: Value(true)),
+    );
+    await pruefe();
   });
 
   group('eine neue Person (PER-090)', () {

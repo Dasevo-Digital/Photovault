@@ -28,8 +28,9 @@ extension GesichtVonHand on Auswertungen {
   /// führt. [personId] ordnet das Gesicht gleich zu (dann wird sein
   /// Ausschnitt das Bild der Person, falls sie noch keines hat).
   ///
-  /// `null`, wenn es die Aufnahme nicht gibt, sie gesperrt ist oder sich
-  /// nicht dekodieren lässt. Lässt sich das Wiedererkennungsmodell nicht
+  /// `null`, wenn es die Aufnahme nicht gibt, sie gesperrt oder im
+  /// Papierkorb ist – auch, wenn sie es während des Rechnens wurde – oder
+  /// sich nicht dekodieren lässt. Lässt sich das Wiedererkennungsmodell nicht
   /// nutzen, entsteht das Gesicht trotzdem – nur ohne Einbettung.
   Future<FaceData?> gesichtVonHandAnlegen({
     required String assetId,
@@ -54,9 +55,6 @@ extension GesichtVonHand on Auswertungen {
     final id = gesichtId ?? const Uuid().v4();
     final ausschnitt = FaceEngineService.cropFaceImage(bild, box);
     final pfad = paths.faceRelativePath(id);
-    final datei = paths.absolute(pfad);
-    await datei.create(recursive: true);
-    await datei.writeAsBytes(jpegOhneAngaben(ausschnitt, quality: 85));
     Float32List? merkmal;
     try {
       merkmal = await faceEngineHalter.mit<Float32List?>(
@@ -67,23 +65,33 @@ extension GesichtVonHand on Auswertungen {
     } catch (_) {
       // Ohne Einbettung bleibt es ein Gesicht – nur ohne Wiedererkennung.
     }
-    await db.insertFace(
-      FacesCompanion.insert(
-        id: id,
-        assetId: assetId,
-        personId: Value(personId),
-        boxX: box.x,
-        boxY: box.y,
-        boxW: box.width,
-        boxH: box.height,
-        cropRelativePath: Value(pfad),
-        embedding: merkmal == null
-            ? const Value.absent()
-            : Value(blobFromEmbeddingFloats(merkmal)),
-        schaerfe: Value(gesichtsschaerfe(ausschnitt)),
-      ),
-    );
-    if (personId != null) await db.setPersonCoverIfUnset(personId, pfad);
+    // Erst gerechnet, dann abgelegt – und nur in eine Aufnahme, die noch
+    // offen ist (#430): Dekodieren und Einbetten dauern, und ein Ausschnitt
+    // im Klartext in einem inzwischen gesperrten Foto liesse jedes spätere
+    // Entsperren scheitern.
+    final abgelegt = await inOffeneAufnahme(assetId, () async {
+      final datei = paths.absolute(pfad);
+      await datei.create(recursive: true);
+      await datei.writeAsBytes(jpegOhneAngaben(ausschnitt, quality: 85));
+      await db.insertFace(
+        FacesCompanion.insert(
+          id: id,
+          assetId: assetId,
+          personId: Value(personId),
+          boxX: box.x,
+          boxY: box.y,
+          boxW: box.width,
+          boxH: box.height,
+          cropRelativePath: Value(pfad),
+          embedding: merkmal == null
+              ? const Value.absent()
+              : Value(blobFromEmbeddingFloats(merkmal)),
+          schaerfe: Value(gesichtsschaerfe(ausschnitt)),
+        ),
+      );
+      if (personId != null) await db.setPersonCoverIfUnset(personId, pfad);
+    });
+    if (!abgelegt) return null;
     return (await db.facesForAsset(assetId)).where((f) => f.id == id).first;
   }
 }

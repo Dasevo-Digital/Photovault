@@ -12,6 +12,7 @@ import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../state/library_state.dart';
 import 'package:kern/services/face_engine_service.dart';
+import 'package:kern/services/tresorreihe.dart';
 
 /// **Ein von Hand aufgezogenes Gesicht anlegen.**
 ///
@@ -35,13 +36,15 @@ import 'package:kern/services/face_engine_service.dart';
 /// Server nicht erreichbar, kommt [KeineVerbindung] durch, und es ist
 /// nichts angelegt.
 ///
-/// [beiEinbettungsfehler] wird gerufen, wenn sich zwar der Ausschnitt
-/// speichern liess, das Wiedererkennungsmodell aber nicht. Der Aufrufer
-/// entscheidet, wie er das sagt; **abgebrochen wird nicht**. Das ist
-/// Absicht: Der Ausschnitt liegt zu diesem Zeitpunkt schon auf der Platte,
-/// und ein Abbruch hinterliesse ihn ohne die Zeile, die ihn erklärt – ein
-/// verwaistes Bild ohne jede Meldung. Ohne Einbettung ist das Gesicht
+/// [beiEinbettungsfehler] wird gerufen, wenn sich das
+/// Wiedererkennungsmodell nicht nutzen liess. Der Aufrufer entscheidet, wie
+/// er das sagt; **abgebrochen wird nicht**: Ohne Einbettung ist das Gesicht
 /// zugeordnet, taugt nur nicht zur Wiedererkennung.
+///
+/// Abgelegt wird erst, wenn alles gerechnet ist, und nur in eine Aufnahme,
+/// die dann noch offen ist (#430) – nicht gesperrt, nicht gelöscht, nicht
+/// im Papierkorb. Sonst ist es `null`, und es entsteht nichts, auch keine
+/// neue Person.
 Future<String?> gesichtVonHandAnlegen({
   required LibraryState library,
   required String assetId,
@@ -105,7 +108,6 @@ Future<String?> gesichtVonHandAnlegen({
   }
   if (gelesen == null) return null;
   final bild = gelesen;
-  final pid = await person();
 
   final gesichtId = const Uuid().v4();
   final box = DetectedFace(
@@ -115,12 +117,7 @@ Future<String?> gesichtVonHandAnlegen({
     kasten.height,
     1.0,
   );
-
-  final ausschnittPfad = library.paths.faceRelativePath(gesichtId);
-  await FaceEngineService.saveFaceCrop(
-    FaceEngineService.cropFaceImage(bild, box),
-    library.paths.absolute(ausschnittPfad),
-  );
+  final ausschnitt = FaceEngineService.cropFaceImage(bild, box);
 
   Float32List? einbettung;
   try {
@@ -133,29 +130,39 @@ Future<String?> gesichtVonHandAnlegen({
     beiEinbettungsfehler?.call(e);
   }
 
-  await library.db.insertFace(
-    FacesCompanion.insert(
-      id: gesichtId,
-      assetId: assetId,
-      personId: Value(pid),
-      boxX: box.x,
-      boxY: box.y,
-      boxW: box.width,
-      boxH: box.height,
-      cropRelativePath: Value(ausschnittPfad),
-      embedding: einbettung != null
-          ? Value(
-              Uint8List.view(
-                einbettung.buffer,
-                einbettung.offsetInBytes,
-                einbettung.lengthInBytes,
-              ),
-            )
-          : const Value.absent(),
-    ),
-  );
-  await library.db.setPersonCoverIfUnset(pid, ausschnittPfad);
-  return gesichtId;
+  return inTresorreihe(library.paths, () async {
+    final a = await library.db.assetById(assetId);
+    if (a == null || a.isLocked || a.isTrashed) return null;
+    final pid = await person();
+    final ausschnittPfad = library.paths.faceRelativePath(gesichtId);
+    await FaceEngineService.saveFaceCrop(
+      ausschnitt,
+      library.paths.absolute(ausschnittPfad),
+    );
+    await library.db.insertFace(
+      FacesCompanion.insert(
+        id: gesichtId,
+        assetId: assetId,
+        personId: Value(pid),
+        boxX: box.x,
+        boxY: box.y,
+        boxW: box.width,
+        boxH: box.height,
+        cropRelativePath: Value(ausschnittPfad),
+        embedding: einbettung != null
+            ? Value(
+                Uint8List.view(
+                  einbettung.buffer,
+                  einbettung.offsetInBytes,
+                  einbettung.lengthInBytes,
+                ),
+              )
+            : const Value.absent(),
+      ),
+    );
+    await library.db.setPersonCoverIfUnset(pid, ausschnittPfad);
+    return gesichtId;
+  });
 }
 
 /// Was beim Anlegen eines Gesichts von Hand schiefging, als Satz: Ist der
