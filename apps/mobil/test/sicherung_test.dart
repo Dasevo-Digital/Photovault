@@ -357,17 +357,20 @@ void main() {
     'Speicher freigeben: am Server gelöscht, die Kopie weiss es noch nicht – '
     'bleibt auf dem Telefon (#425)',
     () async {
-      rolle.foto('v1', server.jpeg('IMG_0601.JPG', 61));
-      rolle.foto('v2', server.jpeg('IMG_0602.JPG', 62));
-      rolle.foto('v3', server.jpeg('IMG_0603.JPG', 63));
+      rolle.foto('v1', server.jpeg('FREI_01.JPG', 220));
+      rolle.foto('v2', server.jpeg('FREI_02.JPG', 230));
+      rolle.foto('v3', server.jpeg('FREI_03.JPG', 240));
       await lauf().laufe();
       final amServer = {for (final a in await aufServer()) a['name']: a['id']};
       String id(String name) => amServer[name]! as String;
+      // Eigene Farben, weit weg von denen der anderen Tests (nahe Farben
+      // ergeben dasselbe JPEG): Der Server ist für alle derselbe, und was
+      // hier gelöscht wird, fehlte sonst den anderen.
       // Die Kopie hat zuletzt vor dem Löschen abgeglichen: Sie führt alle
       // drei als vorhanden, nicht im Papierkorb.
       final db = AppDatabase(NativeDatabase.memory());
       addTearDown(db.close);
-      for (final name in ['IMG_0601.JPG', 'IMG_0602.JPG', 'IMG_0603.JPG']) {
+      for (final name in ['FREI_01.JPG', 'FREI_02.JPG', 'FREI_03.JPG']) {
         await db.insertAsset(
           AssetsCompanion.insert(
             id: id(name),
@@ -384,9 +387,9 @@ void main() {
       // nur in den Papierkorb.
       await telefon.schicke(
         'api/v1/befehle',
-        InDenPapierkorb([id('IMG_0601.JPG'), id('IMG_0602.JPG')]).alsJson(),
+        InDenPapierkorb([id('FREI_01.JPG'), id('FREI_02.JPG')]).alsJson(),
       );
-      await leereServerpapierkorb(telefon, ids: [id('IMG_0601.JPG')]);
+      await leereServerpapierkorb(telefon, ids: [id('FREI_01.JPG')]);
 
       final f = Speicherfreigabe(
         stand: stand,
