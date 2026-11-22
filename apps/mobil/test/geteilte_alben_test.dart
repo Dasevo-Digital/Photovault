@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -1369,5 +1370,98 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Person unbekannt'), findsOneWidget);
     expect(find.textContaining('{'), findsNothing);
+  });
+
+  testWidgets('#454 beitragen: die Zurück-Taste schliesst das '
+      'Fortschrittsfenster nicht, und am Ende bleibt das Album offen', (
+    tester,
+  ) async {
+    final ordner = Directory.systemTemp.createTempSync('pv_geteilt_');
+    addTearDown(() => ordner.deleteSync(recursive: true));
+    final foto = File('${ordner.path}/IMG_1.HEIC')
+      ..writeAsBytesSync(List.filled(64, 7));
+    final angekommen = Completer<void>();
+    final antwort = Completer<void>();
+    final client = MockClient.streaming((r, koerper) async {
+      if (r.method == 'POST' && r.url.path == '/api/v1/geteilt/t1/beitrag') {
+        await koerper.toBytes();
+        angekommen.complete();
+        await antwort.future;
+        return http.StreamedResponse(
+          Stream.value(utf8.encode('{"aufnahme":"a2","ausgang":"imported"}')),
+          201,
+        );
+      }
+      if (r.url.path == '/api/v1/geteilt/t1') {
+        final a = json({
+          'album': {
+            'id': 't1',
+            'name': 'Urlaub',
+            'besitzer': 'erika',
+            'beitragen': true,
+          },
+          'aufnahmen': [],
+        });
+        return http.StreamedResponse(
+          Stream.value(a.bodyBytes),
+          200,
+          headers: a.headers,
+        );
+      }
+      return http.StreamedResponse(const Stream.empty(), 404);
+    });
+    final v = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      't',
+      client: client,
+    );
+    await tester.pumpWidget(app(const Scaffold(body: Text('Start'))));
+    Navigator.of(tester.element(find.text('Start'))).push(
+      MaterialPageRoute<void>(
+        builder: (_) => GeteiltesAlbumSeite(
+          album: album,
+          zugang: Teilungszugang(
+            verbindung: v,
+            waehle: (_) async => [
+              Beitragsdatei(
+                name: 'IMG_1.HEIC',
+                geaendert: DateTime.utc(2026, 8, 2, 10),
+                datei: () async => foto,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Geteilt von erika'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Fotos hinzufügen'));
+    for (var i = 0; i < 50 && !angekommen.isCompleted; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(find.byType(AlertDialog), findsOneWidget);
+    // Android: Zurück.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+
+    antwort.complete();
+    for (var i = 0; i < 10; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 20)),
+      );
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Geteilt von erika'), findsOneWidget);
+    expect(find.text('1 Aufnahme hinzugefügt'), findsOneWidget);
   });
 }

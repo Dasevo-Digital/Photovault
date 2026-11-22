@@ -641,24 +641,33 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
     final dateien = await waehle(context);
     if (dateien.isEmpty || !mounted) return;
     final stand = ValueNotifier<(int, double)>((0, 0));
+    // Auch die Zurück-Taste unter Android schliesst das Fenster nicht
+    // (#454): barrierDismissible sperrt nur das Tippen daneben. Ging es
+    // zu, lief das Hochladen unsichtbar weiter, und das pop am Ende traf
+    // die Seite darunter – das Album, einen inzwischen geöffneten
+    // Betrachter oder die Startseite.
+    var offen = true;
     final dialog = showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (c) => AlertDialog(
-        content: ValueListenableBuilder<(int, double)>(
-          valueListenable: stand,
-          builder: (c, s, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(t.geteiltLaedtHoch(s.$1 + 1, dateien.length)),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(value: s.$2),
-            ],
+      builder: (c) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: ValueListenableBuilder<(int, double)>(
+            valueListenable: stand,
+            builder: (c, s, _) => Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(t.geteiltLaedtHoch(s.$1 + 1, dateien.length)),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(value: s.$2),
+              ],
+            ),
           ),
         ),
       ),
-    );
+    ).whenComplete(() => offen = false);
     final weg = Navigator.of(context, rootNavigator: true);
     var gut = 0;
     String? meldung;
@@ -707,7 +716,7 @@ class _GeteiltesAlbumSeiteState extends State<GeteiltesAlbumSeite> {
     } on Object {
       // Aufräumen ist Beiwerk; das Ergebnis zählt.
     }
-    weg.pop();
+    if (offen) weg.pop();
     await dialog;
     stand.dispose();
     bote.showSnackBar(
