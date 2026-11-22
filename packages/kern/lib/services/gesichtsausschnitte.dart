@@ -1,6 +1,7 @@
 /// Gesichtsausschnitte aus ihrem Foto neu zeichnen: nach einer
 /// Wiederherstellung (die Ausschnitte liegen nicht in der Sicherung) und
-/// einmal je Bibliothek für die grau abgelegten (#459).
+/// einmal je Bibliothek für die grau abgelegten (#459), auch die aus
+/// Videos (#468).
 library;
 
 import 'dart:convert';
@@ -15,10 +16,13 @@ import '../db/database.dart';
 import 'asset_display_path.dart';
 import 'bild_lesen.dart';
 import 'bildnachlauf.dart' show naechsterZusatz;
+import 'bildwerkzeuge.dart';
 import 'blur_detection.dart';
 import 'face_engine_service.dart';
+import 'import_service.dart' show videoStandbildKante;
 import 'storage_paths.dart';
 import 'tresorreihe.dart';
+import 'videostandbilder.dart';
 
 /// Ein Gesicht, dessen Ausschnitt neu entstehen soll: seine Kennung, sein
 /// Kasten (Anteile am Bild) und der Ausschnitt, den es gerade hat.
@@ -73,6 +77,28 @@ Future<Set<String>?> zeichneAusschnitteNeu(
     [for (final g in gesichter) g.kasten],
   ));
   if (ausschnitte == null) return null;
+  return _legeAb(
+    db,
+    paths,
+    asset,
+    gesichter,
+    ausschnitte,
+    ziel: ziel,
+    verwerfen: verwerfen,
+  );
+}
+
+/// Legt [ausschnitte] (je Gesicht in [gesichter] einer, `null` = keiner)
+/// ab – siehe [zeichneAusschnitteNeu].
+Future<Set<String>?> _legeAb(
+  AppDatabase db,
+  StoragePaths paths,
+  AssetData asset,
+  List<Ausschnittsstelle> gesichter,
+  List<img.Image?> ausschnitte, {
+  required String Function(Ausschnittsstelle gesicht) ziel,
+  bool Function(img.Image ausschnitt)? verwerfen,
+}) {
   return inTresorreihe(paths, () async {
     final jetzt = await db.assetById(asset.id);
     if (jetzt == null || jetzt.isLocked) return null;
@@ -80,7 +106,7 @@ Future<Set<String>?> zeichneAusschnitteNeu(
     for (var i = 0; i < gesichter.length; i++) {
       final g = gesichter[i];
       final bild = ausschnitte[i];
-      if (verwerfen?.call(bild) ?? false) continue;
+      if (bild == null || (verwerfen?.call(bild) ?? false)) continue;
       final zeile = await (db.select(
         db.faces,
       )..where((f) => f.id.equals(g.id))).getSingleOrNull();
@@ -104,6 +130,137 @@ Future<Set<String>?> zeichneAusschnitteNeu(
     }
     return neu;
   });
+}
+
+/// Zeichnet die grauen Ausschnitte von [gesichter] aus einem Video neu
+/// (#468).
+///
+/// **Woher das Standbild kommt, steht nirgends.** Ein Gesicht eines Videos
+/// stammt aus dem Standbild vom Import (rund eine halbe Sekunde nach dem
+/// Start, [lesbarerPfad]) oder aus einem der Standbilder, die die
+/// Auswertung bei längeren Videos zusätzlich greift
+/// ([videostandbildstellen]). Diese werden hier neu gegriffen, auf dieselbe
+/// Art wie damals ([videoStandbildKante]).
+///
+/// **Zugeordnet wird über die Graustufe.** Der graue Ausschnitt ist die
+/// Graustufe des richtigen Standbild-Ausschnitts (siehe [grauabstand]).
+/// Passt genau ein Standbild, kommt dessen Ausschnitt farbig an die Stelle
+/// des grauen; passt keines oder mehr als eines, bleibt er grau.
+///
+/// Rückgabe wie bei [zeichneAusschnitteNeu]: die Kennungen der neu
+/// gezeichneten Gesichter, `null`, wenn sich das Standbild vom Import nicht
+/// lesen liess oder das Video inzwischen gesperrt ist.
+Future<Set<String>?> zeichneVideoausschnitteNeu(
+  AppDatabase db,
+  StoragePaths paths,
+  AssetData video,
+  List<Ausschnittsstelle> gesichter, {
+  required String Function(Ausschnittsstelle gesicht) ziel,
+  Bildwerkzeuge? werkzeuge,
+  bool Function(img.Image ausschnitt)? verwerfen,
+}) async {
+  if (gesichter.isEmpty) return {};
+  final standbilder = <Uint8List>[];
+  try {
+    standbilder.add(
+      await (await paths.bereit(lesbarerPfad(video))).readAsBytes(),
+    );
+  } catch (_) {
+    return null;
+  }
+  final stellen = videostandbildstellen(video.durationSeconds);
+  if (stellen.isNotEmpty) {
+    final greifer = werkzeuge ?? Bildwerkzeuge.standard;
+    for (final stelle in stellen) {
+      try {
+        final bild = await greifer.generateVideoThumbnail(
+          await paths.bereit(video.relativePath),
+          maxDimension: videoStandbildKante,
+          anteil: stelle,
+        );
+        if (bild != null) standbilder.add(bild.jpegBytes);
+      } catch (_) {
+        // Ein Standbild weniger; die übrigen können trotzdem passen.
+      }
+    }
+  }
+  final ausschnitte = await berechne(_ordneVideoausschnitteZu, (
+    standbilder,
+    [for (final g in gesichter) g.kasten],
+    [for (final g in gesichter) _absolut(paths, g.ausschnitt ?? '')],
+  ));
+  return _legeAb(
+    db,
+    paths,
+    video,
+    gesichter,
+    ausschnitte,
+    ziel: ziel,
+    verwerfen: verwerfen,
+  );
+}
+
+/// Wie weit ein grauer Ausschnitt im Mittel von der Graustufe eines
+/// Standbild-Ausschnitts abweichen darf, um als derselbe zu gelten (0 bis
+/// 255 je Punkt). Die JPEG-Ablage (Güte 85) allein macht je nach Bild
+/// einen bis fünf aus (gemessen an einem harten Prüfmuster: 4,6); ein um
+/// einen Punkt verschobenes Bild desselben Musters schon über 20.
+const videoausschnittSchwelle = 8.0;
+
+/// Die mittlere Abweichung je Punkt zwischen dem grauen Ausschnitt [grau]
+/// und der Graustufe von [ausschnitt] – so, wie `computeBlurScore` ihn bis
+/// zur Behebung grau färbte (`img.grayscale`). Unendlich bei
+/// verschiedener Grösse.
+double grauabstand(img.Image grau, img.Image ausschnitt) {
+  if (grau.width != ausschnitt.width || grau.height != ausschnitt.height) {
+    return double.infinity;
+  }
+  final vergleich = img.grayscale(img.Image.from(ausschnitt));
+  var summe = 0.0;
+  for (final punkt in vergleich) {
+    summe += (punkt.r - grau.getPixel(punkt.x, punkt.y).r).abs();
+  }
+  return summe / (vergleich.width * vergleich.height);
+}
+
+/// Im Isolat: die Standbilder dekodieren und je Gesicht den farbigen
+/// Ausschnitt des einen Standbilds suchen, dessen Graustufe zum grauen
+/// passt – `null`, wenn keines oder mehr als eines passt.
+List<img.Image?> _ordneVideoausschnitteZu(
+  (List<Uint8List>, List<DetectedFace>, List<String>) eingabe,
+) {
+  final standbilder = [
+    for (final b in eingabe.$1) decodeImageBytes(b),
+  ].whereType<img.Image>().toList();
+  return [
+    for (var i = 0; i < eingabe.$2.length; i++)
+      _eindeutigPassend(standbilder, eingabe.$2[i], eingabe.$3[i]),
+  ];
+}
+
+img.Image? _eindeutigPassend(
+  List<img.Image> standbilder,
+  DetectedFace kasten,
+  String grauDatei,
+) {
+  if (grauDatei.isEmpty) return null;
+  final img.Image? grau;
+  try {
+    grau = decodeImageBytes(File(grauDatei).readAsBytesSync());
+  } catch (_) {
+    return null;
+  }
+  if (grau == null) return null;
+  img.Image? treffer;
+  var passende = 0;
+  for (final bild in standbilder) {
+    final ausschnitt = FaceEngineService.cropFaceImage(bild, kasten);
+    if (grauabstand(grau, ausschnitt) <= videoausschnittSchwelle) {
+      treffer = ausschnitt;
+      passende++;
+    }
+  }
+  return passende == 1 ? treffer : null;
 }
 
 /// Im Isolat: das Bild dekodieren und die Kästen ausschneiden. Zurück
@@ -145,10 +302,14 @@ const nachlaufFarbigeAusschnitte = 'nachlauf-farbige-ausschnitte-1';
 /// – in der App, am Server und in der Rechenhilfe. Jedes in dieser Zeit
 /// erkannte Gesicht steht seither grau in den Personen.
 ///
-/// **Nur, was wirklich grau ist** (siehe [istGrau]), und nur aus Fotos:
-/// Das Standbild eines Videos, aus dem ein Gesicht stammt, steht nirgends.
-/// Ist auch der neue Ausschnitt grau, war das Foto schwarzweiss; dann
-/// bleibt der alte.
+/// **Nur, was wirklich grau ist** (siehe [istGrau]). Ist auch der neue
+/// Ausschnitt grau, war das Foto schwarzweiss; dann bleibt der alte.
+///
+/// **Videos** (#468): Aus welchem Standbild ein Gesicht stammt, steht
+/// nirgends. Die Standbilder werden mit [werkzeuge] (sonst
+/// [Bildwerkzeuge.standard]) neu gegriffen und über die Graustufe dem
+/// grauen Ausschnitt zugeordnet ([zeichneVideoausschnitteNeu]); passt
+/// keines eindeutig, bleibt er grau.
 ///
 /// **Ein neuer Name.** Der neue Ausschnitt kommt nach
 /// `faces/<id>-2.jpg`, der alte wird gelöscht. Verbundene Geräte holen
@@ -174,6 +335,7 @@ Future<({int neu, int offen, String? weiter})> erneuereGraueAusschnitte(
   Duration? frist,
   bool Function()? abbrechen,
   void Function(int erledigt, int gesamt)? fortschritt,
+  Bildwerkzeuge? werkzeuge,
 }) async {
   final f = db.faces, a = db.assets;
   final abfrage =
@@ -263,7 +425,7 @@ Future<({int neu, int offen, String? weiter})> erneuereGraueAusschnitte(
     final zuPruefen = [
       for (final id in stapel)
         for (final z in nachAufnahme[id]!)
-          if (z.foto && !z.gesperrt && !z.papierkorb) z,
+          if (!z.gesperrt && !z.papierkorb) z,
     ];
     final grau = <String, bool?>{};
     final antworten = zuPruefen.isEmpty
@@ -282,11 +444,7 @@ Future<({int neu, int offen, String? weiter})> erneuereGraueAusschnitte(
       }
       final zeilen = nachAufnahme[id]!;
       final erste = zeilen.first;
-      if (!erste.foto) {
-        // Aus welchem Standbild eines Videos ein Gesicht stammt, steht
-        // nirgends; nachzeichnen hiesse raten.
-        erledigt.addAll(zeilen.map((z) => z.id));
-      } else if (erste.gesperrt || erste.papierkorb) {
+      if (erste.gesperrt || erste.papierkorb) {
         wartet.addAll(zeilen.map((z) => z.id));
       } else {
         final graue = [
@@ -308,23 +466,38 @@ Future<({int neu, int offen, String? weiter})> erneuereGraueAusschnitte(
         } else {
           final grauIds = graue.map((z) => z.id).toSet();
           erledigt.addAll(ids.where((g) => !grauIds.contains(g)));
-          if (!await _originalDa(paths, asset)) {
+          if (!await _originalDa(paths, asset) ||
+              (!erste.foto && !await _videoDa(paths, asset))) {
             wartet.addAll(grauIds);
           } else {
-            final r = await zeichneAusschnitteNeu(
-              db,
-              paths,
-              asset,
-              [
-                for (final z in graue)
-                  (id: z.id, kasten: z.kasten, ausschnitt: z.ausschnitt),
-              ],
-              ziel: (g) => paths.faceRelativePath(
-                g.id,
-                naechsterZusatz(g.id, g.ausschnitt),
-              ),
-              verwerfen: istGrau,
+            final stellen = [
+              for (final z in graue)
+                (id: z.id, kasten: z.kasten, ausschnitt: z.ausschnitt),
+            ];
+            String ziel(Ausschnittsstelle g) => paths.faceRelativePath(
+              g.id,
+              naechsterZusatz(g.id, g.ausschnitt),
             );
+            final r = erste.foto
+                ? await zeichneAusschnitteNeu(
+                    db,
+                    paths,
+                    asset,
+                    stellen,
+                    ziel: ziel,
+                    verwerfen: istGrau,
+                  )
+                // Was keinem Standbild eindeutig zugeordnet ist, bleibt
+                // grau und gilt als erledigt.
+                : await zeichneVideoausschnitteNeu(
+                    db,
+                    paths,
+                    asset,
+                    stellen,
+                    ziel: ziel,
+                    werkzeuge: werkzeuge,
+                    verwerfen: istGrau,
+                  );
             if (r != null) {
               neu += r.length;
               erledigt.addAll(grauIds);
@@ -386,6 +559,18 @@ bool? _istGraueDatei(String datei) {
     return bild == null ? null : istGrau(bild);
   } catch (_) {
     return null;
+  }
+}
+
+/// Ob sich die Standbilder eines Videos greifen lassen: Gebraucht wird das
+/// Video selbst nur, wenn es lang genug für weitere Standbilder ist
+/// ([videostandbildstellen]); sonst genügt das vom Import.
+Future<bool> _videoDa(StoragePaths paths, AssetData video) async {
+  if (videostandbildstellen(video.durationSeconds).isEmpty) return true;
+  try {
+    return await (await paths.bereit(video.relativePath)).exists();
+  } catch (_) {
+    return false;
   }
 }
 
