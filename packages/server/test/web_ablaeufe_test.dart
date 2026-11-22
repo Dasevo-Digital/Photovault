@@ -117,4 +117,22 @@ void main() {
       contains("einmalZugleich(\$('gesicht-dialog')"),
     );
   });
+
+  test('nach dem Hochladen in ein geteiltes Album nur dort neu zeichnen', () {
+    // Am Ende des Uploads zeichnete die Seite das Album neu, wo auch immer
+    // man inzwischen war – auch unter einem offenen Betrachter, dessen
+    // Index danach auf ein anderes Foto zeigte.
+    final album = funktion('zeigeGeteiltesAlbum');
+    expect(
+      album,
+      isNot(contains('n: gut })); await zeigeGeteiltesAlbum(id);')),
+    );
+    expect(
+      album,
+      contains(
+        "if (wurzel === 'geteilt' && teil === id && offen < 0) "
+        'await zeigeGeteiltesAlbum(id);',
+      ),
+    );
+  });
 }

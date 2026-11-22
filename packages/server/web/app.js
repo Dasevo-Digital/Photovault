@@ -1987,7 +1987,16 @@ async function zeigeGeteiltesAlbum(id) {
       }
       hinzu.disabled = false;
       stand.textContent = '';
-      if (gut) { meldung(t('{n} hinzugefügt', { n: gut })); await zeigeGeteiltesAlbum(id); }
+      if (gut) {
+        meldung(t('{n} hinzugefügt', { n: gut }));
+        // Nur, solange das Album gezeigt wird und kein Betrachter offen ist:
+        // Sonst ersetzte es die Ansicht, in die man während des Hochladens
+        // gewechselt ist, oder der offene Betrachter zeigte über der neu
+        // geordneten Liste auf ein anderes Foto als die Knöpfe trafen.
+        // Kommt man zurück, lädt das Album ohnehin neu.
+        const [wurzel, teil] = wegTeile();
+        if (wurzel === 'geteilt' && teil === id && offen < 0) await zeigeGeteiltesAlbum(id);
+      }
     });
     kopf.append(hinzu, wahl, stand);
   }
