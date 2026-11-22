@@ -191,6 +191,37 @@ class Abgleich {
     if (_wecker case final w? when !w.isCompleted) w.complete();
   }
 
+  /// Ob die Schleife ruht (siehe [ruhe]).
+  bool get ruht => _ruht;
+  bool _ruht = false;
+
+  /// Tritt mit [wecke] ein, solange die Schleife ruht.
+  Completer<void>? _ruheende;
+
+  /// Lässt die Schleife ruhen, bis [wecke]: Die wartende Abfrage bricht
+  /// ab, und es beginnt keine neue – für eine App, die nicht zu sehen ist.
+  ///
+  /// Unter Android läuft Dart im Hintergrund weiter, solange der Prozess
+  /// nicht eingefroren ist, auch während jeder Sicherungsaufgabe. Die
+  /// Schleife fragte dann alle 25 s neu, und jedes Mal wachte das
+  /// Funkmodul auf. Gesendet wird weiter ([sendeBald]), und direkte
+  /// Aufrufe von [empfange] gehen wie immer.
+  void ruhe() {
+    if (_ruht) return;
+    _ruht = true;
+    if (!_laeuft) return;
+    _selbstAbgebrochen = true;
+    if (!_neuAnfangen.isCompleted) _neuAnfangen.complete();
+    if (_wecker case final w? when !w.isCompleted) w.complete();
+  }
+
+  /// Hebt [ruhe] auf und fragt gleich ([jetzt]).
+  void wecke() {
+    _ruht = false;
+    if (_ruheende case final w? when !w.isCompleted) w.complete();
+    jetzt();
+  }
+
   /// Lädt die Bibliothek vom Server nach [ziel] und bereitet sie als Kopie
   /// vor. Gibt den Stand zurück, ab dem sie dem Server folgt.
   static Future<int> holeAbzug(Serververbindung v, File ziel) async {
@@ -897,6 +928,15 @@ class Abgleich {
       // Ein [jetzt] aus der letzten Runde gilt als erledigt – sonst bräche
       // die nächste wartende Abfrage gleich wieder ab.
       if (_neuAnfangen.isCompleted) _neuAnfangen = Completer<void>();
+      if (_ruht) {
+        final ende = _ruheende = Completer<void>();
+        await Future.any([ende.future, _halt.future]);
+        _ruheende = null;
+        // Wach: gleich fragen, und was jetzt scheitert, ist ein Aussetzer.
+        warten = Duration.zero;
+        _selbstAbgebrochen = false;
+        continue;
+      }
       try {
         try {
           if (!geprueft) {

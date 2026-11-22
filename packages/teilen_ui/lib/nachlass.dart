@@ -407,32 +407,65 @@ class _NachlassblattState extends State<_Nachlassblatt> {
 /// Steht da, solange jemand Zugang zur eigenen Bibliothek verlangt (#300)
 /// – mit „Ablehnen“. Sonst nichts. Fragt beim Start und alle 15 Minuten.
 class NachlassHinweis extends StatefulWidget {
-  const NachlassHinweis({super.key, required this.verbindung});
+  const NachlassHinweis({
+    super.key,
+    required this.verbindung,
+    this.imHintergrundAnhalten = false,
+  });
 
   final Serververbindung verbindung;
+
+  /// Die Uhr steht, solange die App nicht zu sehen ist, und holt beim
+  /// Zurückkehren nach, was sie versäumt hat – fürs Telefon (#437): Unter
+  /// Android läuft Dart im Hintergrund weiter, und jede Abfrage weckt das
+  /// Funkmodul.
+  final bool imHintergrundAnhalten;
 
   @override
   State<NachlassHinweis> createState() => _NachlassHinweisState();
 }
 
 class _NachlassHinweisState extends State<NachlassHinweis> {
+  static const _takt = Duration(minutes: 15);
   List<Nachlasseintrag> _offen = const [];
   Timer? _uhr;
+  AppLifecycleListener? _lebenslauf;
+  DateTime _zuletzt = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _lade();
-    _uhr = Timer.periodic(const Duration(minutes: 15), (_) => _lade());
+    _starteUhr();
+    if (widget.imHintergrundAnhalten) {
+      _lebenslauf = AppLifecycleListener(
+        onHide: () {
+          _uhr?.cancel();
+          _uhr = null;
+        },
+        onShow: () {
+          if (_uhr != null) return;
+          if (DateTime.now().difference(_zuletzt) >= _takt) _lade();
+          _starteUhr();
+        },
+      );
+    }
+  }
+
+  void _starteUhr() {
+    _uhr?.cancel();
+    _uhr = Timer.periodic(_takt, (_) => _lade());
   }
 
   @override
   void dispose() {
     _uhr?.cancel();
+    _lebenslauf?.dispose();
     super.dispose();
   }
 
   Future<void> _lade() async {
+    _zuletzt = DateTime.now();
     try {
       final s = await Nachlassstand.hole(widget.verbindung);
       if (mounted) {

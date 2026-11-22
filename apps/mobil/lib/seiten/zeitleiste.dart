@@ -253,7 +253,10 @@ class _ZeitleisteState extends State<Zeitleiste> {
                           ),
                         // Wer Zugang zur Bibliothek verlangt (#300).
                         if (sitzung.abgleich?.verbindung case final v?)
-                          NachlassHinweis(verbindung: v),
+                          NachlassHinweis(
+                            verbindung: v,
+                            imHintergrundAnhalten: true,
+                          ),
                         Erinnerungsstreifen(
                           sitzung: sitzung,
                           stand: server.length,

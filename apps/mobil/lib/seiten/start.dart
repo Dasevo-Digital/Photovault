@@ -30,15 +30,20 @@ class _StartState extends State<Start> {
   final _gebaut = <int>{0};
 
   /// Zurück in der App: sichern, was dazukam. In den Hintergrund: unter
-  /// Android an den Vordergrunddienst übergeben.
+  /// Android an den Vordergrunddienst übergeben, und Abgleich und Uhren
+  /// ruhen lassen (#437).
   late final _lebenslauf = AppLifecycleListener(
+    onShow: widget.sitzung.weckeInDerApp,
     onResume: () {
       // Die wartende Abfrage ist im Hintergrund abgerissen: gleich neu
       // fragen, statt bis zu einer Minute „nicht erreichbar“ zu zeigen.
       widget.sitzung.abgleich?.jetzt();
       widget.sitzung.sicherung?.zurueckInDerApp();
     },
-    onHide: () => widget.sitzung.sicherung?.imHintergrund(),
+    onHide: () {
+      widget.sitzung.ruheImHintergrund();
+      widget.sitzung.sicherung?.imHintergrund();
+    },
   );
 
   @override

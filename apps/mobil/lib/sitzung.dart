@@ -292,6 +292,9 @@ class Sitzung extends ChangeNotifier {
         notifyListeners();
       }
     });
+    // Ging die App schon beim Öffnen in den Hintergrund, ruht der
+    // Abgleich von Anfang an (siehe [ruheImHintergrund]).
+    if (_imHintergrund) a.ruhe();
     a.starte();
     verbindung = v;
     abgleich = a;
@@ -309,13 +312,65 @@ class Sitzung extends ChangeNotifier {
     unawaited(pruefeServersicherung());
     unawaited(holeServerfassung());
     unawaited(ladePartnerfotos());
-    _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
-      pruefeServerspeicher();
-      pruefeServersicherung();
-      pflegeOfflineUndZwischenspeicher();
-      ladePartnerfotos();
-    });
+    _uhrZuletzt = DateTime.now();
+    if (!_imHintergrund) _starteUhr();
     unawaited(pflegeOfflineUndZwischenspeicher());
+  }
+
+  /// Ob die App gerade nicht zu sehen ist (siehe [ruheImHintergrund]).
+  bool _imHintergrund = false;
+
+  /// Wann die 15-Minuten-Uhr zuletzt geschlagen hat (oder die Sitzung
+  /// aufging).
+  DateTime? _uhrZuletzt;
+
+  /// Ob die 15-Minuten-Uhr läuft – für Prüfungen.
+  @visibleForTesting
+  bool get uhrLaeuft => _speicherUhr?.isActive ?? false;
+
+  void _starteUhr() {
+    _speicherUhr?.cancel();
+    _speicherUhr = Timer.periodic(
+      const Duration(minutes: 15),
+      (_) => _uhrSchlaegt(),
+    );
+  }
+
+  void _uhrSchlaegt() {
+    _uhrZuletzt = DateTime.now();
+    unawaited(pruefeServerspeicher());
+    unawaited(pruefeServersicherung());
+    unawaited(pflegeOfflineUndZwischenspeicher());
+    unawaited(ladePartnerfotos());
+  }
+
+  /// Die App ist nicht mehr zu sehen (#437): Der Abgleich ruht – keine
+  /// wartende Abfrage, die alle 25 s das Funkmodul weckt –, und die
+  /// 15-Minuten-Uhr steht. Unter Android lief beides im Hintergrund
+  /// weiter, solange der Prozess nicht eingefroren war, auch während jeder
+  /// Sicherungsaufgabe. Gesendet wird weiter.
+  void ruheImHintergrund() {
+    _imHintergrund = true;
+    abgleich?.ruhe();
+    _speicherUhr?.cancel();
+    _speicherUhr = null;
+  }
+
+  /// Wieder zu sehen: Der Abgleich fragt gleich, und was die Uhr in der
+  /// Zwischenzeit versäumt hat, kommt sofort.
+  void weckeInDerApp() {
+    _imHintergrund = false;
+    final a = abgleich;
+    if (a == null) return;
+    a.wecke();
+    if (_speicherUhr == null) {
+      final zuletzt = _uhrZuletzt;
+      if (zuletzt == null ||
+          DateTime.now().difference(zuletzt) >= const Duration(minutes: 15)) {
+        _uhrSchlaegt();
+      }
+      _starteUhr();
+    }
   }
 
   /// Vorschauen und Originale, die das Telefon vom Server geholt hat.
@@ -694,6 +749,7 @@ class Sitzung extends ChangeNotifier {
     partnerfotos.value = const [];
     _partnerstand = null;
     _speicherUhr?.cancel();
+    _speicherUhr = null;
     serverspeicher = null;
     serversicherung = null;
     sicherung?.dispose();

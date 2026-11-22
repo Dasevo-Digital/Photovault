@@ -360,6 +360,56 @@ void main() {
     });
   });
 
+  test('ruht die Schleife, fragt sie nicht; gesendet wird weiter, und '
+      'geweckt holt sie gleich ab', () async {
+    final s = await serverDb();
+    await aufnahme(s, 'a1');
+    await aufnahme(s, 'a2');
+    final weiche = _Weiche();
+    final (db, a) = await geraet('Telefon', weiche);
+    var abfragen = 0;
+    weiche.eingriff = (r, weiter) {
+      if (r.url.path.endsWith('/abgleich/aenderungen')) abfragen++;
+      return weiter();
+    };
+    a.starte();
+    await bis(() => a.zustandJetzt.erreichbar && abfragen >= 2);
+    expect(abfragen, greaterThanOrEqualTo(2), reason: 'die lange Abfrage');
+
+    // Die App geht in den Hintergrund.
+    a.ruhe();
+    expect(a.ruht, isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final beimRuhen = abfragen;
+    await s.fuehreAus(const BewertungSetzen(['a1'], 4));
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    expect(abfragen, beimRuhen, reason: 'keine neue Abfrage');
+    expect((await holeAufnahme(db, 'a1')).rating, isNot(4));
+
+    // Ein Befehl geht trotzdem hinaus.
+    await db.fuehreAus(const BewertungSetzen(['a2'], 2));
+    await bis(() async => (await holeAufnahme(s, 'a2')).rating == 2);
+    expect((await holeAufnahme(s, 'a2')).rating, 2);
+
+    // Zurück in der App.
+    final los = DateTime.now();
+    a.wecke();
+    expect(a.ruht, isFalse);
+    await bis(() async => (await holeAufnahme(db, 'a1')).rating == 4);
+    expect((await holeAufnahme(db, 'a1')).rating, 4);
+    expect(
+      DateTime.now().difference(los),
+      lessThan(const Duration(seconds: 2)),
+    );
+
+    // Auch ruhend endet beende sofort.
+    a.ruhe();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final ende = Stopwatch()..start();
+    await a.beende();
+    expect(ende.elapsed, lessThan(const Duration(seconds: 2)));
+  });
+
   test('ein Befehl, der sich nicht mehr lesen lässt, wird zum Fall und hält '
       'die übrigen nicht auf', () async {
     final s = await serverDb();
