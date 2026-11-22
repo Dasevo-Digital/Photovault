@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';
 import 'dart:math';
@@ -111,6 +112,39 @@ class Passwort {
 
   static List<int> _ausB64(String s) =>
       base64.decode(s.padRight((s.length + 3) ~/ 4 * 4, '='));
+}
+
+/// Lässt höchstens [plaetze] Passwortprüfungen zugleich rechnen; die
+/// übrigen warten der Reihe nach.
+///
+/// Jede Prüfung belegt mit der Vorgabe 19 MiB in einem eigenen Isolate.
+/// Ohne Grenze belegten 128 gleichzeitige Anfragen rund 2,5 GB – auf einem
+/// NAS mit 1–4 GB das Ende des Servers. Konten und Freigaben teilen sich
+/// eine Ampel (`Kontodienst`), damit keiner der beiden Wege sie umgeht.
+class Rechenampel {
+  Rechenampel(this.plaetze);
+  final int plaetze;
+  var _belegt = 0;
+  final _wartende = <Completer<void>>[];
+
+  Future<T> mit<T>(Future<T> Function() arbeit) async {
+    if (_belegt >= plaetze) {
+      final c = Completer<void>();
+      _wartende.add(c);
+      await c.future;
+    } else {
+      _belegt++;
+    }
+    try {
+      return await arbeit();
+    } finally {
+      if (_wartende.isNotEmpty) {
+        _wartende.removeAt(0).complete();
+      } else {
+        _belegt--;
+      }
+    }
+  }
 }
 
 /// Vergleicht in gleicher Zeit, egal wo der erste Unterschied liegt.

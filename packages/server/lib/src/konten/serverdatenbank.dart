@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 12;
+  static const schema = 13;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -353,6 +353,22 @@ class Serverdatenbank {
         db.execute('ROLLBACK');
         rethrow;
       }
+    }
+    if (stand < 13) {
+      // Falsche Passwörter je Freigabe (#426), wie bei den Konten: Nach
+      // fünf in Folge ist der Link eine Weile gesperrt, gleich von welcher
+      // Adresse geraten wird.
+      final spalten = {
+        for (final z in db.select('PRAGMA table_info(freigaben)'))
+          z['name'] as String,
+      };
+      db.execute('''
+        BEGIN;
+        ${spalten.contains('fehlversuche') ? '' : 'ALTER TABLE freigaben ADD COLUMN fehlversuche INTEGER NOT NULL DEFAULT 0;'}
+        ${spalten.contains('gesperrt_bis') ? '' : 'ALTER TABLE freigaben ADD COLUMN gesperrt_bis INTEGER;'}
+        PRAGMA user_version = 13;
+        COMMIT;
+      ''');
     }
   }
 

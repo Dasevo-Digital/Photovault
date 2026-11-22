@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 
+import 'konten/bremse.dart';
 import 'konten/passwort.dart';
 import 'konten/serverdatenbank.dart';
 import 'konten/tresorschluessel.dart';
@@ -63,12 +64,19 @@ class Freigabedienst {
     this._tresor, {
     this.passwort = const Passwort(),
     DateTime Function()? uhr,
-  }) : _uhr = uhr ?? DateTime.now;
+    Rechenampel? ampel,
+  }) : _uhr = uhr ?? DateTime.now,
+       _ampel = ampel ?? Rechenampel(2);
 
   final Serverdatenbank _sdb;
   final Tresorschluessel _tresor;
   final Passwort passwort;
   final DateTime Function() _uhr;
+
+  /// Dieselbe Ampel wie für die Passwörter der Konten (siehe
+  /// [Rechenampel]): Vorher rechnete hier jede Anfrage sofort, und ein
+  /// Link mit Passwort umging die Grenze der Konten.
+  final Rechenampel _ampel;
 
   /// Wie lange ein eingegebenes Passwort gilt.
   static const sitzungsdauer = Duration(hours: 12);
@@ -120,7 +128,7 @@ class Freigabedienst {
         aufnahmen == null ? null : jsonEncode(aufnahmen),
         passwortKlartext == null || passwortKlartext.isEmpty
             ? null
-            : await passwort.pruefwertFuer(passwortKlartext),
+            : await _ampel.mit(() => passwort.pruefwertFuer(passwortKlartext)),
         herunterladen ? 1 : 0,
         hochladen ? 1 : 0,
         jetzt.millisecondsSinceEpoch,
@@ -209,15 +217,70 @@ class Freigabedienst {
     [_uhr().millisecondsSinceEpoch, f.id],
   );
 
-  /// Ob [klartext] das Passwort der Freigabe ist.
-  Future<bool> passwortStimmt(Freigabe f, String klartext) async {
+  /// Wie lange [f] nach zu vielen falschen Passwörtern noch gesperrt ist;
+  /// `null`, wenn nicht.
+  Duration? gesperrt(Freigabe f) {
+    final z = _sdb.db.select(
+      'SELECT gesperrt_bis FROM freigaben WHERE id = ?',
+      [f.id],
+    );
+    final bis = z.isEmpty ? null : z.first['gesperrt_bis'] as int?;
+    final jetzt = _uhr().millisecondsSinceEpoch;
+    return bis == null || bis <= jetzt
+        ? null
+        : Duration(milliseconds: bis - jetzt);
+  }
+
+  /// Ob [klartext] das Passwort der Freigabe ist – `warte`, wenn sie
+  /// gerade gesperrt ist; dann wird gar nicht erst gerechnet.
+  ///
+  /// **Je Freigabe gezählt** wie bei den Konten ([Bremse.sperrdauer]):
+  /// fünf falsche in Folge, und der Link ist eine Minute gesperrt, danach
+  /// doppelt so lange bis zu einer Stunde; das richtige setzt den Zähler
+  /// zurück. Die Bremse je Adresse allein hielt niemanden auf, der von
+  /// vielen Adressen aus rät – eine vierstellige PIN fiel so in Stunden.
+  ///
+  /// Die Sperre wird erst unter der Ampel nachgesehen: Gleichzeitige
+  /// Versuche warten dort und sehen danach die Sperre ihrer Vorgänger.
+  Future<({bool stimmt, Duration? warte})> pruefePasswort(
+    Freigabe f,
+    String klartext,
+  ) => _ampel.mit(() async {
+    final warte = gesperrt(f);
+    if (warte != null) return (stimmt: false, warte: warte);
     final z = _sdb.db.select('SELECT passwort FROM freigaben WHERE id = ?', [
       f.id,
     ]);
     final pruefwert = z.isEmpty ? null : z.first['passwort'] as String?;
-    if (pruefwert == null) return true;
-    return passwort.stimmt(klartext, pruefwert);
-  }
+    if (pruefwert == null) return (stimmt: true, warte: null);
+    final stimmt = await passwort.stimmt(klartext, pruefwert);
+    if (stimmt) {
+      _sdb.db.execute(
+        'UPDATE freigaben SET fehlversuche = 0, gesperrt_bis = NULL '
+        'WHERE id = ?',
+        [f.id],
+      );
+    } else {
+      _sdb.db.execute(
+        'UPDATE freigaben SET fehlversuche = fehlversuche + 1 WHERE id = ?',
+        [f.id],
+      );
+      final n = _sdb.db.select(
+        'SELECT fehlversuche FROM freigaben WHERE id = ?',
+        [f.id],
+      );
+      final dauer = n.isEmpty
+          ? null
+          : Bremse.sperrdauer(n.first['fehlversuche'] as int);
+      if (dauer != null) {
+        _sdb.db.execute('UPDATE freigaben SET gesperrt_bis = ? WHERE id = ?', [
+          _uhr().add(dauer).millisecondsSinceEpoch,
+          f.id,
+        ]);
+      }
+    }
+    return (stimmt: stimmt, warte: null);
+  });
 
   String? _geheimnis(Freigabe f) {
     final z = _sdb.db.select(

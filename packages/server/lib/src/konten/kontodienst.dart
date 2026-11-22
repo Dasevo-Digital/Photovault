@@ -217,6 +217,7 @@ class Kontodienst {
     _tresor,
     passwort: passwort,
     uhr: _uhr,
+    ampel: _ampel,
   );
 
   /// Was Gäste über Links hochgeladen haben (Issue #106).
@@ -239,7 +240,8 @@ class Kontodienst {
   static const _vorgangVersuche = 5;
 
   /// Höchstens so viele Passwortprüfungen zugleich: Jede belegt 19 MiB.
-  final _ampel = _Ampel(2);
+  /// Die Passwörter der Freigaben rechnen unter derselben Ampel.
+  final _ampel = Rechenampel(2);
 
   // --- Konten ------------------------------------------------------------
 
@@ -941,32 +943,5 @@ class Kontodienst {
       (_) => zufall.nextInt(256),
     );
     return base64Url.encode(bytes).replaceAll('=', '').substring(0, laenge);
-  }
-}
-
-/// Lässt höchstens [plaetze] Arbeiten zugleich laufen.
-class _Ampel {
-  _Ampel(this.plaetze);
-  final int plaetze;
-  var _belegt = 0;
-  final _wartende = <Completer<void>>[];
-
-  Future<T> mit<T>(Future<T> Function() arbeit) async {
-    if (_belegt >= plaetze) {
-      final c = Completer<void>();
-      _wartende.add(c);
-      await c.future;
-    } else {
-      _belegt++;
-    }
-    try {
-      return await arbeit();
-    } finally {
-      if (_wartende.isNotEmpty) {
-        _wartende.removeAt(0).complete();
-      } else {
-        _belegt--;
-      }
-    }
   }
 }

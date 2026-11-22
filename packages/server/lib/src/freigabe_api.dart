@@ -52,7 +52,8 @@ Response _json(Object? daten, {int status = 200, Map<String, String>? kopf}) =>
 ///
 /// **Was ihn aufhält:** Abgelaufene und gelöschte Freigaben antworten
 /// wie unbekannte mit 404. Ein Passwort wird wie bei der Anmeldung je
-/// Absender gebremst; danach gilt ein Cookie zwölf Stunden.
+/// Absender gebremst und je Freigabe nach Fehlversuchen gesperrt
+/// ([Freigabedienst.pruefePasswort]); danach gilt ein Cookie zwölf Stunden.
 class Freigabeapi {
   Freigabeapi({
     required this.dienst,
@@ -332,7 +333,8 @@ class Freigabeapi {
     }, kopf: _keineSuche);
   }
 
-  /// `{passwort}` → 204 mit Cookie; 401 bei falschem, 429 nach zu vielen.
+  /// `{passwort}` → 204 mit Cookie; 401 bei falschem, 429 nach zu vielen
+  /// – von dieser Adresse oder für diese Freigabe.
   Future<Response> passwort(Request r, String link) async {
     final adresse = absender.von(r);
     final warten = bremse.wartezeit(adresse);
@@ -352,9 +354,19 @@ class Freigabeapi {
       return _json({'fehler': 'kein JSON'}, status: 400);
     }
     final klartext = k is Map ? '${k['passwort'] ?? ''}' : '';
-    if (klartext.isEmpty ||
-        klartext.length > 200 ||
-        !await dienst.passwortStimmt(o.freigabe, klartext)) {
+    if (klartext.isEmpty || klartext.length > 200) {
+      bremse.fehlschlag(adresse);
+      return _json({'fehler': 'Passwort falsch'}, status: 401);
+    }
+    final ergebnis = await dienst.pruefePasswort(o.freigabe, klartext);
+    if (ergebnis.warte case final w?) {
+      return _json(
+        {'fehler': 'zu viele Versuche', 'warten': w.inSeconds},
+        status: 429,
+        kopf: {'retry-after': '${w.inSeconds + 1}'},
+      );
+    }
+    if (!ergebnis.stimmt) {
       bremse.fehlschlag(adresse);
       return _json({'fehler': 'Passwort falsch'}, status: 401);
     }

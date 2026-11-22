@@ -298,11 +298,70 @@ void main() {
       )).statusCode,
       401,
     );
-    // Nach zehn Fehlversuchen wartet der Absender.
+    // Nach weiteren Fehlversuchen wird abgewiesen: Die Freigabe ist
+    // gesperrt (fünf in Folge), und der Absender wartet.
     for (var i = 0; i < 9; i++) {
       await versuch('falsch$i');
     }
     expect((await versuch('geheim123')).statusCode, 429);
+  });
+
+  // #426: Die Bremse je Adresse allein hielt niemanden auf, der von
+  // vielen Adressen aus rät. Nach fünf falschen Passwörtern ist der Link
+  // gesperrt – auch für das richtige, gleich von wo.
+  test('Passwort: nach fünf falschen ist die Freigabe gesperrt', () async {
+    final a = await ladeHoch('a.jpg', 10);
+    final link = linkAus(
+      await teile({
+        'titel': 'Privat',
+        'ids': [a],
+        'passwort': '4711',
+      }),
+    );
+    Future<Response> versuch(String pw) => frag(
+      'POST',
+      '/api/v1/teilen/$link/passwort',
+      kopf: {'content-type': 'application/json'},
+      inhalt: jsonEncode({'passwort': pw}),
+    );
+    // Ein richtiges zwischendurch setzt den Zähler zurück.
+    for (var i = 0; i < 4; i++) {
+      expect((await versuch('000$i')).statusCode, 401);
+    }
+    expect((await versuch('4711')).statusCode, 204);
+    for (var i = 0; i < 5; i++) {
+      expect((await versuch('100$i')).statusCode, 401);
+    }
+    final gesperrt = await versuch('4711');
+    expect(gesperrt.statusCode, 429);
+    expect(int.parse(gesperrt.headers['retry-after']!), greaterThan(0));
+  });
+
+  test('Passwörter der Freigaben rechnen unter der Ampel der Konten', () async {
+    final zaehler = _ZaehlendesPasswort();
+    final dienst = Kontodienst(
+      sdb,
+      Tresorschluessel(List.filled(32, 7)),
+      passwort: zaehler,
+      totpPflicht: false,
+    );
+    final neu = await dienst.freigaben.lege(
+      konto: erika.id,
+      titel: 'Privat',
+      aufnahmen: ['a1'],
+      passwortKlartext: 'geheim',
+    );
+    final f = dienst.freigaben
+        .ohneLinkVon(erika.id)
+        .firstWhere((x) => x.id == neu.id);
+    zaehler.hoechstens = 0;
+    await Future.wait([
+      for (var i = 0; i < 6; i++)
+        dienst.freigaben.pruefePasswort(f, 'falsch$i'),
+      for (var i = 0; i < 4; i++)
+        dienst.anmelden('erika', 'falsch', geraet: '', adresse: 'a$i'),
+    ]);
+    expect(zaehler.hoechstens, 2);
   });
 
   test('Ablauf, Widerruf, fremde Konten', () async {
@@ -400,4 +459,34 @@ void main() {
       expect(neu.ohneLinkVon(erika.id).map((f) => f.titel), ['Sommer']);
     },
   );
+}
+
+/// Zählt, wie viele Prüfungen zugleich rechnen.
+class _ZaehlendesPasswort extends Passwort {
+  _ZaehlendesPasswort() : super(speicher: 64, durchgaenge: 1);
+  var _jetzt = 0;
+  var hoechstens = 0;
+
+  Future<T> _zaehle<T>(Future<T> Function() arbeit) async {
+    _jetzt++;
+    if (_jetzt > hoechstens) hoechstens = _jetzt;
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      return await arbeit();
+    } finally {
+      _jetzt--;
+    }
+  }
+
+  @override
+  Future<bool> stimmt(String passwort, String pruefwert) =>
+      _zaehle(() => super.stimmt(passwort, pruefwert));
+
+  @override
+  Future<String> pruefwertFuer(String passwort) =>
+      _zaehle(() => super.pruefwertFuer(passwort));
+
+  @override
+  Future<void> rechneUmsonst(String passwort) =>
+      _zaehle(() => super.rechneUmsonst(passwort));
 }
