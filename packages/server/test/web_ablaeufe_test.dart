@@ -334,4 +334,69 @@ void main() {
     expect(texte, contains("  'Link nicht mehr lesbar – neu anlegen': '"));
     expect(texte, contains("  '${Freigabeapi.linksUnlesbar}': '"));
   });
+
+  test('WEB-177 Konten: Passwort neu setzen und TOTP zurücksetzen für '
+      'andere Konten, mit Rückfrage', () {
+    // Die API bot beides an (/konten/<id>/passwort, /totp-zuruecksetzen),
+    // die Weboberfläche nicht.
+    final verwaltung = funktion('zeigeVerwaltung');
+    expect(
+      verwaltung,
+      contains(
+        "if (!k.du) { const b = el('button', null, t('Passwort neu setzen …'));",
+      ),
+    );
+    expect(
+      verwaltung,
+      contains(
+        "if (!k.du && k.totp) { const b = el('button', null, t('TOTP zurücksetzen'));",
+      ),
+    );
+
+    final zurueck = funktion('setzeTotpZurueck');
+    final frage = zurueck.indexOf('if (!confirm(');
+    final ruf = zurueck.indexOf('/totp-zuruecksetzen');
+    expect(frage, isNonNegative);
+    expect(ruf, greaterThan(frage), reason: 'erst die Rückfrage');
+
+    final abschicken = app.substring(
+      app.indexOf("\$('form-kontopasswort').addEventListener('submit'"),
+    );
+    final pruefung = abschicken.indexOf(
+      'f.passwort.value !== f.passwort2.value',
+    );
+    final senden = abschicken.indexOf(
+      "/passwort`, { methode: 'POST', json: { neu: f.passwort.value } }",
+    );
+    expect(pruefung, isNonNegative);
+    expect(senden, greaterThan(pruefung));
+    expect(abschicken.substring(senden), contains('m.textContent = x.message'));
+
+    final index = File('web/index.html').readAsStringSync();
+    final dialog = RegExp(
+      r'<dialog id="kontopasswort-dialog">.*?</dialog>',
+      dotAll: true,
+    ).firstMatch(index)?[0];
+    expect(dialog, isNotNull);
+    expect(dialog, contains('type="password"'));
+    expect(dialog, isNot(contains('required')));
+
+    final texte = File('web/texte.js').readAsStringSync();
+    final deutsch = {
+      for (final m in RegExp(r"t\('([^']+)'").allMatches(
+        funktion('oeffneKontopasswort') +
+            zurueck +
+            abschicken.substring(0, senden + 400),
+      ))
+        m[1]!,
+      'Passwort neu setzen …',
+      'TOTP zurücksetzen',
+      'Alle Geräte des Kontos werden dabei abgemeldet.',
+      'Passwort setzen',
+    };
+    expect(deutsch, contains('TOTP von „{name}“ zurückgesetzt.'));
+    for (final d in deutsch) {
+      expect(texte, contains("  '$d': '"), reason: d);
+    }
+  });
 }

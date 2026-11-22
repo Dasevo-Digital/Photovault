@@ -741,6 +741,20 @@
     </menu>
   </form>
 </dialog>
+<!-- Das Passwort eines anderen Kontos neu setzen (WEB-177). -->
+<dialog id="kontopasswort-dialog">
+  <form method="dialog" id="form-kontopasswort">
+    <h3 id="kontopasswort-titel">Passwort neu setzen</h3>
+    <p class="leise klein">Alle Geräte des Kontos werden dabei abgemeldet.</p>
+    <label>Neues Passwort <input name="passwort" type="password" autocomplete="new-password"></label>
+    <label>Noch einmal <input name="passwort2" type="password" autocomplete="new-password"></label>
+    <p id="kontopasswort-meldung" class="fehler"></p>
+    <menu>
+      <button type="button" id="kontopasswort-abbrechen">Abbrechen</button>
+      <button type="submit" class="primaer">Passwort setzen</button>
+    </menu>
+  </form>
+</dialog>
 <!-- Ungespeichertes im Betrachter (#462): speichern, verwerfen oder bleiben. -->
 <dialog id="eingabe-dialog">
   <p id="eingabe-frage"></p>

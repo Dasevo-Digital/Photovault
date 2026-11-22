@@ -4382,11 +4382,62 @@ async function zeigeVerwaltung() {
     // Scheitert die Anfrage (etwa weil das Konto inzwischen fehlt), eine
     // Meldung und die Liste neu – sie stand sonst mit dem alten Eintrag da.
     if (k.gesperrt) { const b = el('button', null, t('Entsperren')); b.type = 'button'; b.addEventListener('click', async () => { try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}/entsperren`, { methode: 'POST', json: {} }); } catch (x) { alert(x.message); } zeigeVerwaltung().catch((x) => meldung(x.message)); }); kn.append(b); }
+    // Für andere Konten wie am Rechner (WEB-177): Passwort neu setzen und
+    // TOTP zurücksetzen – das eigene ändert jeder unter „Konto“.
+    if (!k.du) { const b = el('button', null, t('Passwort neu setzen …')); b.type = 'button'; b.addEventListener('click', () => oeffneKontopasswort(k)); kn.append(b); }
+    if (!k.du && k.totp) { const b = el('button', null, t('TOTP zurücksetzen')); b.type = 'button'; b.addEventListener('click', () => setzeTotpZurueck(k)); kn.append(b); }
     if (!k.du) { const b = el('button', null, t('Entfernen')); b.type = 'button'; b.addEventListener('click', async () => { if (!confirm(t('„{name}“ entfernen? Die Bibliothek bleibt auf dem Server liegen.', { name: k.name }))) return; try { await api(`/api/v1/konten/${encodeURIComponent(k.id)}`, { methode: 'DELETE' }); } catch (x) { alert(x.message); } zeigeVerwaltung().catch((x) => meldung(x.message)); }); kn.append(b); }
     li.append(kn);
     kl.append(li);
   }
 }
+// --- Andere Konten: Passwort und TOTP (WEB-177) ------------------------------
+
+let kontopasswortFuer = null;
+
+function oeffneKontopasswort(k) {
+  kontopasswortFuer = k;
+  const f = $('form-kontopasswort');
+  f.reset();
+  $('kontopasswort-titel').textContent = t('Passwort für „{name}“ neu setzen', { name: k.name });
+  $('kontopasswort-meldung').textContent = '';
+  $('kontopasswort-dialog').showModal();
+  f.passwort.focus();
+}
+
+$('kontopasswort-abbrechen').addEventListener('click', () => $('kontopasswort-dialog').close());
+$('form-kontopasswort').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  const k = kontopasswortFuer;
+  const m = $('kontopasswort-meldung');
+  if (!k) return;
+  if (f.passwort.value.length < 12) { m.textContent = t('Das Passwort braucht mindestens {n} Zeichen.', { n: 12 }); return; }
+  if (f.passwort.value !== f.passwort2.value) { m.textContent = t('Die beiden Passwörter stimmen nicht überein.'); return; }
+  const knopf = f.querySelector('button[type=submit]');
+  knopf.disabled = true;
+  try {
+    await api(`/api/v1/konten/${encodeURIComponent(k.id)}/passwort`, { methode: 'POST', json: { neu: f.passwort.value } });
+    f.reset();
+    $('kontopasswort-dialog').close();
+    meldung(t('Neues Passwort für „{name}“ gesetzt. Alle Geräte des Kontos sind abgemeldet.', { name: k.name }));
+    zeigeVerwaltung().catch((x) => meldung(x.message));
+  } catch (x) {
+    m.textContent = x.message;
+  } finally {
+    knopf.disabled = false;
+  }
+});
+
+async function setzeTotpZurueck(k) {
+  if (!confirm(t('TOTP von „{name}“ zurücksetzen? Die Wiederherstellungscodes verfallen. Ist TOTP Pflicht, richtet „{name}“ es bei der nächsten Anmeldung neu ein, sonst geht die Anmeldung ohne Code.', { name: k.name }))) return;
+  try {
+    await api(`/api/v1/konten/${encodeURIComponent(k.id)}/totp-zuruecksetzen`, { methode: 'POST', json: {} });
+    meldung(t('TOTP von „{name}“ zurückgesetzt.', { name: k.name }));
+  } catch (x) { alert(x.message); }
+  zeigeVerwaltung().catch((x) => meldung(x.message));
+}
+
 const aussenStufen = { aus: 'nicht eingerichtet', ausstehend: 'wartet auf den ersten Lauf', fehler: 'gescheitert', veraltet: 'veraltet', ok: 'in Ordnung' };
 const mb = (b) => `${(b / 1048576).toFixed(0)} MB`;
 let aussenUhr = null;
