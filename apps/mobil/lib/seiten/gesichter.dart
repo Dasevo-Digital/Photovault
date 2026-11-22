@@ -1,3 +1,7 @@
+import 'dart:async';
+
+import 'package:drift/drift.dart' show TableUpdate, TableUpdateQuery;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/gesichtsuebersicht.dart';
@@ -109,8 +113,8 @@ class _BenennenState extends State<_Benennen> {
 
   Future<void> _fertig(Future<void> Function(List<String> ids) arbeit) async {
     final t = AppTexte.of(context);
-    final ids = _ids;
-    if (ids.isEmpty) {
+    final gewaehlt = _ids;
+    if (gewaehlt.isEmpty) {
       setState(() => _meldung = t.gesichterKeinGesicht);
       return;
     }
@@ -119,7 +123,10 @@ class _BenennenState extends State<_Benennen> {
       _meldung = null;
     });
     try {
-      await arbeit(ids);
+      final ids = await _nochWieGezeigt(gewaehlt);
+      // Alle inzwischen anders zugeordnet: nichts zu tun, die Seite
+      // dahinter lädt neu.
+      if (ids.isNotEmpty) await arbeit(ids);
       if (mounted) Navigator.pop(context, true);
     } catch (x) {
       if (mounted) {
@@ -130,6 +137,34 @@ class _BenennenState extends State<_Benennen> {
       }
     }
   }
+
+  /// Von [ids] die Gesichter, die noch so zugeordnet sind wie beim Öffnen
+  /// (#454). Die Liste, aus der das Blatt kam, kann veraltet sein – „Ohne
+  /// Namen“ lädt nicht bei jeder Änderung neu, und der Abgleich bringt
+  /// Benennungen anderer Geräte. „Beiseite“ nähme einem inzwischen
+  /// benannten Gesicht sonst seine Person, und „Das ist …“ ordnete es um.
+  Future<List<String>> _nochWieGezeigt(List<String> ids) async {
+    final gezeigt = {for (final g in widget.gesichter) g.id: g.personId};
+    final jetzt = {
+      for (final f in await (_db.select(
+        _db.faces,
+      )..where((f) => f.id.isIn(ids))).get())
+        f.id: f.personId,
+    };
+    return [
+      for (final id in ids)
+        if (jetzt.containsKey(id) && jetzt[id] == gezeigt[id]) id,
+    ];
+  }
+
+  /// Ob es [person] noch gibt – ein Vorschlag kann inzwischen in eine
+  /// andere Person zusammengeführt sein. Gesichter auf einer Kennung ohne
+  /// Person stünden in keiner Liste mehr.
+  Future<bool> _gibtEs(String person) async =>
+      await (_db.select(
+        _db.people,
+      )..where((p) => p.id.equals(person))).getSingleOrNull() !=
+      null;
 
   /// Den Rahmen ganz entfernen – für die Stelle, an der kein Gesicht ist.
   /// Nur einzeln: Man soll sehen, was man löscht.
@@ -167,8 +202,9 @@ class _BenennenState extends State<_Benennen> {
       return;
     }
     await _fertig((ids) async {
-      // Ein vorhandener Name heisst: diese Person – sonst eine neue.
-      final da = _personen
+      // Ein vorhandener Name heisst: diese Person – sonst eine neue. Frisch
+      // gelesen: Seit dem Öffnen kann eine zusammengeführt worden sein.
+      final da = (await _db.select(_db.people).get())
           .where((p) => p.name.trim().toLowerCase() == name.toLowerCase())
           .firstOrNull;
       var personId = da?.id;
@@ -284,6 +320,9 @@ class _BenennenState extends State<_Benennen> {
                 onPressed: _laeuft
                     ? null
                     : () => _fertig((ids) async {
+                        // Ohne die Person nichts tun; die Liste dahinter
+                        // lädt neu und schlägt dann vor, wer es jetzt ist.
+                        if (!await _gibtEs(vorschlag.id)) return;
                         await _db.fuehreAus(
                           GesichterZuordnen(ids, vorschlag.id),
                         );
@@ -386,10 +425,51 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
 
   AppDatabase get _db => widget.sitzung.db;
 
+  /// Ob sich Gesichter oder Personen seit dem letzten Laden geändert haben
+  /// (#454) – auf einer Personenseite, im Betrachter, über den Abgleich.
+  /// Neu geladen wird erst, wenn der Abschnitt wieder zu sehen ist: Die
+  /// Gruppen zu rechnen liest alle Gesichter, das soll nicht bei jedem
+  /// Schub des Abgleichs geschehen. Vorher blieben die Gruppen stehen, bis
+  /// man die Seite verliess, und Aktionen trafen längst benannte Gesichter.
+  var _veraltet = false;
+  StreamSubscription<Set<TableUpdate>>? _aenderungen;
+  ValueListenable<TickerModeData>? _sichtbar;
+
+  @override
+  void initState() {
+    super.initState();
+    _aenderungen = _db
+        .tableUpdates(TableUpdateQuery.onAllTables([_db.faces, _db.people]))
+        .listen((_) => _veraltet = true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Aus, solange eine andere Seite darüber liegt.
+    final s = TickerMode.getValuesNotifier(context);
+    if (!identical(s, _sichtbar)) {
+      _sichtbar?.removeListener(_wiederDa);
+      _sichtbar = s..addListener(_wiederDa);
+    }
+  }
+
+  void _wiederDa() {
+    if (_veraltet && (_sichtbar?.value.enabled ?? false) && mounted) _neu();
+  }
+
+  @override
+  void dispose() {
+    _sichtbar?.removeListener(_wiederDa);
+    unawaited(_aenderungen?.cancel());
+    super.dispose();
+  }
+
   Future<(GesichterOhneNamen, int)> _lade() async =>
       (await gesichterOhneNamen(_db), await _db.ignoredFacesCount());
 
   void _neu() => setState(() {
+    _veraltet = false;
     _daten = _lade();
   });
 
@@ -417,8 +497,10 @@ class _OhneNamenAbschnittState extends State<OhneNamenAbschnitt> {
               persist: false,
               action: SnackBarAction(
                 label: t.variantenRueckgaengig,
-                onPressed: () =>
-                    _db.fuehreAus(GesichterBeiseitelegen(ids, false)),
+                onPressed: () async {
+                  await _db.fuehreAus(GesichterBeiseitelegen(ids, false));
+                  if (mounted) _neu();
+                },
               ),
             ),
           );
