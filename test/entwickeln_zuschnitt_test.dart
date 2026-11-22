@@ -439,8 +439,10 @@ void main() {
     final temperatur = tester
         .widgetList<Slider>(find.byType(Slider))
         .firstWhere((s) => s.min == 2000);
-    // Bläulich getroffen: Der Regler muss unter 6500 K stehen.
-    expect(temperatur.value, lessThan(6500));
+    // Bläulich getroffen: Ausgeglichen wird eine kalte Lichtfarbe, der
+    // Regler steht also über 6500 K (höher ist wärmer, #466). Die rote
+    // Hälfte ergäbe einen Wert darunter.
+    expect(temperatur.value, greaterThan(6500));
     await abbauen(tester);
   });
 
