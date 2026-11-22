@@ -5,6 +5,12 @@ import 'package:drift/native.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gelaende/gelaende_screen.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:kern/abgleich/abgleich.dart';
+import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
@@ -320,6 +326,61 @@ void main() {
       // Und zwar auf einem Punkt der Spur, nicht irgendwo dazwischen.
       final punkte = await db.punkteDerSpur('s1');
       expect(punkte.map((p) => p.laenge), contains(karte.stelle!.laenge));
+    });
+
+    testWidgets('verbunden fragt die Landschaft den Server nach Gipfeln, '
+        'Hütten und Quellen und sagt, wenn er keine liefert (#474)', (
+      tester,
+    ) async {
+      final k = await anlegen();
+      await spur();
+      final basis = Uri(scheme: 'http', host: 'server', path: '/');
+      final anDenServer = <Uri>[];
+      library
+        ..verbindung = Verbindungsdatei(
+          server: basis,
+          konto: 'probe',
+          geraet: 'Rechner',
+          token: 'pv1_probe',
+        )
+        ..abgleich = Abgleich(
+          db,
+          Serververbindung(
+            basis,
+            'pv1_probe',
+            client: MockClient((r) async {
+              anDenServer.add(r.url);
+              // Ein Server vor 3.38 kennt den Weg nicht.
+              return http.Response('Not Found', 404);
+            }),
+          ),
+        );
+      await zeige(tester, k);
+      await tester.tap(find.byTooltip('Gelände ansehen'));
+      await tester.pump();
+      await tester.pump();
+
+      final landschaft = tester.widget<GelaendeScreen>(
+        find.byType(GelaendeScreen),
+      );
+      final punkte = await tester.runAsync(
+        () => landschaft.wanderobjekte!(
+          sued: 52.36,
+          west: 9.72,
+          nord: 52.38,
+          ost: 9.76,
+        ),
+      );
+
+      expect(punkte, isEmpty);
+      expect(anDenServer.map((u) => u.path), ['/api/v1/wanderobjekte']);
+      expect(
+        melde.verlauf.map((m) => m.text),
+        contains(
+          'Gipfel, Hütten und Quellen kommen über den Server. '
+          'Er liefert gerade keine.',
+        ),
+      );
     });
 
     testWidgets('die Spur lässt sich wieder entfernen', (tester) async {

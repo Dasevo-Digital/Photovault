@@ -4394,6 +4394,7 @@
   "karteStandortNichtErmittelbar": "Standort nicht ermittelbar. Prüfe unter Systemeinstellungen → Datenschutz & Sicherheit → Ortungsdienste, ob Photo Vault fragen darf.",
   "karteStandortSuche": "Standort wird ermittelt …",
   "karteNurUeberServer": "Die Karte kommt über den Server. Er liefert gerade keine Kacheln.",
+  "gelaendeWanderobjekteNurUeberServer": "Gipfel, Hütten und Quellen kommen über den Server. Er liefert gerade keine.",
   "weltkarteKlickMarkiert": "Ein Klick markiert",
   "weltkarteMarkeWeggenommen": "„{name}“ ist nicht mehr markiert.",
   "@weltkarteMarkeWeggenommen": {

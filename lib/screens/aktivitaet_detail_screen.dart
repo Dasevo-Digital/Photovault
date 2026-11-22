@@ -17,6 +17,7 @@ import '../services/gpx.dart';
 import '../services/meldungsdienst.dart';
 import '../services/platform/speicherort.dart';
 import '../services/reiseroute.dart';
+import '../services/wanderobjekte_am_rechner.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/zuordnung_auswahlleiste.dart';
@@ -326,19 +327,26 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     ];
   }
 
-  /// Gipfel, Hütten und Quellen zum Ausschnitt – aus der Bibliothek,
-  /// sonst von Overpass (siehe `wanderobjekteAusBibliothek`).
+  /// Gipfel, Hütten und Quellen zum Ausschnitt – ohne Server aus der
+  /// Bibliothek, sonst von Overpass; verbunden nur über den Server, und
+  /// liefert er nicht, sagt die Landschaft das (siehe
+  /// `wanderobjekteAmRechner`, #474).
   Future<List<Wanderobjekt>> _wanderobjekte({
     required double sued,
     required double west,
     required double nord,
     required double ost,
-  }) => wanderobjekteAusBibliothek(
-    widget.library.db,
+  }) => wanderobjekteAmRechner(
+    widget.library,
     sued: sued,
     west: west,
     nord: nord,
     ost: ost,
+    serverLiefertNicht: () {
+      if (mounted) {
+        melde.hinweis(AppTexte.of(context).gelaendeWanderobjekteNurUeberServer);
+      }
+    },
   );
 
   Future<void> _spurEntfernen() async {

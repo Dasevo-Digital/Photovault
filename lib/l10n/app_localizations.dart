@@ -11131,6 +11131,12 @@ abstract class AppTexte {
   /// **'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.'**
   String get karteNurUeberServer;
 
+  /// No description provided for @gelaendeWanderobjekteNurUeberServer.
+  ///
+  /// In de, this message translates to:
+  /// **'Gipfel, Hütten und Quellen kommen über den Server. Er liefert gerade keine.'**
+  String get gelaendeWanderobjekteNurUeberServer;
+
   /// No description provided for @weltkarteKlickMarkiert.
   ///
   /// In de, this message translates to:

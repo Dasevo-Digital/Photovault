@@ -129,9 +129,9 @@ final _hoehenkachel = Uri.parse(
 );
 
 /// Gipfel, Hütten und Quellen fragt das Handy beim Server: Der fragt
-/// Overpass höchstens einmal je Ausschnitt und merkt es sich für Browser
-/// und Handy (`GET /api/v1/wanderobjekte`). Ohne Server keine Schilder –
-/// sie sind eine Zugabe, die Landschaft steht auch ohne.
+/// Overpass höchstens einmal je Ausschnitt und merkt es sich für Browser,
+/// Handy und Rechner (`wanderobjekteVomServer`). Ohne Server keine
+/// Schilder – sie sind eine Zugabe, die Landschaft steht auch ohne.
 Future<List<Wanderobjekt>> _wanderobjekte(
   Sitzung sitzung, {
   required double sued,
@@ -141,32 +141,14 @@ Future<List<Wanderobjekt>> _wanderobjekte(
 }) async {
   final verbindung = sitzung.abgleich?.verbindung;
   if (verbindung == null) return const [];
-  try {
-    final d = await verbindung.hole(
-      'api/v1/wanderobjekte',
-      parameter: {
-        'sued': sued.toStringAsFixed(5),
-        'west': west.toStringAsFixed(5),
-        'nord': nord.toStringAsFixed(5),
-        'ost': ost.toStringAsFixed(5),
-      },
-    );
-    final arten = {for (final a in Wanderart.values) a.name: a};
-    return [
-      for (final (i, p) in (d['punkte'] as List? ?? const []).indexed)
-        if (p is Map && arten[p['art']] != null)
-          Wanderobjekt(
-            osmId: (p['osmId'] as num?)?.toInt() ?? i,
-            art: arten[p['art']]!,
-            breite: (p['breite'] as num).toDouble(),
-            laenge: (p['laenge'] as num).toDouble(),
-            name: p['name'] as String?,
-            hoehe: (p['hoehe'] as num?)?.toDouble(),
-          ),
-    ];
-  } catch (_) {
-    return const [];
-  }
+  return await wanderobjekteVomServer(
+        verbindung,
+        sued: sued,
+        west: west,
+        nord: nord,
+        ost: ost,
+      ) ??
+      const [];
 }
 
 /// Das Flugvideo am iPhone: AVFoundation über den Kanal

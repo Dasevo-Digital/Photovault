@@ -7180,6 +7180,10 @@ class AppTexteDe extends AppTexte {
       'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.';
 
   @override
+  String get gelaendeWanderobjekteNurUeberServer =>
+      'Gipfel, Hütten und Quellen kommen über den Server. Er liefert gerade keine.';
+
+  @override
   String get weltkarteKlickMarkiert => 'Ein Klick markiert';
 
   @override

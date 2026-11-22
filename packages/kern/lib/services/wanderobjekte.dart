@@ -34,11 +34,18 @@
 /// Das Zerlegen der Antwort steht getrennt vom Abruf: So lässt es sich
 /// an einer echten gespeicherten Antwort prüfen, ohne einen Server zu
 /// fragen.
+///
+/// **Overpass fragt nur, wer keinen Server hat** – der Server selbst und
+/// ein Rechner mit lokaler Bibliothek ([wanderobjekteAusBibliothek]).
+/// Browser, Handy und ein verbundener Rechner fragen den eigenen Server
+/// ([wanderobjekteVomServer]); sonst sähe Overpass die Gegend jeder Tour
+/// gerade dann, wenn man fremde Dienste über den Server meiden will.
 library;
 
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import '../abgleich/verbindung.dart';
 import '../db/database.dart';
 import 'netzkennung.dart';
 
@@ -259,8 +266,9 @@ Future<List<Wanderobjekt>?> holeWanderobjekte({
 /// **Die Bibliothek zuerst**, und das ist keine Bequemlichkeit: Overpass
 /// wird ehrenamtlich betrieben und drosselt bei zu vielen Anfragen. Eine
 /// Tour, die schon einmal angesehen wurde, fragt niemanden mehr – auch
-/// nicht nach einem Neustart und auch nicht ohne Netz. Rechner und Server
-/// nehmen denselben Weg; Browser und Handy fragen den Server.
+/// nicht nach einem Neustart und auch nicht ohne Netz. Der Server und ein
+/// Rechner ohne Server nehmen diesen Weg; Browser, Handy und ein
+/// verbundener Rechner fragen den Server ([wanderobjekteVomServer]).
 Future<List<Wanderobjekt>> wanderobjekteAusBibliothek(
   AppDatabase db, {
   required double sued,
@@ -311,6 +319,67 @@ Future<List<Wanderobjekt>> wanderobjekteAusBibliothek(
           laenge: z.laenge,
           name: z.name,
           hoehe: z.hoehe,
+        ),
+  ];
+}
+
+/// Gipfel, Hütten und Quellen zum Ausschnitt über den eigenen Server
+/// (`GET /api/v1/wanderobjekte`, seit 3.38). Der fragt Overpass höchstens
+/// einmal je Ausschnitt und merkt es sich für alle Geräte.
+///
+/// `null`, wenn der Server nicht antwortet oder ablehnt – auch ein Server,
+/// der den Weg nicht kennt (404). **Kein Rückfall auf Overpass:** Wer
+/// verbunden ist, fragt fremde Dienste nur über den eigenen Server (#474).
+/// Der Aufrufer sagt, dass die Schilder fehlen; die Landschaft steht auch
+/// ohne sie.
+Future<List<Wanderobjekt>?> wanderobjekteVomServer(
+  Serververbindung server, {
+  required double sued,
+  required double west,
+  required double nord,
+  required double ost,
+}) async {
+  try {
+    final antwort = await server.hole(
+      'api/v1/wanderobjekte',
+      parameter: {
+        'sued': sued.toStringAsFixed(5),
+        'west': west.toStringAsFixed(5),
+        'nord': nord.toStringAsFixed(5),
+        'ost': ost.toStringAsFixed(5),
+      },
+    );
+    return ausServerantwort(antwort);
+  } catch (_) {
+    // Kein Netz, Zeitüberschreitung, ein Server vor 3.38 (404) oder eine
+    // gescheiterte Verschlüsselung, die `Serververbindung` nicht zu
+    // [KeineVerbindung] macht – für die Schilder heisst alles dasselbe.
+    return null;
+  }
+}
+
+/// Zerlegt die Antwort von `GET /api/v1/wanderobjekte`.
+///
+/// Wie bei Overpass werden fehlerhafte Einträge **übersprungen**: Eine Art,
+/// die ein neuerer Server kennt, oder ein Punkt ohne Koordinate nimmt die
+/// anderen nicht mit.
+List<Wanderobjekt> ausServerantwort(Map<String, Object?> antwort) {
+  final arten = {for (final a in Wanderart.values) a.name: a};
+  final punkte = antwort['punkte'];
+  if (punkte is! List) return const [];
+  return [
+    for (final (i, p) in punkte.indexed)
+      if (p is Map &&
+          arten[p['art']] != null &&
+          p['breite'] is num &&
+          p['laenge'] is num)
+        Wanderobjekt(
+          osmId: p['osmId'] is num ? (p['osmId'] as num).toInt() : i,
+          art: arten[p['art']]!,
+          breite: (p['breite'] as num).toDouble(),
+          laenge: (p['laenge'] as num).toDouble(),
+          name: p['name'] is String ? p['name'] as String : null,
+          hoehe: p['hoehe'] is num ? (p['hoehe'] as num).toDouble() : null,
         ),
   ];
 }

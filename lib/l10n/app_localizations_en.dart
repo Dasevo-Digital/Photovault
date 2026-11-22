@@ -7144,6 +7144,10 @@ class AppTexteEn extends AppTexte {
       'Map tiles come from your server, which isn\'t providing any right now.';
 
   @override
+  String get gelaendeWanderobjekteNurUeberServer =>
+      'Peaks, huts and springs come from your server, which isn\'t providing any right now.';
+
+  @override
   String get weltkarteKlickMarkiert => 'A click marks';
 
   @override

@@ -3238,6 +3238,7 @@
   "karteStandortNichtErmittelbar": "Could not determine your location. Check System Settings → Privacy & Security → Location Services to see whether Photo Vault may ask.",
   "karteStandortSuche": "Determining location …",
   "karteNurUeberServer": "Map tiles come from your server, which isn't providing any right now.",
+  "gelaendeWanderobjekteNurUeberServer": "Peaks, huts and springs come from your server, which isn't providing any right now.",
   "weltkarteKlickMarkiert": "A click marks",
   "weltkarteMarkeWeggenommen": "“{name}” is no longer marked.",
   "@weltkarteMarkeWeggenommen": {
