@@ -540,7 +540,7 @@
   "entwZuruecksetzen": "Reset sliders",
   "entwEntfernen": "Remove edits",
   "entwVorschauQuelle": "RAW or HEIC: the phone works from the preview (at most 2048 pixels). The computer edits at full size.",
-  "entwVomRechner": "Tone curve, color mixer and look from the computer apply and are kept.",
+  "entwVomRechner": "Tone curve, color mixer, look and crop from the computer apply and are kept. The crop only shows in the saved picture.",
   "entwRechne": "Rendering at full size ({b} × {h}) …",
   "entwLaedtHoch": "Uploading …",
   "entwGespeichert": "Saved.",

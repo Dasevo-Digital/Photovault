@@ -2278,7 +2278,7 @@ abstract class AppTexte {
   /// No description provided for @entwVomRechner.
   ///
   /// In de, this message translates to:
-  /// **'Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.'**
+  /// **'Tonkurve, Farbmischer, Look und Zuschnitt vom Rechner wirken mit und bleiben erhalten. Den Zuschnitt zeigt erst das gespeicherte Bild.'**
   String get entwVomRechner;
 
   /// No description provided for @entwRechne.

@@ -829,7 +829,7 @@
   "entwZuruecksetzen": "Regler zurücksetzen",
   "entwEntfernen": "Entwicklung entfernen",
   "entwVorschauQuelle": "Rohformat oder HEIC: Das Telefon rechnet aus der Vorschau (höchstens 2048 Pixel). In voller Grösse entwickelt der Rechner.",
-  "entwVomRechner": "Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.",
+  "entwVomRechner": "Tonkurve, Farbmischer, Look und Zuschnitt vom Rechner wirken mit und bleiben erhalten. Den Zuschnitt zeigt erst das gespeicherte Bild.",
   "entwRechne": "Rechne in voller Grösse ({b} × {h}) …",
   "@entwRechne": {
     "placeholders": {

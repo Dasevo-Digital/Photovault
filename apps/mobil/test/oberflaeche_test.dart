@@ -3967,6 +3967,71 @@ void main() {
     expect(await tester.runAsync(datei.exists), isTrue);
   });
 
+  testWidgets('Entwickeln am Telefon: der Zuschnitt vom Rechner bleibt und '
+      'schneidet das gespeicherte Bild (#429)', (tester) async {
+    final (sitzung, db) = await sitzungMit(tester, ['z1']);
+    final bild = img.Image(width: 64, height: 48);
+    img.fill(bild, color: img.ColorRgb8(120, 100, 80));
+    // Am Rechner: die linke Hälfte.
+    const zuschnitt = '{"l":0.0,"o":0.0,"b":0.5,"h":1.0,"d":0}';
+    await tester.runAsync(() async {
+      final f = sitzung.paths.absolute('originals/z1.jpg');
+      await f.parent.create(recursive: true);
+      await f.writeAsBytes(img.encodeJpg(bild));
+      await db
+          .into(db.developSettings)
+          .insert(
+            DevelopSettingsCompanion.insert(
+              assetId: 'z1',
+              cropJson: const Value(zuschnitt),
+              updatedAt: DateTime(2026),
+            ),
+          );
+    });
+    tester.view
+      ..physicalSize = const Size(800, 2400)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: const [
+          ...AppTexte.localizationsDelegates,
+          SyncTexte.delegate,
+        ],
+        supportedLocales: AppTexte.supportedLocales,
+        home: Entwickeln(sitzung: sitzung, id: 'z1'),
+      ),
+    );
+    Future<void> warte(int mal) async {
+      for (var i = 0; i < mal; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 200)),
+        );
+        await tester.pump();
+      }
+    }
+
+    await warte(5);
+    final t = AppTexte.of(tester.element(find.byType(Entwickeln)));
+    expect(find.textContaining(t.entwVomRechner), findsOneWidget);
+    await tester.drag(find.byType(Slider).first, const Offset(200, 0));
+    await warte(3);
+    await tester.tap(find.text(t.entwSpeichern));
+    await warte(10);
+
+    final e = (await db.developSettingsForAsset('z1'))!;
+    expect(e.exposure, greaterThan(0));
+    expect(e.cropJson, zuschnitt, reason: 'nicht gelöscht');
+    final a = (await db.assetById('z1'))!;
+    final gespeichert = img.decodeJpg(
+      (await tester.runAsync(
+        sitzung.paths.absolute(a.developedRelativePath!).readAsBytes,
+      ))!,
+    )!;
+    expect((gespeichert.width, gespeichert.height), (32, 48));
+  });
+
   testWidgets('Konto wie im Browser: Geräte abmelden, Passwort ändern', (
     tester,
   ) async {

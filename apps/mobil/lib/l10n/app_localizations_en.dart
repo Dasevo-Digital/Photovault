@@ -1427,7 +1427,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get entwVomRechner =>
-      'Tone curve, color mixer and look from the computer apply and are kept.';
+      'Tone curve, color mixer, look and crop from the computer apply and are kept. The crop only shows in the saved picture.';
 
   @override
   String entwRechne(int b, int h) {

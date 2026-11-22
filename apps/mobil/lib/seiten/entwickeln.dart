@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/bildzuschnitt.dart';
 import 'package:kern/services/cube_lut.dart';
 import 'package:kern/services/develop_color.dart';
 import 'package:kern/services/entwicklungswerte.dart';
@@ -159,6 +160,11 @@ class _EntwickelnState extends State<Entwickeln> {
   CubeLut? _lut;
   var _kurve = ToneCurve.neutral;
   var _mischer = ColorMixer.neutral;
+
+  /// Der Zuschnitt vom Rechner (#429): Das Telefon kann ihn nicht ändern,
+  /// aber er gehört zur Entwicklung. Ohne ihn kam das gespeicherte Bild
+  /// unbeschnitten heraus, und der Befehl löschte den Zuschnitt.
+  var _zuschnitt = Bildzuschnitt.ganz;
   final _werte = <String, double?>{};
   var _vergleich = false;
   var _geaendert = false;
@@ -234,6 +240,13 @@ class _EntwickelnState extends State<Entwickeln> {
           // Browser.
         }
       }
+      var zuschnitt = Bildzuschnitt.ganz;
+      try {
+        zuschnitt = Bildzuschnitt.aus(e?.cropJson);
+      } on FormatException {
+        // Ein unlesbarer Zuschnitt schneidet eben nicht; gespeichert wird
+        // er, wie er war.
+      }
       final vorschau = await Entwicklungsvorschau.lade();
       if (!mounted) {
         basis.dispose();
@@ -252,6 +265,7 @@ class _EntwickelnState extends State<Entwickeln> {
         _lut = lut;
         _kurve = toneCurveAus(e?.toneCurveJson);
         _mischer = colorMixerAus(e?.colorMixerJson);
+        _zuschnitt = zuschnitt;
         _werte
           ..clear()
           ..addAll({
@@ -293,6 +307,8 @@ class _EntwickelnState extends State<Entwickeln> {
       colorMixer: _mischer,
       lut: _lut,
       lutStrength: _e?.lutStrength ?? 1,
+      // Die Vorschau zeigt das ganze Bild; das gespeicherte ist beschnitten.
+      zuschnitt: _zuschnitt,
     );
   }
 
@@ -419,6 +435,7 @@ class _EntwickelnState extends State<Entwickeln> {
             lutStrength: Value(e?.lutStrength ?? 1),
             toneCurveJson: Value(e?.toneCurveJson),
             colorMixerJson: Value(e?.colorMixerJson),
+            cropJson: Value(e?.cropJson),
             updatedAt: DateTime.now(),
           ),
           rel,
@@ -466,7 +483,8 @@ class _EntwickelnState extends State<Entwickeln> {
       if (e != null &&
           (e.toneCurveJson != null ||
               e.colorMixerJson != null ||
-              e.lutPath != null))
+              e.lutPath != null ||
+              e.cropJson != null))
         t.entwVomRechner,
       if (_masken > 0) t.entwMaskenHinweis,
     ];

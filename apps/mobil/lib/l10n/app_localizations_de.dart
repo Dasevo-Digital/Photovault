@@ -1430,7 +1430,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get entwVomRechner =>
-      'Tonkurve, Farbmischer und Look vom Rechner wirken mit und bleiben erhalten.';
+      'Tonkurve, Farbmischer, Look und Zuschnitt vom Rechner wirken mit und bleiben erhalten. Den Zuschnitt zeigt erst das gespeicherte Bild.';
 
   @override
   String entwRechne(int b, int h) {
