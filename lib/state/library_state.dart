@@ -87,6 +87,7 @@ import 'package:kern/abgleich/speicher.dart';
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/abgleich/verbindungsdatei.dart';
+import 'package:kern/abgleich/zwischenspeicher.dart';
 import 'package:kern/auswertung/auswertungen.dart';
 import 'package:kern/auswertung/modelle.dart';
 import 'package:kern/auswertung/nachbearbeitung.dart';
@@ -1233,10 +1234,46 @@ class LibraryState extends ChangeNotifier {
     a.starte();
     unawaited(pruefeServerspeicher());
     unawaited(pruefeServersicherung());
+    unawaited(pflegeZwischenspeicher());
     _speicherUhr = Timer.periodic(const Duration(minutes: 15), (_) {
       pruefeServerspeicher();
       pruefeServersicherung();
+      pflegeZwischenspeicher();
     });
+  }
+
+  /// Hält, was die verbundene Kopie vom Server geholt hat (Vorschauen,
+  /// Originale, Entwicklungen …), unter seiner Grenze – wie am Handy
+  /// (#131, #432). Bis hierher blieb am Rechner jede geholte Datei für
+  /// immer liegen; wer viele Vollbilder und Videos ansah, füllte damit das
+  /// Systemlaufwerk. Was zuletzt gebraucht wurde, bleibt am längsten, und
+  /// was gerade im Entwickeln offen ist, bleibt ganz.
+  @visibleForTesting
+  Future<void> pflegeZwischenspeicher() async {
+    final mb = verbindung?.zwischenspeicherMb ?? Zwischenspeicher.vorgabeMb;
+    if (mb <= 0 || abgleich == null) return;
+    try {
+      final behalten = <String>{};
+      final offen = paths.offeneArbeitsvorschauen.toList();
+      if (offen.isNotEmpty) {
+        for (final a in await db.assetsByIds(offen)) {
+          for (final pfad in [
+            a.relativePath,
+            a.previewRelativePath,
+            a.developedRelativePath,
+            a.restoredRelativePath,
+            a.trimmedRelativePath,
+          ]) {
+            if (pfad != null) behalten.add(p.normalize(pfad));
+          }
+        }
+      }
+      await Zwischenspeicher(
+        paths,
+      ).begrenze(mb * 1024 * 1024, behalten: behalten);
+    } on Object catch (e) {
+      debugPrint('Zwischenspeicher nicht begrenzt: $e');
+    }
   }
 
   /// Wie die Sicherung des Servers steht (Issue #125) – nur für

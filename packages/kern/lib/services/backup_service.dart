@@ -184,6 +184,32 @@ class BackupService {
   static Future<bool> _quelleStimmt(AssetData asset, File quelle) async =>
       (await sha256.bind(quelle.openRead()).first).toString() == asset.checksum;
 
+  /// Das Original von [asset], wenn es erst für die Sicherung vom Server
+  /// kommt – nur in einer verbundenen Kopie, und nur, wenn es dort noch
+  /// nicht liegt. Sonst `null`.
+  Future<String?> _wirdGeholt(AssetData asset) async {
+    final pfad = asset.relativePath;
+    if (_paths.beschaffe == null || _paths.istReferenziert(pfad)) return null;
+    return await _paths.absolute(pfad).exists() ? null : pfad;
+  }
+
+  /// Löscht nach dem Schreiben, was [_wirdGeholt] eigens geholt hat (#432).
+  ///
+  /// [StoragePaths.bereit] legt ein geholtes Original dauerhaft in die
+  /// Kopie. Eine Sicherung in ein neues Ziel holte so die ganze Bibliothek
+  /// des Servers auf diesen Rechner und liess sie dort liegen – bei
+  /// 300 GB lief das Systemlaufwerk voll. Am Server liegt das Original
+  /// weiter und kommt wieder, wenn es jemand öffnet.
+  Future<void> _vergissGeholtes(String? pfad) async {
+    if (pfad == null) return;
+    try {
+      await _paths.absolute(pfad).delete();
+    } on FileSystemException {
+      // Nie angekommen oder gerade in Gebrauch – dann räumt die Begrenzung
+      // des Zwischenspeichers es später weg.
+    }
+  }
+
   /// Legt eine veraltete Datei im unverschlüsselten Ziel beiseite, bevor
   /// die neue Fassung sie ersetzt – falls die Bibliothek ihren Inhalt nicht
   /// mehr hat.
@@ -429,6 +455,7 @@ class BackupService {
         // schreiben liess, brach den kompletten Lauf ab, und alles
         // dahinter wurde nie gesichert. Genau das passierte unter Flatpak
         // beim ersten Video über 789 MB.
+        String? geholt;
         try {
           final target = await zielVon(asset);
           final schonDa = await aktuell(asset, target);
@@ -436,6 +463,7 @@ class BackupService {
           // lädt [StoragePaths.bereit] ein fehlendes Original vom Server –
           // für jede Aufnahme, die schon gesichert ist, wäre das ein
           // Download für nichts.
+          if (!schonDa) geholt = await _wirdGeholt(asset);
           final source = schonDa
               ? null
               : await _paths.bereit(asset.relativePath);
@@ -501,6 +529,8 @@ class BackupService {
             'Sicherung von ${asset.originalFileName} '
             'fehlgeschlagen: $e',
           );
+        } finally {
+          await _vergissGeholtes(geholt);
         }
         done++;
         yield BackupProgress(
@@ -955,10 +985,13 @@ class BackupService {
         // Je Datei abgesichert – hier wiegt es schwerer als beim manuellen
         // Lauf: Dieser läuft ungefragt im Hintergrund, ein Abbruch fiele
         // also niemandem auf.
+        String? geholt;
         try {
           final target = await zielVon(asset);
           final schonDa = await _verschluesseltImZiel(asset, target);
-          // Wie in [performBackup]: erst fragen, dann (verbunden) holen.
+          // Wie in [performBackup]: erst fragen, dann (verbunden) holen –
+          // und was eigens dafür kam, danach wieder weg.
+          if (!schonDa) geholt = await _wirdGeholt(asset);
           final source = schonDa
               ? null
               : await _paths.bereit(asset.relativePath);
@@ -1000,6 +1033,8 @@ class BackupService {
             'Automatische Sicherung von ${asset.originalFileName} '
             'fehlgeschlagen: $e',
           );
+        } finally {
+          await _vergissGeholtes(geholt);
         }
         done++;
         yield BackupProgress(
