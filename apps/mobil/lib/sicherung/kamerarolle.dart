@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 /// Die Fotos und Videos auf dem Telefon, so weit die Sicherung sie braucht.
@@ -32,6 +33,7 @@ class Rolleneintrag {
     required this.aufgenommen,
     required this.video,
     required this.dateien,
+    this.lokal,
     this.quelle,
     this.bearbeitetesVideo,
     this.serie,
@@ -50,8 +52,13 @@ class Rolleneintrag {
 
   /// Die Dateien, die zum Server gehen – beim Live Photo das Bild und das
   /// Video, sonst eine. Lädt sie bei Bedarf (iCloud); `null`, wenn das
-  /// nicht geht.
-  final Future<List<Rollendatei>?> Function() dateien;
+  /// nicht geht. Über die [Bereitstellung] meldet die Rolle, dass es
+  /// vorangeht, und der Lauf kann abbrechen (#437).
+  final Future<List<Rollendatei>?> Function(Bereitstellung b) dateien;
+
+  /// Ob das Original schon auf dem Telefon liegt (und nicht erst aus iCloud
+  /// käme); `null`, wenn die Rolle es nicht weiss.
+  final Future<bool> Function()? lokal;
 
   /// Ob dieses Video auf dem Telefon bearbeitet wurde. Gesichert wird nur
   /// sein Original; löschte man es vom Telefon, wäre die Bearbeitung fort.
@@ -98,4 +105,44 @@ class Rollendatei {
   final String name;
 
   final File datei;
+}
+
+/// Das Bereitstellen der Dateien eines Eintrags (#437): Ein Original, das
+/// nur in iCloud liegt, oder ein grosses Video kann lange brauchen, und ein
+/// Download, der nie zurückkommt, hielt den Lauf samt Sperre für immer.
+/// Die Rolle meldet hier, dass es vorangeht ([geht]), und trägt ein, wie
+/// sich ein laufender Abruf abbrechen lässt ([beiAbbruch]); der Lauf bricht
+/// ab, wenn er aufhören soll oder es zu lange nicht vorangeht.
+class Bereitstellung {
+  final _abbrecher = <Future<void> Function()>[];
+  var _abgebrochen = false;
+  var _zuletzt = DateTime.now();
+
+  /// Wann es zuletzt voranging (oder wann es begann).
+  DateTime get zuletzt => _zuletzt;
+
+  bool get abgebrochen => _abgebrochen;
+
+  /// Es geht voran – etwa ein Stück des Downloads aus iCloud.
+  void geht() => _zuletzt = DateTime.now();
+
+  /// So lässt sich ein laufender Abruf abbrechen. Ist schon abgebrochen,
+  /// geschieht es gleich.
+  void beiAbbruch(Future<void> Function() abbrechen) {
+    if (_abgebrochen) {
+      unawaited(abbrechen().catchError((_) {}));
+    } else {
+      _abbrecher.add(abbrechen);
+    }
+  }
+
+  /// Bricht ab, was eingetragen ist.
+  void brichAb() {
+    if (_abgebrochen) return;
+    _abgebrochen = true;
+    for (final a in _abbrecher) {
+      unawaited(a().catchError((_) {}));
+    }
+    _abbrecher.clear();
+  }
 }

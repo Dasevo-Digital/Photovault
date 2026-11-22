@@ -65,7 +65,7 @@ class _Rolle implements Kamerarolle {
       geaendert: DateTime(2025),
       aufgenommen: DateTime(2025),
       video: false,
-      dateien: () async => null,
+      dateien: (_) async => null,
     ),
   );
 
@@ -83,7 +83,7 @@ class _Rolle implements Kamerarolle {
       geaendert: DateTime(2025, 6, 1),
       aufgenommen: DateTime(2025, 6, 1, 12),
       video: false,
-      dateien: () async => [
+      dateien: (_) async => [
         Rollendatei(teil: 'bild', name: p.basename(datei.path), datei: datei),
       ],
       serie: serie,
@@ -113,7 +113,7 @@ class _Rolle implements Kamerarolle {
     geaendert: geaendert ?? DateTime(2025, 6, 1),
     aufgenommen: DateTime(2025, 6, 1, 12),
     video: false,
-    dateien: () async {
+    dateien: (_) async {
       beimBereitstellen?.call(id);
       return [
         for (final (teil, datei) in teile)
@@ -694,7 +694,7 @@ void main() {
         geaendert: DateTime(2025),
         aufgenommen: DateTime(2025),
         video: false,
-        dateien: () async =>
+        dateien: (_) async =>
             throw PlatformException(code: 'pm', message: 'iCloud'),
       ),
     );

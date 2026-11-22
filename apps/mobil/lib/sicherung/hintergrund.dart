@@ -73,6 +73,7 @@ void sicherungImHintergrund() {
     try {
       await sichereImHintergrund(
         abbrechen: () => _gestoppt || DateTime.now().isAfter(frist),
+        kurz: aufgabe == kurzaufgabe,
       );
     } catch (e) {
       debugPrint('Sicherung im Hintergrund: $e');
@@ -84,8 +85,16 @@ void sicherungImHintergrund() {
 
 /// Ein Lauf ohne Oberfläche. Tut nichts, wenn die Sicherung aus ist, das
 /// Telefon abgemeldet ist oder das Netz nicht passt.
+///
+/// [kurz] ist die Auffrischung unter iOS mit rund 30 Sekunden (#437): Sie
+/// prüft höchstens zwei Einträge auf einmal, lädt in kleinen Stücken hoch
+/// (zwischen ihnen sieht sie auf die Frist) und nimmt nur Originale, die
+/// schon auf dem Telefon liegen. Sonst stellte sie eine ganze Gruppe samt
+/// Downloads aus iCloud bereit, ehe sie zum ersten Mal auf die Frist sah,
+/// überzog sie, und iOS drosselte künftige Auffrischungen.
 Future<Laufbericht?> sichereImHintergrund({
   required bool Function() abbrechen,
+  bool kurz = false,
 }) async {
   final ordner = await Sitzung.vorgabeOrdner();
   final v = await Verbindungsdatei.lies(ordner);
@@ -108,6 +117,9 @@ Future<Laufbericht?> sichereImHintergrund({
       // Aufgabe gleichzeitig (#311), und der erste gab die Sperre des
       // anderen frei.
       wer: 'hintergrund-${DateTime.now().microsecondsSinceEpoch}',
+      gruppe: kurz ? 2 : 20,
+      stueck: kurz ? 4 * 1024 * 1024 : 32 * 1024 * 1024,
+      nurLokal: kurz,
     );
     // Eine Aufgabe unter iOS kennt nur „irgendein Netz“: Das WLAN kann
     // unterwegs wegfallen, und dann ginge es über Mobilfunk weiter.

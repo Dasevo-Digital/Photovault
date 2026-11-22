@@ -99,7 +99,7 @@ class PhotoManagerRolle implements Kamerarolle {
     geaendert: z.geaendert,
     aufgenommen: z.aufgenommen,
     video: z.video,
-    dateien: () => _zusatzdateien(z.id),
+    dateien: (_) => _zusatzdateien(z.id),
     serie: z.serie,
     serientitel: z.titel,
     serienauswahl: z.auswahl,
@@ -127,7 +127,8 @@ class PhotoManagerRolle implements Kamerarolle {
     geaendert: a.modifiedDateTime,
     aufgenommen: a.createDateTime,
     video: a.type == AssetType.video,
-    dateien: () => _dateien(a),
+    dateien: (b) => _dateien(a, b),
+    lokal: () => a.isLocallyAvailable(isOrigin: true),
     quelle: a,
     bearbeitetesVideo: a.type == AssetType.video && Platform.isIOS
         ? () => a.darwin.hasAdjustments
@@ -137,8 +138,47 @@ class PhotoManagerRolle implements Kamerarolle {
     serienauswahl: z?.auswahl ?? false,
   );
 
-  static Future<List<Rollendatei>?> _dateien(AssetEntity a) async {
-    final original = await a.originFile;
+  /// Meldet unter iOS, wie ein Download aus iCloud vorangeht – einer für
+  /// alle Abrufe (je Abruf einer liesse einen Kanal liegen); ein Lauf
+  /// stellt ohnehin einen Eintrag nach dem anderen bereit.
+  static PMProgressHandler? _beobachter;
+  static Bereitstellung? _bereitstellung;
+
+  /// Ein Abruf über photo_manager, den [b] abbrechen kann (#437). Ohne
+  /// Abbruch hing ein Download aus iCloud, der nie zurückkam, den ganzen
+  /// Lauf auf.
+  static Future<File?> _lade(
+    AssetEntity a,
+    Bereitstellung b, {
+    bool original = true,
+    bool zusatz = false,
+  }) async {
+    if (b.abgebrochen) return null;
+    final abbruch = PMCancelToken();
+    b.beiAbbruch(abbruch.cancelRequest);
+    PMProgressHandler? beobachter;
+    if (Platform.isIOS) {
+      beobachter = _beobachter ??= PMProgressHandler()
+        ..stream.listen((_) => _bereitstellung?.geht());
+      _bereitstellung = b;
+    }
+    try {
+      return await a.loadFile(
+        isOrigin: original,
+        withSubtype: zusatz,
+        cancelToken: abbruch,
+        progressHandler: beobachter,
+      );
+    } finally {
+      if (identical(_bereitstellung, b)) _bereitstellung = null;
+    }
+  }
+
+  static Future<List<Rollendatei>?> _dateien(
+    AssetEntity a,
+    Bereitstellung b,
+  ) async {
+    final original = await _lade(a, b);
     if (original == null) return null;
     // Der Name auf dem Telefon (IMG_1234.HEIC), mit der Endung der Datei,
     // die tatsächlich kommt – der Server erkennt das Format daran.
@@ -162,7 +202,7 @@ class PhotoManagerRolle implements Kamerarolle {
       ),
     ];
     if (a.isLivePhoto) {
-      final film = await a.originFileWithSubtype;
+      final film = await _lade(a, b, zusatz: true);
       if (film != null && film.path != original.path) {
         dateien.add(
           Rollendatei(
@@ -176,7 +216,7 @@ class PhotoManagerRolle implements Kamerarolle {
     if (a.type == AssetType.image &&
         Platform.isIOS &&
         await a.darwin.hasAdjustments) {
-      final bearbeitet = await a.file;
+      final bearbeitet = await _lade(a, b, original: false);
       if (bearbeitet != null && bearbeitet.path != original.path) {
         dateien.add(
           Rollendatei(

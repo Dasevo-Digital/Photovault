@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:kern/abgleich/tus.dart';
 import 'package:kern/abgleich/verbindung.dart';
 
@@ -29,6 +30,10 @@ class Sicherungslauf {
     this.stueck = 32 * 1024 * 1024,
     this.gruppe = 20,
     this.gruppeBytes = 256 * 1024 * 1024,
+    this.nurLokal = false,
+    this.bereitstellFrist = const Duration(minutes: 10),
+    this.stillstand = const Duration(minutes: 30),
+    @visibleForTesting this.pruefTakt = const Duration(seconds: 1),
   });
 
   final Kamerarolle rolle;
@@ -49,6 +54,31 @@ class Sicherungslauf {
   /// zwanzig Videos zu je zwei Gigabyte lägen sonst gleichzeitig dort.
   final int gruppeBytes;
 
+  /// Nur, was schon auf dem Telefon liegt ([Rolleneintrag.lokal]); der Rest
+  /// bleibt offen, ohne als Fehlschlag zu zählen. Für die kurze
+  /// Auffrischung unter iOS: Ein Download aus iCloud passt nicht in ihre
+  /// halbe Minute.
+  final bool nurLokal;
+
+  /// So lange darf das Bereitstellen eines Eintrags ohne Fortschritt
+  /// dauern; danach gilt er als gescheitert, und es geht mit dem nächsten
+  /// weiter (wie bei den Bildern einer Serie).
+  final Duration bereitstellFrist;
+
+  /// Geht es so lange gar nicht voran, verlängert der Lauf seine Sperre
+  /// nicht mehr und hört auf: Ein anderer Lauf soll nicht für immer
+  /// warten. Der letzte Riegel – Bereitstellen ([bereitstellFrist]) und
+  /// jedes Stück beim Hochladen haben eigene Fristen.
+  final Duration stillstand;
+
+  /// Wie oft das Warten auf das Bereitstellen nachsieht, ob es aufhören
+  /// soll.
+  final Duration pruefTakt;
+
+  /// Wann es zuletzt voranging (siehe [stillstand]).
+  DateTime _voran = DateTime.now();
+  void _geht() => _voran = DateTime.now();
+
   /// Läuft, bis alles sicher ist, [abbrechen] ja sagt oder das Netz fehlt.
   /// Wirft [Gesperrt], wenn schon ein anderer Lauf arbeitet.
   Future<Laufbericht> laufe({
@@ -56,12 +86,18 @@ class Sicherungslauf {
     void Function(Fortschritt)? meldung,
   }) async {
     if (!stand.sperre(wer)) throw const Gesperrt();
+    _geht();
     // Ein Stück über langsames Netz oder ein Original aus iCloud kann länger
     // dauern als die Sperre gilt. Ohne diesen Takt übernahm der andere Lauf
-    // sie, und beide arbeiteten am selben Upload.
+    // sie, und beide arbeiteten am selben Upload. Verlängert wird aber nur,
+    // solange es vorangeht (#437): Hing ein Download, hielt der Takt die
+    // Sperre für immer, und jeder andere Lauf endete mit [Gesperrt].
     var verloren = false;
     final puls = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!stand.sperre(wer)) verloren = true;
+      if (DateTime.now().difference(_voran) > stillstand ||
+          !stand.sperre(wer)) {
+        verloren = true;
+      }
     });
     bool halt() => verloren || (abbrechen?.call() ?? false);
     var hochgeladen = 0, vorhanden = 0, fehlgeschlagen = 0;
@@ -108,9 +144,18 @@ class Sicherungslauf {
           while (i < offen.length &&
               bereit.length + ergebnis.length < gruppe &&
               bytes < gruppeBytes) {
+            // Vor jedem Eintrag, nicht erst vor der Gruppe (#437): Bis zu
+            // zwanzig Einträge bereitzustellen kann Minuten dauern, und
+            // „Aus“, der Verlust des WLANs oder die Frist der Aufgabe
+            // griffen erst danach.
+            if (halt()) throw const Abgebrochen();
             _halteSperre();
             final x = offen[i++];
-            final d = await _bereitstellen(x, ergebnis);
+            if (nurLokal && !await (x.lokal?.call() ?? Future.value(true))) {
+              continue;
+            }
+            final d = await _bereitstellen(x, ergebnis, halt);
+            _geht();
             if (d == null) continue;
             bereit[x] = d;
             for (final (f, _) in d) {
@@ -178,17 +223,25 @@ class Sicherungslauf {
 
   /// Die Dateien eines Eintrags samt Prüfsummen; `null` (und ein
   /// vermerkter Fehlschlag), wenn sie sich nicht bereitstellen lassen.
+  /// Wirft [Abgebrochen], wenn [halt] es unterwegs verlangt.
   Future<List<(Rollendatei, String)>?> _bereitstellen(
     Rolleneintrag x,
     Map<String, _Erfolg> aus,
+    bool Function() halt,
   ) async {
     try {
-      final d = await x.dateien();
+      final d = await _warte(x, halt);
       if (d == null || d.isEmpty) {
         _scheitert(x, 'Datei nicht verfügbar', aus);
         return null;
       }
       return [for (final f in d) (f, await _pruefsumme(f.datei.path))];
+    } on Abgebrochen {
+      rethrow;
+    } on _ZuLange {
+      _halteSperre();
+      _scheitert(x, 'Datei kam nicht rechtzeitig', aus);
+      return null;
     } on FileSystemException catch (f) {
       _halteSperre();
       _scheitert(x, f.message, aus);
@@ -201,6 +254,43 @@ class Sicherungslauf {
       _scheitert(x, '$f', aus);
       return null;
     }
+  }
+
+  /// Wartet auf die Dateien von [x] – aber nicht für immer (#437). Soll
+  /// der Lauf aufhören ([halt]), wirft es [Abgebrochen]; geht es länger als
+  /// [bereitstellFrist] nicht voran, [_ZuLange]. In beiden Fällen bricht die
+  /// Rolle den Abruf ab, soweit sie kann; was danach noch kommt, verfällt.
+  Future<List<Rollendatei>?> _warte(Rolleneintrag x, bool Function() halt) {
+    final b = Bereitstellung();
+    final fertig = Completer<List<Rollendatei>?>();
+    late final Timer uhr;
+    void ende(Object grund) {
+      uhr.cancel();
+      b.brichAb();
+      if (!fertig.isCompleted) fertig.completeError(grund);
+    }
+
+    uhr = Timer.periodic(pruefTakt, (_) {
+      if (halt()) {
+        ende(const Abgebrochen());
+      } else if (DateTime.now().difference(b.zuletzt) > bereitstellFrist) {
+        ende(const _ZuLange());
+      } else if (b.zuletzt.isAfter(_voran)) {
+        // Ein Download aus iCloud, der vorangeht, ist kein Stillstand.
+        _voran = b.zuletzt;
+      }
+    });
+    Future.sync(() => x.dateien(b)).then(
+      (d) {
+        uhr.cancel();
+        if (!fertig.isCompleted) fertig.complete(d);
+      },
+      onError: (Object f, StackTrace s) {
+        uhr.cancel();
+        if (!fertig.isCompleted) fertig.completeError(f, s);
+      },
+    );
+    return fertig.future;
   }
 
   /// Sichert, was [bereit] liegt, und trägt das Ergebnis in [aus] ein.
@@ -271,6 +361,7 @@ class Sicherungslauf {
             abbrechen: abbrechen,
             fortschritt: (bytes, von) {
               // Ein grosses Video braucht länger als die Sperre gilt.
+              _geht();
               stand.sperre(wer);
               melde(datei: f.name, bytes: bytes, von: von);
             },
@@ -363,6 +454,12 @@ class Gesperrt implements Exception {
 /// [Sicherungslauf._halteSperre]).
 class _SperreVerloren implements Exception {
   const _SperreVerloren();
+}
+
+/// Das Bereitstellen ging zu lange nicht voran (siehe
+/// [Sicherungslauf.bereitstellFrist]).
+class _ZuLange implements Exception {
+  const _ZuLange();
 }
 
 /// Wie weit ein Lauf ist.
