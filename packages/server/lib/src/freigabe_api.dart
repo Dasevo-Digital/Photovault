@@ -14,6 +14,7 @@ import 'package:kern/services/import_service.dart'
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
+import 'albumsicht.dart';
 import 'absender.dart';
 import 'anmeldung_api.dart';
 import 'bibliothek.dart';
@@ -152,11 +153,19 @@ class Freigabeapi {
     Request r,
     Freigabe f,
     String link,
-    AppDatabase db,
-  ) async {
-    final anzahl = f.album != null
-        ? (await db.albumAufnahmen(f.album!)).length
-        : f.aufnahmen!.length;
+    AppDatabase db, {
+    Map<String, int>? gezaehlt,
+  }) async {
+    // Gezählt in der Datenbank, je Album einmal: Vorher lud jeder Link auf
+    // ein Album alle dessen Zeilen, nur um sie zu zählen.
+    final album = f.album;
+    final int anzahl;
+    if (album == null) {
+      anzahl = f.aufnahmen!.length;
+    } else {
+      anzahl = gezaehlt?[album] ?? await db.sichtbareAnzahl(album);
+      gezaehlt?[album] = anzahl;
+    }
     return {
       'id': f.id,
       'titel': f.titel,
@@ -254,9 +263,11 @@ class Freigabeapi {
     } on SchluesselPasstNicht catch (e) {
       return _json({'fehler': 'Die Links der Freigaben: $e'}, status: 500);
     }
+    final gezaehlt = <String, int>{};
     return _json({
       'freigaben': [
-        for (final x in alle) await _alsJson(r, x.freigabe, x.link, db),
+        for (final x in alle)
+          await _alsJson(r, x.freigabe, x.link, db, gezaehlt: gezaehlt),
       ],
     });
   }

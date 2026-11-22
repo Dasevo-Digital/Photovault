@@ -447,6 +447,49 @@ void main() {
     },
   );
 
+  // #436: „Geteilt mit mir“ fragt je Besitzer einmal nach Alben,
+  // Anzahlen und Titelbildern – mit denselben Angaben wie vorher.
+  test('geteilt mit mir: mehrere Alben eines Besitzers, gewähltes '
+      'Titelbild', () async {
+    final (strand, berg, privat) = await urlaub();
+    await befehl(erikaToken, 'albumAnlegen', {
+      'albumId': 'zweites',
+      'name': 'Zweites',
+      'angelegtAm': '2026-10-18T10:00:00Z',
+    });
+    await befehl(erikaToken, 'albumFuellen', {
+      'albumId': 'zweites',
+      'ids': [berg, privat],
+    });
+    await befehl(erikaToken, 'albumTitelbildSetzen', {
+      'albumId': 'zweites',
+      'id': privat,
+    });
+    await teile(max.id);
+    await frag(
+      'PUT',
+      '/api/v1/alben/zweites/teilungen/${max.id}',
+      token: erikaToken,
+      kopf: {'content-type': 'application/json'},
+      inhalt: jsonEncode({'beitragen': true}),
+    );
+    final liste = await mitMir(maxToken);
+    expect(liste.map((a) => a['name']), unorderedEquals(['Urlaub', 'Zweites']));
+    final urlaubKarte = liste.singleWhere((a) => a['name'] == 'Urlaub');
+    final zweites = liste.singleWhere((a) => a['name'] == 'Zweites');
+    expect(urlaubKarte['anzahl'], 2);
+    expect([strand, berg], contains(urlaubKarte['titelbild']));
+    expect(urlaubKarte['beitragen'], false);
+    expect(zweites['anzahl'], 2);
+    expect(zweites['titelbild'], privat);
+    expect(zweites['titelstand'], isNotNull);
+    expect(zweites['beitragen'], true);
+    // Ein gelöschtes Album verschwindet samt Teilung.
+    final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    await (b.db.delete(b.db.albums)..where((t) => t.id.equals('zweites'))).go();
+    expect((await mitMir(maxToken)).map((a) => a['name']), ['Urlaub']);
+  });
+
   test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
     final (strand, _, _) = await urlaub();
     await teile(max.id, beitragen: true);

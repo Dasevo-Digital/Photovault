@@ -1,3 +1,4 @@
+import 'albumsicht.dart';
 import 'beschriftung_api.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -264,20 +265,22 @@ class Teilungsapi {
     return _Ort(g.teilung.besitzer, g.album, g.bereich.bibliothek.db);
   }
 
-  Future<Set<String>> _drin(_Ort o) async => {
-    for (final a in await o.db.albumAufnahmen(o.album.id)) a.id,
-  };
-
   /// `{kommentare: [{id, aufnahme?, name, text, angelegt, eigener,
   /// loeschbar}], gefaellt: {Aufnahme: {anzahl, ich, namen}}}` – nur zu
   /// dem, was gerade im Album liegt.
   Future<Response> _aktivitaet(Request r, _Ort? o) async {
     if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
     final ich = kontoVon(r).id;
-    final drin = await _drin(o);
+    final kommentare = _dienst.kommentare(o.besitzer, o.album.id);
+    final gefaellt = _dienst.gefaelltIn(o.besitzer, o.album.id);
+    // Nur die Aufnahmen, zu denen es etwas gibt – nicht das ganze Album.
+    final drin = await o.db.sichtbarIn(o.album.id, {
+      for (final k in kommentare) ?k.aufnahme,
+      ...gefaellt.keys,
+    });
     return _json({
       'kommentare': [
-        for (final k in _dienst.kommentare(o.besitzer, o.album.id))
+        for (final k in kommentare)
           if (k.aufnahme == null || drin.contains(k.aufnahme))
             {
               'id': k.id,
@@ -290,8 +293,7 @@ class Teilungsapi {
             },
       ],
       'gefaellt': {
-        for (final MapEntry(key: aufnahme, value: von)
-            in _dienst.gefaelltIn(o.besitzer, o.album.id).entries)
+        for (final MapEntry(key: aufnahme, value: von) in gefaellt.entries)
           if (drin.contains(aufnahme))
             aufnahme: {
               'anzahl': von.length,
@@ -319,7 +321,8 @@ class Teilungsapi {
       return _json({'fehler': 'Kommentar leer oder zu lang'}, status: 400);
     }
     if (aufnahme != null &&
-        (aufnahme is! String || !(await _drin(o)).contains(aufnahme))) {
+        (aufnahme is! String ||
+            !await o.db.sichtbarImAlbum(o.album.id, aufnahme))) {
       return _json({'fehler': 'nicht im Album'}, status: 404);
     }
     final ich = kontoVon(r);
@@ -362,7 +365,7 @@ class Teilungsapi {
   /// PUT: „Gefällt mir“; DELETE: nicht mehr.
   Future<Response> _gefaellt(Request r, _Ort? o, String aufnahme) async {
     if (o == null) return _json({'fehler': 'unbekannt'}, status: 404);
-    if (!(await _drin(o)).contains(aufnahme)) {
+    if (!await o.db.sichtbarImAlbum(o.album.id, aufnahme)) {
       return _json({'fehler': 'nicht im Album'}, status: 404);
     }
     _dienst.gefaellt(
@@ -413,24 +416,58 @@ class Teilungsapi {
   /// Was mit dem Konto geteilt ist: `{alben: [{id, name, besitzer,
   /// beitragen, anzahl, titelbild?, titelstand?}]}` – `id` ist die
   /// Kennung der Teilung, nicht die des Albums.
+  ///
+  /// Je Besitzer einmal Alben, Anzahlen und Titelbilder: Vorher rechnete
+  /// jedes geteilte Album sie für alle Alben seines Besitzers neu.
   Future<Response> mitMir(Request r) async {
-    final liste = <Map<String, Object?>>[];
-    for (final t in _dienst.mitKonto(kontoVon(r).id)) {
-      final g = await _geteilt(r, t.id);
-      if (g == null) continue;
-      final db = g.bereich.bibliothek.db;
-      final titel = await db.albumTitelbild(g.album);
-      liste.add({
-        'id': t.id,
-        'name': g.album.name,
-        'besitzer': konten.konto(t.besitzer)?.name ?? '',
-        'beitragen': t.beitragen,
-        'anzahl': (await db.albumAnzahlen())[g.album.id] ?? 0,
-        if (titel != null) 'titelbild': titel.id,
-        if (titel != null) 'titelstand': bildstand(Rasterzeile.aus(titel)),
-      });
+    final ich = kontoVon(r).id;
+    final teilungen = [
+      for (final t in _dienst.mitKonto(ich))
+        if (t.empfaenger == ich) t,
+    ];
+    final eintraege = <String, Map<String, Object?>>{};
+    for (final besitzer in {for (final t in teilungen) t.besitzer}) {
+      final db = (await bibliotheken.fuer(besitzer)).bibliothek.db;
+      final alben = {for (final a in await db.alleAlben()) a.id: a};
+      final eigene = [
+        for (final t in teilungen)
+          if (t.besitzer == besitzer) t,
+      ];
+      final geteilt = <AlbumData>[];
+      for (final t in eigene) {
+        final album = alben[t.album];
+        if (album == null) {
+          // Das Album ist weg; die Teilung geht mit (wie in _geteilt).
+          _dienst.entferneAlbum(t.besitzer, t.album);
+        } else {
+          geteilt.add(album);
+        }
+      }
+      if (geteilt.isEmpty) continue;
+      final anzahlen = await db.albumAnzahlen();
+      final titel = await db.albumTitelbilder(geteilt);
+      final bilder = {
+        for (final a in await db.assetsByIds(titel.values.toSet().toList()))
+          a.id: a,
+      };
+      for (final t in eigene) {
+        final album = alben[t.album];
+        if (album == null) continue;
+        final bild = bilder[titel[album.id]];
+        eintraege[t.id] = {
+          'id': t.id,
+          'name': album.name,
+          'besitzer': konten.konto(t.besitzer)?.name ?? '',
+          'beitragen': t.beitragen,
+          'anzahl': anzahlen[album.id] ?? 0,
+          if (bild != null) 'titelbild': bild.id,
+          if (bild != null) 'titelstand': bildstand(Rasterzeile.aus(bild)),
+        };
+      }
     }
-    return _json({'alben': liste});
+    return _json({
+      'alben': [for (final t in teilungen) ?eintraege[t.id]],
+    });
   }
 
   /// Ein geteiltes Album: `{album: {id, name, besitzer, beitragen},
