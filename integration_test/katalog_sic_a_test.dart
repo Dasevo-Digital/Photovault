@@ -2128,6 +2128,13 @@ void main() {
     await einstellungenNeu(tester);
     var auto = await autoGruppe(tester);
     final menge = dropdownBei(auto, de.einstMengeJeLauf);
+    // Seit das Backup oben gelingt, rückt „Menge je Lauf“ nach oben, und
+    // die Glocke der ungelesenen Meldungen oben rechts läge über dem
+    // Eintrag „500 MB“.
+    melde
+      ..alleSchliessen()
+      ..verlaufGelesen();
+    await tester.pump(const Duration(milliseconds: 300));
     await tap(tester, menge);
     await tap(tester, find.text('500 MB').last);
     await eventually(
