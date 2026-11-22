@@ -4860,6 +4860,16 @@ class AppTexteDe extends AppTexte {
   String get gesichtZurueckgeholt => 'Gesicht wird wieder berücksichtigt.';
 
   @override
+  String get gesichtAutomatisch => 'Automatisch zugeordnet';
+
+  @override
+  String get gesichtAutomatischBestaetigen =>
+      'Automatisch zugeordnet – zum Bestätigen antippen';
+
+  @override
+  String get gesichtAutomatischBestaetigt => 'Zuordnung bestätigt.';
+
+  @override
   String gesichtPosition(int nummer, int gesamt) {
     return '$nummer von $gesamt';
   }

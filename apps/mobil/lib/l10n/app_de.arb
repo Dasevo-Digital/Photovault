@@ -895,6 +895,8 @@
     "placeholders": {"name": {"type": "String"}}
   },
   "gesichterWerIstDas": "Wer ist das?",
+  "gesichtAutomatischBestaetigen": "Automatisch zugeordnet – zum Bestätigen antippen",
+  "gesichtAutomatischBestaetigt": "Zuordnung bestätigt.",
   "gesichterAehnliche": "{n} ähnliche Gesichter",
   "@gesichterAehnliche": {
     "placeholders": {"n": {"type": "int"}}

@@ -7963,6 +7963,24 @@ abstract class AppTexte {
   /// **'Gesicht wird wieder berücksichtigt.'**
   String get gesichtZurueckgeholt;
 
+  /// No description provided for @gesichtAutomatisch.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch zugeordnet'**
+  String get gesichtAutomatisch;
+
+  /// No description provided for @gesichtAutomatischBestaetigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch zugeordnet – zum Bestätigen antippen'**
+  String get gesichtAutomatischBestaetigen;
+
+  /// No description provided for @gesichtAutomatischBestaetigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuordnung bestätigt.'**
+  String get gesichtAutomatischBestaetigt;
+
   /// No description provided for @gesichtPosition.
   ///
   /// In de, this message translates to:

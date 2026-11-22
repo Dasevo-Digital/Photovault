@@ -576,6 +576,8 @@
   "gesichterAnzahl": "{n} faces",
   "gesichterVorschlagFrage": "{name}?",
   "gesichterWerIstDas": "Who is this?",
+  "gesichtAutomatischBestaetigen": "Assigned automatically – tap to confirm",
+  "gesichtAutomatischBestaetigt": "Assignment confirmed.",
   "gesichterAehnliche": "{n} similar faces",
   "gesichterDasIst": "This is {name}",
   "gesichterHinweis": "Tap a face to leave it out if it does not belong. The badge in the corner shows it in the whole photo.",

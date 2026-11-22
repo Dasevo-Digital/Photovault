@@ -1531,6 +1531,13 @@ class AppTexteDe extends AppTexte {
   String get gesichterWerIstDas => 'Wer ist das?';
 
   @override
+  String get gesichtAutomatischBestaetigen =>
+      'Automatisch zugeordnet – zum Bestätigen antippen';
+
+  @override
+  String get gesichtAutomatischBestaetigt => 'Zuordnung bestätigt.';
+
+  @override
   String gesichterAehnliche(int n) {
     return '$n ähnliche Gesichter';
   }

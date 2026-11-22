@@ -4825,6 +4825,16 @@ class AppTexteEn extends AppTexte {
   String get gesichtZurueckgeholt => 'This face counts again.';
 
   @override
+  String get gesichtAutomatisch => 'Assigned automatically';
+
+  @override
+  String get gesichtAutomatischBestaetigen =>
+      'Assigned automatically – tap to confirm';
+
+  @override
+  String get gesichtAutomatischBestaetigt => 'Assignment confirmed.';
+
+  @override
   String gesichtPosition(int nummer, int gesamt) {
     return '$nummer of $gesamt';
   }

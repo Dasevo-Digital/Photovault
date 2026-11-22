@@ -176,7 +176,10 @@ extension PersonenAbfragen on AppDatabase {
   /// ja richtig benennen).
   Future<void> loeseZuordnung(String faceId) =>
       (update(faces)..where((t) => t.id.equals(faceId))).write(
-        const FacesCompanion(personId: Value(null)),
+        const FacesCompanion(
+          personId: Value(null),
+          automatischZugeordnet: Value(false),
+        ),
       );
 
   /// Legt alle noch unbenannten Gesichter auf einen Schlag beiseite und
@@ -298,6 +301,29 @@ extension PersonenAbfragen on AppDatabase {
             when f.personId != null && f.embedding != null)
           (personId: f.personId!, vektor: f.embedding!),
     ];
+  }
+
+  /// Die Gesichter von [personId], die die Wiedererkennung ohne Rückfrage
+  /// zugeordnet hat und die noch niemand bestätigt hat – je Aufnahme ihre
+  /// Kennungen. Für das Zeichen an den Fotos der Personenseite (PER-074).
+  Stream<Map<String, List<String>>> watchAutomatischZugeordnete(
+    String personId,
+  ) {
+    final abfrage = selectOnly(faces)
+      ..addColumns([faces.id, faces.assetId])
+      ..where(
+        faces.personId.equals(personId) &
+            faces.automatischZugeordnet.equals(true),
+      );
+    return abfrage.watch().map((zeilen) {
+      final jeAufnahme = <String, List<String>>{};
+      for (final z in zeilen) {
+        final String aufnahme = z.read(faces.assetId)!;
+        final String gesicht = z.read(faces.id)!;
+        (jeAufnahme[aufnahme] ??= <String>[]).add(gesicht);
+      }
+      return jeAufnahme;
+    });
   }
 
   Future<List<FaceData>> facesForPerson(String personId) async {
@@ -758,6 +784,11 @@ extension PersonenAbfragen on AppDatabase {
         // stuende sonst weiter in der Warteschlange.
         vorschlagPersonId: const Value(null),
         vorschlagWert: const Value(null),
+        // Von Hand zugeordnet oder bestätigt: nicht mehr „automatisch“
+        // (PER-074). Wer dieselbe Person noch einmal zuordnet, bestätigt
+        // die Zuordnung damit. Die automatische Übernahme setzt die
+        // Kennzeichnung danach selbst.
+        automatischZugeordnet: const Value(false),
       ),
     );
     final assignedFaces = await (select(

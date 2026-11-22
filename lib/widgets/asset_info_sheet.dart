@@ -31,6 +31,7 @@ import 'star_rating.dart';
 import 'selection_action_bar.dart' show confirmDialog;
 import '../services/meldungsdienst.dart';
 import 'namens_dialog.dart' show frageNamen;
+import 'automatisch_zugeordnet_marke.dart';
 import 'profilbild.dart';
 import 'package:kern/services/laendernamen.dart';
 import 'package:kern/services/exif_camera.dart'
@@ -74,7 +75,11 @@ class AssetInfoSheet extends StatefulWidget {
 class _AssetFace {
   final PersonData person;
   final String? cropRelativePath;
-  const _AssetFace(this.person, this.cropRelativePath);
+
+  /// Die Gesichter dieser Person im Foto, die die Wiedererkennung ohne
+  /// Rückfrage zugeordnet hat (PER-074) – leer, wenn keins.
+  final List<String> automatisch;
+  const _AssetFace(this.person, this.cropRelativePath, this.automatisch);
 }
 
 class _AssetInfoSheetState extends State<AssetInfoSheet> {
@@ -272,12 +277,24 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
     final peopleById = {for (final p in people) p.id: p};
     final items = <_AssetFace>[];
     final seen = <String>{};
+    final automatisch = <String, List<String>>{};
+    for (final face in faces) {
+      if (automatischZugeordnet(face)) {
+        (automatisch[face.personId!] ??= <String>[]).add(face.id);
+      }
+    }
     for (final face in faces) {
       final personId = face.personId;
       if (personId == null) continue;
       final person = peopleById[personId];
       if (person == null || !seen.add(personId)) continue;
-      items.add(_AssetFace(person, face.cropRelativePath));
+      items.add(
+        _AssetFace(
+          person,
+          face.cropRelativePath,
+          automatisch[personId] ?? const [],
+        ),
+      );
     }
     if (mounted) setState(() => _peopleFaces = items);
   }
@@ -832,7 +849,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                     const SizedBox(width: 12),
                                 itemBuilder: (context, index) {
                                   final item = _peopleFaces[index];
-                                  return GestureDetector(
+                                  final kopf = GestureDetector(
                                     onTap: () => Navigator.of(context).push(
                                       MaterialPageRoute(
                                         builder: (_) => PersonDetailScreen(
@@ -867,6 +884,30 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                         ),
                                       ],
                                     ),
+                                  );
+                                  if (item.automatisch.isEmpty) return kopf;
+                                  // Neben dem Kopf im Stapel: Ein Tipp auf
+                                  // das Zeichen bestätigt, einer auf den
+                                  // Kopf öffnet weiter die Person.
+                                  return Stack(
+                                    children: [
+                                      kopf,
+                                      Positioned(
+                                        top: 0,
+                                        right: 0,
+                                        child: AutomatischZugeordnetMarke(
+                                          beiBestaetigen: () async {
+                                            await bestaetigeZuordnung(
+                                              context,
+                                              widget.db,
+                                              item.automatisch,
+                                              item.person.id,
+                                            );
+                                            await _loadPeople();
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   );
                                 },
                               ),

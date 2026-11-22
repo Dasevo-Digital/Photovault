@@ -373,6 +373,22 @@ class _BetrachterState extends State<Betrachter> {
     if (mounted) _gesichterNeu();
   }
 
+  /// Bestätigt eine automatische Zuordnung (PER-074): dieselbe Person
+  /// noch einmal zugeordnet, das nimmt die Kennzeichnung weg.
+  Future<void> _gesichtBestaetigen(GesichtAufAufnahme g) async {
+    final person = g.person;
+    if (person == null) return;
+    final t = AppTexte.of(context);
+    final bote = ScaffoldMessenger.of(context);
+    await widget.sitzung.db.fuehreAus(
+      GesichterZuordnen([g.gesicht.id], person.id),
+    );
+    bote
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(t.gesichtAutomatischBestaetigt)));
+    if (mounted) _gesichterNeu();
+  }
+
   Future<void> _rahmenGezogen(Rect kasten) async {
     final t = AppTexte.of(context);
     final bote = ScaffoldMessenger.of(context);
@@ -720,6 +736,7 @@ class _BetrachterState extends State<Betrachter> {
                           aufziehen: _aufziehen && i == _index,
                           beiTipp: _gesichtGetippt,
                           beiRahmen: _rahmenGezogen,
+                          beiBestaetigen: _gesichtBestaetigen,
                         )
                       : null,
                 ),

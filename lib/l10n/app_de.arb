@@ -2853,6 +2853,9 @@
   "gesichtIgnorieren": "Ignorieren",
   "gesichtIgnoriert": "Ignoriert",
   "gesichtZurueckgeholt": "Gesicht wird wieder berücksichtigt.",
+  "gesichtAutomatisch": "Automatisch zugeordnet",
+  "gesichtAutomatischBestaetigen": "Automatisch zugeordnet – zum Bestätigen antippen",
+  "gesichtAutomatischBestaetigt": "Zuordnung bestätigt.",
   "gesichtPosition": "{nummer} von {gesamt}",
   "@gesichtPosition": {
     "placeholders": {

@@ -3,6 +3,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/db/rasterzeile.dart';
 import 'package:kern/services/gesichtsuebersicht.dart';
 
+import '../l10n/app_localizations.dart';
 import '../sitzung.dart';
 
 /// Die Gesichter eines Fotos als Rahmen darüber – und ein Gesicht von Hand
@@ -10,6 +11,8 @@ import '../sitzung.dart';
 /// das PhotoView zoomt; die Rahmen wachsen also mit.
 ///
 /// Farben wie dort: benannt grün, unbenannt orange, beiseitegelegt grau.
+/// Ein Gesicht, das die Wiedererkennung ohne Rückfrage zugeordnet hat,
+/// trägt oben rechts ein Zeichen; ein Tipp darauf bestätigt (PER-074).
 class Gesichtsebene extends StatelessWidget {
   const Gesichtsebene({
     super.key,
@@ -19,6 +22,7 @@ class Gesichtsebene extends StatelessWidget {
     required this.aufziehen,
     required this.beiTipp,
     required this.beiRahmen,
+    this.beiBestaetigen,
   });
 
   final Sitzung sitzung;
@@ -31,6 +35,9 @@ class Gesichtsebene extends StatelessWidget {
 
   /// Der aufgezogene Rahmen in Anteilen des Bildes.
   final void Function(Rect kasten) beiRahmen;
+
+  /// Bestätigt eine automatische Zuordnung.
+  final void Function(GesichtAufAufnahme g)? beiBestaetigen;
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -55,6 +62,7 @@ class Gesichtsebene extends StatelessWidget {
                 aufziehen: aufziehen,
                 beiTipp: beiTipp,
                 beiRahmen: beiRahmen,
+                beiBestaetigen: beiBestaetigen,
               ),
             ),
           ),
@@ -70,12 +78,14 @@ class _Flaeche extends StatefulWidget {
     required this.aufziehen,
     required this.beiTipp,
     required this.beiRahmen,
+    this.beiBestaetigen,
   });
 
   final List<GesichtAufAufnahme> gesichter;
   final bool aufziehen;
   final void Function(GesichtAufAufnahme g) beiTipp;
   final void Function(Rect kasten) beiRahmen;
+  final void Function(GesichtAufAufnahme g)? beiBestaetigen;
 
   @override
   State<_Flaeche> createState() => _FlaecheState();
@@ -146,7 +156,12 @@ class _FlaecheState extends State<_Flaeche> {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => widget.beiTipp(g),
-                    child: _Rahmen(g: g),
+                    child: _Rahmen(
+                      g: g,
+                      beiBestaetigen: widget.beiBestaetigen == null
+                          ? null
+                          : () => widget.beiBestaetigen!(g),
+                    ),
                   ),
                 ),
               ),
@@ -170,9 +185,10 @@ class _FlaecheState extends State<_Flaeche> {
 }
 
 class _Rahmen extends StatelessWidget {
-  const _Rahmen({required this.g});
+  const _Rahmen({required this.g, this.beiBestaetigen});
 
   final GesichtAufAufnahme g;
+  final VoidCallback? beiBestaetigen;
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +224,36 @@ class _Rahmen extends StatelessWidget {
                 g.person!.name,
                 maxLines: 1,
                 style: const TextStyle(color: Colors.white, fontSize: 11),
+              ),
+            ),
+          ),
+        if (f.automatischZugeordnet && g.person != null && !f.isIgnored)
+          Positioned(
+            top: 2,
+            right: 2,
+            // Ein eigener Tipp-Empfänger im Rahmen: Der innere gewinnt,
+            // ein Tipp auf das Zeichen öffnet also nicht zugleich das
+            // Benennen.
+            child: Tooltip(
+              message: AppTexte.of(context).gesichtAutomatischBestaetigen,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: beiBestaetigen,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.amberAccent, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    size: 12,
+                    color: Colors.amberAccent,
+                  ),
+                ),
               ),
             ),
           ),

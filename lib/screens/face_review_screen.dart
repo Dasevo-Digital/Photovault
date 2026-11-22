@@ -18,6 +18,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
 import '../widgets/asset_info_sheet.dart';
 import '../widgets/bibliotheksbild.dart';
+import '../widgets/automatisch_zugeordnet_marke.dart';
 import '../widgets/gesichtsrahmen.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/pin_dialogs.dart';
@@ -240,6 +241,14 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// Bestätigt eine automatische Zuordnung (PER-074).
+  Future<void> _bestaetigen(FaceData face) async {
+    final person = face.personId;
+    if (person == null) return;
+    await bestaetigeZuordnung(context, widget.library.db, [face.id], person);
+    _load();
   }
 
   Future<void> _tapFace(FaceData face) async {
@@ -945,6 +954,7 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
                               flaeche: Size(w, h),
                               beiTipp: () => _tapFace(face),
                               beiMenue: (stelle) => _kontextmenue(stelle, face),
+                              beiBestaetigen: () => _bestaetigen(face),
                               hervorgehoben:
                                   face.id == widget.hervorgehobenesGesicht,
                             ),

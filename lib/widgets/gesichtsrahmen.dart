@@ -4,6 +4,7 @@ import 'package:kern/db/database.dart';
 import '../l10n/app_localizations.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import 'automatisch_zugeordnet_marke.dart';
 import 'tippfaenger.dart';
 
 /// Ein Kasten um ein erkanntes Gesicht, mit dem Namen darunter.
@@ -37,6 +38,11 @@ class Gesichtsrahmen extends StatelessWidget {
   final VoidCallback? beiTipp;
   final void Function(Offset stelle)? beiMenue;
 
+  /// Bestätigt eine automatische Zuordnung (PER-074). Trägt das Gesicht
+  /// die Kennzeichnung, steht oben rechts im Rahmen ein Zeichen; ein Tipp
+  /// darauf ruft dies, ein Tipp auf den Rahmen weiter [beiTipp].
+  final VoidCallback? beiBestaetigen;
+
   /// Das Gesicht, nach dem gefragt war – etwa „Im Foto zeigen“ in den
   /// Personen (Issue #189): orange und kräftiger, wie in Browser und Handy.
   final bool hervorgehoben;
@@ -59,6 +65,7 @@ class Gesichtsrahmen extends StatelessWidget {
     required this.flaeche,
     this.beiTipp,
     this.beiMenue,
+    this.beiBestaetigen,
     this.massstab = 1,
     this.hervorgehoben = false,
   });
@@ -84,69 +91,95 @@ class Gesichtsrahmen extends StatelessWidget {
     final beschriftung = gesicht.isIgnored
         ? t.gesichtIgnoriert
         : personName ?? t.gesichtUnbenannt;
-    return Positioned(
-      left: gesicht.boxX * flaeche.width,
-      top: gesicht.boxY * flaeche.height,
-      width: gesicht.boxW * flaeche.width,
-      height: gesicht.boxH * flaeche.height,
-      child: Tippfaenger(
-        beiTipp: beiTipp,
-        // Der Rahmen liegt über der Fläche und fängt den Klick zuerst
-        // ab – ohne diese Zeile bekäme man auf einem Gesicht das Menü
-        // der freien Fläche.
-        beiMenue: beiMenue,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final m = massstab > 0 ? massstab : 1.0;
-            // In Schirmpunkten: mit dem Gesicht wachsend, aber nie unter
-            // 13 – sonst ist ein Gesicht in einer Gruppe nicht zu lesen.
-            final schirm = constraints.biggest.shortestSide * m;
-            final schrift = (schirm * 0.16).clamp(13.0, 18.0) / m;
-            return Semantics(
-              label: beschriftung,
-              button: beiTipp != null,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: hervorgehoben ? hervorhebung : farbeFuer(gesicht),
-                    width: (hervorgehoben ? 3 : 2) / m,
-                  ),
+    final breite = gesicht.boxW * flaeche.width;
+    final hoehe = gesicht.boxH * flaeche.height;
+    final m = massstab > 0 ? massstab : 1.0;
+    final rahmen = Tippfaenger(
+      beiTipp: beiTipp,
+      // Der Rahmen liegt über der Fläche und fängt den Klick zuerst
+      // ab – ohne diese Zeile bekäme man auf einem Gesicht das Menü
+      // der freien Fläche.
+      beiMenue: beiMenue,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // In Schirmpunkten: mit dem Gesicht wachsend, aber nie unter
+          // 13 – sonst ist ein Gesicht in einer Gruppe nicht zu lesen.
+          final schirm = constraints.biggest.shortestSide * m;
+          final schrift = (schirm * 0.16).clamp(13.0, 18.0) / m;
+          return Semantics(
+            label: beschriftung,
+            button: beiTipp != null,
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: hervorgehoben ? hervorhebung : farbeFuer(gesicht),
+                  width: (hervorgehoben ? 3 : 2) / m,
                 ),
+              ),
+              alignment: Alignment.bottomLeft,
+              // Der Name darf breiter sein als das Gesicht: In einer
+              // Gruppe ist ein Gesicht schmaler als „Anna“, und ein auf
+              // „A…“ gekürzter Name sagt nichts.
+              child: OverflowBox(
                 alignment: Alignment.bottomLeft,
-                // Der Name darf breiter sein als das Gesicht: In einer
-                // Gruppe ist ein Gesicht schmaler als „Anna“, und ein auf
-                // „A…“ gekürzter Name sagt nichts.
-                child: OverflowBox(
-                  alignment: Alignment.bottomLeft,
-                  minWidth: 0,
-                  maxWidth: (constraints.maxWidth > 240 / m
-                      ? constraints.maxWidth
-                      : 240 / m),
-                  child: Container(
-                    color: Colors.black87,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: AppSpacing.xs / m,
-                      vertical: 2 / m,
-                    ),
-                    child: Text(
-                      beschriftung,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: gesicht.isIgnored
-                            ? DunkleFlaeche.zweitText
-                            : DunkleFlaeche.text,
-                        fontSize: schrift,
-                        fontWeight: FontWeight.w600,
-                      ),
+                minWidth: 0,
+                maxWidth: (constraints.maxWidth > 240 / m
+                    ? constraints.maxWidth
+                    : 240 / m),
+                child: Container(
+                  color: Colors.black87,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: AppSpacing.xs / m,
+                    vertical: 2 / m,
+                  ),
+                  child: Text(
+                    beschriftung,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: gesicht.isIgnored
+                          ? DunkleFlaeche.zweitText
+                          : DunkleFlaeche.text,
+                      fontSize: schrift,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
+    );
+    return Positioned(
+      left: gesicht.boxX * flaeche.width,
+      top: gesicht.boxY * flaeche.height,
+      width: breite,
+      height: hoehe,
+      child: !automatischZugeordnet(gesicht)
+          ? rahmen
+          : Stack(
+              fit: StackFit.expand,
+              children: [
+                rahmen,
+                // Neben dem Rahmen im Stapel, nicht darin: So fängt das
+                // Zeichen seinen Tipp allein, und ein Tipp darauf öffnet
+                // nicht zugleich die Person. In Schirmpunkten bemessen wie
+                // die Schrift, aber nie grösser als ein Drittel des
+                // Gesichts.
+                Positioned(
+                  top: 2 / m,
+                  right: 2 / m,
+                  child: AutomatischZugeordnetMarke(
+                    beiBestaetigen: beiBestaetigen,
+                    groesse: (20 / m).clamp(
+                      0.0,
+                      (breite < hoehe ? breite : hoehe) / 3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }

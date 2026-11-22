@@ -28,6 +28,7 @@ import '../theme/app_spacing.dart';
 import '../widgets/tastenkuerzel.dart' show schreibtGerade;
 import '../widgets/bild_zoom_gesten.dart';
 import '../widgets/asset_info_sheet.dart';
+import '../widgets/automatisch_zugeordnet_marke.dart';
 import '../widgets/gesichtsrahmen.dart';
 import '../services/gesicht_von_hand.dart';
 import '../widgets/textrahmen.dart';
@@ -1956,6 +1957,14 @@ class _AssetPageState extends State<_AssetPage> {
     await _gesichterLaden();
   }
 
+  /// Bestätigt eine automatische Zuordnung (PER-074).
+  Future<void> _gesichtBestaetigen(FaceData gesicht) async {
+    final person = gesicht.personId;
+    if (person == null) return;
+    await bestaetigeZuordnung(context, widget.db, [gesicht.id], person);
+    await _gesichterLaden();
+  }
+
   /// Ein aufgezogener Rahmen wird zu einem Gesicht.
   ///
   /// [kasten] steht in Anteilen des Fotos (0..1) – dieselbe Rechnung wie
@@ -2353,6 +2362,8 @@ class _AssetPageState extends State<_AssetPage> {
                                               verkleinerung,
                                           beiTipp: () =>
                                               _gesichtAngetippt(gesicht),
+                                          beiBestaetigen: () =>
+                                              _gesichtBestaetigen(gesicht),
                                         ),
                                   ),
                             if (textkaesten)

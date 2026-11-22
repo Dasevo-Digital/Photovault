@@ -1752,6 +1752,9 @@
   "gesichtIgnorieren": "Ignore",
   "gesichtIgnoriert": "Ignored",
   "gesichtZurueckgeholt": "This face counts again.",
+  "gesichtAutomatisch": "Assigned automatically",
+  "gesichtAutomatischBestaetigen": "Assigned automatically – tap to confirm",
+  "gesichtAutomatischBestaetigt": "Assignment confirmed.",
   "gesichtPosition": "{nummer} of {gesamt}",
   "@gesichtPosition": {
     "placeholders": {

@@ -8,6 +8,7 @@ import 'package:kern/services/face_threshold.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/asset_thumbnail_tile.dart';
+import '../widgets/automatisch_zugeordnet_marke.dart';
 import '../widgets/pin_dialogs.dart';
 import 'package:flutter/foundation.dart' show compute;
 
@@ -47,6 +48,10 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
   /// sich ändert (der Strom darüber).
   final _personenstrom = Stromhalter<PersonData?>();
   final _fotostrom = Stromhalter<List<AssetData>>();
+
+  /// Welche Fotos ein Gesicht dieser Person tragen, das die
+  /// Wiedererkennung ohne Rückfrage zugeordnet hat (PER-074).
+  final _automatikstrom = Stromhalter<Map<String, List<String>>>();
 
   /// Sucht unbenannte Gesichter, die dieser Person ähnlich genug sind, und
   /// legt sie zur Bestätigung vor.
@@ -309,60 +314,14 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
                       ),
                     ),
                     Expanded(
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(AppSpacing.md),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 160,
-                              mainAxisSpacing: 4,
-                              crossAxisSpacing: 4,
-                            ),
-                        itemCount: assets.length,
-                        itemBuilder: (context, index) {
-                          final asset = assets[index];
-                          return AssetThumbnailTile(
-                            asset: Rasterzeile.aus(asset),
-                            paths: library.paths,
-                            onTap: () =>
-                                Navigator.of(context, rootNavigator: true).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => AssetViewerScreen(
-                                      assets: assets,
-                                      initialIndex: index,
-                                      paths: library.paths,
-                                      db: library.db,
-                                      library: library,
-                                      onToggleFavorite: (a) =>
-                                          library.db.fuehreAus(
-                                            FavoritSetzen([
-                                              a.id,
-                                            ], !a.isFavorite),
-                                          ),
-                                      onDelete: (a) => library.db.fuehreAus(
-                                        InDenPapierkorb([a.id]),
-                                      ),
-                                      onLock: (a) async {
-                                        if (await ensureVaultUnlocked(
-                                          context,
-                                          library,
-                                        )) {
-                                          await library.lockAsset(a);
-                                        }
-                                      },
-                                    ),
-                                  ),
-                                ),
-                            onDoubleTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => FaceReviewScreen(
-                                  library: library,
-                                  assets: assets,
-                                  startIndex: index,
-                                ),
-                              ),
-                            ),
-                          );
-                        },
+                      child: StreamBuilder<Map<String, List<String>>>(
+                        stream: _automatikstrom.hole(
+                          person.id,
+                          () =>
+                              library.db.watchAutomatischZugeordnete(person.id),
+                        ),
+                        builder: (context, automatik) =>
+                            _raster(assets, automatik.data ?? const {}),
                       ),
                     ),
                   ],
@@ -372,6 +331,86 @@ class _PersonDetailScreenState extends State<PersonDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Die Fotos der Person; wo ihr Gesicht nur automatisch zugeordnet ist,
+  /// mit dem Zeichen dafür. Ein Tipp darauf bestätigt alle automatisch
+  /// zugeordneten Gesichter der Person auf diesem Foto.
+  Widget _raster(
+    List<AssetData> assets,
+    Map<String, List<String>> automatisch,
+  ) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 160,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+      ),
+      itemCount: assets.length,
+      itemBuilder: (context, index) {
+        final asset = assets[index];
+        final kachel = AssetThumbnailTile(
+          asset: Rasterzeile.aus(asset),
+          paths: library.paths,
+          onTap: () => Navigator.of(context, rootNavigator: true).push(
+            MaterialPageRoute(
+              builder: (_) => AssetViewerScreen(
+                assets: assets,
+                initialIndex: index,
+                paths: library.paths,
+                db: library.db,
+                library: library,
+                onToggleFavorite: (a) =>
+                    library.db.fuehreAus(FavoritSetzen([a.id], !a.isFavorite)),
+                onDelete: (a) => library.db.fuehreAus(InDenPapierkorb([a.id])),
+                onLock: (a) async {
+                  if (await ensureVaultUnlocked(context, library)) {
+                    await library.lockAsset(a);
+                  }
+                },
+              ),
+            ),
+          ),
+          onDoubleTap: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => FaceReviewScreen(
+                library: library,
+                assets: assets,
+                startIndex: index,
+              ),
+            ),
+          ),
+        );
+        final gesichter = automatisch[asset.id];
+        if (gesichter == null) return kachel;
+        // Oben in der Mitte: Die Ecken gehören schon
+        // Favorit, Format, Ort und Live Photo.
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            kachel,
+            Positioned(
+              top: 4,
+              left: 0,
+              right: 0,
+              child: Center(
+                heightFactor: 1,
+                child: AutomatischZugeordnetMarke(
+                  groesse: 20,
+                  beiBestaetigen: () => bestaetigeZuordnung(
+                    context,
+                    library.db,
+                    gesichter,
+                    person.id,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

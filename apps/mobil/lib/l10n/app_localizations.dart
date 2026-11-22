@@ -2449,6 +2449,18 @@ abstract class AppTexte {
   /// **'Wer ist das?'**
   String get gesichterWerIstDas;
 
+  /// No description provided for @gesichtAutomatischBestaetigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Automatisch zugeordnet – zum Bestätigen antippen'**
+  String get gesichtAutomatischBestaetigen;
+
+  /// No description provided for @gesichtAutomatischBestaetigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Zuordnung bestätigt.'**
+  String get gesichtAutomatischBestaetigt;
+
   /// No description provided for @gesichterAehnliche.
   ///
   /// In de, this message translates to:
