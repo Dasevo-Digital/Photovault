@@ -75,6 +75,13 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.68.0" date="2026-11-22">
+      <description>
+        <p>Location data is protected when sharing: shared albums and libraries hide GPS unless the owner allows it per share, and exports keep image and sidecar consistent.</p>
+        <p>White balance now follows the usual direction (higher Kelvin is warmer); stored edits are converted once and look the same as before.</p>
+        <p>Many fixes from a full test catalogue and code reviews: more robust sync, safer phone backup, colour face crops, crop-aware masks, and better performance.</p>
+      </description>
+    </release>
     <release version="3.67.13" date="2026-11-20">
       <description>
         <p>This release adds verified storage protection, scheduled external-folder checks and device compatibility information.</p>

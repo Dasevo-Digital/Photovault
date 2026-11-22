@@ -1,6 +1,6 @@
 # Datenschutzerklärung
 
-Stand: 20. November 2026 · Photo Vault 3.67.13
+Stand: 22. November 2026 · Photo Vault 3.68.0
 
 ## Kurz
 
