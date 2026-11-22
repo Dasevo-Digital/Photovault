@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' show max;
 
 import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
@@ -471,14 +472,27 @@ class Freigabeapi {
     if (await d.exists()) await d.delete(recursive: true);
   }
 
+  /// Ob [adresse] in der letzten Stunde schon [beitraegeJeStunde] Dateien
+  /// geschickt hat; sonst zählt diese mit. Wie bei der [Bremse] rückt die
+  /// gezählte Adresse ans Ende, und bei zu vielen Adressen gehen erst die
+  /// abgelaufenen, dann die ältesten – vorher die zuerst eingetragene, auch
+  /// wenn das die gerade gezählte war.
   bool _zuViele(String adresse) {
     final jetzt = DateTime.now();
-    final liste = _jeAbsender.putIfAbsent(adresse, () => [])
-      ..removeWhere((t) => jetzt.difference(t) > const Duration(hours: 1));
-    if (liste.length >= beitraegeJeStunde) return true;
-    liste.add(jetzt);
-    if (_jeAbsender.length > 10000) _jeAbsender.remove(_jeAbsender.keys.first);
-    return false;
+    bool alt(DateTime t) => jetzt.difference(t) > const Duration(hours: 1);
+    final liste = (_jeAbsender.remove(adresse) ?? <DateTime>[])
+      ..removeWhere(alt);
+    final zuViele = liste.length >= beitraegeJeStunde;
+    if (!zuViele) liste.add(jetzt);
+    if (_jeAbsender.length >= Bremse.hoechstensEintraege) {
+      _jeAbsender.removeWhere((_, l) => l.isEmpty || alt(l.last));
+      final ueber = _jeAbsender.length - Bremse.hoechstensEintraege * 9 ~/ 10;
+      for (final k in _jeAbsender.keys.take(max(0, ueber)).toList()) {
+        _jeAbsender.remove(k);
+      }
+    }
+    _jeAbsender[adresse] = liste;
+    return zuViele;
   }
 
   /// Eine Datei von einem Gast: der Körper ist die Datei, `?name=` ihr
