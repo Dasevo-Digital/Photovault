@@ -116,6 +116,56 @@ List<ModelCatalogEntry> modelleFuerSprache(
   istInstalliert: library.isModelInstalled,
 );
 
+/// Ein Blatt mit dem Fortschritt eines Laufs (Modell laden, Ortsverzeichnis
+/// laden, Modelle prüfen), das der Lauf über [setze] füttert und am Ende
+/// mit [schliesse] wieder abräumt.
+///
+/// **Warum nicht das `setState` eines StatefulBuilder.** Das Blatt liegt im
+/// Navigator des Arbeitsbereichs, und jeder Klick in die Seitenleiste
+/// räumt diesen Navigator ab. Das nächste `setState` auf dem entsorgten
+/// Builder warf dann mitten in die Schleife des Laufs: Das Laden lief im
+/// Hintergrund zu Ende, aber `reloadModels` bzw. `reloadGeoData` kam nie,
+/// und die App hielt das Modell bis zum Neustart für fehlend. Ein Wert,
+/// auf den das Blatt hört, kann der Lauf dagegen setzen, ob das Blatt
+/// noch steht oder nicht.
+///
+/// [schliesse] nimmt nur das eigene Blatt weg. Ist es schon zu, bleibt der
+/// Navigator, wie er ist – ein blindes `pop` träfe die Seite darunter.
+class Fortschrittsblatt<T> {
+  Fortschrittsblatt.zeige(
+    this._kontext,
+    T anfang,
+    Widget Function(BuildContext kontext, T wert) inhalt,
+  ) : _wert = ValueNotifier<T>(anfang) {
+    showModalBottomSheet<void>(
+      context: _kontext,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (_) => ValueListenableBuilder<T>(
+        valueListenable: _wert,
+        builder: (kontext, wert, _) => inhalt(kontext, wert),
+      ),
+    ).whenComplete(() => _offen = false);
+  }
+
+  final BuildContext _kontext;
+
+  // Bewusst nie entsorgt: Das Blatt hört beim Ausblenden noch zu, und ein
+  // entsorgter Notifier wirft dann („used after being disposed“).
+  final ValueNotifier<T> _wert;
+  var _offen = true;
+
+  /// Ob das Blatt noch steht.
+  bool get offen => _offen;
+
+  void setze(T wert) => _wert.value = wert;
+
+  void schliesse() {
+    if (_offen && _kontext.mounted) Navigator.of(_kontext).pop();
+    _offen = false;
+  }
+}
+
 /// Gemeinsamer Ablauf für Verlegen/Zurücksetzen/Reset: Ladeanzeige → Aktion
 /// ausführen (schließt dabei die DB-Verbindung) → bei Erfolg zum Neustart
 /// auffordern und die App schließen, bei Fehler die bisherigen Daten

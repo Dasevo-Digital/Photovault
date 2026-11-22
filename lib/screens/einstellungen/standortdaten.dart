@@ -73,44 +73,34 @@ Future<void> _downloadGeoData(Einstellungsstand stand) async {
     stand.downloadingGeoData = true;
     stand.geoDataProgress = 0;
   });
-  void Function(void Function())? sheetSetState;
-
-  // Wie bei _downloadModel bewusst nicht auf das Sheet-Future warten – das
-  // löst erst nach dem Schließen im finally unten auf.
-  showModalBottomSheet<void>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setSheetState) {
-        sheetSetState = setSheetState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                AppTexte.of(context).einstGeoLaedt,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: stand.geoDataProgress > 0 ? stand.geoDataProgress : null,
-              ),
-              const SizedBox(height: 8),
-              Text('${(stand.geoDataProgress * 100).toStringAsFixed(0)} %'),
-            ],
+  // Siehe [Fortschrittsblatt]: Ein Klick in die Seitenleiste schliesst das
+  // Blatt, das Laden läuft weiter und wird danach auch eingelesen.
+  final blatt = Fortschrittsblatt<double>.zeige(
+    context,
+    0,
+    (context, fortschritt) => Padding(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            AppTexte.of(context).einstGeoLaedt,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          LinearProgressIndicator(value: fortschritt > 0 ? fortschritt : null),
+          const SizedBox(height: 8),
+          Text('${(fortschritt * 100).toStringAsFixed(0)} %'),
+        ],
+      ),
     ),
   );
 
   try {
     await for (final p in stand.library.geoDataDownloadService.download()) {
       stand.geoDataProgress = p.fraction;
-      sheetSetState?.call(() {});
+      blatt.setze(p.fraction);
     }
     await stand.library.reloadGeoData();
   } catch (e) {
@@ -118,10 +108,8 @@ Future<void> _downloadGeoData(Einstellungsstand stand) async {
       melde.fehler(fehlertext(context, e));
     }
   } finally {
-    if (context.mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
-    stand.aendere(() => stand.downloadingGeoData = false);
+    blatt.schliesse();
+    if (stand.aktiv) stand.aendere(() => stand.downloadingGeoData = false);
   }
 }
 

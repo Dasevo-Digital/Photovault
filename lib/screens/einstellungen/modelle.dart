@@ -238,40 +238,31 @@ Widget _uebersetzungsSchalter(
 /// wenig genug für einen Knopf und zu viel für jeden Start.
 Future<void> _pruefeModelle(Einstellungsstand stand) async {
   final context = stand.kontext;
-  var laeuft = '';
-  void Function(void Function())? blattSetState;
-
-  // Wie beim Herunterladen bewusst ohne `await`: Das Future des Sheets
-  // löst erst beim Schliessen auf, die Prüfung darunter liefe sonst nie.
-  showModalBottomSheet<void>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setBlattState) {
-        blattSetState = setBlattState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                AppTexte.of(context).einstModellePruefenTitel,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              const LinearProgressIndicator(),
-              const SizedBox(height: 8),
-              Text(
-                AppTexte.of(context).einstModellePruefenLaeuft(laeuft),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+  // Wie beim Herunterladen über [Fortschrittsblatt]: Ein Klick in die
+  // Seitenleiste schliesst das Blatt, die Prüfung läuft weiter.
+  final blatt = Fortschrittsblatt<String>.zeige(
+    context,
+    '',
+    (context, laeuft) => Padding(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            AppTexte.of(context).einstModellePruefenTitel,
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        );
-      },
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(),
+          const SizedBox(height: 8),
+          Text(
+            AppTexte.of(context).einstModellePruefenLaeuft(laeuft),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     ),
   );
 
@@ -279,15 +270,10 @@ Future<void> _pruefeModelle(Einstellungsstand stand) async {
   try {
     befunde = await stand.library.modelDownloadService.pruefeAlleInstallierten(
       ModelCatalog.all,
-      fortschritt: (datei) {
-        laeuft = datei;
-        blattSetState?.call(() {});
-      },
+      fortschritt: blatt.setze,
     );
   } finally {
-    if (context.mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
-    }
+    blatt.schliesse();
   }
   if (!context.mounted) return;
 
@@ -351,70 +337,58 @@ Future<void> _downloadModel(
 ) async {
   final context = stand.kontext;
   stand.aendere(() => stand.downloading.add(entry.id));
-  double progress = 0;
-  void Function(void Function())? sheetSetState;
-
-  // WICHTIG: hier bewusst NICHT auf showModalBottomSheet warten – das
-  // Future davon löst erst auf, wenn das Sheet geschlossen wird (also
-  // erst im finally unten). Würden wir hier awaiten, würde der Code
-  // darunter (der eigentliche Download) nie ausgeführt werden.
-  showModalBottomSheet<void>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setSheetState) {
-        sheetSetState = setSheetState;
-        return Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                AppTexte.of(
-                  context,
-                ).einstModellLaedt(modellTitel(AppTexte.of(context), entry.id)),
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              // Bei einer Reihe steht sonst zwoelfmal dasselbe Fenster da
-              // und man weiss nicht, wie weit es noch ist.
-              if (stand.reihenstand != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  AppTexte.of(context).einstAlleModelleLaeuft(
-                    stand.reihenstand!.$1,
-                    stand.reihenstand!.$2,
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-              const SizedBox(height: 12),
-              LinearProgressIndicator(value: progress > 0 ? progress : null),
-              const SizedBox(height: 8),
-              Text('${(progress * 100).toStringAsFixed(0)} %'),
-            ],
+  // Die Reihe steht fest, solange dieses Modell lädt; danach ist der
+  // Bildschirm womöglich schon zu.
+  final reihe = stand.reihenstand;
+  final blatt = Fortschrittsblatt<double>.zeige(
+    context,
+    0,
+    (context, progress) => Padding(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            AppTexte.of(
+              context,
+            ).einstModellLaedt(modellTitel(AppTexte.of(context), entry.id)),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        );
-      },
+          // Bei einer Reihe steht sonst zwoelfmal dasselbe Fenster da
+          // und man weiss nicht, wie weit es noch ist.
+          if (reihe != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              AppTexte.of(context).einstAlleModelleLaeuft(reihe.$1, reihe.$2),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+          const SizedBox(height: 12),
+          LinearProgressIndicator(value: progress > 0 ? progress : null),
+          const SizedBox(height: 8),
+          Text('${(progress * 100).toStringAsFixed(0)} %'),
+        ],
+      ),
     ),
   );
 
   try {
     await for (final p in stand.library.modelDownloadService.download(entry)) {
-      progress = p.fraction;
-      sheetSetState?.call(() {});
+      blatt.setze(p.fraction);
     }
+    // Auch, wenn das Blatt oder der Bildschirm inzwischen zu ist: Ohne das
+    // hielte die App das Modell bis zum Neustart für fehlend.
     await stand.library.reloadModels();
   } catch (e) {
     if (context.mounted) {
       melde.fehler(fehlertext(context, e));
     }
   } finally {
-    if (context.mounted && Navigator.of(context).canPop()) {
-      Navigator.of(context).pop();
+    blatt.schliesse();
+    if (stand.aktiv) {
+      stand.aendere(() => stand.downloading.remove(entry.id));
     }
-    stand.aendere(() => stand.downloading.remove(entry.id));
   }
 }
 
