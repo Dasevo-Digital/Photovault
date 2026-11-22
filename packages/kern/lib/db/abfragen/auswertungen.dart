@@ -22,8 +22,19 @@ extension AuswertungsAbfragen on AppDatabase {
       assets.aiCaptionEdited.equals(false) &
       (alle ? const Constant(true) : assets.aiCaptionScanned.equals(false));
 
-  Future<List<AssetData>> assetsForCaptionBackfill({bool alle = false}) =>
-      (select(assets)..where((t) => _brauchtBeschreibung(alle))).get();
+  ///
+  /// Mit [limit] nur ein Stück ab [offset] – für die Rechenhilfe, die je
+  /// Abruf ein paar Aufnahmen braucht und nicht die ganze Bibliothek
+  /// (siehe [assetsForCombinedImageAnalysis]).
+  Future<List<AssetData>> assetsForCaptionBackfill({
+    bool alle = false,
+    int? limit,
+    int offset = 0,
+  }) {
+    final q = select(assets)..where((t) => _brauchtBeschreibung(alle));
+    if (limit != null) q.limit(limit, offset: offset);
+    return q.get();
+  }
 
   /// Zählvariante von [assetsForCaptionBackfill], siehe [countLocationBackfill].
   Future<int> countCaptionBackfill() =>
@@ -162,8 +173,15 @@ extension AuswertungsAbfragen on AppDatabase {
   /// `hatEmbedding` kommt aus dem Left Join und sagt, ob die CLIP-Stufe für
   /// dieses Foto noch etwas zu tun hat – die beiden anderen Stufen lassen
   /// sich direkt am Asset ablesen ([Assets.sharpnessScore], [Assets.facesScanned]).
+  ///
+  /// Mit [limit] nur ein Stück ab [offset]: Ein verbundener Rechner holt
+  /// alle paar Sekunden fünf Aufträge. Jedes Mal alle offenen Aufnahmen zu
+  /// lesen, hiess bei einer grossen Bibliothek, die Liste tausendfach
+  /// ganz zu laden. Ohne Sortierung, damit SQLite nach dem Stück aufhört;
+  /// die Reihenfolge ist die der Tabelle und bleibt zwischen zwei Stücken
+  /// dieselbe.
   Future<List<({AssetData asset, bool hatEmbedding})>>
-  assetsForCombinedImageAnalysis() async {
+  assetsForCombinedImageAnalysis({int? limit, int offset = 0}) async {
     final query =
         select(assets).join([
           leftOuterJoin(
@@ -178,6 +196,7 @@ extension AuswertungsAbfragen on AppDatabase {
                   assets.facesScanned.equals(false) |
                   imageEmbeddings.assetId.isNull()),
         );
+    if (limit != null) query.limit(limit, offset: offset);
     final rows = await query.get();
     return [
       for (final r in rows)

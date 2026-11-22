@@ -125,9 +125,15 @@ class _Vergabe {
 
 /// `/api/v1/rechnen/…` – Aufträge für verbundene Rechner.
 class Rechenapi {
-  Rechenapi(this.bibliotheken);
+  Rechenapi(this.bibliotheken, {this.seite = 200});
 
   final Bibliotheken bibliotheken;
+
+  /// So viele offene Aufnahmen liest ein Abruf auf einmal. Ein Rechner holt
+  /// alle paar Sekunden fünf Aufträge; bis 3.67 las jeder Abruf dafür alle
+  /// offenen Aufnahmen jeder Art – bei 100 000 neuen Fotos hunderttausend
+  /// Zeilen je Abruf, tausendfach während eines Durchgangs.
+  final int seite;
 
   static const _hoechstens = 20;
 
@@ -153,46 +159,68 @@ class Rechenapi {
     final geraet = geraetVon(anfrage).id;
     final aus = <Map<String, Object?>>[];
 
-    Future<void> nimm(
+    /// Liest Stück für Stück, bis [anzahl] vergeben sind oder nichts mehr
+    /// offen ist. Was ein anderer gerade rechnet, liegt weiter vorn in der
+    /// Tabelle und wird übersprungen; das nächste Stück beginnt dahinter.
+    Future<void> nimm<T>(
       Rechenart art,
-      Iterable<(String, String, Set<String>)> kandidaten, {
+      Future<List<T>> Function(int limit, int offset) lies,
+      (String, String, Set<String>)? Function(T) kandidat, {
       bool deutsch = false,
     }) async {
-      for (final (aufnahme, datei, offen) in kandidaten) {
-        if (aus.length >= anzahl) return;
-        final id = vergabe.vergib(art, aufnahme, geraet);
-        if (id == null) continue;
-        aus.add(
-          Rechenauftrag(
-            id: id,
-            art: art,
-            aufnahme: aufnahme,
-            datei: datei,
-            teile: offen,
-            deutsch: deutsch,
-          ).alsJson(),
-        );
+      for (var ab = 0; aus.length < anzahl; ab += seite) {
+        final zeilen = await lies(seite, ab);
+        for (final z in zeilen) {
+          if (aus.length >= anzahl) return;
+          final c = kandidat(z);
+          if (c == null) continue;
+          final (aufnahme, datei, offen) = c;
+          final id = vergabe.vergib(art, aufnahme, geraet);
+          if (id == null) continue;
+          aus.add(
+            Rechenauftrag(
+              id: id,
+              art: art,
+              aufnahme: aufnahme,
+              datei: datei,
+              teile: offen,
+              deutsch: deutsch,
+            ).alsJson(),
+          );
+        }
+        if (zeilen.length < seite) return;
       }
     }
 
     if (arten.contains(Rechenart.bildanalyse)) {
-      await nimm(Rechenart.bildanalyse, [
-        for (final c in await db.assetsForCombinedImageAnalysis())
-          if (_offen(c, teile) case final offen when offen.isNotEmpty)
-            (c.asset.id, _datei(c.asset), offen),
-      ]);
+      await nimm(
+        Rechenart.bildanalyse,
+        (n, ab) => db.assetsForCombinedImageAnalysis(limit: n, offset: ab),
+        (c) => switch (_offen(c, teile)) {
+          final offen when offen.isNotEmpty => (
+            c.asset.id,
+            _datei(c.asset),
+            offen,
+          ),
+          _ => null,
+        },
+      );
     }
-    if (arten.contains(Rechenart.texterkennung)) {
-      await nimm(Rechenart.texterkennung, [
-        for (final a in await db.assetsForOcrBackfill())
-          (a.id, _datei(a), const <String>{}),
-      ]);
+    // Ist schon alles vergeben, fragt keine weitere Art die Datenbank.
+    if (arten.contains(Rechenart.texterkennung) && aus.length < anzahl) {
+      await nimm(
+        Rechenart.texterkennung,
+        (n, ab) => db.assetsForOcrBackfill(limit: n, offset: ab),
+        (a) => (a.id, _datei(a), const <String>{}),
+      );
     }
-    if (arten.contains(Rechenart.bildbeschreibung)) {
-      await nimm(Rechenart.bildbeschreibung, [
-        for (final a in await db.assetsForCaptionBackfill())
-          (a.id, _datei(a), const <String>{}),
-      ], deutsch: await db.uebersetzeBeschreibungen());
+    if (arten.contains(Rechenart.bildbeschreibung) && aus.length < anzahl) {
+      await nimm(
+        Rechenart.bildbeschreibung,
+        (n, ab) => db.assetsForCaptionBackfill(limit: n, offset: ab),
+        (a) => (a.id, _datei(a), const <String>{}),
+        deutsch: await db.uebersetzeBeschreibungen(),
+      );
     }
     return _json({'auftraege': aus, 'gueltig': vergabe.dauer.inSeconds});
   }

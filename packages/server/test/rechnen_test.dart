@@ -10,6 +10,7 @@ import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/textstellen.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/anmeldung_api.dart';
 import 'package:photo_vault_server/src/rechnen.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -274,6 +275,72 @@ void main() {
     expect((await hole(zweiter, ['texterkennung'])).map((x) => x.aufnahme), [
       'b',
     ], reason: 'ohne „auslassen“ ist sie wieder frei');
+  });
+
+  test(
+    'liest stückweise und vergibt auch, was hinter Vergebenem liegt',
+    () async {
+      // Jeder Abruf eines Rechners las bis 3.67 alle offenen Aufnahmen jeder
+      // Art. Jetzt liest er Stücke; was ein anderer Rechner gerade hat,
+      // liegt vorn und wird übersprungen.
+      for (final id in ['a', 'b', 'c', 'd', 'e']) {
+        await foto(id);
+      }
+      final klein = const Pipeline()
+          .addMiddleware(anmeldungNoetig(konten, Absender()))
+          .addHandler(Rechenapi(bibliotheken, seite: 2).auftraege);
+      Future<List<String>> holeKlein(Map<String, String> wer, int n) async {
+        final r = await klein(
+          Request(
+            'POST',
+            Uri.parse('http://server/api/v1/rechnen/auftraege'),
+            headers: wer,
+            body: jsonEncode({
+              'arten': ['texterkennung'],
+              'anzahl': n,
+            }),
+          ),
+        );
+        expect(r.statusCode, 200);
+        final j = jsonDecode(await r.readAsString()) as Map;
+        return [
+          for (final a in j['auftraege'] as List) '${(a as Map)['aufnahme']}',
+        ];
+      }
+
+      final erste = await holeKlein(rechner, 3);
+      expect(erste, hasLength(3));
+      final zweite = await holeKlein(zweiter, 5);
+      expect({...erste, ...zweite}, {'a', 'b', 'c', 'd', 'e'});
+      expect(zweite, hasLength(2));
+      expect(await holeKlein(rechner, 5), isEmpty);
+    },
+  );
+
+  test('die Kandidaten der drei Arten gibt es auch stückweise', () async {
+    for (final id in ['a', 'b', 'c']) {
+      await foto(id);
+    }
+    final d = await db();
+    final alle = [
+      for (final c in await d.assetsForCombinedImageAnalysis()) c.asset.id,
+    ];
+    expect(alle, hasLength(3));
+    expect([
+      for (final c in await d.assetsForCombinedImageAnalysis(
+        limit: 2,
+        offset: 1,
+      ))
+        c.asset.id,
+    ], alle.sublist(1));
+    final ocr = [for (final a in await d.assetsForOcrBackfill()) a.id];
+    expect([
+      for (final a in await d.assetsForOcrBackfill(limit: 1, offset: 2)) a.id,
+    ], ocr.sublist(2));
+    final text = [for (final a in await d.assetsForCaptionBackfill()) a.id];
+    expect([
+      for (final a in await d.assetsForCaptionBackfill(limit: 2)) a.id,
+    ], text.sublist(0, 2));
   });
 
   group('Rechenvergabe', () {

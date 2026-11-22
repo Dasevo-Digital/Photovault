@@ -802,18 +802,26 @@ extension NachtragsAbfragen on AppDatabase {
   /// (#270): Am Server kamen dieselben vier DNG in drei Tagen fünfmal
   /// dran, jedes Mal vergeblich. Ein neues Modell, eine neue Zeilenführung
   /// oder ein anderes Gerät mit anderer Lesart nimmt sie wieder.
+  ///
+  /// Mit [limit] nur ein Stück ab [offset], siehe
+  /// [assetsForCombinedImageAnalysis].
   Future<List<AssetData>> assetsForOcrBackfill({
     bool alle = false,
     String? stand,
-  }) =>
-      (select(assets)..where(
-            (t) => alle
-                ? _auswertbar(t) &
-                      t.isTrashed.equals(false) &
-                      t.isLocked.equals(false)
-                : _ocrOffen(t, stand),
-          ))
-          .get();
+    int? limit,
+    int offset = 0,
+  }) {
+    final q = select(assets)
+      ..where(
+        (t) => alle
+            ? _auswertbar(t) &
+                  t.isTrashed.equals(false) &
+                  t.isLocked.equals(false)
+            : _ocrOffen(t, stand),
+      );
+    if (limit != null) q.limit(limit, offset: offset);
+    return q.get();
+  }
 
   /// Zählvariante von [assetsForOcrBackfill], siehe [countLocationBackfill].
   Future<int> countOcrBackfill({String? stand}) =>
