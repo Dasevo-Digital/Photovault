@@ -146,12 +146,16 @@ class _SearchScreenState extends State<SearchScreen>
   @override
   Future<void> rasterAktualisieren() async {
     final db = widget.library.db;
+    final vorher = _funde;
     // Über die Kennungen geholt, kämen gelöschte und gesperrte Treffer
     // mit zurück – genau die, die nicht mehr hierher gehören (#235).
     final frisch = await db.assetsByIds(
-      await db.nochSuchbar([for (final a in _funde) a.id]),
+      await db.nochSuchbar([for (final a in vorher) a.id]),
     );
-    if (mounted) setState(() => _zeigeFunde(frisch));
+    // Kam inzwischen eine neue Trefferliste, gilt die (#433).
+    if (mounted && identical(vorher, _funde)) {
+      setState(() => _zeigeFunde(frisch));
+    }
   }
 
   /// Hört, ob sich Aufnahmen ändern, solange Treffer da sind.
@@ -173,14 +177,17 @@ class _SearchScreenState extends State<SearchScreen>
   }
 
   Future<void> _ohneGeloeschte() async {
-    if (_funde.isEmpty) return;
+    final vorher = _funde;
+    if (vorher.isEmpty) return;
     final bleiben = (await widget.library.db.nochSuchbar([
-      for (final a in _funde) a.id,
+      for (final a in vorher) a.id,
     ])).toSet();
-    if (!mounted || bleiben.length == _funde.length) return;
+    // Kam inzwischen eine neue Trefferliste, gilt die (#433).
+    if (!mounted || !identical(vorher, _funde)) return;
+    if (bleiben.length == vorher.length) return;
     setState(() {
       _zeigeFunde([
-        for (final a in _funde)
+        for (final a in vorher)
           if (bleiben.contains(a.id)) a,
       ]);
       _selected.removeWhere((id) => !bleiben.contains(id));
@@ -352,13 +359,17 @@ class _SearchScreenState extends State<SearchScreen>
       await _runSearch();
       return;
     }
+    // Eine Suche, die während des Holens der Wortlisten begann, gilt –
+    // die Deutung käme sonst über ihre Kriterien (#433).
+    final lauf = ++_suchlauf;
+    final vokabular = await _holeVokabular();
+    if (!mounted || lauf != _suchlauf) return;
     final deutung = deuteSuchsatz(
       eingabe,
-      vokabular: await _holeVokabular(),
+      vokabular: vokabular,
       heute: DateTime.now(),
       grundlage: _filters,
     );
-    if (!mounted) return;
     setState(() {
       _satzfunde = deutung.funde;
       if (deutung.hatVerstanden) {
@@ -396,8 +407,22 @@ class _SearchScreenState extends State<SearchScreen>
   /// falsche Auskunft: Gesucht wurde in einem leeren Verzeichnis.
   String? _leerGrund;
 
+  /// Die Nummer der jüngsten Suche.
+  ///
+  /// Eine neue Suche kann beginnen, während die vorige noch läuft: über
+  /// Enter, eine gespeicherte Suche oder das Optionen-Fenster – gesperrt
+  /// ist nur der Pfeilknopf. Vorher schrieb dann, wer zuletzt fertig
+  /// wurde: Die erste KI-Suche lädt das Modell mehrere Sekunden lang, und
+  /// ihre Treffer ersetzten die einer inzwischen angetippten gespeicherten
+  /// Suche, während Feld und Filter diese zeigten; „Suche speichern“ legte
+  /// dann andere Kriterien ab als die gezeigten Treffer, und der
+  /// Ladebalken verschwand schon beim ersten Ende (#433). Nach jedem
+  /// `await` prüft ein Lauf deshalb, ob er noch der jüngste ist.
+  int _suchlauf = 0;
+
   Future<void> _runSearch() async {
     if (_filters.isEmpty) return;
+    final lauf = ++_suchlauf;
     setState(() {
       _loading = true;
       _searched = true;
@@ -434,7 +459,8 @@ class _SearchScreenState extends State<SearchScreen>
         // hindurch – sonst unverändert (siehe LibraryState.insEnglische).
         final anfrage = await widget.library.insEnglische(query);
         queryVector = await halter.mit((c) => c.embedText(anfrage));
-        if (mounted) setState(() => _statusText = null);
+        if (!mounted || lauf != _suchlauf) return;
+        setState(() => _statusText = null);
       }
 
       if (queryVector != null) {
@@ -442,8 +468,8 @@ class _SearchScreenState extends State<SearchScreen>
         // Video ist nicht mehr ein einziges Bild (siehe
         // [LibraryState.suchkandidaten]).
         final embeddings = await widget.library.suchkandidaten();
+        if (!mounted || lauf != _suchlauf) return;
         if (embeddings.isEmpty) {
-          if (!mounted) return;
           setState(() {
             _zeigeFunde(const []);
             _leerGrund = AppTexte.of(context).sucheOhneEmbeddings;
@@ -468,12 +494,13 @@ class _SearchScreenState extends State<SearchScreen>
         final erlaubt = (await widget.library.db.searchAssetIds(
           _filters,
         )).toSet();
+        if (!mounted || lauf != _suchlauf) return;
         // searchAssets sortiert nach Datum – hier zählt die Ähnlichkeit.
         if (_indexNutzen &&
             ExakterVektorindex.passtInsBudget(embeddings) &&
             _index?.passtZu(embeddings) != true) {
           final gebaut = await compute(erstelleVektorindex, embeddings);
-          if (!mounted) return;
+          if (!mounted || lauf != _suchlauf) return;
           gebaut.bindeQuelle(embeddings);
           _index = gebaut;
         }
@@ -486,7 +513,6 @@ class _SearchScreenState extends State<SearchScreen>
           index: _indexNutzen ? _index : null,
         );
         if (rangfolge.isEmpty) {
-          if (!mounted) return;
           setState(() {
             _zeigeFunde(const []);
             _leerGrund = AppTexte.of(context).sucheOhneEmbeddings;
@@ -504,11 +530,11 @@ class _SearchScreenState extends State<SearchScreen>
       String? grund;
       if (results.isEmpty && _filters.textMode == SearchTextMode.ocr) {
         if (await widget.library.db.zaehleMitErkanntemText() == 0) {
-          if (!mounted) return;
+          if (!mounted || lauf != _suchlauf) return;
           grund = AppTexte.of(context).sucheOhneTexterkennung;
         }
       }
-      if (!mounted) return;
+      if (!mounted || lauf != _suchlauf) return;
       setState(() {
         _zeigeFunde(results);
         _leerGrund = grund;
@@ -516,15 +542,17 @@ class _SearchScreenState extends State<SearchScreen>
     } on ModellUnbrauchbar catch (e) {
       // Eigener Zweig, weil hier etwas zu TUN ist: Der Rohtext war eine
       // C++-Zusicherung mit den Pfaden eines fremden Bauservers.
-      if (!mounted) return;
+      if (!mounted || lauf != _suchlauf) return;
       setState(
         () => _error = AppTexte.of(context).sucheModellUnbrauchbar(e.datei),
       );
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || lauf != _suchlauf) return;
       setState(() => _error = AppTexte.of(context).sucheFehlgeschlagen('$e'));
     } finally {
-      if (mounted) {
+      // Nur der jüngste Lauf beendet die Ladeanzeige: Ein überholter,
+      // der zuerst fertig wird, nahm sie sonst dem noch laufenden weg.
+      if (mounted && lauf == _suchlauf) {
         setState(() {
           _loading = false;
           _statusText = null;
