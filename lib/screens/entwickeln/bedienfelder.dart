@@ -278,19 +278,13 @@ mixin _Bedienfelder on _EntwickelnBasis {
     return LayoutBuilder(
       builder: (context, constraints) {
         final widgetSize = Size(constraints.maxWidth, constraints.maxHeight);
-        final assetWidth = widget.asset.widthPx;
-        final assetHeight = widget.asset.heightPx;
-        final displayRect =
-            (assetWidth != null &&
-                assetHeight != null &&
-                assetWidth > 0 &&
-                assetHeight > 0)
-            ? _imageDisplayRect(
-                widgetSize,
-                assetWidth.toDouble(),
-                assetHeight.toDouble(),
-              )
+        // Der Bildbereich des angezeigten Bildes, also mit Zuschnitt und
+        // Drehung (#457) – dieselbe Rechnung wie für die Gesten.
+        final masse = _anzeigeMasse;
+        final displayRect = masse != null
+            ? _imageDisplayRect(widgetSize, masse.$1, masse.$2)
             : Rect.fromLTWH(0, 0, widgetSize.width, widgetSize.height);
+        final entwurf = _draftShape;
         // Siehe [_buildAiSelectMaskEditor]: ohne `SizedBox.expand` meldet
         // der `LayoutBuilder` eine andere Flaeche, als die Geste sie
         // trifft - und keine Form entsteht.
@@ -327,7 +321,12 @@ mixin _Bedienfelder on _EntwickelnBasis {
                 Positioned.fill(
                   child: IgnorePointer(
                     child: CustomPaint(
-                      painter: _ShapeDraftPainter(_draftShape, displayRect),
+                      // Der Entwurf steht im Original und wird für die
+                      // Anzeige über Zuschnitt und Drehung gelegt.
+                      painter: _ShapeDraftPainter(
+                        entwurf == null ? null : _formInDieAnzeige(entwurf),
+                        displayRect,
+                      ),
                     ),
                   ),
                 ),

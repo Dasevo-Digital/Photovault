@@ -4,6 +4,7 @@ import 'dart:ui' show Offset;
 
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
+import 'package:kern/services/bildzuschnitt.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modell_laden.dart';
 
@@ -371,3 +372,12 @@ Uint8List renderMaskPreviewPng(SamMaskResult result) {
 Uint8List renderMaskPngBytes(SamMaskResult result) {
   return Uint8List.fromList(img.encodePng(maskToOriginalResolution(result)));
 }
+
+/// Wie [renderMaskPngBytes], für eine Auswahl auf dem zugeschnittenen oder
+/// gedrehten Bild: Die Maske wird an ihre Stelle im unbeschnittenen Bild
+/// gelegt (siehe [maskeInsOriginal]), denn dort liegen alle Masken.
+Uint8List renderMaskPngBytesImOriginal(
+  (SamMaskResult result, Bildzuschnitt zuschnitt) werte,
+) => Uint8List.fromList(
+  img.encodePng(maskeInsOriginal(maskToOriginalResolution(werte.$1), werte.$2)),
+);

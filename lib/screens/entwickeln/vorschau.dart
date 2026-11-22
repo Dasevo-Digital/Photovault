@@ -337,10 +337,11 @@ mixin _Vorschau on _EntwickelnBasis {
     final sourceFile = await _originalOderMeldung();
     if (sourceFile == null) return;
     Uint8List? bytes;
+    final adjustments = _currentAdjustments();
     try {
       final roh = await NativeImageConverter.developImage(
         sourceFile,
-        adjustments: _currentAdjustments(),
+        adjustments: adjustments,
         masks: _currentMaskLayers(),
         maxDimension: 1600,
         quality: 0.85,
@@ -365,6 +366,7 @@ mixin _Vorschau on _EntwickelnBasis {
       _dragging = false;
       if (bytes != null) {
         _previewBytes = bytes;
+        _vorschauZuschnitt = adjustments.zuschnitt;
         _error = null;
       } else {
         _error = AppTexte.of(context).entwVorschauFehlt;

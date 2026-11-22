@@ -348,7 +348,12 @@ mixin _Masken on _EntwickelnBasis {
     // Der Regler kann weitergezogen sein, während das Foto geladen wurde.
     final jetzt = _draftShape;
     if (jetzt is! LuminanceRangeShape) return;
-    final png = helligkeitsUeberlagerung(jetzt, klein);
+    // Die Fläche liegt über dem angezeigten Bild, also im selben
+    // Ausschnitt und in derselben Drehung wie dieses (#457).
+    final png = helligkeitsUeberlagerung(
+      jetzt,
+      schneideBild(klein, _vorschauZuschnitt),
+    );
     setState(() => _pendingMaskOverlayPng = png);
   }
 
@@ -381,14 +386,28 @@ mixin _Masken on _EntwickelnBasis {
 
   /// Macht die angeklickte Stelle neutral. Gerechnet wird vom angezeigten
   /// Bild aus, auf jedem Weg gleich (#356).
+  ///
+  /// Der Bildbereich kommt aus genau diesem Bild, nicht aus den Massen
+  /// des Originals: Zugeschnitten oder gedreht hat es ein anderes
+  /// Seitenverhältnis, und der Klick traf eine andere Stelle als die,
+  /// auf die man zeigte – oder fiel ganz aus dem Bild (#457).
   Future<void> _graupunkt(Offset local, Size flaeche) async {
-    final punkt = _widgetPointToNormalizedImagePoint(local, flaeche);
     final bytes = _previewBytes;
-    if (punkt == null || bytes == null) return;
+    if (bytes == null) return;
     final t = AppTexte.of(context);
     final bild = await compute(decodeImageBytes, bytes);
     if (bild == null || !mounted) return;
-    final (r, g, b) = _mittelwert(bild, punkt);
+    final stelle = _widgetPointToImagePoint(
+      local,
+      flaeche,
+      bild.width,
+      bild.height,
+    );
+    if (stelle == null) return;
+    final (r, g, b) = _mittelwert(
+      bild,
+      Offset(stelle.dx / bild.width, stelle.dy / bild.height),
+    );
     final neu = weissabgleichFuer(
       r,
       g,
@@ -453,23 +472,52 @@ mixin _Masken on _EntwickelnBasis {
   /// startete sonst einen zweiten. Beide liehen das Modell, zurückgegeben
   /// wurde es in [dispose] nur einmal – das Segmentierungsmodell (101 MB)
   /// blieb dann bis zum Programmende geladen.
-  Future<void> _ensureEmbedding() => _einbettungLaeuft ??= _berechneEinbettung()
-      .whenComplete(() => _einbettungLaeuft = null);
+  Future<void> _ensureEmbedding() {
+    _maskenquelleAbgleichen();
+    return _einbettungLaeuft ??= _berechneEinbettung().whenComplete(
+      () => _einbettungLaeuft = null,
+    );
+  }
 
   Future<void>? _einbettungLaeuft;
+
+  /// Für welchen Zuschnitt [_decodedForMasking] und [_embedding] gerechnet
+  /// sind – `null`, solange keins von beiden da ist.
+  ///
+  /// Beides entsteht aus der angezeigten Vorschau und gehört zu deren
+  /// Ausschnitt. Eine KI-Auswahl wird mit genau diesem Zuschnitt ins
+  /// Original zurückgelegt (#457).
+  Bildzuschnitt? _dekodiertFuer;
+
+  /// Verwirft Dekodierung und Einbettung, wenn die Vorschau inzwischen
+  /// einen anderen Zuschnitt zeigt. Sonst lägen Tipps und Auswahl auf dem
+  /// alten Ausschnitt, während der neue zu sehen ist.
+  void _maskenquelleAbgleichen() {
+    final fuer = _dekodiertFuer;
+    if (fuer == null || fuer.json == _vorschauZuschnitt.json) return;
+    _decodedForMasking = null;
+    _embedding = null;
+    _dekodierung = null;
+    _dekodiertFuer = null;
+  }
 
   Future<void> _berechneEinbettung() async {
     final halter = widget.segmentation;
     final previewBytes = _previewBytes;
+    final zuschnitt = _vorschauZuschnitt;
     if (halter == null || previewBytes == null || _embedding != null) return;
     setState(() {
       _computingEmbedding = true;
       _ladeSegmentierungsmodell = !halter.istGeladen;
     });
 
-    SegmentationService? segmentation;
+    // Nach einem neuen Zuschnitt wird nur die Einbettung neu gerechnet
+    // (siehe [_maskenquelleAbgleichen]); das Modell ist dann schon
+    // geliehen. Ein zweites Leihen gäbe [dispose] nicht mehr zurück.
+    final schonGeliehen = _segmentation;
+    SegmentationService? segmentation = schonGeliehen;
     try {
-      segmentation = await halter.leihen();
+      segmentation ??= await halter.leihen();
     } catch (e) {
       if (mounted) {
         setState(() => _computingEmbedding = false);
@@ -508,6 +556,7 @@ mixin _Masken on _EntwickelnBasis {
       if (!mounted) return;
       setState(() {
         _decodedForMasking = decoded;
+        _dekodiertFuer = zuschnitt;
         _embedding = embedding;
         _segmentation = segmentation;
         _computingEmbedding = false;
@@ -519,14 +568,14 @@ mixin _Masken on _EntwickelnBasis {
         melde.fehler(AppTexte.of(context).entwKiAuswahlFehler('$e'));
       }
     } finally {
-      if (!behalten) halter.zurueckgeben();
+      if (!behalten && schonGeliehen == null) halter.zurueckgeben();
     }
   }
 
   /// Der tatsächlich gerenderte Bildbereich innerhalb eines Widgets, das per
   /// `BoxFit.contain` skaliert/gelettert wird (Muster: BoxFit.contain-Formel).
   /// Gemeinsame Grundlage für [_widgetPointToImagePoint] (Pixel-Koordinaten,
-  /// KI-Auswahl) und [_widgetPointToNormalizedImagePoint] ([0,1]-Koordinaten,
+  /// KI-Auswahl) und [_anzeigepunkt] ([0,1]-Koordinaten,
   /// Vektorformen).
   ///
   /// [widgetSize] ist die volle Fläche des Editors – der Rand, in dem das
@@ -592,30 +641,67 @@ mixin _Masken on _EntwickelnBasis {
     return Offset(dx / rect.width * imageWidth, dy / rect.height * imageHeight);
   }
 
-  /// Wie [_widgetPointToImagePoint], aber bild-normalisiert ([0,1]) und ohne
-  /// ein dekodiertes Bitmap zu brauchen (nutzt direkt Assets.widthPx/heightPx)
-  /// – für die Vektorformen-Editoren, die (anders als die KI-Auswahl) kein
-  /// SAM-Embedding und damit auch keine Dekodierung des Vorschaubilds
-  /// benötigen.
-  Offset? _widgetPointToNormalizedImagePoint(Offset local, Size widgetSize) {
-    final imageWidth = widget.asset.widthPx;
-    final imageHeight = widget.asset.heightPx;
-    if (imageWidth == null ||
-        imageHeight == null ||
-        imageWidth <= 0 ||
-        imageHeight <= 0) {
+  /// Breite und Höhe des **angezeigten** Bildes, gemessen in Bildpunkten
+  /// des Originals – `null`, wenn die Masse des Fotos unbekannt sind.
+  ///
+  /// Angezeigt wird die Vorschau mit Zuschnitt und Drehung (#457). Ihr
+  /// Seitenverhältnis bestimmt, wo das Bild im Editor sitzt; das des
+  /// Originals lag bei jedem Zuschnitt daneben.
+  @override
+  (double, double)? get _anzeigeMasse {
+    final breite = widget.asset.widthPx;
+    final hoehe = widget.asset.heightPx;
+    if (breite == null || hoehe == null || breite <= 0 || hoehe <= 0) {
       return null;
     }
-    final rect = _imageDisplayRect(
-      widgetSize,
-      imageWidth.toDouble(),
-      imageHeight.toDouble(),
+    return _vorschauZuschnitt.masseDerAnzeige(
+      breite.toDouble(),
+      hoehe.toDouble(),
     );
+  }
+
+  /// Wie [_widgetPointToImagePoint], aber anteilig (0..1) im **angezeigten**
+  /// Bild und ohne ein dekodiertes Bitmap zu brauchen – für die
+  /// Vektorformen-Editoren, die (anders als die KI-Auswahl) kein
+  /// SAM-Embedding und damit auch keine Dekodierung des Vorschaubilds
+  /// benötigen. Ins Original, in dem Masken liegen, kommt der Punkt erst
+  /// mit [_insOriginal].
+  Offset? _anzeigepunkt(Offset local, Size widgetSize) {
+    final masse = _anzeigeMasse;
+    if (masse == null) return null;
+    final rect = _imageDisplayRect(widgetSize, masse.$1, masse.$2);
+    if (rect.isEmpty) return null;
     final dx = local.dx - rect.left;
     final dy = local.dy - rect.top;
     if (dx < 0 || dy < 0 || dx > rect.width || dy > rect.height) return null;
     return Offset(dx / rect.width, dy / rect.height);
   }
+
+  /// Ein Punkt der Anzeige im unbeschnittenen Original, über Zuschnitt
+  /// und Drehung zurück (siehe [Bildzuschnitt.insOriginal]).
+  Offset _insOriginal(Offset anzeige) {
+    final (x, y) = _vorschauZuschnitt.insOriginal(anzeige.dx, anzeige.dy);
+    return Offset(x, y);
+  }
+
+  /// Eine in der Anzeige aufgezogene Form im Original.
+  MaskShapeDefinition _formInsOriginal(MaskShapeDefinition form) =>
+      formInsOriginal(
+        form,
+        _vorschauZuschnitt,
+        bildBreite: (widget.asset.widthPx ?? 1).toDouble(),
+        bildHoehe: (widget.asset.heightPx ?? 1).toDouble(),
+      );
+
+  /// Eine gespeicherte Form so, wie sie über dem angezeigten Bild liegt.
+  @override
+  MaskShapeDefinition _formInDieAnzeige(MaskShapeDefinition form) =>
+      formInDieAnzeige(
+        form,
+        _vorschauZuschnitt,
+        bildBreite: (widget.asset.widthPx ?? 1).toDouble(),
+        bildHoehe: (widget.asset.heightPx ?? 1).toDouble(),
+      );
 
   /// Sorgt dafür, dass das Vorschaubild dekodiert vorliegt.
   ///
@@ -626,6 +712,7 @@ mixin _Masken on _EntwickelnBasis {
   /// [_handleFarbeAufnehmen] kehrt ohne dekodiertes Bild wortlos zurück.
   /// Der Farbwähler braucht kein SAM, nur Bildpunkte.
   Future<img.Image?> _ensureDekodiert() {
+    _maskenquelleAbgleichen();
     final vorhanden = _decodedForMasking;
     if (vorhanden != null) return Future.value(vorhanden);
     // Ein laufender Lauf wird geteilt: Zwei Tipps kurz nacheinander
@@ -635,6 +722,7 @@ mixin _Masken on _EntwickelnBasis {
 
   Future<img.Image?> _dekodiereVorschau() async {
     final bytes = _previewBytes;
+    final zuschnitt = _vorschauZuschnitt;
     if (bytes == null) {
       _dekodierung = null;
       return null;
@@ -648,7 +736,10 @@ mixin _Masken on _EntwickelnBasis {
       melde.warnung(AppTexte.of(context).entwVorschauNichtDekodiert);
       return null;
     }
-    setState(() => _decodedForMasking = decoded);
+    setState(() {
+      _decodedForMasking = decoded;
+      _dekodiertFuer = zuschnitt;
+    });
     return decoded;
   }
 
@@ -681,7 +772,7 @@ mixin _Masken on _EntwickelnBasis {
   @override
   Future<void> _handleFarbeAufnehmen(Offset local, Size widgetSize) async {
     if (_maskFormType != _MaskFormType.colorRange) return;
-    final punkt = _widgetPointToNormalizedImagePoint(local, widgetSize);
+    final punkt = _anzeigepunkt(local, widgetSize);
     if (punkt == null) return;
     final decoded = await _ensureDekodiert();
     if (decoded == null || !mounted) return;
@@ -697,10 +788,13 @@ mixin _Masken on _EntwickelnBasis {
     final faktor = maxWert > 0 ? 255.0 / maxWert : 1.0;
 
     final vorher = _draftShape;
+    // Die Farbe kommt aus dem angezeigten Bild, die Marke liegt wie jede
+    // Form im Original.
+    final stelle = _insOriginal(punkt);
     setState(
       () => _draftShape = ColorRangeShape(
-        pointX: punkt.dx,
-        pointY: punkt.dy,
+        pointX: stelle.dx,
+        pointY: stelle.dy,
         red: (pixel.r * faktor).round().clamp(0, 255),
         green: (pixel.g * faktor).round().clamp(0, 255),
         blue: (pixel.b * faktor).round().clamp(0, 255),
@@ -775,7 +869,12 @@ mixin _Masken on _EntwickelnBasis {
     // Sprache stehen, in der die Maske entstanden ist; das ist gewollt,
     // Masken lassen sich wie Alben umbenennen.
     final name = AppTexte.of(context).entwMaskeNummer(_masks.length + 1);
-    final pngBytes = await compute(renderMaskPngBytes, result);
+    // Die Auswahl entstand auf dem angezeigten Ausschnitt; gespeichert
+    // wird sie über dem ganzen Original (#457).
+    final pngBytes = await compute(renderMaskPngBytesImOriginal, (
+      result,
+      _dekodiertFuer ?? Bildzuschnitt.ganz,
+    ));
     final relativePath = widget.paths.maskRelativePath(const Uuid().v4());
     final file = widget.paths.absolute(relativePath);
     await file.parent.create(recursive: true);
@@ -847,33 +946,36 @@ mixin _Masken on _EntwickelnBasis {
 
   // --- Vektor-Masken: Zieh-Gesten -----------------------------------------
 
+  // Der Entwurf ([_draftShape]) steht immer im Original, wie die
+  // gespeicherte Form; die Gesten kommen in Anzeigekoordinaten an und
+  // werden hier umgerechnet (#457).
+
   @override
   void _handleShapePanStart(DragStartDetails details, Size widgetSize) {
-    final point = _widgetPointToNormalizedImagePoint(
-      details.localPosition,
-      widgetSize,
-    );
+    final point = _anzeigepunkt(details.localPosition, widgetSize);
     if (point == null) return;
+    final imBild = _insOriginal(point);
     switch (_maskFormType) {
       case _MaskFormType.freehand:
         setState(
           () => _draftShape = FreehandShape(
-            points: [point],
+            points: [imBild],
             strokeWidth: (_draftShape as FreehandShape?)?.strokeWidth ?? 0.03,
           ),
         );
       case _MaskFormType.ellipse:
       case _MaskFormType.rectangle:
-        // Beide werden gleich aufgezogen: von Ecke zu Ecke.
+        // Beide werden gleich aufgezogen: von Ecke zu Ecke – in der
+        // Anzeige, denn dort ist die Form achsenparallel.
         setState(() => _ellipseDragAnchor = point);
       case _MaskFormType.gradient:
         final feather = (_draftShape as GradientShape?)?.feather ?? 0.3;
         setState(
           () => _draftShape = GradientShape(
-            startX: point.dx,
-            startY: point.dy,
-            endX: point.dx,
-            endY: point.dy,
+            startX: imBild.dx,
+            startY: imBild.dy,
+            endX: imBild.dx,
+            endY: imBild.dy,
             feather: feather,
           ),
         );
@@ -887,35 +989,37 @@ mixin _Masken on _EntwickelnBasis {
 
   @override
   void _handleShapePanUpdate(DragUpdateDetails details, Size widgetSize) {
-    final point = _widgetPointToNormalizedImagePoint(
-      details.localPosition,
-      widgetSize,
-    );
+    final point = _anzeigepunkt(details.localPosition, widgetSize);
     if (point == null) return;
+    final imBild = _insOriginal(point);
     switch (_maskFormType) {
       case _MaskFormType.freehand:
         final current = _draftShape;
         if (current is! FreehandShape) return;
         setState(
           () => _draftShape = FreehandShape(
-            points: [...current.points, point],
+            points: [...current.points, imBild],
             strokeWidth: current.strokeWidth,
           ),
         );
       case _MaskFormType.ellipse:
         final anchor = _ellipseDragAnchor;
         if (anchor == null) return;
+        // Die Rotation ist in Anzeige und Original dieselbe Zahl (siehe
+        // [formInsOriginal]).
         final previous = _draftShape;
         final rotation = previous is EllipseShape ? previous.rotation : 0.0;
         final feather = previous is EllipseShape ? previous.feather : 0.3;
         setState(
-          () => _draftShape = EllipseShape(
-            centerX: (anchor.dx + point.dx) / 2,
-            centerY: (anchor.dy + point.dy) / 2,
-            radiusX: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
-            radiusY: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
-            rotation: rotation,
-            feather: feather,
+          () => _draftShape = _formInsOriginal(
+            EllipseShape(
+              centerX: (anchor.dx + point.dx) / 2,
+              centerY: (anchor.dy + point.dy) / 2,
+              radiusX: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
+              radiusY: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
+              rotation: rotation,
+              feather: feather,
+            ),
           ),
         );
       case _MaskFormType.rectangle:
@@ -925,13 +1029,15 @@ mixin _Masken on _EntwickelnBasis {
         final rotation = previous is RectangleShape ? previous.rotation : 0.0;
         final feather = previous is RectangleShape ? previous.feather : 0.2;
         setState(
-          () => _draftShape = RectangleShape(
-            centerX: (anchor.dx + point.dx) / 2,
-            centerY: (anchor.dy + point.dy) / 2,
-            halfWidth: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
-            halfHeight: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
-            rotation: rotation,
-            feather: feather,
+          () => _draftShape = _formInsOriginal(
+            RectangleShape(
+              centerX: (anchor.dx + point.dx) / 2,
+              centerY: (anchor.dy + point.dy) / 2,
+              halfWidth: math.max(0.01, (point.dx - anchor.dx).abs() / 2),
+              halfHeight: math.max(0.01, (point.dy - anchor.dy).abs() / 2),
+              rotation: rotation,
+              feather: feather,
+            ),
           ),
         );
       case _MaskFormType.gradient:
@@ -941,8 +1047,8 @@ mixin _Masken on _EntwickelnBasis {
           () => _draftShape = GradientShape(
             startX: current.startX,
             startY: current.startY,
-            endX: point.dx,
-            endY: point.dy,
+            endX: imBild.dx,
+            endY: imBild.dy,
             feather: current.feather,
           ),
         );

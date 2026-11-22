@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'dart:ui' show Offset;
 
 import 'package:image/image.dart' as img;
+import 'package:kern/services/bildzuschnitt.dart';
 
 /// Editierbare Vektor-Maskenform (Ergänzung zu den per SAM-Punkt-Prompt
 /// erzeugten KI-Masken, siehe DevelopMasks.shapeDefinitionJson) – alle
@@ -315,6 +316,131 @@ class GradientShape extends MaskShapeDefinition {
     endY: (json['y2'] as num).toDouble(),
     feather: ((json['feather'] as num?)?.toDouble() ?? 0.3).clamp(0.0, 1.0),
   );
+}
+
+/// Rechnet [form] vom **angezeigten** Bild in das unbeschnittene um, in dem
+/// sie gespeichert wird.
+///
+/// Der Entwickeln-Bildschirm zeigt das Foto zugeschnitten und gedreht
+/// ([Bildzuschnitt]), Masken liegen aber immer über dem ganzen Original –
+/// so überstehen sie einen späteren neuen Zuschnitt. Eine Geste kommt in
+/// Anzeigekoordinaten an und muss deshalb hierdurch.
+///
+/// [bildBreite] und [bildHoehe] sind die Masse des unbeschnittenen Fotos;
+/// sie werden für die Strichbreite gebraucht, die sich auf die längere
+/// Kante bezieht.
+///
+/// Die Drehung einer Ellipse oder eines Rechtecks bleibt dieselbe Zahl:
+/// Eine Vierteldrehung des Bildes tauscht stattdessen die beiden Halbachsen.
+/// So zeigt der Regler „Rotation“ an, was man sieht.
+MaskShapeDefinition formInsOriginal(
+  MaskShapeDefinition form,
+  Bildzuschnitt z, {
+  required double bildBreite,
+  required double bildHoehe,
+}) {
+  if (z.istGanz) return form;
+  final quer = z.drehungen.isOdd;
+  return _formUmrechnen(
+    form,
+    punkt: z.insOriginal,
+    achsen: (a, b) =>
+        quer ? (b * z.breite, a * z.hoehe) : (a * z.breite, b * z.hoehe),
+    strich: _laengereKante(z, bildBreite, bildHoehe),
+  );
+}
+
+/// Die Umkehrung von [formInsOriginal]: wo eine gespeicherte Form in der
+/// Anzeige liegt, zum Zeichnen über dem zugeschnittenen Bild.
+MaskShapeDefinition formInDieAnzeige(
+  MaskShapeDefinition form,
+  Bildzuschnitt z, {
+  required double bildBreite,
+  required double bildHoehe,
+}) {
+  if (z.istGanz) return form;
+  final quer = z.drehungen.isOdd;
+  return _formUmrechnen(
+    form,
+    punkt: z.inDieAnzeige,
+    achsen: (a, b) =>
+        quer ? (b / z.hoehe, a / z.breite) : (a / z.breite, b / z.hoehe),
+    strich: 1 / _laengereKante(z, bildBreite, bildHoehe),
+  );
+}
+
+/// Wie lang die längere Kante des Ausschnitts ist, gemessen an der des
+/// ganzen Fotos.
+double _laengereKante(Bildzuschnitt z, double breite, double hoehe) {
+  final ganz = math.max(breite, hoehe);
+  if (ganz <= 0) return 1;
+  return math.max(breite * z.breite, hoehe * z.hoehe) / ganz;
+}
+
+MaskShapeDefinition _formUmrechnen(
+  MaskShapeDefinition form, {
+  required (double, double) Function(double x, double y) punkt,
+  required (double, double) Function(double a, double b) achsen,
+  required double strich,
+}) {
+  Offset versetzt(double x, double y) {
+    final (nx, ny) = punkt(x, y);
+    return Offset(nx, ny);
+  }
+
+  switch (form) {
+    case FreehandShape():
+      return FreehandShape(
+        points: [for (final p in form.points) versetzt(p.dx, p.dy)],
+        strokeWidth: form.strokeWidth * strich,
+      );
+    case EllipseShape():
+      final mitte = versetzt(form.centerX, form.centerY);
+      final (rx, ry) = achsen(form.radiusX, form.radiusY);
+      return EllipseShape(
+        centerX: mitte.dx,
+        centerY: mitte.dy,
+        radiusX: rx,
+        radiusY: ry,
+        rotation: form.rotation,
+        feather: form.feather,
+      );
+    case RectangleShape():
+      final mitte = versetzt(form.centerX, form.centerY);
+      final (hw, hh) = achsen(form.halfWidth, form.halfHeight);
+      return RectangleShape(
+        centerX: mitte.dx,
+        centerY: mitte.dy,
+        halfWidth: hw,
+        halfHeight: hh,
+        rotation: form.rotation,
+        feather: form.feather,
+      );
+    case GradientShape():
+      final start = versetzt(form.startX, form.startY);
+      final ende = versetzt(form.endX, form.endY);
+      return GradientShape(
+        startX: start.dx,
+        startY: start.dy,
+        endX: ende.dx,
+        endY: ende.dy,
+        feather: form.feather,
+      );
+    case ColorRangeShape():
+      final stelle = versetzt(form.pointX, form.pointY);
+      return ColorRangeShape(
+        pointX: stelle.dx,
+        pointY: stelle.dy,
+        red: form.red,
+        green: form.green,
+        blue: form.blue,
+        tolerance: form.tolerance,
+        feather: form.feather,
+      );
+    case LuminanceRangeShape():
+      // Ohne Geometrie: Sie wählt nach Helligkeit, nicht nach Ort.
+      return form;
+  }
 }
 
 double _smoothstep(double t) {

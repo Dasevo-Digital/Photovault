@@ -183,6 +183,15 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
   String? _error;
   Uint8List? _previewBytes;
 
+  /// Der Zuschnitt, mit dem [_previewBytes] gerechnet ist – also das, was
+  /// gerade zu sehen ist (#457).
+  ///
+  /// Nicht dasselbe wie [_zuschnitt]: Der gilt ab dem Moment, in dem er
+  /// gewählt ist, die Vorschau dazu kommt erst nach dem nächsten Render.
+  /// Masken, Pipetten und Graupunkt rechnen vom Bildschirm aus und
+  /// brauchen den Stand, den man sieht.
+  Bildzuschnitt _vorschauZuschnitt = Bildzuschnitt.ganz;
+
   /// Für den Vorher/Nachher-Vergleich (Gedrückt-Halten) – einmalig beim
   /// ersten Halten mit neutralen Reglerwerten gerendert und danach gecacht,
   /// damit wiederholtes Halten keine erneute native Konvertierung auslöst.
@@ -420,6 +429,8 @@ abstract class _EntwickelnBasis extends State<DevelopScreen> {
     double imageWidth,
     double imageHeight,
   );
+  (double, double)? get _anzeigeMasse;
+  MaskShapeDefinition _formInDieAnzeige(MaskShapeDefinition form);
 
   /// Ob ein Klick ins Bild gerade den Graupunkt setzt (#353).
   bool _weissPipette = false;
@@ -913,6 +924,10 @@ class _ShapeDraftPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final s = shape;
     if (s == null) return;
+    // Eine gespeicherte Form kann über den Zuschnitt hinausreichen. Was
+    // ausserhalb liegt, gehört nicht über den schwarzen Rand; ein paar
+    // Punkte Luft, damit Griffe an der Bildkante ganz zu sehen sind.
+    canvas.clipRect(displayRect.inflate(8));
     const fillColor = Color(
       0x8C2196F3,
     ); // Muster: maskToPreviewOverlay (33,150,243, alpha 140).
