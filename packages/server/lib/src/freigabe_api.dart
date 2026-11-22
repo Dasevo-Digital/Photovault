@@ -9,7 +9,8 @@ import 'package:kern/db/database.dart';
 import 'package:kern/protokoll.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/dateikennung.dart';
-import 'package:kern/services/import_service.dart' show ImportOutcome;
+import 'package:kern/services/import_service.dart'
+    show ImportOutcome, ImportResult;
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
@@ -27,6 +28,7 @@ import 'speicher.dart';
 import 'teilbilder.dart';
 import 'videofassung.dart';
 import 'web.dart';
+import 'zeitangaben.dart';
 
 Response _json(Object? daten, {int status = 200, Map<String, String>? kopf}) =>
     Response(
@@ -630,7 +632,7 @@ class Freigabeapi {
       _zaehle(_laufendJeFreigabe, f.id, -1);
       platz?.gib(geschrieben: angekommen);
     }
-    final geaendert = int.tryParse(q['geaendert'] ?? '');
+    final geaendert = zeitAusText(q['geaendert']);
     unawaited(_pruefe(b, eintrag.id, roh, geaendert));
     return _json({'id': eintrag.id}, status: 202);
   }
@@ -770,62 +772,84 @@ class Freigabeapi {
     final ordner = _ordner(b, id);
     final endung = '${x.befund['endung'] ?? ''}';
     final sauber = File(p.join(ordner.path, 'geprueft', 'sauber$endung'));
+    final zuImport = Directory(p.join(ordner.path, 'import'));
+    if (const {'.jpg', '.mp4'}.contains(endung) &&
+        !await sauber.exists() &&
+        await zuImport.exists()) {
+      // Ein früherer Versuch scheiterte nach dem Umbenennen und liess die
+      // Datei im Ordner `import` liegen; danach hiess es immer „Datei
+      // fehlt“. Zurück an ihren Platz.
+      final reste = await zuImport
+          .list()
+          .where((d) => d is File && p.extension(d.path) == endung)
+          .toList();
+      if (reste.length == 1) await (reste.single as File).rename(sauber.path);
+    }
     if (!const {'.jpg', '.mp4'}.contains(endung) || !await sauber.exists()) {
       return _json({'fehler': 'Datei fehlt'}, status: 410);
     }
     // Unter dem Namen des Gastes, mit der Endung der neuen Fassung – der
     // Import nimmt den Namen aus dem Pfad.
     final grund = p.basenameWithoutExtension(x.name);
-    final zuImport = Directory(p.join(ordner.path, 'import'));
     await zuImport.create();
     final datei = await sauber.rename(
       p.join(zuImport.path, '${grund.isEmpty ? 'beitrag' : grund}$endung'),
     );
-    final geaendert = x.befund['geaendert'];
-    if (geaendert is int) {
-      await datei.setLastModified(
-        DateTime.fromMillisecondsSinceEpoch(geaendert),
-      );
+    // Was auch scheitert: Die Datei geht an ihren Platz zurück, und der
+    // Beitrag lässt sich noch einmal annehmen oder ablehnen.
+    Future<void> zurueck() async {
+      if (await datei.exists()) await datei.rename(sauber.path);
+      if (await zuImport.exists()) await zuImport.delete(recursive: true);
     }
-    final ergebnis = await b.importe.importFile(datei.path);
-    var aufnahme = ergebnis.assetId;
-    if (ergebnis.outcome == ImportOutcome.imported && aufnahme != null) {
-      try {
-        await b.nachbearbeitung.neueAufnahme(aufnahme);
-      } catch (f) {
-        protokoll('Nachbearbeitung eines Gastbeitrags gescheitert: $f');
+
+    final ImportResult ergebnis;
+    String? aufnahme;
+    try {
+      // Auch eine Zeit, die vor dieser Prüfung gespeichert wurde.
+      if (zeitpunktAus(x.befund['geaendert']) case final zeit?) {
+        await datei.setLastModified(zeit);
       }
-      (await bibliotheken.fuer(x.konto)).auswertung.anstossen();
-    } else if (ergebnis.outcome == ImportOutcome.duplicateSkipped) {
-      aufnahme = await b.kennungFuer(
-        (await sha256.bind(datei.openRead()).first).toString(),
-      );
-      // Liegt sie gesperrt oder im Papierkorb, holt der Beitrag eines
-      // Gastes sie nicht ins Album; der Beitrag bleibt zum Ablehnen.
-      if (aufnahme != null && await b.verborgen(aufnahme)) {
-        await datei.rename(sauber.path);
-        await zuImport.delete(recursive: true);
+      ergebnis = await b.importe.importFile(datei.path);
+      aufnahme = ergebnis.assetId;
+      if (ergebnis.outcome == ImportOutcome.imported && aufnahme != null) {
+        try {
+          await b.nachbearbeitung.neueAufnahme(aufnahme);
+        } catch (f) {
+          protokoll('Nachbearbeitung eines Gastbeitrags gescheitert: $f');
+        }
+        (await bibliotheken.fuer(x.konto)).auswertung.anstossen();
+      } else if (ergebnis.outcome == ImportOutcome.duplicateSkipped) {
+        aufnahme = await b.kennungFuer(
+          (await sha256.bind(datei.openRead()).first).toString(),
+        );
+        // Liegt sie gesperrt oder im Papierkorb, holt der Beitrag eines
+        // Gastes sie nicht ins Album; der Beitrag bleibt zum Ablehnen.
+        if (aufnahme != null && await b.verborgen(aufnahme)) {
+          await zurueck();
+          return _json({
+            'fehler':
+                'Diese Aufnahme liegt schon in der Bibliothek, gesperrt oder '
+                'im Papierkorb. Ins Album kommt sie so nicht.',
+          }, status: 409);
+        }
+      }
+      if (aufnahme == null) {
+        await zurueck();
         return _json({
-          'fehler':
-              'Diese Aufnahme liegt schon in der Bibliothek, gesperrt oder '
-              'im Papierkorb. Ins Album kommt sie so nicht.',
-        }, status: 409);
+          'fehler': 'Import gescheitert: ${ergebnis.error}',
+        }, status: 500);
       }
-    }
-    if (aufnahme == null) {
-      await datei.rename(sauber.path);
-      await zuImport.delete(recursive: true);
-      return _json({
-        'fehler': 'Import gescheitert: ${ergebnis.error}',
-      }, status: 500);
-    }
-    final album = (await dienst.von(
-      x.konto,
-    )).where((f) => f.freigabe.id == x.freigabe).firstOrNull?.freigabe.album;
-    if (album != null) {
-      await b.db.fuehreAus(
-        AlbumFuellen(album, [await b.db.sichtbareFassung(aufnahme)]),
-      );
+      final album = (await dienst.von(
+        x.konto,
+      )).where((f) => f.freigabe.id == x.freigabe).firstOrNull?.freigabe.album;
+      if (album != null) {
+        await b.db.fuehreAus(
+          AlbumFuellen(album, [await b.db.sichtbareFassung(aufnahme)]),
+        );
+      }
+    } catch (_) {
+      await zurueck();
+      rethrow;
     }
     await _raeumeWeg(b, id);
     return _json({'aufnahme': aufnahme, 'ausgang': ergebnis.outcome.name});

@@ -14,6 +14,7 @@ import 'package:uuid/uuid.dart';
 
 import 'bibliothek.dart';
 import 'fotokammer.dart';
+import 'zeitangaben.dart';
 import 'package:kern/services/import_plan.dart';
 
 /// Hochladen in Stücken, die sich nach einem Abbruch fortsetzen lassen –
@@ -191,7 +192,7 @@ class Hochladen {
     await _schreib(id, {
       'laenge': laenge,
       'name': name,
-      'geaendert': int.tryParse(meta['geaendert'] ?? ''),
+      'geaendert': zeitAusText(meta['geaendert']),
       'pfad': ?zielpfad,
       'sha256': ?meta['sha256'],
       'bearbeitungVon': ?meta['bearbeitungVon'],
@@ -200,7 +201,7 @@ class Hochladen {
       'kammer': ?(meta['kammer'] == '1' && kammer != null ? true : null),
       'xmp': ?meta['xmp'],
       'videoVon': ?meta['videoVon'],
-      'videoZeit': ?int.tryParse(meta['videoZeit'] ?? ''),
+      'videoZeit': ?zeitAusText(meta['videoZeit']),
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     });
     return Response(
@@ -241,7 +242,7 @@ class Hochladen {
     final angaben = <String, Object?>{
       'laenge': laenge,
       'name': name,
-      'geaendert': int.tryParse(q['geaendert'] ?? ''),
+      'geaendert': zeitAusText(q['geaendert']),
       'angelegt': DateTime.now().toUtc().toIso8601String(),
     };
     await eingang.create(recursive: true);
@@ -457,11 +458,9 @@ class Hochladen {
       id,
     ).rename(p.join(ordner.path, a['name']! as String));
     try {
-      final geaendert = a['geaendert'] as int?;
-      if (geaendert != null) {
-        await datei.setLastModified(
-          DateTime.fromMillisecondsSinceEpoch(geaendert),
-        );
+      // Geprüft beim Anlegen; hier auch für Angaben von vorher.
+      if (zeitpunktAus(a['geaendert']) case final zeit?) {
+        await datei.setLastModified(zeit);
       }
       // In die Fotokammer statt in die Bibliothek (#336): Dort bleibt die
       // Datei, bis jemand sie freigibt – dann geht sie durch
@@ -562,15 +561,11 @@ class Hochladen {
     String aufnahme,
     Map<String, Object?> a,
   ) async {
-    final von = a['videoVon'], zeit = a['videoZeit'];
-    if (von is! String || zeit is! int) return;
+    final von = a['videoVon'], zeit = zeitpunktAus(a['videoZeit']);
+    if (von is! String || zeit == null) return;
     final video = await b.db.assetById(von);
     if (video == null || video.isLocked) return;
-    await b.db.uebernimmVideoangaben(
-      aufnahme,
-      video,
-      DateTime.fromMillisecondsSinceEpoch(zeit),
-    );
+    await b.db.uebernimmVideoangaben(aufnahme, video, zeit);
   }
 
   /// Legt eine in der Fotos-App des Telefons bearbeitete Fassung über ihr

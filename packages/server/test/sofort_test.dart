@@ -100,6 +100,23 @@ void main() {
     expect(await reste(), isEmpty);
   });
 
+  // #436: Eine Zeit ausserhalb dessen, was DateTime fasst, warf erst
+  // mitten im Import.
+  test('eine unmögliche Zeit wird übergangen, das Foto kommt an', () async {
+    for (final (farbe, zeit) in [
+      (41, '9999999999999999'),
+      (42, '-99999999999999999'),
+    ]) {
+      final r = await schicke(
+        jpeg(farbe),
+        'name=IMG_$farbe.jpg&geaendert=$zeit',
+      );
+      expect(r.statusCode, 201);
+      expect((await jsonAus(r))['ausgang'], 'imported');
+    }
+    expect(await reste(), isEmpty);
+  });
+
   test('dieselbe Datei noch einmal ist ein Erfolg, keine zweite', () async {
     final bytes = jpeg(80);
     final erste = await jsonAus(await schicke(bytes, 'name=a.jpg'));

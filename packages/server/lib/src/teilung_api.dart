@@ -20,6 +20,7 @@ import 'gastbeitraege.dart';
 import 'konten/kontodienst.dart';
 import 'speicher.dart';
 import 'zeilen_json.dart';
+import 'zeitangaben.dart';
 
 Response _json(Object? daten, {int status = 200}) => Response(
   status,
@@ -550,11 +551,8 @@ class Teilungsapi {
       if (geschrieben != laenge) {
         return _json({'fehler': 'unvollständig'}, status: 400);
       }
-      final geaendert = int.tryParse(q['geaendert'] ?? '');
-      if (geaendert != null) {
-        await datei.setLastModified(
-          DateTime.fromMillisecondsSinceEpoch(geaendert),
-        );
+      if (zeitpunktAus(zeitAusText(q['geaendert'])) case final zeit?) {
+        await datei.setLastModified(zeit);
       }
       final ergebnis = await b.importe.importFile(datei.path);
       var aufnahme = ergebnis.assetId;

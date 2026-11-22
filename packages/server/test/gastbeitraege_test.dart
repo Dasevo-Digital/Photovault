@@ -457,6 +457,72 @@ void main() {
       );
     });
 
+    // #436: Eine unmögliche Änderungszeit warf beim Annehmen erst nach dem
+    // Umbenennen; danach hiess es bei jedem Versuch „Datei fehlt“.
+    test('Annehmen: unmögliche Zeit übergangen, liegengebliebene Datei '
+        'wiedergefunden', () async {
+      if (!(await Abschottung.erkenne()).ohneNetz) {
+        markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+        return;
+      }
+      await befehl('albumAnlegen', {
+        'albumId': 'feier',
+        'name': 'Feier',
+        'angelegtAm': '2026-10-19T10:00:00Z',
+      });
+      final link = await teile({
+        'titel': 'Feier',
+        'album': 'feier',
+        'hochladen': true,
+      });
+      final foto = _fotoVomGast();
+      final r = await frag(
+        'POST',
+        '/api/v1/teilen/$link/beitrag?name=a.jpg&geaendert=9999999999999999',
+        kopf: {
+          'x-pv-teilen': '1',
+          'sec-fetch-site': 'same-origin',
+          'content-length': '${foto.length}',
+        },
+        inhalt: foto,
+      );
+      expect(r.statusCode, 202);
+      final erster = (await warteAufPruefung()).single;
+      expect(erster['zustand'], 'bereit', reason: '$erster');
+      final an = await frag(
+        'POST',
+        '/api/v1/beitraege/${erster['id']}/annehmen',
+        token: erikaToken,
+      );
+      expect(an.statusCode, 200, reason: await an.readAsString());
+
+      // Wie nach einem gescheiterten Versuch mit dem alten Server: Die
+      // geprüfte Datei liegt im Ordner `import`.
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      await b.db.removeAssetFromAlbum(
+        'feier',
+        (await b.db.albumAufnahmen('feier')).single.id,
+      );
+      expect(
+        (await schicke(link, _fotoVomGast(), name: 'b.jpg')).statusCode,
+        202,
+      );
+      final zweiter = (await warteAufPruefung()).single;
+      final dort = Directory('${b.ordner.path}/gaeste/${zweiter['id']}');
+      Directory('${dort.path}/import').createSync();
+      File(
+        '${dort.path}/geprueft/sauber.jpg',
+      ).renameSync('${dort.path}/import/b.jpg');
+      final noch = await frag(
+        'POST',
+        '/api/v1/beitraege/${zweiter['id']}/annehmen',
+        token: erikaToken,
+      );
+      expect(noch.statusCode, 200, reason: await noch.readAsString());
+      expect(await b.db.albumAufnahmen('feier'), hasLength(1));
+      expect(await warteAufPruefung(), isEmpty);
+    });
+
     test('Freigabe gelöscht: offene Beiträge gehen mit', () async {
       await befehl('albumAnlegen', {
         'albumId': 'a',

@@ -395,6 +395,22 @@ void main() {
     expect(await schicke(), 201);
   });
 
+  // #436: Eine Zeit ausserhalb dessen, was DateTime fasst, endete mit 500.
+  test('beitragen mit unmöglicher Zeit: angenommen, Zeit übergangen', () async {
+    await urlaub();
+    await teile(max.id, beitragen: true);
+    final id = (await mitMir(maxToken)).single['id']! as String;
+    final bytes = jpeg(66);
+    final r = await frag(
+      'POST',
+      '/api/v1/geteilt/$id/beitrag?name=see.jpg&geaendert=9999999999999999',
+      token: maxToken,
+      kopf: {'content-length': '${bytes.length}'},
+      inhalt: bytes,
+    );
+    expect(r.statusCode, 201, reason: await r.readAsString());
+  });
+
   test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
     final (strand, _, _) = await urlaub();
     await teile(max.id, beitragen: true);
