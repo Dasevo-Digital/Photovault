@@ -46,6 +46,9 @@ Future<void> main(List<String> argumente) async {
       'Konto und Gerät. Die Datei kann weg.',
     );
   }
+  if (zeitzonenhinweis(DateTime.now()) case final hinweis?) {
+    protokoll(hinweis);
+  }
   if (konten.alle().isEmpty) {
     protokoll(
       'Noch kein Konto. Das erste legt die App beim Verbinden an (aus dem '

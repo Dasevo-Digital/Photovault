@@ -310,3 +310,17 @@ class Einstellungen {
   /// Der eine Schlüssel aus der Zeit vor den Konten – gilt nicht mehr.
   File get alteZugangsdatei => File(p.join(daten.path, 'zugang.txt'));
 }
+
+/// Der Hinweis beim Start, wenn der Server in UTC rechnet – sonst `null`.
+///
+/// Einige Kalenderdaten in Befehlen (Tagesnotizen von Reisen, Daten im
+/// Stammbaum) hängen noch von der Zeitzone ab, in der sie angewandt
+/// werden. Ein Container ohne `TZ` rechnet in UTC und legt sie dann einen
+/// Tag daneben, wenn die Geräte in einer anderen Zone laufen.
+String? zeitzonenhinweis(DateTime jetzt) =>
+    jetzt.timeZoneOffset == Duration.zero
+    ? 'Der Server rechnet in UTC (${jetzt.timeZoneName}). Laufen die Geräte '
+          'in einer anderen Zeitzone, TZ wie dort setzen (z. B. '
+          'TZ=Europe/Berlin) – sonst landen Tagesnotizen und Daten im '
+          'Stammbaum einen Tag daneben.'
+    : null;

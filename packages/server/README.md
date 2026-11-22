@@ -265,9 +265,17 @@ erreichbar (davor gehört der Reverse Proxy):
 
 ```sh
 docker run -d --name photo-vault -p 127.0.0.1:8790:8790 \
-  -e PV_PROXY=privat -v photo-vault-daten:/daten photo-vault-server
+  -e PV_PROXY=privat -e TZ=Europe/Berlin \
+  -v photo-vault-daten:/daten photo-vault-server
 docker exec -it photo-vault photo_vault_server konto anlegen NAME
 ```
+
+**Zeitzone:** `TZ` sollte dieselbe sein wie auf den Geräten (oben als
+Beispiel `Europe/Berlin`). Ohne sie rechnet der Container in UTC, und
+einige Kalenderdaten, die ein Gerät schickt – etwa die Tagesnotiz einer
+Reise oder Daten im Stammbaum –, landen am Server einen Tag daneben. Der
+Server weist beim Start darauf hin, wenn er in UTC läuft. Mit systemd gilt
+die Zeitzone des Rechners.
 
 Der Server läuft im Bild als Benutzer `photovault` (UID 8790). Wer statt
 eines Volumes einen Ordner einbindet, gibt ihn diesem Benutzer
@@ -314,7 +322,8 @@ docker buildx build -f packages/server/Dockerfile --target openvino \
   --platform linux/amd64 -t photo-vault-server:openvino .
 docker run -d --name photo-vault -p 127.0.0.1:8790:8790 \
   --device /dev/dri --group-add "$(stat -c %g /dev/dri/renderD128)" \
-  -e PV_PROXY=privat -v photo-vault-daten:/daten photo-vault-server:openvino
+  -e PV_PROXY=privat -e TZ=Europe/Berlin \
+  -v photo-vault-daten:/daten photo-vault-server:openvino
 ```
 
 Es bringt Intels Bau der ONNX Runtime mit OpenVINO mit – den gibt es fertig

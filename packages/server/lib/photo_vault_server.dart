@@ -12,7 +12,7 @@ export 'src/beschleuniger.dart' show Beschleuniger;
 export 'src/darktable.dart' show DarktableEntwickler;
 export 'src/bibliothek.dart' show Bibliothek;
 export 'src/bibliotheken.dart' show Bibliotheken, Kontobereich;
-export 'src/einstellungen.dart' show Einstellungen;
+export 'src/einstellungen.dart' show Einstellungen, zeitzonenhinweis;
 export 'src/gastpruefung.dart'
     show Abschottung, Gastpruefung, gastPruefen, gastProzessEinrichten;
 export 'src/aussensicherung.dart'

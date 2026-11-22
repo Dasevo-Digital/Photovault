@@ -45,4 +45,15 @@ void main() {
     );
     expect(() => lies({'PV_OEFFENTLICH': 'http://[x'}), throwsArgumentError);
   });
+
+  // #460: Der Server sagt beim Start, wenn er in UTC rechnet – bis #455
+  // gelöst ist, gehört dieselbe Zeitzone wie auf den Geräten dazu.
+  test('Hinweis auf die Zeitzone nur in UTC', () {
+    expect(zeitzonenhinweis(DateTime.utc(2026, 11, 22)), contains('TZ='));
+    final ortszeit = DateTime(2026, 11, 22);
+    expect(
+      zeitzonenhinweis(ortszeit),
+      ortszeit.timeZoneOffset == Duration.zero ? isNotNull : isNull,
+    );
+  });
 }
