@@ -896,14 +896,12 @@ class Teilungsapi {
     final q = r.url.queryParameters;
     final anzahl = (int.tryParse(q['anzahl'] ?? '') ?? 300).clamp(1, 1000);
     final nach = q['nach']?.split('~');
-    final ab = nach != null && nach.length == 2
-        ? (
-            zeit: DateTime.fromMillisecondsSinceEpoch(
-              int.tryParse(nach[0]) ?? 0,
-            ),
-            id: nach[1],
-          )
+    // Wie in der eigenen Zeitleiste: Was kein Lesezeichen ist, fängt
+    // vorn an – auch eine Zeit, die DateTime nicht fasst (vorher ein 500).
+    final zeit = nach != null && nach.length == 2
+        ? lesezeichenzeit(nach[0])
         : null;
+    final ab = zeit == null ? null : (zeit: zeit, id: nach![1]);
     final liste = await partnerzeilen(db, f, anzahl: anzahl, nach: ab);
     return _json({
       'name': konten.konto(konto)?.name ?? '',

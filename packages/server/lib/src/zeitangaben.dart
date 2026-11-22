@@ -27,3 +27,16 @@ DateTime? zeitpunktAus(Object? ms) {
   final m = zeitInMs(ms);
   return m == null ? null : DateTime.fromMillisecondsSinceEpoch(m);
 }
+
+/// So weit reicht DateTime: 100 000 000 Tage um 1970.
+const _dateTimeGrenze = 8640000000000000;
+
+/// Jeder Zeitpunkt, den DateTime fasst – für das Lesezeichen einer
+/// Zeitleiste (`?nach=`), das der Server selbst ausgab und das auch eine
+/// sehr alte oder falsch datierte Aufnahme trifft. `null` ausserhalb.
+DateTime? lesezeichenzeit(String? text) {
+  final ms = int.tryParse(text ?? '');
+  return ms == null || ms.abs() > _dateTimeGrenze
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(ms);
+}

@@ -82,6 +82,7 @@ import 'vollbild.dart';
 import 'web.dart';
 import 'rueckblick_api.dart';
 import 'zeilen_json.dart';
+import 'zeitangaben.dart';
 
 /// Welche Fassung der Schnittstelle der Server spricht. Steigt, sobald sich
 /// etwas so ändert, dass ein älterer Client es falsch verstünde.
@@ -2923,15 +2924,14 @@ class _Lesezeichen {
 
   String get text => '${zeit.millisecondsSinceEpoch}~$id';
 
+  /// `null` für alles, was kein Lesezeichen ist – auch für eine Zeit
+  /// jenseits dessen, was DateTime fasst (vorher ein 500).
   static _Lesezeichen? lies(String? text) {
     if (text == null) return null;
     final i = text.indexOf('~');
     if (i < 0) return null;
-    final ms = int.tryParse(text.substring(0, i));
-    if (ms == null) return null;
-    return _Lesezeichen(
-      DateTime.fromMillisecondsSinceEpoch(ms),
-      text.substring(i + 1),
-    );
+    final zeit = lesezeichenzeit(text.substring(0, i));
+    if (zeit == null) return null;
+    return _Lesezeichen(zeit, text.substring(i + 1));
   }
 }

@@ -31,4 +31,38 @@ void main() {
       expect(antwort.headers['content-type'], typ);
     });
   }
+
+  // #436: `bytes=-` und Zahlen, die nicht in int passen, warfen eine
+  // FormatException – ein 500 ohne Anmeldung über jede Datei eines Links.
+  group('Range, die nichts taugt', () {
+    late File datei;
+    setUp(() {
+      datei = File('${ordner.path}/bild.jpg')
+        ..writeAsBytesSync(List.generate(100, (i) => i));
+    });
+    Future<Response> mit(String range) => dateiAntwort(
+      Request('GET', Uri.parse('http://localhost/'), headers: {'range': range}),
+      datei,
+    );
+    const riesig = '99999999999999999999';
+
+    test('bytes=- liefert die ganze Datei', () async {
+      final r = await mit('bytes=-');
+      expect(r.statusCode, 200);
+      expect(r.headers['content-length'], '100');
+    });
+    test('ein Anfang jenseits jeder Datei: 416', () async {
+      expect((await mit('bytes=$riesig-')).statusCode, 416);
+    });
+    test('ein Ende jenseits der Datei: bis zum Ende', () async {
+      final r = await mit('bytes=10-$riesig');
+      expect(r.statusCode, 206);
+      expect(r.headers['content-range'], 'bytes 10-99/100');
+    });
+    test('mehr letzte Bytes, als es gibt: alle', () async {
+      final r = await mit('bytes=-$riesig');
+      expect(r.statusCode, 206);
+      expect(r.headers['content-range'], 'bytes 0-99/100');
+    });
+  });
 }

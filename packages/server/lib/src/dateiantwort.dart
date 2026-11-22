@@ -22,6 +22,9 @@ const _typen = {
   ...videoMedientypen,
 };
 
+/// Grösser als jede Datei, für Zahlen in `Range`, die nicht in int passen.
+const _riesig = 1 << 62;
+
 /// Antwortet mit [datei], auf Wunsch einem Teil davon (`Range`) – damit
 /// sich ein Video abspielen lässt, ohne es ganz zu laden.
 Future<Response> dateiAntwort(Request anfrage, File datei) async {
@@ -51,15 +54,27 @@ Future<Response> dateiAntwort(Request anfrage, File datei) async {
     );
   }
   final a = bereich.group(1)!, e = bereich.group(2)!;
+  // `bytes=-` nennt keinen Bereich: ganz, wie ohne Range (RFC 9110 14.2).
+  // Vorher warf int.parse('') – ein 500 ohne Anmeldung über jede Datei
+  // eines Links.
+  if (a.isEmpty && e.isEmpty) {
+    return Response.ok(
+      datei.openRead(),
+      headers: {...kopf, 'content-length': '$groesse'},
+    );
+  }
+  // Nur Ziffern (siehe oben): Was nicht in int passt, ist grösser als
+  // jede Datei.
+  int zahl(String s) => int.tryParse(s) ?? _riesig;
   int von, bis;
   if (a.isEmpty) {
     // `bytes=-500`: die letzten 500 Bytes.
-    final n = int.parse(e);
+    final n = zahl(e);
     von = n >= groesse ? 0 : groesse - n;
     bis = groesse - 1;
   } else {
-    von = int.parse(a);
-    bis = e.isEmpty ? groesse - 1 : int.parse(e).clamp(0, groesse - 1);
+    von = zahl(a);
+    bis = e.isEmpty ? groesse - 1 : zahl(e).clamp(0, groesse - 1);
   }
   if (von >= groesse || von > bis) {
     return Response(

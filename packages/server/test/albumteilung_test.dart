@@ -411,6 +411,42 @@ void main() {
     expect(r.statusCode, 201, reason: await r.readAsString());
   });
 
+  // #436: Ein Lesezeichen mit einer Zeit, die DateTime nicht fasst, warf
+  // in der Zeitleiste und in der eines Partners.
+  test(
+    'Zeitleisten: ein Lesezeichen jenseits von DateTime fängt vorn an',
+    () async {
+      await urlaub();
+      const nach = 'nach=99999999999999999~x';
+      final eigen = await frag(
+        'GET',
+        '/api/v1/aufnahmen?$nach',
+        token: erikaToken,
+      );
+      expect(eigen.statusCode, 200);
+      expect((await jsonAus(eigen))['aufnahmen'], hasLength(3));
+      final gesetzt = await frag(
+        'PUT',
+        '/api/v1/partner/${max.id}',
+        token: erikaToken,
+        kopf: {'content-type': 'application/json'},
+        inhalt: '{}',
+      );
+      expect(
+        gesetzt.statusCode,
+        lessThan(300),
+        reason: await gesetzt.readAsString(),
+      );
+      final partner = await frag(
+        'GET',
+        '/api/v1/partner/von/${erika.id}/aufnahmen?$nach',
+        token: maxToken,
+      );
+      expect(partner.statusCode, 200);
+      expect((await jsonAus(partner))['aufnahmen'], hasLength(3));
+    },
+  );
+
   test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
     final (strand, _, _) = await urlaub();
     await teile(max.id, beitragen: true);
