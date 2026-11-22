@@ -492,23 +492,35 @@ class BackupWiederhersteller {
             }
           }
         }
-        // Das Manifest stellt Alben mit neuen Kennungen wieder her. Die
-        // Ausschlüsse und die Herkunft der Vorschläge müssen ihnen folgen.
+        // Die Zielalben der Kameravorgaben und Regeln auch dann, wenn sie
+        // (noch) leer sind: Das Manifest legt nur Alben mit Fotos an, und
+        // ohne ihr Album sortierte die Regel in ein Album, das es nicht
+        // gibt. Nur beim ganzen Zurückholen, wie der Erinnerungsfilter.
+        for (final tabelle in const ['camera_presets', 'automation_rules']) {
+          if (nurPruefsummen != null ||
+              !tabellen.contains(tabelle) ||
+              !quelle
+                  .select('PRAGMA table_info("$tabelle")')
+                  .any((s) => s['name'] == 'target_album_id')) {
+            continue;
+          }
+          for (final z in quelle.select(
+            'SELECT target_album_id FROM "$tabelle" '
+            'WHERE target_album_id IS NOT NULL',
+          )) {
+            benoetigteAlben.add(z['target_album_id'] as String);
+          }
+        }
+        // Ein Album kann hier unter einer anderen Kennung stehen
+        // ([_albumHier]). Die Ausschlüsse, die Herkunft der Vorschläge und
+        // die Zielalben müssen ihm folgen.
         for (final id in benoetigteAlben) {
           if (_albumZuordnung.containsKey(id)) continue;
           final alben = quelle.select('SELECT name FROM albums WHERE id=?', [
             id,
           ]);
           if (alben.isEmpty) continue;
-          final vorhanden = await (_db.select(
-            _db.albums,
-          )..where((t) => t.id.equals(id))).getSingleOrNull();
-          final neu = vorhanden?.name == alben.single['name'] ? id : _uuid.v4();
-          if (neu != id || vorhanden == null) {
-            await _db.fuehreAus(
-              AlbumAnlegen(neu, alben.single['name'] as String, DateTime.now()),
-            );
-          }
+          final neu = await _albumHier(id, alben.single['name'] as String);
           final fotos = [
             for (final z in quelle.select(
               'SELECT asset_id FROM album_assets WHERE album_id=?',
@@ -519,6 +531,9 @@ class BackupWiederhersteller {
           if (fotos.isNotEmpty) await _db.fuehreAus(AlbumFuellen(neu, fotos));
           _albumZuordnung[id] = neu;
         }
+        final albenHier = {
+          for (final a in await _db.select(_db.albums).get()) a.id,
+        };
         for (final tabelle in uebernommeneTabellen) {
           final erlaubt = zielSpalten[tabelle];
           if (erlaubt == null) continue;
@@ -535,7 +550,6 @@ class BackupWiederhersteller {
               if (erlaubt.contains(z['name'] as String)) z['name'] as String,
           ];
           if (spalten.isEmpty) continue;
-          final hatAssetId = spalten.contains('asset_id');
 
           final liste = spalten.map((s) => '"$s"').join(', ');
           final platzhalter = List.filled(spalten.length, '?').join(', ');
@@ -547,24 +561,34 @@ class BackupWiederhersteller {
             var ueberspringen = false;
             for (final spalte in spalten) {
               var wert = zeile[spalte];
-              if (spalte == 'asset_id' && hatAssetId) {
-                wert = assetZuordnung[wert];
-                if (wert == null) {
-                  ueberspringen = true;
-                  break;
-                }
+              // Jeder Verweis auf eine Aufnahme oder ein Album folgt der
+              // Zuordnung, nicht nur `asset_id`: Ausnahmen der
+              // Duplikatsuche, das Titelbild einer Reise und die Zielalben
+              // zeigten sonst auf Kennungen der alten Bibliothek.
+              switch ((tabelle, spalte)) {
+                case (_, 'asset_id') ||
+                    ('duplikat_ausnahmen', 'asset_a' || 'asset_b'):
+                  wert = assetZuordnung[wert];
+                  ueberspringen = wert == null;
+                case ('beschriftungsvorschlaege', 'album_id'):
+                  wert = _albumZuordnung[wert];
+                  ueberspringen = wert == null;
+                // Ohne Titelbild oder Zielalbum gilt die Zeile weiter.
+                case ('reisen', 'titelbild_asset_id'):
+                  wert = assetZuordnung[wert];
+                case (
+                  'camera_presets' || 'automation_rules',
+                  'target_album_id',
+                ):
+                  wert =
+                      _albumZuordnung[wert] ??
+                      (albenHier.contains(wert) ? wert : null);
               }
-              if (tabelle == 'beschriftungsvorschlaege' &&
-                  spalte == 'album_id') {
-                wert = _albumZuordnung[wert];
-                if (wert == null) {
-                  ueberspringen = true;
-                  break;
-                }
-              }
+              if (ueberspringen) break;
               werte.add(wert);
             }
             if (ueberspringen) continue;
+            if (tabelle == 'duplikat_ausnahmen') _ordnePaar(spalten, werte);
             try {
               await _db.customInsert(
                 befehl,
@@ -926,16 +950,52 @@ class BackupWiederhersteller {
             .whereType<String>()
             .toList();
         if (assetIds.isEmpty) continue;
-        final albumId = const Uuid().v4();
-        await _db.fuehreAus(AlbumAnlegen(albumId, name, DateTime.now()));
+        final id = albumEntry['id'] as String?;
+        final albumId = await _albumHier(id, name);
         await _db.fuehreAus(AlbumFuellen(albumId, assetIds));
-        if (albumEntry['id'] case final String id) {
-          _albumZuordnung[id] = albumId;
-        }
+        if (id != null) _albumZuordnung[id] = albumId;
       } catch (e) {
         if (streng) rethrow;
         _problem('pv_restore_album', e);
       }
+    }
+  }
+
+  /// Das Album hier, in das das gesicherte Album [id] mit [name]
+  /// zurückkommt.
+  ///
+  /// Dasselbe, wenn es unter dieser Kennung und diesem Namen schon da ist –
+  /// wer dieselbe Bibliothek zurückspielt oder einzelne Fotos zurückholt,
+  /// hat es noch. Bis hierher bekam jedes Album bei jeder
+  /// Wiederherstellung eine neue Kennung und stand danach doppelt da.
+  /// Fehlt die Kennung hier, bleibt sie: Ein zweites Zurückspielen findet
+  /// das Album dann wieder, und Verweise darauf gelten weiter. Nur wenn
+  /// sie hier ein anderes Album trägt, kommt eine neue.
+  Future<String> _albumHier(String? id, String name) async {
+    if (id != null) {
+      final vorhanden = await (_db.select(
+        _db.albums,
+      )..where((t) => t.id.equals(id))).getSingleOrNull();
+      if (vorhanden?.name == name) return id;
+      if (vorhanden == null) {
+        await _db.fuehreAus(AlbumAnlegen(id, name, DateTime.now()));
+        return id;
+      }
+    }
+    final neu = _uuid.v4();
+    await _db.fuehreAus(AlbumAnlegen(neu, name, DateTime.now()));
+    return neu;
+  }
+
+  /// Hält die Regel der Tabelle ein, dass `asset_a` die kleinere Kennung
+  /// ist – nach der Zuordnung zu neuen Kennungen kann es umgekehrt sein.
+  static void _ordnePaar(List<String> spalten, List<Object?> werte) {
+    final a = spalten.indexOf('asset_a'), b = spalten.indexOf('asset_b');
+    if (a < 0 || b < 0) return;
+    final (x, y) = (werte[a]! as String, werte[b]! as String);
+    if (x.compareTo(y) > 0) {
+      werte[a] = y;
+      werte[b] = x;
     }
   }
 
