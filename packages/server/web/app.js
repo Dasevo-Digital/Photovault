@@ -3196,6 +3196,9 @@ function autoregelText(r, d) {
   else teile.push(`${t(AUSLOESER[r.ausloeser] || r.ausloeser)}: ${r.begriff || ''}`);
   const album = d.alben.find((a) => a.id === r.album);
   if (album) teile.push(`→ ${album.name}`);
+  // Wie am Rechner (IMP-024): Das Ziel fällt beim Import weg, der Rest der
+  // Regel gilt. Vorher stand hier dann einfach kein Album.
+  else if (r.album) teile.push(`→ ${t('Zielalbum gelöscht – Regel bearbeiten')}`);
   const namen = r.schlagwoerter.map((id) => d.schlagwoerter.find((s) => s.id === id)?.name).filter(Boolean);
   if (namen.length) teile.push(`🏷 ${namen.join(', ')}`);
   if (r.favorit) teile.push(`♥ ${t('Favorit')}`);

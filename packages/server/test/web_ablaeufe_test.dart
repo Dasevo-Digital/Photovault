@@ -137,6 +137,23 @@ void main() {
     );
   });
 
+  test('eine Regel mit gelöschtem Zielalbum ist markiert (IMP-024)', () {
+    // Vorher stand bei so einer Regel einfach kein Album – am Rechner heisst
+    // sie „Zielalbum gelöscht – Regel bearbeiten“.
+    final text = funktion('autoregelText');
+    expect(
+      text,
+      contains(
+        "else if (r.album) teile.push(`→ \${t('Zielalbum gelöscht – Regel "
+        "bearbeiten')}`);",
+      ),
+    );
+    expect(
+      File('web/texte.js').readAsStringSync(),
+      contains("  'Zielalbum gelöscht – Regel bearbeiten': '"),
+    );
+  });
+
   group('ungespeicherte Eingaben im Betrachter (#462)', () {
     /// Der Klick-Handler von [id]: eine Zeile oder bis zu seinem `});`.
     String klick(String id) {

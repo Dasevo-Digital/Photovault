@@ -866,7 +866,11 @@ class Freigabeapi {
           .where((f) => f.id == x.freigabe)
           .firstOrNull
           ?.album;
-      if (album != null) {
+      // Ein inzwischen gelöschtes Album fällt weg, das Foto kommt trotzdem
+      // herein – wie bei einer Regel mit gelöschtem Zielalbum (IMP-024).
+      // Vorher lag es danach in einem Album, das es nicht gibt, und war nur
+      // noch über den Link zu sehen.
+      if (album != null && await b.db.albumVorhanden(album)) {
         await b.db.fuehreAus(
           AlbumFuellen(album, [await b.db.sichtbareFassung(aufnahme)]),
         );

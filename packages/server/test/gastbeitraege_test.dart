@@ -457,6 +457,50 @@ void main() {
       );
     });
 
+    // Wie eine Regel mit gelöschtem Zielalbum (IMP-024): Das Foto kommt
+    // herein, das gelöschte Album fällt weg. Vorher lag es danach in einem
+    // Album, das es nicht gibt, und war nur noch über den Link zu sehen.
+    test('Annehmen nach gelöschtem Album: Foto in der Bibliothek, in keinem '
+        'Album', () async {
+      if (!(await Abschottung.erkenne()).ohneNetz) {
+        markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+        return;
+      }
+      await befehl('albumAnlegen', {
+        'albumId': 'feier',
+        'name': 'Feier',
+        'angelegtAm': '2026-10-19T10:00:00Z',
+      });
+      final link = await teile({
+        'titel': 'Feier',
+        'album': 'feier',
+        'hochladen': true,
+      });
+      expect((await schicke(link, _fotoVomGast())).statusCode, 202);
+      final beitrag = (await warteAufPruefung()).single;
+      expect(beitrag['zustand'], 'bereit');
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      // Gelöscht, wie es ein Gerät über den Abgleich tun kann.
+      await (b.db.delete(b.db.albums)..where((a) => a.id.equals('feier'))).go();
+
+      final an = await frag(
+        'POST',
+        '/api/v1/beitraege/${beitrag['id']}/annehmen',
+        token: erikaToken,
+      );
+      final text = await an.readAsString();
+      expect(an.statusCode, 200, reason: text);
+      final aufnahme = (jsonDecode(text) as Map)['aufnahme'] as String;
+      expect(
+        (await b.db.assetById(aufnahme))?.originalFileName,
+        'IMG_0001.jpg',
+      );
+      expect(await b.db.select(b.db.albumAssets).get(), isEmpty);
+      final inhalt = await jsonAus(await frag('GET', '/api/v1/teilen/$link'));
+      expect(inhalt['aufnahmen'], isEmpty);
+      expect(await warteAufPruefung(), isEmpty);
+    });
+
     // #436: Eine unmögliche Änderungszeit warf beim Annehmen erst nach dem
     // Umbenennen; danach hiess es bei jedem Versuch „Datei fehlt“.
     test('Annehmen: unmögliche Zeit übergangen, liegengebliebene Datei '

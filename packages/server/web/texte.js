@@ -719,6 +719,7 @@ const EN = {
   'Eine Regel legt passende Fotos beim Hochladen in ein Album, vergibt Schlagwörter oder macht sie zu Favoriten, von jedem Gerät und auch ohne laufenden Rechner.': 'A rule puts matching photos into an album when they are uploaded, adds tags or marks them as favorites, from any device and without a running computer.',
   'Neue Regel': 'New rule',
   'Regel bearbeiten': 'Edit rule',
+  'Zielalbum gelöscht – Regel bearbeiten': 'Target album deleted – edit the rule',
   'Noch keine Regeln.': 'No rules yet.',
   'Bedingung': 'Condition',
   'Ort (Umkreis)': 'Place (radius)',
