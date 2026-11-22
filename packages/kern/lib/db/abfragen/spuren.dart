@@ -233,20 +233,25 @@ extension SpurenAbfragen on AppDatabase {
   Future<List<({String personId, String assetId, DateTime zeit})>>
   auftritteFuerPersonen(Set<String> personIds) async {
     if (personIds.isEmpty) return const [];
+    // Nur die drei Spalten: Ein `join` holt sonst jede Spalte beider
+    // Tabellen, die Einbettung jedes Gesichts eingeschlossen (siehe
+    // [_fotosVonPersonen]).
     final abfrage =
-        select(
-          faces,
-        ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])..where(
-          faces.personId.isIn(personIds) &
-              assets.isTrashed.equals(false) &
-              assets.isLocked.equals(false),
-        );
+        selectOnly(
+            faces,
+          ).join([innerJoin(assets, assets.id.equalsExp(faces.assetId))])
+          ..addColumns([faces.personId, faces.assetId, assets.fileCreatedAt])
+          ..where(
+            faces.personId.isIn(personIds) &
+                assets.isTrashed.equals(false) &
+                assets.isLocked.equals(false),
+          );
     return [
       for (final z in await abfrage.get())
         (
-          personId: z.readTable(faces).personId!,
-          assetId: z.readTable(assets).id,
-          zeit: z.readTable(assets).fileCreatedAt,
+          personId: z.read(faces.personId)!,
+          assetId: z.read(faces.assetId)!,
+          zeit: z.read(assets.fileCreatedAt)!,
         ),
     ];
   }
@@ -378,6 +383,23 @@ extension SpurenAbfragen on AppDatabase {
     return sortiert;
   }
 
+  /// Die Aufnahmen, auf denen eine der [personIds] erkannt ist – als
+  /// Bedingung `id IN (…)`, wie [VokabularAbfragen] sie für die Suche nach
+  /// Personen baut.
+  ///
+  /// **Kein Verbund mit den Gesichtern.** Die Fotos von Personen lasen
+  /// bisher über `join`: drift holt dabei jede Spalte beider Tabellen, die
+  /// Einbettung jedes Gesichts eingeschlossen, und ein Foto mit zwei
+  /// Gesichtern derselben Person kam doppelt und wurde erst in Dart
+  /// aussortiert. Bei einer Person mit 3000 Gesichtern gemessen 57 gegen
+  /// 21 ms – und die Personenseite fragt nach jeder Änderung neu.
+  Expression<bool> _fotosVonPersonen(Iterable<String> personIds) =>
+      assets.id.isInQuery(
+        selectOnly(faces)
+          ..addColumns([faces.assetId])
+          ..where(faces.personId.isIn(personIds)),
+      );
+
   /// Alle Fotos, auf denen mindestens eine der genannten Personen erkannt
   /// wurde – für „Fotos der Familie".
   ///
@@ -388,25 +410,16 @@ extension SpurenAbfragen on AppDatabase {
   /// einmal, nicht mehrfach.
   Future<List<AssetData>> assetsFuerPersonen(List<String> personIds) async {
     if (personIds.isEmpty) return [];
-    final query =
-        select(
-            assets,
-          ).join([innerJoin(faces, faces.assetId.equalsExp(assets.id))])
+    return (select(assets)
           ..where(
-            faces.personId.isIn(personIds) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false) &
-                _isPrimaryGridEntry(assets),
+            (t) =>
+                _fotosVonPersonen(personIds) &
+                t.isTrashed.equals(false) &
+                t.isLocked.equals(false) &
+                _isPrimaryGridEntry(t),
           )
-          ..orderBy([OrderingTerm.desc(assets.fileCreatedAt)]);
-    final rows = await query.get();
-    final gesehen = <String>{};
-    final ergebnis = <AssetData>[];
-    for (final row in rows) {
-      final a = row.readTable(assets);
-      if (gesehen.add(a.id)) ergebnis.add(a);
-    }
-    return ergebnis;
+          ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]))
+        .get();
   }
 
   /// Verortete Fotos einer Personengruppe, samt der Personen darauf.
@@ -418,60 +431,53 @@ extension SpurenAbfragen on AppDatabase {
   Future<List<({AssetData asset, Set<String> personen})>>
   verorteteAssetsFuerPersonen(List<String> personIds) async {
     if (personIds.isEmpty) return [];
-    final query =
-        select(
-            assets,
-          ).join([innerJoin(faces, faces.assetId.equalsExp(assets.id))])
-          ..where(
-            faces.personId.isIn(personIds) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false) &
-                assets.latitude.isNotNull() &
-                assets.longitude.isNotNull() &
-                _isPrimaryGridEntry(assets),
-          )
-          ..orderBy([OrderingTerm.desc(assets.fileCreatedAt)]);
-    final rows = await query.get();
-    final nachId = <String, AssetData>{};
+    final fotos =
+        await (select(assets)
+              ..where(
+                (t) =>
+                    _fotosVonPersonen(personIds) &
+                    t.isTrashed.equals(false) &
+                    t.isLocked.equals(false) &
+                    t.latitude.isNotNull() &
+                    t.longitude.isNotNull() &
+                    _isPrimaryGridEntry(t),
+              )
+              ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]))
+            .get();
+    if (fotos.isEmpty) return [];
+    // Wer auf welchem Foto ist: zwei schmale Spalten der Gesichter statt
+    // ihrer vollen Zeilen.
     final leute = <String, Set<String>>{};
-    for (final row in rows) {
-      final a = row.readTable(assets);
-      nachId[a.id] = a;
-      final pid = row.readTable(faces).personId;
-      if (pid != null) leute.putIfAbsent(a.id, () => {}).add(pid);
+    final wer = selectOnly(faces)
+      ..addColumns([faces.assetId, faces.personId])
+      ..where(faces.personId.isIn(personIds));
+    for (final z in await wer.get()) {
+      leute
+          .putIfAbsent(z.read(faces.assetId)!, () => {})
+          .add(z.read(faces.personId)!);
     }
     return [
-      for (final e in nachId.entries)
-        (asset: e.value, personen: leute[e.key] ?? const <String>{}),
+      for (final a in fotos)
+        (asset: a, personen: leute[a.id] ?? const <String>{}),
     ];
   }
 
   Stream<List<AssetData>> watchAssetsForPerson(String personId) {
-    final query =
-        select(
-            assets,
-          ).join([innerJoin(faces, faces.assetId.equalsExp(assets.id))])
-          ..where(
-            faces.personId.equals(personId) &
-                assets.isTrashed.equals(false) &
-                assets.isLocked.equals(false),
-          )
-          ..orderBy([OrderingTerm.desc(assets.fileCreatedAt)]);
-    // Ein Foto mit zwei Gesichtern derselben Person steht zweimal im
-    // Verbund – hier bleibt es bei einem Eintrag.
+    final query = select(assets)
+      ..where(
+        (t) =>
+            _fotosVonPersonen([personId]) &
+            t.isTrashed.equals(false) &
+            t.isLocked.equals(false),
+      )
+      ..orderBy([(t) => OrderingTerm.desc(t.fileCreatedAt)]);
     return _gedrosselt(
-      () => query.map((r) => r.readTable(assets)),
+      () => query,
       TableUpdateQuery.allOf([
         TableUpdateQuery.onTable(assets),
         TableUpdateQuery.onTable(faces),
       ]),
-    ).map((zeilen) {
-      final gesehen = <String>{};
-      return [
-        for (final a in zeilen)
-          if (gesehen.add(a.id)) a,
-      ];
-    });
+    );
   }
 
   /// Liefert alle Bild-Assets, die für einen (erneuten) Gesichts-Scan
