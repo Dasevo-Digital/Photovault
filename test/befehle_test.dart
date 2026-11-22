@@ -827,6 +827,37 @@ void main() {
       expect(await kennungen(dort), h);
     });
 
+    test(
+      'eine Exportvorgabe trägt „Ort mitgeben“ zum anderen Gerät (#468)',
+      () async {
+        await beide(
+          ExportvorgabeSpeichern(
+            ExportPresetsCompanion.insert(
+              name: 'Mit Ort',
+              nachJpeg: const Value(true),
+              ortMitgeben: const Value(true),
+              erstelltAm: DateTime(2026, 11, 22),
+            ),
+          ),
+        );
+        final dortige = await dort.alleExportPresets();
+        expect(dortige.single.ortMitgeben, isTrue);
+        // Wer die Vorgabe danach umstellt, stellt sie auch dort um.
+        await beide(
+          ExportvorgabeSpeichern(
+            ExportPresetsCompanion(
+              id: Value(dortige.single.id),
+              name: const Value('Mit Ort'),
+              ortMitgeben: const Value(false),
+              erstelltAm: Value(DateTime(2026, 11, 22)),
+            ),
+          ),
+        );
+        expect((await dort.alleExportPresets()).single.ortMitgeben, isFalse);
+        expect((await hier.alleExportPresets()).single.ortMitgeben, isFalse);
+      },
+    );
+
     test('Schlagwörter: die Kennung folgt aus dem Namen', () async {
       await beide(const SchlagwortAnheften([], 'Leuchtturm'));
       expect(

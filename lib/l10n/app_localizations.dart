@@ -7630,8 +7630,20 @@ abstract class AppTexte {
   /// No description provided for @exportVorgabeXmpHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.'**
+  /// **'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird oder „Ort mitgeben“ an ist.'**
   String get exportVorgabeXmpHinweis;
+
+  /// No description provided for @exportVorgabeOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Ort mitgeben'**
+  String get exportVorgabeOrt;
+
+  /// No description provided for @exportVorgabeOrtHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Schreibt die GPS-Position ins Bild und in die XMP-Beilage. Ohne den Schalter geht kein Ort mit.'**
+  String get exportVorgabeOrtHinweis;
 
   /// No description provided for @exportVorgabeJpegVoll.
   ///
@@ -7644,6 +7656,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'JPEG, lange Kante {kante} px, {prozent} %'**
   String exportVorgabeJpegKante(int kante, int prozent);
+
+  /// No description provided for @exportVorgabeMitOrt.
+  ///
+  /// In de, this message translates to:
+  /// **'mit Ort'**
+  String get exportVorgabeMitOrt;
 
   /// No description provided for @exportVorgabeOhneXmp.
   ///

@@ -137,6 +137,7 @@ String vorgabeZusammenfassung(AppTexte t, ExportPresetData v) {
     else
       t.exportVorgabeJpegKante(v.maxKante!, (v.qualitaet * 100).round()),
     v.namensmuster,
+    if (v.nachJpeg && v.ortMitgeben) t.exportVorgabeMitOrt,
     if (!v.xmpDaneben) t.exportVorgabeOhneXmp,
   ];
   return teile.join(' · ');
@@ -169,6 +170,10 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
   late bool _nachJpeg = widget.bestehend?.nachJpeg ?? true;
   late double _qualitaet = widget.bestehend?.qualitaet ?? 0.9;
   late bool _xmp = widget.bestehend?.xmpDaneben ?? true;
+
+  /// Neu aus: So gab eine gerenderte Vorgabe bis zum Schalter keinen Ort
+  /// mit (#468).
+  late bool _ort = widget.bestehend?.ortMitgeben ?? false;
   String? _fehler;
 
   @override
@@ -218,6 +223,8 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
         qualitaet: Value(_qualitaet),
         namensmuster: Value(muster),
         xmpDaneben: Value(_xmp),
+        // Nur beim Rendern von Bedeutung, siehe Exportvorgabe.ausPreset.
+        ortMitgeben: Value(_nachJpeg && _ort),
         erstelltAm: Value(widget.bestehend?.erstelltAm ?? DateTime.now()),
       ),
     );
@@ -274,6 +281,15 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
                   max: 1,
                   divisions: 12,
                   onChanged: (v) => setState(() => _qualitaet = v),
+                ),
+                // Nur beim Rendern: Eine unverändert kopierte Datei behält
+                // ihren Ort ohnehin.
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(t.exportVorgabeOrt),
+                  subtitle: Text(t.exportVorgabeOrtHinweis),
+                  value: _ort,
+                  onChanged: (v) => setState(() => _ort = v),
                 ),
               ],
               const Divider(height: AppSpacing.xxl),

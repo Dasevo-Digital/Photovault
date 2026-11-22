@@ -98,7 +98,9 @@ class Exportvorgabe {
   ///
   /// Ohne Angabe gilt, was die Datei selbst tut: Eine unverändert kopierte
   /// Datei trägt ihren Ort ohnehin, ein gerendertes Bild bekommt keinen
-  /// (siehe `mitAufnahmeangaben`). Der Datenschutzexport gibt nie einen
+  /// (siehe `mitAufnahmeangaben`). Eine gespeicherte Vorgabe mit „Nach
+  /// JPEG rendern“ sagt es selbst (Schalter „Ort mitgeben“,
+  /// `ExportPresets.ortMitgeben`). Der Datenschutzexport gibt nie einen
   /// Ort mit. Was sich nicht wandeln lässt (etwa ein Video), geht auch bei
   /// einer Grössenvorgabe unverändert hinaus – mit dem Ort, den die Datei
   /// selbst trägt; die Beilage folgt trotzdem dieser Einstellung.
@@ -135,12 +137,16 @@ class Exportvorgabe {
     ortMitgeben: false,
   );
 
+  /// Der Schalter „Ort mitgeben“ gilt nur für eine gerenderte Vorgabe: Eine
+  /// unverändert kopierte Datei behält ihren Ort, und die Beilage folgt
+  /// ihr – sonst ginge der Ort in der Datei hinaus und fehlte nur daneben.
   factory Exportvorgabe.ausPreset(ExportPresetData p) => Exportvorgabe(
     nachJpeg: p.nachJpeg,
     maxKante: p.maxKante,
     qualitaet: p.qualitaet,
     namensmuster: p.namensmuster,
     xmpDaneben: p.xmpDaneben,
+    ortMitgeben: p.nachJpeg ? p.ortMitgeben : null,
   );
 }
 

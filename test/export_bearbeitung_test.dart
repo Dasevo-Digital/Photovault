@@ -228,24 +228,73 @@ void main() {
         isFalse,
         reason: 'der Datenschutzexport gibt nie einen Ort mit',
       );
-      ExportPresetData preset({required bool nachJpeg}) => ExportPresetData(
-        id: 1,
-        name: 'Vorgabe',
-        nachJpeg: nachJpeg,
-        maxKante: 1600,
-        qualitaet: 0.8,
-        namensmuster: '{name}',
-        xmpDaneben: true,
-        erstelltAm: DateTime(2026),
-      );
       expect(
-        Exportvorgabe.ausPreset(preset(nachJpeg: true)).ortMitgeben,
+        Exportvorgabe.ausPreset(_preset(nachJpeg: true)).ortMitgeben,
         isFalse,
       );
       expect(
-        Exportvorgabe.ausPreset(preset(nachJpeg: false)).ortMitgeben,
+        Exportvorgabe.ausPreset(_preset(nachJpeg: false)).ortMitgeben,
         isTrue,
       );
     });
+
+    test('der Schalter „Ort mitgeben“ einer gespeicherten Vorgabe (#468)', () {
+      expect(
+        Exportvorgabe.ausPreset(
+          _preset(nachJpeg: true, ortMitgeben: true),
+        ).ortMitgeben,
+        isTrue,
+      );
+      // Eine unverändert kopierte Datei behält ihren Ort, die Beilage folgt
+      // ihr – auch wenn in der Zeile etwas anderes stünde.
+      expect(
+        Exportvorgabe.ausPreset(
+          _preset(nachJpeg: false, ortMitgeben: false),
+        ).ortMitgeben,
+        isTrue,
+      );
+    });
+
+    test('eine gespeicherte Vorgabe mit „Ort mitgeben“ schreibt ihn in Bild '
+        'und Beilage (#468)', () async {
+      await db.fuehreAus(
+        ExportvorgabeSpeichern(
+          ExportPresetsCompanion.insert(
+            name: 'Mit Ort',
+            nachJpeg: const Value(true),
+            maxKante: const Value(1024),
+            ortMitgeben: const Value(true),
+            erstelltAm: DateTime(2026),
+          ),
+        ),
+      );
+      final vorgabe = (await db.alleExportPresets()).single;
+      expect(vorgabe.ortMitgeben, isTrue);
+      final name = await ExportService(paths).exportAsset(
+        await mitOrt(),
+        ziel.path,
+        vorgabe: Exportvorgabe.ausPreset(vorgabe),
+      );
+      final ort = parseExifGps(
+        await readExifFromBytes(
+          File(p.join(ziel.path, name)).readAsBytesSync(),
+        ),
+      );
+      expect(ort?.latitude, closeTo(-33.856784, 1e-5));
+      expect(lies(name).beilage, contains('exif:GPSLatitude="33,'));
+    });
   });
 }
+
+ExportPresetData _preset({required bool nachJpeg, bool ortMitgeben = false}) =>
+    ExportPresetData(
+      id: 1,
+      name: 'Vorgabe',
+      nachJpeg: nachJpeg,
+      maxKante: 1600,
+      qualitaet: 0.8,
+      namensmuster: '{name}',
+      xmpDaneben: true,
+      erstelltAm: DateTime(2026),
+      ortMitgeben: ortMitgeben,
+    );

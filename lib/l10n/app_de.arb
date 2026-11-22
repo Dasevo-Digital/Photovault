@@ -2721,7 +2721,9 @@
   "exportVorgabeMusterNoetig": "Das Namensmuster darf nicht leer sein.",
   "exportVorgabeMusterHinweis": "Die Endung wird immer selbst ergänzt. Die laufende Nummer zählt innerhalb eines Export-Laufs und wird vierstellig aufgefüllt.",
   "exportVorgabeXmp": "XMP-Beistelldatei mitschreiben",
-  "exportVorgabeXmpHinweis": "Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.",
+  "exportVorgabeXmpHinweis": "Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird oder „Ort mitgeben“ an ist.",
+  "exportVorgabeOrt": "Ort mitgeben",
+  "exportVorgabeOrtHinweis": "Schreibt die GPS-Position ins Bild und in die XMP-Beilage. Ohne den Schalter geht kein Ort mit.",
   "exportVorgabeJpegVoll": "JPEG, volle Auflösung, {prozent} %",
   "@exportVorgabeJpegVoll": {
     "placeholders": {
@@ -2741,6 +2743,7 @@
       }
     }
   },
+  "exportVorgabeMitOrt": "mit Ort",
   "exportVorgabeOhneXmp": "ohne XMP",
   "exportVorgabeLoeschenTitel": "Voreinstellung löschen?",
   "exportVorgabeLoeschenText": "„{name}\" wird entfernt. Bereits exportierte Dateien bleiben unberührt.",

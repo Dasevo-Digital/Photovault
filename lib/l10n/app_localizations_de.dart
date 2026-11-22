@@ -4641,7 +4641,14 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get exportVorgabeXmpHinweis =>
-      'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.';
+      'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird oder „Ort mitgeben“ an ist.';
+
+  @override
+  String get exportVorgabeOrt => 'Ort mitgeben';
+
+  @override
+  String get exportVorgabeOrtHinweis =>
+      'Schreibt die GPS-Position ins Bild und in die XMP-Beilage. Ohne den Schalter geht kein Ort mit.';
 
   @override
   String exportVorgabeJpegVoll(int prozent) {
@@ -4652,6 +4659,9 @@ class AppTexteDe extends AppTexte {
   String exportVorgabeJpegKante(int kante, int prozent) {
     return 'JPEG, lange Kante $kante px, $prozent %';
   }
+
+  @override
+  String get exportVorgabeMitOrt => 'mit Ort';
 
   @override
   String get exportVorgabeOhneXmp => 'ohne XMP';

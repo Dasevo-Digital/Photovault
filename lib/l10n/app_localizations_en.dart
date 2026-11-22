@@ -4611,7 +4611,14 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get exportVorgabeXmpHinweis =>
-      'Rating, keywords and named faces for other programs – as a separate file next to the photo. Like the photo itself, it contains the location only when the file is copied unchanged.';
+      'Rating, keywords and named faces for other programs – as a separate file next to the photo. Like the photo itself, it contains the location only when the file is copied unchanged or “Include location” is on.';
+
+  @override
+  String get exportVorgabeOrt => 'Include location';
+
+  @override
+  String get exportVorgabeOrtHinweis =>
+      'Writes the GPS position into the image and the XMP sidecar. When off, no location goes out.';
 
   @override
   String exportVorgabeJpegVoll(int prozent) {
@@ -4622,6 +4629,9 @@ class AppTexteEn extends AppTexte {
   String exportVorgabeJpegKante(int kante, int prozent) {
     return 'JPEG, longer edge $kante px, $prozent%';
   }
+
+  @override
+  String get exportVorgabeMitOrt => 'with location';
 
   @override
   String get exportVorgabeOhneXmp => 'no XMP';

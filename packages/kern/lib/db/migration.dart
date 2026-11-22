@@ -1560,6 +1560,18 @@ extension Migrationsschritte on AppDatabase {
     if (from < 102) {
       await _kehreTemperaturUm();
     }
+    if (from < 103) {
+      // Der Schalter „Ort mitgeben“ der Exportvorgaben (#468). Die Vorgabe
+      // `false` ist, was bis 102 für jede Vorgabe galt (siehe
+      // ExportPresets.ortMitgeben).
+      await _addColumnIfMissing(
+        m,
+        exportPresets,
+        exportPresets.ortMitgeben,
+        'export_presets',
+        'ort_mitgeben',
+      );
+    }
   }
 
   /// Die Tabellen, deren Spalte `temperature` eine Farbtemperatur trägt.

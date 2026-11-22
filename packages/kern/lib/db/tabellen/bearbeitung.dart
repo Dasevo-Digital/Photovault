@@ -109,6 +109,15 @@ class ExportPresets extends Table {
   BoolColumn get xmpDaneben => boolean().withDefault(const Constant(true))();
 
   DateTimeColumn get erstelltAm => dateTime()();
+
+  /// Ob der Ort mit hinausgeht – im gerenderten Bild **und** in der
+  /// XMP-Beilage (siehe `Exportvorgabe.ortMitgeben`). Seit Schema 103.
+  ///
+  /// Nur mit [nachJpeg] von Bedeutung: Eine unverändert kopierte Datei
+  /// trägt ihren Ort ohnehin, die Beilage folgt ihr. Die Vorgabe `false`
+  /// ist das, was bis dahin galt – eine gerenderte Vorgabe gab keinen Ort
+  /// mit –, also ändert sich für bestehende Vorgaben nichts.
+  BoolColumn get ortMitgeben => boolean().withDefault(const Constant(false))();
 }
 
 /// Verallgemeinerung von [CameraPresets] auf andere Bedingungen als die

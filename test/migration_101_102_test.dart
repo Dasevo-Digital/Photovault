@@ -157,7 +157,7 @@ void main() {
       final stand = Entwicklungsstand.decode(v.stateJson);
       expect(stand.einstellungen.temperature, 10562.5);
       expect(stand.masken.single.temperature, 42250000 / 12000);
-      expect(await stufe(db), 102);
+      expect(await stufe(db), db.schemaVersion);
       await db.close();
     }
   });

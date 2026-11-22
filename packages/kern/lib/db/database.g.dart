@@ -20089,6 +20089,21 @@ class $ExportPresetsTable extends ExportPresets
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _ortMitgebenMeta = const VerificationMeta(
+    'ortMitgeben',
+  );
+  @override
+  late final GeneratedColumn<bool> ortMitgeben = GeneratedColumn<bool>(
+    'ort_mitgeben',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("ort_mitgeben" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -20099,6 +20114,7 @@ class $ExportPresetsTable extends ExportPresets
     namensmuster,
     xmpDaneben,
     erstelltAm,
+    ortMitgeben,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -20164,6 +20180,15 @@ class $ExportPresetsTable extends ExportPresets
     } else if (isInserting) {
       context.missing(_erstelltAmMeta);
     }
+    if (data.containsKey('ort_mitgeben')) {
+      context.handle(
+        _ortMitgebenMeta,
+        ortMitgeben.isAcceptableOrUnknown(
+          data['ort_mitgeben']!,
+          _ortMitgebenMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -20205,6 +20230,10 @@ class $ExportPresetsTable extends ExportPresets
         DriftSqlType.dateTime,
         data['${effectivePrefix}erstellt_am'],
       )!,
+      ortMitgeben: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}ort_mitgeben'],
+      )!,
     );
   }
 
@@ -20232,6 +20261,15 @@ class ExportPresetData extends DataClass
   final String namensmuster;
   final bool xmpDaneben;
   final DateTime erstelltAm;
+
+  /// Ob der Ort mit hinausgeht – im gerenderten Bild **und** in der
+  /// XMP-Beilage (siehe `Exportvorgabe.ortMitgeben`). Seit Schema 103.
+  ///
+  /// Nur mit [nachJpeg] von Bedeutung: Eine unverändert kopierte Datei
+  /// trägt ihren Ort ohnehin, die Beilage folgt ihr. Die Vorgabe `false`
+  /// ist das, was bis dahin galt – eine gerenderte Vorgabe gab keinen Ort
+  /// mit –, also ändert sich für bestehende Vorgaben nichts.
+  final bool ortMitgeben;
   const ExportPresetData({
     required this.id,
     required this.name,
@@ -20241,6 +20279,7 @@ class ExportPresetData extends DataClass
     required this.namensmuster,
     required this.xmpDaneben,
     required this.erstelltAm,
+    required this.ortMitgeben,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -20255,6 +20294,7 @@ class ExportPresetData extends DataClass
     map['namensmuster'] = Variable<String>(namensmuster);
     map['xmp_daneben'] = Variable<bool>(xmpDaneben);
     map['erstellt_am'] = Variable<DateTime>(erstelltAm);
+    map['ort_mitgeben'] = Variable<bool>(ortMitgeben);
     return map;
   }
 
@@ -20270,6 +20310,7 @@ class ExportPresetData extends DataClass
       namensmuster: Value(namensmuster),
       xmpDaneben: Value(xmpDaneben),
       erstelltAm: Value(erstelltAm),
+      ortMitgeben: Value(ortMitgeben),
     );
   }
 
@@ -20287,6 +20328,7 @@ class ExportPresetData extends DataClass
       namensmuster: serializer.fromJson<String>(json['namensmuster']),
       xmpDaneben: serializer.fromJson<bool>(json['xmpDaneben']),
       erstelltAm: serializer.fromJson<DateTime>(json['erstelltAm']),
+      ortMitgeben: serializer.fromJson<bool>(json['ortMitgeben']),
     );
   }
   @override
@@ -20301,6 +20343,7 @@ class ExportPresetData extends DataClass
       'namensmuster': serializer.toJson<String>(namensmuster),
       'xmpDaneben': serializer.toJson<bool>(xmpDaneben),
       'erstelltAm': serializer.toJson<DateTime>(erstelltAm),
+      'ortMitgeben': serializer.toJson<bool>(ortMitgeben),
     };
   }
 
@@ -20313,6 +20356,7 @@ class ExportPresetData extends DataClass
     String? namensmuster,
     bool? xmpDaneben,
     DateTime? erstelltAm,
+    bool? ortMitgeben,
   }) => ExportPresetData(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -20322,6 +20366,7 @@ class ExportPresetData extends DataClass
     namensmuster: namensmuster ?? this.namensmuster,
     xmpDaneben: xmpDaneben ?? this.xmpDaneben,
     erstelltAm: erstelltAm ?? this.erstelltAm,
+    ortMitgeben: ortMitgeben ?? this.ortMitgeben,
   );
   ExportPresetData copyWithCompanion(ExportPresetsCompanion data) {
     return ExportPresetData(
@@ -20339,6 +20384,9 @@ class ExportPresetData extends DataClass
       erstelltAm: data.erstelltAm.present
           ? data.erstelltAm.value
           : this.erstelltAm,
+      ortMitgeben: data.ortMitgeben.present
+          ? data.ortMitgeben.value
+          : this.ortMitgeben,
     );
   }
 
@@ -20352,7 +20400,8 @@ class ExportPresetData extends DataClass
           ..write('qualitaet: $qualitaet, ')
           ..write('namensmuster: $namensmuster, ')
           ..write('xmpDaneben: $xmpDaneben, ')
-          ..write('erstelltAm: $erstelltAm')
+          ..write('erstelltAm: $erstelltAm, ')
+          ..write('ortMitgeben: $ortMitgeben')
           ..write(')'))
         .toString();
   }
@@ -20367,6 +20416,7 @@ class ExportPresetData extends DataClass
     namensmuster,
     xmpDaneben,
     erstelltAm,
+    ortMitgeben,
   );
   @override
   bool operator ==(Object other) =>
@@ -20379,7 +20429,8 @@ class ExportPresetData extends DataClass
           other.qualitaet == this.qualitaet &&
           other.namensmuster == this.namensmuster &&
           other.xmpDaneben == this.xmpDaneben &&
-          other.erstelltAm == this.erstelltAm);
+          other.erstelltAm == this.erstelltAm &&
+          other.ortMitgeben == this.ortMitgeben);
 }
 
 class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
@@ -20391,6 +20442,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
   final Value<String> namensmuster;
   final Value<bool> xmpDaneben;
   final Value<DateTime> erstelltAm;
+  final Value<bool> ortMitgeben;
   const ExportPresetsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -20400,6 +20452,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     this.namensmuster = const Value.absent(),
     this.xmpDaneben = const Value.absent(),
     this.erstelltAm = const Value.absent(),
+    this.ortMitgeben = const Value.absent(),
   });
   ExportPresetsCompanion.insert({
     this.id = const Value.absent(),
@@ -20410,6 +20463,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     this.namensmuster = const Value.absent(),
     this.xmpDaneben = const Value.absent(),
     required DateTime erstelltAm,
+    this.ortMitgeben = const Value.absent(),
   }) : name = Value(name),
        erstelltAm = Value(erstelltAm);
   static Insertable<ExportPresetData> custom({
@@ -20421,6 +20475,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     Expression<String>? namensmuster,
     Expression<bool>? xmpDaneben,
     Expression<DateTime>? erstelltAm,
+    Expression<bool>? ortMitgeben,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -20431,6 +20486,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
       if (namensmuster != null) 'namensmuster': namensmuster,
       if (xmpDaneben != null) 'xmp_daneben': xmpDaneben,
       if (erstelltAm != null) 'erstellt_am': erstelltAm,
+      if (ortMitgeben != null) 'ort_mitgeben': ortMitgeben,
     });
   }
 
@@ -20443,6 +20499,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     Value<String>? namensmuster,
     Value<bool>? xmpDaneben,
     Value<DateTime>? erstelltAm,
+    Value<bool>? ortMitgeben,
   }) {
     return ExportPresetsCompanion(
       id: id ?? this.id,
@@ -20453,6 +20510,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
       namensmuster: namensmuster ?? this.namensmuster,
       xmpDaneben: xmpDaneben ?? this.xmpDaneben,
       erstelltAm: erstelltAm ?? this.erstelltAm,
+      ortMitgeben: ortMitgeben ?? this.ortMitgeben,
     );
   }
 
@@ -20483,6 +20541,9 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     if (erstelltAm.present) {
       map['erstellt_am'] = Variable<DateTime>(erstelltAm.value);
     }
+    if (ortMitgeben.present) {
+      map['ort_mitgeben'] = Variable<bool>(ortMitgeben.value);
+    }
     return map;
   }
 
@@ -20496,7 +20557,8 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
           ..write('qualitaet: $qualitaet, ')
           ..write('namensmuster: $namensmuster, ')
           ..write('xmpDaneben: $xmpDaneben, ')
-          ..write('erstelltAm: $erstelltAm')
+          ..write('erstelltAm: $erstelltAm, ')
+          ..write('ortMitgeben: $ortMitgeben')
           ..write(')'))
         .toString();
   }
@@ -38220,6 +38282,7 @@ typedef $$ExportPresetsTableCreateCompanionBuilder =
       Value<String> namensmuster,
       Value<bool> xmpDaneben,
       required DateTime erstelltAm,
+      Value<bool> ortMitgeben,
     });
 typedef $$ExportPresetsTableUpdateCompanionBuilder =
     ExportPresetsCompanion Function({
@@ -38231,6 +38294,7 @@ typedef $$ExportPresetsTableUpdateCompanionBuilder =
       Value<String> namensmuster,
       Value<bool> xmpDaneben,
       Value<DateTime> erstelltAm,
+      Value<bool> ortMitgeben,
     });
 
 class $$ExportPresetsTableFilterComposer
@@ -38279,6 +38343,11 @@ class $$ExportPresetsTableFilterComposer
 
   ColumnFilters<DateTime> get erstelltAm => $composableBuilder(
     column: $table.erstelltAm,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get ortMitgeben => $composableBuilder(
+    column: $table.ortMitgeben,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -38331,6 +38400,11 @@ class $$ExportPresetsTableOrderingComposer
     column: $table.erstelltAm,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get ortMitgeben => $composableBuilder(
+    column: $table.ortMitgeben,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExportPresetsTableAnnotationComposer
@@ -38369,6 +38443,11 @@ class $$ExportPresetsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get erstelltAm => $composableBuilder(
     column: $table.erstelltAm,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get ortMitgeben => $composableBuilder(
+    column: $table.ortMitgeben,
     builder: (column) => column,
   );
 }
@@ -38416,6 +38495,7 @@ class $$ExportPresetsTableTableManager
                 Value<String> namensmuster = const Value.absent(),
                 Value<bool> xmpDaneben = const Value.absent(),
                 Value<DateTime> erstelltAm = const Value.absent(),
+                Value<bool> ortMitgeben = const Value.absent(),
               }) => ExportPresetsCompanion(
                 id: id,
                 name: name,
@@ -38425,6 +38505,7 @@ class $$ExportPresetsTableTableManager
                 namensmuster: namensmuster,
                 xmpDaneben: xmpDaneben,
                 erstelltAm: erstelltAm,
+                ortMitgeben: ortMitgeben,
               ),
           createCompanionCallback:
               ({
@@ -38436,6 +38517,7 @@ class $$ExportPresetsTableTableManager
                 Value<String> namensmuster = const Value.absent(),
                 Value<bool> xmpDaneben = const Value.absent(),
                 required DateTime erstelltAm,
+                Value<bool> ortMitgeben = const Value.absent(),
               }) => ExportPresetsCompanion.insert(
                 id: id,
                 name: name,
@@ -38445,6 +38527,7 @@ class $$ExportPresetsTableTableManager
                 namensmuster: namensmuster,
                 xmpDaneben: xmpDaneben,
                 erstelltAm: erstelltAm,
+                ortMitgeben: ortMitgeben,
               ),
           withReferenceMapper: (p0) => p0
               .map(
