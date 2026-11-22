@@ -8,6 +8,7 @@ import 'package:flutter_map/flutter_map.dart' show MapCachingProvider;
 import 'package:http/http.dart' as http;
 
 import 'package:gelaende/gelaende_laden.dart';
+import 'package:kern/abgleich/kachelumleitung.dart';
 import 'package:kern/services/gelaendeebenen.dart';
 import 'package:gelaende/gelaendekacheln.dart';
 import 'package:kern/services/netzkennung.dart';
@@ -23,14 +24,20 @@ import 'package:kern/services/netzkennung.dart';
 ///
 /// **Erst ab Stufe [globusKachelnAb].** Bis dahin zeigt die Grundtextur
 /// mindestens halb so fein, wie der Bildschirm auflöst; Kacheln zu holen
-/// lohnte nicht. Ohne Netz bleibt es bei der Grundtextur, wie bisher.
+/// lohnte nicht. Ohne Netz bleibt es bei der Grundtextur, wie bisher –
+/// ebenso in einer verbundenen Bibliothek ([nurUeberServer], siehe
+/// [globusNetz]).
 class Globuskacheln {
   Globuskacheln(
     this._regler, {
     required this._ansicht,
     http.Client? netz,
     MapCachingProvider? speicher,
-  }) : _netz = netz ?? http.Client(),
+    bool Function()? nurUeberServer,
+  }) : _netz = globusNetz(
+         netz ?? http.Client(),
+         nurUeberServer: nurUeberServer,
+       ),
        _eigenesNetz = netz == null,
        _speicher = speicher ?? gemeinsamerKachelspeicher() {
     _regler.blick.addListener(_blickGeaendert);
@@ -128,6 +135,15 @@ class Globuskacheln {
     if (_eigenesNetz) _netz.close();
   }
 }
+
+/// Der Client, über den der Globus seine Luftbilder holt.
+///
+/// Solange [nurUeberServer] gilt (die Bibliothek ist verbunden), geht
+/// nichts direkt an Esri: Der eigene Server reicht das Luftbild nicht
+/// weiter (#468). Der Globus zeigt dann die Grundtextur und was schon im
+/// Kachelspeicher liegt.
+http.Client globusNetz(http.Client innen, {bool Function()? nurUeberServer}) =>
+    Kachelumleitung(innen, server: () => null, nurUeberServer: nurUeberServer);
 
 /// Ab dieser Kachelstufe lädt der Globus Luftbilder nach. Die Grundtextur
 /// (8192 Punkte für den Erdumfang) entspricht Stufe 5; ab 6 zeigen die

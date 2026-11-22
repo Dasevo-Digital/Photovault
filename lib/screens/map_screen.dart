@@ -328,10 +328,16 @@ class _MapScreenState extends State<MapScreen> {
       maxZoom: 6,
     );
     // Beim Heranzoomen Luftbildkacheln über die Textur (#9).
-    _globuskacheln = Globuskacheln(regler, ansicht: () => _globusAnsicht)
-      ..beiWechsel = () {
-        if (mounted) setState(() {});
-      };
+    // Verbunden geht das Luftbild nicht direkt an Esri (#468).
+    _globuskacheln =
+        Globuskacheln(
+            regler,
+            ansicht: () => _globusAnsicht,
+            nurUeberServer: () => kartenVerbunden.value,
+          )
+          ..beiWechsel = () {
+            if (mounted) setState(() {});
+          };
     return _globeController = regler;
   }
 

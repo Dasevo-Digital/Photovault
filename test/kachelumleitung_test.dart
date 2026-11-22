@@ -11,6 +11,8 @@ import 'package:photo_vault/widgets/mini_location_map.dart';
 /// die Abrufe von OpenStreetMap und OpenTopoMap zu ihm um, sobald er es
 /// kann – und nur diese. Die Adresse der Kachel bleibt dabei die des
 /// Anbieters, damit der Kachelspeicher auf der Platte für beide Wege gilt.
+const osmKachelVorlage = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
 void main() {
   final server = Serververbindung(
     Uri.parse('http://heimserver.test/fotos'),
@@ -129,13 +131,6 @@ void main() {
           );
         }
         expect(fang.anfragen, isEmpty, reason: 'kein Abruf beim Anbieter');
-        // Was der Server ohnehin nicht holt, geht weiter wie bisher.
-        await netz.get(
-          Uri.parse(
-            'https://a.basemaps.cartocdn.com/dark_all/3/4/2.png?key=abc',
-          ),
-        );
-        expect(fang.anfragen, hasLength(1));
         // Liefert er Kacheln, gehen sie über ihn.
         ziel = server;
         await netz.get(Uri.parse('https://tile.openstreetmap.org/3/4/2.png'));
@@ -145,6 +140,65 @@ void main() {
         );
       },
     );
+
+    test('verbunden auch nichts direkt, was der Server nicht weiterreicht '
+        '(#468)', () async {
+      var verbunden = true;
+      netz = Kachelumleitung(
+        fang,
+        server: () => ziel,
+        nurUeberServer: () => verbunden,
+      );
+      const fremde = [
+        // CARTO mit eigenem Schlüssel.
+        'https://a.basemaps.cartocdn.com/dark_all/3/4/2.png?key=abc',
+        // Eine eigene Kartenquelle.
+        'https://kacheln.beispiel.test/3/4/2.png',
+        // Luftbild und Höhendaten der Landschaft und des Globus.
+        'https://server.arcgisonline.com/ArcGIS/rest/services/'
+            'World_Imagery/MapServer/tile/3/2/4',
+        'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/3/4/2.png',
+      ];
+      // Ob der Server Kacheln liefert oder (noch) nicht: Diese Quellen holt
+      // er nie, also gehen sie verbunden gar nicht hinaus.
+      for (final liefert in [server, null]) {
+        ziel = liefert;
+        for (final adresse in fremde) {
+          await expectLater(
+            netz.get(Uri.parse(adresse)),
+            throwsA(isA<KachelNurUeberServer>()),
+            reason: adresse,
+          );
+        }
+      }
+      expect(fang.anfragen, isEmpty, reason: 'kein Abruf beim Anbieter');
+
+      // Ohne Server (lokale Bibliothek) wie bisher direkt.
+      verbunden = false;
+      ziel = null;
+      for (final adresse in fremde) {
+        await netz.get(Uri.parse(adresse));
+        expect(fang.adressen.last, adresse);
+      }
+    });
+
+    test('welche Kartenvorlagen über den Server kommen können', () {
+      expect(vorlageUeberServer(osmKachelVorlage), isTrue);
+      expect(
+        vorlageUeberServer('https://tile.opentopomap.org/{z}/{x}/{y}.png'),
+        isTrue,
+      );
+      expect(
+        vorlageUeberServer(
+          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=k',
+        ),
+        isFalse,
+      );
+      expect(
+        vorlageUeberServer('https://kacheln.beispiel.test/{z}/{x}/{y}.png'),
+        isFalse,
+      );
+    });
 
     test('nur ein Server mit `funktionen.karte` liefert Kacheln', () {
       expect(

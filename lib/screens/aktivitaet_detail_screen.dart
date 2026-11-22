@@ -23,7 +23,8 @@ import '../widgets/zuordnung_auswahlleiste.dart';
 import '../widgets/aktivitaetsart_anzeige.dart';
 import '../widgets/asset_thumbnail_tile.dart';
 import 'package:gelaende/hoehenprofil.dart';
-import '../widgets/mini_location_map.dart' show kachelNetzClient;
+import '../widgets/mini_location_map.dart'
+    show kachelNetzClient, kartenVerbunden;
 import '../widgets/namens_dialog.dart';
 import '../widgets/routenkarte.dart';
 import 'asset_viewer_screen.dart';
@@ -242,6 +243,12 @@ class _AktivitaetDetailScreenState extends State<AktivitaetDetailScreen> {
     // Und die Tageszeit, aus demselben Grund an derselben Stelle.
     final stimmung = await widget.library.db.gelaendeStimmungWert();
     if (!mounted) return;
+    // Höhendaten und Luftbild reicht der Server nicht weiter, und verbunden
+    // werden sie nicht direkt geholt (#468): Die Landschaft hat dann nur,
+    // was schon auf der Platte liegt. Derselbe Hinweis wie auf den Karten.
+    if (kartenVerbunden.value) {
+      melde.hinweis(AppTexte.of(context).karteNurUeberServer);
+    }
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (_) => GelaendeScreen(

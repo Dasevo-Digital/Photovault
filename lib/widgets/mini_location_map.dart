@@ -572,9 +572,11 @@ Client? _kachelNetz;
 
 Serververbindung? _kachelserver;
 
-/// Ob die Bibliothek mit einem Server verbunden ist – dann kommen
-/// OpenStreetMap- und OpenTopoMap-Kacheln nur über ihn (IMP-122).
-bool _kartenVerbunden = false;
+/// Ob die Bibliothek mit einem Server verbunden ist – dann kommen Kacheln
+/// nur über ihn (IMP-122): OpenStreetMap und OpenTopoMap, sobald er sie
+/// liefert; was er nicht weiterreicht (CARTO, eine eigene Kartenquelle,
+/// Luftbild, Höhendaten), gar nicht (#468).
+final kartenVerbunden = ValueNotifier<bool>(false);
 
 /// Der eigene Server, über den OpenStreetMap- und OpenTopoMap-Kacheln
 /// kommen (#180) – `null` heisst: Er liefert (noch) keine.
@@ -587,16 +589,23 @@ bool _kartenVerbunden = false;
 /// [verbunden] sagt, ob es überhaupt einen Server gibt. Eine lokale
 /// Bibliothek holt ihre Kacheln selbst. Eine verbundene holt sie **nie**
 /// beim Anbieter, auch nicht, solange ihr Server keine meldet (kurz nach
-/// dem Start, ein Server mit abgeschalteten Karten oder bis 3.66): Dann
-/// bleibt die Karte leer, bis auf das, was schon auf der Platte liegt,
-/// und sagt das ([kachelnNurUeberServer]). Sonst sähe der Anbieter
-/// gerade dann die Orte der Fotos, wenn man ihn über den Server meiden
-/// will.
+/// dem Start, ein Server mit abgeschalteten Karten oder bis 3.66), und
+/// auch keine aus Quellen, die er gar nicht weiterreicht: Dann bleibt die
+/// Karte leer, bis auf das, was schon auf der Platte liegt, und sagt das
+/// ([kachelnNurUeberServer], [kartenquelleFehltVerbunden]). Sonst sähe der
+/// Anbieter gerade dann die Orte der Fotos, wenn man ihn über den Server
+/// meiden will.
 void setzeKachelserver(Serververbindung? server, {bool verbunden = false}) {
   _kachelserver = server;
-  _kartenVerbunden = verbunden || server != null;
-  kachelnNurUeberServer.value = _kartenVerbunden && server == null;
+  kartenVerbunden.value = verbunden || server != null;
+  kachelnNurUeberServer.value = kartenVerbunden.value && server == null;
 }
+
+/// Ob [stil] in einer verbundenen Bibliothek leer bleibt, weil der Server
+/// seine Quelle nicht weiterreicht – CARTO (die dunkle Karte mit
+/// Schlüssel) oder eine eigene Kartenquelle (#468).
+bool kartenquelleFehltVerbunden(Kartenstil stil) =>
+    kartenVerbunden.value && !vorlageUeberServer(stil.kachelUrl);
 
 /// Ob die Karten gerade auf den eigenen Server warten: verbunden, aber er
 /// liefert keine Kacheln. Jede Karte zeigt das mit einem kurzen Hinweis
@@ -635,7 +644,7 @@ Client kachelNetzClient() => _kachelNetz ??= Offlinerueckfall(
       delay: kachelWartezeit,
     ),
     server: () => _kachelserver,
-    nurUeberServer: () => _kartenVerbunden,
+    nurUeberServer: () => kartenVerbunden.value,
   ),
   // Ganz aussen: erst wenn alle Wiederholungen durch sind, wird auf
   // die Platte zurueckgefallen. Siehe [Offlinerueckfall].
@@ -1031,14 +1040,19 @@ class _KachelschichtState extends State<Kachelschicht> {
   Timer? _uhr;
   Timer? _stille;
 
+  /// Ändert sich, ob die Karte auf den Server wartet oder ob die
+  /// Bibliothek verbunden ist.
+  final _kachelweg = Listenable.merge([kachelnNurUeberServer, kartenVerbunden]);
+
   @override
   void initState() {
     super.initState();
-    kachelnNurUeberServer.addListener(_serverGewechselt);
+    _kachelweg.addListener(_serverGewechselt);
   }
 
-  /// Liefert der Server jetzt Kacheln, gleich neu laden – nicht erst beim
-  /// nächsten Nachfassen, das bis zu 45 Sekunden entfernt sein kann.
+  /// Liefert der Server jetzt Kacheln oder ist die Bibliothek nicht mehr
+  /// verbunden, gleich neu laden – nicht erst beim nächsten Nachfassen, das
+  /// bis zu 45 Sekunden entfernt sein kann.
   void _serverGewechselt() {
     if (kachelnNurUeberServer.value || !mounted) return;
     _uhr?.cancel();
@@ -1077,7 +1091,7 @@ class _KachelschichtState extends State<Kachelschicht> {
 
   @override
   void dispose() {
-    kachelnNurUeberServer.removeListener(_serverGewechselt);
+    _kachelweg.removeListener(_serverGewechselt);
     _uhr?.cancel();
     _stille?.cancel();
     super.dispose();
@@ -1119,16 +1133,21 @@ double kartenHoechsteStufe(BuildContext context, {Kartenstil? stil}) =>
 /// zwei Drittel der Breite begrenzt, damit sie die Karte nicht zudeckt.
 ///
 /// Mit ihr kommt der Hinweis, wenn die Karte auf den eigenen Server wartet
-/// ([kachelnNurUeberServer]): Die Namensnennung steht in jeder Karte, also
-/// erreicht er so alle, ohne dass eine vergessen werden kann.
+/// ([kachelnNurUeberServer]) oder ihre Quelle in einer verbundenen
+/// Bibliothek gar nicht geholt wird ([kartenquelleFehltVerbunden]): Die
+/// Namensnennung steht in jeder Karte, also erreicht er so alle, ohne dass
+/// eine vergessen werden kann.
 Widget buildMapAttribution(BuildContext context, {Kartenstil? stil}) {
+  final gewaehlt = stil ?? _ausTheme(context);
   return Stack(
     children: [
       _namensnennung(context, stil),
-      ValueListenableBuilder<bool>(
-        valueListenable: kachelnNurUeberServer,
-        builder: (context, wartet, _) =>
-            wartet ? const _KartenHinweis() : const SizedBox.shrink(),
+      ListenableBuilder(
+        listenable: Listenable.merge([kachelnNurUeberServer, kartenVerbunden]),
+        builder: (context, _) =>
+            kachelnNurUeberServer.value || kartenquelleFehltVerbunden(gewaehlt)
+            ? const _KartenHinweis()
+            : const SizedBox.shrink(),
       ),
     ],
   );

@@ -157,6 +157,74 @@ void main() {
     expect(find.text(hinweis), findsNothing);
   });
 
+  testWidgets('verbunden sagt auch eine Karte aus einer Quelle, die der '
+      'Server nicht weiterreicht, dass sie leer bleibt (#468)', (tester) async {
+    Kartenstil? stil;
+    Future<void> zeige() => tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 340,
+            height: 200,
+            child: Builder(
+              builder: (context) => buildMapAttribution(context, stil: stil),
+            ),
+          ),
+        ),
+      ),
+    );
+    const hinweis =
+        'Die Karte kommt über den Server. Er liefert gerade keine Kacheln.';
+    addTearDown(() => setzeCartoSchluessel(null));
+    final heim = Serververbindung(
+      Uri.parse('http://heimserver.test/'),
+      'pv1_test',
+    );
+
+    // Der Server liefert Kacheln – aber CARTO holt er nicht.
+    setzeCartoSchluessel('schluessel');
+    setzeKachelserver(heim, verbunden: true);
+    stil = Kartenstil.dunkel;
+    await zeige();
+    expect(find.text(hinweis), findsOneWidget);
+    expect(kartenquelleFehltVerbunden(Kartenstil.dunkel), isTrue);
+    // OpenStreetMap und OpenTopoMap kommen über ihn: kein Hinweis.
+    for (final s in [Kartenstil.hell, Kartenstil.topo]) {
+      stil = s;
+      await zeige();
+      expect(find.text(hinweis), findsNothing, reason: '$s');
+    }
+    // Ohne Schlüssel ist die dunkle Karte die umgefärbte OSM-Karte.
+    setzeCartoSchluessel(null);
+    stil = Kartenstil.dunkel;
+    await zeige();
+    expect(find.text(hinweis), findsNothing);
+
+    // Eine lokale Bibliothek holt CARTO weiter selbst.
+    setzeCartoSchluessel('schluessel');
+    setzeKachelserver(null);
+    await zeige();
+    expect(find.text(hinweis), findsNothing);
+    expect(kartenquelleFehltVerbunden(Kartenstil.dunkel), isFalse);
+  });
+
+  test('verbunden holt der gemeinsame Kachelweg CARTO nicht direkt, auch '
+      'wenn der Server Kacheln liefert (#468)', () async {
+    setzeKachelserver(
+      Serververbindung(Uri.parse('http://heimserver.test/'), 'pv1_test'),
+      verbunden: true,
+    );
+    await expectLater(
+      kachelNetzClient().get(
+        Uri.parse('https://a.basemaps.cartocdn.com/dark_all/5/16/10.png?key=k'),
+      ),
+      throwsA(isA<KachelNurUeberServer>()),
+    );
+  });
+
   testWidgets('liefert der Server Kacheln, lädt die Karte gleich neu', (
     tester,
   ) async {

@@ -188,6 +188,32 @@ void main() {
     mosaik.dispose();
   });
 
+  test(
+    'verbunden holt der Globus kein Luftbild direkt bei Esri (#468)',
+    () async {
+      var anfragen = 0;
+      final netz = MockClient((anfrage) async {
+        anfragen++;
+        final kachel = img.Image(width: 256, height: 256);
+        return http.Response.bytes(img.encodePng(kachel), 200);
+      });
+      var verbunden = true;
+      final globus = globusNetz(netz, nurUeberServer: () => verbunden);
+      const fenster = Kachelfenster(7, 64, 43, 2, 2);
+
+      // Es bleibt bei der Grundtextur.
+      expect(await ladeMosaik(fenster, globus, _OhneSpeicher()), isNull);
+      expect(anfragen, 0);
+
+      // Ohne Server wie bisher.
+      verbunden = false;
+      final mosaik = await ladeMosaik(fenster, globus, _OhneSpeicher());
+      expect(mosaik, isNotNull);
+      expect(anfragen, 4);
+      mosaik!.dispose();
+    },
+  );
+
   testWidgets('der Shader zeigt das Mosaik dort, wo es liegt', (tester) async {
     // Grundtextur blau, Mosaik rot um 0°/0° (Stufe 6, Kacheln 31…32).
     // Ohne Drehung zeigt die Kugelmitte auf 0°/0°.

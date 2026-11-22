@@ -23,7 +23,8 @@ import 'verbindung.dart';
 /// Adressen abrufen liesse. Es sind die beiden schlüssellosen Karten, die
 /// die Apps und die Weboberfläche zeigen. CARTO trägt den eigenen
 /// Schlüssel in der Adresse und die eigene Kartenquelle ist frei
-/// eingetragen – beide gehen weiter direkt.
+/// eingetragen – beide holt ein Gerät ohne Server weiter direkt; in einer
+/// verbundenen Bibliothek gar nicht (siehe [Kachelumleitung.nurUeberServer]).
 ///
 /// [hoechsteStufe] ist die letzte Stufe mit echten Kacheln (siehe
 /// `Kartenstil.hoechsteEchteStufe`): OSM antwortet darüber mit 400,
@@ -55,6 +56,24 @@ String? serverKachelpfad(Uri kachel) {
   return 'api/v1/karte/$stil/${m[1]}/${m[2]}/${m[3]}.png';
 }
 
+/// Ob die Kacheln der Adressvorlage [vorlage] (`…/{z}/{x}/{y}.png`) über
+/// den eigenen Server kommen können – also zu einer der
+/// [serverKartenquellen] gehören.
+///
+/// Für die Karten, die in einer verbundenen Bibliothek sagen müssen, dass
+/// ihre Quelle dort nicht geholt wird (CARTO, eine eigene Kartenquelle).
+bool vorlageUeberServer(String vorlage) {
+  final beispiel = Uri.tryParse(
+    vorlage
+        .replaceAll('{s}', 'a')
+        .replaceAll('{r}', '')
+        .replaceAll('{z}', '1')
+        .replaceAll('{x}', '1')
+        .replaceAll('{y}', '1'),
+  );
+  return beispiel != null && serverKachelpfad(beispiel) != null;
+}
+
 /// Lenkt die Abrufe der [serverKartenquellen] zum eigenen Server um, wenn
 /// [server] einen nennt; alles andere geht unverändert weiter.
 ///
@@ -77,23 +96,25 @@ class Kachelumleitung extends http.BaseClient {
   /// [serverLiefertKacheln]); sonst `null`.
   final Serververbindung? Function() server;
 
-  /// Ob die Kacheln der [serverKartenquellen] **nur** über den eigenen
-  /// Server kommen dürfen – so, solange die Bibliothek mit einem verbunden
-  /// ist (IMP-122).
+  /// Ob Kacheln **nur** über den eigenen Server kommen dürfen – so,
+  /// solange die Bibliothek mit einem verbunden ist (IMP-122, #468).
   ///
-  /// Meldet der Server dann (noch) keine Kacheln – er ist älter, die
-  /// Karten sind dort abgeschaltet, oder die Fähigkeit ist kurz nach dem
-  /// Start noch nicht erfragt –, wird nicht beim Anbieter nachgeholt,
-  /// sondern [KachelNurUeberServer] geworfen. Für das Gerät ist das wie
-  /// kein Netz: Was auf der Platte liegt, bleibt zu sehen. Ohne Angabe
-  /// geht es wie bisher direkt.
+  /// Dann geht kein Abruf mehr direkt an einen Anbieter: Meldet der Server
+  /// (noch) keine Kacheln – er ist älter, die Karten sind dort
+  /// abgeschaltet, oder die Fähigkeit ist kurz nach dem Start noch nicht
+  /// erfragt –, und ebenso für alles, was er gar nicht weiterreicht (CARTO,
+  /// eine eigene Kartenquelle, Luftbild, Höhendaten), wird
+  /// [KachelNurUeberServer] geworfen, ohne dass etwas abgerufen wird. Für
+  /// das Gerät ist das wie kein Netz: Was auf der Platte liegt, bleibt zu
+  /// sehen. Ohne Angabe geht alles, was nicht umgelenkt wird, wie bisher
+  /// direkt.
   final bool Function()? nurUeberServer;
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest anfrage) async {
     final s = server();
     final pfad = anfrage.method != 'GET' ? null : serverKachelpfad(anfrage.url);
-    if (s == null && pfad != null && (nurUeberServer?.call() ?? false)) {
+    if ((s == null || pfad == null) && (nurUeberServer?.call() ?? false)) {
       throw KachelNurUeberServer(anfrage.url);
     }
     if (s == null || pfad == null) return _innen.send(anfrage);
