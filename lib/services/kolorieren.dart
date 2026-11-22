@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
@@ -44,23 +45,26 @@ class KolorierService {
   }
 
   /// Färbt [quelle] ein und gibt das Ergebnis in derselben Grösse zurück.
+  ///
+  /// **Im Isolat der Oberfläche läuft nur das Modell** (Plattformkanal).
+  /// Die Eingabe entsteht und die Farbe kommt über `compute()` aufs Bild:
+  /// Das Zusammensetzen rechnet in voller Auflösung sieben Potenzen je
+  /// Bildpunkt, bei 24 Megapixeln Sekunden, in denen Fenster und
+  /// Warteanzeige stillstanden (Folge von #434).
   Future<img.Image> faerbe(img.Image quelle) async {
-    final eingabe = await OrtValue.fromList(koloriereingabe(quelle), [
-      1,
-      3,
-      modellGroesse,
-      modellGroesse,
-    ]);
+    final eingabe = await OrtValue.fromList(
+      await compute(koloriereingabe, quelle),
+      [1, 3, modellGroesse, modellGroesse],
+    );
     final lebend = <OrtValue>{eingabe};
+    final Float32List ab;
     try {
       final ausgaben = await _session.run({'input': eingabe});
       lebend.addAll(ausgaben.values);
       final roh = await ausgaben['output']!.asFlattenedList();
-      final ab = Float32List(roh.length);
-      for (var i = 0; i < roh.length; i++) {
-        ab[i] = (roh[i] as num).toDouble();
-      }
-      return eingefaerbt(quelle, ab);
+      ab = roh is Float32List
+          ? roh
+          : Float32List.fromList([for (final v in roh) (v as num).toDouble()]);
     } finally {
       for (final v in lebend) {
         try {
@@ -70,10 +74,15 @@ class KolorierService {
         }
       }
     }
+    return compute(_einfaerben, (quelle: quelle, ab: ab));
   }
 
   Future<void> dispose() async => _session.close();
 }
+
+/// [eingefaerbt] für `compute()`.
+img.Image _einfaerben(({img.Image quelle, Float32List ab}) a) =>
+    eingefaerbt(a.quelle, a.ab);
 
 /// Das Graubild für das Modell: [quelle] auf 512 × 512, jeder Bildpunkt
 /// auf seine Helligkeit gebracht und als RGB in 0..1, Kanal für Kanal.
