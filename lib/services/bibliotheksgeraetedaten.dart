@@ -9,8 +9,11 @@ import 'package:uuid/uuid.dart';
 /// die versteckte Kennung nicht mit.
 class Bibliotheksgeraetedaten {
   static final _offen = <String, Future<String>>{};
-  static Future<String> kennung(StoragePaths paths) async {
-    final root = await paths.root.resolveSymbolicLinks();
+  static Future<String> kennung(StoragePaths paths) => kennungVon(paths.root);
+
+  /// [kennung] für den Ordner `library/` einer Bibliothek.
+  static Future<String> kennungVon(Directory bibliothek) async {
+    final root = await bibliothek.resolveSymbolicLinks();
     if (_offen.length >= 128 && !_offen.containsKey(root)) {
       _offen.remove(_offen.keys.first);
     }

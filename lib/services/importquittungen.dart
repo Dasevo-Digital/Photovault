@@ -8,6 +8,7 @@ import 'package:kern/services/import_plan.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
+import 'bibliotheksgeraetedaten.dart';
 import 'library_location.dart';
 
 enum ImportErgebnis { offen, importiert, kammer, duplikat, ausgelassen, fehler }
@@ -96,13 +97,54 @@ class Importquittungen {
 
   /// Der lokale Datenordner bleibt auch dann auf diesem Rechner, wenn die
   /// Medienbibliothek auf einem anderen Laufwerk liegt.
+  ///
+  /// **Unter der Standortkennung der Bibliothek (#433)**, wie ihre
+  /// Originalorte. Bis hierher war der Ordner nach dem Pfad benannt: Nach
+  /// dem Verlegen, oder wenn eine externe Platte unter einem anderen
+  /// Laufwerksbuchstaben oder Namen erschien, lagen Importverlauf und
+  /// Kopienprüfungen verwaist im Datenordner. Ein nach dem Pfad benannter
+  /// Ordner wird beim ersten Öffnen übernommen.
   static Future<Importquittungen> fuer(Directory bibliothek) async {
-    final daten = await LibraryLocation.datenordner();
-    final pfad = await bibliothek.resolveSymbolicLinks();
-    final kennung = sha256.convert(utf8.encode(p.normalize(pfad))).toString();
-    return Importquittungen(
-      Directory(p.join(daten.path, 'bibliotheksverlauf', kennung)),
+    final verlauf = Directory(
+      p.join((await LibraryLocation.datenordner()).path, 'bibliotheksverlauf'),
     );
+    final ordner = Directory(
+      p.join(
+        verlauf.path,
+        await Bibliotheksgeraetedaten.kennungVon(bibliothek),
+      ),
+    );
+    final pfad = await bibliothek.resolveSymbolicLinks();
+    final frueher = Directory(
+      p.join(
+        verlauf.path,
+        sha256.convert(utf8.encode(p.normalize(pfad))).toString(),
+      ),
+    );
+    await _uebernimm(frueher, ordner);
+    return Importquittungen(ordner);
+  }
+
+  /// Legt den Inhalt von [frueher] nach [ordner]; was dort schon liegt,
+  /// bleibt. Scheitert es, bleibt der frühere Ordner und mit ihm der
+  /// Verlauf – beim nächsten Öffnen geht es weiter.
+  static Future<void> _uebernimm(Directory frueher, Directory ordner) async {
+    try {
+      if (!await frueher.exists()) return;
+      if (!await ordner.exists()) {
+        await frueher.rename(ordner.path);
+        return;
+      }
+      await for (final e in frueher.list(followLinks: false)) {
+        if (e is! File) continue;
+        final ziel = File(p.join(ordner.path, p.basename(e.path)));
+        if (!await ziel.exists()) await e.rename(ziel.path);
+      }
+      // Nur, wenn nichts mehr darin liegt.
+      await frueher.delete();
+    } on FileSystemException {
+      // s. o.
+    }
   }
 
   File _datei(String id, String endung) {
