@@ -149,6 +149,33 @@ void main() {
     },
   );
 
+  test('ein gesichertes Video kommt vom Telefon, solange es dasselbe ist '
+      '(#437)', () async {
+    final v = (await aufnahme('film', 'mov')).copyWith(type: 'VIDEO');
+    expect(Geraetefotos.videoKommtInFrage(v, 'pruef-film'), isTrue);
+    expect(
+      Geraetefotos.videoKommtInFrage(v, 'andere'),
+      isFalse,
+      reason: 'am Rechner bearbeitet',
+    );
+    expect(
+      Geraetefotos.videoKommtInFrage(
+        v.copyWith(trimmedRelativePath: const Value('trimmed/film.mov')),
+        'pruef-film',
+      ),
+      isFalse,
+      reason: 'auf dem Server gekürzt',
+    );
+    expect(
+      Geraetefotos.videoKommtInFrage(
+        await aufnahme('foto', 'heic'),
+        'pruef-foto',
+      ),
+      isFalse,
+      reason: 'kein Video',
+    );
+  });
+
   test('die volle Auflösung kommt vom eigenen Abruf des Servers', () async {
     final heic = await aufnahme('a-b-c', 'heic');
 

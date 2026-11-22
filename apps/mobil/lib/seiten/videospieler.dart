@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kern/db/database.dart';
 import 'package:video_player/video_player.dart';
 
+import '../lokal/geraetefoto.dart';
 import '../sitzung.dart';
 
 /// Ab welcher Datenrate ein Original über das Netz als schwer gilt.
@@ -69,7 +70,8 @@ class Stillstand {
 
 /// Ein fertig geladener Spieler für das Video [a] – wie im Browser: was der
 /// Betrachter abspielt (gekürzt, sonst das Original), von hier, wenn es
-/// hier liegt, sonst vom Server mit Teilabruf.
+/// hier liegt (geholt oder, unverändert gesichert, in der Mediathek des
+/// Telefons), sonst vom Server mit Teilabruf.
 ///
 /// Statt des Originals die leichte Fassung des Servers (`abspielbar`):
 /// - **wenn das Telefon das Original nicht spielt** – HEVC auf älteren
@@ -93,6 +95,9 @@ Future<VideoPlayerController> videospieler(
   if (!leicht && await hier.exists()) {
     final c = VideoPlayerController.file(File(hier.path));
     if (await _bereit(c)) return c;
+  }
+  if (!leicht) {
+    if (await _vomTelefon(sitzung, a) case final c?) return c;
   }
   final abgleich = sitzung.abgleich;
   final v = sitzung.verbindung;
@@ -148,6 +153,19 @@ Future<VideoPlayerController> videospieler(
     await Future<void>.delayed(const Duration(seconds: 1));
   }
   throw StateError('nicht abspielbar');
+}
+
+/// Das Video aus der Mediathek des Telefons, wenn es dort unverändert
+/// liegt (siehe [Geraetefotos.videoQuelle]).
+Future<VideoPlayerController?> _vomTelefon(Sitzung sitzung, AssetData a) async {
+  final d = sitzung.sicherung;
+  if (d == null || a.type != 'VIDEO') return null;
+  final quelle = await Geraetefotos(d).videoQuelle(a);
+  if (quelle == null) return null;
+  final c = quelle.scheme == 'content'
+      ? VideoPlayerController.contentUri(quelle)
+      : VideoPlayerController.file(File.fromUri(quelle));
+  return await _bereit(c) ? c : null;
 }
 
 /// Lädt [c]; ein Video ohne Bild (Breite 0) zählt wie ein Fehler – so

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:kern/db/database.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
@@ -7,7 +9,8 @@ import '../sicherung/dienst.dart';
 
 /// Fotos, die noch auf diesem Telefon liegen, zeigt der Betrachter von dort
 /// (#330): Sie sind sofort da, in voller Auflösung und ohne Netz. Vom Server
-/// kämen erst die Vorschau und beim Zoomen eine Wandlung.
+/// kämen erst die Vorschau und beim Zoomen eine Wandlung. Videos ebenso
+/// ([videoQuelle], #437).
 ///
 /// Welches Foto des Telefons zu einer Aufnahme gehört, weiss die Sicherung.
 /// Vom Server kommt es weiterhin, wenn
@@ -47,6 +50,37 @@ class Geraetefotos {
       return null;
     }
   }
+
+  /// Woher der Spieler das Video [a] nimmt, wenn es unverändert und ganz
+  /// auf diesem Telefon liegt, sonst `null` (#437): unter Android eine
+  /// Content-URI, unter iOS eine Datei-URL – ohne Kopie in den
+  /// Zwischenspeicher. Vom Server lief ein eigenes, frisch gesichertes
+  /// 4K-Video sonst über den Upload daheim und das Datenvolumen, startete
+  /// langsam, und schwere Videos fielen auf die leichte Fassung zurück.
+  Future<Uri?> videoQuelle(AssetData a) async {
+    final g = _sicherung.gesichertAls(a.id);
+    if (g == null || !videoKommtInFrage(a, g.pruefsumme)) return null;
+    try {
+      final e = await AssetEntity.fromId(g.lokal);
+      if (e == null || e.type != AssetType.video) return null;
+      if (e.modifiedDateTime.millisecondsSinceEpoch != g.geaendert) return null;
+      if (!await e.isLocallyAvailable(isOrigin: true)) return null;
+      // In der Fotos-App bearbeitet: Die URL spielte die Bearbeitung, auf
+      // dem Server liegt nur das Original.
+      if (Platform.isIOS && await e.darwin.hasAdjustments) return null;
+      final url = await e.getMediaUrl();
+      return url == null ? null : Uri.parse(url);
+    } on Object {
+      return null;
+    }
+  }
+
+  /// Ob das Video [a] vom Telefon kommen kann: nicht auf dem Server
+  /// gekürzt und dort noch die Datei, die vom Telefon kam ([zeigtDasselbe]).
+  static bool videoKommtInFrage(AssetData a, String? pruefsumme) =>
+      a.type == 'VIDEO' &&
+      a.trimmedRelativePath == null &&
+      zeigtDasselbe(a, pruefsumme);
 
   /// Ob das Foto auf dem Telefon dasselbe zeigte wie der Server.
   static bool kommtInFrage(AssetData a) =>
