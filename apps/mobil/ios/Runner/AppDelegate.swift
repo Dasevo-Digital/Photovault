@@ -20,6 +20,14 @@ import workmanager_apple
       }
     }
     Abdeckung.richteEin()
+    // Das Widget „Vor x Jahren“ (#467): Den Zustand der App-Sperre sagt
+    // sonst erst Flutter, wenn die Oberfläche startet. So stimmt er auch,
+    // wenn iOS die App nach einem Update nur für die Sicherung im
+    // Hintergrund startet; Abdeckung.an ist dieselbe Einstellung. Vor dem
+    // ersten Entsperren liest UserDefaults nur „aus“.
+    if application.isProtectedDataAvailable {
+      GemeinsameAppSperre.gleiche(Abdeckung.an)
+    }
     WorkmanagerPlugin.registerBGProcessingTask(withIdentifier: "de.dasevo.photovault.sicherung")
     // Kurze Auffrischungen über den Tag (BGAppRefreshTask, rund 30 s je
     // Lauf): Die Verarbeitungsaufgabe allein lässt iOS meist nur nachts am
@@ -75,6 +83,14 @@ import workmanager_apple
         case "abdeckung":
           Abdeckung.an = (aufruf.arguments as? Bool) ?? false
           antwort(nil)
+        case "appSperre":
+          guard let an = aufruf.arguments as? Bool else {
+            antwort(FlutterError(code: "werte", message: nil, details: nil))
+            return
+          }
+          antwort(
+            GemeinsameAppSperre.gleiche(an)
+              ? nil : FlutterError(code: "schluesselbund", message: nil, details: nil))
         case "laufzeit":
           // Die Frist der App-Sperre (#382): CLOCK_MONOTONIC zählt auch,
           // während das Gerät schläft, und lässt sich anders als die
@@ -98,6 +114,19 @@ import workmanager_apple
         }
       }
     }
+  }
+}
+
+extension GemeinsameAppSperre {
+  /// Merkt sich den Zustand der App-Sperre für das Widget (#467). Hat er
+  /// sich geändert, zeichnet es sofort neu: Ein Foto, das es noch zeigt,
+  /// weicht dem Schloss. `false`, wenn der Schlüsselbund nicht schreibt.
+  @discardableResult
+  static func gleiche(_ an: Bool) -> Bool {
+    guard self.an != an else { return true }
+    let ok = schreibe(an)
+    WidgetCenter.shared.reloadAllTimelines()
+    return ok
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'gemeinsam.dart';
 import 'l10n/app_localizations.dart';
 
 /// Die App-Sperre (#376): Face ID, Touch ID oder der Gerätecode, bevor die
@@ -21,7 +22,8 @@ import 'l10n/app_localizations.dart';
 /// Sie gilt nur für dieses Gerät und nur für die Oberfläche: Die Sicherung
 /// im Hintergrund und das Teilen aus anderen Apps zeigen nichts und laufen
 /// weiter. Im App-Umschalter deckt das System die App ab (siehe
-/// `AppDelegate.swift` und `MainActivity.kt`), solange sie an ist.
+/// `AppDelegate.swift` und `MainActivity.kt`), solange sie an ist, und das
+/// Widget „Vor x Jahren“ zeigt dann nur ein Schloss (#467).
 class AppSperre extends ChangeNotifier {
   AppSperre({
     this.an = false,
@@ -32,6 +34,7 @@ class AppSperre extends ChangeNotifier {
     DateTime Function()? jetzt,
     Future<int?> Function()? laufzeit,
     Future<void> Function(bool an)? abdecken,
+    Future<void> Function(bool an)? teileZustand,
     Future<void> Function()? beiSperre,
     bool? abdeckenWennInaktiv,
     bool? android,
@@ -40,6 +43,7 @@ class AppSperre extends ChangeNotifier {
        _jetzt = jetzt ?? DateTime.now,
        _laufzeit = laufzeit ?? _systemLaufzeit,
        _abdecken = abdecken ?? _systemAbdeckung,
+       _teileZustand = teileZustand ?? Gemeinsam.setzeAppSperre,
        _beiSperre = beiSperre ?? _systemSperre,
        // Android schützt den Umschalter mit FLAG_SECURE; eine Fläche bei
        // jedem Fokusverlust (geteilter Bildschirm, Berechtigungsdialog,
@@ -74,6 +78,9 @@ class AppSperre extends ChangeNotifier {
   final DateTime Function() _jetzt;
   final Future<int?> Function() _laufzeit;
   final Future<void> Function(bool an) _abdecken;
+
+  /// Sagt den Erweiterungen, ob die Sperre an ist (#467).
+  final Future<void> Function(bool an) _teileZustand;
   final Future<void> Function() _beiSperre;
   final bool _abdeckenWennInaktiv;
   final bool _android;
@@ -103,13 +110,23 @@ class AppSperre extends ChangeNotifier {
   /// Datei gibt es nur, seit jemand die Sperre einmal geschaltet hat, und
   /// ein Fehler soll sie nicht still abschalten. Hat das Gerät gar keinen
   /// Code, schaltet [entsperre] sie ohnehin ab.
-  static Future<AppSperre> lade() async {
-    final datei = File(
+  static Future<AppSperre> lade() async => ladeAus(
+    File(
       p.join((await getApplicationSupportDirectory()).path, 'app_sperre.json'),
-    );
+    ),
+  );
+
+  /// [lade] aus [datei].
+  ///
+  /// Das Widget erfährt den Zustand bei jedem Start, nicht nur beim
+  /// Umschalten (#467): War die Sperre schon vor dem Update an, das das
+  /// Schloss im Widget brachte, wüsste es sonst nichts davon.
+  @visibleForTesting
+  static Future<AppSperre> ladeAus(File datei) async {
     final (an, frist) = await leseEinstellung(datei);
     final sperre = AppSperre(an: an, frist: frist, datei: datei);
     unawaited(sperre._abdecken(an).catchError((Object _) {}));
+    unawaited(sperre._teileZustand(an).catchError((Object _) {}));
     return sperre;
   }
 
@@ -207,6 +224,7 @@ class AppSperre extends ChangeNotifier {
     }
     notifyListeners();
     await _abdecken(this.an).catchError((Object _) {});
+    await _teileZustand(this.an).catchError((Object _) {});
     final ziel = datei;
     if (ziel == null) return;
     try {

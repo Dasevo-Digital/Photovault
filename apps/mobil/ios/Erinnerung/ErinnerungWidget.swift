@@ -10,12 +10,21 @@ import WidgetKit
 /// Es holt sich das Bild selbst vom Server, mit der Verbindung, die die
 /// App im gemeinsamen Schlüsselbund ablegt (GemeinsameVerbindung). Ohne
 /// Netz bleibt das zuletzt geladene stehen; WidgetKit hält es fest.
+///
+/// Ist die App-Sperre an, zeigt es nur ein Schloss und fragt den Server gar
+/// nicht erst (#467). Schaltet die App sie ein, lädt sie das Widget neu;
+/// das zuletzt gezeigte Foto weicht damit sofort.
 
 struct Erinnerungseintrag: TimelineEntry {
   let date: Date
   let bild: UIImage?
   let titel: String
   let unterzeile: String?
+  var gesperrt = false
+
+  static var mitSperre: Erinnerungseintrag {
+    Erinnerungseintrag(date: .now, bild: nil, titel: Texte.gesperrt, unterzeile: nil, gesperrt: true)
+  }
 }
 
 private struct Antwort: Decodable {
@@ -57,6 +66,7 @@ struct Erinnerungsanbieter: TimelineProvider {
     guard let v = GemeinsameVerbindung.lies() else {
       return Erinnerungseintrag(date: .now, bild: nil, titel: "Photo Vault", unterzeile: Texte.anmelden)
     }
+    if GemeinsameAppSperre.an { return .mitSperre }
     guard let r = v.anfrage("api/v1/erinnerungen"),
       let (daten, antwort) = try? await URLSession.shared.data(for: r),
       (antwort as? HTTPURLResponse)?.statusCode == 200,
@@ -73,6 +83,9 @@ struct Erinnerungsanbieter: TimelineProvider {
     let stunde = Calendar.current.ordinality(of: .hour, in: .year, for: .now) ?? 0
     let (jahre, foto) = fotos[(stunde / 6) % fotos.count]
     let bild = await ladeBild(v, foto.id, groesse: groesse)
+    // Während des Ladens eingeschaltet: Der neue Lauf, den die App
+    // angestossen hat, könnte vor diesem fertig sein.
+    if GemeinsameAppSperre.an { return .mitSperre }
     return Erinnerungseintrag(
       date: .now, bild: bild, titel: Texte.vorJahren(jahre), unterzeile: Texte.datum(foto.aufgenommen))
   }
@@ -111,6 +124,8 @@ enum Texte {
   static var anmelden: String { Sprache.deutsch ? "In der App anmelden" : "Sign in in the app" }
   static var keinServer: String { Sprache.deutsch ? "Server nicht erreichbar" : "Server not reachable" }
   static var keineErinnerung: String { Sprache.deutsch ? "Heute keine Erinnerung" : "No memory today" }
+  /// Wie die App über ihrer Sperre (appSperreGesperrt).
+  static var gesperrt: String { Sprache.deutsch ? "Photo Vault ist gesperrt" : "Photo Vault is locked" }
   static var name: String { Sprache.deutsch ? "Vor x Jahren" : "Years ago" }
   static var beschreibung: String {
     Sprache.deutsch
@@ -134,22 +149,35 @@ struct ErinnerungAnsicht: View {
   var body: some View {
     ZStack(alignment: .bottomLeading) {
       if let bild = eintrag.bild {
-        Color.clear.overlay(Image(uiImage: bild).resizable().scaledToFill()).clipped()
+        // Ist das iPhone gesperrt, blendet iOS es je nach Einstellung aus
+        // (Heute-Ansicht, StandBy; #467).
+        Color.clear.overlay(Image(uiImage: bild).resizable().scaledToFill().privacySensitive())
+          .clipped()
         LinearGradient(colors: [.clear, .black.opacity(0.6)], startPoint: .center, endPoint: .bottom)
       } else {
         LinearGradient(
           colors: [Color(red: 0.13, green: 0.63, blue: 0.58), Color(red: 0.05, green: 0.42, blue: 0.38)],
           startPoint: .top, endPoint: .bottom)
       }
-      VStack(alignment: .leading, spacing: 2) {
-        Text(eintrag.titel).font(.headline).bold().lineLimit(2)
-        if let u = eintrag.unterzeile {
-          Text(u).font(.caption).lineLimit(1).opacity(0.9)
+      if eintrag.gesperrt {
+        VStack(spacing: 8) {
+          Image(systemName: "lock.fill").font(.title)
+          Text(eintrag.titel).font(.caption).bold().multilineTextAlignment(.center).lineLimit(2)
         }
+        .foregroundStyle(.white)
+        .padding(12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+      } else {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(eintrag.titel).font(.headline).bold().lineLimit(2)
+          if let u = eintrag.unterzeile {
+            Text(u).font(.caption).lineLimit(1).opacity(0.9).privacySensitive(eintrag.bild != nil)
+          }
+        }
+        .foregroundStyle(.white)
+        .shadow(color: .black.opacity(0.4), radius: 2)
+        .padding(12)
       }
-      .foregroundStyle(.white)
-      .shadow(color: .black.opacity(0.4), radius: 2)
-      .padding(12)
     }
     .containerBackground(for: .widget) { Color.black }
   }

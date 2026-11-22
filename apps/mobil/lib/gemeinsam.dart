@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Teilt die Verbindung zum Server mit den Erweiterungen der App auf dem
@@ -15,8 +14,17 @@ abstract final class Gemeinsam {
 
   static Future<void> loesche() => _rufe('loesche');
 
+  /// Ob die App-Sperre an ist (#467). Dann zeigt das Widget „Vor x Jahren“
+  /// nur ein Schloss, kein Foto und kein Datum – sonst stünden die Fotos
+  /// auf dem Home-Bildschirm, in der Heute-Ansicht und in StandBy, auch auf
+  /// dem gesperrten iPhone. Ändert sich der Zustand, zeichnet iOS das
+  /// Widget neu.
+  static Future<void> setzeAppSperre(bool an) => _rufe('appSperre', an);
+
   static Future<void> _rufe(String methode, [Object? werte]) async {
-    if (!Platform.isIOS) return;
+    // defaultTargetPlatform statt Platform.isIOS: Es ist dasselbe, lässt
+    // sich in Tests aber umstellen.
+    if (defaultTargetPlatform != TargetPlatform.iOS) return;
     try {
       await _kanal.invokeMethod<void>(methode, werte);
     } on PlatformException {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -643,5 +644,73 @@ void main() {
     expect(abdeckungen, [true, false]);
     expect(s.gesperrt, isFalse);
     expect(File('${datei.path}.neu').existsSync(), isFalse, reason: 'atomar');
+  });
+
+  group('Widget „Vor x Jahren“ (#467)', () {
+    // Der Kanal, über den die App den Zustand in den gemeinsamen
+    // Schlüsselbund schreibt (AppDelegate.swift, „appSperre“).
+    const kanal = MethodChannel('de.dasevo.photovault/gemeinsam');
+    final bote =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    late List<MethodCall> aufrufe;
+    late Directory ordner;
+    late File datei;
+
+    setUp(() {
+      aufrufe = [];
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      bote.setMockMethodCallHandler(kanal, (aufruf) async {
+        aufrufe.add(aufruf);
+        return null;
+      });
+      ordner = Directory.systemTemp.createTempSync('pv_appsperre_');
+      datei = File('${ordner.path}/app_sperre.json');
+    });
+
+    tearDown(() {
+      debugDefaultTargetPlatformOverride = null;
+      bote.setMockMethodCallHandler(kanal, null);
+      ordner.deleteSync(recursive: true);
+    });
+
+    List<Object?> zustaende() => [
+      for (final a in aufrufe)
+        if (a.method == 'appSperre') a.arguments,
+    ];
+
+    test('Einschalten schreibt den Zustand, Abschalten löscht ihn', () async {
+      final s = await AppSperre.ladeAus(datei);
+      await pumpEventQueue();
+      expect(zustaende(), [false], reason: 'ohne Einstellung: aus');
+      await s.setze(an: true);
+      expect(zustaende().last, true);
+      await s.setze(frist: const Duration(minutes: 1));
+      expect(zustaende().last, true, reason: 'die Frist schaltet nichts ab');
+      await s.setze(an: false);
+      expect(zustaende().last, false);
+    });
+
+    test('jeder Start sagt es, auch bei unlesbarer Einstellung', () async {
+      datei.writeAsStringSync('{"an": true, "frist": 60}');
+      await AppSperre.ladeAus(datei);
+      await pumpEventQueue();
+      expect(zustaende(), [true]);
+      datei.writeAsStringSync('{"an": tr');
+      await AppSperre.ladeAus(datei);
+      await pumpEventQueue();
+      expect(zustaende(), [true, true], reason: 'im Zweifel an');
+    });
+
+    test('ohne Gerätecode abgeschaltet: auch das Widget erfährt es', () async {
+      datei.writeAsStringSync('{"an": true, "frist": 0}');
+      final s = AppSperre(
+        an: true,
+        datei: datei,
+        verfuegbar: () async => false,
+        abdecken: (an) async => abdeckungen.add(an),
+      );
+      expect(await s.entsperre('Grund'), isTrue);
+      expect(zustaende(), [false]);
+    });
   });
 }

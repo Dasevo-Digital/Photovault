@@ -8,8 +8,9 @@ import Security
 /// nur mit bezahlter Mitgliedschaft; die App wird kostenlos signiert. Eine
 /// gemeinsame Schlüsselbund-Gruppe dagegen deckt das Profil ab, das Xcode
 /// dafür anlegt (`<Team>.*`). Darin steht nur, was die Erweiterungen
-/// brauchen: die Adresse des Servers und das Token dieses Telefons.
-/// Die App schreibt es beim Anmelden und löscht es beim Abmelden.
+/// brauchen: die Adresse des Servers und das Token dieses Telefons, dazu
+/// ob die App-Sperre an ist (GemeinsameAppSperre). Die App schreibt die
+/// Verbindung beim Anmelden und löscht sie beim Abmelden.
 struct GemeinsameVerbindung: Codable {
   let server: String
   let token: String
@@ -36,6 +37,26 @@ struct GemeinsameVerbindung: Codable {
     r.httpMethod = methode
     r.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     return r
+  }
+}
+
+/// Ob die App-Sperre an ist (#467). Dann zeigt das Widget „Vor x Jahren“
+/// nur ein Schloss, kein Foto und kein Datum – sonst stünden die Fotos auf
+/// dem Home-Bildschirm, in der Heute-Ansicht und in StandBy, auch auf dem
+/// gesperrten iPhone. Die App schreibt es beim Start und bei jedem
+/// Umschalten (lib/app_sperre.dart); ein Eintrag heisst an.
+enum GemeinsameAppSperre {
+  private static let konto = "appSperre"
+
+  /// Auch an, solange sich der Eintrag nicht lesen lässt: lieber ein
+  /// Schloss zu viel als ein Foto.
+  static var an: Bool {
+    !GemeinsamerSpeicher.lesbar(konto) || GemeinsamerSpeicher.lies(konto) != nil
+  }
+
+  @discardableResult
+  static func schreibe(_ an: Bool) -> Bool {
+    GemeinsamerSpeicher.schreibe(konto, an ? Data("an".utf8) : nil)
   }
 }
 
