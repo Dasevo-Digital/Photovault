@@ -15,10 +15,16 @@ import 'video_playback.dart';
 class LivePhotoView extends StatefulWidget {
   final File imageFile;
   final File videoFile;
+
+  /// Legt den Spieler an – nur für Prüfungen austauschbar.
+  @visibleForTesting
+  final VideoPlaybackController Function() neuerSpieler;
+
   const LivePhotoView({
     super.key,
     required this.imageFile,
     required this.videoFile,
+    this.neuerSpieler = VideoPlaybackController.new,
   });
 
   @override
@@ -35,10 +41,29 @@ class _LivePhotoViewState extends State<LivePhotoView> {
   /// Press-and-Hold-Gestus eine per Button gestartete Wiedergabe abbricht.
   bool _loopMode = false;
 
-  Future<VideoPlaybackController?> _ensureController() async {
-    if (_controller != null) return _controller;
+  /// Was gerade gewünscht ist: `null` nichts, `false` Abspielen beim
+  /// Halten, `true` Dauerschleife.
+  ///
+  /// Das Öffnen des Videos dauert (Dauer und Bildmasse müssen bekannt
+  /// sein). Wer in der Zeit losliess, bekam das Video trotzdem einmal
+  /// abgespielt, und es blieb auf dem letzten Bild stehen. Nach jedem
+  /// `await` zählt deshalb, was jetzt gewünscht ist (#433).
+  bool? _gewuenscht;
+
+  /// Der laufende Öffnungsvorgang. Vorher öffnete ein zweiter Aufruf
+  /// während des ersten einen zweiten Spieler; der erste wurde nie
+  /// entsorgt und spielte mit Ton im Hintergrund weiter (#433).
+  Future<VideoPlaybackController?>? _oeffnen;
+
+  Future<VideoPlaybackController?> _ensureController() {
+    final vorhanden = _controller;
+    if (vorhanden != null) return Future.value(vorhanden);
+    return _oeffnen ??= _oeffneController().whenComplete(() => _oeffnen = null);
+  }
+
+  Future<VideoPlaybackController?> _oeffneController() async {
     setState(() => _initializing = true);
-    final controller = VideoPlaybackController();
+    final controller = widget.neuerSpieler();
     if (!await controller.open(widget.videoFile)) {
       await controller.dispose();
       if (mounted) setState(() => _initializing = false);
@@ -54,19 +79,27 @@ class _LivePhotoViewState extends State<LivePhotoView> {
   }
 
   Future<void> _startPlayback({required bool loop}) async {
+    _gewuenscht = loop;
     if (_playing && _loopMode == loop) return;
     final controller = await _ensureController();
-    if (controller == null || !mounted) return;
+    bool giltNoch() => mounted && _gewuenscht == loop;
+    if (controller == null || !giltNoch()) return;
     setState(() {
       _playing = true;
       _loopMode = loop;
     });
     await controller.setLooping(loop);
+    if (!giltNoch()) return;
     await controller.seekToStart();
+    if (!giltNoch()) return;
     await controller.play();
+    // Während des Startens losgelassen: Das Anhalten kam dann vor dem
+    // Abspielen an.
+    if (mounted && !_playing) await controller.pause();
   }
 
   Future<void> _stopPlayback() async {
+    _gewuenscht = null;
     if (!_playing) return;
     setState(() {
       _playing = false;
@@ -75,20 +108,25 @@ class _LivePhotoViewState extends State<LivePhotoView> {
     await _controller?.pause();
   }
 
+  /// Ob die Dauerschleife läuft oder gerade startet. Nach dem Wunsch und
+  /// nicht nach [_loopMode]: Der steht erst, wenn das Video offen ist, und
+  /// ein Loslassen in der Zwischenzeit brach die Schleife sonst ab.
+  bool get _schleife => _gewuenscht == true;
+
   void _onHoldStart() {
-    if (_loopMode) {
+    if (_schleife) {
       return; // Play-Button hat Vorrang, Halten soll nichts abbrechen.
     }
     _startPlayback(loop: false);
   }
 
   void _onHoldEnd() {
-    if (_loopMode) return;
+    if (_schleife) return;
     _stopPlayback();
   }
 
   void _togglePlayButton() {
-    if (_loopMode) {
+    if (_schleife) {
       _stopPlayback();
     } else {
       _startPlayback(loop: true);
