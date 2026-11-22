@@ -508,7 +508,7 @@ abstract class AppTexte {
   /// No description provided for @kontoAbmeldenText.
   ///
   /// In de, this message translates to:
-  /// **'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren.'**
+  /// **'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren. Was die Sicherung schon erledigt hat und wie sie eingestellt ist, merkt sich das Telefon für eine neue Anmeldung bei demselben Konto.'**
   String get kontoAbmeldenText;
 
   /// No description provided for @geraetVorgabe.

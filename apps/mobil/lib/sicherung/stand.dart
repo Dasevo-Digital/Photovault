@@ -13,9 +13,10 @@ import 'package:sqlite3/sqlite3.dart';
 /// nächsten Lauf wieder hoch. Was hier als erledigt steht, geht nie mehr
 /// zum Server – es sei denn, es wurde am Telefon bearbeitet.
 ///
-/// Liegt im Ordner der Kopie und verschwindet mit ihr beim Abmelden: Ein
-/// anderer Server oder ein anderes Konto beginnt von vorn (und der Server
-/// sagt dann, was er schon hat).
+/// Liegt im Ordner der Kopie. Beim Abmelden hebt die Sitzung ihn je Server
+/// und Konto auf und legt ihn bei der nächsten Anmeldung dort zurück
+/// (`Sicherungsgedaechtnis`, #431); ein anderer Server oder ein anderes
+/// Konto beginnt von vorn (und der Server sagt dann, was er schon hat).
 ///
 /// Die App und die Hintergrundaufgabe öffnen dieselbe Datei, unter Android
 /// womöglich gleichzeitig: WAL, eine Wartezeit für Sperren und eine
@@ -23,10 +24,13 @@ import 'package:sqlite3/sqlite3.dart';
 class Sicherungsstand {
   Sicherungsstand._(this._db);
 
+  /// Wie die Datei im Ordner heisst.
+  static const dateiname = 'sicherung.sqlite';
+
   /// Öffnet (oder legt an) den Stand in [ordner].
   factory Sicherungsstand.oeffne(Directory ordner) {
     ordner.createSync(recursive: true);
-    final db = sqlite3.open(p.join(ordner.path, 'sicherung.sqlite'));
+    final db = sqlite3.open(p.join(ordner.path, dateiname));
     db
       ..execute('PRAGMA journal_mode = WAL')
       ..execute('PRAGMA busy_timeout = 10000')

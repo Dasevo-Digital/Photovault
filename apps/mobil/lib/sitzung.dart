@@ -32,6 +32,7 @@ import 'gemeinsam.dart';
 import 'offline_alben.dart';
 import 'partnerfotos.dart';
 import 'sicherung/dienst.dart';
+import 'sicherung/gedaechtnis.dart';
 
 enum Sitzungszustand { laedt, abgemeldet, bereit, fehler }
 
@@ -177,7 +178,10 @@ class Sitzung extends ChangeNotifier {
     required String token,
   }) async {
     final ordner = await _ordner();
-    if (await ordner.exists()) await ordner.delete(recursive: true);
+    if (await ordner.exists()) {
+      await _bewahreSicherung(ordner);
+      await ordner.delete(recursive: true);
+    }
     await ordner.create(recursive: true);
     final s = Serververbindung(server, token);
     try {
@@ -192,7 +196,30 @@ class Sitzung extends ChangeNotifier {
       token: token,
     );
     await v.schreibe(ordner);
+    // Dasselbe Konto wie vor dem Abmelden: Die Sicherung macht dort weiter,
+    // wo sie war, statt still aus zu sein (#431).
+    try {
+      Sicherungsgedaechtnis.neben(
+        ordner,
+      ).stelleWiederHer(ordner, server: server, konto: konto);
+    } on Object catch (f) {
+      debugPrint('Sicherungsstand nicht zurückgelegt: $f');
+    }
     await _oeffne(ordner, v);
+  }
+
+  /// Hebt den Stand der Sicherung auf, bevor [ordner] gelöscht wird
+  /// (siehe [Sicherungsgedaechtnis]). Darf das Abmelden nie aufhalten.
+  Future<void> _bewahreSicherung(Directory ordner) async {
+    try {
+      final v = await Verbindungsdatei.lies(ordner);
+      if (v == null) return;
+      Sicherungsgedaechtnis.neben(
+        ordner,
+      ).bewahre(ordner, server: v.server, konto: v.konto);
+    } on Object catch (f) {
+      debugPrint('Sicherungsstand nicht aufgehoben: $f');
+    }
   }
 
   Future<void> _oeffne(Directory ordner, Verbindungsdatei v) async {
@@ -611,7 +638,9 @@ class Sitzung extends ChangeNotifier {
   }
 
   /// Meldet das Telefon beim Server ab und löscht die Kopie samt aller
-  /// geladenen Bilder. Auf dem Server bleibt alles, wie es ist.
+  /// geladenen Bilder. Auf dem Server bleibt alles, wie es ist. Was die
+  /// Sicherung schon erledigt hat und wie sie eingestellt ist, bleibt für
+  /// die nächste Anmeldung bei demselben Konto (#431).
   Future<void> abmelden() async {
     final a = abgleich;
     if (a != null) {
@@ -628,7 +657,10 @@ class Sitzung extends ChangeNotifier {
     abgleichszustand = null;
     await Gemeinsam.loesche();
     final ordner = await _ordner();
-    if (await ordner.exists()) await ordner.delete(recursive: true);
+    if (await ordner.exists()) {
+      await _bewahreSicherung(ordner);
+      await ordner.delete(recursive: true);
+    }
     _setze(Sitzungszustand.abgemeldet);
   }
 

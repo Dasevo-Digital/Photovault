@@ -272,7 +272,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get kontoAbmeldenText =>
-      'The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost.';
+      'The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost. The phone remembers what the backup has already done and how it is set up, for when you sign in to the same account again.';
 
   @override
   String get geraetVorgabe => 'Phone';

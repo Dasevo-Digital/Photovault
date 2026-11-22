@@ -92,7 +92,7 @@
   "kontoAbmelden": "Sign out",
   "kontoAbmeldenHinweis": "Deletes the copy on this phone; everything stays on the server.",
   "kontoAbmeldenTitel": "Sign out?",
-  "kontoAbmeldenText": "The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost.",
+  "kontoAbmeldenText": "The phone signs out from the server and deletes its library copy and all downloaded pictures. Pending changes and saved conflicts will be lost. The phone remembers what the backup has already done and how it is set up, for when you sign in to the same account again.",
   "geraetVorgabe": "Phone",
   "anmeldenTitel": "Connect to server",
   "anmeldenErklaerung": "Photo Vault on the phone shows the library of your Photo Vault server – with timeline, search, albums, people and map, even offline.",

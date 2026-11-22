@@ -273,7 +273,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get kontoAbmeldenText =>
-      'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren.';
+      'Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren. Was die Sicherung schon erledigt hat und wie sie eingestellt ist, merkt sich das Telefon für eine neue Anmeldung bei demselben Konto.';
 
   @override
   String get geraetVorgabe => 'Telefon';

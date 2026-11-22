@@ -7,6 +7,7 @@ import 'package:kern/abgleich/verbindung.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/search_filters.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault_mobil/sicherung/stand.dart';
 import 'package:photo_vault_mobil/sitzung.dart';
 
 import 'hilfen/testserver.dart';
@@ -179,5 +180,55 @@ void main() {
     } finally {
       v.schliesse();
     }
+  });
+
+  test('nach dem Abmelden findet dasselbe Konto seine Sicherung wieder, '
+      'samt allem schon Erledigten (#431)', () async {
+    await sitzung.verbinde(
+      server: adresse,
+      konto: 'erika',
+      geraet: 'Telefon',
+      token: await anmelden('Telefon'),
+    );
+    final aufnahme = (await sitzung.db.alleRasterzeilen()).first.id;
+    final zeit = DateTime(2026, 5, 6, 7);
+    // Was die Sicherung bis dahin wusste: wie sie eingestellt ist, und ein
+    // Foto ist gesichert (am Server inzwischen vielleicht gelöscht).
+    // Eingeschaltet ginge hier nicht: Ohne Telefon gibt es die Plugins
+    // für die Aufgaben nicht (das prüft sicherung_gedaechtnis_test).
+    Sicherungsstand.oeffne(telefon)
+      ..einstellungen = const Sicherungseinstellungen(
+        videos: false,
+        nurWlan: false,
+        alben: ['urlaub'],
+      )
+      ..erledige(
+        'telefonfoto',
+        zeit,
+        ausgang: 'hochgeladen',
+        aufnahme: aufnahme,
+      )
+      ..merkeOrt('halb', 'bild', 'summe', 'irgendwo')
+      ..schliesse();
+
+    // Der Server hat das Telefon abgemeldet; die App verlangt Abmelden und
+    // neu Verbinden.
+    await sitzung.abmelden();
+    expect(telefon.existsSync(), isFalse);
+    await sitzung.verbinde(
+      server: adresse,
+      konto: 'erika',
+      geraet: 'Telefon',
+      token: await anmelden('Telefon'),
+    );
+
+    final d = sitzung.sicherung!;
+    expect(d.einstellungen.videos, isFalse);
+    expect(d.einstellungen.nurWlan, isFalse);
+    expect(d.einstellungen.alben, ['urlaub']);
+    expect(d.gesichertAls(aufnahme)?.lokal, 'telefonfoto');
+    final stand = Sicherungsstand.oeffne(telefon);
+    addTearDown(stand.schliesse);
+    expect(stand.ort('halb', 'bild', 'summe'), isNull);
   });
 }

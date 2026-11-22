@@ -131,7 +131,7 @@
   "kontoAbmelden": "Abmelden",
   "kontoAbmeldenHinweis": "Löscht die Kopie auf diesem Telefon; auf dem Server bleibt alles.",
   "kontoAbmeldenTitel": "Abmelden?",
-  "kontoAbmeldenText": "Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren.",
+  "kontoAbmeldenText": "Das Telefon meldet sich beim Server ab und löscht seine Kopie der Bibliothek samt aller geladenen Bilder. Noch wartende Änderungen und gespeicherte Konflikte gehen verloren. Was die Sicherung schon erledigt hat und wie sie eingestellt ist, merkt sich das Telefon für eine neue Anmeldung bei demselben Konto.",
   "geraetVorgabe": "Telefon",
   "anmeldenTitel": "Mit Server verbinden",
   "anmeldenErklaerung": "Photo Vault auf dem Telefon zeigt die Bibliothek deines Photo-Vault-Servers – mit Zeitleiste, Suche, Alben, Personen und Karte, auch ohne Verbindung.",
