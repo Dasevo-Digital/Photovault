@@ -69,4 +69,18 @@ void main() {
     final weiter = app.indexOf('pos += stueck.length', mehr);
     expect(weiter, greaterThan(abruf));
   });
+
+  test('wer sich nach einer abgelaufenen Sitzung anmeldet, bekommt eine '
+      'frische Seite', () {
+    // Nach einem 401 zeigte zeigeAnmeldung das Formular, und die neue
+    // Anmeldung rief nur starte() auf: Zeitleiste, Suchfilter und
+    // Duplikate des vorigen Kontos blieben stehen.
+    expect(funktion('starte'), contains('warAngemeldet = true;'));
+    final nach = funktion('nachAnmeldung');
+    final neu = nach.indexOf(
+      'if (warAngemeldet) { location.reload(); return; }',
+    );
+    expect(neu, isNonNegative);
+    expect(nach.indexOf('await starte();'), greaterThan(neu));
+  });
 }

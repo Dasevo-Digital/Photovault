@@ -89,6 +89,9 @@ function aufnahmedatumText(a, format = datumZeit) {
 }
 
 let sitzung = null;   // {name, verwalter, geraet}
+// Ob in diesem Tab schon ein Konto angemeldet war. Dann liegen seine
+// Listen noch im Speicher: Zeitleiste, Suchfilter, Duplikate, Vorschläge.
+let warAngemeldet = false;
 
 // --- Ansichten -------------------------------------------------------------
 
@@ -368,6 +371,10 @@ async function nachAnmeldung(d) {
   if (d.angemeldet) {
     fehler('');
     if (d.wiederherstellungscodes) await zeigeCodes(d.wiederherstellungscodes);
+    // Nach einer abgelaufenen oder anderswo beendeten Sitzung neu laden,
+    // wie beim Abmelden: starte() allein zeigte, wer sich jetzt im selben
+    // Tab anmeldet, die geladenen Listen des vorigen Kontos.
+    if (warAngemeldet) { location.reload(); return; }
     await starte();
     return;
   }
@@ -7240,6 +7247,7 @@ document.addEventListener('visibilitychange', () => {
 
 async function starte() {
   sitzung = await api('/api/v1/web/sitzung');
+  warAngemeldet = true;
   $('anmeldung').hidden = true;
   $('kopf').hidden = false;
   $('nav').hidden = false;
