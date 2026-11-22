@@ -24,6 +24,45 @@ class DetectedFace {
   });
 }
 
+/// Wie ein Bild in die quadratische Eingabe von YuNet kommt (#461):
+/// verkleinert (oder vergrössert), ohne sein Seitenverhältnis zu ändern,
+/// oben links angelegt; der Rest der Eingabe bleibt schwarz.
+///
+/// **Warum mit Rand.** Bis hierher wurde jedes Bild auf 640 × 640
+/// gestaucht. Ein Panorama von 4:1 kam so mit viermal zu schmalen
+/// Gesichtern im Netz an, ein Hochformat mit zu breiten – YuNet ist auf
+/// Gesichter in ihrer echten Form angelernt und fand sie dort schlechter
+/// oder gar nicht. OpenCV füllt für YuNet ebenso mit Rand auf.
+///
+/// Die Kästen kommen in Punkten der Eingabe heraus; [x] und [y] rechnen
+/// sie auf Anteile am Bild um. Der Rand zählt dabei nicht mit: geteilt
+/// wird durch die Grösse, die das Bild in der Eingabe hat.
+class Letterbox {
+  const Letterbox._(this.seite, this.breite, this.hoehe);
+
+  /// Für ein Bild von [bildBreite] × [bildHoehe] Punkten in einer Eingabe
+  /// mit der Kantenlänge [seite].
+  factory Letterbox.fuer(int bildBreite, int bildHoehe, {required int seite}) {
+    final faktor = seite / math.max(math.max(bildBreite, bildHoehe), 1);
+    int kante(int n) => (n * faktor).round().clamp(1, seite);
+    return Letterbox._(seite, kante(bildBreite), kante(bildHoehe));
+  }
+
+  /// Die Kantenlänge der quadratischen Eingabe.
+  final int seite;
+
+  /// Wie breit und hoch das Bild in der Eingabe ist, in Punkten. Was
+  /// rechts und unten davon liegt, ist Rand.
+  final int breite;
+  final int hoehe;
+
+  /// Ein Wert der Eingabe in x-Richtung als Anteil an der Bildbreite.
+  double x(double punkte) => punkte / breite;
+
+  /// Ein Wert der Eingabe in y-Richtung als Anteil an der Bildhöhe.
+  double y(double punkte) => punkte / hoehe;
+}
+
 /// Reine, deterministische Nachverarbeitung für YuNets Rohausgaben –
 /// bewusst aus [FaceEngineService] herausgezogen, damit sie ohne echte
 /// ONNX-Runtime-Inferenz unit-testbar ist (siehe
@@ -36,8 +75,9 @@ class FacePostprocess {
   /// Decodiert eine einzelne YuNet-Anchor-Zelle in eine normalisierte
   /// (0..1) Bounding Box. [dx]/[dy]/[dw]/[dh] sind die rohen
   /// Netzwerk-Ausgaben für diese Zelle, [row]/[col] die Position im Grid,
-  /// [stride] die Feature-Map-Stride-Stufe (8/16/32) und [inputSize] die
-  /// quadratische Eingabegröße des Netzes (640).
+  /// [stride] die Feature-Map-Stride-Stufe (8/16/32) und [rahmen], wie das
+  /// Bild in der Eingabe des Netzes liegt. Normalisiert wird auf das Bild,
+  /// nicht auf die Eingabe (siehe [Letterbox]).
   static DetectedFace decodeBox({
     required int row,
     required int col,
@@ -46,7 +86,7 @@ class FacePostprocess {
     required double dy,
     required double dw,
     required double dh,
-    required int inputSize,
+    required Letterbox rahmen,
     required double score,
     List<double>? landmarks,
   }) {
@@ -58,10 +98,10 @@ class FacePostprocess {
     final y1 = cy - h / 2;
 
     return DetectedFace(
-      (x1 / inputSize).clamp(0.0, 1.0),
-      (y1 / inputSize).clamp(0.0, 1.0),
-      (w / inputSize).clamp(0.0, 1.0),
-      (h / inputSize).clamp(0.0, 1.0),
+      rahmen.x(x1).clamp(0.0, 1.0),
+      rahmen.y(y1).clamp(0.0, 1.0),
+      rahmen.x(w).clamp(0.0, 1.0),
+      rahmen.y(h).clamp(0.0, 1.0),
       score,
       landmarks: landmarks,
     );
@@ -76,14 +116,14 @@ class FacePostprocess {
     required int col,
     required int stride,
     required List<double> kps,
-    required int inputSize,
+    required Letterbox rahmen,
   }) {
     final result = List<double>.filled(10, 0.0);
     for (var i = 0; i < 5; i++) {
       final px = (col + kps[i * 2]) * stride;
       final py = (row + kps[i * 2 + 1]) * stride;
-      result[i * 2] = (px / inputSize).clamp(0.0, 1.0);
-      result[i * 2 + 1] = (py / inputSize).clamp(0.0, 1.0);
+      result[i * 2] = rahmen.x(px).clamp(0.0, 1.0);
+      result[i * 2 + 1] = rahmen.y(py).clamp(0.0, 1.0);
     }
     return result;
   }

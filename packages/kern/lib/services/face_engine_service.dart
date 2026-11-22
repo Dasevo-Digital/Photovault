@@ -72,10 +72,11 @@ class FaceEngineService {
 
   bool get canEmbed => _recognizer != null;
 
-  /// Erkennt Gesichter in einem bereits dekodierten Bild. Das Bild wird
-  /// dafür (ohne Seitenverhältnis beizubehalten) auf 640x640 skaliert –
-  /// normalisierte Koordinaten bleiben dadurch unabhängig von der
-  /// Original-Auflösung korrekt.
+  /// Erkennt Gesichter in einem bereits dekodierten Bild. Das Bild kommt
+  /// dafür mit Rand in die 640x640 grosse Eingabe, ohne sein
+  /// Seitenverhältnis zu ändern ([yunetEingabe], #461); die Kästen werden
+  /// auf das Bild zurückgerechnet und sind damit unabhängig von seiner
+  /// Auflösung.
   ///
   /// Nimmt bewusst ein bereits dekodiertes [img.Image] statt einer [File]
   /// entgegen: Aufrufer wie [LibraryState] brauchen dasselbe dekodierte Bild
@@ -86,24 +87,12 @@ class FaceEngineService {
     img.Image decoded, {
     double scoreThreshold = 0.7,
   }) async {
-    final resized = img.copyResize(
-      decoded,
-      width: _yunetInputSize,
-      height: _yunetInputSize,
+    final rahmen = Letterbox.fuer(
+      decoded.width,
+      decoded.height,
+      seite: _yunetInputSize,
     );
-
-    // YuNet (Teil der OpenCV-DNN-Familie) erwartet BGR-Kanalreihenfolge, kein RGB.
-    final chw = Float32List(3 * _yunetInputSize * _yunetInputSize);
-    var idx = 0;
-    for (var c = 0; c < 3; c++) {
-      for (var y = 0; y < _yunetInputSize; y++) {
-        for (var x = 0; x < _yunetInputSize; x++) {
-          final pixel = resized.getPixel(x, y);
-          final value = c == 0 ? pixel.b : (c == 1 ? pixel.g : pixel.r);
-          chw[idx++] = value.toDouble();
-        }
-      }
-    }
+    final chw = yunetEingabe(decoded, rahmen);
 
     final inputTensor = await OrtValue.fromList(chw, [
       1,
@@ -154,7 +143,7 @@ class FaceEngineService {
                   col: c,
                   stride: stride,
                   kps: kps.sublist(kpsOffset, kpsOffset + 10),
-                  inputSize: _yunetInputSize,
+                  rahmen: rahmen,
                 );
               }
             }
@@ -168,7 +157,7 @@ class FaceEngineService {
                 dy: bbox[bboxOffset + 1],
                 dw: bbox[bboxOffset + 2],
                 dh: bbox[bboxOffset + 3],
-                inputSize: _yunetInputSize,
+                rahmen: rahmen,
                 score: score,
                 landmarks: landmarks,
               ),
@@ -184,6 +173,36 @@ class FaceEngineService {
         await v.dispose();
       }
     }
+  }
+
+  /// Die Eingabe für YuNet: [bild] in der Grösse, die [rahmen] vorgibt,
+  /// oben links in einem schwarzen Quadrat, als Kanäle hintereinander
+  /// (CHW) in BGR-Reihenfolge – YuNet stammt aus der OpenCV-DNN-Familie
+  /// und erwartet BGR, kein RGB.
+  ///
+  /// Bis #461 wurde das Bild auf das Quadrat gestaucht; ein Panorama kam
+  /// mit viel zu schmalen Gesichtern an (siehe [Letterbox]). Ein
+  /// quadratisches Bild füllt die Eingabe wie bisher ganz.
+  static Float32List yunetEingabe(img.Image bild, Letterbox rahmen) {
+    final seite = rahmen.seite;
+    final verkleinert = img.copyResize(
+      bild,
+      width: rahmen.breite,
+      height: rahmen.hoehe,
+    );
+    // Float32List ist mit null gefüllt: Der Rand bleibt schwarz.
+    final chw = Float32List(3 * seite * seite);
+    final flaeche = seite * seite;
+    for (var y = 0; y < rahmen.hoehe; y++) {
+      for (var x = 0; x < rahmen.breite; x++) {
+        final pixel = verkleinert.getPixel(x, y);
+        final i = y * seite + x;
+        chw[i] = pixel.b.toDouble();
+        chw[flaeche + i] = pixel.g.toDouble();
+        chw[2 * flaeche + i] = pixel.r.toDouble();
+      }
+    }
+    return chw;
   }
 
   /// Berechnet ein Embedding für ein erkanntes Gesicht: richtet es, falls
