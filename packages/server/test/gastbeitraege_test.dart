@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:exif/exif.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
@@ -395,6 +396,65 @@ void main() {
         200,
       );
       expect(await warteAufPruefung(), isEmpty);
+    });
+
+    // #426: Die Dublette eines gesperrten Fotos kam beim Annehmen ins
+    // Album – sichtbar für jeden Link darauf, sobald es entsperrt würde.
+    test('Annehmen holt kein gesperrtes Foto ins Album', () async {
+      if (!(await Abschottung.erkenne()).ohneNetz) {
+        markTestSkipped('Betriebssystem-Isolation nicht verfügbar');
+        return;
+      }
+      await befehl('albumAnlegen', {
+        'albumId': 'feier',
+        'name': 'Feier',
+        'angelegtAm': '2026-10-19T10:00:00Z',
+      });
+      final link = await teile({
+        'titel': 'Feier',
+        'album': 'feier',
+        'hochladen': true,
+      });
+      final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+      expect((await schicke(link, _fotoVomGast())).statusCode, 202);
+      final erster = (await warteAufPruefung()).single;
+      final an = await frag(
+        'POST',
+        '/api/v1/beitraege/${erster['id']}/annehmen',
+        token: erikaToken,
+      );
+      expect(an.statusCode, 200, reason: await an.readAsString());
+      final foto = (await b.db.albumAufnahmen('feier')).single.id;
+      await b.db.removeAssetFromAlbum('feier', foto);
+      await (b.db.update(b.db.assets)..where((t) => t.id.equals(foto))).write(
+        const AssetsCompanion(isLocked: Value(true)),
+      );
+
+      expect((await schicke(link, _fotoVomGast())).statusCode, 202);
+      final zweiter = (await warteAufPruefung()).single;
+      expect(zweiter['zustand'], 'bereit');
+      final noch = await frag(
+        'POST',
+        '/api/v1/beitraege/${zweiter['id']}/annehmen',
+        token: erikaToken,
+      );
+      expect(noch.statusCode, 409, reason: await noch.readAsString());
+      expect(
+        await (b.db.select(
+          b.db.albumAssets,
+        )..where((t) => t.assetId.equals(foto))).get(),
+        isEmpty,
+      );
+      // Der Beitrag bleibt und lässt sich ablehnen.
+      expect((await warteAufPruefung()).single['zustand'], 'bereit');
+      expect(
+        (await frag(
+          'DELETE',
+          '/api/v1/beitraege/${zweiter['id']}',
+          token: erikaToken,
+        )).statusCode,
+        200,
+      );
     });
 
     test('Freigabe gelöscht: offene Beiträge gehen mit', () async {

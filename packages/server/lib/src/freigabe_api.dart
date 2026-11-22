@@ -727,6 +727,17 @@ class Freigabeapi {
       aufnahme = await b.kennungFuer(
         (await sha256.bind(datei.openRead()).first).toString(),
       );
+      // Liegt sie gesperrt oder im Papierkorb, holt der Beitrag eines
+      // Gastes sie nicht ins Album; der Beitrag bleibt zum Ablehnen.
+      if (aufnahme != null && await b.verborgen(aufnahme)) {
+        await datei.rename(sauber.path);
+        await zuImport.delete(recursive: true);
+        return _json({
+          'fehler':
+              'Diese Aufnahme liegt schon in der Bibliothek, gesperrt oder '
+              'im Papierkorb. Ins Album kommt sie so nicht.',
+        }, status: 409);
+      }
     }
     if (aufnahme == null) {
       await datei.rename(sauber.path);

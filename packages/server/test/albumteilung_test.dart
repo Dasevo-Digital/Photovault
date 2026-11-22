@@ -321,6 +321,45 @@ void main() {
     expect(noch['aufnahme'], neu);
   });
 
+  // #426: Eine Dublette eines gesperrten Fotos oder eines im Papierkorb
+  // kam ins geteilte Album, und die Antwort nannte seine Kennung.
+  test('Beitrag gleich einem gesperrten oder weggeworfenen Foto: nicht ins '
+      'Album, keine Kennung', () async {
+    final (_, _, privat) = await urlaub();
+    final weg = await ladeHoch(erikaToken, 'weg.jpg', 150);
+    final b = (await bibliotheken.fuer(erika.id)).bibliothek;
+    await (b.db.update(b.db.assets)..where((t) => t.id.equals(privat))).write(
+      const AssetsCompanion(isLocked: Value(true)),
+    );
+    await befehl(erikaToken, 'inDenPapierkorb', {
+      'ids': [weg],
+    });
+    await teile(max.id, beitragen: true);
+    final id = (await mitMir(maxToken)).single['id']! as String;
+    for (final (farbe, kennung) in [(200, privat), (150, weg)]) {
+      final bytes = jpeg(farbe);
+      final r = await frag(
+        'POST',
+        '/api/v1/geteilt/$id/beitrag?name=gleich.jpg',
+        token: maxToken,
+        kopf: {'content-length': '${bytes.length}'},
+        inhalt: bytes,
+      );
+      final text = await r.readAsString();
+      expect(r.statusCode, 409, reason: text);
+      expect(text, isNot(contains(kennung)));
+      expect([
+        for (final a in await b.db.albumAufnahmen('urlaub')) a.id,
+      ], isNot(contains(kennung)));
+      expect(
+        await (b.db.select(
+          b.db.albumAssets,
+        )..where((t) => t.assetId.equals(kennung))).get(),
+        isEmpty,
+      );
+    }
+  });
+
   test('eigene Beiträge wieder entfernen, fremde nicht (#290)', () async {
     final (strand, _, _) = await urlaub();
     await teile(max.id, beitragen: true);

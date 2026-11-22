@@ -194,6 +194,18 @@ class Bibliothek {
               .getSingleOrNull())
           ?.id;
 
+  /// Ob die Aufnahme [id] verborgen ist: gesperrt oder im Papierkorb.
+  ///
+  /// Für Beiträge anderer, die als Dublette einer solchen Aufnahme
+  /// ankommen (#426): Sie kommt dann nicht ins Album, und wer beigetragen
+  /// hat, erfährt ihre Kennung nicht. Sonst stünde ein gesperrtes Foto
+  /// des Besitzers im geteilten Album, ohne dass er es hineingelegt hat,
+  /// und wäre nach dem Entsperren für alle Empfänger und Links zu sehen.
+  Future<bool> verborgen(String id) async {
+    final a = await db.assetById(id);
+    return a != null && (a.isLocked || a.isTrashed);
+  }
+
   Future<void> schliesse() async {
     wirdGeschlossen = true;
     await db.close();

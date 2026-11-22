@@ -14,6 +14,7 @@ import 'package:shelf/shelf.dart';
 import 'albumregeln.dart';
 import 'albumteilungen.dart';
 import 'anmeldung_api.dart';
+import 'bibliothek.dart';
 import 'bibliotheken.dart';
 import 'gastbeitraege.dart';
 import 'konten/kontodienst.dart';
@@ -493,7 +494,8 @@ class Teilungsapi {
   /// `?name=` ihr Name, `?geaendert=` ihre Änderungszeit in Millisekunden.
   /// → 201 `{aufnahme, ausgang}`; `ausgang` ist `imported` oder
   /// `duplicateSkipped` (dann lag sie beim Besitzer schon und kommt nur
-  /// ins Album).
+  /// ins Album). 409, wenn sie beim Besitzer gesperrt ist oder im
+  /// Papierkorb liegt ([Bibliothek.verborgen]).
   Future<Response> beitrag(Request r, String id) async {
     final g = await _geteilt(r, id);
     if (g == null) return _json({'fehler': 'unbekannt'}, status: 404);
@@ -561,6 +563,12 @@ class Teilungsapi {
         aufnahme = await b.kennungFuer(
           (await sha256.bind(datei.openRead()).first).toString(),
         );
+        // Gesperrt oder im Papierkorb: nicht ins Album und ohne Kennung.
+        if (aufnahme != null && await b.verborgen(aufnahme)) {
+          return _json({
+            'fehler': 'Diese Datei lässt sich nicht beitragen.',
+          }, status: 409);
+        }
       }
       if (aufnahme == null) {
         return _json({
