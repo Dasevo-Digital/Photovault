@@ -290,11 +290,16 @@ class Abgleich {
     _laeuft = false;
     if (_wecker case final w? when !w.isCompleted) w.complete();
     if (!_halt.isCompleted) _halt.complete();
-    await _schleife;
-    await _senden;
-    await _sendelauf;
-    db.umleitung = null;
-    await _zustand.close();
+    // Die Umleitung geht und der Zustandsstrom schliesst auf jeden Fall –
+    // auch wenn einer der Läufe wider Erwarten mit einem Fehler endet.
+    try {
+      await _schleife;
+      await _senden;
+      await _sendelauf;
+    } finally {
+      db.umleitung = null;
+      await _zustand.close();
+    }
   }
 
   // --- Schreiben ---------------------------------------------------------
@@ -561,15 +566,24 @@ class Abgleich {
               'ORDER BY nr',
             )
             .get()) {
-      final befehl = Befehl.ausJson(
-        ((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
-            .cast<String, Object?>(),
-      );
+      // Auch das Lesen gehört in den Abfang: Ein Eintrag, der sich nicht
+      // mehr öffnen oder deuten lässt, brach sonst die ganze
+      // Empfangstransaktion ab – Runde um Runde, und nichts kam mehr an.
       try {
-        await _mitSchalter(z.read<int>('nr'), () => befehl.anwenden(db));
+        final befehl = Befehl.ausJson(
+          ((await _leseAuftrag(z.read<String>('befehl')))['befehl'] as Map)
+              .cast<String, Object?>(),
+        );
+        try {
+          await _mitSchalter(z.read<int>('nr'), () => befehl.anwenden(db));
+        } catch (e) {
+          meldung.protokoll(
+            'Vorwegnahme ${befehl.art} liess sich nicht wiederholen: $e',
+          );
+        }
       } catch (e) {
         meldung.protokoll(
-          'Vorwegnahme ${befehl.art} liess sich nicht wiederholen: $e',
+          'Vorwegnahme ${z.read<int>('nr')} liess sich nicht lesen: $e',
         );
       }
     }
@@ -700,49 +714,64 @@ class Abgleich {
       // die nächste wartende Abfrage gleich wieder ab.
       if (_neuAnfangen.isCompleted) _neuAnfangen = Completer<void>();
       try {
-        if (!geprueft) {
-          // Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten es
-          // hier nicht gibt (oder umgekehrt) – dann lieber gar nicht.
-          final stand = await verbindung.hole('api/v1/abgleich/stand');
-          final schema = stand['schema'];
-          await meldeGeraetestand();
-          if (schema is int && schema != db.schemaVersion) {
-            await _melde(erreichbar: true, serverSchema: schema);
+        try {
+          if (!geprueft) {
+            // Ein anderes Schema hiesse, Zeilen anzuwenden, deren Spalten
+            // es hier nicht gibt (oder umgekehrt) – dann lieber gar nicht.
+            final stand = await verbindung.hole('api/v1/abgleich/stand');
+            final schema = stand['schema'];
+            await meldeGeraetestand();
+            if (schema is int && schema != db.schemaVersion) {
+              await _melde(erreichbar: true, serverSchema: schema);
+              _laeuft = false;
+              return;
+            }
+            geprueft = true;
+            // Der Server hat geantwortet – das gilt ab jetzt, nicht erst,
+            // wenn alles Neue geholt und eingespielt ist.
+            await _melde(erreichbar: true);
+          }
+          await sende();
+          await empfange(warten: warten);
+          await meldeGeraetestand(erfolgreich: true);
+          warten = const Duration(seconds: 25);
+          _pause = const Duration(seconds: 2);
+          _selbstAbgebrochen = false;
+          await _melde(erreichbar: true);
+        } on KeineVerbindung {
+          if (!_laeuft) return;
+          warten = Duration.zero;
+          // Selbst abgebrochen ([jetzt]): kein Aussetzer – gleich weiter.
+          if (_selbstAbgebrochen) {
+            _selbstAbgebrochen = false;
+            continue;
+          }
+          await _melde(erreichbar: false);
+          await _schlafe(_pause);
+          _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
+        } on Serverfehler catch (f) {
+          if (f.abgemeldet) {
+            await _melde(erreichbar: true, abgemeldet: true);
             _laeuft = false;
             return;
           }
-          geprueft = true;
-          // Der Server hat geantwortet – das gilt ab jetzt, nicht erst,
-          // wenn alles Neue geholt und eingespielt ist.
-          await _melde(erreichbar: true);
+          if (!_laeuft) return;
+          warten = Duration.zero;
+          meldung.protokoll('Abgleich: $f');
+          await _schlafe(_pause);
+          _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
         }
-        await sende();
-        await empfange(warten: warten);
-        await meldeGeraetestand(erfolgreich: true);
-        warten = const Duration(seconds: 25);
-        _pause = const Duration(seconds: 2);
-        _selbstAbgebrochen = false;
-        await _melde(erreichbar: true);
-      } on KeineVerbindung {
+      } catch (f, s) {
+        // Jeder andere Fehler – eine volle oder gesperrte Datenbank, eine
+        // Datei, die sich nicht lesen lässt, eine Antwort ohne die
+        // erwarteten Felder, auch einer aus den Zweigen oben – beendete
+        // die Schleife früher still: Gesendet wurde weiter, empfangen
+        // nichts mehr, und die Anzeige blieb auf „erreichbar“, bis die
+        // App neu startete. Jetzt eine Pause wie nach einem Aussetzer,
+        // dann die nächste Runde.
         if (!_laeuft) return;
         warten = Duration.zero;
-        // Selbst abgebrochen ([jetzt]): kein Aussetzer – gleich weiter.
-        if (_selbstAbgebrochen) {
-          _selbstAbgebrochen = false;
-          continue;
-        }
-        await _melde(erreichbar: false);
-        await _schlafe(_pause);
-        _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
-      } on Serverfehler catch (f) {
-        if (f.abgemeldet) {
-          await _melde(erreichbar: true, abgemeldet: true);
-          _laeuft = false;
-          return;
-        }
-        if (!_laeuft) return;
-        warten = Duration.zero;
-        meldung.protokoll('Abgleich: $f');
+        meldung.protokoll('Abgleich: $f\n$s');
         await _schlafe(_pause);
         _pause = Duration(seconds: min(_pause.inSeconds * 2, 60));
       }
