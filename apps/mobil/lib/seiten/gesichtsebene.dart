@@ -234,7 +234,14 @@ Future<FaceData?> gesichtAmServerAnlegen(
   );
   final id = (antwort['gesicht']! as Map)['id']! as String;
   for (var i = 0; i < 25; i++) {
-    await sitzung.gleicheAb();
+    // Angelegt ist es. Scheitert ein Abgleich, nicht gleich aufgeben
+    // (#454): Sonst hiesse es „nicht angelegt“, und ein zweiter Rahmen
+    // legte dasselbe Gesicht noch einmal an.
+    try {
+      await sitzung.gleicheAb();
+    } on Object catch (f) {
+      debugPrint('Abgleich nach dem neuen Gesicht: $f');
+    }
     final da = (await sitzung.db.facesForAsset(
       assetId,
     )).where((f) => f.id == id).firstOrNull;

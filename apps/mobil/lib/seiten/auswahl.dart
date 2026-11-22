@@ -256,7 +256,16 @@ class _AuswahlleisteState extends State<Auswahlleiste> {
           zeichne: collageAmServer(v),
           speichere: (wahl) async {
             await collageAmServerSpeichern(v, wahl);
-            await sitzung.gleicheAb();
+            // Gespeichert ist sie damit. Scheitert nur das Abgleichen
+            // danach (anderes Schema, Netz gerade weg), darf die Seite das
+            // nicht als Fehler zeigen (#454): „Speichern“ würde wieder
+            // frei, und jeder weitere Tipp legte eine weitere Collage an.
+            // Die Schleife des Abgleichs holt sie nach.
+            try {
+              await sitzung.gleicheAb();
+            } on Object catch (f) {
+              debugPrint('Abgleich nach der Collage: $f');
+            }
           },
           miniatur: (id) => FernBild(
             v,
