@@ -978,6 +978,8 @@ const _einordnung = <String, _Art>{
   'moveToTrash': _Art.befehl,
   'restoreFromTrash': _Art.befehl,
   'deleteAssetRows': _Art.datei,
+  // Läuft mit dem endgültigen Löschen (leerePapierkorb), wie deleteAssetRows.
+  'raeumeVerwaisteZeilen': _Art.datei,
   'insertAsset': _Art.datei,
   'setEditedAssetFile': _Art.datei,
   // Schlagwörter, Alben, Suchen

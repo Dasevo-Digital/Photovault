@@ -272,7 +272,8 @@ void main() {
     testWidgets('der Wechsel zur nächsten Maske verliert nichts', (
       tester,
     ) async {
-      await zeige(tester);
+      // Unter Last kommen die Masken später an als die festen Takte.
+      await zeige(tester, bis: () => find.text('Himmel').evaluate().isNotEmpty);
       await waehle(tester, 'Himmel');
       expect(belichtung(tester), 0);
       await ziehe(tester);
@@ -305,7 +306,11 @@ void main() {
           await datei.parent.create(recursive: true);
           await datei.writeAsBytes(bild);
         });
-        await zeige(tester);
+        // Unter Last kommen die Masken später an als die festen Takte.
+        await zeige(
+          tester,
+          bis: () => find.text('Himmel').evaluate().isNotEmpty,
+        );
         await waehle(tester, 'Himmel');
         await ziehe(tester);
         await waehle(tester, 'Wiese');
@@ -340,7 +345,8 @@ void main() {
       // Verbunden, das Original liegt nicht hier, und der Server antwortet
       // nicht.
       paths.beschaffe = (_) async => throw Exception('keine Verbindung');
-      await zeige(tester);
+      // Unter Last kommen die Masken später an als die festen Takte.
+      await zeige(tester, bis: () => find.text('Himmel').evaluate().isNotEmpty);
       // Das Nachsehen auf der Platte ist echte Ein-/Ausgabe.
       for (var i = 0; i < 20; i++) {
         await tester.runAsync(
