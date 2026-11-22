@@ -4582,7 +4582,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get exportVorgabeXmpHinweis =>
-      'Rating, keywords and location for other programs – as a separate file next to the photo.';
+      'Rating, keywords and named faces for other programs – as a separate file next to the photo. Like the photo itself, it contains the location only when the file is copied unchanged.';
 
   @override
   String exportVorgabeJpegVoll(int prozent) {

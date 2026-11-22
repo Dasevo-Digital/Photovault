@@ -4613,7 +4613,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get exportVorgabeXmpHinweis =>
-      'Bewertung, Schlagwörter und Ort für andere Programme – als eigene Datei neben dem Foto.';
+      'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.';
 
   @override
   String exportVorgabeJpegVoll(int prozent) {

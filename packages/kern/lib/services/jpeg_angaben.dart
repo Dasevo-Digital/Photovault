@@ -13,12 +13,18 @@ import '../db/database.dart';
 /// Fotobuch sich darauf verlassen. Wer ein DNG als JPEG herunterlädt, will
 /// aber, dass es im nächsten Programm am richtigen Tag steht.
 ///
-/// **Ohne Ort.** Die Datei verlässt die Bibliothek, wird geteilt und
-/// weitergeschickt; der Ort steht weiter in der Bibliothek und im Original.
+/// **Ohne Ort, solange [mitOrt] ihn nicht verlangt.** Die Datei verlässt
+/// die Bibliothek, wird geteilt und weitergeschickt; der Ort steht weiter
+/// in der Bibliothek und im Original. Mit [mitOrt] kommt er als GPS-Angabe
+/// dazu – so, wie die XMP-Beilage desselben Exports ihn trägt (BEA-128).
 ///
 /// Gibt [jpeg] unverändert zurück, wenn sich der Anhang nicht einsetzen
 /// lässt.
-Uint8List mitAufnahmeangaben(Uint8List jpeg, AssetData a) {
+Uint8List mitAufnahmeangaben(
+  Uint8List jpeg,
+  AssetData a, {
+  bool mitOrt = false,
+}) {
   final ort = a.fileCreatedAt.toLocal();
   String zwei(int n) => n.toString().padLeft(2, '0');
   final zeit =
@@ -39,8 +45,32 @@ Uint8List mitAufnahmeangaben(Uint8List jpeg, AssetData a) {
       exif.exifIfd['DateTimeOriginal'] = img.IfdValueAscii(zeit);
       exif.exifIfd['DateTimeDigitized'] = img.IfdValueAscii(zeit);
     }
+    if ((a.latitude, a.longitude) case (final lat?, final lon?) when mitOrt) {
+      final gps = exif.gpsIfd;
+      gps['GPSLatitudeRef'] = img.IfdValueAscii(lat < 0 ? 'S' : 'N');
+      gps['GPSLatitude'] = _gradMinutenSekunden(lat);
+      gps['GPSLongitudeRef'] = img.IfdValueAscii(lon < 0 ? 'W' : 'E');
+      gps['GPSLongitude'] = _gradMinutenSekunden(lon);
+    }
     return img.injectJpgExif(jpeg, exif) ?? jpeg;
   } catch (_) {
     return jpeg;
   }
+}
+
+/// Grad, Minuten und Sekunden als drei Brüche – die Form, die EXIF für
+/// GPS-Angaben vorschreibt. `setGpsLocation` aus `package:image` schreibt
+/// stattdessen eine Kommazahl, die übliche Leser nicht verstehen.
+img.IfdValueRational _gradMinutenSekunden(double wert) {
+  final a = wert.abs();
+  final grad = a.floor();
+  final minuten = ((a - grad) * 60).floor();
+  final sekunden = ((a - grad) * 60 - minuten) * 60;
+  // `package:image` gibt den Bruch selbst nicht heraus, nur Werte, die
+  // ihn tragen (wie in der Gastprüfung des Servers).
+  return img.IfdValueRational(grad, 1)
+    ..value.addAll(img.IfdValueRational(minuten, 1).value)
+    ..value.addAll(
+      img.IfdValueRational((sekunden * 10000).round(), 10000).value,
+    );
 }

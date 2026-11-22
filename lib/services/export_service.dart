@@ -89,6 +89,21 @@ class Exportvorgabe {
   final bool metadatenEntfernen;
   final bool gesichterVerdecken;
 
+  /// Ob der Ort mit hinausgeht – in der Datei **und** in der XMP-Beilage,
+  /// immer in beiden oder in keiner (BEA-128).
+  ///
+  /// Vorher schrieb der Grössenexport ein JPEG ohne Ort und legte eine
+  /// Beilage mit GPS daneben: Wer nur die Bilder weitergab, behielt den
+  /// Ort für sich, wer den Ordner weitergab, nicht – ohne es zu sehen.
+  ///
+  /// Ohne Angabe gilt, was die Datei selbst tut: Eine unverändert kopierte
+  /// Datei trägt ihren Ort ohnehin, ein gerendertes Bild bekommt keinen
+  /// (siehe `mitAufnahmeangaben`). Der Datenschutzexport gibt nie einen
+  /// Ort mit. Was sich nicht wandeln lässt (etwa ein Video), geht auch bei
+  /// einer Grössenvorgabe unverändert hinaus – mit dem Ort, den die Datei
+  /// selbst trägt; die Beilage folgt trotzdem dieser Einstellung.
+  final bool ortMitgeben;
+
   const Exportvorgabe({
     this.nachJpeg = false,
     this.raw16 = false,
@@ -98,7 +113,9 @@ class Exportvorgabe {
     this.xmpDaneben = true,
     this.metadatenEntfernen = false,
     this.gesichterVerdecken = false,
-  });
+    bool? ortMitgeben,
+  }) : ortMitgeben =
+           !metadatenEntfernen && (ortMitgeben ?? (!nachJpeg && !raw16));
 
   /// Die Entsprechung einer der vier festen Grössen – damit der schnelle
   /// Weg und der Voreinstellungs-Weg denselben Code durchlaufen.
@@ -115,6 +132,7 @@ class Exportvorgabe {
     xmpDaneben: false,
     metadatenEntfernen: true,
     gesichterVerdecken: true,
+    ortMitgeben: false,
   );
 
   factory Exportvorgabe.ausPreset(ExportPresetData p) => Exportvorgabe(
@@ -266,7 +284,7 @@ class ExportService {
         _paths,
       )).exportiere(gerendert, datenschutz: v.metadatenEntfernen);
       if (!v.metadatenEntfernen) {
-        gerendert = mitAufnahmeangaben(gerendert, asset);
+        gerendert = mitAufnahmeangaben(gerendert, asset, mitOrt: v.ortMitgeben);
       }
     }
 
@@ -322,7 +340,12 @@ class ExportService {
       final gesichter = _library != null
           ? await _library.db.gesichtsregionenVon(asset.id)
           : const <Gesichtsregion>[];
-      final xmp = buildXmpPacket(asset, tagNames, gesichter: gesichter);
+      final xmp = buildXmpPacket(
+        asset,
+        tagNames,
+        gesichter: gesichter,
+        mitOrt: v.ortMitgeben,
+      );
       await File(_paths.xmpSidecarPath(targetPath)).writeAsString(xmp);
     }
 

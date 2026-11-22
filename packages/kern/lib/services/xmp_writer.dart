@@ -22,11 +22,16 @@ import 'xmp_regionen.dart';
 /// Unbenannte Gesichter gehören NICHT hinein: Eine Region ohne Namen sagt
 /// dem Zielprogramm nur „hier ist irgendein Kopf", und das findet dessen
 /// eigene Erkennung selbst.
+///
+/// Ohne [mitOrt] fehlen die GPS-Angaben. Beim Export folgt die Beilage so
+/// der Datei daneben: Ein gewandeltes JPEG trägt keinen Ort, und eine
+/// Beilage, die ihn trotzdem nennt, gab ihn mit hinaus (BEA-128).
 String buildXmpPacket(
   AssetData asset,
   List<String> tagNames, {
   List<Gesichtsregion> gesichter = const [],
   bool bewertungImmer = false,
+  bool mitOrt = true,
 }) {
   final builder = XmlBuilder();
   builder.processing('xpacket', 'begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"');
@@ -73,12 +78,12 @@ String buildXmpPacket(
               if (asset.iso != null) 'exif:ISOSpeedRatings': '${asset.iso}',
               if (asset.exposureTimeSeconds != null)
                 'exif:ExposureTime': _toRational(asset.exposureTimeSeconds!),
-              if (asset.latitude != null)
+              if (mitOrt && asset.latitude != null)
                 'exif:GPSLatitude': _toXmpGps(
                   asset.latitude!,
                   isLatitude: true,
                 ),
-              if (asset.longitude != null)
+              if (mitOrt && asset.longitude != null)
                 'exif:GPSLongitude': _toXmpGps(
                   asset.longitude!,
                   isLatitude: false,

@@ -2713,7 +2713,7 @@
   "exportVorgabeMusterNoetig": "Das Namensmuster darf nicht leer sein.",
   "exportVorgabeMusterHinweis": "Die Endung wird immer selbst ergänzt. Die laufende Nummer zählt innerhalb eines Export-Laufs und wird vierstellig aufgefüllt.",
   "exportVorgabeXmp": "XMP-Beistelldatei mitschreiben",
-  "exportVorgabeXmpHinweis": "Bewertung, Schlagwörter und Ort für andere Programme – als eigene Datei neben dem Foto.",
+  "exportVorgabeXmpHinweis": "Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.",
   "exportVorgabeJpegVoll": "JPEG, volle Auflösung, {prozent} %",
   "@exportVorgabeJpegVoll": {
     "placeholders": {

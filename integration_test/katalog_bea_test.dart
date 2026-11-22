@@ -6190,6 +6190,23 @@ void _exportTests() {
       'unbearbeitet: EXIF-Datum ${datumExif ?? 'fehlt'}, Kamera ${roh.exif.imageIfd['Make'] ?? 'fehlt'}; '
           'XMP mit Datum: ${xmp2.contains('2019')}, XMP mit GPS: ${xmp2.contains('GPSLatitude')}',
     );
+    // Behoben in #464: Der Grössenexport gibt den Ort weder im JPEG noch
+    // in der XMP-Beilage mit.
+    expect(datumExif, contains('2019'));
+    for (final f in jpgs) {
+      expect(
+        img.decodeJpg(f.readAsBytesSync())!.exif.gpsIfd.isEmpty,
+        isTrue,
+        reason: p.basename(f.path),
+      );
+    }
+    for (final f in xmps) {
+      expect(
+        f.readAsStringSync(),
+        isNot(contains('GPSLatitude')),
+        reason: p.basename(f.path),
+      );
+    }
     await abschluss(tester);
   });
 
@@ -7962,12 +7979,10 @@ void _befundTests() {
     await abschluss(tester);
   });
 
-  // Befund: Der Größenexport eines unbearbeiteten Fotos trägt weder
-  // Aufnahmedatum noch Kamera: Die Aufnahmeangaben werden nur bei einer
-  // bearbeiteten Fassung eingesetzt (services/export_service.dart:222-224),
-  // der native JPEG-Kodierer schreibt keine Metadaten, und die XMP-Beilage
-  // trägt kein Datum – wohl aber GPS (export_service.dart, buildXmpPacket),
-  // entgegen dem Kommentar über dem Rendern.
+  // Behoben in #403 und #464: Der Größenexport eines unbearbeiteten Fotos
+  // trägt Aufnahmedatum und Kamera im JPEG (#403), und die XMP-Beilage
+  // nennt den Ort nur noch, wenn auch das Bild ihn trägt – beim
+  // Größenexport also nicht (#464).
   testWidgets('BEA-128 Befund: Aufnahmedatum fehlt im Größenexport', (
     tester,
   ) async {
@@ -7979,15 +7994,20 @@ void _befundTests() {
         hoehe: 2000,
         datum: DateTime(2019, 8, 1, 10),
         kamera: 'Testkamera',
+        breitengrad: 47.4,
+        laengengrad: 11.1,
       ),
     ]);
     final ziel = zielOrdner('web');
     await waehleAus(tester, ids);
     dialog.ordner = ziel.path;
     await exportWaehlen(tester, de.exportWeb);
+    // Die Beilage entsteht nach dem Bild – auf beide warten.
     await eventually(
       tester,
-      () async => dateienIn(ziel).any((f) => f.path.endsWith('.jpg')),
+      () async =>
+          dateienIn(ziel).any((f) => f.path.endsWith('.jpg')) &&
+          dateienIn(ziel).any((f) => f.path.endsWith('.xmp')),
       timeout: _lang,
     );
     final b = img.decodeJpg(
@@ -8003,8 +8023,10 @@ void _befundTests() {
           xmp.contains('2019'),
       isTrue,
     );
+    expect(b.exif.gpsIfd.isEmpty, isTrue, reason: 'kein Ort im JPEG');
+    expect(xmp, isNot(contains('GPSLatitude')), reason: 'kein Ort daneben');
     await abschluss(tester);
-  }, skip: true);
+  });
 
   // Behoben in #411: Der Passphrase-Dialog des Austauschpakets prüft die
   // 10 Zeichen, die das Paket verlangt, und weist 9 sofort ab; er heisst

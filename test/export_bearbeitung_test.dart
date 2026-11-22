@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
+import 'package:exif/exif.dart';
+import 'package:kern/services/exif_gps.dart';
 import 'package:kern/services/import_service.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:path/path.dart' as p;
@@ -139,5 +141,111 @@ void main() {
     );
     expect(bild.exif.imageIfd.make, 'Beispielkamera');
     expect(bild.exif.gpsIfd.isEmpty, isTrue, reason: 'der Ort bleibt daheim');
+  });
+
+  group('der Ort geht in Bild und Beilage gemeinsam hinaus (BEA-128)', () {
+    Future<AssetData> mitOrt() async {
+      final rein = File(p.join(tempRoot.path, 'gipfel.jpg'))
+        ..writeAsBytesSync(jpeg(0, 0, 200));
+      final r = await ImportService(db, paths).importFile(rein.path);
+      await (db.update(db.assets)..where((t) => t.id.equals(r.assetId!))).write(
+        const AssetsCompanion(
+          latitude: Value(-33.856784),
+          longitude: Value(151.215297),
+        ),
+      );
+      return (await db.assetById(r.assetId!))!;
+    }
+
+    ({img.Image bild, String beilage}) lies(String name) => (
+      bild: img.decodeJpg(File(p.join(ziel.path, name)).readAsBytesSync())!,
+      beilage: File(
+        p.setExtension(p.join(ziel.path, name), '.xmp'),
+      ).readAsStringSync(),
+    );
+
+    test('„Web – 2048 px“: weder im Bild noch in der Beilage', () async {
+      // Vorher trug das JPEG keinen Ort, die Beilage daneben aber GPS.
+      final name = await ExportService(paths).exportAsset(
+        await mitOrt(),
+        ziel.path,
+        vorgabe: Exportvorgabe.ausGroesse(Exportgroesse.web),
+      );
+      final aus = lies(name);
+      expect(aus.bild.exif.gpsIfd.isEmpty, isTrue);
+      expect(aus.beilage, isNot(contains('GPSLatitude')));
+      expect(aus.beilage, isNot(contains('GPSLongitude')));
+    });
+
+    test('mit „Ort mitgeben“ in beiden', () async {
+      final name = await ExportService(paths).exportAsset(
+        await mitOrt(),
+        ziel.path,
+        vorgabe: const Exportvorgabe(
+          nachJpeg: true,
+          maxKante: 2048,
+          ortMitgeben: true,
+        ),
+      );
+      final aus = lies(name);
+      // Gelesen wie beim Import: drei Brüche und die Himmelsrichtung.
+      final ort = parseExifGps(
+        await readExifFromBytes(
+          File(p.join(ziel.path, name)).readAsBytesSync(),
+        ),
+      );
+      expect(ort?.latitude, closeTo(-33.856784, 1e-5));
+      expect(ort?.longitude, closeTo(151.215297, 1e-5));
+      expect(aus.beilage, contains('exif:GPSLatitude="33,'));
+      expect(aus.beilage, contains('exif:GPSLongitude="151,'));
+    });
+
+    test(
+      'das unveränderte Original behält den Ort auch in der Beilage',
+      () async {
+        final name = await ExportService(
+          paths,
+        ).exportAsset(await mitOrt(), ziel.path);
+        expect(lies(name).beilage, contains('exif:GPSLatitude="33,'));
+      },
+    );
+
+    test('jede gerenderte Vorgabe und der Datenschutzexport ohne Ort', () {
+      for (final g in Exportgroesse.values) {
+        if (g == Exportgroesse.original) continue;
+        expect(
+          Exportvorgabe.ausGroesse(g).ortMitgeben,
+          isFalse,
+          reason: g.name,
+        );
+      }
+      expect(Exportvorgabe.datenschutz().ortMitgeben, isFalse);
+      expect(
+        const Exportvorgabe(
+          metadatenEntfernen: true,
+          ortMitgeben: true,
+        ).ortMitgeben,
+        isFalse,
+        reason: 'der Datenschutzexport gibt nie einen Ort mit',
+      );
+      ExportPresetData preset({required bool nachJpeg}) => ExportPresetData(
+        id: 1,
+        name: 'Vorgabe',
+        nachJpeg: nachJpeg,
+        maxKante: 1600,
+        qualitaet: 0.8,
+        namensmuster: '{name}',
+        xmpDaneben: true,
+        erstelltAm: DateTime(2026),
+      );
+      expect(
+        Exportvorgabe.ausPreset(preset(nachJpeg: true)).ortMitgeben,
+        isFalse,
+      );
+      expect(
+        Exportvorgabe.ausPreset(preset(nachJpeg: false)).ortMitgeben,
+        isTrue,
+      );
+    });
   });
 }

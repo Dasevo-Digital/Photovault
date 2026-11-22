@@ -7582,7 +7582,7 @@ abstract class AppTexte {
   /// No description provided for @exportVorgabeXmpHinweis.
   ///
   /// In de, this message translates to:
-  /// **'Bewertung, Schlagwörter und Ort für andere Programme – als eigene Datei neben dem Foto.'**
+  /// **'Bewertung, Schlagwörter und benannte Gesichter für andere Programme – als eigene Datei neben dem Foto. Den Ort enthält sie wie das Foto selbst nur, wenn die Datei unverändert kopiert wird.'**
   String get exportVorgabeXmpHinweis;
 
   /// No description provided for @exportVorgabeJpegVoll.
