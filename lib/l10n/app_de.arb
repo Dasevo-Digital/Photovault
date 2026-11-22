@@ -1817,6 +1817,9 @@
   },
   "importLaeuft": "Importiere Fotos & Videos …",
   "importJetztSichten": "Jetzt sichten",
+  "importImHintergrund": "Im Hintergrund weiter",
+  "importAbgebrochen": "Import abgebrochen",
+  "importAnzeigen": "Anzeigen",
   "integPruefungFehlgeschlagen": "Prüfung fehlgeschlagen: {fehler}",
   "@integPruefungFehlgeschlagen": {
     "placeholders": {

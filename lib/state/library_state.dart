@@ -80,6 +80,7 @@ import '../services/tresor_dateiwechsel.dart';
 import '../services/tresorreihe.dart';
 import '../services/xmp_writer.dart';
 import 'hintergrundlauf.dart';
+import 'importlauf.dart';
 import 'package:kern/abgleich/spuren_nachreichen.dart';
 import 'package:kern/abgleich/abgleich.dart';
 import 'package:kern/abgleich/kachelumleitung.dart' show serverLiefertKacheln;
@@ -938,6 +939,7 @@ class LibraryState extends ChangeNotifier {
     for (final abo in _vorratAbos) {
       unawaited(abo.cancel());
     }
+    await mitFrist('Import', () async => _importlauf?.verwerfe());
     await mitFrist('Abgleich', () async => abgleich?.beende());
     await mitFrist('Rechenhilfe', beendeRechenhilfe);
     if (_datenbankGeoeffnet) {
@@ -2319,7 +2321,7 @@ class LibraryState extends ChangeNotifier {
       // Ganz durchgelaufen: merken, wann. Die Karten der Aufgaben ohne
       // eigene Notiz je Aufnahme zählen danach nur, was seitdem dazukam
       // (Issue #15) – vorher stand dort nach jedem Lauf dieselbe Zahl.
-      if (lauf.erfolgreich) {
+      if (lauf.erfolgreich && lauf.vermerken) {
         try {
           await db.merkeAufgabenlauf(lauf.schluessel);
         } catch (_) {
@@ -2379,6 +2381,46 @@ class LibraryState extends ChangeNotifier {
     unawaited(
       (abo?.cancel() ?? Future<void>.value()).whenComplete(lauf.schliesseAb),
     );
+  }
+
+  /// Der letzte Import – laufend oder beendet (IMP-039). Am Zustand und
+  /// nicht am Fortschrittsblatt, damit das Blatt weggeschoben werden kann
+  /// und die Aufgabenleiste wie die Schlussmeldung es wieder öffnen.
+  Importlauf? get importlauf => _importlauf;
+  Importlauf? _importlauf;
+
+  /// Ein neuer Import löst den letzten ab; der räumt dabei weg, was nur er
+  /// brauchte (siehe [Importlauf.verwerfe]).
+  void setzeImportlauf(Importlauf lauf) {
+    final alt = _importlauf;
+    _importlauf = lauf;
+    if (alt != null && !identical(alt, lauf)) unawaited(alt.verwerfe());
+  }
+
+  /// Startet einen Import als Lauf in der Aufgabenleiste – mit Fortschritt
+  /// und „Abbrechen“ wie jede Aufgabe (siehe [Importlauf]).
+  ///
+  /// Nicht über [reiheAufgabeEin]: Der Import muss auch verbunden gehen
+  /// (dort lädt er zum Server hoch), er wartet auf keinen Platz in der
+  /// Schlange, und vermerkt wird er nicht.
+  Hintergrundlauf starteImport({
+    required String titel,
+    required Stream<ImportProgress> Function() strom,
+  }) {
+    if (_laeufe[Importlauf.schluessel]?.offen ?? false) {
+      throw StateError('pv_import_laeuft');
+    }
+    final lauf = Hintergrundlauf(
+      schluessel: Importlauf.schluessel,
+      titel: titel,
+      leermeldung: titel,
+      strom: strom,
+      vermerken: false,
+    );
+    _laeufe[Importlauf.schluessel] = lauf;
+    notifyListeners();
+    _versucheStarten();
+    return lauf;
   }
 
   /// Räumt einen beendeten Lauf weg, damit die Karte wieder ihre Zahlen

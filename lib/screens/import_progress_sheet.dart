@@ -1,16 +1,15 @@
 import '../services/umzugsquelle.dart';
-import 'dart:io';
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:kern/abgleich/verbindung.dart';
 import 'package:path/path.dart' as p;
 
 import '../l10n/app_localizations.dart';
 
 import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart' show unterstuetzteEndungen;
+import '../state/importlauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/camera_source_picker_dialog.dart';
@@ -18,9 +17,11 @@ import 'asset_viewer_screen.dart';
 import 'home_shell.dart' show Hauptbereich;
 import 'import_plan_screen.dart';
 import 'importquittungen_screen.dart';
-import '../services/importquittungen.dart';
 import 'package:kern/services/import_plan.dart';
 import '../services/meldungsdienst.dart';
+import '../services/importfehler.dart';
+
+export '../services/importfehler.dart' show importFehlertext;
 
 /// Fragt zunächst, ob einzelne Dateien, ein ganzer Ordner oder direkt eine
 /// angeschlossene Kamera/SD-Karte importiert werden sollen, und importiert
@@ -28,6 +29,12 @@ import '../services/meldungsdienst.dart';
 /// Live-Fortschritt (inkl. Gesichtserkennung + CLIP-Embedding, sofern
 /// verfügbar).
 Future<void> showImportSheet(BuildContext context, LibraryState library) async {
+  // Ein Import auf einmal: Läuft schon einer, kommt sein Blatt wieder,
+  // statt dass ein zweiter dieselben Dateien prüft und hereinholt.
+  if (library.importlauf case final lauf? when lauf.laeuft) {
+    await zeigeImportblatt(context, lauf);
+    return;
+  }
   final mode = await showDialog<_ImportMode>(
     context: context,
     builder: (context) => AlertDialog(
@@ -169,15 +176,28 @@ Future<void> showImportSheet(BuildContext context, LibraryState library) async {
         (plan.eintraege.isEmpty && plan.ausgelassen.isEmpty)) {
       return;
     }
-    paths = plan.eintraege.map((e) => e.pfad).toList();
-
-    await showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (context) =>
-          _ImportProgressSheet(library: library, filePaths: paths, plan: plan),
+    // Der Import gehört dem Zustand, nicht dem Blatt (IMP-039): Das Blatt
+    // darf weg, der Lauf läuft in der Aufgabenleiste weiter. „Anzeigen“
+    // an der Schlussmeldung öffnet es über den obersten Navigator wieder –
+    // der Bildschirm, aus dem der Import kam, kann dann längst weg sein.
+    final wurzel = Navigator.of(context, rootNavigator: true).context;
+    // Die entpackten Archive eines Umzugs gehören ab hier dem Lauf: Er
+    // braucht sie, bis nichts mehr erneut zu versuchen ist – auch wenn
+    // das Blatt längst weg ist.
+    final umzug = quelle;
+    quelle = null;
+    final lauf = Importlauf(
+      library: library,
+      plan: plan,
+      texte: AppTexte.of(context),
+      zeigen: (l) {
+        if (wurzel.mounted) unawaited(zeigeImportblatt(wurzel, l));
+      },
+      aufraeumen: umzug?.schliesse,
     );
+    library.setzeImportlauf(lauf);
+    unawaited(lauf.starte());
+    await zeigeImportblatt(context, lauf);
   } on UmzugAbgebrochen {
     return;
   } on Object catch (fehler) {
@@ -269,181 +289,53 @@ String? importBilanz(
   ].join(' · ');
 }
 
-/// Ein Satz dazu, woran eine Datei oder ein ganzer Lauf scheiterte (#335) –
-/// aus dem, was [ImportProgress.grund] mitbringt.
+/// Zeigt das Fortschrittsblatt eines Imports (IMP-039).
 ///
-/// Eine Kennung kann als Ausnahme kommen oder als Text: als Text etwa vom
-/// Server, der den Grund in einer Kopfzeile weiterreicht. Beides wird
-/// gleich übersetzt (IMP-028).
-String importFehlertext(AppTexte t, Object? grund) => switch (grund) {
-  null || '' => t.importFehlerUnbekannt,
-  KeineVerbindung() => t.importFehlerKeineVerbindung,
-  Serverfehler(:final status, :final text) => t.importFehlerServer(
-    status,
-    _kurzerServertext(text),
-  ),
-  FormatException(:final message) => _kennungstext(t, message),
-  FileSystemException(:final message, :final osError) =>
-    osError == null ? message : '$message (${osError.message})',
-  final String text => _kennungstext(t, text),
-  _ => '$grund',
-};
-
-/// Bekannte Kennungen als Satz, alles andere unverändert. Ältere Server
-/// schicken die Kennung noch mit dem Namen der Ausnahme davor; gelesen wird
-/// deshalb die Kennung am Ende des Textes.
-String _kennungstext(AppTexte t, String text) {
-  final kennung = RegExp(r'pv_[a-z0-9_]+$').firstMatch(text)?.group(0);
-  return switch (kennung) {
-    'pv_import_quelle_geaendert' => t.importFehlerQuelleGeaendert,
-    'pv_import_regeln_geaendert' ||
-    'pv_import_auswahl' => t.importPlanGeaendert,
-    'pv_import_server_zu_alt' => t.importPlanServerAlt,
-    _ => text,
-  };
-}
-
-/// Aus der Antwort eines Servers oder Proxys das Wesentliche: der Titel
-/// einer HTML-Fehlerseite, der Text eines JSON-Fehlers, sonst der Anfang.
-String _kurzerServertext(String text) {
-  final titel = RegExp(
-    r'<title>(.*?)</title>',
-    caseSensitive: false,
-    dotAll: true,
-  ).firstMatch(text);
-  if (titel != null) return titel.group(1)!.trim();
-  final json = RegExp(r'"fehler"\s*:\s*"([^"]*)"').firstMatch(text);
-  if (json != null) return json.group(1)!;
-  final rein = text
-      .replaceAll(RegExp(r'<[^>]*>'), ' ')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
-  return rein.length > 80 ? '${rein.substring(0, 80)} …' : rein;
-}
+/// Das Blatt ist eine Ansicht auf [lauf] und lässt sich wegschieben – nach
+/// unten ziehen, daneben klicken oder „Im Hintergrund weiter“. Der Import
+/// läuft dann in der Aufgabenleiste weiter, mit „Anzeigen“ und
+/// „Abbrechen“; dorthin kommt man auch zurück. Vorher war das Blatt modal
+/// und ohne Abbrechen, und die App blieb während des ganzen Imports
+/// gesperrt.
+///
+/// Auf dem obersten Navigator: Das Blatt liegt dann über dem ganzen
+/// Fenster, gleich ob es aus der Leiste oder aus der Zeitleiste kommt.
+Future<void> zeigeImportblatt(BuildContext context, Importlauf lauf) =>
+    showModalBottomSheet<void>(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => _ImportProgressSheet(lauf: lauf),
+    );
 
 class _ImportProgressSheet extends StatefulWidget {
-  final LibraryState library;
-  final List<String> filePaths;
-  final ImportPlan plan;
-  const _ImportProgressSheet({
-    required this.library,
-    required this.filePaths,
-    required this.plan,
-  });
+  final Importlauf lauf;
+  const _ImportProgressSheet({required this.lauf});
 
   @override
   State<_ImportProgressSheet> createState() => _ImportProgressSheetState();
 }
 
 class _ImportProgressSheetState extends State<_ImportProgressSheet> {
-  int _done = 0;
-  int _total = 0;
-  String? _currentFile;
-  bool _finished = false;
-  String? _quittungId;
-
-  /// Asset-IDs aller in diesem Lauf tatsächlich neu importierten Fotos/
-  /// Videos (keine Duplikate/Fehler) – für den "Jetzt sichten"-Einstieg in
-  /// den Sichtungs-Modus (Culling) direkt nach dem Import.
-  final List<String> _importedAssetIds = [];
-
-  /// Was uebersprungen wurde und was gar nicht hereinkam.
-  ///
-  /// Beides gab es immer schon, gesagt wurde es nie: Wer zweihundert
-  /// Dateien hereinzieht und danach hundertachtzig Fotos vorfindet,
-  /// sucht den Fehler bei sich.
-  int _duplikate = 0;
-  int _fehler = 0;
-
-  /// Wie viele in der Fotokammer liegen (#336).
-  int _inKammer = 0;
-
-  /// Die gescheiterten Dateien mit ihrem Grund – für „Warum?“ und für den
-  /// neuen Versuch.
-  final _gescheitert = <String, Object?>{};
+  Importlauf get _lauf => widget.lauf;
+  LibraryState get _library => _lauf.library;
 
   @override
   void initState() {
     super.initState();
-    _run(widget.filePaths, widget.plan);
+    _lauf.angezeigt();
   }
 
-  Future<void> _run(List<String> pfade, ImportPlan plan) async {
-    final offen = pfade.toSet();
-    _quittungId = null;
-    try {
-      final ablage = await Importquittungen.fuer(widget.library.paths.root);
-      await for (final progress in ablage.protokolliere(
-        plan,
-        pfade.isEmpty
-            ? const Stream.empty()
-            : widget.library.importFiles(pfade, plan: plan),
-        begonnen: (id) => _quittungId = id,
-      )) {
-        if (!mounted) return;
-        setState(() {
-          _done = progress.done;
-          _total = progress.total;
-          _currentFile = progress.currentFile;
-          if (progress.pfad case final pfad?) offen.remove(pfad);
-          if (progress.assetId != null) {
-            _importedAssetIds.add(progress.assetId!);
-          }
-          if (progress.duplikat) _duplikate++;
-          if (progress.kammer) _inKammer++;
-          if (progress.gescheitert) {
-            _fehler++;
-            if (progress.pfad case final pfad?) {
-              _gescheitert[pfad] = progress.grund;
-            }
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          // Was der Lauf nicht mehr erreichte, kam auch nicht herein – und
-          // lässt sich so noch einmal versuchen.
-          for (final pfad in offen) {
-            _gescheitert[pfad] = e;
-          }
-          _fehler += offen.isEmpty ? 1 : offen.length;
-        });
-        // Der wirkliche Grund: Vorher stand hier für jeden Abbruch „…
-        // haben sich geändert“, auch wenn der Server weg oder zu alt war
-        // (IMP-087).
-        final t = AppTexte.of(context);
-        melde.warnung(
-          e is QuittungSchreibfehler
-              ? t.quittungSchreibfehler
-              : importFehlertext(t, e),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _finished = true);
-    }
-  }
-
-  /// Nur die gescheiterten Dateien noch einmal, mit demselben Plan.
-  Future<void> _wiederhole() async {
-    final pfade = _gescheitert.keys.toList();
-    if (pfade.isEmpty) return;
-    setState(() {
-      _gescheitert.clear();
-      _fehler = 0;
-      _finished = false;
-      _done = 0;
-      _total = pfade.length;
-      _currentFile = null;
-    });
-    await _run(pfade, widget.plan.auswahl(pfade.toSet()));
+  @override
+  void dispose() {
+    _lauf.verborgen();
+    super.dispose();
   }
 
   /// Gleiche Gründe zusammen: „41 × Server nicht erreichbar“ statt 41
   /// gleicher Zeilen.
   Widget _fehlerliste(AppTexte t) {
     final gruppen = <String, List<String>>{};
-    for (final MapEntry(key: pfad, value: grund) in _gescheitert.entries) {
+    for (final MapEntry(key: pfad, value: grund) in _lauf.gescheitert.entries) {
       gruppen
           .putIfAbsent(importFehlertext(t, grund), () => [])
           .add(p.basename(pfad));
@@ -482,8 +374,8 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
 
   Future<void> _reviewImported() async {
     final assets = <AssetData>[];
-    for (final id in _importedAssetIds) {
-      final asset = await widget.library.db.assetById(id);
+    for (final id in _lauf.importierteIds) {
+      final asset = await _library.db.assetById(id);
       if (asset != null) assets.add(asset);
     }
     if (!mounted || assets.isEmpty) return;
@@ -493,9 +385,9 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
         builder: (_) => AssetViewerScreen(
           assets: assets,
           initialIndex: 0,
-          paths: widget.library.paths,
-          db: widget.library.db,
-          library: widget.library,
+          paths: _library.paths,
+          db: _library.db,
+          library: _library,
           cullingMode: true,
         ),
       ),
@@ -503,8 +395,16 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final progress = _total == 0 ? (_finished ? 1.0 : 0.0) : _done / _total;
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: _lauf, builder: (context, _) => _baue());
+
+  Widget _baue() {
+    final t = AppTexte.of(context);
+    final l = _lauf;
+    final fertig = l.fertig;
+    final progress = l.gesamt == 0
+        ? (fertig ? 1.0 : 0.0)
+        : l.erledigt / l.gesamt;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),
@@ -513,82 +413,85 @@ class _ImportProgressSheetState extends State<_ImportProgressSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _finished
-                  ? AppTexte.of(context).importAbgeschlossen
-                  : AppTexte.of(context).importLaeuft,
+              !fertig
+                  ? t.importLaeuft
+                  : l.abgebrochen
+                  ? t.importAbgebrochen
+                  : t.importAbgeschlossen,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 12),
             LinearProgressIndicator(value: progress),
             const SizedBox(height: 8),
             Text(
-              '$_done / $_total${_currentFile != null ? ' — $_currentFile' : ''}',
+              '${l.erledigt} / ${l.gesamt}'
+              '${l.datei != null ? ' — ${l.datei}' : ''}',
             ),
             const SizedBox(height: 16),
+            if (!fertig)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: l.abbrechen,
+                    child: Text(t.allgAbbrechen),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(t.importImHintergrund),
+                  ),
+                ],
+              ),
             // Die Bilanz steht nur da, wenn es etwas zu sagen gibt -
             // "0 uebersprungen" ist keine Nachricht.
-            if (_finished &&
-                (_duplikate > 0 || _fehler > 0 || _inKammer > 0)) ...[
-              Text(
-                [
-                  if (_inKammer == 0 || _importedAssetIds.isNotEmpty)
-                    AppTexte.of(
-                      context,
-                    ).importBilanzNeu(_importedAssetIds.length),
-                  if (_inKammer > 0)
-                    AppTexte.of(context).importBilanzKammer(_inKammer),
-                  if (_duplikate > 0)
-                    AppTexte.of(context).importBilanzDuplikate(_duplikate),
-                  if (_fehler > 0)
-                    AppTexte.of(context).importBilanzFehler(_fehler),
-                ].join(' · '),
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              if (_gescheitert.isNotEmpty) _fehlerliste(AppTexte.of(context)),
+            if (fertig &&
+                (l.duplikate > 0 ||
+                    l.fehler > 0 ||
+                    l.inKammer > 0 ||
+                    l.abgebrochen)) ...[
+              Text(l.bilanz(t), style: Theme.of(context).textTheme.bodyMedium),
+              if (l.gescheitert.isNotEmpty) _fehlerliste(t),
               const SizedBox(height: 16),
             ],
-            if (_finished) ...[
-              if (_gescheitert.isNotEmpty) ...[
+            if (fertig) ...[
+              if (l.gescheitert.isNotEmpty) ...[
                 OutlinedButton.icon(
-                  onPressed: _wiederhole,
+                  onPressed: l.wiederhole,
                   icon: const Icon(Icons.refresh, size: 18),
-                  label: Text(
-                    AppTexte.of(
-                      context,
-                    ).importErneutVersuchen(_gescheitert.length),
-                  ),
+                  label: Text(t.importErneutVersuchen(l.gescheitert.length)),
                 ),
                 const SizedBox(height: 8),
               ],
-              if (_inKammer > 0) ...[
+              if (l.inKammer > 0) ...[
                 FilledButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    widget.library.zeigeBereich(Hauptbereich.fotokammer);
+                    _library.zeigeBereich(Hauptbereich.fotokammer);
                   },
                   icon: const Icon(Icons.move_to_inbox_outlined, size: 18),
-                  label: Text(AppTexte.of(context).importZurKammer),
+                  label: Text(t.importZurKammer),
                 ),
                 const SizedBox(height: 8),
               ],
-              if (_importedAssetIds.isNotEmpty) ...[
+              if (l.importierteIds.isNotEmpty) ...[
                 FilledButton.icon(
                   onPressed: _reviewImported,
                   icon: const Icon(Icons.rate_review_outlined, size: 18),
-                  label: Text(AppTexte.of(context).importJetztSichten),
+                  label: Text(t.importJetztSichten),
                 ),
                 const SizedBox(height: 8),
               ],
-              if (_quittungId case final id?)
+              if (l.quittungId case final id?)
                 TextButton.icon(
                   onPressed: () =>
-                      zeigeImportquittungen(context, widget.library, id: id),
+                      zeigeImportquittungen(context, _library, id: id),
                   icon: const Icon(Icons.receipt_long_outlined),
-                  label: Text(AppTexte.of(context).quittungTitel),
+                  label: Text(t.quittungTitel),
                 ),
               OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(AppTexte.of(context).allgFertig),
+                child: Text(t.allgFertig),
               ),
             ],
           ],

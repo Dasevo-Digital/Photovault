@@ -26,7 +26,13 @@ class Hintergrundlauf {
     required this.strom,
     this.bilanztext,
     this.rechenintensiv = false,
+    this.vermerken = true,
   });
+
+  /// Ob ein ganz durchgelaufener Lauf als erledigt vermerkt wird (siehe
+  /// `LibraryState._fuehreAus`). Nein beim Import: Er ist keine Aufgabe
+  /// der Übersicht, deren Karte danach nur noch Neues zählen soll.
+  final bool vermerken;
 
   /// Woher die Arbeit kommt.
   ///

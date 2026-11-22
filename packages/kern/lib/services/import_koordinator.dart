@@ -30,39 +30,47 @@ class ImportKoordinator {
     }
     final nachPfad = plan?.nachPfad;
     var done = 0;
-    yield ImportProgress(0, pfade.length);
-    for (final pfad in pfade) {
-      if (plan != null &&
-          plan.regelstand != await pruefung.aktuellerRegelstand()) {
-        throw const FormatException('pv_import_regeln_geaendert');
+    try {
+      yield ImportProgress(0, pfade.length);
+      for (final pfad in pfade) {
+        if (plan != null &&
+            plan.regelstand != await pruefung.aktuellerRegelstand()) {
+          throw const FormatException('pv_import_regeln_geaendert');
+        }
+        final eintrag = nachPfad?[pfad];
+        final result = await importe.importFile(
+          pfad,
+          erwartetePruefsumme: pruefsummen?[pfad],
+          erwarteteAngaben: eintrag?.angaben,
+          beiEintrag: plan == null
+              ? null
+              : (id) => pruefung.uebernehme(plan, eintrag!, id),
+        );
+        if (result.outcome == ImportOutcome.imported &&
+            result.assetId != null) {
+          await nachbearbeiten(result.assetId!, regelnAnwenden: plan == null);
+        }
+        yield ImportProgress(
+          ++done,
+          pfade.length,
+          currentFile: p.basename(pfad),
+          pfad: pfad,
+          assetId: result.outcome == ImportOutcome.imported
+              ? result.assetId
+              : null,
+          duplikat: result.outcome == ImportOutcome.duplicateSkipped,
+          gescheitert: result.outcome == ImportOutcome.failed,
+          grund: result.outcome == ImportOutcome.failed
+              ? result.grund ?? result.error
+              : null,
+        );
       }
-      final eintrag = nachPfad?[pfad];
-      final result = await importe.importFile(
-        pfad,
-        erwartetePruefsumme: pruefsummen?[pfad],
-        erwarteteAngaben: eintrag?.angaben,
-        beiEintrag: plan == null
-            ? null
-            : (id) => pruefung.uebernehme(plan, eintrag!, id),
-      );
-      if (result.outcome == ImportOutcome.imported && result.assetId != null) {
-        await nachbearbeiten(result.assetId!, regelnAnwenden: plan == null);
+    } finally {
+      // Auch nach einem Abbruch (IMP-039): Was bis dahin hereinkam, wird
+      // ausgewertet wie nach einem ganzen Lauf.
+      if (done > 0 && await db.autoAnalyzeAfterImportEnabled()) {
+        unawaited(starteAnalyse());
       }
-      yield ImportProgress(
-        ++done,
-        pfade.length,
-        currentFile: p.basename(pfad),
-        pfad: pfad,
-        assetId: result.outcome == ImportOutcome.imported
-            ? result.assetId
-            : null,
-        duplikat: result.outcome == ImportOutcome.duplicateSkipped,
-        gescheitert: result.outcome == ImportOutcome.failed,
-        grund: result.outcome == ImportOutcome.failed
-            ? result.grund ?? result.error
-            : null,
-      );
     }
-    if (await db.autoAnalyzeAfterImportEnabled()) unawaited(starteAnalyse());
   }
 }

@@ -3452,6 +3452,15 @@ class AppTexteDe extends AppTexte {
   String get importJetztSichten => 'Jetzt sichten';
 
   @override
+  String get importImHintergrund => 'Im Hintergrund weiter';
+
+  @override
+  String get importAbgebrochen => 'Import abgebrochen';
+
+  @override
+  String get importAnzeigen => 'Anzeigen';
+
+  @override
   String integPruefungFehlgeschlagen(String fehler) {
     return 'Prüfung fehlgeschlagen: $fehler';
   }

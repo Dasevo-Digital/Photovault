@@ -14,6 +14,7 @@ import 'package:zierbild/bibliothek_eintraege.dart';
 import '../l10n/app_localizations.dart';
 import '../services/groessentext.dart';
 import '../utils/dauertext.dart';
+import '../state/importlauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/arbeitsbereich.dart';
@@ -126,14 +127,19 @@ class _RestoreQueueBanner extends StatelessWidget {
 ///
 /// Nur der Knopf bricht ab, nicht die ganze Zeile: Ein Tipp auf den
 /// Fortschrittstext beendete sonst einen stundenlangen Lauf (Audit-Fund).
+///
+/// [anzeigen] öffnet, was zum Lauf gehört – beim Import das weggeschobene
+/// Fortschrittsblatt (IMP-039).
 class _Laufzeile extends StatelessWidget {
   final double? anteil;
   final String text;
   final VoidCallback abbrechen;
+  final VoidCallback? anzeigen;
   const _Laufzeile({
     required this.anteil,
     required this.text,
     required this.abbrechen,
+    this.anzeigen,
   });
 
   @override
@@ -161,6 +167,11 @@ class _Laufzeile extends StatelessWidget {
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
+          if (anzeigen case final zeige?)
+            TextButton(
+              onPressed: zeige,
+              child: Text(AppTexte.of(context).importAnzeigen),
+            ),
           TextButton(
             onPressed: abbrechen,
             child: Text(AppTexte.of(context).allgAbbrechen),
@@ -281,6 +292,11 @@ class _AnalyseBanner extends StatelessWidget {
                   ? '${lauf.titel}  ${lauf.erledigt}/${lauf.gesamt}'
                   : lauf.titel,
               abbrechen: () => library.brichAufgabeAb(lauf.schluessel),
+              anzeigen: switch (library.importlauf) {
+                final import? when lauf.schluessel == Importlauf.schluessel =>
+                  () => zeigeImportblatt(context, import),
+                _ => null,
+              },
             ),
         ],
       ),

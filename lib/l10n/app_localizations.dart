@@ -5849,6 +5849,24 @@ abstract class AppTexte {
   /// **'Jetzt sichten'**
   String get importJetztSichten;
 
+  /// No description provided for @importImHintergrund.
+  ///
+  /// In de, this message translates to:
+  /// **'Im Hintergrund weiter'**
+  String get importImHintergrund;
+
+  /// No description provided for @importAbgebrochen.
+  ///
+  /// In de, this message translates to:
+  /// **'Import abgebrochen'**
+  String get importAbgebrochen;
+
+  /// No description provided for @importAnzeigen.
+  ///
+  /// In de, this message translates to:
+  /// **'Anzeigen'**
+  String get importAnzeigen;
+
   /// No description provided for @integPruefungFehlgeschlagen.
   ///
   /// In de, this message translates to:

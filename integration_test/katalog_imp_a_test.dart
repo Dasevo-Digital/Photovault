@@ -1710,10 +1710,14 @@ void main() {
 
   // === Import – Ablauf und Bilanz ==========================================
 
+  // Behoben in #464 (IMP-030, IMP-039): Das Blatt lässt sich wegschieben,
+  // der Import läuft in der Aufgabenleiste weiter („Anzeigen“,
+  // „Abbrechen“), und im Blatt steht „Abbrechen“.
   pruefung(
-    'IMP-029 IMP-030 Fortschritt während des Imports, Blatt bleibt offen',
+    'IMP-029 IMP-030 Fortschritt während des Imports, Blatt wegschieben',
     (tester) async {
       await startApp(tester);
+      await bibliothek.db.setAutoAnalyzeAfterImport(false);
       final o = quellordner('fuenfzig');
       for (var i = 0; i < 50; i++) {
         nach(
@@ -1728,9 +1732,10 @@ void main() {
       await starte(tester, 50);
       final zeile = RegExp(r'^(\d+) / 50 — f\d\d\.jpg$');
       final werte = <int>{};
-      var sahLauf = false, abbrechenImBlatt = false, versucht = false;
+      var sahLauf = false, abbrechenImBlatt = false, weggeschoben = false;
+      var inDerLeiste = false;
       final ende = DateTime.now().add(const Duration(minutes: 3));
-      while (find.text(de.importAbgeschlossen).evaluate().isEmpty) {
+      while (!(bibliothek.importlauf?.fertig ?? false)) {
         if (DateTime.now().isAfter(ende)) fail('Import endet nicht');
         await tester.pump(const Duration(milliseconds: 50));
         if (find.text(de.importLaeuft).evaluate().isNotEmpty) {
@@ -1744,36 +1749,54 @@ void main() {
               .isNotEmpty) {
             abbrechenImBlatt = true;
           }
-          if (!versucht) {
-            versucht = true;
-            // Neben das Blatt klicken und es nach unten ziehen.
+          if (!weggeschoben && werte.isNotEmpty) {
+            weggeschoben = true;
+            // Neben das Blatt klicken: Es geht, der Import läuft weiter.
             await tester.tapAt(const Offset(700, 40));
-            await tester.pump(const Duration(milliseconds: 300));
-            await tester.dragFrom(
-              tester.getCenter(find.byType(BottomSheet)),
-              const Offset(0, 500),
-            );
-            await tester.pump(const Duration(milliseconds: 300));
-            expect(find.byType(BottomSheet), findsOneWidget);
+            await tester.pump(const Duration(milliseconds: 500));
+            expect(find.byType(BottomSheet), findsNothing);
           }
+        }
+        if (weggeschoben &&
+            !inDerLeiste &&
+            find.text(de.importAnzeigen).evaluate().isNotEmpty) {
+          inDerLeiste = true;
+          // Aus der Aufgabenleiste wieder hervorholen.
+          await tester.tap(find.text(de.importAnzeigen).first);
+          await tester.pump(const Duration(milliseconds: 500));
+          expect(find.text(de.importLaeuft), findsOneWidget);
         }
         for (final e in find.byType(Text).evaluate()) {
           final m = zeile.firstMatch((e.widget as Text).data ?? '');
           if (m != null) werte.add(int.parse(m[1]!));
         }
       }
+      await settle(tester);
       expect(sahLauf, isTrue, reason: '„Importiere Fotos & Videos …“');
       expect(
         werte.where((w) => w > 0 && w < 50),
         isNotEmpty,
         reason: 'Zähler n / 50',
       );
+      expect(abbrechenImBlatt, isTrue, reason: 'Abbrechen im Blatt');
+      expect(weggeschoben, isTrue);
+      debugPrint('IMP-030: aus der Aufgabenleiste geholt: $inDerLeiste');
+      if (!inDerLeiste) {
+        // Schneller fertig, als die Leiste zu sehen war: Dann holt die
+        // Schlussmeldung das Blatt zurück.
+        expect(
+          melde.verlauf.any(
+            (m) =>
+                m.text.startsWith(de.importAbgeschlossen) &&
+                m.aktion?.beschriftung == de.importAnzeigen,
+          ),
+          isTrue,
+        );
+        await tap(tester, find.text(de.importAnzeigen).first);
+      }
+      // Das Blatt steht wieder da und zeigt das Ende.
+      await warteAufAbschluss(tester);
       expect(find.textContaining(RegExp(r'^50 / 50')), findsOneWidget);
-      expect(abbrechenImBlatt, isFalse);
-      // Auch nach dem Ende schliesst nur „Fertig“.
-      await tester.tapAt(const Offset(700, 40));
-      await settle(tester);
-      expect(find.text(de.importAbgeschlossen), findsOneWidget);
       await schliesseBlatt(tester);
       expect(await aufnahmen(tester), hasLength(50));
       await finish(tester);

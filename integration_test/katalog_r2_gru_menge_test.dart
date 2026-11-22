@@ -287,14 +287,20 @@ void main() {
       for (final e in find.textContaining(RegExp('^\\d+ / $n')).evaluate()) {
         stand.add(((e.widget as Text).data!).split(' — ').first);
       }
-      // Während des Imports in der App blättern: ein anderer Bereich.
+      // Während des Imports in der App blättern: das Blatt wegschieben,
+      // einen anderen Bereich öffnen und das Blatt aus der Aufgabenleiste
+      // zurückholen (#464).
       if (!blaetternVersucht && stand.length > 20) {
         blaetternVersucht = true;
+        await tester.tapAt(const Offset(700, 40));
+        await tester.pump(const Duration(milliseconds: 500));
         final vorher = gewaehlt(tester);
         await tester.tapAt(tester.getCenter(zeile(de.navAlben).first));
         await tester.pump(const Duration(milliseconds: 300));
         blaetternGing = gewaehlt(tester) != vorher;
         print('IMP-039: Klick auf „Alben“ während des Imports: $blaetternGing');
+        await tester.tap(find.text(de.importAnzeigen).first);
+        await tester.pump(const Duration(milliseconds: 500));
       }
     }
     zeiten.stopp();
@@ -303,6 +309,7 @@ void main() {
       'blättern ging: $blaetternGing',
     );
     expect(stand.length, greaterThan(20), reason: 'Import zählt sichtbar');
+    expect(blaetternGing, isTrue, reason: 'blättern während des Imports');
     expect(zeiten.anteil(0.95), lessThan(250), reason: 'Blatt bleibt flüssig');
     await tippe(tester, find.widgetWithText(OutlinedButton, de.allgFertig));
     await waitGone(tester, find.text(de.importAbgeschlossen));
@@ -316,11 +323,10 @@ void main() {
     await ende(tester);
   }, timeout: const Timeout(Duration(minutes: 38)));
 
-  // Befund (IMP-039): Während des Imports lässt sich in der App nicht
-  // blättern. Das Fortschrittsblatt ist modal und lässt sich nicht
-  // wegschieben (lib/screens/import_progress_sheet.dart:99–104,
-  // showModalBottomSheet mit isDismissible: false, enableDrag: false);
-  // ein Klick auf die Seitenleiste dahinter bleibt ohne Wirkung.
+  // Behoben in #464 (IMP-039): Das Fortschrittsblatt lässt sich
+  // wegschieben; der Import läuft in der Aufgabenleiste weiter, und ein
+  // Klick auf die Seitenleiste öffnet einen anderen Bereich. Das Ergebnis
+  // holt die Aufgabenleiste oder die Schlussmeldung zurück.
   testWidgets(
     'IMP-039 Befund: während des Imports einen anderen Bereich öffnen',
     (tester) async {
@@ -345,29 +351,41 @@ void main() {
           find.textContaining(RegExp(r'^\d+ / 400')),
           timeout: const Duration(seconds: 60),
         );
+        // Das Blatt wegschieben: daneben klicken.
+        await tester.tapAt(const Offset(700, 40));
+        await tester.pump(const Duration(milliseconds: 500));
+        final blattWeg = find.text(de.importLaeuft).evaluate().isEmpty;
+        final inDerLeiste = find.text(de.importAnzeigen).evaluate().isNotEmpty;
         final vorher = gewaehlt(tester);
         await tester.tapAt(tester.getCenter(zeile(de.navAlben).first));
         await tester.pump(const Duration(milliseconds: 500));
         final ging =
             gewaehlt(tester) != vorher &&
             find.byType(AlbumsScreen).hitTestable().evaluate().isNotEmpty;
-        final nochImport = find.text(de.importAbgeschlossen).evaluate().isEmpty;
+        final nochImport = bibliothek.importlauf?.laeuft ?? false;
         print(
-          'IMP-039 Befund Durchgang $durchgang: Bereich gewechselt $ging, '
+          'IMP-039 Befund Durchgang $durchgang: Blatt weg $blattWeg, '
+          'in der Leiste $inDerLeiste, Bereich gewechselt $ging, '
           'Import lief noch $nochImport',
         );
-        if (nochImport && !ging) befunde.add('Durchgang $durchgang');
-        await waitFor(
+        if (nochImport && (!blattWeg || !inDerLeiste || !ging)) {
+          befunde.add('Durchgang $durchgang');
+        }
+        await eventually(
           tester,
-          find.text(de.importAbgeschlossen),
+          () async => bibliothek.importlauf?.fertig ?? false,
           timeout: const Duration(minutes: 5),
+          was: 'Import fertig',
         );
+        // Das Ergebnis bleibt erreichbar: „Anzeigen“ an der Schlussmeldung.
+        await tester.tap(find.text(de.importAnzeigen).first);
+        await waitFor(tester, find.text(de.importAbgeschlossen));
         await tippe(tester, find.widgetWithText(OutlinedButton, de.allgFertig));
+        expect(await aufnahmen(tester), hasLength(400));
         await ende(tester);
       }
       expect(befunde, isEmpty, reason: 'blättern während des Imports');
     },
-    skip: true,
     timeout: const Timeout(Duration(minutes: 20)),
   );
 }
