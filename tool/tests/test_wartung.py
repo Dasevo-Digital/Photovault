@@ -66,6 +66,49 @@ class Wartung(unittest.TestCase):
         self.assertEqual((backup/'daten/katalog').read_text(),'schema-alt')
         self.assertEqual((self.temp/'daten.fehlgeschlagen-probe/katalog').read_text(),'schema-neu')
 
+    def _datenordner(self):
+        daten=self.temp/'daten';(daten/'bibliotheken/konto/library/originals').mkdir(parents=True)
+        (daten/'modelle').mkdir()
+        (daten/'server.sqlite').write_text('server-alt');(daten/'server.schluessel').write_text('schluessel')
+        (daten/'bibliotheken/konto/library.sqlite').write_text('bib-alt')
+        (daten/'bibliotheken/konto/library.sqlite-wal').write_text('wal-alt')
+        (daten/'bibliotheken/konto/library/ausschnitte.json').write_text('{}')
+        (daten/'bibliotheken/konto/library/originals/foto.jpg').write_bytes(b'foto')
+        (daten/'modelle/clip.onnx').write_bytes(b'modell')
+        return daten
+
+    def test_zustand_umfasst_datenbanken_und_kopfdateien_ohne_fotos(self):
+        daten=self._datenordner()
+        self.assertEqual({p.as_posix() for p in fern.zustandsdateien(daten)},{
+            'server.sqlite','server.schluessel','bibliotheken/konto/library.sqlite',
+            'bibliotheken/konto/library.sqlite-wal','bibliotheken/konto/library/ausschnitte.json'})
+        n=fern.sichere_zustand(daten,self.temp/'zustand')
+        self.assertEqual(n,5)
+        self.assertFalse((self.temp/'zustand/bibliotheken/konto/library/originals').exists())
+        (daten/'server.sqlite').write_text('anders')
+        with self.assertRaises(ValueError):fern.pruefe_zustand(daten,self.temp/'zustand')
+
+    def test_misslungener_start_mit_zustandssicherung_setzt_datenbanken_zurueck(self):
+        programm=self.temp/'app';programm.mkdir();(programm/'version').write_text('alt')
+        daten=self._datenordner()
+        staging=self.temp/'staging';staging.mkdir();neu=staging/'neu';neu.mkdir();(neu/'version').write_text('neu')
+        backup=self.temp/'sicherung';backup.mkdir();fern.sichere(programm,backup/'programm');fern.sichere_zustand(daten,backup/'zustand')
+        bib=daten/'bibliotheken/konto'
+        def starte():
+            if (programm/'version').read_text()=='neu':
+                (bib/'library.sqlite').write_text('bib-neu')
+                (bib/'library.sqlite-shm').write_text('shm-neu')
+                (daten/'server.sqlite').write_text('server-neu')
+        with self.assertRaises(ValueError):
+            fern.tausche_mit_rueckweg(programm,neu,daten,backup,'probe',starte=starte,stoppe=lambda:None,
+                                      gesund=lambda:(programm/'version').read_text()=='alt',zustand=True)
+        self.assertEqual((programm/'version').read_text(),'alt')
+        self.assertEqual((bib/'library.sqlite').read_text(),'bib-alt')
+        self.assertEqual((daten/'server.sqlite').read_text(),'server-alt')
+        self.assertFalse((bib/'library.sqlite-shm').exists(),'die SHM der neuen Fassung ist weg')
+        self.assertEqual((bib/'library/originals/foto.jpg').read_bytes(),b'foto')
+        self.assertEqual((backup/'fehlgeschlagen/bibliotheken/konto/library.sqlite').read_text(),'bib-neu')
+
     def test_defekte_sicherung_stoppt_vor_programmtausch(self):
         programm=self.temp/'app';programm.mkdir();(programm/'v').write_text('alt')
         daten=self.temp/'daten';daten.mkdir();backup=self.temp/'backup';backup.mkdir()
