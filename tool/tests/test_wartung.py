@@ -109,6 +109,23 @@ class Wartung(unittest.TestCase):
         self.assertEqual((bib/'library/originals/foto.jpg').read_bytes(),b'foto')
         self.assertEqual((backup/'fehlgeschlagen/bibliotheken/konto/library.sqlite').read_text(),'bib-neu')
 
+    def test_datenbankpruefung_veraendert_die_sicherung_nicht(self):
+        # 3.68.0: Die Integritätsprüfung öffnete die gesicherte Datenbank an
+        # Ort und Stelle; SQLite schrieb dabei in ihre -shm, und die Prüfung
+        # vor dem Tausch fand eine abweichende Sicherung.
+        import sqlite3
+        daten=self.temp/'daten';(daten/'bibliotheken/konto').mkdir(parents=True)
+        quelle=self.temp/'quelle.sqlite'
+        con=sqlite3.connect(quelle);con.execute('PRAGMA journal_mode=WAL');con.execute('PRAGMA wal_autocheckpoint=0')
+        con.execute('CREATE TABLE t(x)');con.executemany('INSERT INTO t VALUES (?)',[(i,) for i in range(500)]);con.commit()
+        for endung in ['','-wal','-shm']:
+            shutil.copy2(str(quelle)+endung,daten/('bibliotheken/konto/library.sqlite'+endung))
+        con.close()
+        backup=self.temp/'zustand';fern.sichere_zustand(daten,backup)
+        fern.pruefe_datenbanken(backup,self.temp/'pruefung')
+        self.assertEqual(fern.pruefe_zustand(daten,backup),3)
+        self.assertFalse((self.temp/'pruefung').exists(),'die Arbeitskopie ist wieder weg')
+
     def test_defekte_sicherung_stoppt_vor_programmtausch(self):
         programm=self.temp/'app';programm.mkdir();(programm/'v').write_text('alt')
         daten=self.temp/'daten';daten.mkdir();backup=self.temp/'backup';backup.mkdir()

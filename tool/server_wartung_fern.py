@@ -174,6 +174,34 @@ def stelle_zustand_her(daten, sicherung, fehlgeschlagen):
     return pruefe_zustand(daten, sicherung)
 
 
+def pruefe_datenbanken(sicherung, arbeit):
+    """Prüft jede gesicherte SQLite-Datenbank an einer Arbeitskopie.
+
+    Nicht an Ort und Stelle: Auch lesend schreibt SQLite bei einer
+    WAL-Datenbank in die -shm-Datei, und die Sicherung wiche danach vom
+    Original ab (3.68.0).
+    """
+    try:
+        for db in sicherung.rglob('*.sqlite'):
+            arbeit.mkdir(mode=0o700, parents=True, exist_ok=True)
+            kopie = arbeit / 'pruefung.sqlite'
+            for endung in ['', '-wal']:
+                quelle = Path(str(db) + endung)
+                if quelle.exists():
+                    shutil.copy2(quelle, Path(str(kopie) + endung))
+            con = sqlite3.connect(kopie)
+            try:
+                if con.execute('PRAGMA integrity_check').fetchone() != ('ok',):
+                    raise ValueError('Datenbankprüfung der Sicherung fehlgeschlagen')
+            finally:
+                con.close()
+            for endung in ['', '-wal', '-shm']:
+                Path(str(kopie) + endung).unlink(missing_ok=True)
+    finally:
+        if arbeit.exists():
+            shutil.rmtree(arbeit)
+
+
 class RueckwegFehler(RuntimeError):
     pass
 
@@ -297,10 +325,7 @@ def main(args):
         config.mkdir(mode=0o700)
         for i, p in enumerate(sorted(konfiguration)):
             sichere(p, config / str(i))
-        for db in datensicherung.rglob('*.sqlite'):
-            with sqlite3.connect(db.as_uri() + '?mode=ro', uri=True) as con:
-                if con.execute('PRAGMA integrity_check').fetchone() != ('ok',):
-                    raise ValueError('Datenbankprüfung der Sicherung fehlgeschlagen')
+        pruefe_datenbanken(datensicherung, basis / 'pruefung')
         (basis / 'geprueft.json').write_text(json.dumps({'version': args['fassung'], 'eintraege': n,
                                                        'umfang': 'zustand' if zustand else 'voll',
                                                        'konfiguration': [str(p) for p in sorted(konfiguration)]}))
