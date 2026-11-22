@@ -277,6 +277,24 @@ void main() {
     ], reason: 'ohne „auslassen“ ist sie wieder frei');
   });
 
+  test('falsche Typen in der Anfrage sind ein 400', () async {
+    await foto('a');
+    for (final inhalt in [
+      {'arten': 'texterkennung'},
+      {
+        'arten': ['texterkennung'],
+        'teile': 'clip',
+      },
+      {
+        'arten': ['texterkennung'],
+        'anzahl': 'fünf',
+      },
+    ]) {
+      final (status, _) = await post('auftraege', rechner, inhalt);
+      expect(status, 400, reason: '$inhalt');
+    }
+  });
+
   test(
     'liest stückweise und vergibt auch, was hinter Vergebenem liegt',
     () async {

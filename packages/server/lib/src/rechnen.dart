@@ -144,15 +144,26 @@ class Rechenapi {
   Future<Response> auftraege(Request anfrage) async {
     final k = await _koerper(anfrage);
     if (k == null) return _json({'fehler': 'kein JSON'}, status: 400);
+    // Falsche Typen sind ein 400, keine 500 aus einem misslungenen `as`.
+    final (rohArten, rohTeile, rohAnzahl) = (
+      k['arten'],
+      k['teile'],
+      k['anzahl'],
+    );
+    if ((rohArten != null && rohArten is! List) ||
+        (rohTeile != null && rohTeile is! List) ||
+        (rohAnzahl != null && (rohAnzahl is! num || !rohAnzahl.isFinite))) {
+      return _json({'fehler': 'arten, teile oder anzahl'}, status: 400);
+    }
     final arten = <Rechenart>{
-      for (final a in (k['arten'] as List?) ?? const [])
+      for (final a in (rohArten as List?) ?? const [])
         ?Rechenart.values.asNameMap()[a],
     };
     final teile = {
-      for (final t in (k['teile'] as List?) ?? Bildanalyseteil.alle)
+      for (final t in (rohTeile as List?) ?? Bildanalyseteil.alle)
         if (Bildanalyseteil.alle.contains(t)) t as String,
     };
-    final anzahl = ((k['anzahl'] as num?)?.toInt() ?? 5).clamp(1, _hoechstens);
+    final anzahl = ((rohAnzahl as num?)?.toInt() ?? 5).clamp(1, _hoechstens);
     final bereich = await bibliotheken.fuer(kontoVon(anfrage).id);
     final db = bereich.bibliothek.db;
     final vergabe = bereich.vergabe;

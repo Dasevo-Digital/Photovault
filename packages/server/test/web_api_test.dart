@@ -2568,6 +2568,14 @@ void main() {
       )).statusCode,
       400,
     );
+    // Ein Jahr, mit dem DateTime nicht rechnen kann, endete als 500.
+    for (final pfad in ['/api/v1/kalender/300000', '/api/v1/kalender/0/1']) {
+      expect(
+        (await frag('GET', pfad, token: erikaToken)).statusCode,
+        400,
+        reason: pfad,
+      );
+    }
 
     final j = await jsonAus(
       await frag('GET', '/api/v1/jahresrueckblick/2024', token: erikaToken),

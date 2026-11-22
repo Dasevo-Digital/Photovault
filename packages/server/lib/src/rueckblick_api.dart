@@ -136,6 +136,13 @@ class Rueckblickapi {
     });
   }
 
+  /// Ein Jahr, mit dem DateTime rechnen kann: `/kalender/300000` endete
+  /// sonst mit einem ArgumentError als 500.
+  static int? _jahr(String text) {
+    final j = int.tryParse(text);
+    return j == null || j < 1 || j > 9999 ? null : j;
+  }
+
   Map<String, Object?> _feld(Kalenderfeld f) => {
     'nummer': f.nummer,
     'anzahl': f.anzahl,
@@ -152,7 +159,7 @@ class Rueckblickapi {
 
   /// `GET /api/v1/kalender/<jahr>` → die Monate mit Aufnahmen.
   Future<Response> monate(Request anfrage, String jahr) async {
-    final j = int.tryParse(jahr);
+    final j = _jahr(jahr);
     if (j == null) return _json({'fehler': 'jahr'}, status: 400);
     return _json({
       'jahr': j,
@@ -165,7 +172,7 @@ class Rueckblickapi {
   /// `GET /api/v1/kalender/<jahr>/<monat>` → die Aufnahmen des Monats,
   /// neueste zuerst.
   Future<Response> monat(Request anfrage, String jahr, String monat) async {
-    final j = int.tryParse(jahr), m = int.tryParse(monat);
+    final j = _jahr(jahr), m = int.tryParse(monat);
     if (j == null || m == null || m < 1 || m > 12) {
       return _json({'fehler': 'monat'}, status: 400);
     }

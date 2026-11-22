@@ -463,6 +463,12 @@ void main() {
       inhalt: jsonEncode({'pruefsummen': List.filled(1001, fremd)}),
     );
     expect(zuViele.statusCode, 400);
+    final keinJson = await frag(
+      'POST',
+      '/api/v1/pruefsummen',
+      inhalt: '{"pruefsummen": [',
+    );
+    expect(keinJson.statusCode, 400, reason: 'kaputtes JSON ist keine 500');
   });
 
   test('Aufräumen verwirft nur, was nicht mehr weitergeht', () async {

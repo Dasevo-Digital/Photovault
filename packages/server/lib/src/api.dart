@@ -517,7 +517,8 @@ Handler baueApi({
         if (a == null) {
           return _json({'fehler': 'Nicht verfügbar.'}, status: 409);
         }
-        final k = jsonDecode(await r.readAsString());
+        final (:json, :k) = await _jsonKoerper(r);
+        if (!json) return _keinJson();
         if (k is! Map) return _json({'fehler': 'Angaben fehlen'}, status: 400);
         try {
           await a.einrichten(k.cast<String, Object?>());
@@ -572,7 +573,8 @@ Handler baueApi({
     ..post(
       '/api/v1/immich/pruefen',
       (Request r) => _nurVerwalter(r, () async {
-        final k = jsonDecode(await r.readAsString());
+        final (:json, :k) = await _jsonKoerper(r);
+        if (!json) return _keinJson();
         if (k is! Map) return _json({'fehler': 'Angaben fehlen'}, status: 400);
         final konto = kontoVon(r).id;
         try {
@@ -592,7 +594,8 @@ Handler baueApi({
     ..post(
       '/api/v1/immich/uebernehmen',
       (Request r) => _nurVerwalter(r, () async {
-        final k = jsonDecode(await r.readAsString());
+        final (:json, :k) = await _jsonKoerper(r);
+        if (!json) return _keinJson();
         final konto = kontoVon(r).id;
         try {
           await immich.uebernimm(
@@ -626,7 +629,8 @@ Handler baueApi({
             'fehler': 'Kein Sicherungsziel eingestellt.',
           }, status: 409);
         }
-        final k = jsonDecode(await r.readAsString());
+        final (:json, :k) = await _jsonKoerper(r);
+        if (!json) return _keinJson();
         final pp = k is Map ? k['passphrase'] : null;
         if (pp is! String) {
           return _json({'fehler': 'passphrase fehlt'}, status: 400);
@@ -791,6 +795,18 @@ Future<Response> _nurVerwalter(
 /// versuchen.
 Response _speicherVoll() =>
     _json({'fehler': 'Der Speicher des Servers ist voll.'}, status: 507);
+
+/// Der Körper der Anfrage als JSON; [json] ist `false`, wenn er keines
+/// ist. Ein kaputter Körper endete vorher als FormatException in einer 500.
+Future<({bool json, Object? k})> _jsonKoerper(Request r) async {
+  try {
+    return (json: true, k: jsonDecode(await r.readAsString()));
+  } on FormatException {
+    return (json: false, k: null);
+  }
+}
+
+Response _keinJson() => _json({'fehler': 'kein JSON'}, status: 400);
 
 Response _json(Object? daten, {int status = 200}) => Response(
   status,
@@ -2534,7 +2550,8 @@ class _Api {
   /// was im Papierkorb liegt; der Import nähme es ebenfalls nicht noch
   /// einmal.
   Future<Response> pruefsummen(Request anfrage) async {
-    final k = jsonDecode(await anfrage.readAsString());
+    final (:json, :k) = await _jsonKoerper(anfrage);
+    if (!json) return _keinJson();
     final liste = k is Map ? k['pruefsummen'] : null;
     if (liste is! List || liste.length > 1000) {
       return _json({'fehler': 'pruefsummen fehlt oder zu viele'}, status: 400);

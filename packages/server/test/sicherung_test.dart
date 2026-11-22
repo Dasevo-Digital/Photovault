@@ -624,6 +624,19 @@ void main() {
       (jsonDecode(await stand.readAsString()) as Map)['stufe'],
       'nichtEingerichtet',
     );
+    // Ein kaputter Körper endete als FormatException in einer 500.
+    final kaputt = await api(
+      Request(
+        'POST',
+        Uri.parse('http://server/api/v1/sicherung/einrichten'),
+        headers: {
+          'authorization':
+              'Bearer ${konten.meldeAn(erika.id, 'Rechner', 'x').token}',
+        },
+        body: '{"passphrase": ',
+      ),
+    );
+    expect(kaputt.statusCode, 400);
     final r = await frag('POST', 'sicherung/einrichten', erika, {
       'passphrase': passphrase,
     });
