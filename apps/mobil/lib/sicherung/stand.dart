@@ -342,6 +342,13 @@ class Sicherungsstand {
     ..execute('DELETE FROM fehler')
     ..execute("DELETE FROM erledigt WHERE ausgang = 'abgelehnt'");
 
+  /// Nur, was aus vorübergehendem Grund scheiterte (kein Netz, Server
+  /// nicht bereit, Datei kam nicht), sofort wieder versuchen – auch, was
+  /// gerade nach [fehlerGrenze] Fehlschlägen pausiert. Was der Server
+  /// abgelehnt hat, bleibt: Es noch einmal hochzuladen, brächte dasselbe
+  /// Ergebnis für dieselbe Datenmenge (siehe [vergissFehler]).
+  void vergissVoruebergehendeFehler() => _db.execute('DELETE FROM fehler');
+
   // --- Sperre --------------------------------------------------------------
 
   /// Nimmt die Sperre für [wer] bis [dauer] von jetzt – wenn sie frei,

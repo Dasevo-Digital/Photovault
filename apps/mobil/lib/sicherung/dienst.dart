@@ -357,8 +357,16 @@ class Sicherungsdienst extends ChangeNotifier {
   /// eines Laufs im Hintergrund –, und überspringt, was dreimal scheiterte
   /// (zwölf Stunden Pause) oder was der Server abgelehnt hat. Gezählt
   /// wurden beide in der Zeitleiste trotzdem. Wer von Hand tippt, will
-  /// es jetzt: Darum hier noch einmal alles versuchen, nach dem Zugriff
-  /// fragen und sagen, wie es ausging.
+  /// es jetzt: Darum hier das Pausierte noch einmal versuchen, nach dem
+  /// Zugriff fragen und sagen, wie es ausging.
+  ///
+  /// **Was der Server abgelehnt hat, nicht.** Bis 0.19 vergass jeder Tipp
+  /// auch diese Ablehnungen, und jede solche Datei ging ganz noch einmal
+  /// hoch – ein kaputtes Video bei jedem Tipp, mit [mobil] über Mobilfunk –,
+  /// nur um wieder abgelehnt zu werden. Sie zählen im Bericht weiter als
+  /// gescheitert („Details“ führt zur Sicherungsseite), und dort holt
+  /// „Erneut versuchen“ ([versucheFehlerErneut]) sie zurück, wenn der Grund
+  /// behoben ist.
   ///
   /// [mobil] sichert dieses eine Mal auch ohne WLAN.
   Future<Sicherungsantwort> sichereJetzt({bool mobil = false}) async {
@@ -374,7 +382,7 @@ class Sicherungsdienst extends ChangeNotifier {
       }
       _beobachte();
     }
-    _stand.vergissFehler();
+    _stand.vergissVoruebergehendeFehler();
     final vorher = _stand.letzterLauf?.ende;
     await sichere(mobil: mobil);
     return switch (wartet) {
