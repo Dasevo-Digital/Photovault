@@ -403,6 +403,42 @@ void main() {
       );
       expect(Directory(p.join(ort.path, 'library')).existsSync(), isFalse);
     });
+
+    // Bis hierher blieb alles bis zum Fehler Kopierte im Ziel, zuerst die
+    // ganze library.sqlite: Jeder neue Versuch scheiterte mit „belegt“
+    // (#433).
+    test('scheitert das Kopieren, bleibt im Ziel nichts liegen', () async {
+      for (final name in ['b.jpg', 'c.jpg']) {
+        File(p.join(ort.path, 'library', 'originals', '2026', name))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(name);
+      }
+      final neu = Directory(p.join(wurzel.path, 'neu'))..createSync();
+      // Wo eine der Dateien hin soll, steht schon ein Ordner: Das Kopieren
+      // scheitert dort, nachdem library.sqlite angekommen ist.
+      final hindernis = Directory(
+        p.join(neu.path, 'library', 'originals', '2026', 'c.jpg'),
+      )..createSync(recursive: true);
+
+      await expectLater(
+        LibraryLocation.verschiebe(ort, neu),
+        throwsA(isA<FileSystemException>()),
+      );
+
+      expect(File(p.join(neu.path, 'library.sqlite')).existsSync(), isFalse);
+      expect(
+        neu.listSync(recursive: true).whereType<File>(),
+        isEmpty,
+        reason: 'das Ziel muss für einen neuen Versuch frei sein',
+      );
+      expect(hindernis.existsSync(), isTrue, reason: 'nicht von uns');
+      // Die Bibliothek selbst ist unberührt.
+      expect(File(p.join(ort.path, 'library.sqlite')).readAsStringSync(), 'db');
+      expect(
+        File(p.join(ort.path, 'library', 'originals', 'a.jpg')).existsSync(),
+        isTrue,
+      );
+    });
   });
 }
 

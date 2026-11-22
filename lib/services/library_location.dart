@@ -917,26 +917,68 @@ class LibraryLocation {
       );
     }
 
+    // Was hier entsteht, geht wieder weg, wenn das Kopieren scheitert
+    // (#433). Bis hierher blieb alles bis dahin Kopierte liegen – zuerst die
+    // ganze library.sqlite. Das Ziel war danach belegt: Jeder neue Versuch
+    // scheiterte mit „belegt“, beim Zurücksetzen lag die halbe Kopie im
+    // versteckten Ordner des Systemlaufwerks, und ein Wechsel auf den
+    // Standard öffnete sie mit fehlenden Dateien.
+    final angelegteDateien = <File>[];
+    final angelegteOrdner = <Directory>[];
+    Future<void> legeOrdnerAn(Directory ordner) async {
+      final fehlend = <Directory>[];
+      for (
+        var o = ordner;
+        !await o.exists() && o.parent.path != o.path;
+        o = o.parent
+      ) {
+        fehlend.add(o);
+      }
+      await ordner.create(recursive: true);
+      angelegteOrdner.addAll(fehlend.reversed);
+    }
+
     melde(erzwingen: true);
-    for (final datei in dateien) {
-      await datei.ziel.parent.create(recursive: true);
-      final ausgabe = datei.ziel.openWrite();
-      try {
-        await ausgabe.addStream(
-          datei.quelle.openRead().map((block) {
+    try {
+      for (final datei in dateien) {
+        await legeOrdnerAn(datei.ziel.parent);
+        if (!await datei.ziel.exists()) angelegteDateien.add(datei.ziel);
+        final ausgabe = await datei.ziel.open(mode: FileMode.write);
+        try {
+          await for (final block in datei.quelle.openRead()) {
+            await ausgabe.writeFrom(block);
             kopierteBytes += block.length;
             melde();
-            return block;
-          }),
-        );
-      } finally {
-        await ausgabe.close();
+          }
+          // Auf die Platte, bevor die Quelle gelöscht wird: Ein Absturz
+          // oder Stromausfall danach liesse sonst weder Quelle noch Kopie.
+          await ausgabe.flush();
+        } finally {
+          await ausgabe.close();
+        }
+        if (await datei.ziel.length() != datei.bytes) {
+          throw FileSystemException('pv_verschieben_kopie', datei.ziel.path);
+        }
+        kopierteDateien++;
+        melde(erzwingen: true);
       }
-      if (await datei.ziel.length() != datei.bytes) {
-        throw FileSystemException('pv_verschieben_kopie', datei.ziel.path);
+    } catch (_) {
+      for (final f in angelegteDateien) {
+        try {
+          await f.delete();
+        } on FileSystemException {
+          // Schon weg, oder nie angelegt.
+        }
       }
-      kopierteDateien++;
-      melde(erzwingen: true);
+      // Die tiefsten zuerst; einer, in dem noch etwas liegt, bleibt.
+      for (final o in angelegteOrdner.reversed) {
+        try {
+          await o.delete();
+        } on FileSystemException {
+          // Nicht leer oder schon weg.
+        }
+      }
+      rethrow;
     }
 
     // Erst nach erfolgreichem Kopieren die Originale löschen.
