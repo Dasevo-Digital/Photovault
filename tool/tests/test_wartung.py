@@ -18,7 +18,7 @@ import server_wartung_fern as fern
 class Wartung(unittest.TestCase):
     def setUp(self):
         self.temp=Path(tempfile.mkdtemp(prefix='pv_wartung_'))
-        self.addCleanup(shutil.rmtree,self.temp)
+        self.addCleanup(release.entferne_baum,self.temp)
 
     def test_sicherung_prueft_inhalt_und_menge(self):
         quelle=self.temp/'quelle';quelle.mkdir();(quelle/'foto').write_bytes(b'foto')
@@ -137,7 +137,8 @@ class Wartung(unittest.TestCase):
 
     def test_linux_baut_ohne_originalrepo_zurueckzusetzen(self):
         script=release.linux_bau('pv-1.2.3-'+'a'*32,'b'*40)
-        subprocess.run(['bash','-n'],input=script,text=True,check=True)
+        if os.name!='nt':  # Windows-Runner: „bash“ ist dort die WSL-Hülle ohne System
+            subprocess.run(['bash','-n'],input=script,text=True,check=True)
         self.assertNotIn('reset',script);self.assertNotIn('git clean',script)
         self.assertIn('mktemp -d',script);self.assertIn('git clone',script)
         self.assertIn('checkout --quiet --detach '+'b'*40,script)

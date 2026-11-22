@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tarfile
 import time
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 
 def sha256(pfad):
@@ -72,12 +72,15 @@ def sichere(quelle, ziel):
 def entpacke(paket, ziel):
     with tarfile.open(paket) as tar:
         for item in tar.getmembers():
-            pfad = Path(item.name)
+            # Namen im Archiv sind POSIX-Pfade, auch wenn das hier unter
+            # Windows läuft: Dort gälte „/absolut“ ohne Laufwerk nicht als
+            # absolut, und der Zielordner entstünde vor der Ablehnung.
+            pfad = PurePosixPath(item.name)
             if pfad.is_absolute() or '..' in pfad.parts or not (item.isfile() or item.isdir() or item.issym()):
                 raise ValueError('Unsicherer Archiveintrag')
             if item.issym():
                 link = pfad.parent / item.linkname
-                if Path(item.linkname).is_absolute() or '..' in link.parts:
+                if PurePosixPath(item.linkname).is_absolute() or '..' in link.parts:
                     raise ValueError('Unsichere Archivverknüpfung')
         # Vor jedem Eintrag noch einmal auf bereits entpackte Links prüfen.
         ziel.mkdir(mode=0o700,parents=True,exist_ok=True)

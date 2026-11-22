@@ -660,7 +660,7 @@ class OrtBereitstellen(unittest.TestCase):
     def setUp(self):
         import hashlib
         self.temp = Path(tempfile.mkdtemp(prefix='pv_ort_'))
-        self.addCleanup(shutil.rmtree, self.temp)
+        self.addCleanup(release.entferne_baum, self.temp)
         self.daten = b'ort-archiv'
         self.summe = hashlib.sha256(self.daten).hexdigest()
         self.repo = self.temp / 'repo'
@@ -729,7 +729,8 @@ class OrtBereitstellen(unittest.TestCase):
 
     def test_bauskripte_reichen_die_ablage_weiter(self):
         script = release.linux_bau('pv-1.2.3-' + 'a' * 32, 'b' * 40, ort=True)
-        subprocess.run(['bash', '-n'], input=script, text=True, check=True)
+        if os.name != 'nt':  # Windows-Runner: „bash“ ist dort die WSL-Hülle ohne System
+            subprocess.run(['bash', '-n'], input=script, text=True, check=True)
         self.assertIn('export PV_ONNXRUNTIME_QUELLE=file:///tmp/pv-1.2.3-' + 'a' * 32 + '-ort;', script)
         self.assertIn('rm -rf -- "$1" "$3"', script)
         self.assertNotIn('PV_ONNXRUNTIME_QUELLE', release.linux_bau('pv-1.2.3-' + 'a' * 32, 'b' * 40))

@@ -69,6 +69,7 @@ import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -307,6 +308,18 @@ try {{
 'BAU-ENDE 0'
 '''
 
+def entferne_baum(pfad):
+    """shutil.rmtree, das auch schreibgeschützte Dateien löscht: Git legt
+    seine Objekte so an, und Windows verweigert dann das Löschen."""
+    def schreibbar(funktion, p, _fehler):
+        os.chmod(p, stat.S_IWRITE)
+        funktion(p)
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(pfad, onexc=schreibbar)
+    else:
+        shutil.rmtree(pfad, onerror=schreibbar)
+
+
 @contextmanager
 def isolierter_baum(basis, commit):
     """Alle lokalen Builds lesen einen festen Commit in eigener Arbeitskopie."""
@@ -321,7 +334,7 @@ def isolierter_baum(basis, commit):
     finally:
         REPO = quelle
         # Nur der in diesem Aufruf neu angelegte Baum, nie eine Benutzerkopie.
-        shutil.rmtree(ziel)
+        entferne_baum(ziel)
 
 
 def linux_bau(kennung, commit, ort=False):
