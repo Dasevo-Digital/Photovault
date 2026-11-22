@@ -2187,9 +2187,22 @@ function nurImHeimnetz(adresse) {
   return h === 'localhost' || h.endsWith('.local') || h.endsWith('.lan') || /^(10\.|127\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.|100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|\[?fe80:|\[?f[cd][0-9a-f]{2}:)/i.test(h);
 }
 
-$('form-link').addEventListener('submit', async (e) => {
+// Ein Formular nur einmal zugleich: Die Dialoge bleiben während der Anfrage
+// offen, und ein Doppelklick oder zweimal Enter legte zwei Links, Regeln,
+// gemerkte Suchen oder Personen gleichen Namens an.
+const laufendeFormulare = new WeakSet();
+async function einmalZugleich(ziel, arbeit) {
+  if (laufendeFormulare.has(ziel)) return;
+  laufendeFormulare.add(ziel);
+  try { await arbeit(); } finally { laufendeFormulare.delete(ziel); }
+}
+
+$('form-link').addEventListener('submit', (e) => {
   e.preventDefault();
-  const f = e.target;
+  einmalZugleich(e.target, () => linkAnlegen(e.target));
+});
+
+async function linkAnlegen(f) {
   const titel = f.titel.value.trim();
   if (!titel) { $('link-meldung').textContent = t('Bitte einen Titel eingeben.'); return; }
   const koerper = {
@@ -2213,7 +2226,7 @@ $('form-link').addEventListener('submit', async (e) => {
   } catch (x) {
     $('link-meldung').textContent = x.message;
   }
-});
+}
 
 async function kopiere(text) {
   try {
@@ -3243,17 +3256,19 @@ function autoregelWerte(f) {
 $('autoregel-neu').addEventListener('click', () => autoregelDialog(null));
 $('autoregel-abbrechen').addEventListener('click', () => $('autoregel-dialog').close());
 $('form-autoregel').ausloeser.addEventListener('change', autoregelAusloeser);
-$('form-autoregel').addEventListener('submit', async (e) => {
+$('form-autoregel').addEventListener('submit', (e) => {
   e.preventDefault();
   const f = e.target;
-  try {
-    const regel = autoregelWerte(f);
-    const schlagwortIds = [...f.schlagwoerter.selectedOptions].map((o) => o.value);
-    await befehl('regelSpeichern', { regel });
-    await befehl('regelSchlagwoerterSetzen', { regelId: regel.id, schlagwortIds });
-    $('autoregel-dialog').close();
-    await zeigeAutoregeln();
-  } catch (x) { $('autoregel-meldung').textContent = x.message; }
+  einmalZugleich(f, async () => {
+    try {
+      const regel = autoregelWerte(f);
+      const schlagwortIds = [...f.schlagwoerter.selectedOptions].map((o) => o.value);
+      await befehl('regelSpeichern', { regel });
+      await befehl('regelSchlagwoerterSetzen', { regelId: regel.id, schlagwortIds });
+      $('autoregel-dialog').close();
+      await zeigeAutoregeln();
+    } catch (x) { $('autoregel-meldung').textContent = x.message; }
+  });
 });
 let autoregelUhr = null;
 $('form-autoregel').ortsuche.addEventListener('input', () => {
@@ -3654,19 +3669,21 @@ async function oeffneGesichter(fall) {
   }
 }
 
-async function gesichterFertig(ausfuehren) {
+function gesichterFertig(ausfuehren) {
   const fall = gesichtFall;
   if (!fall) return;
   const ids = fall.gesichter.map((g) => g.id).filter((id) => !fall.aus.has(id));
   if (!ids.length) { $('gesicht-meldung').textContent = t('Kein Gesicht gewählt.'); return; }
-  try {
-    await ausfuehren(ids, fall);
-    $('gesicht-dialog').close();
-    gesichtFall = null;
-    if (fall.fertig) fall.fertig();
-  } catch (x) {
-    $('gesicht-meldung').textContent = x.message;
-  }
+  return einmalZugleich($('gesicht-dialog'), async () => {
+    try {
+      await ausfuehren(ids, fall);
+      $('gesicht-dialog').close();
+      gesichtFall = null;
+      if (fall.fertig) fall.fertig();
+    } catch (x) {
+      $('gesicht-meldung').textContent = x.message;
+    }
+  });
 }
 
 // Hatte die Gruppe einen Vorschlag, ist die Wahl ein Urteil darüber:
@@ -3967,15 +3984,17 @@ $('suche-merken').addEventListener('click', () => {
   f.name.focus();
 });
 $('merken-abbrechen').addEventListener('click', () => $('merken-dialog').close());
-$('form-merken').addEventListener('submit', async (e) => {
+$('form-merken').addEventListener('submit', (e) => {
   e.preventDefault();
   const name = e.target.name.value.trim();
   if (!name || !letzteSuche) return;
-  try {
-    await api(`/api/v1/intelligente-alben?${letzteSuche.q}`, { methode: 'POST', json: { sucheId: neueKennung(), name } });
-    $('merken-dialog').close();
-    meldung(t('„{name}“ steht jetzt unter Alben.', { name }));
-  } catch (x) { $('merken-meldung').textContent = x.message; }
+  einmalZugleich(e.target, async () => {
+    try {
+      await api(`/api/v1/intelligente-alben?${letzteSuche.q}`, { methode: 'POST', json: { sucheId: neueKennung(), name } });
+      $('merken-dialog').close();
+      meldung(t('„{name}“ steht jetzt unter Alben.', { name }));
+    } catch (x) { $('merken-meldung').textContent = x.message; }
+  });
 });
 
 $('form-suche').addEventListener('submit', async (e) => {

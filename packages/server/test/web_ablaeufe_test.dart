@@ -97,4 +97,24 @@ void main() {
     expect(pruefung, isNonNegative);
     expect(hole.indexOf('this.weiter = d.weiter'), greaterThan(pruefung));
   });
+
+  test('Dialoge legen bei einem Doppelklick nichts doppelt an', () {
+    // Die Dialoge bleiben während der Anfrage offen; zweimal Enter legte
+    // zwei Links, Regeln, gemerkte Suchen oder Personen gleichen Namens an.
+    expect(app, contains('if (laufendeFormulare.has(ziel)) return;'));
+    for (final form in ['form-link', 'form-autoregel', 'form-merken']) {
+      final beginn = app.indexOf("\$('$form').addEventListener('submit'");
+      expect(beginn, isNonNegative, reason: form);
+      final ende = app.indexOf('\n});', beginn);
+      expect(
+        app.substring(beginn, ende),
+        contains('einmalZugleich('),
+        reason: form,
+      );
+    }
+    expect(
+      funktion('gesichterFertig'),
+      contains("einmalZugleich(\$('gesicht-dialog')"),
+    );
+  });
 }
