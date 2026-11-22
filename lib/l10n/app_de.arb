@@ -1859,7 +1859,7 @@
   "integAnsehen": "Ansehen",
   "integVorschauTitel": "Vorschau",
   "integKeineVorschau": "Für diese Datei lässt sich keine Vorschau zeigen.",
-  "integVorschauVerschluesselt": "Das Foto ist gesperrt – die Vorschau ist mitverschlüsselt.",
+  "integVorschauVerschluesselt": "Das Foto ist gesperrt – die Vorschau wurde nur zum Ansehen entschlüsselt.",
   "integFotoOeffnen": "Foto öffnen",
   "integHeaderProbleme": "Verschlüsselte Dateien mit ungültigem Header ({anzahl})",
   "@integHeaderProbleme": {

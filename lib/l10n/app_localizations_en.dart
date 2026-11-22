@@ -3481,7 +3481,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get integVorschauVerschluesselt =>
-      'The photo is locked – its preview is encrypted along with it.';
+      'The photo is locked – its preview was decrypted only for viewing.';
 
   @override
   String get integFotoOeffnen => 'Open the photo';

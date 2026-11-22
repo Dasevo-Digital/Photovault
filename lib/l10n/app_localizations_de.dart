@@ -3506,7 +3506,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get integVorschauVerschluesselt =>
-      'Das Foto ist gesperrt – die Vorschau ist mitverschlüsselt.';
+      'Das Foto ist gesperrt – die Vorschau wurde nur zum Ansehen entschlüsselt.';
 
   @override
   String get integFotoOeffnen => 'Foto öffnen';

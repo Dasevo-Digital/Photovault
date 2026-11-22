@@ -1161,7 +1161,7 @@
   "integAnsehen": "View",
   "integVorschauTitel": "Preview",
   "integKeineVorschau": "No preview can be shown for this file.",
-  "integVorschauVerschluesselt": "The photo is locked – its preview is encrypted along with it.",
+  "integVorschauVerschluesselt": "The photo is locked – its preview was decrypted only for viewing.",
   "integFotoOeffnen": "Open the photo",
   "integHeaderProbleme": "Encrypted files with an invalid header ({anzahl})",
   "integBeschaedigt": "The file may be damaged – not a valid encrypted file",

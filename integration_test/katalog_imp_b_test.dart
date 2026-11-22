@@ -2281,10 +2281,10 @@ void main() {
     await ende(tester);
   });
 
-  // Befund: integrity_check_screen.dart:199 (_ansehenKnopf) gibt bei
-  // gesperrten Aufnahmen gar keinen „Ansehen"-Knopf aus. Der Text
-  // integVorschauVerschluesselt („Das Foto ist gesperrt – die Vorschau ist
-  // mitverschlüsselt.") ist damit unerreichbar.
+  // Behoben in #464: Auch eine gesperrte Aufnahme hat einen
+  // „Ansehen"-Knopf. Er fragt bei gesperrtem Tresor erst nach dem PIN und
+  // zeigt dann das entschlüsselte Vorschaubild mit dem Hinweis
+  // integVorschauVerschluesselt; vorher bleibt alles verschlüsselt.
   testWidgets('IMP-217 Ansehen bei gesperrtem Foto nennt die Verschlüsselung', (
     tester,
   ) async {
@@ -2297,17 +2297,36 @@ void main() {
       });
       final g = (await mitDb(tester, () => bibliothek.db.assetById(l3.id)))!;
       datei(g).deleteSync();
+      // Tresor zu: Der Knopf muss erst nach dem PIN fragen.
+      await mitDb(tester, bibliothek.sperreTresor);
       await oeffneWerkzeug(tester, de.werkzIntegritaetTitel);
       await warteIntegritaet(tester);
       await waitFor(tester, find.text(de.integFehlendeDateien(1)));
       final zeile = integZeile(g.relativePath);
+      expect(
+        find.descendant(of: zeile, matching: find.byType(Image)),
+        findsNothing,
+        reason: 'in der Zeile kein Klartext',
+      );
       await tapFrei(
         tester,
         find.descendant(of: zeile, matching: find.text(de.integAnsehen)),
       );
+      await waitFor(tester, find.text(de.pinEingebenTitel));
+      await enter(tester, field(de.pinFeld), _pin);
+      await tapFrei(tester, find.text('OK'));
       await waitFor(tester, find.text(de.integVorschauVerschluesselt));
+      expect(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(Image),
+        ),
+        findsOneWidget,
+        reason: 'das entschlüsselte Vorschaubild',
+      );
+      await tapFrei(tester, find.text(de.allgSchliessen));
     });
-  }, skip: true);
+  });
 
   // ---------------------------------------------------------------------
   // Bibliothekszustand

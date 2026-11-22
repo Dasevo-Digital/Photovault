@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:kern/db/database.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/integrity_check_screen.dart';
+import 'package:photo_vault/services/vault_crypto.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
@@ -218,13 +219,33 @@ void main() {
     expect(find.text('Ansehen'), findsNothing);
   });
 
-  testWidgets('bei einer gesperrten Aufnahme gibt es nichts zu sehen', (
+  testWidgets('eine gesperrte Aufnahme zeigt sich erst nach dem Entsperren', (
     tester,
   ) async {
-    // Das Vorschaubild ist mitverschluesselt; ein Bild, das sich nicht
-    // dekodieren laesst, waere ein leeres Feld - und das sagt weniger
-    // als kein Feld.
-    lege('thumbnails/gesperrt.png');
+    // IMP-217: Vorher gab es bei gesperrten Aufnahmen gar keinen Knopf.
+    // Das Vorschaubild ist mitverschlüsselt; zu sehen ist es erst, wenn
+    // der PIN den Tresor geöffnet hat – vorher nichts im Klartext.
+    final klartextOrdner = Directory(p.join(wurzel.path, 'klartext'));
+    library.klartextOrdnerFuerTests = klartextOrdner;
+    await tester.runAsync(() async {
+      await library.setupVaultPin('4711');
+      final row = await db.privacySettingsRow();
+      final schluessel = await VaultCrypto.unwrapMasterKey(
+        '4711',
+        kdfSalt: row!.kdfSalt!,
+        nonce: row.wrappedMasterKeyNonce!,
+        wrapped: row.wrappedMasterKey!,
+      );
+      final klar = File(p.join(wurzel.path, 'klar.png'))
+        ..writeAsBytesSync(einPixel);
+      final ziel = paths.absolute('thumbnails/gesperrt.png')
+        ..parent.createSync(recursive: true);
+      await VaultCrypto.encryptFile(klar, ziel, schluessel);
+      ziel.setLastModifiedSync(
+        DateTime.now().subtract(const Duration(hours: 2)),
+      );
+    });
+    library.lockVaultSession();
     await aufnahme(
       'a1',
       original: 'originals/weg.jpg',
@@ -233,7 +254,44 @@ void main() {
     );
     await zeige(tester);
     expect(find.text('originals/weg.jpg'), findsOneWidget);
-    expect(find.text('Ansehen'), findsNothing);
+    expect(
+      find.descendant(of: find.byType(ListTile), matching: find.byType(Image)),
+      findsNothing,
+      reason: 'in der Zeile bleibt es beim Zeichen',
+    );
+
+    // Abgebrochen: kein Bild, nichts entschlüsselt.
+    await tester.tap(find.text('Ansehen'));
+    await tester.pumpAndSettle();
+    expect(find.text('PIN eingeben'), findsOneWidget);
+    await tester.tap(find.text('Abbrechen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Vorschau'), findsNothing);
+    expect(klartextOrdner.existsSync(), isFalse);
+
+    // Mit PIN: das entschlüsselte Vorschaubild und der Hinweis.
+    await tester.tap(find.text('Ansehen'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), '4711');
+    await tester.tap(find.text('OK'));
+    for (var i = 0; i < 150 && find.text('Vorschau').evaluate().isEmpty; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+    }
+    expect(find.text('Vorschau'), findsOneWidget);
+    final t = AppTexte.of(tester.element(find.byType(IntegrityCheckScreen)));
+    expect(find.text(t.integVorschauVerschluesselt), findsOneWidget);
+    final bild = tester.widget<Image>(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(Image),
+      ),
+    );
+    final datei = ((bild.image as ResizeImage).imageProvider as FileImage).file;
+    expect(p.isWithin(klartextOrdner.path, datei.path), isTrue);
+    await tester.runAsync(library.clearDecryptCache);
   });
 
   testWidgets(

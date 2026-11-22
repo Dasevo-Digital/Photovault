@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -9,6 +11,7 @@ import '../services/integrity_check_service.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pin_dialogs.dart' show ensureVaultUnlocked;
 import '../widgets/selection_action_bar.dart' show confirmDialog;
 import 'asset_viewer_screen.dart';
 import '../services/meldungsdienst.dart';
@@ -147,9 +150,10 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
   /// * Bei einer **verwaisten** Datei ist es umgekehrt: Die Zeile fehlt,
   ///   die Datei liegt da. Zu sehen gibt es sie selbst.
   ///
-  /// Bei einer gesperrten Aufnahme gibt es nichts zu sehen: Das
-  /// Vorschaubild ist mitverschluesselt (siehe TresorWaechter), und ein
-  /// Entschluesseln allein fuer eine Vorschau waere der falsche Preis.
+  /// Bei einer gesperrten Aufnahme ist das Vorschaubild mitverschlüsselt
+  /// (siehe TresorWaechter). In der Zeile steht deshalb nur das Zeichen;
+  /// zu sehen gibt es das Bild erst über „Ansehen“ und das Entsperren
+  /// (siehe [_sichteGesperrt]).
   ({String pfad, bool gesperrt})? _vorschauFuer(MissingFileIssue issue) {
     if (issue.kind != MissingFileKind.original) return null;
     final eintrag = _zurAufnahme[issue.ownerId];
@@ -181,8 +185,21 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
   }
 
   /// Zeigt die Datei gross, bevor irgendetwas geloescht wird.
-  Future<void> _sichten(String? pfad, {required bool gesperrt}) async {
+  ///
+  /// Bei einer gesperrten Aufnahme ist [klartext] die eben entschlüsselte
+  /// Kopie des Vorschaubilds – fehlt sie, liess es sich nicht
+  /// entschlüsseln.
+  Future<void> _sichten(
+    String? pfad, {
+    bool gesperrt = false,
+    File? klartext,
+  }) async {
     final t = AppTexte.of(context);
+    final bild = gesperrt
+        ? klartext
+        : pfad == null
+        ? null
+        : widget.library.paths.absolute(pfad);
     await showDialog<void>(
       context: context,
       builder: (dialogKontext) => AlertDialog(
@@ -193,22 +210,22 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (pfad == null || !flutterKannAnzeigen(pfad))
+              if (pfad == null || bild == null || !flutterKannAnzeigen(pfad))
                 Text(t.integKeineVorschau)
-              else if (gesperrt)
-                Text(t.integVorschauVerschluesselt)
-              else
+              else ...[
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxHeight: 420),
                   child: Image(
-                    image: begrenztesBild(
-                      widget.library.paths.absolute(pfad),
-                      kante: 840,
-                    ),
+                    image: begrenztesBild(bild, kante: 840),
                     fit: BoxFit.contain,
                     errorBuilder: (_, _, _) => Text(t.integKeineVorschau),
                   ),
                 ),
+                if (gesperrt) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(t.integVorschauVerschluesselt),
+                ],
+              ],
               const SizedBox(height: AppSpacing.md),
               Text(
                 pfad ?? '',
@@ -228,12 +245,34 @@ class _IntegrityCheckScreenState extends State<IntegrityCheckScreen> {
   }
 
   /// Der Ansehen-Knopf, oder nichts, wenn es nichts zu sehen gibt.
+  ///
+  /// Auch bei einer gesperrten Aufnahme (IMP-217): Vorher gab es dort
+  /// keinen Knopf, und man trug ein Foto aus, ohne es gesehen zu haben.
   Widget? _ansehenKnopf(String? pfad, {required bool gesperrt}) {
-    if (pfad == null || gesperrt || !flutterKannAnzeigen(pfad)) return null;
+    if (pfad == null || !flutterKannAnzeigen(pfad)) return null;
     return TextButton(
-      onPressed: () => _sichten(pfad, gesperrt: gesperrt),
+      onPressed: () => gesperrt ? _sichteGesperrt(pfad) : _sichten(pfad),
       child: Text(AppTexte.of(context).integAnsehen),
     );
+  }
+
+  /// Entsperrt wie überall in der App (PIN, einmal je Sitzung) und zeigt
+  /// dann das entschlüsselte Vorschaubild. Ohne Entsperren bleibt es zu:
+  /// Nichts davon liegt vorher im Klartext.
+  Future<void> _sichteGesperrt(String pfad) async {
+    if (!await ensureVaultUnlocked(context, widget.library) || !mounted) {
+      return;
+    }
+    File? klartext;
+    try {
+      klartext = await widget.library.decryptForViewing(pfad);
+    } on Object catch (e) {
+      // Beschädigt oder mit anderem Schlüssel: Der Dialog sagt
+      // „keine Vorschau“ statt eines leeren Feldes.
+      debugPrint('Vorschau von $pfad nicht entschlüsselt: $e');
+    }
+    if (!mounted) return;
+    await _sichten(pfad, gesperrt: true, klartext: klartext);
   }
 
   /// Das Bild fuer die Rueckfrage – oder `null`, wenn es keines gibt.

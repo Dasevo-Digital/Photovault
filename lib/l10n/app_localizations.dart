@@ -5936,7 +5936,7 @@ abstract class AppTexte {
   /// No description provided for @integVorschauVerschluesselt.
   ///
   /// In de, this message translates to:
-  /// **'Das Foto ist gesperrt – die Vorschau ist mitverschlüsselt.'**
+  /// **'Das Foto ist gesperrt – die Vorschau wurde nur zum Ansehen entschlüsselt.'**
   String get integVorschauVerschluesselt;
 
   /// No description provided for @integFotoOeffnen.
