@@ -107,6 +107,15 @@ void main() {
     }
   }
 
+  /// Taktet, bis [ziel] da ist – höchstens rund 15 s. Für Schritte mit
+  /// echter Rechenarbeit (Passphrase prüfen), die unter Last länger
+  /// brauchen als feste Takte.
+  Future<void> taktebis(WidgetTester tester, Finder ziel) async {
+    for (var i = 0; i < 200 && ziel.evaluate().isEmpty; i++) {
+      await takte(tester, 1);
+    }
+  }
+
   Future<void> zeige(WidgetTester tester) async {
     tester.view.physicalSize = const Size(1100, 2600);
     tester.view.devicePixelRatio = 1.0;
@@ -553,7 +562,7 @@ void main() {
         'eine lange passphrase',
       );
       await tester.tap(find.text('OK'));
-      await takte(tester, 30);
+      await taktebis(tester, find.text(de.passphraseFestlegenTitel));
       expect(find.text(de.passphraseFestlegenTitel), findsOneWidget);
       await tester.tap(
         find.descendant(

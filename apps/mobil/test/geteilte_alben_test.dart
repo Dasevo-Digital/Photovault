@@ -462,13 +462,15 @@ void main() {
       ),
     );
     await tester.pumpWidget(liste());
-    for (var i = 0; i < 10; i++) {
+    final abgelegt = File('${ordner.path}/t1/a1.miniatur.s9');
+    // Bis die Miniatur abgelegt ist – unter Last (ganze Suite) dauert das
+    // länger als zehn feste Runden.
+    for (var i = 0; i < 300 && (i < 10 || !abgelegt.existsSync()); i++) {
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 30)),
       );
       await tester.pump();
     }
-    final abgelegt = File('${ordner.path}/t1/a1.miniatur.s9');
     expect(abgelegt.existsSync(), isTrue);
     expect(Directory('${ordner.path}/weg').existsSync(), isFalse);
     expect(bilder, 1);
