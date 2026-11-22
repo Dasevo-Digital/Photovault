@@ -3870,7 +3870,11 @@ void _bildeditorTests() {
         of: find.byType(ImageEditorScreen),
         matching: find.byType(Slider),
       );
-      tester.widget<Slider>(pinsel).onChanged!(50);
+      // Pinsel 80 wie in der zweiten Runde: Mit 50 blieben die Ecken des
+      // Quadrats frei, und LaMa setzte das Quadrat aus ihnen fort – der
+      // Fleck blieb dunkel, obwohl das Entfernen wirkte.
+      final s = tester.widget<Slider>(pinsel);
+      s.onChanged!(math.min(80, s.max));
       await settle(tester);
       await editorStrich(tester, [
         const Offset(0.47, 0.5),
