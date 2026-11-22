@@ -521,10 +521,16 @@ extension SpurenAbfragen on AppDatabase {
     return _countWhere(predicate);
   }
 
-  Future<void> markFacesScanned(List<String> assetIds) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
+  /// In Portionen (siehe [inStuecken]): Das Zurückholen einer Sicherung
+  /// vermerkt hier in einem Zug jede dort schon durchsuchte Aufnahme, und
+  /// ab 32767 nahm SQLite die Anweisung gar nicht erst an.
+  Future<void> markFacesScanned(List<String> assetIds) => transaction(() async {
+    for (final stueck in inStuecken(assetIds)) {
+      await (update(assets)..where((t) => t.id.isIn(stueck))).write(
         const AssetsCompanion(facesScanned: Value(true)),
       );
+    }
+  });
 
   /// Löscht bereits erkannte, aber noch keiner Person zugeordnete Gesichter
   /// eines Assets, bevor ein erneuter Scan neue Erkennungen einfügt – manuell

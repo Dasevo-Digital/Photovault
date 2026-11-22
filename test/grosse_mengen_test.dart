@@ -47,6 +47,27 @@ void main() {
     await db.deleteAssetRows(viele);
   });
 
+  test(
+    'Vermerke der Auswertung vertragen mehr Werte, als SQLite nimmt',
+    () async {
+      // Das Zurückholen einer Sicherung vermerkt in einem Zug jede Aufnahme,
+      // die dort schon nach Gesichtern durchsucht war, und die Stufe
+      // Videobilder jedes Video, das zu kurz für weitere Standbilder ist –
+      // bei einer grossen Bibliothek mit Live Photos mehr als 32766 auf
+      // einmal. Beides scheiterte dann ganz, die Stufe bei jedem Lauf von
+      // vorn.
+      await lege('a');
+      final mit = [...viele, 'a'];
+      await db.markFacesScanned(mit);
+      await db.markVideobilderGeprueft(mit);
+      await db.markAiTagsScanned(mit);
+      final a = (await db.assetById('a'))!;
+      expect(a.facesScanned, isTrue);
+      expect(a.videobilderGeprueft, isTrue);
+      expect(a.aiTagsScanned, isTrue);
+    },
+  );
+
   test('die Reihenfolge bleibt, und Partner finden sich', () async {
     await lege('b');
     await lege('a', partner: 'b');

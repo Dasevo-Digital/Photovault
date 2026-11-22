@@ -204,9 +204,13 @@ extension EinbettungsAbfragen on AppDatabase {
   /// Vermerkt, dass ein Foto die Verschlagwortung durchlaufen hat –
   /// unabhängig davon, ob dabei Tags heraussprangen.
   Future<void> markAiTagsScanned(List<String> assetIds) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
-        const AssetsCompanion(aiTagsScanned: Value(true)),
-      );
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            const AssetsCompanion(aiTagsScanned: Value(true)),
+          );
+        }
+      });
 
   /// Zählvariante von [assetsForAiTagging], siehe [countLocationBackfill].
   Future<int> countAiTagging({required bool onlyUntagged}) async {
@@ -303,10 +307,19 @@ extension EinbettungsAbfragen on AppDatabase {
 
   /// Merkt „nachgesehen" fuer Videos, bei denen nichts zu holen war –
   /// zu kurz, oder das Standbild liess sich nicht greifen.
+  ///
+  /// In Portionen (siehe [inStuecken]): Die Stufe vermerkt alle zu kurzen
+  /// Videos am Ende in einem Zug, und mit jedem Live Photo ist eines
+  /// dabei. Ab 32767 nahm SQLite die Anweisung nicht an, die Stufe
+  /// scheiterte und begann beim nächsten Lauf von vorn.
   Future<void> markVideobilderGeprueft(List<String> assetIds) =>
-      (update(assets)..where((t) => t.id.isIn(assetIds))).write(
-        const AssetsCompanion(videobilderGeprueft: Value(true)),
-      );
+      transaction(() async {
+        for (final stueck in inStuecken(assetIds)) {
+          await (update(assets)..where((t) => t.id.isIn(stueck))).write(
+            const AssetsCompanion(videobilderGeprueft: Value(true)),
+          );
+        }
+      });
 
   /// Die zusaetzlichen Einbettungen, nach Aufnahme gebuendelt – fuer die
   /// Suche, und nur fuer sie (siehe [Videoeinbettungen]).
