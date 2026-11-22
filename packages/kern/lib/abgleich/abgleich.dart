@@ -608,6 +608,7 @@ class Abgleich {
               'UPDATE pv_abgleich SET stand = ? WHERE id = 0',
               [bis],
             );
+            await _streicheAbgeholte(zeilen, bis);
             if (await _beruehrtOffenes(zeilen)) {
               t.addAll(await _wendeOffeneAn());
             }
@@ -622,6 +623,34 @@ class Abgleich {
       if (a['mehr'] != true) break;
     }
     await gleicheAn();
+  }
+
+  /// Streicht für bestätigte Befehle bis [bis] die Zeilen, die eben mit
+  /// der Seite kamen, aus dem, was [gleicheAn] beim Server nachfragt.
+  ///
+  /// Eine Seite bis [bis] wurde gelesen, nachdem der Server diese Befehle
+  /// ausgeführt hatte; ihre Zeilen stehen jetzt so in der Kopie, wie der
+  /// Server sie sieht. Früher holte [gleicheAn] trotzdem jede Zeile jedes
+  /// bestätigten Befehls noch einmal – bei 10.000 Fotos im Papierkorb
+  /// 10.000 volle Zeilen in 20 Anfragen, am Handy über Mobilfunk. Übrig
+  /// bleibt, was der Server nicht geändert hat: die Wirkung abgelehnter
+  /// Befehle, Zeilen mit einer Kennung, die er anders vergab.
+  Future<void> _streicheAbgeholte(List<Zeilenstand> zeilen, int bis) async {
+    if (zeilen.isEmpty) return;
+    await db.customStatement(
+      'DELETE FROM pv_aenderungen WHERE ausgang IN ('
+      'SELECT nr FROM pv_ausgang WHERE bestaetigt IS NOT NULL '
+      'AND bestaetigt <= ?) '
+      'AND (tabelle, schluessel) IN ('
+      "SELECT json_extract(value, '\$[0]'), json_extract(value, '\$[1]') "
+      'FROM json_each(?))',
+      [
+        bis,
+        jsonEncode([
+          for (final z in zeilen) [z.tabelle, jsonEncode(z.schluessel)],
+        ]),
+      ],
+    );
   }
 
   /// Ob [zeilen] eine Zeile treffen, die ein unbestätigter Befehl

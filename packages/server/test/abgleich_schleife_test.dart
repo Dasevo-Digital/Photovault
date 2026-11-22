@@ -299,22 +299,39 @@ void main() {
       return (angehalten: angehalten, frei: frei);
     }
 
-    test('ein älterer Zeilenstand landet nicht über einem neueren', () async {
+    /// Ein Befehl, den der Server ablehnt, ohne die vorweggenommene Zeile
+    /// anzufassen: das Schlagwort an a1, die am Server inzwischen im
+    /// Papierkorb liegt. Diese Zeile holt das Angleichen beim Server nach.
+    Future<(AppDatabase, AppDatabase, Abgleich, _Weiche)> abgelehnt() async {
       final s = await serverDb();
       await aufnahme(s, 'a1');
+      await aufnahme(s, 'a2');
+      await s.fuehreAus(const SchlagwortAnheften(['a2'], 'strand'));
       final weiche = _Weiche();
       final (db, a) = await geraet('Telefon', weiche);
-      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Hafen'));
+      await s.fuehreAus(InDenPapierkorb(['a1']));
+      await db.fuehreAus(const SchlagwortAnheften(['a1'], 'strand'));
       await a.sende();
+      expect(a.zustandJetzt.abgelehnt, isNotEmpty);
+      return (s, db, a, weiche);
+    }
+
+    Future<List<String>> schlagwoerter(AppDatabase db) async => [
+      for (final t in await db.tagsForAsset('a1')) t.name,
+    ];
+
+    test('ein älterer Zeilenstand landet nicht über einem neueren', () async {
+      final (s, db, a, weiche) = await abgelehnt();
       final halt = halteZeilenAn(weiche);
 
-      // Die Schleife gleicht den bestätigten Befehl an und wartet auf die
-      // Zeile vom Server.
+      // Die Schleife gleicht den abgelehnten Befehl an und wartet auf die
+      // Zeile vom Server: Dort gibt es sie (noch) nicht.
       final erstes = a.empfange();
       await halt.angehalten.future;
-      // Inzwischen ändert jemand die Zeile, und ein direkter Aufruf (Ziehen
-      // zum Aktualisieren) holt das ab.
-      await s.fuehreAus(const BeschreibungSetzen(['a1'], 'Strand'));
+      // Inzwischen holt jemand a1 zurück und vergibt das Schlagwort, und
+      // ein direkter Aufruf (Ziehen zum Aktualisieren) holt das ab.
+      await s.fuehreAus(const AusDemPapierkorb(['a1']));
+      await s.fuehreAus(const SchlagwortAnheften(['a1'], 'strand'));
       final zweites = a.empfange();
       await Future.any([
         zweites,
@@ -323,34 +340,64 @@ void main() {
       halt.frei.complete();
       await erstes;
       await zweites;
-      expect((await holeAufnahme(db, 'a1')).description, 'Strand');
-      expect((await holeAufnahme(s, 'a1')).description, 'Strand');
+      expect(await schlagwoerter(s), ['strand']);
+      expect(await schlagwoerter(db), ['strand']);
     });
 
     test('was ein Befehl während der Anfrage vorwegnimmt, bleibt', () async {
-      final s = await serverDb();
-      await aufnahme(s, 'a1');
-      final weiche = _Weiche();
-      final (db, a) = await geraet('Telefon', weiche);
-      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Hafen'));
-      await a.sende();
+      final (s, db, a, weiche) = await abgelehnt();
       final halt = halteZeilenAn(weiche);
 
       final lauf = a.empfange();
       await halt.angehalten.future;
-      await db.fuehreAus(const BeschreibungSetzen(['a1'], 'Mole'));
+      // Noch einmal von Hand vergeben, solange die Antwort aussteht.
+      await db.fuehreAus(const SchlagwortAnheften(['a1'], 'strand'));
       halt.frei.complete();
       await lauf;
-      expect(
-        (await holeAufnahme(db, 'a1')).description,
-        'Mole',
-        reason: 'der neue Befehl ist noch nicht gesendet',
-      );
-      await a.sende();
-      await a.empfange();
-      expect((await holeAufnahme(db, 'a1')).description, 'Mole');
-      expect((await holeAufnahme(s, 'a1')).description, 'Mole');
+      expect(await schlagwoerter(db), [
+        'strand',
+      ], reason: 'der neue Befehl ist noch nicht gesendet');
     });
+  });
+
+  test('das Angleichen fragt nicht nach, was das Protokoll schon '
+      'brachte', () async {
+    final s = await serverDb();
+    final ids = [for (var i = 0; i < 40; i++) 'a$i'];
+    for (final id in ids) {
+      await aufnahme(s, id);
+    }
+    final weiche = _Weiche();
+    final (db, a) = await geraet('Telefon', weiche);
+    final nachgefragt = <Object?>[];
+    weiche.eingriff = (r, weiter) {
+      if (r.url.path.endsWith('/abgleich/zeilen') && r is http.Request) {
+        nachgefragt.addAll((jsonDecode(r.body) as Map)['schluessel'] as List);
+      }
+      return weiter();
+    };
+    await db.fuehreAus(BewertungSetzen(ids, 5));
+    await a.sende();
+    await a.empfange();
+    expect(nachgefragt, isEmpty);
+    expect(
+      (await db
+              .customSelect('SELECT count(*) AS n FROM pv_ausgang')
+              .getSingle())
+          .read<int>('n'),
+      0,
+    );
+    for (final d in [db, s]) {
+      expect((await d.assetsByIds(ids)).map((x) => x.rating).toSet(), {5});
+    }
+
+    // Was der Server ablehnt, nimmt das Angleichen weiter zurück.
+    await s.fuehreAus(AlbumAnlegen('al1', 'Sommer', DateTime(2026, 7, 1)));
+    await db.fuehreAus(AlbumAnlegen('al1', 'Winter', DateTime(2026, 1, 1)));
+    await a.sende();
+    expect(a.zustandJetzt.abgelehnt, isNotEmpty);
+    await a.empfange();
+    expect((await db.select(db.albums).getSingle()).name, 'Sommer');
   });
 
   group('Spuren nachreichen', () {
