@@ -53,7 +53,8 @@ Wohin es geht, steht nicht hier, sondern in
 „onnxruntime_quelle“ ist optional: der Ordner mit den Archiven der ONNX
 Runtime (#473), {version} wird ersetzt. Liegt er auf dem Gitea-Host, geht
 das Token mit. Die Archive werden hier geprüft und an die Bauten
-weitergereicht; ohne den Eintrag laden die Bauten selbst bei Microsoft.
+weitergereicht; ohne den Eintrag laden die Bauten selbst aus der Freigabe
+onnxruntime-<fassung> auf GitHub.
 
 Das Gitea-Token kommt aus dem Schlüsselbund (git credential-osxkeychain)
 und wird nirgends gespeichert oder ausgegeben.
@@ -355,7 +356,7 @@ def ort_pruefsummen(text):
 def ort_bereitstellen(z, a, commit):
     """Legt die Archive der ONNX Runtime für den Bau von [commit] geprüft in
     a/onnxruntime ab und gibt den Ordner zurück – None, wenn ziele.json keine
-    eigene Ablage nennt; dann laden die Bauten wie früher selbst (#473).
+    eigene Ablage nennt; dann laden die Bauten selbst aus der Vorgabe (#473).
 
     Die Ablage auf Gitea ist nicht öffentlich. Das Token aus dem
     Schlüsselbund geht deshalb nur hier auf dem Mac mit und nur an den

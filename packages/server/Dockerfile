@@ -66,12 +66,13 @@ RUN --mount=type=cache,id=pv-pub-${TARGETARCH},target=/root/.pub-cache \
 #   - liegt es im Kontext „ort-archiv“ (docker buildx build
 #     --build-context ort-archiv=<ordner>), von dort;
 #   - sonst aus ORT_QUELLE, einem Ordner mit den Archiven. Vorgabe ist die
-#     Freigabe von Microsoft, die seit 22.11.2026 nicht mehr erreichbar ist.
+#     eigene Freigabe onnxruntime-<fassung> auf GitHub; die von Microsoft
+#     ist seit 22.11.2026 nicht mehr erreichbar.
 FROM scratch AS ort-archiv
 
 FROM debian:${DEBIAN} AS ort
 ARG ORT_FASSUNG
-ARG ORT_QUELLE=https://github.com/microsoft/onnxruntime/releases/download/v${ORT_FASSUNG}
+ARG ORT_QUELLE=https://github.com/Dasevo-Digital/Photovault/releases/download/onnxruntime-${ORT_FASSUNG}
 ARG TARGETARCH
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \

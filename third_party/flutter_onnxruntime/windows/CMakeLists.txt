@@ -90,7 +90,9 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
 
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/runtime_download.cmake")
     # Pinned checksums: onnxruntime-pruefsummen.txt next to this plugin.
-    pv_runtime_fetch("https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}"
+    # Microsoft's releases (microsoft/onnxruntime) are gone since 22.11.2026;
+    # the default is Photo Vault's own release with the verified archives.
+    pv_runtime_fetch("https://github.com/Dasevo-Digital/Photovault/releases/download/onnxruntime-${ONNXRUNTIME_VERSION}"
       "${ONNXRUNTIME_ARCHIVE_NAME}" "${ONNXRUNTIME_ARCHIVE_SHA256}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.zip"
       "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}")
   endif()

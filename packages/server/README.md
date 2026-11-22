@@ -261,8 +261,9 @@ docker buildx build -f packages/server/Dockerfile \
   --platform linux/amd64,linux/arm64 -t photo-vault-server .
 ```
 
-Die ONNX Runtime lädt der Bau aus der Freigabe von Microsoft; die ist seit
-22.11.2026 nicht mehr erreichbar. Liegen die Archive
+Die ONNX Runtime lädt der Bau aus der eigenen Freigabe `onnxruntime-1.28.3`
+auf GitHub (die Freigaben von Microsoft sind seit 22.11.2026 nicht mehr
+erreichbar). Liegen die Archive
 (`onnxruntime-linux-x64-1.28.3.tgz`, `onnxruntime-linux-aarch64-1.28.3.tgz`)
 woanders, nimmt der Bau sie mit `--build-arg ORT_QUELLE=<adresse des
 ordners>` oder aus einem lokalen Ordner mit `--build-context
