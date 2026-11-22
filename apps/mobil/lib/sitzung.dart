@@ -88,14 +88,20 @@ class Sitzung extends ChangeNotifier {
 
   Fotokammerdienst? _fotokammer;
 
-  /// Einmal je Start: wie viele Fotos warten, und ob eine Erinnerung dran ist.
+  /// Einmal je Verbindung: wie viele Fotos warten, und ob eine Erinnerung
+  /// dran ist. [beende] setzt es zurück – nach dem Ummelden ist es eine
+  /// andere Kammer.
   var _kammerGeprueft = false;
   final kammerErinnerung = ValueNotifier<({int anzahl, int tage})?>(null);
 
   Future<void> _pruefeKammer() async {
+    final a = abgleich;
     final d = fotokammer;
-    if (d == null) return;
+    if (a == null || d == null) return;
     await d.aktualisiere();
+    // Inzwischen abgemeldet oder an einem anderen Server: Die Zahl gehört
+    // nicht mehr zu dieser Sitzung.
+    if (!identical(abgleich, a)) return;
     kammerErinnerung.value = d.faelligeErinnerung();
   }
 
@@ -742,6 +748,13 @@ class Sitzung extends ChangeNotifier {
     if (a == null) return;
     abgleich = null;
     kartenUeberServer = false;
+    // Fassung und Fotokammer gehören zum Server dieser Sitzung (#454):
+    // Nach dem Ummelden stand sonst die Fassung des alten auf der
+    // Kontoseite, und die Kammer des neuen wurde nie gezählt.
+    serverfassung = null;
+    _kammerGeprueft = false;
+    _fotokammer = null;
+    kammerErinnerung.value = null;
     _fassungGeholt = false;
     _fassungVersucht = null;
     // Die neue Sitzung wartet nicht auf die Abfrage der alten (#382).

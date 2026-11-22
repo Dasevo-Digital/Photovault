@@ -231,4 +231,30 @@ void main() {
     addTearDown(stand.schliesse);
     expect(stand.ort('halb', 'bild', 'summe'), isNull);
   });
+
+  test('nach dem Ummelden zählt die App die Fotokammer neu, und die '
+      'Fassung des alten Servers bleibt nicht stehen (#454)', () async {
+    await bis(
+      () async => sitzung.fotokammer?.anzahl.value != null,
+      'Fotokammer gezählt',
+    );
+    await sitzung.holeServerfassung();
+    expect(sitzung.serverfassung, isNotNull);
+
+    await sitzung.abmelden();
+    expect(sitzung.serverfassung, isNull);
+    expect(sitzung.fotokammer, isNull);
+    expect(sitzung.kammerErinnerung.value, isNull);
+
+    await sitzung.verbinde(
+      server: adresse,
+      konto: 'erika',
+      geraet: 'Telefon',
+      token: await anmelden('Telefon'),
+    );
+    await bis(
+      () async => sitzung.fotokammer?.anzahl.value != null,
+      'Fotokammer nach dem Ummelden gezählt',
+    );
+  });
 }
