@@ -1829,7 +1829,22 @@ class LibraryState extends ChangeNotifier {
   /// Knöpfe und Hinweise überhaupt zu sehen sind.
   Listenable get fortschritt => _fortschritt;
   final _fortschritt = ValueNotifier<int>(0);
-  bool get analyseLaeuft => _analyse != null;
+
+  /// Ob die Hintergrundanalyse läuft – ab dem Aufruf, nicht erst ab ihrem
+  /// ersten Stand (#433). Davor liegen die Kandidatenabfrage und das Laden
+  /// der Modelle, also Sekunden. Bis hierher hing alles am ersten Stand:
+  /// Ein zweiter Aufruf in dieser Zeit (ein kleiner Import gleich nach dem
+  /// Start) liess einen zweiten Durchgang neben dem ersten laufen, jede
+  /// Aufnahme wurde doppelt gerechnet, und schwere Aufgaben starteten
+  /// daneben.
+  bool get analyseLaeuft => _analyseInGang;
+  bool _analyseInGang = false;
+
+  /// Gesetzt, wenn während eines Durchgangs noch einer angefragt wurde: Er
+  /// folgt, sobald der laufende durch ist. Was der laufende in einer schon
+  /// abgefragten Stufe nicht mehr sah – die Fotos eines Imports, der eben
+  /// zu Ende ging –, kommt so trotzdem dran.
+  bool _analyseNochmal = false;
   bool _analyseAbbruch = false;
 
   /// Wie oft der Fortschritt einer Hintergrundstufe gemeldet wird.
@@ -1843,10 +1858,13 @@ class LibraryState extends ChangeNotifier {
   /// Arbeitet die Stufen der Hintergrundanalyse nacheinander ab (siehe
   /// [Analysestufe]) und meldet ihren Fortschritt.
   Future<void> starteHintergrundanalyse() async {
-    if (_analyse != null) return; // läuft bereits
     // Verbunden wertet der Server aus; die Ergebnisse kommen mit dem
     // Abgleich.
     if (verbunden) return;
+    if (_analyseInGang) {
+      _analyseNochmal = true;
+      return;
+    }
 
     // Nicht neben eine rechenintensive Aufgabe legen: Die Analyse arbeitet
     // genau deren Stufen ab – zwei Durchgänge gingen dann dieselbe Liste
@@ -1861,6 +1879,10 @@ class LibraryState extends ChangeNotifier {
     }
     _analyseZurueckgestellt = false;
     _analyseAbbruch = false;
+    // Vor dem ersten `await`: Ab hier gilt die Analyse als laufend.
+    _analyseInGang = true;
+    _analyseNochmal = false;
+    notifyListeners();
 
     const stufen = Analysestufe.values;
 
@@ -1912,12 +1934,16 @@ class LibraryState extends ChangeNotifier {
         }
       }
     } finally {
+      final nochmal = _analyseNochmal && !_analyseAbbruch;
       _analyse = null;
+      _analyseInGang = false;
+      _analyseNochmal = false;
       _analyseAbbruch = false;
       notifyListeners();
       // Schwere Aufgaben warten, solange die Analyse arbeitet – jetzt
       // dürfen sie.
       _versucheStarten();
+      if (nochmal && !_beendet) unawaited(starteHintergrundanalyse());
     }
   }
 
@@ -1940,7 +1966,7 @@ class LibraryState extends ChangeNotifier {
   /// Bricht nach der laufenden Datei ab – kein harter Abbruch mitten in
   /// einer Modell-Inferenz.
   void brichHintergrundanalyseAb() {
-    if (_analyse == null) return;
+    if (!_analyseInGang) return;
     _analyseAbbruch = true;
   }
 
