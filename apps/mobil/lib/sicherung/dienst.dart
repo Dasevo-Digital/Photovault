@@ -73,15 +73,17 @@ class Sicherungsdienst extends ChangeNotifier {
   /// Fotos dazukommen. Ohne Sicherung oder Zugriff: nichts.
   ///
   /// Gezählt wird, was ein Lauf sichern würde: bei gewählten Alben nur
-  /// deren Fotos. Sonst stand neben „Jetzt sichern“ die ganze Mediathek
-  /// als „nur auf dem Telefon“, und der Knopf lud sie nie hoch.
+  /// deren Fotos, bei ausgeschaltetem „Videos sichern“ keine Videos. Sonst
+  /// stand neben „Jetzt sichern“ die ganze Mediathek als „nur auf dem
+  /// Telefon“, und der Knopf lud sie nie hoch und sagte trotzdem „Alles
+  /// ist gesichert.“ (#437).
   Future<void> zaehleUngesicherte() async {
-    if (!einstellungen.an ||
-        (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise)) {
+    final e = einstellungen;
+    if (!e.an || (zugriff != Zugriff.erlaubt && zugriff != Zugriff.teilweise)) {
       ungesichert = const [];
     } else {
       try {
-        final alle = await _rolle(einstellungen.alben).eintraege(videos: true);
+        final alle = await _rolle(e.alben).eintraege(videos: e.videos);
         ungesichert = nochNichtGesichert(alle, _stand.bekannt().erledigt);
         await _stapleSerien(alle);
       } on MissingPluginException {
@@ -227,12 +229,15 @@ class Sicherungsdienst extends ChangeNotifier {
   }
 
   Future<void> setze(Sicherungseinstellungen e) async {
-    final andereAlben = !listEquals(e.alben, _stand.einstellungen.alben);
+    final vorher = _stand.einstellungen;
+    final andereAuswahl =
+        !listEquals(e.alben, vorher.alben) || e.videos != vorher.videos;
     _stand.einstellungen = e;
     await _plane(e);
     notifyListeners();
-    // Was „nur auf dem Telefon“ zählt, hängt an den gewählten Alben.
-    if (andereAlben && e.an) unawaited(zaehleUngesicherte());
+    // Was „nur auf dem Telefon“ zählt, hängt an den gewählten Alben und
+    // daran, ob Videos mitgehen.
+    if (andereAuswahl && e.an) unawaited(zaehleUngesicherte());
   }
 
   /// Ob neue Fotos auch ohne offene App gleich zum Server gehen (#308).

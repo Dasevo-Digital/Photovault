@@ -24,18 +24,22 @@ Widget _app(Widget home) => MaterialApp(
 
 /// Eine Kamerarolle mit festen Einträgen, ohne Dateien.
 class _Rolle implements Kamerarolle {
-  _Rolle(this.ids);
+  _Rolle(this.ids, {this.videos = const []});
 
   final List<String> ids;
 
+  /// Kennungen von Videos; ohne `videos: true` liefert die Rolle sie nicht,
+  /// wie `PhotoManagerRolle`.
+  final List<String> videos;
+
   @override
   Future<List<Rolleneintrag>> eintraege({required bool videos}) async => [
-    for (final id in ids)
+    for (final id in [...ids, if (videos) ...this.videos])
       Rolleneintrag(
         id: id,
         geaendert: DateTime(2026, 6, 1),
         aufgenommen: DateTime(2026, 6, 1, 12),
-        video: false,
+        video: this.videos.contains(id),
         dateien: () async => null,
       ),
   ];
@@ -170,5 +174,21 @@ void main() {
       expect(punkt().enabled, isFalse);
       expect(find.text(t.sicherungFreigebenGesperrt), findsOneWidget);
     }
+  });
+
+  test('#437 „Videos sichern“ aus: Videos zählen nicht als „nur auf dem '
+      'Telefon“, und eingeschaltet gleich wieder', () async {
+    final rolle = _Rolle(['f1', 'f2'], videos: ['v1']);
+    final d = _dienst(
+      const Sicherungseinstellungen(an: true, videos: false),
+      rolle: (_) => rolle,
+    )..zugriff = Zugriff.erlaubt;
+    await d.zaehleUngesicherte();
+    expect([for (final l in d.ungesichert!) l.id], ['f1', 'f2']);
+
+    await d.setze(d.einstellungen.mit(videos: true));
+    // Die neue Zählung läuft ohne Warten auf sie an.
+    await pumpEventQueue();
+    expect([for (final l in d.ungesichert!) l.id], ['f1', 'f2', 'v1']);
   });
 }
