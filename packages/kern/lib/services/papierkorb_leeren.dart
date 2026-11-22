@@ -1,5 +1,7 @@
-import 'package:drift/drift.dart';
+import 'dart:convert';
 import 'dart:io';
+
+import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../db/database.dart';
@@ -141,9 +143,16 @@ Future<List<String>> leerePapierkorb(
 }
 
 /// Welche von [pfade] eine bleibende Aufnahme noch braucht.
+///
+/// **Ein Durchlauf für alle.** Die Pfadspalten haben keinen Index, also
+/// liest jede Abfrage die ganze Tabelle. Früher ging das je 500 Pfade
+/// einmal: 5.000 Aufnahmen aus dem Papierkorb sind rund 30.000 Pfade,
+/// also 60 volle Durchläufe – am Server innerhalb der Schreibtransaktion
+/// von [leerePapierkorb], auf jedem Gerät bei jeder Protokollseite mit
+/// gelöschten Aufnahmen. Jetzt stehen alle Pfade als eine JSON-Liste in
+/// einer einzigen Abfrage.
 Future<Set<String>> _nochGebraucht(AppDatabase db, Set<String> pfade) async {
-  final gebraucht = <String>{};
-  final liste = pfade.toList();
+  if (pfade.isEmpty) return {};
   const spalten = [
     'relative_path',
     'thumbnail_relative_path',
@@ -152,28 +161,19 @@ Future<Set<String>> _nochGebraucht(AppDatabase db, Set<String> pfade) async {
     'restored_relative_path',
     'trimmed_relative_path',
   ];
-  for (var i = 0; i < liste.length; i += 500) {
-    final teil = liste.sublist(
-      i,
-      i + 500 > liste.length ? liste.length : i + 500,
-    );
-    final platz = List.filled(teil.length, '?').join(', ');
-    for (final z
-        in await db
-            .customSelect(
-              'SELECT ${spalten.join(', ')} FROM assets WHERE '
-              '${spalten.map((s) => '$s IN ($platz)').join(' OR ')}',
-              variables: [
-                for (var j = 0; j < spalten.length; j++)
-                  for (final t in teil) Variable<String>(t),
-              ],
-              readsFrom: {db.assets},
-            )
-            .get()) {
-      for (final s in spalten) {
-        final w = z.readNullable<String>(s);
-        if (w != null) gebraucht.add(w);
-      }
+  final gebraucht = <String>{};
+  for (final z
+      in await db
+          .customSelect(
+            'SELECT ${spalten.join(', ')} FROM assets WHERE '
+            '${spalten.map((s) => '$s IN (SELECT value FROM json_each(?1))').join(' OR ')}',
+            variables: [Variable<String>(jsonEncode(pfade.toList()))],
+            readsFrom: {db.assets},
+          )
+          .get()) {
+    for (final s in spalten) {
+      final w = z.readNullable<String>(s);
+      if (w != null) gebraucht.add(w);
     }
   }
   return gebraucht..retainAll(pfade);
