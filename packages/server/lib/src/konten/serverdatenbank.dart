@@ -357,18 +357,31 @@ class Serverdatenbank {
     if (stand < 13) {
       // Falsche Passwörter je Freigabe (#426), wie bei den Konten: Nach
       // fünf in Folge ist der Link eine Weile gesperrt, gleich von welcher
-      // Adresse geraten wird.
-      final spalten = {
-        for (final z in db.select('PRAGMA table_info(freigaben)'))
-          z['name'] as String,
-      };
-      db.execute('''
-        BEGIN;
-        ${spalten.contains('fehlversuche') ? '' : 'ALTER TABLE freigaben ADD COLUMN fehlversuche INTEGER NOT NULL DEFAULT 0;'}
-        ${spalten.contains('gesperrt_bis') ? '' : 'ALTER TABLE freigaben ADD COLUMN gesperrt_bis INTEGER;'}
-        PRAGMA user_version = 13;
-        COMMIT;
-      ''');
+      // Adresse geraten wird. Nur, was fehlt – wie Schritt 12.
+      final spalten = db
+          .select('PRAGMA table_info(freigaben)')
+          .map((r) => r['name'])
+          .toSet();
+      db.execute('BEGIN');
+      try {
+        if (spalten.isNotEmpty) {
+          for (final feld in const {
+            'fehlversuche': 'INTEGER NOT NULL DEFAULT 0',
+            'gesperrt_bis': 'INTEGER',
+          }.entries) {
+            if (!spalten.contains(feld.key)) {
+              db.execute(
+                'ALTER TABLE freigaben ADD COLUMN ${feld.key} ${feld.value}',
+              );
+            }
+          }
+        }
+        db.execute('PRAGMA user_version = 13');
+        db.execute('COMMIT');
+      } on Object {
+        db.execute('ROLLBACK');
+        rethrow;
+      }
     }
   }
 

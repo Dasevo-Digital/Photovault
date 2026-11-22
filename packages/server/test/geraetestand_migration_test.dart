@@ -41,7 +41,10 @@ void main() {
       alt.close();
       final neu = Serverdatenbank.oeffne(file);
       addTearDown(neu.db.close);
-      expect(neu.db.select('PRAGMA user_version').single.values.single, 12);
+      expect(
+        neu.db.select('PRAGMA user_version').single.values.single,
+        Serverdatenbank.schema,
+      );
       expect(
         neu.db
             .select('SELECT * FROM konten')
@@ -66,4 +69,31 @@ void main() {
       );
     },
   );
+
+  // #426: Falsche Passwörter werden je Freigabe gezählt.
+  test('12 auf 13: Freigaben bekommen einen Zähler, bleiben sonst gleich', () {
+    final temp = Directory.systemTemp.createTempSync('pv_freigabe_schema_');
+    addTearDown(() => temp.deleteSync(recursive: true));
+    final file = File('${temp.path}/server.sqlite');
+    Serverdatenbank.oeffne(file).db.close();
+    final alt = sqlite3.open(file.path);
+    alt.execute(
+      "INSERT INTO konten(id,name,passwort,angelegt) VALUES ('konto','probe','hash',0)",
+    );
+    alt.execute(
+      'INSERT INTO freigaben(id,konto,pruefwert,link,geheimnis,titel,angelegt) '
+      "VALUES ('f','konto','p','l','g','Feier',0)",
+    );
+    alt.execute('ALTER TABLE freigaben DROP COLUMN fehlversuche');
+    alt.execute('ALTER TABLE freigaben DROP COLUMN gesperrt_bis');
+    alt.execute('PRAGMA user_version=12');
+    alt.close();
+    final neu = Serverdatenbank.oeffne(file);
+    addTearDown(neu.db.close);
+    expect(neu.db.select('PRAGMA user_version').single.values.single, 13);
+    final f = neu.db.select('SELECT * FROM freigaben').single;
+    expect(f['titel'], 'Feier');
+    expect(f['fehlversuche'], 0);
+    expect(f['gesperrt_bis'], isNull);
+  });
 }
