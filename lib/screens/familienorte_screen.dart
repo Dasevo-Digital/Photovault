@@ -62,6 +62,41 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
   /// vorher ohne Steuerung aus, weil sie sich nur ums Zeichnen kümmerte.
   final _steuerung = MapController();
 
+  /// Die Orte, nach dem Vollbild nachgeführt: Ein dort gelöschtes oder
+  /// gesperrtes Foto stand sonst weiter auf der Karte (siehe
+  /// FamilienfotosScreen).
+  late List<Familienort> _orte = widget.orte;
+
+  @override
+  void didUpdateWidget(covariant FamilienorteScreen alt) {
+    super.didUpdateWidget(alt);
+    if (!identical(alt.orte, widget.orte)) _orte = widget.orte;
+  }
+
+  @override
+  void dispose() {
+    _steuerung.dispose();
+    super.dispose();
+  }
+
+  Future<void> _auffrischen() async {
+    final db = widget.library.db;
+    final vorher = _orte;
+    final frisch = {
+      for (final a in await db.assetsByIds(
+        await db.nochSuchbar([for (final o in vorher) o.asset.id]),
+      ))
+        a.id: a,
+    };
+    if (!mounted || !identical(vorher, _orte)) return;
+    setState(() {
+      _orte = [
+        for (final o in vorher)
+          if (frisch[o.asset.id] case final a?) (asset: a, gruppe: o.gruppe),
+      ];
+    });
+  }
+
   /// Welche Gruppen gerade gezeigt werden. Anfangs alle – die Karte soll
   /// zuerst zeigen, was da ist, und sich erst auf Wunsch verengen.
   final Set<Ortsgruppe> _sichtbar = {...Ortsgruppe.values};
@@ -113,9 +148,9 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
     return ll.LatLng(lat / anzahl, lng / anzahl);
   }
 
-  void _oeffne(List<AssetData> gruppe) {
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
+  Future<void> _oeffne(List<AssetData> gruppe) async {
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<void>(
         builder: (_) => AssetViewerScreen(
           assets: gruppe,
           initialIndex: 0,
@@ -133,14 +168,13 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
         ),
       ),
     );
+    await _auffrischen();
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppTexte.of(context);
-    final gezeigt = widget.orte
-        .where((o) => _sichtbar.contains(o.gruppe))
-        .toList();
+    final gezeigt = _orte.where((o) => _sichtbar.contains(o.gruppe)).toList();
     // Leer ist die Karte erst, wenn weder Fotos noch Ereignisse darauf
     // liegen: Eine Familie kann verortete Ereignisse haben, ohne ein
     // einziges verortetes Foto (PER-184).
@@ -165,7 +199,7 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
   /// Die Legende ist zugleich der Filter – eine Farberklärung, die man
   /// nur lesen kann, wäre eine verschenkte Fläche.
   Widget _legende(BuildContext context, AppTexte t) {
-    final vorhanden = {for (final o in widget.orte) o.gruppe};
+    final vorhanden = {for (final o in _orte) o.gruppe};
     return Padding(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -186,7 +220,7 @@ class _FamilienorteScreenState extends State<FamilienorteScreen> {
                   radius: 7,
                 ),
                 label: Text(
-                  '${_name(t, g)} (${widget.orte.where((o) => o.gruppe == g).length})',
+                  '${_name(t, g)} (${_orte.where((o) => o.gruppe == g).length})',
                 ),
               ),
           if (widget.ereignisse.isNotEmpty)
