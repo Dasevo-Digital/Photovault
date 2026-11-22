@@ -125,13 +125,20 @@ class Protokoll {
       String eintrag(String zeile) =>
           'INSERT INTO pv_aenderungen (tabelle, schluessel, ausgang) '
           "VALUES ('$tabelle', ${schluessel(zeile)}, $ausgang);";
+      // Der alte Schlüssel nur, wenn er sich ändert: Sonst stand jede
+      // Änderung doppelt im Protokoll, bis `verdichte` beim nächsten Start
+      // aufräumte, und eine Seite mit 500 Einträgen trug nur 250 Zeilen.
+      final alterSchluessel =
+          'INSERT INTO pv_aenderungen (tabelle, schluessel, ausgang) '
+          "SELECT '$tabelle', ${schluessel('OLD')}, $ausgang "
+          'WHERE ${schluessel('OLD')} IS NOT ${schluessel('NEW')};';
       await db.customStatement(
         'CREATE TRIGGER "pv_aenderung_${tabelle}_i" AFTER INSERT ON "$tabelle" '
         '$wenn BEGIN ${eintrag('NEW')} END',
       );
       await db.customStatement(
         'CREATE TRIGGER "pv_aenderung_${tabelle}_u" AFTER UPDATE ON "$tabelle" '
-        '$wenn BEGIN ${eintrag('OLD')} ${eintrag('NEW')} END',
+        '$wenn BEGIN $alterSchluessel ${eintrag('NEW')} END',
       );
       await db.customStatement(
         'CREATE TRIGGER "pv_aenderung_${tabelle}_d" AFTER DELETE ON "$tabelle" '
@@ -283,11 +290,12 @@ class Protokoll {
         ));
       }
     }
-    final zeilen = <Zeilenstand>[];
-    for (final (tabelle, s) in schluessel.reversed) {
-      if (!Abgleichsplan.abgeglichen(tabelle)) continue;
-      zeilen.add(await lies(tabelle, (jsonDecode(s) as List).cast<Object?>()));
-    }
+    // Gebündelt gelesen: Einzeln waren es bis zu 500 Abfragen je Seite.
+    final zeilen = await liesViele([
+      for (final (tabelle, s) in schluessel.reversed)
+        if (Abgleichsplan.abgeglichen(tabelle))
+          (tabelle, (jsonDecode(s) as List).cast<Object?>()),
+    ]);
     return (bis: bis, zeilen: zeilen, mehr: mehr);
   }
 

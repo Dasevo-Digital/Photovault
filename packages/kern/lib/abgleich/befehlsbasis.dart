@@ -341,6 +341,13 @@ class Befehlsbasis {
   }
 
   /// Auf dem Server innerhalb derselben Transaktion wie das Anwenden.
+  ///
+  /// Die Zeilen werden gebündelt gelesen ([Protokoll.liesViele]) –
+  /// einzeln waren es bei einem Massenbefehl zehntausende Abfragen in der
+  /// Schreibtransaktion. Was der Bündel nicht findet, liest [Protokoll.lies]
+  /// noch einmal einzeln nach: Der Bündel ordnet nach dem Schlüssel, wie er
+  /// in der Zeile steht, und ein Schlüssel vom Gerät, der nur in SQLite
+  /// gleich ist (5.0 für 5), gälte dort sonst als fehlende Zeile.
   static Future<bool> passt(Protokoll p, List<Befehlsbasis> basis) async {
     if (basis.isEmpty) return true;
     final tabellen = (await p.abgeglicheneTabellen()).toSet();
@@ -350,7 +357,6 @@ class Befehlsbasis {
           b.schluessel.length != await p.schluessellaenge(b.tabelle)) {
         throw const FormatException('pv_sync_basis');
       }
-      final row = await p.lies(b.tabelle, b.schluessel);
       // Auch bei gelöschten Zeilen gegen das Schema validieren.
       final spalten = schemaSpalten[b.tabelle] ??=
           Abgleichsplan.geteilteSpalten[b.tabelle] ??
@@ -364,6 +370,15 @@ class Befehlsbasis {
       if (b.spalten.any((s) => !spalten.contains(s))) {
         throw const FormatException('pv_sync_basis');
       }
+    }
+    final zeilen = await p.liesViele([
+      for (final b in basis) (b.tabelle, b.schluessel),
+    ]);
+    for (var i = 0; i < basis.length; i++) {
+      final b = basis[i];
+      final row = zeilen[i].werte == null
+          ? await p.lies(b.tabelle, b.schluessel)
+          : zeilen[i];
       final ist = hash(row.werte, b.spalten);
       if (ist != b.vorher && ist != b.nachher) return false;
     }
