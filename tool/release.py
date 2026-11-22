@@ -46,8 +46,14 @@ Wohin es geht, steht nicht hier, sondern in
       "windows_flutter": "C:\\\\src\\\\flutter\\\\bin",
       "server_ssh": "root@<adresse>",
       "server_schluessel": "<pfad zum Schlüssel>",
-      "server_known_hosts": "<pfad>"
+      "server_known_hosts": "<pfad>",
+      "onnxruntime_quelle": "https://<gitea>/api/packages/<besitzer>/generic/onnxruntime/{version}"
     }
+
+„onnxruntime_quelle“ ist optional: der Ordner mit den Archiven der ONNX
+Runtime (#473), {version} wird ersetzt. Liegt er auf dem Gitea-Host, geht
+das Token mit. Die Archive werden hier geprüft und an die Bauten
+weitergereicht; ohne den Eintrag laden die Bauten selbst bei Microsoft.
 
 Das Gitea-Token kommt aus dem Schlüsselbund (git credential-osxkeychain)
 und wird nirgends gespeichert oder ausgegeben.
@@ -276,8 +282,11 @@ def vorbereiten(args):
 WINDOWS_BAU = r'''$ErrorActionPreference = 'Stop'
 $repo = Join-Path $env:LOCALAPPDATA 'PhotoVaultBuilds/{kennung}'
 $bundle = Join-Path $env:TEMP '{kennung}.bundle'
+$ort = Join-Path $env:TEMP '{kennung}-ort'
 if (Test-Path -LiteralPath $repo) {{ throw 'Isolierter Bauordner ist schon belegt' }}
 $env:Path = '{flutter};' + $env:Path
+# Geprüfte Archive der ONNX Runtime vom Mac (#473), sonst lädt CMake selbst.
+if (Test-Path -LiteralPath $ort) {{ $env:PV_ONNXRUNTIME_QUELLE = ([Uri]$ort).AbsoluteUri }}
 try {{
   git clone --no-checkout -- $bundle $repo
   if ($LASTEXITCODE -ne 0) {{ throw 'clone' }}
@@ -292,6 +301,7 @@ try {{
   Set-Location $env:USERPROFILE
   if (Test-Path -LiteralPath $repo) {{ Remove-Item -LiteralPath $repo -Recurse -Force }}
   if (Test-Path -LiteralPath $bundle) {{ Remove-Item -LiteralPath $bundle -Force }}
+  if (Test-Path -LiteralPath $ort) {{ Remove-Item -LiteralPath $ort -Recurse -Force }}
 }}
 'BAU-ENDE 0'
 '''
@@ -313,15 +323,84 @@ def isolierter_baum(basis, commit):
         shutil.rmtree(ziel)
 
 
-def linux_bau(kennung, commit):
-    inner = 'trap \'cd /; rm -rf -- "$1"; rm -f -- "$2"\' EXIT; bash tool/flatpak_bauen.sh --pruefen --buendel && echo BAU-ENDE-0'
+def linux_bau(kennung, commit, ort=False):
+    """[ort]: Die geprüften Archive der ONNX Runtime liegen schon unter
+    /tmp/<kennung>-ort (siehe ort_bereitstellen)."""
+    ordner = f'/tmp/{kennung}-ort'
+    inner = 'trap \'cd /; rm -rf -- "$1" "$3"; rm -f -- "$2"\' EXIT; bash tool/flatpak_bauen.sh --pruefen --buendel && echo BAU-ENDE-0'
+    quelle = f'export PV_ONNXRUNTIME_QUELLE={shlex.quote("file://" + ordner)}; ' if ort else ''
     return (f'set -eu; work=$(mktemp -d "$HOME/{kennung}.XXXXXX"); '
             f'bundle=/tmp/{kennung}.bundle; '
             'git clone --quiet --no-checkout -- "$bundle" "$work"; '
             'cd "$work"; '
             f'git checkout --quiet --detach {shlex.quote(commit)}; '
             'export PATH="$HOME/flutter/bin:$HOME/snap/flutter/common/flutter/bin:$PATH"; '
-            f'nohup bash -c {shlex.quote(inner)} pv "$work" "$bundle" > "$HOME/pv_bau_{kennung}.log" 2>&1 &')
+            + quelle +
+            f'nohup bash -c {shlex.quote(inner)} pv "$work" "$bundle" {shlex.quote(ordner)} > "$HOME/pv_bau_{kennung}.log" 2>&1 &')
+
+
+ORT_SUMMEN = 'third_party/flutter_onnxruntime/onnxruntime-pruefsummen.txt'
+
+
+def ort_pruefsummen(text):
+    """Name → erlaubte Summen aus onnxruntime-pruefsummen.txt."""
+    summen = {}
+    for zeile in text.splitlines():
+        m = re.match(r'([0-9a-f]{64})  (\S+)\s*$', zeile)
+        if m:
+            summen.setdefault(m.group(2), set()).add(m.group(1))
+    return summen
+
+
+def ort_bereitstellen(z, a, commit):
+    """Legt die Archive der ONNX Runtime für den Bau von [commit] geprüft in
+    a/onnxruntime ab und gibt den Ordner zurück – None, wenn ziele.json keine
+    eigene Ablage nennt; dann laden die Bauten wie früher selbst (#473).
+
+    Die Ablage auf Gitea ist nicht öffentlich. Das Token aus dem
+    Schlüsselbund geht deshalb nur hier auf dem Mac mit und nur an den
+    Gitea-Host; die Bau-Rechner bekommen die geprüften Dateien. Geprüft wird
+    gegen die Summen des Commits, die auch CMake und das Dockerfile lesen."""
+    quelle = z.get('onnxruntime_quelle')
+    if not quelle:
+        return None
+    r = subprocess.run(['git', 'show', f'{commit}:{ORT_SUMMEN}'], cwd=REPO, text=True, capture_output=True)
+    if r.returncode != 0:
+        print(f'› {ORT_SUMMEN} fehlt in {commit[:10]} – die Bauten laden die ONNX Runtime selbst', flush=True)
+        return None
+    summen = ort_pruefsummen(r.stdout)
+    ordner = a / 'onnxruntime'
+    ordner.mkdir(parents=True, exist_ok=True)
+    gitea_host = urllib.parse.urlparse(z.get('gitea_api', '')).hostname
+    tok = None
+    try:
+        for name, erlaubt in sorted(summen.items()):
+            ziel = ordner / name
+            if ziel.is_file() and _sha256(ziel) in erlaubt:
+                continue
+            m = re.search(r'-(\d+\.\d+\.\d+)\.(?:tgz|zip)$', name)
+            url = quelle.replace('{version}', m.group(1) if m else '').rstrip('/') + '/' + name
+            kopf = {}
+            if gitea_host and urllib.parse.urlparse(url).hostname == gitea_host:
+                tok = tok or token(z)
+                kopf['Authorization'] = 'token ' + tok
+            teil = ordner / (name + '.teil')
+            try:
+                with urllib.request.urlopen(urllib.request.Request(url, headers=kopf), timeout=600) as antwort, \
+                        open(teil, 'wb') as f:
+                    shutil.copyfileobj(antwort, f)
+            except (urllib.error.URLError, OSError) as e:
+                teil.unlink(missing_ok=True)
+                sys.exit(f'ONNX Runtime {name} nicht geladen: {e}')
+            summe = _sha256(teil)
+            if summe not in erlaubt:
+                teil.unlink()
+                sys.exit(f'ONNX Runtime {name}: Prüfsumme {summe} steht nicht in {ORT_SUMMEN}.')
+            teil.replace(ziel)
+    finally:
+        tok = None
+    print(f'› ONNX Runtime geprüft bereit: {", ".join(sorted(summen))}', flush=True)
+    return ordner
 
 
 def bauen(args):
@@ -354,12 +433,16 @@ def bauen(args):
     except (OSError,ValueError,AttributeError):
         pass
 
+    ort = ort_bereitstellen(z, a, commit) if {'linux', 'windows', 'server'} & nur else None
+
     # Linux und Windows laufen im Hintergrund, während hier macOS baut.
     windows = None
     if 'linux' in nur:
         b = buendel(a, 'linux', marke, None)
         lauf(['scp', '-q', str(b), f'{z["linux_ssh"]}:/tmp/{kennung}.bundle'])
-        lauf(['ssh', z['linux_ssh'], linux_bau(kennung, commit)])
+        if ort:
+            lauf(['scp', '-q', '-r', str(ort), f'{z["linux_ssh"]}:/tmp/{kennung}-ort'])
+        lauf(['ssh', z['linux_ssh'], linux_bau(kennung, commit, ort is not None)])
 
     if 'windows' in nur:
         ps1 = a / 'windows_bau.ps1'
@@ -367,6 +450,8 @@ def bauen(args):
         b = buendel(a, 'windows', marke, None)
         lauf(['scp', '-q', str(b), f'{z["windows_ssh"]}:AppData/Local/Temp/{kennung}.bundle'])
         lauf(['scp', '-q', str(ps1), f'{z["windows_ssh"]}:{kennung}.ps1'])
+        if ort:
+            lauf(['scp', '-q', '-r', str(ort), f'{z["windows_ssh"]}:AppData/Local/Temp/{kennung}-ort'])
         windows_log = open(a / 'windows_bau.log', 'w')
         windows = subprocess.Popen(['ssh', z['windows_ssh'], f'powershell -NoProfile -ExecutionPolicy Bypass -File {kennung}.ps1'],
                                    stdout=windows_log, stderr=subprocess.STDOUT)
@@ -386,7 +471,7 @@ def bauen(args):
     if 'server' in nur:
         try:
             with isolierter_baum(a, commit):
-                _baue_server(fassung, marke, a, u)
+                _baue_server(fassung, marke, a, u, ort)
                 gebaut.add('server')
         except SystemExit as e:
             fehler.append(f'Server: {e}')
@@ -607,14 +692,16 @@ def _halte_vor(images, plattformen, versuche=3, pause=30):
                 print(f'› {image} ({plattform}) nicht geholt – der Bau fragt selbst nach', flush=True)
 
 
-def _baue_server(fassung, marke, a, u):
+def _baue_server(fassung, marke, a, u, ort=None):
     commit = lauf(['git', 'rev-parse', '--short', f'{marke}^{{commit}}'], ausgabe=True).strip()
     _halte_vor(basis_images(REPO / 'packages/server/Dockerfile'), ['linux/amd64', 'linux/arm64'])
+    # Geprüfte Archive der ONNX Runtime als Kontext „ort-archiv“ (#473).
+    kontext = ['--build-context', f'ort-archiv={ort}'] if ort else []
     for ziel, plattform in [('paket', 'linux/amd64,linux/arm64'), ('paket-openvino', 'linux/amd64')]:
         # Das Basis-Image fragt BuildKit bei jedem Bau bei Docker Hub nach.
         lauf(['docker', 'buildx', 'build', '-f', 'packages/server/Dockerfile', '--target', ziel,
               '--platform', plattform, '--build-arg', f'PV_FASSUNG={fassung}', '--build-arg', f'PV_COMMIT={commit}',
-              '--output', f'type=local,dest={a / ziel}', '.'], versuche=4, pause=120)
+              *kontext, '--output', f'type=local,dest={a / ziel}', '.'], versuche=4, pause=120)
     for arch in ['amd64', 'arm64']:
         lauf(['cp', str(a / 'paket' / f'linux_{arch}' / f'photo-vault-server-linux-{arch}.tar.gz'),
               str(u / f'PhotoVault-Server-{fassung}-linux-{arch}.tar.gz')])

@@ -73,12 +73,9 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     set(ONNXRUNTIME_ARCH "x86")
   endif()
 
-  # Set download URL with correct naming pattern for Windows
-  set(ONNXRUNTIME_URL
-      "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}.zip"
-  )
-
-  message(STATUS "Downloading ONNX Runtime from: ${ONNXRUNTIME_URL}")
+  # Archive name of the release; the source can be replaced through the
+  # environment variable PV_ONNXRUNTIME_QUELLE (see cmake/runtime_download.cmake).
+  set(ONNXRUNTIME_ARCHIVE_NAME "onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}.zip")
 
   # Create a directory for the downloaded library
   set(ONNXRUNTIME_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/onnxruntime")
@@ -92,9 +89,10 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     file(MAKE_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
 
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/runtime_download.cmake")
-    set(runtime_sha "${ONNXRUNTIME_ARCHIVE_SHA256}")
-    pv_runtime_download("${ONNXRUNTIME_URL}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.zip"
-      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}" "${runtime_sha}")
+    # Pinned checksums: onnxruntime-pruefsummen.txt next to this plugin.
+    pv_runtime_fetch("https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}"
+      "${ONNXRUNTIME_ARCHIVE_NAME}" "${ONNXRUNTIME_ARCHIVE_SHA256}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.zip"
+      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-win-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}")
   endif()
 
   # Set paths to the extracted files

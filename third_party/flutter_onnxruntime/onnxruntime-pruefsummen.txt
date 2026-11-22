@@ -1,0 +1,18 @@
+# Feste Prüfsummen der ONNX-Runtime-Archive, die Linux, Windows und das
+# Server-Image laden (Format von sha256sum: Summe, zwei Leerzeichen, Name).
+# Gelesen von cmake/runtime_download.cmake, packages/server/Dockerfile und
+# tool/release.py. Ein Archiv gilt nur, wenn seine Summe hier steht – egal,
+# ob es von Microsoft oder aus einer eigenen Ablage (PV_ONNXRUNTIME_QUELLE,
+# ORT_QUELLE) kommt. Mehrere Zeilen je Name sind erlaubt.
+#
+# Je Archiv zuerst das Original von Microsoft, dann die eigene Ablage. Die
+# Originale sind seit 22.11.2026 nicht mehr bei GitHub erreichbar. Die
+# eigenen Archive sind aus früher gegen diese Summen geprüften Kopien neu
+# gepackt; Bibliotheken und Header sind unverändert, dazu kommt
+# PHOTOVAULT-HERKUNFT.txt. Windows hatte vorher keine feste Summe, dort
+# steht nur die eigene Ablage (onnxruntime.dll bitgleich mit Paket 3.67.13).
+db14e4863bd37893fc59729d986ab2a0d043d10b7d44da1913c4982b7e3d009c  onnxruntime-linux-x64-1.28.3.tgz
+b78057ef54e513cbc33e5b006caea93f687fb61cc052b401b43cd427d842cbed  onnxruntime-linux-x64-1.28.3.tgz
+6c6b1ae96d7b0be9f555092857c6a4f2b0b5587a5298d732d9e52e8253038ce7  onnxruntime-linux-aarch64-1.28.3.tgz
+677dcb0aa32fdb07b61208853ed08fe8f558d89d846e1fd3833eb8068efc3d24  onnxruntime-linux-aarch64-1.28.3.tgz
+c2f2c5f1b53c40970eb578b38819f5c242011f979b418967928e4c7be7050171  onnxruntime-win-x64-1.28.3.zip

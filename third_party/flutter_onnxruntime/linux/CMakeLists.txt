@@ -102,13 +102,10 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
   endif()
 
-  # Set download URL with the release asset naming pattern
+  # Archive name of the release; the source can be replaced through the
+  # environment variable PV_ONNXRUNTIME_QUELLE (see cmake/runtime_download.cmake).
   message(STATUS "Using ONNX Runtime version: ${ONNXRUNTIME_VERSION}")
-  set(ONNXRUNTIME_URL
-      "https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}/onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}.tgz"
-  )
-
-  message(STATUS "Downloading ONNX Runtime from: ${ONNXRUNTIME_URL}")
+  set(ONNXRUNTIME_ARCHIVE_NAME "onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}.tgz")
 
   # Create a directory for the downloaded library
   set(ONNXRUNTIME_DOWNLOAD_DIR "${CMAKE_CURRENT_BINARY_DIR}/onnxruntime")
@@ -122,16 +119,10 @@ if(NOT USE_SYSTEM_ONNXRUNTIME)
     file(MAKE_DIRECTORY ${ONNXRUNTIME_DOWNLOAD_DIR})
 
     include("${CMAKE_CURRENT_LIST_DIR}/../cmake/runtime_download.cmake")
-    set(runtime_sha "${ONNXRUNTIME_ARCHIVE_SHA256}")
-    if(ONNXRUNTIME_VERSION STREQUAL "1.28.3" AND "${runtime_sha}" STREQUAL "")
-      if(ONNXRUNTIME_ARCH STREQUAL "x64")
-        set(runtime_sha "db14e4863bd37893fc59729d986ab2a0d043d10b7d44da1913c4982b7e3d009c")
-      elseif(ONNXRUNTIME_ARCH STREQUAL "aarch64")
-        set(runtime_sha "6c6b1ae96d7b0be9f555092857c6a4f2b0b5587a5298d732d9e52e8253038ce7")
-      endif()
-    endif()
-    pv_runtime_download("${ONNXRUNTIME_URL}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.tgz"
-      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}" "${runtime_sha}")
+    # Pinned checksums: onnxruntime-pruefsummen.txt next to this plugin.
+    pv_runtime_fetch("https://github.com/microsoft/onnxruntime/releases/download/v${ONNXRUNTIME_VERSION}"
+      "${ONNXRUNTIME_ARCHIVE_NAME}" "${ONNXRUNTIME_ARCHIVE_SHA256}" "${ONNXRUNTIME_DOWNLOAD_DIR}/runtime.tgz"
+      "${ONNXRUNTIME_DOWNLOAD_DIR}/onnxruntime-linux-${ONNXRUNTIME_ARCH}-${ONNXRUNTIME_VERSION}")
   endif()
 
   # Set paths to the extracted files

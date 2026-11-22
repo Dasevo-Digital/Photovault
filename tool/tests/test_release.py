@@ -651,3 +651,94 @@ class Arbeitsordner(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class OrtBereitstellen(unittest.TestCase):
+    """Eigene Ablage der ONNX Runtime (#473): geprüft auf dem Mac, das
+    Token nur für den Gitea-Host."""
+
+    def setUp(self):
+        import hashlib
+        self.temp = Path(tempfile.mkdtemp(prefix='pv_ort_'))
+        self.addCleanup(shutil.rmtree, self.temp)
+        self.daten = b'ort-archiv'
+        self.summe = hashlib.sha256(self.daten).hexdigest()
+        self.repo = self.temp / 'repo'
+        liste = self.repo / release.ORT_SUMMEN
+        liste.parent.mkdir(parents=True)
+        liste.write_text(f'# Kopf\n{"0" * 64}  onnxruntime-linux-x64-1.2.3.tgz\n{self.summe}  onnxruntime-linux-x64-1.2.3.tgz\n')
+        def git(*a):
+            return subprocess.check_output(['git', *a], cwd=self.repo, text=True).strip()
+        git('init', '-q'); git('config', 'user.name', 'test'); git('config', 'user.email', '')
+        git('add', '.'); git('commit', '-qm', 'liste')
+        self.commit = git('rev-parse', 'HEAD')
+        self.ablage = self.temp / 'ablage' / '1.2.3'
+        self.ablage.mkdir(parents=True)
+        self.a = self.temp / 'arbeit'
+        patcher = unittest.mock.patch.object(release, 'REPO', self.repo)
+        patcher.start(); self.addCleanup(patcher.stop)
+
+    def ziele(self, quelle):
+        return {'gitea_api': 'https://gitea.invalid/api/v1/repos/o/r', 'onnxruntime_quelle': quelle}
+
+    def test_ohne_eintrag_bleibt_alles_wie_frueher(self):
+        self.assertIsNone(release.ort_bereitstellen({}, self.a, self.commit))
+        self.assertFalse(self.a.exists())
+
+    def test_gepruefte_kopie_mit_version_in_der_adresse(self):
+        (self.ablage / 'onnxruntime-linux-x64-1.2.3.tgz').write_bytes(self.daten)
+        quelle = (self.temp / 'ablage').as_uri() + '/{version}'
+        with unittest.mock.patch.object(release, 'token', side_effect=AssertionError('kein Token für file://')):
+            ordner = release.ort_bereitstellen(self.ziele(quelle), self.a, self.commit)
+        self.assertEqual((ordner / 'onnxruntime-linux-x64-1.2.3.tgz').read_bytes(), self.daten)
+        self.assertEqual(sorted(p.name for p in ordner.iterdir()), ['onnxruntime-linux-x64-1.2.3.tgz'])
+
+    def test_falsche_summe_bricht_ab_und_hinterlaesst_nichts(self):
+        (self.ablage / 'onnxruntime-linux-x64-1.2.3.tgz').write_bytes(b'anders')
+        with self.assertRaises(SystemExit) as fehler:
+            release.ort_bereitstellen(self.ziele((self.temp / 'ablage').as_uri() + '/{version}'), self.a, self.commit)
+        self.assertIn('Prüfsumme', str(fehler.exception))
+        self.assertEqual(list((self.a / 'onnxruntime').iterdir()), [])
+
+    def test_token_nur_an_den_gitea_host(self):
+        gesehen = []
+        def oeffne(req, timeout=None):
+            import io
+            gesehen.append((urllib.parse.urlparse(req.full_url).hostname, req.get_header('Authorization')))
+            return io.BytesIO(self.daten)
+        import urllib.parse
+        with unittest.mock.patch.object(release, 'token', return_value='geheim'), \
+                unittest.mock.patch.object(release.urllib.request, 'urlopen', side_effect=oeffne):
+            release.ort_bereitstellen(self.ziele('https://gitea.invalid/api/packages/o/generic/onnxruntime/{version}'),
+                                      self.a, self.commit)
+            shutil.rmtree(self.a)
+            release.ort_bereitstellen(self.ziele('https://anderswo.invalid/ort/{version}'), self.a, self.commit)
+        self.assertEqual(gesehen, [('gitea.invalid', 'token geheim'), ('anderswo.invalid', None)])
+
+    def test_vorhandene_gepruefte_kopie_wird_nicht_neu_geladen(self):
+        (self.a / 'onnxruntime').mkdir(parents=True)
+        (self.a / 'onnxruntime' / 'onnxruntime-linux-x64-1.2.3.tgz').write_bytes(self.daten)
+        with unittest.mock.patch.object(release.urllib.request, 'urlopen', side_effect=AssertionError('geladen')):
+            release.ort_bereitstellen(self.ziele('https://gitea.invalid/x/{version}'), self.a, self.commit)
+
+    def test_aeltere_marke_ohne_liste_laedt_selbst(self):
+        (self.repo / release.ORT_SUMMEN).unlink()
+        subprocess.run(['git', 'commit', '-qam', 'weg'], cwd=self.repo, check=True)
+        neu = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=self.repo, text=True).strip()
+        self.assertIsNone(release.ort_bereitstellen(self.ziele('https://gitea.invalid/x'), self.a, neu))
+
+    def test_bauskripte_reichen_die_ablage_weiter(self):
+        script = release.linux_bau('pv-1.2.3-' + 'a' * 32, 'b' * 40, ort=True)
+        subprocess.run(['bash', '-n'], input=script, text=True, check=True)
+        self.assertIn('export PV_ONNXRUNTIME_QUELLE=file:///tmp/pv-1.2.3-' + 'a' * 32 + '-ort;', script)
+        self.assertIn('rm -rf -- "$1" "$3"', script)
+        self.assertNotIn('PV_ONNXRUNTIME_QUELLE', release.linux_bau('pv-1.2.3-' + 'a' * 32, 'b' * 40))
+        windows = release.WINDOWS_BAU.format(kennung='probe', flutter='test', commit='b' * 40)
+        self.assertIn("$ort = Join-Path $env:TEMP 'probe-ort'", windows)
+        self.assertIn('$env:PV_ONNXRUNTIME_QUELLE = ([Uri]$ort).AbsoluteUri', windows)
+        self.assertIn('Remove-Item -LiteralPath $ort -Recurse -Force', windows)
+
+    def test_echte_liste_passt_zum_leser(self):
+        summen = release.ort_pruefsummen((REPO / release.ORT_SUMMEN).read_text())
+        self.assertEqual(len(summen['onnxruntime-linux-x64-1.28.3.tgz']), 2)
+        self.assertEqual(len(summen['onnxruntime-win-x64-1.28.3.zip']), 1)

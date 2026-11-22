@@ -58,24 +58,42 @@ RUN --mount=type=cache,id=pv-pub-${TARGETARCH},target=/root/.pub-cache \
     dart build cli -o /aus
 
 # --- ONNX Runtime ------------------------------------------------------------
-# Das offizielle Paket von Microsoft in genau der Fassung, mit der auch die
-# App rechnet (third_party/flutter_onnxruntime) – sonst wären die Ergebnisse
-# nicht dieselben. Die Prüfsummen stehen in der Freigabe auf GitHub.
+# Das Paket in genau der Fassung, mit der auch die App rechnet
+# (third_party/flutter_onnxruntime) – sonst wären die Ergebnisse nicht
+# dieselben. Es gilt nur mit einer Summe aus
+# third_party/flutter_onnxruntime/onnxruntime-pruefsummen.txt.
+# Woher es kommt:
+#   - liegt es im Kontext „ort-archiv“ (docker buildx build
+#     --build-context ort-archiv=<ordner>), von dort;
+#   - sonst aus ORT_QUELLE, einem Ordner mit den Archiven. Vorgabe ist die
+#     Freigabe von Microsoft, die seit 22.11.2026 nicht mehr erreichbar ist.
+FROM scratch AS ort-archiv
+
 FROM debian:${DEBIAN} AS ort
 ARG ORT_FASSUNG
+ARG ORT_QUELLE=https://github.com/microsoft/onnxruntime/releases/download/v${ORT_FASSUNG}
 ARG TARGETARCH
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*
-RUN set -eu; \
+COPY third_party/flutter_onnxruntime/onnxruntime-pruefsummen.txt /ort-pruefsummen.txt
+RUN --mount=type=bind,from=ort-archiv,target=/ort-archiv \
+    set -eu; \
     case "$TARGETARCH" in \
-      amd64) arch=x64; summe=db14e4863bd37893fc59729d986ab2a0d043d10b7d44da1913c4982b7e3d009c ;; \
-      arm64) arch=aarch64; summe=6c6b1ae96d7b0be9f555092857c6a4f2b0b5587a5298d732d9e52e8253038ce7 ;; \
+      amd64) arch=x64 ;; \
+      arm64) arch=aarch64 ;; \
       *) echo "keine ONNX Runtime für $TARGETARCH" >&2; exit 1 ;; \
     esac; \
-    curl -fsSL -o /tmp/ort.tgz \
-      "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_FASSUNG}/onnxruntime-linux-${arch}-${ORT_FASSUNG}.tgz"; \
-    echo "$summe  /tmp/ort.tgz" | sha256sum -c -; \
+    name="onnxruntime-linux-${arch}-${ORT_FASSUNG}.tgz"; \
+    if [ -f "/ort-archiv/$name" ]; then \
+      cp "/ort-archiv/$name" /tmp/ort.tgz; \
+    else \
+      curl -fsSL -o /tmp/ort.tgz "${ORT_QUELLE%/}/$name"; \
+    fi; \
+    summe=$(sha256sum /tmp/ort.tgz | cut -d' ' -f1); \
+    if ! grep -qxF "$summe  $name" /ort-pruefsummen.txt; then \
+      echo "$name: Prüfsumme $summe steht nicht in onnxruntime-pruefsummen.txt" >&2; exit 1; \
+    fi; \
     mkdir /ort; \
     tar -xzf /tmp/ort.tgz -C /ort --strip-components=1; \
     cp "/ort/lib/libonnxruntime.so.${ORT_FASSUNG}" /libonnxruntime.so.${ORT_FASSUNG}; \
