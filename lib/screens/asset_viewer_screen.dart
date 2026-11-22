@@ -256,8 +256,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     setState(() => _assets[index] = updated);
   }
 
-  Future<void> _refreshCurrentAsset() async {
-    final updated = await widget.db.assetById(_currentAsset.id);
+  /// Liest die Aufnahme [id] neu – die, an der gearbeitet wurde, nicht die
+  /// gerade gezeigte. Nach einem Bearbeiten oder einer Rückfrage konnte
+  /// vorher längst ein anderes Foto zu sehen sein, und aufgefrischt wurde
+  /// dann dieses; das bearbeitete zeigte weiter die alte Datei (#428).
+  Future<void> _refreshAsset(String id) async {
+    final updated = await widget.db.assetById(id);
     if (updated != null) _replaceAsset(updated);
   }
 
@@ -267,7 +271,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   bool get _hasNext => _currentIndex < _assets.length - 1;
 
   void _goToPrevious() {
-    if (_slideshowActive) _stopSlideshow();
+    _diaschauBeenden();
     if (_hasPrevious) {
       _controller.previousPage(
         duration: const Duration(milliseconds: 220),
@@ -277,7 +281,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   }
 
   void _goToNext() {
-    if (_slideshowActive) _stopSlideshow();
+    _diaschauBeenden();
     if (_hasNext) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 220),
@@ -287,7 +291,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   }
 
   void _jumpToIndex(int index) {
-    if (_slideshowActive) _stopSlideshow();
+    _diaschauBeenden();
     _controller.animateToPage(
       index,
       duration: const Duration(milliseconds: 250),
@@ -313,10 +317,33 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (mounted) setState(() => _slideshowActive = false);
   }
 
+  /// Beendet eine laufende Diaschau – zu Beginn jeder bewussten
+  /// Interaktion: Blättern, und jede Aktion mit Rückfrage oder eigenem
+  /// Bildschirm. Sonst blätterte der Timer unter dem Fenster weiter, und
+  /// was danach geschah, traf das Foto, das gerade zu sehen war – nicht
+  /// das, nach dem gefragt wurde (#428).
+  void _diaschauBeenden() {
+    if (_slideshowActive) _stopSlideshow();
+  }
+
+  /// Ob die Diaschau jetzt weiterblättern darf.
+  ///
+  /// Nicht, solange etwas über der Ansicht liegt (ein Fenster, ein anderer
+  /// Bildschirm), das Rechtsklick-Menü offen ist oder in der Info-Leiste
+  /// geschrieben wird: Die Leiste hängt am gezeigten Foto und speichert
+  /// erst beim Verlassen des Feldes, ein Weiterblättern verwarf den
+  /// getippten Text (#428). Danach geht es von selbst weiter.
+  bool get _diaschauDarfBlaettern =>
+      mounted &&
+      (ModalRoute.isCurrentOf(context) ?? true) &&
+      !_menue.isOpen &&
+      !schreibtGerade();
+
   /// Vom Diaschau-Timer aufgerufen – bewusst NICHT über [_goToNext], da das
   /// die Diaschau als "manuelle Interaktion" sofort wieder stoppen würde.
   /// Am Ende der Liste angekommen: von vorn beginnen statt abzubrechen.
   void _advanceSlideshow() {
+    if (!_diaschauDarfBlaettern) return;
     if (_hasNext) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 220),
@@ -402,12 +429,15 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// schließen – gemeinsame Grundlage für [_rejectCurrent] (Sichtungs-Modus,
   /// ungefragt) und [_confirmAndDeleteCurrent] (normales Tastenkürzel, mit
   /// Bestätigung). Ist die Liste danach leer, schließt sich der Screen.
-  Future<void> _removeCurrentAndAdvance() async {
+  ///
+  /// [abgelehnt] ist die Aufnahme, die zu sehen war, als die Aktion begann
+  /// – vor einer Rückfrage festgehalten, nicht erst danach gelesen (#428).
+  Future<void> _removeAndAdvance(AssetData abgelehnt) async {
     if (_loescht) return;
+    final platz = _assets.indexWhere((a) => a.id == abgelehnt.id);
+    if (platz == -1) return;
     _loescht = true;
     try {
-      final abgelehnt = _currentAsset;
-      final platz = _currentIndex;
       final wasLastIndex = platz == _assets.length - 1;
       // Über denselben Weg wie der Knopf: Was „Löschen“ hier heisst,
       // weiss der Aufrufer. Im Album nahm die Taste das Foto sonst nicht
@@ -470,7 +500,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Sichtungs-Modus ist ein schneller Tastatur-Durchlauf; ein Dialog pro
   /// Ablehnung würde genau das verhindern (reversibel über den Papierkorb
   /// bleibt es trotzdem).
-  Future<void> _rejectCurrent() => _removeCurrentAndAdvance();
+  Future<void> _rejectCurrent() {
+    _diaschauBeenden();
+    return _removeAndAdvance(_currentAsset);
+  }
 
   /// Tastenkürzel ⌫/Delete AUSSERHALB des Sichtungs-Modus (siehe
   /// [_handleKeyEvent]): anders als [_rejectCurrent] MIT Bestätigungsdialog,
@@ -480,31 +513,36 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// schließen – anders als der Maus-Lösch-Knopf, der bewusst schließt (eine
   /// gezielte Einzelaktion statt eines schnellen Tastatur-Durchlaufs).
   Future<void> _confirmAndDeleteCurrent() async {
+    _diaschauBeenden();
+    final asset = _currentAsset;
     final confirmed = await confirmDialog(
       context,
       AppTexte.of(context).loeschenTitel(1),
       AppTexte.of(context).loeschenHinweis(1),
     );
-    if (!confirmed) return;
-    await _removeCurrentAndAdvance();
+    if (!confirmed || !mounted) return;
+    await _removeAndAdvance(asset);
   }
 
   Future<void> _toggleFavorite() async {
     if (widget.onToggleFavorite == null) return;
-    await widget.onToggleFavorite!(_currentAsset);
-    await _refreshCurrentAsset();
+    final asset = _currentAsset;
+    await widget.onToggleFavorite!(asset);
+    await _refreshAsset(asset.id);
   }
 
   /// Gibt zurück, ob gelöscht wurde: „Abbrechen“ schloss sonst das Vollbild.
   Future<bool> _confirmAndDelete() async {
     if (widget.onDelete == null) return false;
+    _diaschauBeenden();
+    final asset = _currentAsset;
     final confirmed = await confirmDialog(
       context,
       AppTexte.of(context).loeschenTitel(1),
       AppTexte.of(context).loeschenHinweis(1),
     );
     if (!confirmed) return false;
-    await widget.onDelete!(_currentAsset);
+    await widget.onDelete!(asset);
     return true;
   }
 
@@ -516,28 +554,33 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   }
 
   void _showSimilarImages() {
+    _diaschauBeenden();
     final library = context.read<LibraryState>();
+    final asset = _currentAsset;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) =>
-            SimilarPhotosScreen(library: library, sourceAsset: _currentAsset),
+            SimilarPhotosScreen(library: library, sourceAsset: asset),
       ),
     );
   }
 
   Future<void> _openMetadataEditor() async {
+    _diaschauBeenden();
     final asset = _currentAsset;
     final saved = await showDialog<bool>(
       context: context,
       builder: (_) => MetadataEditorDialog(asset: asset, db: widget.db),
     );
-    if (saved == true) await _refreshCurrentAsset();
+    if (saved == true) await _refreshAsset(asset.id);
   }
 
   /// Nimmt jede Bearbeitung der gezeigten Aufnahme zurueck – siehe
   /// [originalWiederherstellen]. Mit Rueckfrage, wie in der Info-Ansicht.
   Future<void> _originalWiederherstellen() async {
+    _diaschauBeenden();
     final t = AppTexte.of(context);
+    final asset = _currentAsset;
     if (!await confirmDialog(
       context,
       t.infoOriginalHerstellen,
@@ -549,11 +592,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     await originalWiederherstellen(
       db: widget.db,
       paths: widget.paths,
-      asset: _currentAsset,
+      asset: asset,
     );
     if (!mounted) return;
     melde.erfolg(t.infoOriginalHergestellt);
-    await _refreshCurrentAsset();
+    await _refreshAsset(asset.id);
   }
 
   /// Das Rechtsklick-Menü des Fotos (Issue #18).
@@ -642,7 +685,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         if (ok) {
           await _darktable.schliesse(asset.id);
           vergissAlleBilder();
-          if (mounted) await _refreshCurrentAsset();
+          if (mounted) await _refreshAsset(asset.id);
           melde.erfolg(t.darktableAmServerFertig);
         } else {
           melde.fehler(t.darktableAmServerFehler);
@@ -661,7 +704,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       );
       await _darktable.schliesse(asset.id);
       vergissAlleBilder();
-      await _refreshCurrentAsset();
+      await _refreshAsset(asset.id);
       melde.erfolg(t.darktableUebernommen);
     } on Object catch (e) {
       melde.fehler(t.darktableFehler('$e'));
@@ -739,6 +782,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   Future<void> _fuehreAus(_ContextMenuAction aktion) async {
     if (!mounted) return;
+    _diaschauBeenden();
     switch (aktion) {
       case _ContextMenuAction.inDarktable:
         await _inDarktable();
@@ -753,10 +797,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       case _ContextMenuAction.faceReview:
         await _openFaceReview();
       case _ContextMenuAction.entwicklungEinfuegen:
-        await runBatchPasteDevelop(context, widget.library!, [
-          _currentAsset.id,
-        ]);
-        await _refreshCurrentAsset();
+        final id = _currentAsset.id;
+        await runBatchPasteDevelop(context, widget.library!, [id]);
+        await _refreshAsset(id);
       case _ContextMenuAction.originalHerstellen:
         await _originalWiederherstellen();
     }
@@ -770,6 +813,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _openFaceReview() async {
     final library = widget.library;
     if (library == null) return;
+    _diaschauBeenden();
+    final id = _currentAsset.id;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => FaceReviewScreen(
@@ -779,10 +824,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         ),
       ),
     );
-    if (mounted) await _refreshCurrentAsset();
+    if (mounted) await _refreshAsset(id);
   }
 
   Future<void> _editAsset() async {
+    _diaschauBeenden();
     final asset = _currentAsset;
     final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
@@ -801,26 +847,28 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         ),
       ),
     );
-    if (saved == true) await _refreshCurrentAsset();
+    if (saved == true) await _refreshAsset(asset.id);
   }
 
   Future<void> _setRating(int rating) async {
-    await widget.db.fuehreAus(BewertungSetzen([_currentAsset.id], rating));
-    await _refreshCurrentAsset();
+    final id = _currentAsset.id;
+    await widget.db.fuehreAus(BewertungSetzen([id], rating));
+    await _refreshAsset(id);
   }
 
   /// Farbmarke über die Tasten 6–9 (siehe [farbmarkeFuerZiffer]). Dieselbe
   /// Taste noch einmal nimmt die Marke wieder weg – wie ein zweiter Klick auf
   /// denselben Kreis in der Palette.
   Future<void> _setColorLabel(String farbe) async {
-    final aktuell = _currentAsset.colorLabel;
+    final asset = _currentAsset;
     await widget.db.fuehreAus(
-      FarbmarkeSetzen([_currentAsset.id], aktuell == farbe ? null : farbe),
+      FarbmarkeSetzen([asset.id], asset.colorLabel == farbe ? null : farbe),
     );
-    await _refreshCurrentAsset();
+    await _refreshAsset(asset.id);
   }
 
   Future<void> _developAsset() async {
+    _diaschauBeenden();
     final asset = _currentAsset;
     final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
@@ -835,10 +883,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         ),
       ),
     );
-    if (saved == true) await _refreshCurrentAsset();
+    if (saved == true) await _refreshAsset(asset.id);
   }
 
   Future<void> _trimVideoAsset() async {
+    _diaschauBeenden();
     final asset = _currentAsset;
     final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
@@ -846,7 +895,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
             VideoTrimScreen(asset: asset, db: widget.db, paths: widget.paths),
       ),
     );
-    if (saved == true) await _refreshCurrentAsset();
+    if (saved == true) await _refreshAsset(asset.id);
   }
 
   Future<void> _exportAsset() async {
@@ -1088,10 +1137,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 icon: const Icon(Icons.auto_fix_high_outlined),
                 tooltip: AppTexte.of(context).viewerEntwicklungAnwendenLang,
                 onPressed: () async {
+                  _diaschauBeenden();
                   await runBatchPasteDevelop(context, widget.library!, [
                     asset.id,
                   ]);
-                  await _refreshCurrentAsset();
+                  await _refreshAsset(asset.id);
                 },
               ),
             if (asset.type == 'IMAGE' && !asset.isLocked)
