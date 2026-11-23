@@ -3982,6 +3982,10 @@ class AppTexteEn extends AppTexte {
   String get infoTitel => 'Info';
 
   @override
+  String get infoGesperrtNurLesen =>
+      'In the locked folder, details can only be viewed. To edit them, take the photo out of the locked folder first.';
+
+  @override
   String get infoVideoStandbild =>
       'The caption is based on a single frame from the first second. For videos of 10 seconds or longer, image search, tags and faces also use up to five more frames from across the whole clip.';
 

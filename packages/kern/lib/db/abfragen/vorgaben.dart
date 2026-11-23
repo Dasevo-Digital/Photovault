@@ -229,6 +229,17 @@ extension VorgabenAbfragen on AppDatabase {
     return rows.map((r) => r.readTable(tags)).toList();
   }
 
+  /// Die Schlagwörter mit diesen Kennungen, nach Namen geordnet; fehlende
+  /// fallen weg.
+  Future<List<TagData>> tagsByIds(Iterable<String> ids) {
+    final liste = ids.toSet().toList();
+    if (liste.isEmpty) return Future.value(const []);
+    return (select(tags)
+          ..where((t) => t.id.isIn(liste))
+          ..orderBy([(t) => OrderingTerm(expression: t.name)]))
+        .get();
+  }
+
   /// Tag-Namen ALLER Assets in einer einzigen Abfrage (assetId -> Tag-Namen)
   /// – für den Metadaten-Export beim Backup, damit nicht pro Foto eine
   /// eigene Datenbankabfrage nötig ist ([tagsForAsset] wäre dort ein

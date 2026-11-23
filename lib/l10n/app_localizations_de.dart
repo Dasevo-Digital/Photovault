@@ -4008,6 +4008,10 @@ class AppTexteDe extends AppTexte {
   String get infoTitel => 'Info';
 
   @override
+  String get infoGesperrtNurLesen =>
+      'Im gesperrten Ordner lassen sich die Angaben nur ansehen. Zum Bearbeiten das Foto zuerst aus dem gesperrten Ordner nehmen.';
+
+  @override
   String get infoVideoStandbild =>
       'Die Beschreibung beruht auf einem Standbild aus der ersten Sekunde. Bildsuche, Schlagwörter und Gesichter werten bei Videos ab 10 Sekunden zusätzlich bis zu fünf Standbilder aus dem ganzen Film aus.';
 

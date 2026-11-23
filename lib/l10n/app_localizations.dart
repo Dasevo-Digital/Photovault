@@ -6657,6 +6657,12 @@ abstract class AppTexte {
   /// **'Info'**
   String get infoTitel;
 
+  /// No description provided for @infoGesperrtNurLesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Im gesperrten Ordner lassen sich die Angaben nur ansehen. Zum Bearbeiten das Foto zuerst aus dem gesperrten Ordner nehmen.'**
+  String get infoGesperrtNurLesen;
+
   /// No description provided for @infoVideoStandbild.
   ///
   /// In de, this message translates to:

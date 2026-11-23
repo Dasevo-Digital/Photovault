@@ -4512,9 +4512,18 @@ class LibraryState extends ChangeNotifier {
     }
   }
 
-  Future<void> _restorePrivateMetadata(String assetId, SecretKey key) async {
-    final json = await _privateMetadataLesen(assetId, key);
-    if (json == null) return; // Bestand aus älteren Fassungen.
+  /// Die Schlagwörter aus dem Paket: Kennung und Herkunft
+  /// (siehe [AppDatabase.privateRelationsForAsset]).
+  static List<(String, String)> _schlagwoerterAusPaket(
+    Map<String, dynamic> json,
+  ) => [
+    for (final encoded in (json['tags'] as List? ?? const []))
+      if ((encoded as String).split('\u0000') case [final id, final quelle])
+        (id, quelle),
+  ];
+
+  /// Die Zeile einer Aufnahme, wie sie in den gesperrten Ordner kam.
+  static AssetsCompanion _angabenAusPaket(Map<String, dynamic> json) {
     double? number(String key) => (json[key] as num?)?.toDouble();
     Value<String?> text(String key) => json.containsKey(key)
         ? Value(json[key] as String?)
@@ -4525,68 +4534,105 @@ class LibraryState extends ChangeNotifier {
             _ => null,
           })
         : const Value.absent();
-    final tags = <(String, String)>[];
-    for (final encoded in (json['tags'] as List? ?? const [])) {
-      final parts = (encoded as String).split('\u0000');
-      if (parts.length == 2) tags.add((parts[0], parts[1]));
+    return AssetsCompanion(
+      originalFileName: Value(json['originalFileName'] as String),
+      fileCreatedAt: Value(DateTime.parse(json['fileCreatedAt'] as String)),
+      importedAt: Value(DateTime.parse(json['importedAt'] as String)),
+      isFavorite: Value(json['isFavorite'] as bool),
+      faceScanExcluded: Value(json['faceScanExcluded'] as bool),
+      description: Value(json['description'] as String?),
+      latitude: Value(number('latitude')),
+      longitude: Value(number('longitude')),
+      cameraMake: Value(json['cameraMake'] as String?),
+      cameraModel: Value(json['cameraModel'] as String?),
+      lensModel: Value(json['lensModel'] as String?),
+      focalLengthMm: Value(number('focalLengthMm')),
+      fNumber: Value(number('fNumber')),
+      iso: Value(json['iso'] as int?),
+      exposureTimeSeconds: Value(number('exposureTimeSeconds')),
+      exposureBiasEv: Value(number('exposureBiasEv')),
+      focalLength35mm: Value(number('focalLength35mm')),
+      locationCountry: Value(json['locationCountry'] as String?),
+      locationState: Value(json['locationState'] as String?),
+      locationCity: Value(json['locationCity'] as String?),
+      rating: Value(json['rating'] as int),
+      colorLabel: Value(json['colorLabel'] as String?),
+      ocrText: Value(json['ocrText'] as String?),
+      ocrScanned: Value(json['ocrScanned'] as bool),
+      ocrBoxen: Value(json['ocrBoxen'] as String?),
+      gpsGeprueft: Value(json['gpsGeprueft'] as bool),
+      datumGeschaetzt: Value(json['datumGeschaetzt'] as bool),
+      datumGeprueft: Value(json['datumGeprueft'] as bool),
+      // Pakete vor #480 kennen die Datierung nicht; sie blieb dann in der
+      // Zeile stehen und bleibt dort.
+      datumVon: datum('datumVon'),
+      datumBis: datum('datumBis'),
+      datumGenauigkeit: text('datumGenauigkeit'),
+      datumQuelle: text('datumQuelle'),
+      datumHinweis: text('datumHinweis'),
+      ortGeerbt: Value(json['ortGeerbt'] as bool),
+      videobilderGeprueft: Value(json['videobilderGeprueft'] as bool),
+      zeitversatzMinuten: Value(json['zeitversatzMinuten'] as int?),
+      aiCaption: Value(json['aiCaption'] as String?),
+      aiCaptionDe: Value(json['aiCaptionDe'] as String?),
+      aiCaptionScanned: Value(json['aiCaptionScanned'] as bool),
+      aiCaptionEdited: Value(json['aiCaptionEdited'] as bool),
+      aiTagsScanned: Value(json['aiTagsScanned'] as bool),
+      // Fehlt in allem, was vor Schema 92 gesperrt wurde: dann eben
+      // noch nicht gehört.
+      transkript: Value(json['transkript'] as String?),
+      transkriptSprache: Value(json['transkriptSprache'] as String?),
+      transkriptGeprueft: Value(json['transkriptGeprueft'] as bool? ?? false),
+    );
+  }
+
+  /// Was das Infoblatt einer gesperrten Aufnahme zeigt (#492): [asset] mit
+  /// den Angaben, wie sie in den gesperrten Ordner kamen, und seinen
+  /// Schlagwörtern. Nur im Speicher; in die Datenbank kommt nichts davon.
+  ///
+  /// `null`, wenn neben [asset] kein verschlüsseltes Paket liegt: bei einer
+  /// Aufnahme ausserhalb des Ordners und bei einer, die ohne Schutz der
+  /// Angaben gesperrt wurde. Deren Angaben stehen wie sonst in der
+  /// Datenbank. Ist der Ordner nicht entsperrt oder das Paket nicht lesbar,
+  /// bleibt es bei der neutralen Zeile ohne Schlagwörter.
+  Future<({AssetData asset, List<TagData> schlagwoerter})?> angabenImTresor(
+    AssetData asset,
+  ) async {
+    if (!asset.isLocked ||
+        !await paths
+            .absolute(paths.vaultMetadataRelativePath(asset.id))
+            .exists()) {
+      return null;
     }
+    const keine = <TagData>[];
+    final key = _vaultKey;
+    if (key == null) return (asset: asset, schlagwoerter: keine);
+    try {
+      final json = await _privateMetadataLesen(asset.id, key);
+      if (json == null) return null;
+      return (
+        asset: asset.copyWithCompanion(_angabenAusPaket(json)),
+        schlagwoerter: await db.tagsByIds([
+          for (final (id, _) in _schlagwoerterAusPaket(json)) id,
+        ]),
+      );
+    } on Object catch (e) {
+      debugPrint('Angaben der gesperrten Aufnahme nicht lesbar: $e');
+      return (asset: asset, schlagwoerter: keine);
+    }
+  }
+
+  Future<void> _restorePrivateMetadata(String assetId, SecretKey key) async {
+    final json = await _privateMetadataLesen(assetId, key);
+    if (json == null) return; // Bestand aus älteren Fassungen.
     await db.restorePrivateMetadata(
       assetId,
       beschriftungen: (json['beschriftungen'] as List? ?? const [])
           .cast<String>(),
       entwicklungsvarianten:
           (json['entwicklungsvarianten'] as List? ?? const []).cast<String>(),
-      AssetsCompanion(
-        originalFileName: Value(json['originalFileName'] as String),
-        fileCreatedAt: Value(DateTime.parse(json['fileCreatedAt'] as String)),
-        importedAt: Value(DateTime.parse(json['importedAt'] as String)),
-        isFavorite: Value(json['isFavorite'] as bool),
-        faceScanExcluded: Value(json['faceScanExcluded'] as bool),
-        description: Value(json['description'] as String?),
-        latitude: Value(number('latitude')),
-        longitude: Value(number('longitude')),
-        cameraMake: Value(json['cameraMake'] as String?),
-        cameraModel: Value(json['cameraModel'] as String?),
-        lensModel: Value(json['lensModel'] as String?),
-        focalLengthMm: Value(number('focalLengthMm')),
-        fNumber: Value(number('fNumber')),
-        iso: Value(json['iso'] as int?),
-        exposureTimeSeconds: Value(number('exposureTimeSeconds')),
-        exposureBiasEv: Value(number('exposureBiasEv')),
-        focalLength35mm: Value(number('focalLength35mm')),
-        locationCountry: Value(json['locationCountry'] as String?),
-        locationState: Value(json['locationState'] as String?),
-        locationCity: Value(json['locationCity'] as String?),
-        rating: Value(json['rating'] as int),
-        colorLabel: Value(json['colorLabel'] as String?),
-        ocrText: Value(json['ocrText'] as String?),
-        ocrScanned: Value(json['ocrScanned'] as bool),
-        ocrBoxen: Value(json['ocrBoxen'] as String?),
-        gpsGeprueft: Value(json['gpsGeprueft'] as bool),
-        datumGeschaetzt: Value(json['datumGeschaetzt'] as bool),
-        datumGeprueft: Value(json['datumGeprueft'] as bool),
-        // Pakete vor #480 kennen die Datierung nicht; sie blieb dann in der
-        // Zeile stehen und bleibt dort.
-        datumVon: datum('datumVon'),
-        datumBis: datum('datumBis'),
-        datumGenauigkeit: text('datumGenauigkeit'),
-        datumQuelle: text('datumQuelle'),
-        datumHinweis: text('datumHinweis'),
-        ortGeerbt: Value(json['ortGeerbt'] as bool),
-        videobilderGeprueft: Value(json['videobilderGeprueft'] as bool),
-        zeitversatzMinuten: Value(json['zeitversatzMinuten'] as int?),
-        aiCaption: Value(json['aiCaption'] as String?),
-        aiCaptionDe: Value(json['aiCaptionDe'] as String?),
-        aiCaptionScanned: Value(json['aiCaptionScanned'] as bool),
-        aiCaptionEdited: Value(json['aiCaptionEdited'] as bool),
-        aiTagsScanned: Value(json['aiTagsScanned'] as bool),
-        // Fehlt in allem, was vor Schema 92 gesperrt wurde: dann eben
-        // noch nicht gehört.
-        transkript: Value(json['transkript'] as String?),
-        transkriptSprache: Value(json['transkriptSprache'] as String?),
-        transkriptGeprueft: Value(json['transkriptGeprueft'] as bool? ?? false),
-      ),
-      tags: tags,
+      _angabenAusPaket(json),
+      tags: _schlagwoerterAusPaket(json),
       albumIds: [
         for (final id in json['albums'] as List? ?? const []) id as String,
       ],

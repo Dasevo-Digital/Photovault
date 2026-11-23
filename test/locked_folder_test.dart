@@ -545,4 +545,56 @@ void main() {
       erwarteDatierung((await db.assetById(asset.id))!);
     });
   });
+
+  group('Infoblatt gesperrter Fotos (#492)', () {
+    Future<AssetData> mitAngaben(String name) async {
+      final asset = await importPhoto(name, [3, 1, 4, 1, 5]);
+      await db.fuehreAus(BeschreibungSetzen([asset.id], 'Am See'));
+      await db.fuehreAus(BewertungSetzen([asset.id], 4));
+      await db.fuehreAus(OrtSetzen([asset.id], 52.5, 13.4));
+      await db.fuehreAus(SchlagwortAnheften([asset.id], 'Urlaub'));
+      return (await db.assetById(asset.id))!;
+    }
+
+    test('zeigt die Angaben aus dem Paket, die Zeile bleibt neutral', () async {
+      final asset = await mitAngaben('see.jpg');
+      await library.setupVaultPin('1234');
+      await library.lockAsset(asset);
+      final zeile = (await db.assetById(asset.id))!;
+
+      final angaben = (await library.angabenImTresor(zeile))!;
+      expect(angaben.asset.isLocked, isTrue);
+      expect(angaben.asset.originalFileName, 'see.jpg');
+      expect(angaben.asset.description, 'Am See');
+      expect(angaben.asset.rating, 4);
+      expect(angaben.asset.latitude, 52.5);
+      expect([for (final t in angaben.schlagwoerter) t.name], ['Urlaub']);
+
+      final danach = (await db.assetById(asset.id))!;
+      expect(danach.originalFileName, 'Private Aufnahme');
+      expect(danach.description, isNull);
+      expect(danach.rating, 0);
+      expect(danach.latitude, isNull);
+      expect(await db.tagsForAsset(asset.id), isEmpty);
+
+      // Ohne Schlüssel bleibt es bei der neutralen Zeile.
+      library.lockVaultSession();
+      final ohneSchluessel = (await library.angabenImTresor(zeile))!;
+      expect(ohneSchluessel.asset.description, isNull);
+      expect(ohneSchluessel.schlagwoerter, isEmpty);
+    });
+
+    test('ohne Paket gilt die Zeile', () async {
+      final offen = await mitAngaben('offen.jpg');
+      expect(await library.angabenImTresor(offen), isNull);
+
+      await db.setProtectPrivateMetadata(false);
+      await library.setupVaultPin('1234');
+      await library.lockAsset(offen);
+      final gesperrt = (await db.assetById(offen.id))!;
+      expect(gesperrt.isLocked, isTrue);
+      expect(gesperrt.description, 'Am See');
+      expect(await library.angabenImTresor(gesperrt), isNull);
+    });
+  });
 }

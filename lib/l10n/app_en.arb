@@ -1391,6 +1391,7 @@
   "personWiedererkennung": "Recognition: {erklaerung}. From {bestaetigt, plural, =1{one confirmation} other{{bestaetigt} confirmations}} and {abgelehnt, plural, =1{one correction} other{{abgelehnt} corrections}}.",
   "infoKeineUnbenannten": "No unnamed faces found on this photo – if face detection has not run yet, see Tools → Scan for faces.",
   "infoTitel": "Info",
+  "infoGesperrtNurLesen": "In the locked folder, details can only be viewed. To edit them, take the photo out of the locked folder first.",
   "infoVideoStandbild": "The caption is based on a single frame from the first second. For videos of 10 seconds or longer, image search, tags and faces also use up to five more frames from across the whole clip.",
   "infoBeschreibungHinzufuegen": "Add a description",
   "infoKiBeschreibung": "AI caption",

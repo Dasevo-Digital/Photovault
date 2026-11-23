@@ -118,13 +118,41 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   /// Auflösen.
   List<AssetData> _formate = const [];
 
+  /// Eine Aufnahme aus dem gesperrten Ordner: Das Blatt zeigt sie nur
+  /// (#492). Jede Eingabe landete sonst im Klartext in der Datenbank, und
+  /// beim Herausnehmen überschrieb das verschlüsselte Paket sie wieder.
+  /// Wer etwas ändern will, nimmt das Foto zuerst aus dem Ordner.
+  bool get _nurLesen => widget.asset.isLocked;
+
   @override
   void initState() {
     super.initState();
+    if (_nurLesen) {
+      _ladeTresorangaben();
+      return;
+    }
     _loadTags();
     _loadPeople();
     _ladeDatumsvorschlag();
     _ladeFormate();
+  }
+
+  /// Die echten Angaben aus dem verschlüsselten Paket, nur im Speicher
+  /// (siehe [LibraryState.angabenImTresor]). Ohne Paket, also ohne Schutz
+  /// der Angaben gesperrt, stehen sie wie sonst in der Datenbank.
+  Future<void> _ladeTresorangaben() async {
+    final angaben = await context.read<LibraryState>().angabenImTresor(
+      widget.asset,
+    );
+    if (!mounted) return;
+    if (angaben == null) {
+      await _loadTags();
+      return;
+    }
+    setState(() {
+      _asset = angaben.asset;
+      _tags = angaben.schlagwoerter;
+    });
   }
 
   /// Eine neue Fassung von aussen – etwa Bewertung oder Farbmarke, per
@@ -135,6 +163,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   void didUpdateWidget(covariant AssetInfoSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (identical(widget.asset, oldWidget.asset) || widget.asset == _asset) {
+      return;
+    }
+    // Die Zeile eines gesperrten Fotos ist neutral; gezeigt wird das Paket.
+    if (_nurLesen) {
+      _ladeTresorangaben();
       return;
     }
     _asset = widget.asset;
@@ -234,7 +267,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
 
   Future<void> _saveKiBeschreibung() async {
     final deutsch = _kiDeutsch;
-    if (deutsch == null) return;
+    if (deutsch == null || _nurLesen) return;
     final neu = _kiController.text.trim();
     if (neu == _kiText(deutsch)) return;
     await widget.db.fuehreAus(
@@ -383,7 +416,8 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   }
 
   Future<void> _saveDescription() async {
-    if (_descriptionController.text.trim() == (_asset.description ?? '')) {
+    if (_nurLesen ||
+        _descriptionController.text.trim() == (_asset.description ?? '')) {
       return;
     }
     await widget.db.fuehreAus(
@@ -735,19 +769,43 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextField(
-                        contextMenuBuilder: einfuegbaresMenue,
-                        controller: _descriptionController,
-                        focusNode: _descriptionFocusNode,
-                        maxLines: null,
-                        decoration: InputDecoration(
-                          hintText: AppTexte.of(
-                            context,
-                          ).infoBeschreibungHinzufuegen,
-                          border: const UnderlineInputBorder(),
-                          isDense: true,
+                      if (_nurLesen) ...[
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.lock_outline,
+                              size: 18,
+                              color: onSurfaceVariant,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                AppTexte.of(context).infoGesperrtNurLesen,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: onSurfaceVariant),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        if ((asset.description ?? '').trim().isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          SelectableText(asset.description!.trim()),
+                        ],
+                      ] else
+                        TextField(
+                          contextMenuBuilder: einfuegbaresMenue,
+                          controller: _descriptionController,
+                          focusNode: _descriptionFocusNode,
+                          maxLines: null,
+                          decoration: InputDecoration(
+                            hintText: AppTexte.of(
+                              context,
+                            ).infoBeschreibungHinzufuegen,
+                            border: const UnderlineInputBorder(),
+                            isDense: true,
+                          ),
+                        ),
                       if (kiVorhanden) ...[
                         const SizedBox(height: 12),
                         _KiBeschreibung(
@@ -756,6 +814,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           deutsch: kiDeutsch,
                           vonHand: asset.aiCaptionEdited,
                           onSprache: _kiSpracheWechseln,
+                          nurLesen: _nurLesen,
                         ),
                         // Bei einem Video ruht die Beschreibung auf einem
                         // einzigen Standbild. Das gehört dazugesagt: Wer
@@ -799,7 +858,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             label: AppTexte.of(context).infoBewertung,
                             child: StarRating(
                               value: _asset.rating,
-                              onChanged: _setRating,
+                              onChanged: _nurLesen ? null : _setRating,
                             ),
                           ),
                           const Spacer(),
@@ -808,111 +867,116 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             label: AppTexte.of(context).suchoptFarbmarkierung,
                             child: ColorLabelPicker(
                               value: _asset.colorLabel,
-                              onChanged: _setColorLabel,
+                              onChanged: _nurLesen ? null : _setColorLabel,
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _SectionLabel(
-                              AppTexte.of(context).navPersonen,
+                      // Gesichter löscht das Sperren ohnehin (siehe
+                      // AppDatabase.clearDerivedContentData).
+                      if (!_nurLesen) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _SectionLabel(
+                                AppTexte.of(context).navPersonen,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            tooltip: AppTexte.of(context).personZuordnenTitel,
-                            onPressed: _addPerson,
-                          ),
-                        ],
-                      ),
-                      SizedBox(
-                        height: 72,
-                        child: _peopleFaces.isEmpty
-                            ? Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(
-                                  AppTexte.of(context).infoNiemandZugeordnet,
-                                  style: TextStyle(
-                                    color: onSurfaceVariant,
-                                    fontSize: 13,
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              tooltip: AppTexte.of(context).personZuordnenTitel,
+                              onPressed: _addPerson,
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 72,
+                          child: _peopleFaces.isEmpty
+                              ? Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    AppTexte.of(context).infoNiemandZugeordnet,
+                                    style: TextStyle(
+                                      color: onSurfaceVariant,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
-                              )
-                            : ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _peopleFaces.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 12),
-                                itemBuilder: (context, index) {
-                                  final item = _peopleFaces[index];
-                                  final kopf = GestureDetector(
-                                    onTap: () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => PersonDetailScreen(
-                                          library: context.read<LibraryState>(),
-                                          person: item.person,
+                                )
+                              : ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _peopleFaces.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(width: 12),
+                                  itemBuilder: (context, index) {
+                                    final item = _peopleFaces[index];
+                                    final kopf = GestureDetector(
+                                      onTap: () => Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => PersonDetailScreen(
+                                            library: context
+                                                .read<LibraryState>(),
+                                            person: item.person,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Profilbild(
-                                          datei: item.cropRelativePath == null
-                                              ? null
-                                              : widget.paths.absolute(
-                                                  item.cropRelativePath!,
-                                                ),
-                                          radius: 26,
-                                          hintergrund: Colors.grey.shade800,
-                                        ),
-                                        const SizedBox(height: 4),
-                                        SizedBox(
-                                          width: 60,
-                                          child: Text(
-                                            item.person.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 11,
+                                      child: Column(
+                                        children: [
+                                          Profilbild(
+                                            datei: item.cropRelativePath == null
+                                                ? null
+                                                : widget.paths.absolute(
+                                                    item.cropRelativePath!,
+                                                  ),
+                                            radius: 26,
+                                            hintergrund: Colors.grey.shade800,
+                                          ),
+                                          const SizedBox(height: 4),
+                                          SizedBox(
+                                            width: 60,
+                                            child: Text(
+                                              item.person.name,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                              ),
                                             ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (item.automatisch.isEmpty) return kopf;
+                                    // Neben dem Kopf im Stapel: Ein Tipp auf
+                                    // das Zeichen bestätigt, einer auf den
+                                    // Kopf öffnet weiter die Person.
+                                    return Stack(
+                                      children: [
+                                        kopf,
+                                        Positioned(
+                                          top: 0,
+                                          right: 0,
+                                          child: AutomatischZugeordnetMarke(
+                                            beiBestaetigen: () async {
+                                              await bestaetigeZuordnung(
+                                                context,
+                                                widget.db,
+                                                item.automatisch,
+                                                item.person.id,
+                                              );
+                                              await _loadPeople();
+                                            },
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  );
-                                  if (item.automatisch.isEmpty) return kopf;
-                                  // Neben dem Kopf im Stapel: Ein Tipp auf
-                                  // das Zeichen bestätigt, einer auf den
-                                  // Kopf öffnet weiter die Person.
-                                  return Stack(
-                                    children: [
-                                      kopf,
-                                      Positioned(
-                                        top: 0,
-                                        right: 0,
-                                        child: AutomatischZugeordnetMarke(
-                                          beiBestaetigen: () async {
-                                            await bestaetigeZuordnung(
-                                              context,
-                                              widget.db,
-                                              item.automatisch,
-                                              item.person.id,
-                                            );
-                                            await _loadPeople();
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                      ),
-                      const SizedBox(height: 16),
+                                    );
+                                  },
+                                ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
 
                       _SectionLabel(AppTexte.of(context).infoDetails),
                       const SizedBox(height: 4),
@@ -959,23 +1023,24 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                 if (asset.zeitversatzMinuten case final v?)
                                   zeitversatzText(v),
                               ].join(' · '),
-                        onEdit: _pickDate,
+                        onEdit: _nurLesen ? null : _pickDate,
                       ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          icon: const Icon(Icons.date_range),
-                          label: Text(AppTexte.of(context).datierungTitel),
-                          onPressed: () async {
-                            final d = await frageDatierung(context, _asset);
-                            if (d == null || !mounted) return;
-                            await widget.db.fuehreAus(
-                              DatierungSetzen([_asset.id], d),
-                            );
-                            await _refresh();
-                          },
+                      if (!_nurLesen)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            icon: const Icon(Icons.date_range),
+                            label: Text(AppTexte.of(context).datierungTitel),
+                            onPressed: () async {
+                              final d = await frageDatierung(context, _asset);
+                              if (d == null || !mounted) return;
+                              await widget.db.fuehreAus(
+                                DatierungSetzen([_asset.id], d),
+                              );
+                              await _refresh();
+                            },
+                          ),
                         ),
-                      ),
                       if (_datumsvorschlag case final v?)
                         Padding(
                           padding: const EdgeInsets.only(left: 40),
@@ -1021,7 +1086,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           subtitle: AppTexte.of(context).infoOriginalUnberuehrt(
                             _bearbeitungstext(AppTexte.of(context)),
                           ),
-                          onEdit: _originalWiederherstellen,
+                          onEdit: _nurLesen ? null : _originalWiederherstellen,
                           editIcon: Icons.restore,
                           editTooltip: AppTexte.of(
                             context,
@@ -1054,7 +1119,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                     ? null
                                     : regionParts.join(', '))
                               : AppTexte.of(context).infoOrtNichtAufgeloest,
-                          onEdit: _clearLocation,
+                          onEdit: _nurLesen ? null : _clearLocation,
                           editIcon: Icons.close,
                           editTooltip: AppTexte.of(context).infoOrtEntfernen,
                         ),
@@ -1073,7 +1138,7 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                                   _formate.map(assetFormatLabel).join(', '),
                                 )
                               : AppTexte.of(context).infoNurTitelbild,
-                          onEdit: _unstack,
+                          onEdit: _nurLesen ? null : _unstack,
                           editIcon: Icons.close,
                           editTooltip: istVariantenstapel(asset.stackId)
                               ? AppTexte.of(context).infoVariantenAufloesen
@@ -1110,28 +1175,29 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                         // mehr hin, und genau dann will man ihn: Wer eine
                         // Serie gestapelt hat, sucht später das beste Bild
                         // darin.
-                        Padding(
-                          padding: const EdgeInsets.only(left: 40, top: 4),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                              onPressed: _serieVergleichen,
-                              icon: const Icon(
-                                Icons.compare_outlined,
-                                size: 18,
-                              ),
-                              label: Text(
-                                istVariantenstapel(asset.stackId)
-                                    ? AppTexte.of(
-                                        context,
-                                      ).variantenvergleichOeffnen
-                                    : AppTexte.of(
-                                        context,
-                                      ).serienvergleichOeffnen,
+                        if (!_nurLesen)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 40, top: 4),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: _serieVergleichen,
+                                icon: const Icon(
+                                  Icons.compare_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  istVariantenstapel(asset.stackId)
+                                      ? AppTexte.of(
+                                          context,
+                                        ).variantenvergleichOeffnen
+                                      : AppTexte.of(
+                                          context,
+                                        ).serienvergleichOeffnen,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                       ],
                       const SizedBox(height: 16),
 
@@ -1145,99 +1211,56 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                             runSpacing: 6,
                             children: [
                               for (final tag in _tags)
-                                InputChip(
-                                  label: Text(tag.name),
-                                  tooltip: AppTexte.of(
-                                    context,
-                                  ).infoTagUmbenennenHinweis,
-                                  onPressed: () => _renameTag(tag),
-                                  onDeleted: () => _removeTag(tag),
-                                ),
+                                if (_nurLesen)
+                                  Chip(label: Text(tag.name))
+                                else
+                                  InputChip(
+                                    label: Text(tag.name),
+                                    tooltip: AppTexte.of(
+                                      context,
+                                    ).infoTagUmbenennenHinweis,
+                                    onPressed: () => _renameTag(tag),
+                                    onDeleted: () => _removeTag(tag),
+                                  ),
                             ],
                           ),
                         ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              contextMenuBuilder: einfuegbaresMenue,
-                              controller: _tagController,
-                              decoration: InputDecoration(
-                                hintText: AppTexte.of(
-                                  context,
-                                ).infoTagHinzufuegenPlatzhalter,
-                                isDense: true,
-                                border: const OutlineInputBorder(),
+                      if (!_nurLesen)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                contextMenuBuilder: einfuegbaresMenue,
+                                controller: _tagController,
+                                decoration: InputDecoration(
+                                  hintText: AppTexte.of(
+                                    context,
+                                  ).infoTagHinzufuegenPlatzhalter,
+                                  isDense: true,
+                                  border: const OutlineInputBorder(),
+                                ),
+                                onSubmitted: (_) => _addTag(),
                               ),
-                              onSubmitted: (_) => _addTag(),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            tooltip: AppTexte.of(context).auswTagHinzufuegen,
-                            onPressed: _addTag,
-                          ),
-                        ],
-                      ),
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              tooltip: AppTexte.of(context).auswTagHinzufuegen,
+                              onPressed: _addTag,
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 20),
                     ],
                   ),
                 ),
-                // Über der Karte und nicht darunter: Wer den Ortsnamen
-                // kennt, soll ihn eintippen können, ohne erst zu suchen,
-                // wo auf der Karte er liegt.
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    0,
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          contextMenuBuilder: einfuegbaresMenue,
-                          controller: _ortController,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            labelText: AppTexte.of(context).infoOrtSuchen,
-                            hintText: AppTexte.of(
-                              context,
-                            ).infoOrtSuchenBeispiel,
-                            prefixIcon: const Icon(
-                              Icons.travel_explore,
-                              size: 20,
-                            ),
-                            border: const OutlineInputBorder(),
-                          ),
-                          onChanged: _ortEingabe,
-                          onSubmitted: (_) => _sucheOrt(),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      IconButton(
-                        tooltip: AppTexte.of(context).infoOrtSuchen,
-                        icon: _ortSucheLaeuft
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.search),
-                        onPressed: _ortSucheLaeuft ? null : _sucheOrt,
-                      ),
-                    ],
-                  ),
-                ),
-                // Die Vorschläge. **Der eigentliche Umbau**: Bis hierher
-                // entschied die Suche sofort und sagte erst hinterher,
-                // dass die Wahl eine Vermutung war („es gibt 23 weitere
-                // gleichen Namens"). Wer den Ort seines Fotos kennt, will
-                // ihn auswählen, nicht hinterher berichtigen.
-                if (_ortVorschlaege.isNotEmpty)
+                // Ohne Ortssuche und ohne Karte, wenn das Blatt nur zeigt:
+                // Die Kacheln holt die Karte von einem fremden Dienst, und
+                // welche sie holt, verriete, wo ein gesperrtes Foto
+                // entstanden ist.
+                if (!_nurLesen) ...[
+                  // Über der Karte und nicht darunter: Wer den Ortsnamen
+                  // kennt, soll ihn eintippen können, ohne erst zu suchen,
+                  // wo auf der Karte er liegt.
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.lg,
@@ -1245,57 +1268,110 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                       AppSpacing.lg,
                       AppSpacing.sm,
                     ),
-                    child: Material(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          for (final v in _ortVorschlaege)
-                            ListTile(
-                              dense: true,
-                              visualDensity: VisualDensity.compact,
-                              leading: const Icon(
-                                Icons.place_outlined,
-                                size: 18,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            contextMenuBuilder: einfuegbaresMenue,
+                            controller: _ortController,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              labelText: AppTexte.of(context).infoOrtSuchen,
+                              hintText: AppTexte.of(
+                                context,
+                              ).infoOrtSuchenBeispiel,
+                              prefixIcon: const Icon(
+                                Icons.travel_explore,
+                                size: 20,
                               ),
-                              title: Text(v.name),
-                              subtitle: v.herkunft.isEmpty
-                                  ? null
-                                  : Text(v.herkunft),
-                              // Die Einwohnerzahl beantwortet „welches
-                              // Berlin?", ohne dass jemand die Landkarte
-                              // im Kopf haben muss.
-                              trailing: v.einwohner == 0
-                                  ? null
-                                  : Text(
-                                      NumberFormat.compact(
-                                        locale: Localizations.localeOf(
-                                          context,
-                                        ).toString(),
-                                      ).format(v.einwohner),
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                              onTap: () => _ortUebernehmen(v),
+                              border: const OutlineInputBorder(),
                             ),
-                        ],
-                      ),
+                            onChanged: _ortEingabe,
+                            onSubmitted: (_) => _sucheOrt(),
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        IconButton(
+                          tooltip: AppTexte.of(context).infoOrtSuchen,
+                          icon: _ortSucheLaeuft
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.search),
+                          onPressed: _ortSucheLaeuft ? null : _sucheOrt,
+                        ),
+                      ],
                     ),
                   ),
-                MiniLocationMap(
-                  latitude: asset.latitude,
-                  longitude: asset.longitude,
-                  onLocationChanged: _setLocation,
-                  height: 200,
-                  borderRadius: BorderRadius.zero,
-                ),
+                  // Die Vorschläge. **Der eigentliche Umbau**: Bis hierher
+                  // entschied die Suche sofort und sagte erst hinterher,
+                  // dass die Wahl eine Vermutung war („es gibt 23 weitere
+                  // gleichen Namens"). Wer den Ort seines Fotos kennt, will
+                  // ihn auswählen, nicht hinterher berichtigen.
+                  if (_ortVorschlaege.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        0,
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                      ),
+                      child: Material(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final v in _ortVorschlaege)
+                              ListTile(
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                leading: const Icon(
+                                  Icons.place_outlined,
+                                  size: 18,
+                                ),
+                                title: Text(v.name),
+                                subtitle: v.herkunft.isEmpty
+                                    ? null
+                                    : Text(v.herkunft),
+                                // Die Einwohnerzahl beantwortet „welches
+                                // Berlin?", ohne dass jemand die Landkarte
+                                // im Kopf haben muss.
+                                trailing: v.einwohner == 0
+                                    ? null
+                                    : Text(
+                                        NumberFormat.compact(
+                                          locale: Localizations.localeOf(
+                                            context,
+                                          ).toString(),
+                                        ).format(v.einwohner),
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                onTap: () => _ortUebernehmen(v),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  MiniLocationMap(
+                    latitude: asset.latitude,
+                    longitude: asset.longitude,
+                    onLocationChanged: _setLocation,
+                    height: 200,
+                    borderRadius: BorderRadius.zero,
+                  ),
+                ],
               ],
             ),
           ),
@@ -1573,12 +1649,16 @@ class _KiBeschreibung extends StatelessWidget {
   final bool vonHand;
   final void Function(bool deutsch) onSprache;
 
+  /// Nur zeigen, nicht bearbeiten (gesperrter Ordner, #492).
+  final bool nurLesen;
+
   const _KiBeschreibung({
     required this.controller,
     required this.focusNode,
     required this.deutsch,
     required this.vonHand,
     required this.onSprache,
+    this.nurLesen = false,
   });
 
   @override
@@ -1614,16 +1694,21 @@ class _KiBeschreibung extends StatelessWidget {
           contextMenuBuilder: einfuegbaresMenue,
           controller: controller,
           focusNode: focusNode,
+          readOnly: nurLesen,
           maxLines: null,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontStyle: FontStyle.italic,
             color: farben.onSurfaceVariant,
           ),
-          decoration: InputDecoration(
-            hintText: deutsch ? t.infoKiPlatzhalterDe : t.infoKiPlatzhalterEn,
-            border: const UnderlineInputBorder(),
-            isDense: true,
-          ),
+          decoration: nurLesen
+              ? const InputDecoration.collapsed(hintText: null)
+              : InputDecoration(
+                  hintText: deutsch
+                      ? t.infoKiPlatzhalterDe
+                      : t.infoKiPlatzhalterEn,
+                  border: const UnderlineInputBorder(),
+                  isDense: true,
+                ),
         ),
         if (vonHand) ...[
           const SizedBox(height: 4),

@@ -612,6 +612,10 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   final MenuController _menue = MenuController();
 
   void _showContextMenu(Offset globalPosition) {
+    // Jeder Punkt darin ändert die Aufnahme oder sucht sie dort, wo eine
+    // gesperrte nicht steht (Zeitleiste, ähnliche Fotos) – siehe
+    // [_bearbeitbar].
+    if (!_bearbeitbar) return;
     final bildbereich =
         _bildbereichKey.currentContext?.findRenderObject() as RenderBox?;
     if (bildbereich == null) return;
@@ -851,7 +855,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (saved == true) await _refreshAsset(asset.id);
   }
 
+  /// Angaben einer Aufnahme aus dem gesperrten Ordner ändert die Ansicht
+  /// nicht (#492): Sie landeten im Klartext in der Datenbank, und beim
+  /// Herausnehmen überschrieb das verschlüsselte Paket sie wieder. Das
+  /// Infoblatt zeigt sie dort nur.
+  bool get _bearbeitbar => !_currentAsset.isLocked;
+
   Future<void> _setRating(int rating) async {
+    if (!_bearbeitbar) return;
     final id = _currentAsset.id;
     await widget.db.fuehreAus(BewertungSetzen([id], rating));
     await _refreshAsset(id);
@@ -861,6 +872,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Taste noch einmal nimmt die Marke wieder weg – wie ein zweiter Klick auf
   /// denselben Kreis in der Palette.
   Future<void> _setColorLabel(String farbe) async {
+    if (!_bearbeitbar) return;
     final asset = _currentAsset;
     await widget.db.fuehreAus(
       FarbmarkeSetzen([asset.id], asset.colorLabel == farbe ? null : farbe),
