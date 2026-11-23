@@ -20,6 +20,7 @@ void main() {
   Future<void> zeige(
     WidgetTester tester, {
     Size groesse = const Size(1200, 900),
+    Widget? darunter,
   }) async {
     gedrueckt = 0;
     tester.view.physicalSize = groesse;
@@ -33,12 +34,14 @@ void main() {
         builder: (context, kind) => mitMeldungen(kind, dienst: d),
         home: Scaffold(
           appBar: AppBar(title: const Text('Bildschirm')),
-          body: Center(
-            child: FilledButton(
-              onPressed: () => gedrueckt++,
-              child: const Text('Darunter'),
-            ),
-          ),
+          body:
+              darunter ??
+              Center(
+                child: FilledButton(
+                  onPressed: () => gedrueckt++,
+                  child: const Text('Darunter'),
+                ),
+              ),
         ),
       ),
     );
@@ -88,6 +91,37 @@ void main() {
     await tester.tap(find.text('Darunter'));
     await tester.pump();
     expect(gedrueckt, 1);
+    await ruhe(tester);
+  });
+
+  testWidgets('neben der Glocke kommt ein Klick darunter an', (tester) async {
+    // #482: Das Scrollable um den Stapel fing seine ganze Breite ab
+    // (420 Punkte), auch wenn darin nur die Glocke stand.
+    await zeige(
+      tester,
+      darunter: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => gedrueckt++,
+        child: const SizedBox.expand(),
+      ),
+    );
+    d.hinweis('Verpasst');
+    await tester.pump(const Duration(seconds: 5));
+    final glocke = find.byIcon(Icons.notifications_none);
+    expect(glocke, findsOneWidget);
+    expect(find.text('Verpasst'), findsNothing);
+
+    for (final abstand in [60.0, 200.0, 380.0]) {
+      await tester.tapAt(tester.getCenter(glocke) - Offset(abstand, 0));
+      await tester.pump();
+    }
+    expect(gedrueckt, 3);
+
+    // Die Glocke selbst nimmt ihren Klick weiter an.
+    await tester.tap(glocke);
+    await tester.pump();
+    expect(gedrueckt, 3);
+    expect(find.text('Verpasst'), findsOneWidget);
     await ruhe(tester);
   });
 

@@ -178,6 +178,9 @@ class _MeldungsfensterState extends State<Meldungsfenster> {
     // Fläche fangen sie nicht ab. Ein IgnorePointer darüber wäre sogar
     // schädlich – er nähme den ganzen Teilbaum aus der Trefferprüfung,
     // und ein inneres `ignoring: false` holte ihn nicht zurück.
+    //
+    // Nur das Scrollable fängt von sich aus seine ganze Fläche ab – siehe
+    // dort.
     return Positioned.fill(
       child: SafeArea(
         child: Padding(
@@ -194,7 +197,15 @@ class _MeldungsfensterState extends State<Meldungsfenster> {
               // Rollbar, sobald der Stapel höher wird als das Fenster: Eine
               // sehr lange Meldung – etwa ein Fehler mit angehängtem
               // Wortlaut – liess die Spalte sonst unten überlaufen.
+              //
+              // **Nur die Karten nehmen Klicks an** (#482). Von sich aus
+              // fängt ein Scrollable jeden Klick auf seiner ganzen Fläche ab,
+              // und die ist 420 Punkte breit, auch wenn darin nur die Glocke
+              // steht: Der Streifen links neben ihr war für die Ansicht
+              // darunter tot, etwa der Chip „Ereignisse“ in „Orte der
+              // Familie“.
               child: SingleChildScrollView(
+                hitTestBehavior: HitTestBehavior.deferToChild,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
