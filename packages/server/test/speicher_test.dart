@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:kern/protokoll.dart';
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/speicher.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
@@ -186,5 +188,110 @@ void main() {
       }),
       throwsArgumentError,
     );
+  });
+
+  // #483: Ein Upload, der nach dem Kopf nichts mehr schickte, hielt die
+  // ganze angekündigte Länge zugesagt, solange die Verbindung stand.
+  group('Zusage mit dem Gelesenen', () {
+    const schritt = Speicherwaechter.zusageSchritt;
+    late int frei;
+    late Speicherwaechter w;
+    setUp(() async {
+      frei = 1000 + 10 * schritt;
+      w = Speicherwaechter(
+        Directory.systemTemp,
+        mindestFrei: 1000,
+        messung: (_) async => Speicherstand(gesamt: 1 << 41, frei: frei),
+      );
+      await w.pruefe();
+    });
+
+    test('vorab nur ein Schritt, dann mit dem Gelesenen', () {
+      expect(w.sageZu(10 * schritt + 1), isNull, reason: 'passt gar nicht');
+      final z = w.sageZu(8 * schritt)!;
+      expect(w.reserviert, schritt);
+      expect(z.wachse(schritt, bis: 8 * schritt), isTrue);
+      expect(w.reserviert, schritt, reason: 'noch gedeckt');
+      expect(z.wachse(schritt + 1, bis: 8 * schritt), isTrue);
+      expect(w.reserviert, 2 * schritt);
+      // Daneben passt, was neben der vollen Länge nicht mehr gepasst hätte.
+      final andere = w.sageZu(7 * schritt)!;
+      expect(w.reserviert, 3 * schritt);
+      expect(andere.wachse(7 * schritt, bis: 7 * schritt), isTrue);
+      expect(w.reserviert, 9 * schritt);
+      // Jetzt reicht es für den Rest des ersten nicht mehr.
+      expect(z.wachse(3 * schritt + 1, bis: 8 * schritt), isFalse);
+      expect(w.reserviert, 9 * schritt);
+      andere.gib(geschrieben: false);
+      z.gib(geschrieben: false);
+      expect(w.reserviert, 0);
+    });
+
+    test('nicht über die angekündigte Länge', () {
+      final z = w.sageZu(schritt + 10)!;
+      expect(z.wachse(schritt + 1, bis: schritt + 10), isTrue);
+      expect(z.bytes, schritt + 10);
+      z.gib(geschrieben: false);
+      expect(w.reserviert, 0);
+    });
+
+    test('schreibeUpload: ganz, zu viel, kein Platz, Stillstand', () async {
+      final ordner = await Directory.systemTemp.createTemp('pv_upload_');
+      addTearDown(() => ordner.delete(recursive: true));
+      final ziel = File('${ordner.path}/eingang');
+
+      final ganz = w.sageZu(100)!;
+      expect(
+        await schreibeUpload(
+          Stream.value(List.filled(100, 1)),
+          ziel,
+          laenge: 100,
+          platz: ganz,
+        ),
+        100,
+      );
+      expect(await ziel.length(), 100);
+      ganz.gib(geschrieben: false);
+      expect(
+        await schreibeUpload(
+          Stream.fromIterable([List.filled(80, 1), List.filled(80, 1)]),
+          ziel,
+          laenge: 100,
+          platz: null,
+        ),
+        160,
+        reason: 'mehr als angekündigt: danach Schluss',
+      );
+
+      // Zugesagt sind 10; für den Rest ist kein Platz mehr da.
+      frei = 1000 + 50;
+      await w.pruefe();
+      final knapp = w.reserviere(10)!;
+      await expectLater(
+        schreibeUpload(
+          Stream.value(List.filled(60, 1)),
+          ziel,
+          laenge: 100,
+          platz: knapp,
+        ),
+        throwsA(isA<SpeicherVoll>()),
+      );
+      expect(knapp.bytes, 10);
+
+      final still = StreamController<List<int>>();
+      addTearDown(still.close);
+      final uhr = Stopwatch()..start();
+      await expectLater(
+        schreibeUpload(
+          still.stream,
+          ziel,
+          laenge: 100,
+          platz: null,
+          leerlauf: const Duration(milliseconds: 100),
+        ),
+        throwsA(isA<TimeoutException>()),
+      );
+      expect(uhr.elapsed, lessThan(const Duration(seconds: 5)));
+    });
   });
 }

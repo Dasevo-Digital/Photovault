@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:kern/protokoll.dart';
 
@@ -107,11 +108,31 @@ class Speicherwaechter {
   /// Ohne Messung (kein `df`) lässt sich nichts prüfen; dann gilt die
   /// Zusage, gezählt wird trotzdem.
   Speicherzusage? reserviere(int bytes) {
-    final s = _stand;
-    if (s != null && s.frei - _reserviert - bytes < mindestFrei) return null;
+    if (!_passt(bytes)) return null;
     _reserviert += bytes;
     return Speicherzusage._(this, bytes);
   }
+
+  bool _passt(int bytes) {
+    final s = _stand;
+    return s == null || s.frei - _reserviert - bytes >= mindestFrei;
+  }
+
+  /// Um so viel wächst eine Zusage aus [sageZu] auf einmal.
+  static const zusageSchritt = 64 * 1024 * 1024;
+
+  /// Für einen Upload, der [angekuendigt] Bytes nennt: `null`, wenn sie
+  /// jetzt nicht passen ([reserviere]), sonst eine Zusage über den ersten
+  /// [zusageSchritt], die mit dem Gelesenen wächst ([schreibeUpload]).
+  ///
+  /// **Nicht die ganze Länge vorab (#483).** Ein Gast, der nach dem Kopf
+  /// nichts mehr schickte, hielt sonst bis zu 2 GB, solange seine
+  /// Verbindung stand – und mit ihnen [voll] für alle Uploads aller Konten,
+  /// während die Messung genug Platz sah. Jetzt hält ein stehender Upload
+  /// höchstens, was schon kam, und einen Schritt.
+  Speicherzusage? sageZu(int angekuendigt) => _passt(angekuendigt)
+      ? reserviere(math.min(angekuendigt, zusageSchritt))
+      : null;
 
   void _gib(int bytes, {required bool geschrieben}) {
     if (!geschrieben) {
@@ -188,10 +209,27 @@ class Speicherwaechter {
 
 /// Eine Zusage von Platz für einen Upload ([Speicherwaechter.reserviere]).
 class Speicherzusage {
-  Speicherzusage._(this._waechter, this.bytes);
+  Speicherzusage._(this._waechter, this._bytes);
   final Speicherwaechter _waechter;
-  final int bytes;
+  int _bytes;
+  int get bytes => _bytes;
   var _gegeben = false;
+
+  /// Wächst, bis die Zusage [gelesen] Bytes deckt – in Schritten von
+  /// [Speicherwaechter.zusageSchritt], aber nicht über [bis]. `false`, wenn
+  /// der Platz dafür nicht mehr reicht; dann bleibt sie, wie sie war.
+  bool wachse(int gelesen, {required int bis}) {
+    if (_gegeben) return false;
+    if (gelesen <= _bytes) return true;
+    final mehr = math.max(
+      gelesen - _bytes,
+      math.min(Speicherwaechter.zusageSchritt, bis - _bytes),
+    );
+    if (!_waechter._passt(mehr)) return false;
+    _waechter._reserviert += mehr;
+    _bytes += mehr;
+    return true;
+  }
 
   /// Gibt die Zusage zurück: [geschrieben], wenn die Datei auf der Platte
   /// bleibt (dann erst nach der nächsten Messung), sonst sofort. Mehrmals
@@ -199,6 +237,65 @@ class Speicherzusage {
   void gib({required bool geschrieben}) {
     if (_gegeben) return;
     _gegeben = true;
-    _waechter._gib(bytes, geschrieben: geschrieben);
+    _waechter._gib(_bytes, geschrieben: geschrieben);
   }
+}
+
+/// Für den Rest eines Uploads reicht der Platz nicht mehr
+/// ([Speicherzusage.wachse]).
+class SpeicherVoll implements Exception {
+  const SpeicherVoll();
+}
+
+/// Wie lange ein Upload ohne ein neues Stück stehen darf ([schreibeUpload]).
+const uploadLeerlauf = Duration(seconds: 60);
+
+/// Schreibt den Körper [koerper] eines Uploads mit der angekündigten Länge
+/// [laenge] nach [ziel] und gibt zurück, wie viele Bytes kamen – mehr als
+/// [laenge], wenn der Absender mehr schickte; dann ist danach Schluss.
+///
+/// [platz] wächst mit dem Gelesenen ([Speicherwaechter.sageZu]); reicht er
+/// nicht mehr: [SpeicherVoll]. Kommt [leerlauf] lang kein Stück:
+/// [TimeoutException] (#483). Ohne diese Frist hielt ein Upload, der nach
+/// dem Kopf nichts mehr schickte – ein Telefon, das mitten darin
+/// einschlief, oder ein Gast mit Absicht –, Verbindung und Zusage, bis die
+/// Verbindung von selbst endete.
+Future<int> schreibeUpload(
+  Stream<List<int>> koerper,
+  File ziel, {
+  required int laenge,
+  required Speicherzusage? platz,
+  Duration leerlauf = uploadLeerlauf,
+}) async {
+  var gelesen = 0;
+  final senke = ziel.openWrite();
+  var gescheitert = false;
+  try {
+    await senke.addStream(
+      koerper
+          .timeout(leerlauf)
+          .takeWhile((stueck) {
+            gelesen += stueck.length;
+            return gelesen <= laenge;
+          })
+          .map((stueck) {
+            if (platz != null && !platz.wachse(gelesen, bis: laenge)) {
+              throw const SpeicherVoll();
+            }
+            return stueck;
+          }),
+    );
+  } catch (_) {
+    gescheitert = true;
+    rethrow;
+  } finally {
+    try {
+      await senke.close();
+    } catch (_) {
+      // Nach einem Abbruch meldet das Schliessen denselben Fehler noch
+      // einmal; der erste zählt.
+      if (!gescheitert) rethrow;
+    }
+  }
+  return gelesen;
 }

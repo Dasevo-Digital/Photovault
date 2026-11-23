@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:photo_vault_server/photo_vault_server.dart';
+import 'package:photo_vault_server/src/speicher.dart';
 import 'package:photo_vault_server/src/freigabe_api.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
@@ -96,6 +97,7 @@ void main() {
     int jeAbsender = 100,
     int jeFreigabe = 100,
     int inPruefung = 100,
+    Duration leerlauf = uploadLeerlauf,
   }) => Freigabeapi(
     dienst: konten.freigaben,
     bibliotheken: bibliotheken,
@@ -108,6 +110,7 @@ void main() {
     gleichzeitigJeAbsender: jeAbsender,
     gleichzeitigJeFreigabe: jeFreigabe,
     hoechstensInPruefung: inPruefung,
+    leerlauf: leerlauf,
   );
 
   /// Ein Upload, dessen Körper erst mit `fertig()` ankommt.
@@ -215,5 +218,29 @@ void main() {
     pruefung.alleFertig();
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(await ganz(f, 'c'), 202);
+  });
+
+  // #483: Ein Gast, der nach dem Kopf nichts mehr schickte, hielt seine
+  // Zusage über die ganze Länge, solange die Verbindung stand – und mit
+  // ihr „voll“ für alle anderen.
+  test('ein stehender Upload hält den Platz nicht fest', () async {
+    const schritt = Speicherwaechter.zusageSchritt;
+    final f = api(leerlauf: const Duration(milliseconds: 300));
+    // Neben der ganzen angekündigten Länge blieben 500 Bytes – zu wenig
+    // für den zweiten Gast.
+    frei = 1000 + 3 * schritt + 500;
+    await speicher.pruefe();
+    final steht = schicke(f, 'a', laenge: 3 * schritt);
+    expect(await schonDa(steht.antwort), isFalse);
+    expect(await ganz(f, 'b'), 202);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(speicher.reserviert, schritt, reason: 'nur der erste Schritt');
+
+    final r = await steht.antwort;
+    expect(r.statusCode, 408);
+    expect(r.headers['connection'], 'close');
+    await speicher.pruefe();
+    expect(speicher.reserviert, 0);
+    expect(konten.beitraege.offen(konten.freigaben.fuer(link)!.id), 1);
   });
 }

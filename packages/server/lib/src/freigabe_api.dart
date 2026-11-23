@@ -73,6 +73,7 @@ class Freigabeapi {
     this.gleichzeitigJeAbsender = gastGleichzeitigJeAbsender,
     this.gleichzeitigJeFreigabe = gastGleichzeitigJeFreigabe,
     this.hoechstensInPruefung = gastHoechstensInPruefung,
+    this.leerlauf = uploadLeerlauf,
   }) : bremse = bremse ?? Bremse(),
        pruefung = pruefung ?? Gastpruefung();
 
@@ -99,6 +100,9 @@ class Freigabeapi {
 
   /// Die grösste Datei, die ein Gast schicken darf.
   final int hoechstensBeitrag;
+
+  /// Wie lange ein Beitrag ohne neues Stück stehen darf ([schreibeUpload]).
+  final Duration leerlauf;
 
   /// Höchstens so viele Bytes in offenen Beiträgen je Freigabe (siehe
   /// [Gastbeitraege.hoechstensOffeneBytes]).
@@ -604,8 +608,9 @@ class Freigabeapi {
         _zuViele(adresse)) {
       return _json({'fehler': 'zu viele Dateien'}, status: 429);
     }
-    // Der Platz für genau diese Datei, mit allem, was gerade ankommt.
-    final platz = speicher?.reserviere(laenge);
+    // Ob diese Datei mit allem, was gerade ankommt, noch passt; zugesagt
+    // wird mit dem Gelesenen (Speicherwaechter.sageZu, #483).
+    final platz = speicher?.sageZu(laenge);
     if (speicher != null && platz == null) {
       return _json({'fehler': 'Der Speicher ist voll.'}, status: 507);
     }
@@ -627,23 +632,32 @@ class Freigabeapi {
     var angekommen = false;
     try {
       await ordner.create(recursive: true);
-      var geschrieben = 0;
-      final senke = roh.openWrite();
-      try {
-        await senke.addStream(
-          r.read().takeWhile((stueck) {
-            geschrieben += stueck.length;
-            return geschrieben <= laenge;
-          }),
-        );
-      } finally {
-        await senke.close();
-      }
+      final geschrieben = await schreibeUpload(
+        r.read(),
+        roh,
+        laenge: laenge,
+        platz: platz,
+        leerlauf: leerlauf,
+      );
       if (geschrieben != laenge) {
         await _raeumeWeg(b, eintrag.id);
         return _json({'fehler': 'unvollständig'}, status: 400);
       }
       angekommen = true;
+    } on TimeoutException {
+      await _raeumeWeg(b, eintrag.id);
+      return _json(
+        {'fehler': 'Zeitüberschreitung'},
+        status: 408,
+        kopf: {'connection': 'close'},
+      );
+    } on SpeicherVoll {
+      await _raeumeWeg(b, eintrag.id);
+      return _json(
+        {'fehler': 'Der Speicher ist voll.'},
+        status: 507,
+        kopf: {'connection': 'close'},
+      );
     } catch (e) {
       await _raeumeWeg(b, eintrag.id);
       rethrow;

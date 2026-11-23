@@ -1,5 +1,6 @@
 import 'albumsicht.dart';
 import 'beschriftung_api.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -23,12 +24,17 @@ import 'speicher.dart';
 import 'zeilen_json.dart';
 import 'zeitangaben.dart';
 
-Response _json(Object? daten, {int status = 200}) => Response(
+Response _json(
+  Object? daten, {
+  int status = 200,
+  Map<String, String> kopf = const {},
+}) => Response(
   status,
   body: jsonEncode(daten),
   headers: {
     'content-type': 'application/json; charset=utf-8',
     'cache-control': 'no-store',
+    ...kopf,
   },
 );
 
@@ -82,6 +88,7 @@ class Teilungsapi {
     required this.datei,
     this.speicher,
     this.hoechstensBeitrag = 2 * 1024 * 1024 * 1024,
+    this.leerlauf = uploadLeerlauf,
   });
 
   final Kontodienst konten;
@@ -89,6 +96,9 @@ class Teilungsapi {
   final Aufnahmedatei datei;
   final Speicherwaechter? speicher;
   final int hoechstensBeitrag;
+
+  /// Wie lange ein Beitrag ohne neues Stück stehen darf ([schreibeUpload]).
+  final Duration leerlauf;
 
   Albumteilungen get _dienst => konten.albumteilungen;
 
@@ -570,10 +580,10 @@ class Teilungsapi {
     if (laenge <= 0 || laenge > hoechstensBeitrag) {
       return _json({'fehler': 'Datei zu gross'}, status: 413);
     }
-    // Der Platz für genau diese Datei, mit allem, was gerade ankommt
-    // (Speicherwaechter.reserviere) – nicht nur der Stand der letzten
-    // Messung.
-    final platz = speicher?.reserviere(laenge);
+    // Ob diese Datei mit allem, was gerade ankommt, noch passt – nicht nur
+    // nach dem Stand der letzten Messung. Zugesagt wird mit dem Gelesenen
+    // (Speicherwaechter.sageZu, #483).
+    final platz = speicher?.sageZu(laenge);
     if (speicher != null && platz == null) {
       return _json({'fehler': 'Der Speicher ist voll.'}, status: 507);
     }
@@ -595,17 +605,27 @@ class Teilungsapi {
       final datei = File(
         p.join(ordner.path, Gastbeitraege.bereinigt(q['name'] ?? 'beitrag')),
       );
-      var geschrieben = 0;
-      final senke = datei.openWrite();
+      final int geschrieben;
       try {
-        await senke.addStream(
-          r.read().takeWhile((stueck) {
-            geschrieben += stueck.length;
-            return geschrieben <= laenge;
-          }),
+        geschrieben = await schreibeUpload(
+          r.read(),
+          datei,
+          laenge: laenge,
+          platz: platz,
+          leerlauf: leerlauf,
         );
-      } finally {
-        await senke.close();
+      } on TimeoutException {
+        return _json(
+          {'fehler': 'Zeitüberschreitung'},
+          status: 408,
+          kopf: {'connection': 'close'},
+        );
+      } on SpeicherVoll {
+        return _json(
+          {'fehler': 'Der Speicher ist voll.'},
+          status: 507,
+          kopf: {'connection': 'close'},
+        );
       }
       if (geschrieben != laenge) {
         return _json({'fehler': 'unvollständig'}, status: 400);
