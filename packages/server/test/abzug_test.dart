@@ -104,4 +104,45 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     expect(kopien(), 0);
   });
+
+  // #485: Die Frist endete, sobald jemand der Antwort zuhörte – auch wenn
+  // danach nichts mehr gelesen wurde.
+  test('ein Leser, der nicht weiterliest, gibt die Kopie frei', () async {
+    final b = (await bibliotheken.fuer(konten.alle().single.id)).bibliothek;
+    final r1 = await frag();
+    await b.db.customStatement(
+      "INSERT INTO pv_aenderungen (tabelle, schluessel) VALUES ('x', '[1]')",
+    );
+    final r2 = await frag();
+    final steht = [
+      for (final r in [r1, r2]) r.read().listen((_) {})..pause(),
+    ];
+    addTearDown(() async {
+      for (final s in steht) {
+        await s.cancel();
+      }
+    });
+    expect(kopien(), 2);
+    await b.db.customStatement(
+      "INSERT INTO pv_aenderungen (tabelle, schluessel) VALUES ('x', '[2]')",
+    );
+    expect((await frag()).statusCode, 503);
+
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    expect(kopien(), 0);
+    final weiter = await frag();
+    expect(weiter.statusCode, 200);
+    await weiter.read().drain<void>();
+  });
+
+  test('wer zu Ende liest, bekommt alles', () async {
+    final r = await frag();
+    final laenge = int.parse(r.headers['content-length']!);
+    var gelesen = 0;
+    await for (final stueck in r.read()) {
+      gelesen += stueck.length;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+    expect(gelesen, laenge);
+  });
 }

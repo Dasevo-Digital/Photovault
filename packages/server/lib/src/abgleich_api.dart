@@ -50,8 +50,9 @@ class Abgleichsapi {
   /// Wo die Abzüge entstehen; sonst im Systemtemp.
   final Directory? abzugsordner;
 
-  /// So lange darf eine Antwort mit einem Abzug warten, bis jemand sie
-  /// liest; danach gibt sie ihre Kopie frei.
+  /// So lange darf eine Antwort mit einem Abzug ohne Fortschritt stehen –
+  /// ungelesen oder mit einem Leser, der nicht weiterliest; danach bricht
+  /// sie ab und gibt ihre Kopie frei.
   final Duration ohneLeser;
 
   /// Höchstens so viele Abzüge je Bibliothek zugleich. Gleichzeitige
@@ -215,8 +216,9 @@ class Abgleichsapi {
   /// des Kontos nacheinander auf. Jetzt entsteht je Bibliothek nur ein
   /// Abzug zugleich; wer fragt, während einer auf demselben Stand
   /// ausgeliefert wird, bekommt denselben. Mehr als [hoechstensAbzuege]
-  /// gibt es nicht (503). Liest niemand die Antwort, gibt sie ihre Kopie
-  /// nach [ohneLeser] frei.
+  /// gibt es nicht (503). Geht die Antwort [ohneLeser] lang nicht weiter
+  /// – niemand liest sie, oder der Leser steht –, bricht sie ab und gibt
+  /// ihre Kopie frei.
   Future<Response> abzug(Request anfrage) async {
     final b = await _bib(anfrage);
     // shelf_router nimmt HEAD mit; der Körper liefe nie, und nur er räumt auf.
@@ -235,21 +237,48 @@ class Abgleichsapi {
     }
     StreamSubscription<List<int>>? abo;
     var frei = false;
-    late final Timer wache;
+    Timer? wache;
     void gibFrei() {
       if (frei) return;
       frei = true;
-      wache.cancel();
+      wache?.cancel();
       unawaited(kopie.gibFrei());
     }
 
-    wache = Timer(ohneLeser, gibFrei);
     late final StreamController<List<int>> aus;
+    // Ging [ohneLeser] lang nichts weiter: abbrechen und die Kopie
+    // freigeben. Das Gerät sieht eine unvollständige Antwort und fragt neu.
+    void abbrechen() {
+      if (frei) return;
+      unawaited(abo?.cancel());
+      abo = null;
+      gibFrei();
+      aus.addError(TimeoutException('Abzug: niemand liest weiter', ohneLeser));
+      unawaited(aus.close());
+    }
+
+    // **Die Frist misst den Fortschritt (#485).** Sie endete früher, sobald
+    // der Server der Antwort zuhörte – und das tut er sofort, auch wenn das
+    // Gerät nie etwas liest. Zwei Verbindungen, die stehen blieben (eine App
+    // hängt, ein Telefon geht in den Hintergrund), hielten so ihre Kopien,
+    // bis sie endeten, und jedes weitere Gerät des Kontos bekam
+    // `pv_abzug_belegt`. Jetzt stellt jedes gelieferte Stück sie neu.
+    void wacheStellen() {
+      wache?.cancel();
+      wache = Timer(ohneLeser, abbrechen);
+    }
+
+    wacheStellen();
     aus = StreamController<List<int>>(
       onListen: () {
-        wache.cancel();
+        // Schon abgebrochen: Fehler und Ende liegen bereit, die Kopie ist weg.
+        if (frei) return;
+        wacheStellen();
         abo = kopie.datei.openRead().listen(
-          aus.add,
+          (stueck) {
+            wacheStellen();
+            aus.add(stueck);
+          },
           onError: aus.addError,
           onDone: () {
             unawaited(aus.close());
