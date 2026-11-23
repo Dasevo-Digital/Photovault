@@ -75,6 +75,12 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.68.1" date="2026-11-23">
+      <description>
+        <p>Connected libraries now fetch summits, huts and springs for activities only through your own server, no longer directly from Overpass.</p>
+        <p>All builds load the ONNX Runtime from a verified copy in this project, since the original download locations are gone.</p>
+      </description>
+    </release>
     <release version="3.68.0" date="2026-11-22">
       <description>
         <p>Location data is protected when sharing: shared albums and libraries hide GPS unless the owner allows it per share, and exports keep image and sidecar consistent.</p>
