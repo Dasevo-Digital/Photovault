@@ -624,9 +624,12 @@ function zelleVon(s, a) {
   let text = '';
   switch (s) {
     case 'dateiname': text = a.name || ''; break;
-    // Die Uhrzeit weicht dem Vermerk, wenn das Datum geschätzt ist – sie
-    // wäre die genaueste Angabe und zugleich die, die sicher nicht stimmt.
-    case 'datum': text = a.geschaetzt ? `${listenDatum.format(new Date(a.aufgenommen))} (${t('geschätzt')})` : aufnahmedatumText(a,listenDatumZeit); break;
+    // Eine Datierung zuerst, so wie sie gilt („1985“, „März 1990“): Sie setzt
+    // immer auch „geschätzt“, und der Zweig dafür erfand einen Tag – den
+    // 1. Januar –, den niemand angegeben hat (#486). Sonst weicht die Uhrzeit
+    // dem Vermerk, wenn das Datum geschätzt ist – sie wäre die genaueste
+    // Angabe und zugleich die, die sicher nicht stimmt.
+    case 'datum': text = a.datierung ? aufnahmedatumText(a, listenDatum) : a.geschaetzt ? `${listenDatum.format(new Date(a.aufgenommen))} (${t('geschätzt')})` : aufnahmedatumText(a,listenDatumZeit); break;
     case 'kamera': text = kamerabezeichnung(a.kamera, a.modell); break;
     case 'objektiv': text = a.objektiv || ''; break;
     case 'belichtung': text = belichtungstext(a); break;

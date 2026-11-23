@@ -471,4 +471,27 @@ void main() {
       expect(texte, contains("  '$d': '"), reason: d);
     }
   });
+
+  test('die Liste zeigt eine Datierung, wie sie gilt (#486)', () {
+    // Eine Datierung setzt immer auch „geschätzt“; der Zweig dafür kam
+    // zuerst und zeigte „01.01.85 (geschätzt)“ statt „1985“.
+    final datum = RegExp(
+      r"case 'datum': text = ([^;]+);",
+    ).firstMatch(funktion('zelleVon'))![1]!;
+    expect(datum, startsWith('a.datierung ? aufnahmedatumText('));
+    expect(
+      datum.indexOf('a.datierung'),
+      lessThan(datum.indexOf('a.geschaetzt')),
+    );
+  });
+
+  test('ein Ort ohne Koordinaten steht in den Angaben (#484)', () {
+    final angaben = funktion('zeigeAngaben');
+    expect(angaben, contains('d.ortOhneKoordinaten'));
+    expect(angaben, contains("t('ohne Koordinaten')"));
+    expect(
+      File('web/texte.js').readAsStringSync(),
+      contains("  'ohne Koordinaten': '"),
+    );
+  });
 }
