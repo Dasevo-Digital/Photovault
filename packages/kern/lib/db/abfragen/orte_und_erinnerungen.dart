@@ -59,10 +59,18 @@ extension ErinnerungsAbfragen on AppDatabase {
           ..where(albumAssets.albumId.isIn(filter.alben)),
       );
     }
-    for (final z in filter.zeitgrenzen) {
+    // Eine datierte Aufnahme nach ihrer Datierung, wie in der Zeitleiste
+    // (#481): Ein auf 1985 datierter Scan gehört nicht in den Zeitraum
+    // seines Dateidatums.
+    final grenzen = filter.zeitgrenzen, tage = filter.kalendertage;
+    for (var i = 0; i < grenzen.length; i++) {
       bedingung &=
-          assets.fileCreatedAt.isSmallerThanValue(z.von) |
-          assets.fileCreatedAt.isBiggerOrEqualValue(z.bis);
+          (assets.datumVon.isNull() &
+              (assets.fileCreatedAt.isSmallerThanValue(grenzen[i].von) |
+                  assets.fileCreatedAt.isBiggerOrEqualValue(grenzen[i].bis))) |
+          (assets.datumVon.isNotNull() &
+              (assets.datumVon.isSmallerThanValue(tage[i].von) |
+                  assets.datumVon.isBiggerOrEqualValue(tage[i].bis)));
     }
     return bedingung;
   }

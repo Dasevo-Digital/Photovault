@@ -244,7 +244,8 @@ Future<Jahresinhalt> jahresinhalt(AppDatabase db, int jahr) async {
     for (final a in aufnahmen)
       (
         id: a.id,
-        wann: a.fileCreatedAt,
+        // Wie die Zeitleiste: datiert nach der Datierung (#481).
+        wann: a.anzeigeDatum,
         video: a.type == 'VIDEO',
         favorit: a.isFavorite,
         bewertung: a.rating,
@@ -252,6 +253,7 @@ Future<Jahresinhalt> jahresinhalt(AppDatabase db, int jahr) async {
         land: a.locationCountry,
         ort: a.locationCity,
         datumGeraten: a.datumGeschaetzt,
+        monatOffen: const {'jahr', 'zeitraum'}.contains(a.datumGenauigkeit),
       ),
   ];
   final nachId = {for (final a in aufnahmen) a.id: a};

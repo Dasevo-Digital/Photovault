@@ -144,16 +144,13 @@ extension AktivitaetenAbfragen on AppDatabase {
   /// bei einem weiten Zeitraum die halbe Bibliothek für eine einzige
   /// Ziffer, und das bei jeder Änderung.
   Future<int> zahlImZeitraum(DateTime von, DateTime bis) async {
-    final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
-    final anfang = DateTime(von.year, von.month, von.day);
     final zaehler = assets.id.count();
     final abfrage = selectOnly(assets)
       ..addColumns([zaehler])
       ..where(
         assets.isTrashed.equals(false) &
             assets.isLocked.equals(false) &
-            assets.fileCreatedAt.isBiggerOrEqualValue(anfang) &
-            assets.fileCreatedAt.isSmallerOrEqualValue(ende) &
+            _imZeitraum(assets, von, bis) &
             _isPrimaryGridEntry(assets),
       );
     return (await abfrage.getSingle()).read(zaehler)!;
@@ -164,13 +161,26 @@ extension AktivitaetenAbfragen on AppDatabase {
     DateTime von,
     DateTime bis,
   ) async {
-    final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
+    // Dieselbe Bedingung wie [_imZeitraum], hier als Text.
     final anfang = DateTime(von.year, von.month, von.day);
+    final ende = DateTime(bis.year, bis.month, bis.day + 1);
+    final anfangUtc = DateTime.utc(von.year, von.month, von.day);
+    final endeUtc = DateTime.utc(bis.year, bis.month, bis.day + 1);
     return (await customSelect(
       'SELECT $rasterSpalten FROM assets WHERE $rasterSichtbar '
-      'AND file_created_at >= ? AND file_created_at <= ? '
-      'ORDER BY file_created_at ASC',
-      variables: [Variable.withDateTime(anfang), Variable.withDateTime(ende)],
+      'AND coalesce(datum_von,file_created_at) >= ? '
+      'AND coalesce(datum_von,file_created_at) < ? '
+      'AND ((datum_von IS NULL AND file_created_at >= ? '
+      'AND file_created_at < ?) OR (datum_von >= ? AND datum_von < ?)) '
+      'ORDER BY coalesce(datum_von,file_created_at) ASC',
+      variables: [
+        Variable.withDateTime(anfang.isBefore(anfangUtc) ? anfang : anfangUtc),
+        Variable.withDateTime(ende.isAfter(endeUtc) ? ende : endeUtc),
+        Variable.withDateTime(anfang),
+        Variable.withDateTime(ende),
+        Variable.withDateTime(anfangUtc),
+        Variable.withDateTime(endeUtc),
+      ],
       readsFrom: {assets},
     ).get()).map(Rasterzeile.ausZeile).toList();
   }
@@ -186,8 +196,6 @@ extension AktivitaetenAbfragen on AppDatabase {
     int hoechstens = 8,
     bool erinnerung = false,
   }) async {
-    final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
-    final anfang = DateTime(von.year, von.month, von.day);
     final anzahl = faces.assetId.count(distinct: true);
     final query =
         selectOnly(
@@ -198,8 +206,7 @@ extension AktivitaetenAbfragen on AppDatabase {
             faces.personId.isNotNull() &
                 assets.isTrashed.equals(false) &
                 assets.isLocked.equals(false) &
-                assets.fileCreatedAt.isBiggerOrEqualValue(anfang) &
-                assets.fileCreatedAt.isSmallerOrEqualValue(ende),
+                _imZeitraum(assets, von, bis),
           )
           ..groupBy([faces.personId])
           ..orderBy([OrderingTerm.desc(anzahl)])
@@ -226,8 +233,6 @@ extension AktivitaetenAbfragen on AppDatabase {
     DateTime bis, {
     bool erinnerung = false,
   }) async {
-    final ende = DateTime(bis.year, bis.month, bis.day, 23, 59, 59, 999);
-    final anfang = DateTime(von.year, von.month, von.day);
     final filter = erinnerung
         ? await erinnerungsBedingung()
         : const Constant(true);
@@ -237,11 +242,12 @@ extension AktivitaetenAbfragen on AppDatabase {
                 filter &
                 t.isTrashed.equals(false) &
                 t.isLocked.equals(false) &
-                t.fileCreatedAt.isBiggerOrEqualValue(anfang) &
-                t.fileCreatedAt.isSmallerOrEqualValue(ende) &
+                _imZeitraum(t, von, bis) &
                 _isPrimaryGridEntry(t),
           )
-          ..orderBy([(t) => OrderingTerm.asc(t.fileCreatedAt)]))
+          ..orderBy([
+            (t) => OrderingTerm.asc(coalesce([t.datumVon, t.fileCreatedAt])),
+          ]))
         .get();
   }
 

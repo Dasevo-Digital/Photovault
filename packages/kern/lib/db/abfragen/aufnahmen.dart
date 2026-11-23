@@ -3,16 +3,27 @@ part of '../database.dart';
 /// Aufnahmen, Zeitleiste und die Datenströme, die einen Schwall aushalten.
 extension AufnahmenAbfragen on AppDatabase {
   Expression<bool> _kalenderjahr(Assets t, int jahr) =>
-      _kalendergrenze(
-        t,
-        [DateTime(jahr), DateTime.utc(jahr)],
-        [DateTime(jahr + 1), DateTime.utc(jahr + 1)],
-      ) &
-      ((t.datumVon.isNull() &
-              t.fileCreatedAt.isBiggerOrEqualValue(DateTime(jahr)) &
-              t.fileCreatedAt.isSmallerThanValue(DateTime(jahr + 1))) |
-          (t.datumVon.isBiggerOrEqualValue(DateTime.utc(jahr)) &
-              t.datumVon.isSmallerThanValue(DateTime.utc(jahr + 1))));
+      _imZeitraum(t, DateTime(jahr), DateTime(jahr, 12, 31));
+
+  /// Ob eine Aufnahme zwischen den Kalendertagen [von] und [bis] (beide
+  /// eingeschlossen) entstand: ohne Datierung nach der Ortszeit von
+  /// `file_created_at`, mit Datierung nach ihrem Anfang `datum_von`, einem
+  /// Kalendertag in UTC. So ordnen Zeitleiste, Kalender und Statistik die
+  /// Aufnahme ein; Jahresrückblick, Reisen und Aktivitäten zählten einen
+  /// auf 1985 datierten Scan dagegen im Jahr seines Dateidatums (#481).
+  Expression<bool> _imZeitraum(Assets t, DateTime von, DateTime bis) {
+    final anfang = DateTime(von.year, von.month, von.day);
+    final ende = DateTime(bis.year, bis.month, bis.day + 1);
+    final anfangUtc = DateTime.utc(von.year, von.month, von.day);
+    final endeUtc = DateTime.utc(bis.year, bis.month, bis.day + 1);
+    return _kalendergrenze(t, [anfang, anfangUtc], [ende, endeUtc]) &
+        ((t.datumVon.isNull() &
+                t.fileCreatedAt.isBiggerOrEqualValue(anfang) &
+                t.fileCreatedAt.isSmallerThanValue(ende)) |
+            (t.datumVon.isBiggerOrEqualValue(anfangUtc) &
+                t.datumVon.isSmallerThanValue(endeUtc)));
+  }
+
   Expression<bool> _kalendermonat(Assets t, int jahr, int monat) {
     if (monat == 0) {
       return _kalenderjahr(t, jahr) &

@@ -76,6 +76,14 @@ class Erinnerungsfilter {
     };
   }
 
+  /// Dieselben Zeiträume als Kalendertage in UTC, von einschliessend bis
+  /// ausschliessend – der Massstab für eine datierte Aufnahme, deren
+  /// `datum_von` ein Kalendertag in UTC ist (#481).
+  List<({DateTime von, DateTime bis})> get kalendertage => [
+    for (final z in zeitraeume)
+      (von: tag(z.von), bis: tag(z.bis).add(const Duration(days: 1))),
+  ];
+
   bool schliesstTagAus(DateTime datum) =>
       zeitgrenzen.any((z) => !datum.isBefore(z.von) && datum.isBefore(z.bis));
 

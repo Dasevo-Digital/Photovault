@@ -27,6 +27,11 @@ typedef Jahresaufnahme = ({
   /// Auswahl – ein falsch datiertes Foto wäre im Rückblick auf das
   /// falsche Jahr eine Behauptung.
   bool datumGeraten,
+
+  /// Nur das Jahr ist bekannt (Datierung „Jahr“ oder „Zeitraum“): Die
+  /// Aufnahme zählt mit, aber in keinem Monat – [wann] wäre der 1. Januar,
+  /// und der stimmt nicht (#481).
+  bool monatOffen,
 });
 
 /// Was über ein Jahr zu sagen ist.
@@ -73,7 +78,7 @@ Jahreszahlen jahreszahlen(Iterable<Jahresaufnahme> aufnahmen) {
   final jeMonat = List<int>.filled(12, 0);
   for (final a in aufnahmen) {
     a.video ? videos++ : fotos++;
-    jeMonat[a.wann.month - 1]++;
+    if (!a.monatOffen) jeMonat[a.wann.month - 1]++;
     if (!a.datumGeraten) {
       tage.add(a.wann.year * 1000 + _tagImJahr(a.wann));
     }

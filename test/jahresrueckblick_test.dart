@@ -22,6 +22,7 @@ void main() {
     land: land,
     ort: ort,
     datumGeraten: geraten,
+    monatOffen: false,
   );
 
   group('Zahlen', () {
