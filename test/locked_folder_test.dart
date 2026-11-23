@@ -440,4 +440,109 @@ void main() {
       reason: 'die Serie bleibt mit ihrem anderen Bild zu sehen',
     );
   });
+
+  // #480: Datierung, Quelle und „Hinweis zur Herkunft“ standen nach dem
+  // Sperren weiter im Klartext in library.sqlite.
+  group('Datierung im gesperrten Ordner (#480)', () {
+    const hinweis = 'Rückseite: Sommer bei Person A';
+
+    void erwarteOhneDatierung(AssetData a) {
+      expect(a.datumVon, isNull);
+      expect(a.datumBis, isNull);
+      expect(a.datumGenauigkeit, isNull);
+      expect(a.datumQuelle, isNull);
+      expect(a.datumHinweis, isNull);
+      expect(a.datumGeschaetzt, isFalse);
+    }
+
+    void erwarteDatierung(AssetData a) {
+      expect(a.datumVon!.isAtSameMomentAs(DateTime.utc(1985)), isTrue);
+      expect(a.datumBis!.isAtSameMomentAs(DateTime.utc(1986)), isTrue);
+      expect(a.datumGenauigkeit, 'jahr');
+      expect(a.datumQuelle, 'beschriftung');
+      expect(a.datumHinweis, hinweis);
+      expect(a.datumGeschaetzt, isTrue);
+    }
+
+    Future<String> paketText(String id) async => String.fromCharCodes(
+      await paths.absolute(paths.vaultMetadataRelativePath(id)).readAsBytes(),
+    );
+
+    test('Sperren legt sie ins Paket, Entsperren holt sie zurück', () async {
+      final asset = await importPhoto('scan.jpg', [4, 5, 6]);
+      await db.setzeDatierung(
+        [asset.id],
+        AufnahmeDatierung.jahr(
+          1985,
+          quelle: Datierungsquelle.beschriftung,
+          hinweis: hinweis,
+        ),
+      );
+      erwarteDatierung((await db.assetById(asset.id))!);
+
+      await library.setupVaultPin('1234');
+      await library.lockAsset((await db.assetById(asset.id))!);
+
+      final gesperrt = (await db.assetById(asset.id))!;
+      erwarteOhneDatierung(gesperrt);
+      expect(await paketText(asset.id), isNot(contains('Sommer')));
+
+      await library.unlockAsset(gesperrt);
+      erwarteDatierung((await db.assetById(asset.id))!);
+    });
+
+    test(
+      'vor #480 Gesperrtes kommt beim Entsperren des Ordners ins Paket',
+      () async {
+        final asset = await importPhoto('alt.jpg', [7, 8, 9]);
+        await library.setupVaultPin('1234');
+        await library.lockAsset(asset);
+        // So liess eine ältere Fassung die Zeile zurück: gesperrt, aber mit
+        // lesbarer Datierung.
+        await db.setzeDatierung(
+          [asset.id],
+          AufnahmeDatierung.jahr(
+            1985,
+            quelle: Datierungsquelle.beschriftung,
+            hinweis: hinweis,
+          ),
+        );
+        erwarteDatierung((await db.assetById(asset.id))!);
+
+        library.lockVaultSession();
+        await library.unlockVaultWithPin('1234');
+
+        erwarteOhneDatierung((await db.assetById(asset.id))!);
+        expect(await paketText(asset.id), isNot(contains('Sommer')));
+        expect(
+          File(
+            '${paths.absolute(paths.vaultMetadataRelativePath(asset.id)).path}.datierung',
+          ).existsSync(),
+          isFalse,
+          reason: 'das neue Paket ersetzt das alte',
+        );
+
+        await library.unlockAsset((await db.assetById(asset.id))!);
+        erwarteDatierung((await db.assetById(asset.id))!);
+      },
+    );
+
+    test('ohne geschützte Angaben bleibt die Zeile, wie gewählt', () async {
+      final asset = await importPhoto('offen.jpg', [1, 1, 2]);
+      await db.setProtectPrivateMetadata(false);
+      await db.setzeDatierung(
+        [asset.id],
+        AufnahmeDatierung.jahr(
+          1985,
+          quelle: Datierungsquelle.beschriftung,
+          hinweis: hinweis,
+        ),
+      );
+      await library.setupVaultPin('1234');
+      await library.lockAsset((await db.assetById(asset.id))!);
+      library.lockVaultSession();
+      await library.unlockVaultWithPin('1234');
+      erwarteDatierung((await db.assetById(asset.id))!);
+    });
+  });
 }

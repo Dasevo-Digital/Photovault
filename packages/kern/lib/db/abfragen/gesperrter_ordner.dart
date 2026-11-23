@@ -110,6 +110,14 @@ extension GesperrteAbfragen on AppDatabase {
         aiCaptionDe: const Value(null),
         transkript: const Value(null),
         transkriptSprache: const Value(null),
+        // Die Datierung samt Quelle und „Hinweis zur Herkunft“ (#480); wie
+        // [ohneDatierung].
+        datumVon: const Value(null),
+        datumBis: const Value(null),
+        datumGenauigkeit: const Value(null),
+        datumQuelle: const Value(null),
+        datumHinweis: const Value(null),
+        datumGeschaetzt: const Value(false),
       ),
     );
     await (delete(
@@ -118,6 +126,24 @@ extension GesperrteAbfragen on AppDatabase {
     await (delete(assetTags)..where((t) => t.assetId.equals(assetId))).go();
     await (delete(albumAssets)..where((a) => a.assetId.equals(assetId))).go();
   });
+
+  /// Die Datierung einer Aufnahme (Bereich, Genauigkeit, Quelle und
+  /// „Hinweis zur Herkunft“) neutral: Bei einer gesperrten Aufnahme liegt
+  /// sie im verschlüsselten Paket (#480).
+  static const ohneDatierung = AssetsCompanion(
+    datumVon: Value(null),
+    datumBis: Value(null),
+    datumGenauigkeit: Value(null),
+    datumQuelle: Value(null),
+    datumHinweis: Value(null),
+    datumGeschaetzt: Value(false),
+  );
+
+  /// Leert nur die Datierung von [assetId] (siehe [ohneDatierung]); für
+  /// Aufnahmen, die vor #480 gesperrt wurden, nachdem ihre Datierung im
+  /// Paket steht.
+  Future<void> leereDatierung(String assetId) =>
+      (update(assets)..where((a) => a.id.equals(assetId))).write(ohneDatierung);
 
   Future<void> restorePrivateMetadata(
     String assetId,

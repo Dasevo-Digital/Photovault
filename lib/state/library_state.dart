@@ -4235,12 +4235,14 @@ class LibraryState extends ChangeNotifier {
     if (kdfSalt == null || nonce == null || wrapped == null) {
       throw StateError('Kein PIN eingerichtet.');
     }
-    _vaultKey = await VaultCrypto.unwrapMasterKey(
+    final key = await VaultCrypto.unwrapMasterKey(
       pin,
       kdfSalt: kdfSalt,
       nonce: nonce,
       wrapped: wrapped,
     );
+    _vaultKey = key;
+    await _datierungInsPaket(key);
   }
 
   /// Ändert den PIN, ohne den Master-Key (und damit alle bereits
@@ -4359,6 +4361,7 @@ class LibraryState extends ChangeNotifier {
       'gpsGeprueft': asset.gpsGeprueft,
       'datumGeschaetzt': asset.datumGeschaetzt,
       'datumGeprueft': asset.datumGeprueft,
+      ..._datierungFuersPaket(asset),
       'ortGeerbt': asset.ortGeerbt,
       'videobilderGeprueft': asset.videobilderGeprueft,
       'zeitversatzMinuten': asset.zeitversatzMinuten,
@@ -4378,13 +4381,24 @@ class LibraryState extends ChangeNotifier {
       'entwicklungsvarianten':
           relations['entwicklungsvarianten'] ?? const <String>[],
     };
+    await _schreibePrivateMetadata(asset.id, metadata, key, target);
+  }
+
+  /// Verschlüsselt [metadata] von [assetId] nach [target] (AES-GCM, die
+  /// Asset-ID als AAD).
+  Future<void> _schreibePrivateMetadata(
+    String assetId,
+    Map<String, Object?> metadata,
+    SecretKey key,
+    File target,
+  ) async {
     final cipher = AesGcm.with256bits();
     final nonce = cipher.newNonce();
     final box = await cipher.encrypt(
       utf8.encode(jsonEncode(metadata)),
       secretKey: key,
       nonce: nonce,
-      aad: utf8.encode(asset.id),
+      aad: utf8.encode(assetId),
     );
     await target.writeAsBytes([
       ..._privateMetadataMagic,
@@ -4393,6 +4407,53 @@ class LibraryState extends ChangeNotifier {
       ...box.mac.bytes,
     ], flush: true);
   }
+
+  /// Die Datierung (#407) gehört ins Paket wie die Aufnahmezeit: Bereich,
+  /// Genauigkeit, Quelle und „Hinweis zur Herkunft“ sagen ebenso viel
+  /// über ein Foto wie sein Datum. Bis #480 blieben sie im Klartext in der
+  /// Datenbank stehen.
+  static Map<String, Object?> _datierungFuersPaket(AssetData asset) => {
+    'datumVon': asset.datumVon?.toUtc().toIso8601String(),
+    'datumBis': asset.datumBis?.toUtc().toIso8601String(),
+    'datumGenauigkeit': asset.datumGenauigkeit,
+    'datumQuelle': asset.datumQuelle,
+    'datumHinweis': asset.datumHinweis,
+  };
+
+  static bool _hatDatierung(AssetData a) =>
+      a.datumVon != null ||
+      a.datumBis != null ||
+      a.datumGenauigkeit != null ||
+      a.datumQuelle != null ||
+      a.datumHinweis != null;
+
+  /// Gesperrte Aufnahmen aus Fassungen vor #480 tragen ihre Datierung noch
+  /// im Klartext in der Datenbank, und ihr Paket kennt sie nicht. Sobald
+  /// der Schlüssel da ist, kommt sie ins Paket und danach aus der Zeile.
+  /// Das neue Paket entsteht neben dem alten und ersetzt es erst fertig;
+  /// bricht etwas ab, bleibt es beim alten Stand und der nächste Versuch
+  /// holt es nach. Ohne Paket (Angaben beim Sperren nicht geschützt)
+  /// bleibt die Zeile, wie sie ist – so war es gewählt.
+  Future<void> _datierungInsPaket(
+    SecretKey key,
+  ) => _mitTresorWarteschlange(() async {
+    for (final asset in await db.alleGesperrten()) {
+      if (!_hatDatierung(asset)) continue;
+      final ziel = paths.absolute(paths.vaultMetadataRelativePath(asset.id));
+      if (!await ziel.exists()) continue;
+      try {
+        final json = await _privateMetadataLesen(asset.id, key);
+        if (json == null) continue;
+        json.addAll(_datierungFuersPaket(asset));
+        final neu = File('${ziel.path}.datierung');
+        await _schreibePrivateMetadata(asset.id, json, key, neu);
+        await neu.rename(ziel.path);
+        await db.leereDatierung(asset.id);
+      } on Object catch (e) {
+        debugPrint('Datierung der gesperrten Aufnahme nicht nachgetragen: $e');
+      }
+    }
+  });
 
   /// Die verschlüsselt abgelegten privaten Angaben von [assetId], oder
   /// `null` bei einem Bestand aus älteren Fassungen ohne diese Datei.
@@ -4455,6 +4516,15 @@ class LibraryState extends ChangeNotifier {
     final json = await _privateMetadataLesen(assetId, key);
     if (json == null) return; // Bestand aus älteren Fassungen.
     double? number(String key) => (json[key] as num?)?.toDouble();
+    Value<String?> text(String key) => json.containsKey(key)
+        ? Value(json[key] as String?)
+        : const Value.absent();
+    Value<DateTime?> datum(String key) => json.containsKey(key)
+        ? Value(switch (json[key]) {
+            final String s => DateTime.parse(s),
+            _ => null,
+          })
+        : const Value.absent();
     final tags = <(String, String)>[];
     for (final encoded in (json['tags'] as List? ?? const [])) {
       final parts = (encoded as String).split('\u0000');
@@ -4495,6 +4565,13 @@ class LibraryState extends ChangeNotifier {
         gpsGeprueft: Value(json['gpsGeprueft'] as bool),
         datumGeschaetzt: Value(json['datumGeschaetzt'] as bool),
         datumGeprueft: Value(json['datumGeprueft'] as bool),
+        // Pakete vor #480 kennen die Datierung nicht; sie blieb dann in der
+        // Zeile stehen und bleibt dort.
+        datumVon: datum('datumVon'),
+        datumBis: datum('datumBis'),
+        datumGenauigkeit: text('datumGenauigkeit'),
+        datumQuelle: text('datumQuelle'),
+        datumHinweis: text('datumHinweis'),
         ortGeerbt: Value(json['ortGeerbt'] as bool),
         videobilderGeprueft: Value(json['videobilderGeprueft'] as bool),
         zeitversatzMinuten: Value(json['zeitversatzMinuten'] as int?),
