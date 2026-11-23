@@ -1104,7 +1104,10 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                       // Die Region weicht dafuer – wer wissen will, wo das
                       // ungefaehr war, liest den Ortsnamen; wer wissen will,
                       // wie sicher das ist, braucht diesen Satz.
-                      if (hasLocation)
+                      // Auch ein Name ohne Koordinaten, etwa ein angenommener
+                      // Ortsvorschlag, den das Ortsverzeichnis nicht kennt
+                      // (#484): Sonst sah man nicht, was übernommen wurde.
+                      if (hasLocation || (asset.locationCity ?? '').isNotEmpty)
                         _IconDetailRow(
                           icon: asset.ortGeerbt
                               ? Icons.share_location_outlined
@@ -1112,7 +1115,12 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
                           title:
                               asset.locationCity ??
                               AppTexte.of(context).infoStandortBekannt,
-                          subtitle: asset.ortGeerbt
+                          subtitle: !hasLocation
+                              ? [
+                                  ...regionParts,
+                                  AppTexte.of(context).infoOrtOhneKoordinaten,
+                                ].join(' · ')
+                              : asset.ortGeerbt
                               ? AppTexte.of(context).infoOrtGeerbt
                               : asset.locationCity != null
                               ? (regionParts.isEmpty

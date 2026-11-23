@@ -1513,6 +1513,12 @@ abstract class AppTexte {
   /// **'vom Nachbarfoto übernommen'**
   String get angabenGeerbt;
 
+  /// No description provided for @angabenOhneKoordinaten.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne Koordinaten'**
+  String get angabenOhneKoordinaten;
+
   /// No description provided for @angabenBeschreibung.
   ///
   /// In de, this message translates to:

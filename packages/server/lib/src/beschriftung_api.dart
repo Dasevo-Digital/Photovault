@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/beschriftungsvorschlaege.dart';
+import 'package:kern/services/reverse_geocoder.dart';
 import 'package:shelf/shelf.dart';
 
 Response _json(Object? j, [int status = 200]) => Response(
@@ -23,8 +24,9 @@ Future<Response> beschriftungsAnfrage(
   required String name,
   required bool besitzer,
   String? entscheidung,
+  ReverseGeocoder? ortsverzeichnis,
 }) async {
-  final dienst = Beschriftungsdienst(db);
+  final dienst = Beschriftungsdienst(db, ortsverzeichnis: ortsverzeichnis);
   final t = db.beschriftungsvorschlaege;
   Future<bool> sichtbar(String id) async =>
       (await (db.selectOnly(db.assets)

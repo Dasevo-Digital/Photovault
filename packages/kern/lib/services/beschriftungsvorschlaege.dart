@@ -5,6 +5,7 @@ import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
 import '../db/database.dart';
+import 'reverse_geocoder.dart';
 
 class Beschriftungsstand {
   Beschriftungsstand(this.aufnahme, this.gesichter, this.personen);
@@ -20,8 +21,12 @@ class Beschriftungsstand {
 
 /// Speichern und Entscheiden erfolgen in derselben Bibliotheksdatenbank.
 class Beschriftungsdienst {
-  const Beschriftungsdienst(this.db);
+  const Beschriftungsdienst(this.db, {this.ortsverzeichnis});
   final AppDatabase db;
+
+  /// Löst einen angenommenen Ortsnamen zu Koordinaten, Land und Region auf
+  /// ([_ortAusVorschlag]); ohne Verzeichnis bleibt es beim Namen.
+  final ReverseGeocoder? ortsverzeichnis;
 
   Future<void> _imAlbum(String album, String asset) async {
     final t = db.assets;
@@ -159,6 +164,45 @@ class Beschriftungsdienst {
     return kennung;
   });
 
+  /// Was „Annehmen“ eines Ortes setzt (#484).
+  ///
+  /// Bisher nur den Namen als Stadt, zu den alten Koordinaten. Bei einem
+  /// Foto ohne GPS zeigten die Angaben danach keinen Ort, und auf der Karte
+  /// fehlte er; bei einem mit GPS widersprachen Name und Koordinaten, und
+  /// Land und Region waren still gelöscht.
+  ///
+  /// Jetzt wie die Ortssuche: Kennt das Ortsverzeichnis den Namen – bei
+  /// gleichnamigen der nächste zum bisherigen Ort –, gelten seine
+  /// Koordinaten und Namen. Sonst kommt nur der Name dazu; Koordinaten,
+  /// Land und Region bleiben, wie sie waren.
+  OrtSetzen _ortAusVorschlag(AssetData a, String name) {
+    final geo = ortsverzeichnis;
+    final treffer = geo?.sucheOrt(
+      name,
+      naheBreite: a.latitude,
+      naheLaenge: a.longitude,
+    );
+    if (geo != null && treffer != null) {
+      final namen = geo.lookup(treffer.breite, treffer.laenge);
+      return OrtSetzen(
+        [a.id],
+        treffer.breite,
+        treffer.laenge,
+        land: namen?.country,
+        region: namen?.state,
+        stadt: namen?.city ?? treffer.name,
+      );
+    }
+    return OrtSetzen(
+      [a.id],
+      a.latitude,
+      a.longitude,
+      land: a.locationCountry,
+      region: a.locationState,
+      stadt: name,
+    );
+  }
+
   Future<void> entscheiden(
     String id, {
     required bool annehmen,
@@ -181,9 +225,7 @@ class Beschriftungsdienst {
       switch (v.art) {
         case 'ort':
           final a = (await db.assetById(v.assetId))!;
-          await db.fuehreAus(
-            OrtSetzen([a.id], a.latitude, a.longitude, stadt: v.wert),
-          );
+          await db.fuehreAus(_ortAusVorschlag(a, v.wert));
         case 'jahr':
           await db.fuehreAus(JahrSchaetzen(v.assetId, int.parse(v.wert)));
         case 'person':

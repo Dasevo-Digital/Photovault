@@ -6729,6 +6729,12 @@ abstract class AppTexte {
   /// **'Standort bekannt'**
   String get infoStandortBekannt;
 
+  /// No description provided for @infoOrtOhneKoordinaten.
+  ///
+  /// In de, this message translates to:
+  /// **'ohne Koordinaten'**
+  String get infoOrtOhneKoordinaten;
+
   /// No description provided for @infoOrtNichtAufgeloest.
   ///
   /// In de, this message translates to:

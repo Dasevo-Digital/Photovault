@@ -3531,7 +3531,8 @@ async function zeigeImFoto(g) {
     fig.append(r);
   }
   if (d) {
-    const ort = d.ort ? [d.ort.stadt, land(d.ort.land)].filter(Boolean).join(', ') : '';
+    const o = d.ort || d.ortOhneKoordinaten;
+    const ort = o ? [o.stadt, land(o.land)].filter(Boolean).join(', ') : '';
     $('imfoto-text').textContent = [aufnahmedatumText(d,datumZeit), ort, d.name].filter(Boolean).join(' · ');
   }
 }
@@ -6373,6 +6374,12 @@ async function zeigeAngaben() {
   if (d.ort) {
     const name = [d.ort.stadt, d.ort.region, land(d.ort.land)].filter(Boolean).join(', ');
     const r = reihe('📍', name || t('Standort bekannt'), `${d.ort.breite.toFixed(5)}, ${d.ort.laenge.toFixed(5)}${d.ort.geerbt ? ` · ${t('vom Nachbarfoto übernommen')}` : ''}`);
+    r.querySelector('.inhalt').append(ortKnopf);
+    teile.push(r);
+  } else if (d.ortOhneKoordinaten) {
+    // Ein Name ohne Koordinaten, etwa ein angenommener Ortsvorschlag (#484).
+    const o = d.ortOhneKoordinaten;
+    const r = reihe('📍', [o.stadt, o.region, land(o.land)].filter(Boolean).join(', '), t('ohne Koordinaten'));
     r.querySelector('.inhalt').append(ortKnopf);
     teile.push(r);
   } else {

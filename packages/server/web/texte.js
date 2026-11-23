@@ -574,6 +574,7 @@ const EN = {
   'Datum geschätzt': 'Date estimated',
   'bearbeitet': 'edited',
   'Standort bekannt': 'Location known',
+  'ohne Koordinaten': 'without coordinates',
   'vom Nachbarfoto übernommen': 'taken from a neighbouring photo',
   'Beschreibung': 'Description',
   'Speichern': 'Save',

@@ -1635,6 +1635,16 @@ class _Api {
           'stadt': a.locationCity,
           'geerbt': a.ortGeerbt,
         },
+      // Ein Name ohne Koordinaten, etwa ein angenommener Ortsvorschlag, den
+      // das Ortsverzeichnis nicht kennt (#484). Eigener Schlüssel: Wer
+      // `ort` liest, rechnet mit Koordinaten.
+      if ((a.latitude == null || a.longitude == null) &&
+          (a.locationCity ?? '').isNotEmpty)
+        'ortOhneKoordinaten': {
+          'land': landAnzeige(a.locationCountry, _sprache(anfrage)),
+          'region': a.locationState,
+          'stadt': a.locationCity,
+        },
       'personen': [
         for (final p in angaben.personen) {'id': p.id, 'name': p.name},
       ],

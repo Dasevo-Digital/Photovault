@@ -4028,6 +4028,9 @@ class AppTexteEn extends AppTexte {
   String get infoStandortBekannt => 'Location known';
 
   @override
+  String get infoOrtOhneKoordinaten => 'without coordinates';
+
+  @override
   String get infoOrtNichtAufgeloest =>
       'Location not resolved yet (Tools → Jobs, “Resolve country/region/city”)';
 

@@ -984,6 +984,9 @@ class AppTexteDe extends AppTexte {
   String get angabenGeerbt => 'vom Nachbarfoto übernommen';
 
   @override
+  String get angabenOhneKoordinaten => 'ohne Koordinaten';
+
+  @override
   String get angabenBeschreibung => 'Beschreibung';
 
   @override

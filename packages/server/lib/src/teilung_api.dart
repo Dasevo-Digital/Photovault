@@ -272,6 +272,7 @@ class Teilungsapi {
       name: konto.name,
       besitzer: konto.id == ort.besitzer,
       entscheidung: entscheidung,
+      ortsverzeichnis: bibliotheken.ortsverzeichnis,
     );
   }
 

@@ -982,6 +982,9 @@ class AppTexteEn extends AppTexte {
   String get angabenGeerbt => 'taken from a neighbouring photo';
 
   @override
+  String get angabenOhneKoordinaten => 'without coordinates';
+
+  @override
   String get angabenBeschreibung => 'Description';
 
   @override

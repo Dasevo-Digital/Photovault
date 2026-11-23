@@ -1410,6 +1410,7 @@
   "infoNiemandZugeordnet": "Nobody assigned yet.",
   "infoDetails": "Details",
   "infoStandortBekannt": "Location known",
+  "infoOrtOhneKoordinaten": "without coordinates",
   "infoOrtNichtAufgeloest": "Location not resolved yet (Tools → Jobs, “Resolve country/region/city”)",
   "infoOrtEntfernen": "Clear the location",
   "infoBearbeitet": "Edited",

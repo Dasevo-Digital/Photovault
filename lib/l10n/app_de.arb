@@ -2222,6 +2222,7 @@
   "infoNiemandZugeordnet": "Noch niemand zugeordnet.",
   "infoDetails": "Details",
   "infoStandortBekannt": "Standort bekannt",
+  "infoOrtOhneKoordinaten": "ohne Koordinaten",
   "infoOrtNichtAufgeloest": "Ort noch nicht aufgelöst (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“)",
   "infoOrtEntfernen": "Ort entfernen",
   "infoBearbeitet": "Bearbeitet",

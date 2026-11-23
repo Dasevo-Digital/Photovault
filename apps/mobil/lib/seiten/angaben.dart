@@ -306,8 +306,10 @@ class _AngabenlisteState extends State<Angabenliste> {
           ),
         _Reihe(
           symbol: Icons.place_outlined,
+          // Ein Name ohne Koordinaten, etwa ein angenommener Ortsvorschlag
+          // (#484), steht da wie jeder andere – mit dem Zusatz.
           haupt: Text(
-            !hatOrt
+            !hatOrt && ortName.isEmpty
                 ? t.ortKeiner
                 : ortName.isEmpty
                 ? t.angabenStandortBekannt
@@ -317,7 +319,9 @@ class _AngabenlisteState extends State<Angabenliste> {
               ? '${a.latitude!.toStringAsFixed(5)}, '
                     '${a.longitude!.toStringAsFixed(5)}'
                     '${a.ortGeerbt ? ' · ${t.angabenGeerbt}' : ''}'
-              : null,
+              : ortName.isEmpty
+              ? null
+              : t.angabenOhneKoordinaten,
           unten: Align(
             alignment: Alignment.centerLeft,
             child: TextButton(

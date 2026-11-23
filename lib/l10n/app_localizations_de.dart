@@ -4054,6 +4054,9 @@ class AppTexteDe extends AppTexte {
   String get infoStandortBekannt => 'Standort bekannt';
 
   @override
+  String get infoOrtOhneKoordinaten => 'ohne Koordinaten';
+
+  @override
   String get infoOrtNichtAufgeloest =>
       'Ort noch nicht aufgelöst (Werkzeuge → Aufgaben, „Land/Bundesland/Stadt auflösen“)';
 

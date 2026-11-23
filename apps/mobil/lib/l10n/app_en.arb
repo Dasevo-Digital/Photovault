@@ -419,6 +419,7 @@
   "angabenBearbeitet": "edited",
   "angabenStandortBekannt": "Location known",
   "angabenGeerbt": "taken from a neighbouring photo",
+  "angabenOhneKoordinaten": "without coordinates",
   "angabenBeschreibung": "Description",
   "angabenSpeichern": "Save",
   "angabenGespeichert": "Saved",
