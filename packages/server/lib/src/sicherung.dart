@@ -178,7 +178,10 @@ class Serversicherung {
       'um':
           '${um.stunde.toString().padLeft(2, '0')}:'
           '${um.minute.toString().padLeft(2, '0')}',
-      'naechster': naechsterLauf().toUtc().toIso8601String(),
+      // Ohne Ziel oder vor dem Einrichten sichert kein Lauf (#487) – ein
+      // Termin stand trotzdem in der Weboberfläche.
+      if (ziel != null && eingerichtet)
+        'naechster': naechsterLauf().toUtc().toIso8601String(),
       ...letzter,
     };
   }

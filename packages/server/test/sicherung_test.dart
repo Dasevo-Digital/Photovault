@@ -269,6 +269,29 @@ void main() {
     expect(await sicherung.stufe(), Sicherungsstufe.veraltet);
   });
 
+  test('ein nächster Termin nur, wenn auch gesichert wird (#487)', () async {
+    final aus = neu(ohneZiel: true);
+    expect((await aus.stand())['stufe'], 'aus');
+    expect(await aus.stand(), isNot(contains('naechster')));
+    expect((await sicherung.stand())['stufe'], 'nichtEingerichtet');
+    expect(await sicherung.stand(), isNot(contains('naechster')));
+    // Wie die Apps den Stand lesen.
+    expect(
+      Serversicherungsstand.ausJson(await sicherung.stand()).naechster,
+      isNull,
+    );
+
+    await sicherung.einrichten(passphrase);
+    expect(
+      (await sicherung.stand())['naechster'],
+      DateTime(2026, 10, 16, 3, 30).toUtc().toIso8601String(),
+    );
+    // Fehlt das Ziel, versucht es der nächste Lauf trotzdem.
+    File('${nas.path}/${Serversicherung.markeName}').deleteSync();
+    expect((await sicherung.stand())['stufe'], 'zielFehlt');
+    expect(await sicherung.stand(), contains('naechster'));
+  });
+
   test('der nächste Lauf: heute um halb vier oder morgen', () {
     jetzt = DateTime(2026, 10, 15, 2);
     expect(sicherung.naechsterLauf(), DateTime(2026, 10, 15, 3, 30));
