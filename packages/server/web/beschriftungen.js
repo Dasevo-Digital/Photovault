@@ -1,14 +1,39 @@
 'use strict';
 
-function sammlungsFehler(fehler) {
+// Was der Server zu Vorschlägen meldet, in Worten (#488). Vorher kamen nur
+// fünf Codes an; endete etwa die Teilung, stand bloß „unbekannt“ da.
+// `geteilt`: Der Dialog gehört zu einem Album, das ein anderes Konto teilt.
+function sammlungsFehler(fehler, geteilt = false) {
+  const ungueltig = 'Die Anfrage war ungültig. Bitte die Ansicht neu laden.';
+  const wert = 'Bitte einen gültigen Vorschlag eingeben: höchstens 200 Zeichen, ein Jahr zwischen 1 und 9999.';
   const texte = {
     pv_beschriftung_geaendert: 'Dieses Foto wurde geändert. Bitte erneut prüfen.',
     pv_beschriftung_mehrdeutig: 'Bitte eine gleichnamige Person auswählen.',
     pv_beschriftung_entschieden: 'Dieser Vorschlag wurde bereits entschieden.',
     pv_beschriftung_umfang: 'Zu viele offene Vorschläge. Bitte zuerst vorhandene Vorschläge prüfen.',
     pv_beschriftung_gesicht: 'Dieses Gesicht ist nicht mehr verfügbar. Bitte aktualisieren.',
+    pv_beschriftung_aufnahme: 'Dieses Foto ist nicht mehr im Album.',
+    pv_beschriftung_person: 'Diese Person gibt es nicht mehr. Bitte erneut auswählen.',
+    pv_beschriftung_art: ungueltig,
+    pv_beschriftung_wert: wert,
+    wert,
+    unbekannt: geteilt ? 'Dieses Foto ist nicht mehr verfügbar, oder das Album ist nicht mehr mit dir geteilt.' : 'Dieses Album oder Foto ist nicht mehr verfügbar.',
+    umfang: 'Der Vorschlag ist zu lang.',
+    seite: ungueltig,
+    entscheidung: ungueltig,
+    format: ungueltig,
   };
-  return texte[fehler.message] ? t(texte[fehler.message]) : fehler.message;
+  const code = fehler.code;
+  if (texte[code]) return t(texte[code]);
+  if (code === 'pv_anfrage_grenze') {
+    return t(fehler.status === 503 ? 'Der Server ist gerade ausgelastet. Bitte gleich noch einmal versuchen.'
+      : fehler.status === 408 ? 'Die Anfrage hat zu lange gedauert. Bitte noch einmal versuchen.'
+        : 'Der Vorschlag ist zu lang.');
+  }
+  // Ein Code ohne Text bleibt kein roher Bezeichner; Sätze (etwa vom
+  // Erinnerungsfilter) stehen wie gesendet da.
+  if (code && /^[a-z_]+$/.test(code)) return t('Fehler {n}', { n: fehler.status });
+  return fehler.message;
 }
 
 function sammlungsDialog(titel) {
@@ -95,6 +120,7 @@ async function oeffneErinnerungsfilter() {
 
 async function oeffneBeschriftungen(basis, aufnahme) {
   const route = `${basis}/beschriftungen`;
+  const geteilt = basis.startsWith('/api/v1/geteilt/');
   const { dialog, inhalt, fehler } = sammlungsDialog('Beschriftungsvorschläge');
   let seite = 0;
   const laden = async () => {
@@ -110,7 +136,7 @@ async function oeffneBeschriftungen(basis, aufnahme) {
       if (d.besitzer) zeile.append(el('p', null, `${t('Aktuell')}: ${v.aktuell || '—'}`));
       if (!aufnahme) {
         const foto = el('button', 'knopf', t('Foto prüfen')); foto.type = 'button';
-        foto.addEventListener('click', () => oeffneBeschriftungen(basis, v.aufnahme).catch((x) => { fehler.textContent = sammlungsFehler(x); }));
+        foto.addEventListener('click', () => oeffneBeschriftungen(basis, v.aufnahme).catch((x) => { fehler.textContent = sammlungsFehler(x, geteilt); }));
         zeile.append(foto);
       }
       if (d.besitzer && v.zustand === 'offen') {
@@ -136,7 +162,7 @@ async function oeffneBeschriftungen(basis, aufnahme) {
                   const o = el('option', null, `${p.name} (${p.id.slice(0, 8)})`); o.value = p.id; person.append(o);
                 }
                 personenseite++; weitere.hidden = !neu.personenMehr;
-              } catch (x) { fehler.textContent = sammlungsFehler(x); }
+              } catch (x) { fehler.textContent = sammlungsFehler(x, geteilt); }
               finally { weitere.disabled = false; }
             });
             zeile.append(weitere);
@@ -148,7 +174,7 @@ async function oeffneBeschriftungen(basis, aufnahme) {
             if (annehmen && gleiche.length > 1 && !person.value) { fehler.textContent = t('Person auswählen'); return; }
             zeile.querySelectorAll('button').forEach((k) => { k.disabled = true; });
             try { await api(`${route}/${encodeURIComponent(v.id)}`, { methode: 'POST', json: { annehmen, stand: v.stand, ...(person.value ? { person: person.value } : {}) } }); await laden(); }
-            catch (x) { fehler.textContent = sammlungsFehler(x); await laden(); }
+            catch (x) { fehler.textContent = sammlungsFehler(x, geteilt); await laden().catch(() => { /* Die Meldung steht schon da. */ }); }
           });
           zeile.append(b);
         }
@@ -158,7 +184,7 @@ async function oeffneBeschriftungen(basis, aufnahme) {
     for (const [an, richtung] of [[seite > 0, -1], [d.mehr, 1]]) {
       if (!an) continue;
       const b = el('button', 'knopf', t(richtung < 0 ? 'Vorherige Vorschläge' : 'Weitere Vorschläge')); b.type = 'button';
-      b.addEventListener('click', async () => { b.disabled = true; seite += richtung; try { await laden(); } catch (x) { fehler.textContent = sammlungsFehler(x); b.disabled = false; } });
+      b.addEventListener('click', async () => { b.disabled = true; seite += richtung; try { await laden(); } catch (x) { fehler.textContent = sammlungsFehler(x, geteilt); b.disabled = false; } });
       inhalt.append(b);
     }
     if (!aufnahme) return;
@@ -184,9 +210,9 @@ async function oeffneBeschriftungen(basis, aufnahme) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault(); senden.disabled = true;
       try { await api(route, { methode: 'POST', json: { aufnahme, art: art.value, wert: wert.value.trim(), ...(art.value === 'person' ? { gesicht: gesicht.value } : {}) } }); await laden(); }
-      catch (x) { fehler.textContent = sammlungsFehler(x); senden.disabled = false; }
+      catch (x) { fehler.textContent = sammlungsFehler(x, geteilt); senden.disabled = false; }
     });
     inhalt.append(form);
   };
-  try { await laden(); } catch (x) { fehler.textContent = sammlungsFehler(x); }
+  try { await laden(); } catch (x) { fehler.textContent = sammlungsFehler(x, geteilt); }
 }

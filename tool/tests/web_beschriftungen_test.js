@@ -39,17 +39,20 @@ const Parameter = typeof URLSearchParams === 'function' ? URLSearchParams : clas
 const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', 'miniaturUrl', 'URLSearchParams', quelle + '\nreturn {oeffneErinnerungsfilter,oeffneBeschriftungen};');
 
 (async () => {
-  let filter, besitzer = true, konflikt = false, personenMehr = false, personenAbfrage = false;
+  let filter, besitzer = true, konflikt = false, personenMehr = false, personenAbfrage = false, entzogen = null;
   let gespeicherterFilter = { fassung: 1, personen: [], alben: [], zeitraeume: [] };
   let v = { id: 'v', aufnahme: 'foto', von: '<img src=x>', angelegt: '2026-11-19T10:00:00Z', art: 'ort', wert: '<script>Testort</script>', aktuell: 'Alt', stand: 'geprueft', zustand: 'offen' };
   const anfragen = [];
+  // Wie api() in app.js: die Meldung übersetzt, dazu Code und Status.
+  const serverfehler = (code, status) => Object.assign(Error(code), { code, status });
   const api = async (pfad, o = {}) => {
     anfragen.push([pfad, o]);
+    if (entzogen) throw serverfehler(...entzogen);
     if (pfad.endsWith('/einstellungen')) return { erinnerungsfilter: gespeicherterFilter };
     if (pfad.endsWith('/personen')) return { personen: [{ id: 'p', name: '<img src=x>' }] };
     if (pfad.endsWith('/alben')) return { alben: [{ id: 'al', name: 'Album' }] };
     if (o.methode === 'POST') {
-      if (konflikt) throw Error('pv_beschriftung_geaendert');
+      if (konflikt) throw serverfehler('pv_beschriftung_geaendert', 409);
       if (pfad.endsWith('/v')) { assert(o.json.stand === 'geprueft', 'Stand fehlt'); v = { ...v, zustand: o.json.annehmen ? 'angenommen' : 'abgelehnt' }; }
       return {};
     }
@@ -114,6 +117,21 @@ const lade = new Function('el', 'api', 'befehl', 'document', 't', 'datumZeit', '
   await document.body.querySelector('form').fire('submit');
   const post = anfragen.filter((a) => a[1].methode === 'POST').pop();
   assert(post[0] === '/api/v1/geteilt/g/beschriftungen' && post[1].json.wert === '1985' && post[1].json.art === 'jahr', 'Vorschlag geht an falsches Album oder verliert Angaben');
+  // Die Teilung endet, während der Dialog offen ist (#488): Statt „unbekannt“
+  // ein Satz, der sagt, was los ist.
+  entzogen = ['unbekannt', 404];
+  await document.body.querySelector('form').fire('submit');
+  const meldung = () => document.body.querySelectorAll('p').find((n) => n.className === 'meldung').textContent;
+  assert(meldung() === 'Dieses Foto ist nicht mehr verfügbar, oder das Album ist nicht mehr mit dir geteilt.', `Roher Fehler beim Empfänger: ${meldung()}`);
+  entzogen = ['pv_neu', 400];
+  await document.body.querySelector('form').fire('submit');
+  assert(meldung() === 'Fehler {n}', `Unbekannter Code roh: ${meldung()}`);
+  entzogen = null;
+  await button('Schließen').fire('click');
+  entzogen = ['unbekannt', 404];
+  await dialoge.oeffneBeschriftungen('/api/v1/alben/al');
+  assert(meldung() === 'Dieses Album oder Foto ist nicht mehr verfügbar.', `Roher Fehler beim Besitzer: ${meldung()}`);
+  entzogen = null;
   await button('Schließen').fire('click');
 })().then(() => {
   if (typeof print === 'function') print('Dialogregressionen bestanden'); else console.log('Dialogregressionen bestanden');

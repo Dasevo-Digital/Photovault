@@ -37,6 +37,8 @@ const api = async (pfad, { methode = 'GET', json } = {}) => {
   if (!antwort.ok) {
     const f = new Error(daten && daten.fehler ? t(daten.fehler) : t('Fehler {n}', { n: antwort.status }));
     f.status = antwort.status;
+    // Der Code, wie der Server ihn schickt: Die Meldung ist schon übersetzt.
+    if (daten && typeof daten.fehler === 'string') f.code = daten.fehler;
     throw f;
   }
   return daten;

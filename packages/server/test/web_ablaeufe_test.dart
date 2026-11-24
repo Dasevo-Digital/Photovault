@@ -494,4 +494,49 @@ void main() {
       contains("  'ohne Koordinaten': '"),
     );
   });
+
+  test('jeder Fehler der Beschriftungsvorschläge hat einen Text (#488)', () {
+    // Der Dialog übersetzte nur fünf Codes; endete etwa die Teilung, stand
+    // bloß „unbekannt“ da.
+    final js = File('web/beschriftungen.js').readAsStringSync();
+    final beginn = js.indexOf('function sammlungsFehler(');
+    final fehlerText = js.substring(beginn, js.indexOf('\n}\n', beginn));
+    // Was der Weg senden kann: die Antworten der Beschriftungs-API, der
+    // Zugang über die Teilungs-API und die Codes des Dienstes.
+    final teilung = File('lib/src/teilung_api.dart').readAsStringSync();
+    final quellen = [
+      File('lib/src/beschriftung_api.dart').readAsStringSync(),
+      teilung.substring(
+        teilung.indexOf('Future<Response> _beschriftung('),
+        teilung.indexOf('// --- Kommentare'),
+      ),
+    ];
+    final codes = {
+      for (final q in quellen)
+        for (final m in RegExp(r"'fehler': '(\w+)'").allMatches(q)) m[1]!,
+      for (final m in RegExp(r"FormatException\('(pv_\w+)'\)").allMatches(
+        File(
+          '../kern/lib/services/beschriftungsvorschlaege.dart',
+        ).readAsStringSync(),
+      ))
+        m[1]!,
+    };
+    expect(codes, containsAll(['unbekannt', 'pv_beschriftung_aufnahme']));
+    for (final code in codes) {
+      expect(
+        fehlerText,
+        anyOf(contains('    $code: '), contains('    $code,')),
+        reason: code,
+      );
+    }
+    expect(fehlerText, contains("code === 'pv_anfrage_grenze'"));
+    // Ein unbekannter Code bleibt kein roher Bezeichner.
+    expect(fehlerText, contains("t('Fehler {n}', { n: fehler.status })"));
+    expect(app, contains('f.code = daten.fehler'));
+
+    final texte = File('web/texte.js').readAsStringSync();
+    for (final m in RegExp(r"'([A-ZÄÖÜ][^']+\.)'").allMatches(fehlerText)) {
+      expect(texte, contains("  '${m[1]}': '"), reason: m[1]);
+    }
+  });
 }
