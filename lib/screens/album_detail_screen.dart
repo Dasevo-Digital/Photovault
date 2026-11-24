@@ -130,6 +130,31 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
     if (mounted) setState(_selected.clear);
   }
 
+  /// Das Album selbst; die Fotos darin bleiben in der Bibliothek.
+  ///
+  /// Bis #491 ging das am Rechner nur bei intelligenten Alben. Derselbe
+  /// Befehl wie beim Verwerfen eines eben angelegten Albums: Server und
+  /// Geräte kennen ihn seit jeher. Teilungen und Regeln eines gelöschten
+  /// Albums überspringt der Server.
+  Future<void> _albumLoeschen() async {
+    final t = AppTexte.of(context);
+    final verbunden = widget.library.abgleich?.verbindung != null;
+    if (!await confirmDialog(
+      context,
+      t.albumLoeschen,
+      verbunden
+          ? t.albumLoeschenFrageGeteilt(widget.albumName)
+          : t.albumLoeschenFrage(widget.albumName),
+      bestaetigen: t.albumLoeschen,
+    )) {
+      return;
+    }
+    await widget.library.db.fuehreAus(
+      AusAlbumNehmen(widget.albumId, const [], albumLoeschen: true),
+    );
+    if (mounted) Navigator.of(context).pop();
+  }
+
   Future<void> _exportAlbum(
     BuildContext context,
     List<AssetData> assets,
@@ -311,6 +336,11 @@ class _AlbumDetailScreenState extends State<AlbumDetailScreen>
                   ),
                 ),
               ],
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: AppTexte.of(context).albumLoeschen,
+                onPressed: _albumLoeschen,
+              ),
             ],
           ),
           body: assets.isEmpty

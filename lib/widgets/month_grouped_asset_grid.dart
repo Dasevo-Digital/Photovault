@@ -468,7 +468,7 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
     List<Rasterzeile> gruppe,
   ) => _MonthHeader(
     label: gruppe.first.monatsschluessel % 100 == 0
-        ? '${AppTexte.of(context).datierungTitel} · ${gruppe.first.fileCreatedAt.year}'
+        ? '${AppTexte.of(context).datierungOhneMonat} · ${gruppe.first.fileCreatedAt.year}'
         : gruppe.first.datierung != null &&
               gruppe.first.datierung!.genauigkeit.name != 'tag'
         ? datierungstext(
@@ -497,7 +497,7 @@ class _MonthGroupedAssetGridState extends State<MonthGroupedAssetGrid> {
   ) {
     return _TagesHeader(
       label: tag.first.monatsschluessel % 100 == 0
-          ? '${AppTexte.of(context).datierungTitel} · ${tag.first.fileCreatedAt.year}'
+          ? '${AppTexte.of(context).datierungOhneMonat} · ${tag.first.fileCreatedAt.year}'
           : tag.first.datierung != null
           ? datierungstext(
               tag.first.datierung!,

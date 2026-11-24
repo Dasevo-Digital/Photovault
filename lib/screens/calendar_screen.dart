@@ -259,7 +259,7 @@ class MonatsuebersichtScreen extends StatelessWidget {
               return _YearCard(
                 key: ValueKey(monat),
                 titel: monat == 0
-                    ? t.datierungTitel
+                    ? t.datierungOhneMonat
                     : DateFormat.MMMM(sprache).format(DateTime(jahr, monat)),
                 assetCount: proMonat[monat]!,
                 library: library,
@@ -421,7 +421,7 @@ class _YearDetailScreenState extends State<YearDetailScreen>
   String _titel(BuildContext context) {
     if (widget.monat == null) return '${widget.year}';
     if (widget.monat == 0) {
-      return '${AppTexte.of(context).datierungTitel} · ${widget.year}';
+      return '${AppTexte.of(context).datierungOhneMonat} · ${widget.year}';
     }
     return DateFormat.yMMMM(
       Localizations.localeOf(context).toString(),

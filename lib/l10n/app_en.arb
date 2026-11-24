@@ -82,6 +82,9 @@
   "albenLeer": "No albums yet.",
   "albenIntelligente": "Smart albums",
   "albenGewoehnliche": "Albums",
+  "albumLoeschen": "Delete album",
+  "albumLoeschenFrage": "Delete “{name}”? The photos stay in the library; only the album disappears.",
+  "albumLoeschenFrageGeteilt": "Delete “{name}”? The photos stay in the library; only the album disappears – also for the accounts it is shared with.",
   "albumIntelligentLoeschen": "Delete smart album",
   "albumIntelligentLoeschenFrage": "Remove “{name}”? The photos stay; only the saved search disappears.",
   "@albumIntelligentLoeschenFrage": {
@@ -4483,6 +4486,7 @@
   "viewerVideobildSchonDa": "This exact frame is already saved as a photo.",
   "viewerVideobildFehler": "Could not grab a frame from the video at this point.",
   "datierungTitel": "Set dating",
+  "datierungOhneMonat": "Month unknown",
   "datierungEinleitung": "These photos carry no real capture date – guessed during import or set by a scanner – and look old. Image search estimates the decade from them. A range is given; if it is too wide, the model does not know and there is nothing to apply. The middle of the year is applied, and the date stays marked as estimated.",
   "datierungOhneModell": "The estimate needs the image search model (CLIP). You can download it under Settings → AI models.",
   "datierungKeine": "None of the photos without a real capture date looks old.",

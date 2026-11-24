@@ -594,6 +594,24 @@ abstract class AppTexte {
   /// **'Alben'**
   String get albenGewoehnliche;
 
+  /// No description provided for @albumLoeschen.
+  ///
+  /// In de, this message translates to:
+  /// **'Album löschen'**
+  String get albumLoeschen;
+
+  /// No description provided for @albumLoeschenFrage.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ löschen? Die Fotos bleiben in der Bibliothek, nur das Album verschwindet.'**
+  String albumLoeschenFrage(String name);
+
+  /// No description provided for @albumLoeschenFrageGeteilt.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ löschen? Die Fotos bleiben in der Bibliothek, nur das Album verschwindet – auch bei den Konten, mit denen es geteilt ist.'**
+  String albumLoeschenFrageGeteilt(String name);
+
   /// No description provided for @albumIntelligentLoeschen.
   ///
   /// In de, this message translates to:
@@ -14412,6 +14430,12 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Datierung festlegen'**
   String get datierungTitel;
+
+  /// No description provided for @datierungOhneMonat.
+  ///
+  /// In de, this message translates to:
+  /// **'Monat unbekannt'**
+  String get datierungOhneMonat;
 
   /// No description provided for @datierungEinleitung.
   ///

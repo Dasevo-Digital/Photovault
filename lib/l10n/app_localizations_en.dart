@@ -309,6 +309,19 @@ class AppTexteEn extends AppTexte {
   String get albenGewoehnliche => 'Albums';
 
   @override
+  String get albumLoeschen => 'Delete album';
+
+  @override
+  String albumLoeschenFrage(String name) {
+    return 'Delete “$name”? The photos stay in the library; only the album disappears.';
+  }
+
+  @override
+  String albumLoeschenFrageGeteilt(String name) {
+    return 'Delete “$name”? The photos stay in the library; only the album disappears – also for the accounts it is shared with.';
+  }
+
+  @override
   String get albumIntelligentLoeschen => 'Delete smart album';
 
   @override
@@ -9354,6 +9367,9 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get datierungTitel => 'Set dating';
+
+  @override
+  String get datierungOhneMonat => 'Month unknown';
 
   @override
   String get datierungEinleitung =>

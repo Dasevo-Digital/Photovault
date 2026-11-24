@@ -82,13 +82,13 @@ class AssetListView extends StatefulWidget {
     final sprache = Localizations.localeOf(context).toString();
     if (gruppierung == ListenGruppierung.tag) {
       if (zahl % 100 == 0) {
-        return '${AppTexte.of(context).datierungTitel} · ${zahl ~/ 10000}';
+        return '${AppTexte.of(context).datierungOhneMonat} · ${zahl ~/ 10000}';
       }
       final datum = DateTime(zahl ~/ 10000, zahl ~/ 100 % 100, zahl % 100);
       return DateFormat.yMMMMEEEEd(sprache).format(datum);
     }
     if (zahl % 100 == 0) {
-      return '${AppTexte.of(context).datierungTitel} · ${zahl ~/ 100}';
+      return '${AppTexte.of(context).datierungOhneMonat} · ${zahl ~/ 100}';
     }
     final datum = DateTime(zahl ~/ 100, zahl % 100);
     return DateFormat.yMMMM(sprache).format(datum);

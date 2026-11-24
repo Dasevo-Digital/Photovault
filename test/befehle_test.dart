@@ -576,6 +576,25 @@ void main() {
       expect(await db.imAlbum('al1', ['a1', 'a2', 'a3']), isEmpty);
     });
 
+    // „Album löschen“ in der Albumansicht (#491): derselbe Befehl, ohne
+    // Aufnahmen. Das Album geht samt Einträgen, die Fotos bleiben.
+    test('ein ganzes Album löschen, die Fotos bleiben (#491)', () async {
+      await db.fuehreAus(AlbumAnlegen('al2', 'Herbst', DateTime(2026, 10, 1)));
+      await db.fuehreAus(AlbumAnlegen('al3', 'Winter', DateTime(2026, 12, 1)));
+      await db.fuehreAus(const AlbumFuellen('al2', ['a1', 'a2']));
+      await db.fuehreAus(const AlbumFuellen('al3', ['a1']));
+
+      await db.fuehreAus(const AusAlbumNehmen('al2', [], albumLoeschen: true));
+
+      expect((await db.alleAlben()).map((a) => a.id), ['al3']);
+      expect(await db.imAlbum('al2', ['a1', 'a2']), isEmpty);
+      expect(await db.imAlbum('al3', ['a1']), {'a1'});
+      expect(
+        (await db.select(db.assets).get()).map((a) => a.id),
+        containsAll(['a1', 'a2']),
+      );
+    });
+
     test(
       'Personen: anlegen, zuordnen, beiseitelegen, zusammenführen',
       () async {
