@@ -4063,7 +4063,7 @@ class LibraryState extends ChangeNotifier {
   }) async {
     // Vor dem Schliessen: Sonst stünde die App ohne Datenbank da.
     final hindernis = await LibraryLocation.hindernisBeimZuruecksetzen();
-    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
+    if (hindernis != null) throw VerschiebenVerhindert(hindernis);
     // Liegt die Bibliothek schon im Standardordner, gibt es nichts zu
     // verschieben – und keinen Grund, die Datenbank zu schliessen (GRU-104).
     if (!await LibraryLocation.isCustom) return;

@@ -629,6 +629,34 @@
     }
   },
   "einstVerschiebenFehlgeschlagen": "Verschieben fehlgeschlagen",
+  "einstVerschiebenKeinZugriff": "Photo Vault darf nicht in „{ordner}“ schreiben. Prüfe die Zugriffsrechte dieses Ordners und der Ordner darin oder wähle einen anderen. Die Bibliothek bleibt am bisherigen Ort.",
+  "@einstVerschiebenKeinZugriff": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
+  "einstVerschiebenKeinPlatz": "In „{ordner}“ ist nicht genug Platz für die Bibliothek. Die Bibliothek bleibt am bisherigen Ort.",
+  "@einstVerschiebenKeinPlatz": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
+  "einstVerschiebenKopieFehler": "Die Bibliothek konnte nicht vollständig nach „{ordner}“ kopiert werden ({grund}). Sie bleibt am bisherigen Ort.",
+  "@einstVerschiebenKopieFehler": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      },
+      "grund": {
+        "type": "String"
+      }
+    }
+  },
+  "einstVerschiebenDateiUnvollstaendig": "eine Datei kam nicht vollständig an",
   "einstWechselnFehlgeschlagen": "Wechseln fehlgeschlagen",
   "einstNeustartTitel": "Neustart erforderlich",
   "einstNeustartNachFehler": "Die Datenbank der Bibliothek war für diesen Vorgang schon geschlossen. Photo Vault muss deshalb neu gestartet werden – die App wird jetzt geschlossen, bitte danach manuell neu öffnen.",

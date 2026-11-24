@@ -97,6 +97,26 @@ String fehlertext(BuildContext context, Object fehler) {
       datei,
       ursache ?? '',
     ),
+    // Verlegen und Zurücksetzen nennen den gewählten Ordner statt einer
+    // Datei tief in der Ablage samt Rohtext des Systems (#490).
+    BibliotheksVerschiebefehler(
+      :final ziel,
+      problem: Verschiebeproblem.zugriff,
+    ) =>
+      t.einstVerschiebenKeinZugriff(ziel),
+    BibliotheksVerschiebefehler(
+      :final ziel,
+      problem: Verschiebeproblem.platz,
+    ) =>
+      t.einstVerschiebenKeinPlatz(ziel),
+    BibliotheksVerschiebefehler(:final ziel, :final grund) =>
+      t.einstVerschiebenKopieFehler(
+        ziel,
+        grund == null || grund.isEmpty
+            ? t.einstVerschiebenDateiUnvollstaendig
+            : grund,
+      ),
+    VerschiebenVerhindert(:final hindernis) => hindernistext(t, hindernis),
     TokenablageFehler() => t.serverTokenSpeichernFehler,
     // Der Server sagt den Grund als `{"fehler": …}`; roh stand sonst das
     // JSON da bzw. „KeineVerbindung(ClientException …)“ (SIC-132, SIC-137).
@@ -105,6 +125,13 @@ String fehlertext(BuildContext context, Object fehler) {
     _ => '$fehler',
   };
 }
+
+/// Warum [hindernis] gegen einen Ordner als neuen Speicherort spricht.
+String hindernistext(AppTexte t, Verschiebehindernis hindernis) =>
+    switch (hindernis) {
+      Verschiebehindernis.inDerBibliothek => t.einstSpeicherortInBibliothek,
+      Verschiebehindernis.belegt => t.einstSpeicherortBelegt,
+    };
 
 /// Die Modelle, die zur eingestellten Oberflächensprache passen –
 /// siehe [ModelCatalog.fuerSprache].

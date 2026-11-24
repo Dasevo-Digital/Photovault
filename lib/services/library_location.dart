@@ -19,6 +19,75 @@ enum Verschiebehindernis {
   belegt,
 }
 
+/// Gegen den neuen Ort spricht [hindernis]; es wurde nichts angefasst.
+///
+/// Die Einstellungen prüfen das vorher selbst. Füllte sich das Ziel
+/// danach noch, stand bis #490 „Bad state: pv_verschieben_belegt“ da.
+class VerschiebenVerhindert implements Exception {
+  const VerschiebenVerhindert(this.hindernis);
+  final Verschiebehindernis hindernis;
+
+  @override
+  String toString() => 'VerschiebenVerhindert(${hindernis.name})';
+}
+
+/// Woran das Kopieren der Bibliothek an den neuen Ort scheiterte.
+enum Verschiebeproblem {
+  /// Das System lässt dort nicht schreiben: fehlende Rechte, der
+  /// Sandkasten von macOS oder ein schreibgeschützter Datenträger.
+  zugriff,
+
+  /// Der Datenträger ist voll.
+  platz,
+
+  /// Alles andere, auch eine Datei, die nicht vollständig ankam.
+  kopie,
+}
+
+/// Das Verlegen der Bibliothek nach [ziel] scheiterte beim Kopieren; die
+/// Bibliothek liegt unverändert am bisherigen Ort (#490).
+///
+/// Vorher kam die [FileSystemException] selbst bis in die Meldung, also
+/// „PathAccessException: Cannot open file, path = '…/library/
+/// .standortkennung' …“: ein Pfad tief in der Ablage statt des Ordners,
+/// den man gewählt hat.
+class BibliotheksVerschiebefehler implements Exception {
+  const BibliotheksVerschiebefehler(this.ziel, this.problem, [this.grund]);
+
+  /// Aus einem Fehler beim Kopieren nach [ziel].
+  factory BibliotheksVerschiebefehler.aus(String ziel, Object fehler) {
+    final os = fehler is FileSystemException ? fehler.osError : null;
+    final code = os?.errorCode;
+    // Unter Windows sind auch Schreibschutz und Sperren eine
+    // PathAccessException, unter macOS und Linux nicht ein
+    // schreibgeschützter Datenträger (EROFS).
+    final zugriff =
+        fehler is PathAccessException || (!Platform.isWindows && code == 30);
+    // ENOSPC; unter Windows ERROR_DISK_FULL und ERROR_HANDLE_DISK_FULL.
+    final platz = Platform.isWindows ? code == 112 || code == 39 : code == 28;
+    return BibliotheksVerschiebefehler(
+      ziel,
+      zugriff
+          ? Verschiebeproblem.zugriff
+          : platz
+          ? Verschiebeproblem.platz
+          : Verschiebeproblem.kopie,
+      os?.message,
+    );
+  }
+
+  /// Der Ordner, in den die Bibliothek sollte.
+  final String ziel;
+  final Verschiebeproblem problem;
+
+  /// Was das System dazu sagt, sofern es etwas sagt.
+  final String? grund;
+
+  @override
+  String toString() =>
+      'BibliotheksVerschiebefehler(${problem.name}, $ziel, $grund)';
+}
+
 @immutable
 class BibliotheksVerschiebefortschritt {
   const BibliotheksVerschiebefortschritt({
@@ -769,7 +838,7 @@ class LibraryLocation {
     final newRoot = Directory(picked.path);
     if (p.equals(oldRoot.path, newRoot.path)) return picked.path;
     final hindernis = await verschiebehindernis(oldRoot, newRoot);
-    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
+    if (hindernis != null) throw VerschiebenVerhindert(hindernis);
 
     if (beforeMove != null) await beforeMove();
 
@@ -808,7 +877,7 @@ class LibraryLocation {
     final defaultRoot = await _anchorDir();
     if (p.equals(oldRoot.path, defaultRoot.path)) return;
     final hindernis = await verschiebehindernis(oldRoot, defaultRoot);
-    if (hindernis != null) throw StateError('pv_verschieben_${hindernis.name}');
+    if (hindernis != null) throw VerschiebenVerhindert(hindernis);
 
     await _moveLibraryData(oldRoot, defaultRoot, onProgress: onProgress);
 
@@ -962,7 +1031,7 @@ class LibraryLocation {
         kopierteDateien++;
         melde(erzwingen: true);
       }
-    } catch (_) {
+    } catch (fehler, stapel) {
       for (final f in angelegteDateien) {
         try {
           await f.delete();
@@ -978,7 +1047,11 @@ class LibraryLocation {
           // Nicht leer oder schon weg.
         }
       }
-      rethrow;
+      if (fehler is! FileSystemException) rethrow;
+      Error.throwWithStackTrace(
+        BibliotheksVerschiebefehler.aus(to.path, fehler),
+        stapel,
+      );
     }
 
     // Erst nach erfolgreichem Kopieren die Originale löschen.

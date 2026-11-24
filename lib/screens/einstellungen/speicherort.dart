@@ -139,14 +139,8 @@ Future<void> _openInFinder(Einstellungsstand stand, String path) async {
 }
 
 void _meldeHindernis(BuildContext context, Verschiebehindernis hindernis) {
-  final t = AppTexte.of(context);
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(switch (hindernis) {
-        Verschiebehindernis.inDerBibliothek => t.einstSpeicherortInBibliothek,
-        Verschiebehindernis.belegt => t.einstSpeicherortBelegt,
-      }),
-    ),
+    SnackBar(content: Text(hindernistext(AppTexte.of(context), hindernis))),
   );
 }
 

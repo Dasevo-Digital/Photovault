@@ -420,9 +420,14 @@ void main() {
         p.join(neu.path, 'library', 'originals', '2026', 'c.jpg'),
       )..createSync(recursive: true);
 
+      // Mit dem gewählten Ordner statt der Datei tief in der Ablage (#490).
       await expectLater(
         LibraryLocation.verschiebe(ort, neu),
-        throwsA(isA<FileSystemException>()),
+        throwsA(
+          isA<BibliotheksVerschiebefehler>()
+              .having((f) => f.ziel, 'ziel', neu.path)
+              .having((f) => f.problem, 'problem', Verschiebeproblem.kopie),
+        ),
       );
 
       expect(File(p.join(neu.path, 'library.sqlite')).existsSync(), isFalse);
@@ -439,6 +444,40 @@ void main() {
         isTrue,
       );
     });
+
+    // GRU-196/GRU-197: Im Ziel liegt ein schreibgeschützter Ordner
+    // „library“. Gemeldet wurde „PathAccessException: Cannot open file,
+    // path = '…/library/.standortkennung' …“ (#490).
+    test(
+      'fehlt im Ziel der Schreibzugriff, nennt der Fehler den Ordner',
+      () async {
+        File(
+          p.join(ort.path, 'library', '.standortkennung'),
+        ).writeAsStringSync('k');
+        final neu = Directory(p.join(wurzel.path, 'neu'))..createSync();
+        final gesperrt = Directory(p.join(neu.path, 'library'))..createSync();
+        expect(
+          (await Process.run('chmod', ['555', gesperrt.path])).exitCode,
+          0,
+        );
+        addTearDown(() => Process.run('chmod', ['755', gesperrt.path]));
+
+        await expectLater(
+          LibraryLocation.verschiebe(ort, neu),
+          throwsA(
+            isA<BibliotheksVerschiebefehler>()
+                .having((f) => f.ziel, 'ziel', neu.path)
+                .having((f) => f.problem, 'problem', Verschiebeproblem.zugriff),
+          ),
+        );
+        expect(File(p.join(neu.path, 'library.sqlite')).existsSync(), isFalse);
+        expect(
+          File(p.join(ort.path, 'library.sqlite')).readAsStringSync(),
+          'db',
+        );
+      },
+      skip: Platform.isWindows ? 'chmod gibt es dort nicht' : false,
+    );
   });
 }
 

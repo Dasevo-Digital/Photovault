@@ -2004,6 +2004,30 @@ abstract class AppTexte {
   /// **'Verschieben fehlgeschlagen'**
   String get einstVerschiebenFehlgeschlagen;
 
+  /// No description provided for @einstVerschiebenKeinZugriff.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault darf nicht in „{ordner}“ schreiben. Prüfe die Zugriffsrechte dieses Ordners und der Ordner darin oder wähle einen anderen. Die Bibliothek bleibt am bisherigen Ort.'**
+  String einstVerschiebenKeinZugriff(String ordner);
+
+  /// No description provided for @einstVerschiebenKeinPlatz.
+  ///
+  /// In de, this message translates to:
+  /// **'In „{ordner}“ ist nicht genug Platz für die Bibliothek. Die Bibliothek bleibt am bisherigen Ort.'**
+  String einstVerschiebenKeinPlatz(String ordner);
+
+  /// No description provided for @einstVerschiebenKopieFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Bibliothek konnte nicht vollständig nach „{ordner}“ kopiert werden ({grund}). Sie bleibt am bisherigen Ort.'**
+  String einstVerschiebenKopieFehler(String ordner, String grund);
+
+  /// No description provided for @einstVerschiebenDateiUnvollstaendig.
+  ///
+  /// In de, this message translates to:
+  /// **'eine Datei kam nicht vollständig an'**
+  String get einstVerschiebenDateiUnvollstaendig;
+
   /// No description provided for @einstWechselnFehlgeschlagen.
   ///
   /// In de, this message translates to:

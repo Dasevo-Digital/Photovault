@@ -1206,6 +1206,25 @@ class AppTexteEn extends AppTexte {
   String get einstVerschiebenFehlgeschlagen => 'Moving failed';
 
   @override
+  String einstVerschiebenKeinZugriff(String ordner) {
+    return 'Photo Vault is not allowed to write to “$ordner”. Check the permissions of this folder and the folders inside it, or choose another one. The library stays where it was.';
+  }
+
+  @override
+  String einstVerschiebenKeinPlatz(String ordner) {
+    return 'There is not enough space in “$ordner” for the library. The library stays where it was.';
+  }
+
+  @override
+  String einstVerschiebenKopieFehler(String ordner, String grund) {
+    return 'The library could not be copied completely to “$ordner” ($grund). It stays where it was.';
+  }
+
+  @override
+  String get einstVerschiebenDateiUnvollstaendig =>
+      'a file did not arrive completely';
+
+  @override
   String get einstWechselnFehlgeschlagen => 'Switching failed';
 
   @override
