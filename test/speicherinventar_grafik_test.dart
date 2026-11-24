@@ -54,7 +54,12 @@ void main() {
     ),
   ]);
   const key = Key('inventar-bild');
-  Future<void> zeigen(WidgetTester tester, {double skalierung = 1}) async {
+  Future<void> zeigen(
+    WidgetTester tester, {
+    double skalierung = 1,
+    Locale sprache = const Locale('de'),
+    SpeicherinventarStand? daten,
+  }) async {
     final schrift = Platform.environment['PV_VISUAL_FONT'];
     if (schrift != null) {
       await tester.runAsync(() async {
@@ -75,7 +80,7 @@ void main() {
             brightness: Brightness.dark,
             fontFamily: schrift == null ? null : 'Vorschau',
           ),
-          locale: const Locale('de'),
+          locale: sprache,
           localizationsDelegates: AppTexte.localizationsDelegates,
           supportedLocales: AppTexte.supportedLocales,
           home: Scaffold(
@@ -84,7 +89,7 @@ void main() {
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
-                  child: SpeicherinventarGrafik(stand: stand),
+                  child: SpeicherinventarGrafik(stand: daten ?? stand),
                 ),
               ),
             ),
@@ -154,4 +159,63 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('der Standardordner heisst so wie in der Sprache (#489)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1120, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final daten = SpeicherinventarStand([
+      const Speicherorteintrag(
+        id: 'standard',
+        name: 'Standard',
+        pfad: '/Daten/Photo Vault',
+        art: Speicherortart.bibliothek,
+        erreichbar: true,
+        aktiv: true,
+        bibliothek: 'standard',
+        standard: true,
+      ),
+      const Speicherorteintrag(
+        id: 'standard-dateien',
+        name: 'Standard',
+        pfad: '/Daten/Photo Vault/library/originals',
+        art: Speicherortart.dateien,
+        erreichbar: true,
+        bibliothek: 'standard',
+        standard: true,
+      ),
+      Speicherorteintrag(
+        id: 'standard-sicherung',
+        name: 'Standard',
+        pfad: '/Sicherungen/Standard',
+        art: Speicherortart.sicherung,
+        erreichbar: true,
+        bibliothek: 'standard',
+        pruefung: Speicherpruefung(DateTime(2026, 1, 2, 12), 3, false),
+        standard: true,
+      ),
+      // Selbst so benannt: Der Name bleibt.
+      const Speicherorteintrag(
+        id: 'eigen',
+        name: 'Standard',
+        pfad: '/Extern/Standard',
+        art: Speicherortart.bibliothek,
+        erreichbar: true,
+        bibliothek: 'eigen',
+      ),
+    ]);
+    await zeigen(tester, sprache: const Locale('en'), daten: daten);
+    expect(find.text('Library: Default'), findsOneWidget);
+    expect(find.text('Library files for Default'), findsOneWidget);
+    expect(find.text('Backup destination for Default'), findsOneWidget);
+    expect(find.text('Library: Standard'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await zeigen(tester, daten: daten);
+    expect(find.text('Bibliothek: Standard'), findsNWidgets(2));
+    expect(find.text('Sicherungsziel für Standard'), findsOneWidget);
+  });
 }

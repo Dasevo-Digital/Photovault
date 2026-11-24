@@ -440,4 +440,54 @@ void main() {
     );
     expect(datei.readAsStringSync(), '{kaputt');
   });
+
+  test('der Standardordner bleibt als solcher erkennbar (#489)', () async {
+    // Sein Name ist das feste „Standard“; übersetzen kann ihn nur die
+    // Oberfläche, und dafür muss sie wissen, welcher Eintrag er ist.
+    Speicherinventar mit(List<BibliothekMitZustand> liste) => Speicherinventar(
+      aktiveWurzel: aktiv,
+      privat: privat,
+      zugriff: _Zugriff(),
+      bekannte: () async => liste,
+      laufwerk: (_) async => null,
+    );
+    BibliothekMitZustand eintrag(
+      Directory d,
+      String name, {
+      required bool istAktiv,
+      required bool istStandard,
+    }) => BibliothekMitZustand(
+      eintrag: Bibliothekseintrag(path: d.path, name: name),
+      erreichbar: true,
+      istAktiv: istAktiv,
+      istStandard: istStandard,
+      aufgeloesterPfad: d.path,
+    );
+
+    // Geöffnet ist der Standardordner.
+    var s = await mit([
+      eintrag(aktiv, 'Standard', istAktiv: true, istStandard: true),
+      eintrag(archiv, 'Archiv', istAktiv: false, istStandard: false),
+    ]).laden();
+    var orte = s.orte.where((e) => e.art == Speicherortart.bibliothek);
+    expect(orte.singleWhere((e) => e.aktiv).standard, isTrue);
+    expect(orte.singleWhere((e) => e.pfad == archiv.path).standard, isFalse);
+    expect(orte.singleWhere((e) => e.aktiv).anzeigename('Default'), 'Default');
+
+    // Geöffnet ist eine andere; der Standardordner samt Sicherungsziel
+    // steht daneben.
+    await nachweis();
+    s = await mit([
+      eintrag(aktiv, 'Aktiv', istAktiv: true, istStandard: false),
+      eintrag(archiv, 'Standard', istAktiv: false, istStandard: true),
+    ]).laden();
+    orte = s.orte.where((e) => e.art == Speicherortart.bibliothek);
+    expect(orte.singleWhere((e) => e.aktiv).standard, isFalse);
+    expect(orte.singleWhere((e) => e.aktiv).anzeigename('Default'), 'Aktiv');
+    expect(orte.singleWhere((e) => e.pfad == archiv.path).standard, isTrue);
+    expect(
+      s.orte.singleWhere((e) => e.art == Speicherortart.sicherung).standard,
+      isTrue,
+    );
+  });
 }

@@ -37,6 +37,7 @@ class Speicherorteintrag {
     this.nachweiseUnlesbar = false,
     this.weiterePfade = const [],
     this.laufwerkHistorisch = false,
+    this.standard = false,
   });
   final String id, name, pfad, bibliothek;
   final Speicherortart art;
@@ -46,6 +47,15 @@ class Speicherorteintrag {
   final Speicherlaufwerk? laufwerk;
   final Speicherpruefung? pruefung;
   final List<String> weiterePfade;
+
+  /// Gehört zum Standardordner der App. Der hat keinen eigenen Namen;
+  /// [name] ist dann das feste „Standard“ aus [LibraryLocation.bekannte].
+  final bool standard;
+
+  /// Der Name, wie ihn die Oberfläche zeigt – wie
+  /// [BibliothekMitZustand.anzeigename]: Vorher stand auch in der
+  /// englischen Oberfläche „Library: Standard“ (#489).
+  String anzeigename(String standardname) => standard ? standardname : name;
 }
 
 class SpeicherinventarStand {
@@ -132,16 +142,15 @@ class Speicherinventar {
     pruefeAbbruch();
     // Der tatsächliche aktive Pfad bleibt auch bei einer defekten Liste
     // sichtbar. Er hat Vorrang vor einem alten gespeicherten Lesezeichen.
+    final ausListe = liste.where((b) => b.istAktiv).firstOrNull;
     final aktiverEintrag = BibliothekMitZustand(
       eintrag: Bibliothekseintrag(
         path: aktiveWurzel.path,
-        name:
-            liste.where((b) => b.istAktiv).firstOrNull?.eintrag.name ??
-            p.basename(aktiveWurzel.path),
+        name: ausListe?.eintrag.name ?? p.basename(aktiveWurzel.path),
       ),
       erreichbar: true,
       istAktiv: true,
-      istStandard: false,
+      istStandard: ausListe?.istStandard ?? false,
       aufgeloesterPfad: aktiveWurzel.path,
     );
     liste = [aktiverEintrag, ...liste];
@@ -173,6 +182,7 @@ class Speicherinventar {
         b.eintrag,
         real,
         identical(b, aktiverEintrag),
+        standard: b.istStandard,
       );
     }
     final orte = <Speicherorteintrag>[];
@@ -232,6 +242,7 @@ class Speicherinventar {
               Speicherorteintrag(
                 id: 'dateien:${e.key}:$relativ',
                 name: b.eintrag.name,
+                standard: b.standard,
                 pfad: alias,
                 aufgeloesterPfad: real,
                 art: Speicherortart.dateien,
@@ -292,6 +303,7 @@ class Speicherinventar {
                 Speicherorteintrag(
                   id: 'sicherung:${e.key}:$key',
                   name: b.eintrag.name,
+                  standard: b.standard,
                   pfad: n.ziel,
                   aufgeloesterPfad: ziel,
                   art: Speicherortart.sicherung,
@@ -318,6 +330,7 @@ class Speicherinventar {
         Speicherorteintrag(
           id: 'bibliothek:${e.key}',
           name: b.eintrag.name,
+          standard: b.standard,
           pfad: b.eintrag.path,
           aufgeloesterPfad: root,
           art: Speicherortart.bibliothek,
@@ -374,10 +387,15 @@ class Speicherinventar {
 }
 
 class _Bibliotheksort {
-  _Bibliotheksort(this.eintrag, this.real, this.aktiv);
+  _Bibliotheksort(
+    this.eintrag,
+    this.real,
+    this.aktiv, {
+    required this.standard,
+  });
   final Bibliothekseintrag eintrag;
   final String? real;
-  final bool aktiv;
+  final bool aktiv, standard;
   final Set<String> aliase = {};
 }
 

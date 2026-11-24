@@ -4,11 +4,14 @@ import 'package:intl/intl.dart';
 import '../l10n/app_localizations.dart';
 import '../services/speicherinventar.dart';
 
-String _titel(AppTexte t, Speicherorteintrag ort) => switch (ort.art) {
-  Speicherortart.bibliothek => t.speicherinventarBibliothek(ort.name),
-  Speicherortart.dateien => t.speicherinventarDateien(ort.name),
-  Speicherortart.sicherung => t.speicherinventarSicherung(ort.name),
-};
+String _titel(AppTexte t, Speicherorteintrag ort) {
+  final name = ort.anzeigename(t.einstBibStandard);
+  return switch (ort.art) {
+    Speicherortart.bibliothek => t.speicherinventarBibliothek(name),
+    Speicherortart.dateien => t.speicherinventarDateien(name),
+    Speicherortart.sicherung => t.speicherinventarSicherung(name),
+  };
+}
 
 /// Der konkrete Pfad bleibt sichtbar, auch bei abgezogenem Datenträger.
 /// Verbindungen beschreiben Zuordnungen, nicht mehrere unabhängige Kopien.
