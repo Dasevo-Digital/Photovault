@@ -75,6 +75,14 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.69.0" date="2026-11-26">
+      <description>
+        <p>Locked folder: the dating of a locked photo is now stored in its encrypted package, and the info panel of a locked photo is read-only.</p>
+        <p>Backups check each original while writing it and no longer mark a damaged original as backed up; copies damaged in the destination are rewritten by the next run.</p>
+        <p>Faces can now be fully edited in the full-screen view: name, unassign, ignore, delete, and exclude the photo from the face scan.</p>
+        <p>Time ranges, year reviews and the photo picker follow the dating of a photo; accepting a place suggestion takes the place from the server's directory.</p>
+      </description>
+    </release>
     <release version="3.68.1" date="2026-11-23">
       <description>
         <p>Connected libraries now fetch summits, huts and springs for activities only through your own server, no longer directly from Overpass.</p>
