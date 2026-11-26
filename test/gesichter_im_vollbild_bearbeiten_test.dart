@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
-import 'package:drift/drift.dart' show Value;
+import 'package:drift/drift.dart'
+    show QueryExecutor, QueryInterceptor, Value, ApplyInterceptor;
 import 'package:drift/native.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -26,18 +28,37 @@ import 'package:provider/provider.dart';
 /// laden und danach zurück. Jetzt steht alles im Rechtsklick-Menü des
 /// Vollbilds: auf dem Rahmen für dieses Gesicht, im Untermenü für das
 /// ganze Foto.
+/// Hält Leseabfragen an, solange [tor] gesetzt ist – wie eine Datenbank,
+/// die gerade mit einer Gesichtssuche im Hintergrund beschäftigt ist.
+class _Schleuse extends QueryInterceptor {
+  Completer<void>? tor;
+
+  @override
+  Future<List<Map<String, Object?>>> runSelect(
+    QueryExecutor executor,
+    String statement,
+    List<Object?> args,
+  ) async {
+    final t = tor;
+    if (t != null) await t.future;
+    return executor.runSelect(statement, args);
+  }
+}
+
 void main() {
   final de = lookupAppTexte(const Locale('de'));
   late Directory wurzel;
   late AppDatabase db;
   late StoragePaths pfade;
   late LibraryState bibliothek;
+  late _Schleuse schleuse;
   var ruhig = true;
 
   setUp(() async {
     ruhig = true;
     wurzel = Directory.systemTemp.createTempSync('pv_gesichter_vollbild_');
-    db = AppDatabase(NativeDatabase.memory());
+    schleuse = _Schleuse();
+    db = AppDatabase(NativeDatabase.memory().interceptWith(schleuse));
     pfade = await StoragePaths.forTesting(
       Directory(p.join(wurzel.path, 'lib')),
     );
@@ -199,6 +220,57 @@ void main() {
     await maus.up();
     await tester.pumpAndSettle();
     expect(find.text(de.gesichtErkennungLoeschen), findsOneWidget);
+  });
+
+  testWidgets('das Menü wartet nicht auf eine beschäftigte Datenbank', (
+    tester,
+  ) async {
+    // Das Menü ging zuerst erst auf, wenn die Gesichter des Fotos gelesen
+    // waren. War die Datenbank beschäftigt, kam es spät – und ein lange
+    // gehaltener Klick auf einen Rahmen verlor dabei sein Gesicht.
+    await gesicht('g1');
+    await gesicht('g2', x: 0.5);
+    await zeige(tester);
+    schleuse.tor = Completer<void>();
+    final maus = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+
+    await maus.down(tester.getCenter(rahmen('g1')));
+    await maus.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.text(de.gesichtErkennungLoeschen), findsOneWidget);
+    expect(find.text(de.viewerAehnlicheZeigen), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text(de.gesichtErkennungLoeschen), findsNothing);
+
+    await maus.down(tester.getCenter(rahmen('g1')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await maus.up();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(
+      find.text(de.gesichtErkennungLoeschen),
+      findsOneWidget,
+      reason: 'lang gehalten, Datenbank noch beschäftigt',
+    );
+
+    // Sind die Gesichter gelesen, stimmen auch die Zahlen im Untermenü.
+    schleuse.tor!.complete();
+    schleuse.tor = null;
+    await tester.pumpAndSettle();
+    expect(find.text(de.gesichtErkennungLoeschen), findsOneWidget);
+    await tester.tap(find.text(de.viewerGesichterBearbeiten));
+    await tester.pumpAndSettle();
+    final sammel = tester.widget<MenuItemButton>(
+      find.widgetWithText(
+        MenuItemButton,
+        de.gesichtAlleUnbenanntenIgnorieren(2),
+      ),
+    );
+    expect(sammel.onPressed, isNotNull);
   });
 
   testWidgets('Ignorieren, Lösen und Löschen wirken sofort im Bild', (

@@ -622,13 +622,20 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// das alte Menü sofort und öffnet das neue an der neuen Stelle.
   final MenuController _menue = MenuController();
 
-  /// Das Gesicht, auf dessen Rahmen zuletzt rechts geklickt wurde, und wo.
-  ({FaceData gesicht, Offset stelle})? _menueGesicht;
+  /// Der Rahmen, auf den zuletzt rechts geklickt wurde: welches Gesicht,
+  /// wo und wann.
+  ({FaceData gesicht, Offset stelle, DateTime zeit})? _rahmenklick;
 
-  /// Die Gesichter des gezeigten Fotos und ihre Namen, als das Menü
-  /// aufging – für die Sammeleinträge und deren Anzahl.
+  /// Das Gesicht, für das das Menü gerade gilt – `null` für einen Klick
+  /// daneben.
+  FaceData? _menueGesicht;
+
+  /// Die Gesichter des Fotos [_menueGesichterFuer] und ihre Namen – für
+  /// die Sammeleinträge und deren Anzahl. Sie kommen nach, wenn das Menü
+  /// schon offen ist (siehe [_menueGesichterLaden]).
   List<FaceData> _menueGesichter = const [];
   Map<String, String> _menueNamen = const {};
+  String? _menueGesichterFuer;
 
   /// Ob das Menü Gesichtseinträge trägt: nur für Fotos, nicht für Videos
   /// und nichts aus dem gesperrten Ordner, und nur mit Bibliothek – das
@@ -641,48 +648,40 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Ein Rechtsklick auf einen Gesichtsrahmen (#495): dasselbe Menü, mit
   /// den Einträgen für dieses Gesicht obenauf.
   void _gesichtRechtsklick(FaceData gesicht, Offset stelle) {
-    _menueGesicht = (gesicht: gesicht, stelle: stelle);
-    unawaited(_showContextMenu(stelle));
+    _rahmenklick = (gesicht: gesicht, stelle: stelle, zeit: DateTime.now());
+    _showContextMenu(stelle);
   }
 
-  Future<void> _showContextMenu(Offset globalPosition) async {
+  void _showContextMenu(Offset globalPosition) {
     // Jeder Punkt darin ändert die Aufnahme oder sucht sie dort, wo eine
     // gesperrte nicht steht (Zeitleiste, ähnliche Fotos) – siehe
     // [_bearbeitbar].
     if (!_bearbeitbar) return;
-    // Hält man die Taste auf einem Rahmen einen Augenblick, melden sich
-    // beide Erkenner, der des Rahmens zuerst. An derselben Stelle gilt sein
-    // Gesicht deshalb weiter; jeder andere Klick ist einer daneben.
-    final angeklickt = _menueGesicht?.stelle == globalPosition
-        ? _menueGesicht
-        : null;
-    _menueGesicht = null;
-    final asset = _currentAsset;
-    var gesichter = const <FaceData>[];
-    var namen = const <String, String>{};
-    if (_gesichtsmenue) {
-      gesichter = await widget.db.facesForAsset(asset.id);
-      namen = {
-        for (final p in await widget.db.peopleForAsset(asset.id)) p.id: p.name,
-      };
-      if (!mounted || _currentAsset.id != asset.id) return;
-    }
-    // Die frische Zeile, nicht die der Seite: Sie kann seit dem Laden der
-    // Rahmen eine andere Person tragen.
-    FaceData? gesicht;
-    for (final g in gesichter) {
-      if (g.id == angeklickt?.gesicht.id) gesicht = g;
-    }
-    setState(() {
-      _menueGesichter = gesichter;
-      _menueNamen = namen;
-      _menueGesicht = gesicht == null
-          ? null
-          : (gesicht: gesicht, stelle: globalPosition);
-    });
     final bildbereich =
         _bildbereichKey.currentContext?.findRenderObject() as RenderBox?;
     if (bildbereich == null) return;
+    // Hält man die Taste auf einem Rahmen einen Augenblick, melden sich
+    // beide Erkenner im selben Moment, der des Rahmens zuerst. An derselben
+    // Stelle und gleich danach gilt sein Gesicht deshalb weiter; jeder
+    // andere Klick ist einer daneben.
+    final klick = _rahmenklick;
+    final gesicht =
+        klick != null &&
+            klick.stelle == globalPosition &&
+            DateTime.now().difference(klick.zeit) < const Duration(seconds: 1)
+        ? klick.gesicht
+        : null;
+    final asset = _currentAsset;
+    setState(() {
+      _menueGesicht = gesicht;
+      // Die Zahlen eines anderen Fotos wären falsch; bis die eigenen da
+      // sind, sind die Sammeleinträge ausgegraut.
+      if (_menueGesichterFuer != asset.id) {
+        _menueGesichter = const [];
+        _menueNamen = const {};
+        _menueGesichterFuer = asset.id;
+      }
+    });
     final lokal = bildbereich.globalToLocal(globalPosition);
     // Innerhalb des Fotobereichs bleiben: Ein Menü, das am Rand des
     // Bildbereichs ansetzt, lag sonst halb unter der Seitenleiste.
@@ -692,6 +691,34 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         lokal.dy.clamp(4.0, bildbereich.size.height - 4),
       ),
     );
+    if (_gesichtsmenue) unawaited(_menueGesichterLaden(asset.id, gesicht?.id));
+  }
+
+  /// Holt die Gesichter für das offene Menü.
+  ///
+  /// **Erst nach dem Öffnen**, nicht davor: Läuft im Hintergrund eine
+  /// Gesichtssuche, kann die Datenbank einen Moment brauchen – das Menü
+  /// ginge dann bei jedem Rechtsklick auf ein Foto spürbar später auf. Die
+  /// Einträge für das angeklickte Gesicht stehen sofort da; sie brauchen
+  /// nur die Zeile, die der Rahmen schon hat.
+  Future<void> _menueGesichterLaden(String assetId, String? gesichtId) async {
+    final gesichter = await widget.db.facesForAsset(assetId);
+    final personen = await widget.db.peopleForAsset(assetId);
+    if (!mounted || _currentAsset.id != assetId) return;
+    setState(() {
+      _menueGesichter = gesichter;
+      _menueNamen = {for (final p in personen) p.id: p.name};
+      _menueGesichterFuer = assetId;
+      // Die frische Zeile, nicht die des Rahmens: Sie kann inzwischen eine
+      // andere Person tragen – oder gelöscht sein.
+      if (gesichtId != null && _menueGesicht?.id == gesichtId) {
+        FaceData? frisch;
+        for (final g in gesichter) {
+          if (g.id == gesichtId) frisch = g;
+        }
+        _menueGesicht = frisch;
+      }
+    });
   }
 
   late final _darktable = widget.darktable ?? DarktableBruecke.standard();
@@ -782,7 +809,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   List<Widget> _menuepunkte(BuildContext context) {
     final t = AppTexte.of(context);
-    final gesicht = _gesichtsmenue ? _menueGesicht?.gesicht : null;
+    final gesicht = _gesichtsmenue ? _menueGesicht : null;
     Widget punkt(_ContextMenuAction aktion, IconData symbol, String text) =>
         MenuItemButton(
           leadingIcon: Icon(symbol, size: 20),
@@ -940,8 +967,19 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     );
     if (!geaendert || !mounted) return;
     if (wahl == Gesichtswahl.durchsuchen) await _refreshAsset(asset.id);
-    if (mounted) setState(() => _gesichterStand++);
+    if (mounted) _gesichterGeaendert();
   }
+
+  /// Nach jeder Änderung an den Gesichtern: Seiten und Info-Ansicht laden
+  /// neu, und das nächste Menü zählt nicht mit dem alten Stand – sonst
+  /// liefe „unbenannte löschen“ einen Augenblick lang über Erkennungen,
+  /// die es schon nicht mehr gibt.
+  void _gesichterGeaendert() => setState(() {
+    _gesichterStand++;
+    _menueGesichter = const [];
+    _menueNamen = const {};
+    _menueGesichterFuer = null;
+  });
 
   Future<void> _fuehreAus(_ContextMenuAction aktion) async {
     if (!mounted) return;
@@ -1385,8 +1423,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                                   beiGesichtsmenue: _gesichtsmenueFuer(a)
                                       ? _gesichtRechtsklick
                                       : null,
-                                  beiGesichterGeaendert: () =>
-                                      setState(() => _gesichterStand++),
+                                  beiGesichterGeaendert: _gesichterGeaendert,
                                   gesichtAufziehen:
                                       _gesichtAufziehen &&
                                       index == _currentIndex,
