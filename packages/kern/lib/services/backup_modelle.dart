@@ -145,6 +145,7 @@ class BackupProbeErgebnis {
     this.fehler,
     this.position = 0,
     this.passphraseGeprueft,
+    this.beschaedigt = const [],
   });
 
   final DateTime am;
@@ -156,6 +157,13 @@ class BackupProbeErgebnis {
   final String? fehler;
   final int position;
   final bool? passphraseGeprueft;
+
+  /// Dateien der Stichprobe, die im Ziel beschädigt sind (#494): Prüfsumme
+  /// der Aufnahme und ihr Name. Der nächste Lauf schreibt sie aus der
+  /// Bibliothek neu (siehe [BackupService.performAutoBackup]). Vorher
+  /// meldete die Probe den Schaden nur; die Größe stimmte, und die Datei
+  /// blieb in jedem Lauf liegen.
+  final List<({String pruefsumme, String name})> beschaedigt;
 
   /// Die Stichprobe fiel aus, weil kein Original ins Prüfbudget passt.
   ///
@@ -178,6 +186,11 @@ class BackupProbeErgebnis {
     'fehler': fehler,
     'position': position,
     'passphraseGeprueft': passphraseGeprueft,
+    if (beschaedigt.isNotEmpty)
+      'beschaedigt': [
+        for (final b in beschaedigt)
+          {'pruefsumme': b.pruefsumme, 'name': b.name},
+      ],
   };
 
   static BackupProbeErgebnis ausJson(Map<String, dynamic> j) {
@@ -192,6 +205,16 @@ class BackupProbeErgebnis {
       fehler: j['fehler'] as String?,
       position: j['position'] as int? ?? 0,
       passphraseGeprueft: j['passphraseGeprueft'] as bool?,
+      beschaedigt: [
+        for (final b in j['beschaedigt'] as List? ?? const [])
+          if (b is Map &&
+              b['pruefsumme'] is String &&
+              RegExp(r'^[a-f0-9]{64}$').hasMatch(b['pruefsumme'] as String))
+            (
+              pruefsumme: b['pruefsumme'] as String,
+              name: b['name'] is String ? b['name'] as String : '',
+            ),
+      ],
     );
   }
 }

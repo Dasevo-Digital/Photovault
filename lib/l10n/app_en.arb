@@ -5048,6 +5048,7 @@
       }
     }
   },
+  "backupProbeBeschaedigt": "Damaged in the backup destination: {namen}. The next backup writes them again from the library.",
   "backupProbeFehler": "{wann}: the recovery drill failed. Check the backup files, passphrase and available space. An earlier success applies only to that earlier backup.",
   "@backupProbeFehler": {
     "placeholders": {

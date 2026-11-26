@@ -168,6 +168,14 @@ class BackupKoordinator {
             // Übersprungen heisst: nichts geprüft, nichts gescheitert. Die
             // Zeile mit dem Hinweis geht unten durch (SIC-057).
             if (!probe.erfolgreich && !probe.uebersprungen) {
+              if (BackupProbeFandSchaden.aus(probe) case final schaden?) {
+                meldeWarnung((
+                  grund: Backuphindernis.beschaedigt,
+                  letzterLauf: null,
+                  fehler: schaden.namen,
+                ));
+                throw schaden;
+              }
               meldeWarnung((
                 grund: Backuphindernis.fehlgeschlagen,
                 letzterLauf: null,
@@ -256,7 +264,8 @@ class BackupKoordinator {
           // pv_probe_stichprobe_zu_gross“, und „Letzter Lauf“ blieb leer
           // (SIC-057).
           if (!probe.erfolgreich && !probe.uebersprungen) {
-            throw StateError(probe.fehler ?? 'pv_probe_unlesbar');
+            throw BackupProbeFandSchaden.aus(probe) ??
+                StateError(probe.fehler ?? 'pv_probe_unlesbar');
           }
         }
       }
@@ -273,6 +282,13 @@ class BackupKoordinator {
                 fehler: '${ausfaelle + zusatzAusfaelle}',
               ),
       );
+    } on BackupProbeFandSchaden catch (e) {
+      protokoll('Automatisches Backup: beschädigt im Ziel: ${e.namen}');
+      meldeWarnung((
+        grund: Backuphindernis.beschaedigt,
+        letzterLauf: lastRun,
+        fehler: e.namen,
+      ));
     } catch (e) {
       protokoll('Automatisches Backup fehlgeschlagen: $e');
       meldeWarnung((
@@ -302,6 +318,10 @@ enum Backuphindernis {
   /// Das Betriebssystem lässt nicht ins Ziel schreiben – unter macOS fehlt
   /// das Merkmal für den Ordner, er muss einmal neu gewählt werden (#211).
   zielGesperrt,
+
+  /// Die Wiederherstellungsprobe fand beschädigte Dateien im Ziel; der
+  /// nächste Lauf schreibt sie neu ([Backupwarnung.fehler] nennt sie, #494).
+  beschaedigt,
 }
 
 typedef Backupwarnung = ({
@@ -312,4 +332,24 @@ typedef Backupwarnung = ({
 
 class BackupLaeuftBereits implements Exception {
   const BackupLaeuftBereits();
+}
+
+/// Die Wiederherstellungsprobe fand beschädigte Dateien im Ziel (#494).
+/// Vorher kam nur „Bad state: pv_probe_unlesbar“ an, ohne die Aufnahme.
+class BackupProbeFandSchaden implements Exception {
+  const BackupProbeFandSchaden(this.namen);
+
+  /// Die Namen der Aufnahmen, höchstens fünf, durch Komma getrennt.
+  final String namen;
+
+  static BackupProbeFandSchaden? aus(BackupProbeErgebnis probe) {
+    if (probe.beschaedigt.isEmpty) return null;
+    final namen = [for (final b in probe.beschaedigt) b.name];
+    return BackupProbeFandSchaden(
+      namen.length > 5 ? '${namen.take(5).join(', ')} …' : namen.join(', '),
+    );
+  }
+
+  @override
+  String toString() => 'BackupProbeFandSchaden($namen)';
 }

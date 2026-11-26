@@ -520,6 +520,8 @@ class _HomeShellState extends State<HomeShell> {
         );
       case Backuphindernis.dateienFehlen:
         melde.warnung(t.backupDateienFehlen(int.tryParse(w.fehler ?? '') ?? 0));
+      case Backuphindernis.beschaedigt:
+        melde.warnung(t.backupProbeBeschaedigt(w.fehler ?? ''));
     }
   }
 

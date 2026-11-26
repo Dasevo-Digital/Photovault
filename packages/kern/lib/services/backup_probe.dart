@@ -40,6 +40,10 @@ extension BackupWiederherstellungsprobe on BackupService {
     var position = vorher?.position ?? 0;
     String? fehler;
     bool? passphraseGeprueft;
+    // Die Dateien der Stichprobe, um beim Scheitern die beschädigten zu
+    // benennen (#494).
+    final dateien = <String, ({File datei, String name})>{};
+    var beschaedigt = const <({String pruefsumme, String name})>[];
     try {
       if (!Platform.isWindows) {
         final r = await Process.run('chmod', ['700', temp.path]);
@@ -153,6 +157,10 @@ extension BackupWiederherstellungsprobe on BackupService {
         if (bytes + groesse > maxBytes) continue;
         bytes += groesse;
         auswahl.add(hash);
+        dateien[hash] = (
+          datei: datei,
+          name: p.basename('${foto['originalFileName']}'),
+        );
         position = (index + 1) % fotos.length;
       }
       if (fotos.isNotEmpty && auswahl.isEmpty) {
@@ -264,6 +272,8 @@ extension BackupWiederherstellungsprobe on BackupService {
       fehler = e is FormatException && e.message.startsWith('pv_probe_')
           ? e.message
           : 'pv_probe_unlesbar';
+      beschaedigt = await _beschaedigteDateien(dateien, schluessel);
+      if (beschaedigt.isNotEmpty) fehler = 'pv_probe_original_beschaedigt';
     } finally {
       try {
         await probeDb?.close();
@@ -282,7 +292,13 @@ extension BackupWiederherstellungsprobe on BackupService {
       fehler: fehler,
       position: position,
       passphraseGeprueft: passphraseGeprueft,
+      beschaedigt: beschaedigt,
     );
+    await _merkeProbe(wurzel, ergebnis);
+    return ergebnis;
+  }
+
+  Future<void> _merkeProbe(String wurzel, BackupProbeErgebnis ergebnis) async {
     final ziel = File(p.join(wurzel, probeDateiname));
     final teil = File('${ziel.path}.${const Uuid().v4()}.neu');
     try {
@@ -291,6 +307,66 @@ extension BackupWiederherstellungsprobe on BackupService {
     } finally {
       if (await teil.exists()) await teil.delete();
     }
-    return ergebnis;
   }
+
+  /// Welche Dateien der Stichprobe im Ziel nicht mehr zu ihrer Aufnahme
+  /// passen (#494). Erst gefragt, wenn die Probe gescheitert ist: Die
+  /// Wiederherstellung sagt nur, dass etwas nicht ging, nicht was. Die
+  /// Entschlüsselung erkennt jede Veränderung; die Grösse, an der die
+  /// Sicherung misst, nicht.
+  Future<List<({String pruefsumme, String name})>> _beschaedigteDateien(
+    Map<String, ({File datei, String name})> dateien,
+    SecretKey? schluessel,
+  ) async {
+    final kaputt = <({String pruefsumme, String name})>[];
+    for (final MapEntry(key: hash, value: (:datei, :name)) in dateien.entries) {
+      try {
+        if (schluessel != null) {
+          await VaultCrypto.pruefeDatei(
+            datei,
+            schluessel,
+            erwartetePruefsumme: hash,
+          );
+        } else if ((await sha256.bind(datei.openRead()).first).toString() !=
+            hash) {
+          kaputt.add((pruefsumme: hash, name: name));
+        }
+      } on FileSystemException {
+        // Fehlt oder ist nicht lesbar: kein Schaden, den ein neues Schreiben
+        // behebt, ohne dass die Sicherung es ohnehin sieht.
+      } on Object {
+        kaputt.add((pruefsumme: hash, name: name));
+      }
+    }
+    return kaputt;
+  }
+
+  /// Nimmt [neu] Geschriebenes aus der Liste der beschädigten Dateien der
+  /// letzten Probe in [wurzel] (#494): Sonst schriebe jeder weitere Lauf
+  /// sie noch einmal, bis die nächste Probe die Liste ersetzt.
+  Future<void> _vergissBeschaedigte(String wurzel, Set<String> neu) async {
+    if (neu.isEmpty) return;
+    final probe = await letzteProbe(wurzel);
+    if (probe == null ||
+        !probe.beschaedigt.any((b) => neu.contains(b.pruefsumme))) {
+      return;
+    }
+    await _merkeProbe(
+      wurzel,
+      BackupProbeErgebnis.ausJson({
+        ...probe.alsJson(),
+        'beschaedigt': [
+          for (final b in probe.beschaedigt)
+            if (!neu.contains(b.pruefsumme))
+              {'pruefsumme': b.pruefsumme, 'name': b.name},
+        ],
+      }),
+    );
+  }
+
+  /// Was die letzte Probe in [wurzel] als beschädigt fand (#494).
+  Future<Set<String>> _beschaedigteImZiel(String wurzel) async => {
+    for (final b in (await letzteProbe(wurzel))?.beschaedigt ?? const [])
+      b.pruefsumme,
+  };
 }

@@ -55,6 +55,7 @@ String fehlertext(BuildContext context, Object fehler) {
   return switch (fehler) {
     BackupBrauchtPassphrase() => t.backupPassphraseNoetig,
     BackupLaeuftBereits() => t.backupLaeuftBereits,
+    BackupProbeFandSchaden(:final namen) => t.backupProbeBeschaedigt(namen),
     WiederherstellungUnvollstaendig(:final ergebnis) =>
       t.backupRestoreUnvollstaendig(
         ergebnis.importiert,

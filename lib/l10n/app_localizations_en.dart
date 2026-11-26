@@ -10457,6 +10457,11 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String backupProbeBeschaedigt(String namen) {
+    return 'Damaged in the backup destination: $namen. The next backup writes them again from the library.';
+  }
+
+  @override
   String backupProbeFehler(String wann) {
     return '$wann: the recovery drill failed. Check the backup files, passphrase and available space. An earlier success applies only to that earlier backup.';
   }

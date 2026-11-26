@@ -15978,6 +15978,12 @@ abstract class AppTexte {
     String datenbank,
   );
 
+  /// No description provided for @backupProbeBeschaedigt.
+  ///
+  /// In de, this message translates to:
+  /// **'Beschädigt im Sicherungsziel: {namen}. Die nächste Sicherung schreibt sie aus der Bibliothek neu.'**
+  String backupProbeBeschaedigt(String namen);
+
   /// No description provided for @backupProbeFehler.
   ///
   /// In de, this message translates to:

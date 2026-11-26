@@ -5,6 +5,7 @@ import 'package:kern/services/backup_service.dart';
 import 'package:path/path.dart' as p;
 
 import '../../l10n/app_localizations.dart';
+import '../../services/backup_koordinator.dart';
 import '../../services/sicherungsziel.dart';
 import 'gemeinsam.dart';
 
@@ -67,8 +68,12 @@ String backupProbeTextMit(
 ) {
   final wann = datum(probe.am.toLocal());
   if (!probe.erfolgreich) {
+    // Welche Dateien, und dass der nächste Lauf sie neu schreibt (#494).
+    final schaden = BackupProbeFandSchaden.aus(probe);
     final fehler = probe.fehler == 'pv_probe_stichprobe_zu_gross'
         ? t.backupProbeZuGross(wann)
+        : schaden != null
+        ? '${t.backupProbeFehler(wann)}\n${t.backupProbeBeschaedigt(schaden.namen)}'
         : t.backupProbeFehler(wann);
     return probe.letzterErfolg == null
         ? fehler

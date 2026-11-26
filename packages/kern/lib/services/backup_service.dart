@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cryptography/cryptography.dart';
-import 'package:crypto/crypto.dart' show sha256;
+import 'package:crypto/crypto.dart' show Digest, sha256;
 import 'package:drift/native.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
@@ -113,8 +113,21 @@ class BackupService {
   /// einer vollständigen Verschlüsselung steht fest
   /// ([VaultCrypto.passtZurGroesse]). Gemessen wird an der Datei der
   /// Bibliothek, sonst an der Grösse aus der Datenbank.
-  Future<bool> _verschluesseltImZiel(AssetData asset, File ziel) async {
+  ///
+  /// Was die letzte Wiederherstellungsprobe als [beschaedigt] fand, gilt
+  /// als nicht im Ziel (#494): Ein Bitfehler lässt die Grösse stimmen.
+  Future<bool> _verschluesseltImZiel(
+    AssetData asset,
+    File ziel, [
+    Set<String> beschaedigt = const {},
+  ]) async {
     if (!await _liegtImZiel(ziel)) return false;
+    if (beschaedigt.contains(asset.checksum)) {
+      protokoll(
+        'Sicherung von ${asset.relativePath} beschädigt – wird neu geschrieben',
+      );
+      return false;
+    }
     final hier = _paths.absolute(asset.relativePath);
     final groesse = await hier.exists()
         ? await hier.length()
@@ -148,9 +161,17 @@ class BackupService {
   Future<bool> _stimmtImZiel(
     AssetData asset,
     File ziel,
-    Map<String, String> frueher,
-  ) async {
+    Map<String, String> frueher, [
+    Set<String> beschaedigt = const {},
+  ]) async {
     if (!await _liegtImZiel(ziel)) return false;
+    // Wie [_verschluesseltImZiel] (#494).
+    if (beschaedigt.contains(asset.checksum)) {
+      protokoll(
+        'Sicherung von ${asset.relativePath} beschädigt – wird neu geschrieben',
+      );
+      return false;
+    }
     final genannt =
         frueher['originals/${pfadInDerSicherung(asset.relativePath).replaceAll(r'\', '/')}'];
     if (genannt != null && genannt != asset.checksum) return false;
@@ -189,6 +210,36 @@ class BackupService {
   /// meldet die Datei als Fehler.
   static Future<bool> _quelleStimmt(AssetData asset, File quelle) async =>
       (await sha256.bind(quelle.openRead()).first).toString() == asset.checksum;
+
+  /// Kopiert [quelle] nach [ziel] und rechnet dabei ihre Prüfsumme mit
+  /// (#493), ohne die Datei ein zweites Mal zu lesen. Passt sie nicht zu
+  /// [pruefsumme], wirft es wie [VaultCrypto.encryptFile].
+  static Future<void> _kopiereGeprueft(
+    File quelle,
+    File ziel,
+    String pruefsumme,
+  ) async {
+    String? ist;
+    final hash = sha256.startChunkedConversion(
+      ChunkedConversionSink<Digest>.withCallback(
+        (werte) => ist = werte.single.toString(),
+      ),
+    );
+    final ausgabe = await ziel.open(mode: FileMode.write);
+    try {
+      await for (final block in quelle.openRead()) {
+        hash.add(block);
+        await ausgabe.writeFrom(block);
+      }
+      await ausgabe.flush();
+    } finally {
+      await ausgabe.close();
+    }
+    hash.close();
+    if (ist != pruefsumme) {
+      throw const FormatException('pv_vault_quellpruefsumme');
+    }
+  }
 
   /// Das Original von [asset], wenn es erst für die Sicherung vom Server
   /// kommt – nur in einer verbundenen Kopie, und nur, wenn es dort noch
@@ -279,6 +330,11 @@ class BackupService {
       try {
         await schreibe(zwischen);
         imLager = true;
+      } on FormatException {
+        // Die Quelle passt nicht zu ihrer Prüfsumme (#493): kein Problem
+        // des Zwischenlagers, und neben dem Ziel ginge es ebenso wenig.
+        await _wegwerfen(zwischen);
+        rethrow;
       } on FileSystemException catch (e) {
         // Kein Platz (oder sonst ein Problem) im Zwischenlager. Merken,
         // damit die nächste grosse Datei den Umweg gar nicht erst geht.
@@ -423,9 +479,11 @@ class BackupService {
         : File(
             p.join(originalsOut.path, pfadInDerSicherung(asset.relativePath)),
           );
+    final beschaedigt = await _beschaedigteImZiel(backupRoot.path);
+    final neuGeschrieben = <String>{};
     Future<bool> aktuell(AssetData asset, File ziel) => encryptionKey == null
-        ? _stimmtImZiel(asset, ziel, frueher)
-        : _verschluesseltImZiel(asset, ziel);
+        ? _stimmtImZiel(asset, ziel, frueher, beschaedigt)
+        : _verschluesseltImZiel(asset, ziel, beschaedigt);
     var done = 0;
     var totalBytes = zusatz.geschriebenBytes;
     var geschriebeneBytes = zusatz.geschriebenBytes;
@@ -497,17 +555,28 @@ class BackupService {
               ziel: target,
               quellGroesse: quellGroesse,
               schreibe: (zwischen) async {
+                // Mit der Prüfsumme der Aufnahme (#493): Vorher prüfte nur
+                // das Ersetzen einer Kopie die Quelle, und ein schon vor der
+                // ersten Sicherung beschädigtes Original ging ohne Warnung
+                // als gesichert durch.
                 if (encryptionKey != null) {
                   await VaultCrypto.encryptFile(
                     source,
                     zwischen,
                     encryptionKey,
+                    erwartetePruefsumme: asset.checksum,
                   );
                 } else {
-                  await source.copy(zwischen.path);
+                  await _kopiereGeprueft(source, zwischen, asset.checksum);
                 }
               },
+            ).onError<FormatException>(
+              (_, _) => throw FileSystemException(
+                'pv_backup_quelle_beschaedigt',
+                asset.relativePath,
+              ),
             );
+            neuGeschrieben.add(asset.checksum);
 
             if (encryptionKey == null) {
               final xmp = buildXmpPacket(
@@ -571,6 +640,7 @@ class BackupService {
           )
         : (anzahl: 0, bytes: 0);
     if (offen.anzahl == 0) abgebrochenWegenLimit = false;
+    await _vergissBeschaedigte(backupRoot.path, neuGeschrieben);
 
     if (backedUpIds.isNotEmpty && markieren) {
       await _db.markBackedUp(backedUpIds);
@@ -966,6 +1036,8 @@ class BackupService {
         ),
       ),
     );
+    final beschaedigt = await _beschaedigteImZiel(backupRoot.path);
+    final neuGeschrieben = <String>{};
     var done = 0;
     var geschriebeneBytes = zusatz.geschriebenBytes;
     var abgebrochenWegenLimit = false;
@@ -994,7 +1066,11 @@ class BackupService {
         String? geholt;
         try {
           final target = await zielVon(asset);
-          final schonDa = await _verschluesseltImZiel(asset, target);
+          final schonDa = await _verschluesseltImZiel(
+            asset,
+            target,
+            beschaedigt,
+          );
           // Wie in [performBackup]: erst fragen, dann (verbunden) holen –
           // und was eigens dafür kam, danach wieder weg.
           if (!schonDa) geholt = await _wirdGeholt(asset);
@@ -1023,9 +1099,20 @@ class BackupService {
               zwischenlager: staging,
               ziel: target,
               quellGroesse: await source.length(),
-              schreibe: (zwischen) =>
-                  VaultCrypto.encryptFile(source, zwischen, encryptionKey),
+              // Mit der Prüfsumme, wie in [performBackup] (#493).
+              schreibe: (zwischen) => VaultCrypto.encryptFile(
+                source,
+                zwischen,
+                encryptionKey,
+                erwartetePruefsumme: asset.checksum,
+              ),
+            ).onError<FormatException>(
+              (_, _) => throw FileSystemException(
+                'pv_backup_quelle_beschaedigt',
+                asset.relativePath,
+              ),
             );
+            neuGeschrieben.add(asset.checksum);
             geschriebeneBytes += await target.length();
             neu++;
           }
@@ -1071,10 +1158,12 @@ class BackupService {
     final offen = abgebrochenWegenLimit
         ? await _fehlenImZiel(
             pending.skip(done),
-            (a) async => _verschluesseltImZiel(a, await zielVon(a)),
+            (a) async =>
+                _verschluesseltImZiel(a, await zielVon(a), beschaedigt),
           )
         : (anzahl: 0, bytes: 0);
     if (offen.anzahl == 0) abgebrochenWegenLimit = false;
+    await _vergissBeschaedigte(backupRoot.path, neuGeschrieben);
 
     if (autoBackedUpIds.isNotEmpty && markieren) {
       await _db.markAutoBackedUp(autoBackedUpIds);

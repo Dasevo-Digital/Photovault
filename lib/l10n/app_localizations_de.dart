@@ -10512,6 +10512,11 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String backupProbeBeschaedigt(String namen) {
+    return 'Beschädigt im Sicherungsziel: $namen. Die nächste Sicherung schreibt sie aus der Bibliothek neu.';
+  }
+
+  @override
   String backupProbeFehler(String wann) {
     return '$wann: Die Wiederherstellungsprobe war nicht erfolgreich. Sicherungsdateien, Passphrase und verfügbaren Platz prüfen. Ein früherer Erfolg gilt nur für den damaligen Stand.';
   }

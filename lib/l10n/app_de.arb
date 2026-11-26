@@ -6710,6 +6710,14 @@
       }
     }
   },
+  "backupProbeBeschaedigt": "Beschädigt im Sicherungsziel: {namen}. Die nächste Sicherung schreibt sie aus der Bibliothek neu.",
+  "@backupProbeBeschaedigt": {
+    "placeholders": {
+      "namen": {
+        "type": "String"
+      }
+    }
+  },
   "backupProbeFehler": "{wann}: Die Wiederherstellungsprobe war nicht erfolgreich. Sicherungsdateien, Passphrase und verfügbaren Platz prüfen. Ein früherer Erfolg gilt nur für den damaligen Stand.",
   "@backupProbeFehler": {
     "placeholders": {
