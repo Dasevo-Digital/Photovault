@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 
 import '../l10n/app_localizations.dart';
 import 'package:image/image.dart' as img;
-import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_display_path.dart';
@@ -19,6 +18,7 @@ import '../theme/app_theme.dart';
 import '../widgets/asset_info_sheet.dart';
 import '../widgets/bibliotheksbild.dart';
 import '../widgets/automatisch_zugeordnet_marke.dart';
+import '../widgets/gesichtsmenue.dart';
 import '../widgets/gesichtsrahmen.dart';
 import '../widgets/person_picker_dialog.dart';
 import '../widgets/pin_dialogs.dart';
@@ -252,68 +252,21 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
   }
 
   Future<void> _tapFace(FaceData face) async {
-    // Ein beiseitegelegtes Gesicht anzutippen heisst „doch nicht" – dafür
-    // braucht es keinen Dialog mit Namensfeld, der nur den einen Fall
-    // verdeckte, den der Nutzer hier will.
     if (face.isIgnored) {
-      await widget.library.db.fuehreAus(
-        GesichterBeiseitelegen([face.id], false),
-      );
-      if (mounted) {
-        melde.erfolg(AppTexte.of(context).gesichtZurueckgeholt);
-      }
+      await gesichtZurueckholen(context, widget.library.db, face);
       _load();
       return;
     }
 
-    final people = await widget.library.db
-        .select(widget.library.db.people)
-        .get();
-    // Wer könnte das sein? Die Einbettung liegt am Gesicht, die Rechnung
-    // gab es längst - sie stand nur in der Sammelzuordnung fest.
-    final vorschlag = await widget.library.personenvorschlag(
-      face.embedding,
-      ausser: face.personId,
-    );
-    if (!mounted) return;
-    final currentName = face.personId != null
-        ? _personNames[face.personId]
-        : null;
-    final choice = await showPersonPickerDialog(
+    final geaendert = await gesichtBenennen(
       context,
-      people,
-      suggestedPerson: vorschlag,
+      db: widget.library.db,
       paths: widget.library.paths,
-      title: currentName != null
-          ? AppTexte.of(context).gesichtUmbenennen
-          : AppTexte.of(context).gesichtBenennen,
-      currentName: currentName,
-      // Nur für noch namenlose Gesichter: Ein bereits benanntes beiseite-
-      // zulegen hiesse, die Person still aus dem Foto zu entfernen – das
-      // gehört nicht hinter dieselbe Schaltfläche.
-      erlaubtIgnorieren: face.personId == null,
+      library: widget.library,
+      gesicht: face,
+      aktuellerName: face.personId != null ? _personNames[face.personId] : null,
     );
-    if (choice == null) return;
-
-    if (choice.ignorieren) {
-      await widget.library.db.fuehreAus(
-        GesichterBeiseitelegen([face.id], true),
-      );
-      _load();
-      return;
-    }
-
-    String personId;
-    if (choice.newName != null) {
-      personId = const Uuid().v4();
-      await widget.library.db.fuehreAus(
-        PersonAnlegen(personId, choice.newName!),
-      );
-    } else {
-      personId = choice.existingPersonId!;
-    }
-    await widget.library.db.fuehreAus(GesichterZuordnen([face.id], personId));
-    _load();
+    if (geaendert) _load();
   }
 
   /// Das Kontextmenü (Rechtsklick). [face] ist gesetzt, wenn auf einen
@@ -345,38 +298,15 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
 
   List<Widget> _menuepunkte(FaceData? face) {
     final t = AppTexte.of(context);
-    final unbenannte = _faces
-        .where((f) => f.personId == null && !f.isIgnored)
-        .length;
-    // Löschen trifft auch die beiseitegelegten – wie „Alle unbenannten
-    // Erkennungen löschen“ bei den Personen.
-    final unbenannteMitIgnorierten = _faces
-        .where((f) => f.personId == null)
-        .length;
-    Widget punkt(String wahl, IconData symbol, String text, {bool an = true}) =>
-        MenuItemButton(
-          leadingIcon: Icon(symbol, size: 20),
-          onPressed: an ? () => unawaited(_waehle(wahl, face)) : null,
-          child: Text(text),
-        );
+    void waehle(Gesichtswahl wahl) => unawaited(_gesichtswahl(wahl, face));
+    Widget punkt(String wahl, IconData symbol, String text) => MenuItemButton(
+      leadingIcon: Icon(symbol, size: 20),
+      onPressed: () => unawaited(_waehle(wahl)),
+      child: Text(text),
+    );
     return [
       if (face != null) ...[
-        if (!face.isIgnored)
-          punkt(
-            'benennen',
-            Icons.person_add_alt_1,
-            face.personId != null ? t.gesichtUmbenennen : t.gesichtBenennen,
-          ),
-        if (face.personId != null)
-          punkt('loesen', Icons.person_off_outlined, t.gesichtZuordnungLoesen),
-        punkt(
-          face.isIgnored ? 'zurueck' : 'ignorieren',
-          face.isIgnored
-              ? Icons.visibility_outlined
-              : Icons.visibility_off_outlined,
-          face.isIgnored ? t.gesichtNichtMehrIgnorieren : t.gesichtIgnorieren,
-        ),
-        punkt('loeschen', Icons.delete_outline, t.gesichtErkennungLoeschen),
+        ...gesichtsEintraege(t, face, waehle),
         const Divider(height: 1),
       ],
       // Auch hier, nicht nur in der Titelleiste: Sind die Rahmen weg,
@@ -393,57 +323,49 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
         Icons.add_a_photo_outlined,
         t.gesichtManuellHinzufuegen,
       ),
-      punkt(
-        'alleIgnorieren',
-        Icons.visibility_off_outlined,
-        t.gesichtAlleUnbenanntenIgnorieren(unbenannte),
-        an: unbenannte > 0,
-      ),
-      punkt(
-        'alleLoeschen',
-        Icons.delete_sweep_outlined,
-        t.gesichtAlleUnbenanntenLoeschen(unbenannteMitIgnorierten),
-        an: unbenannteMitIgnorierten > 0,
-      ),
+      ...unbenannteEintraege(t, _faces, waehle),
       const Divider(height: 1),
       punkt('info', Icons.info_outline, t.viewerInfo),
       // Das Foto selbst, nicht eine Erkennung darauf – deshalb unten und
       // hinter einem Trenner: Die Einträge darüber ändern nur, was über
       // dem Bild liegt.
-      punkt(
-        'nichtMehrSuchen',
-        _asset.faceScanExcluded
-            ? Icons.person_search_outlined
-            : Icons.search_off_outlined,
-        _asset.faceScanExcluded
-            ? t.gesichtWiederDurchsuchen
-            : t.gesichtNichtMehrDurchsuchen,
-      ),
+      durchsuchenEintrag(t, _asset, waehle),
       punkt('fotoLoeschen', Icons.delete_outline, t.gesichtFotoLoeschen),
     ];
   }
 
-  Future<void> _waehle(String wahl, FaceData? face) async {
+  /// Ein Eintrag aus dem gemeinsamen Gesichtsmenü (siehe
+  /// [fuehreGesichtswahlAus]) – dieselben wie im Vollbild.
+  Future<void> _gesichtswahl(Gesichtswahl wahl, FaceData? face) async {
+    if (!mounted) return;
+    final asset = _asset;
+    final geaendert = await fuehreGesichtswahlAus(
+      context,
+      library: widget.library,
+      wahl: wahl,
+      asset: asset,
+      gesichter: _faces,
+      gesicht: face,
+      aktuellerName: face?.personId != null
+          ? _personNames[face!.personId]
+          : null,
+    );
+    if (!geaendert || !mounted) return;
+    if (wahl == Gesichtswahl.durchsuchen) {
+      // Die Zeile in der eigenen Liste nachziehen: Sie stammt aus dem
+      // aufrufenden Bildschirm und weiss von der Änderung nichts.
+      final neu = await widget.library.db.assetById(asset.id);
+      if (neu == null || !mounted) return;
+      final stelle = _assets.indexWhere((a) => a.id == asset.id);
+      if (stelle >= 0) setState(() => _assets[stelle] = neu);
+      return;
+    }
+    _load();
+  }
+
+  Future<void> _waehle(String wahl) async {
     if (!mounted) return;
     switch (wahl) {
-      case 'benennen':
-        await _tapFace(face!);
-      case 'loesen':
-        await widget.library.db.fuehreAus(ZuordnungLoesen(face!.id));
-        _load();
-      case 'ignorieren':
-        await widget.library.db.fuehreAus(
-          GesichterBeiseitelegen([face!.id], true),
-        );
-        _load();
-      case 'zurueck':
-        await widget.library.db.fuehreAus(
-          GesichterBeiseitelegen([face!.id], false),
-        );
-        _load();
-      case 'loeschen':
-        await widget.library.loescheGesicht(face!.id);
-        _load();
       case 'rahmen':
         setState(() => _rahmenSichtbar = !_rahmenSichtbar);
       case 'hinzufuegen':
@@ -452,20 +374,8 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
           _dragStart = null;
           _dragCurrent = null;
         });
-      case 'alleIgnorieren':
-        await widget.library.db.fuehreAus(
-          GesichterBeiseitelegen([
-            for (final f in _faces)
-              if (f.personId == null && !f.isIgnored) f.id,
-          ], true),
-        );
-        _load();
-      case 'alleLoeschen':
-        await _loescheUnbenannte();
       case 'info':
         setState(() => _infoSichtbar = true);
-      case 'nichtMehrSuchen':
-        _durchsuchenUmschalten();
       case 'fotoLoeschen':
         await _loescheFoto();
     }
@@ -528,61 +438,6 @@ class _FaceReviewScreenState extends State<FaceReviewScreen> {
       _dragCurrent = null;
     });
     _load();
-  }
-
-  /// Dieses Foto von der Gesichtssuche ausnehmen – oder zurückholen.
-  ///
-  /// **Gedacht für Bilder, auf denen jeder Durchlauf neue „Gesichter"
-  /// findet:** eine Gemäldewand, ein Zeitungsfoto, ein Plakat. Ein
-  /// einzelnes Gesicht beiseitezulegen half dort nicht, weil beim
-  /// nächsten Durchlauf andere Stellen erkannt wurden.
-  ///
-  /// Bereits erkannte Gesichter bleiben stehen – die Ausnahme gilt dem
-  /// Suchen, nicht dem Gefundenen.
-  Future<void> _durchsuchenUmschalten() async {
-    final neuerWert = !_asset.faceScanExcluded;
-    await widget.library.db.fuehreAus(
-      GesichtssucheAusnehmen(_asset.id, neuerWert),
-    );
-    if (!mounted) return;
-    setState(
-      () => _assets[_index] = _asset.copyWith(faceScanExcluded: neuerWert),
-    );
-    melde.erfolg(
-      neuerWert
-          ? AppTexte.of(context).gesichtNichtMehrDurchsuchtHinweis
-          : AppTexte.of(context).gesichtWiederDurchsuchtHinweis,
-    );
-  }
-
-  /// Die unbenannten Erkennungen dieses Fotos auf einmal löschen (#192) –
-  /// für ein Bild, auf dem die Erkennung lauter Fehlgriffe gefunden hat.
-  Future<void> _loescheUnbenannte() async {
-    final t = AppTexte.of(context);
-    final ids = [
-      for (final f in _faces)
-        if (f.personId == null) f.id,
-    ];
-    if (ids.isEmpty) return;
-    final ja = await showDialog<bool>(
-      context: context,
-      builder: (dialog) => AlertDialog(
-        content: Text(t.gesichtUnbenannteLoeschenFrage(ids.length)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialog, false),
-            child: Text(t.allgAbbrechen),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialog, true),
-            child: Text(t.allgLoeschen),
-          ),
-        ],
-      ),
-    );
-    if (ja != true || !mounted) return;
-    await widget.library.loescheGesichter(ids);
-    if (mounted) _load();
   }
 
   Future<void> _loescheFoto() async {

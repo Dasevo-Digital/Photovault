@@ -631,15 +631,34 @@ Finder get fotoflaeche => find.descendant(
   matching: find.byType(AspectRatio),
 );
 
-/// Öffnet „Gesichter bearbeiten“ für [id] (über den Betrachter).
+/// Öffnet „Gesichter bearbeiten“ für [id] über dem Betrachter, mit der
+/// Reihe [ids] zum Blättern.
+///
+/// Aus dem Vollbild führt seit #495 kein Eintrag mehr dorthin – es kann
+/// selbst alles, und man erreicht den Bildschirm unter „Personen“. Geprüft
+/// wird hier der Bildschirm selbst, darum wird er direkt geöffnet.
 Future<void> gesichterBearbeiten(
   WidgetTester tester,
   List<String> ids,
   String id,
 ) async {
   await ki.betrachter(tester, ids, id);
-  await ki.rechtsklick(tester, find.byType(PageView));
-  await ki.tippe(tester, find.text(de.viewerGesichterBearbeiten));
+  final reihe = <AssetData>[];
+  for (final i in ids) {
+    final a = await tester.runAsync(() => bibliothek.db.assetById(i));
+    if (a != null) reihe.add(a);
+  }
+  unawaited(
+    Navigator.of(tester.element(find.byType(AssetViewerScreen))).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FaceReviewScreen(
+          library: bibliothek,
+          assets: reihe,
+          startIndex: reihe.indexWhere((a) => a.id == id),
+        ),
+      ),
+    ),
+  );
   await ki.pumpe(tester, 1500);
   await waitFor(tester, find.byType(FaceReviewScreen));
   await waitFor(tester, fotoflaeche, timeout: const Duration(seconds: 30));

@@ -3374,9 +3374,7 @@ void main() {
     await finish(tester);
   });
 
-  pruefung('PER-098 Gesichter bearbeiten aus der Vollbildansicht', (
-    tester,
-  ) async {
+  pruefung('PER-098 Gesichter bearbeiten im Vollbild', (tester) async {
     await start(tester);
     final f = await fotos(tester, [
       ...bilder('vb', 2),
@@ -3395,35 +3393,16 @@ void main() {
       (w) => w is AssetThumbnailTile && w.asset.id == assetId,
     );
     await waitFor(tester, kachelVon(f['vb1.jpg']!.id));
-    final reihe = [
-      for (final k in tester.widgetList<AssetThumbnailTile>(
-        find.descendant(
-          of: find.byType(PersonDetailScreen),
-          matching: find.byType(AssetThumbnailTile),
-        ),
-      ))
-        k.asset.id,
-    ];
-    final stelle = reihe.indexOf(f['vb1.jpg']!.id);
     await tippe(tester, kachelVon(f['vb1.jpg']!.id));
     await waitFor(tester, find.byType(AssetViewerScreen));
     await warte(tester, 800);
     await rechtsklick(tester, find.byType(PageView));
     await klick(tester, find.text(de.viewerGesichterBearbeiten));
-    await waitFor(tester, find.byType(FaceReviewScreen));
-    await waitFor(
-      tester,
-      find.text(de.gesichtPosition(stelle + 1, reihe.length)),
-    );
-    expect(
-      find.descendant(
-        of: find.byType(FaceReviewScreen),
-        matching: find.text('vb1.jpg'),
-      ),
-      findsOneWidget,
-    );
-    await taste(tester, LogicalKeyboardKey.escape);
-    await waitGone(tester, find.byType(FaceReviewScreen));
+    // Seit #495 ein Untermenü im Vollbild, kein zweiter Bildschirm.
+    await waitFor(tester, find.text(de.gesichtNichtMehrDurchsuchen));
+    expect(find.byType(FaceReviewScreen), findsNothing);
+    await klick(tester, find.text(de.viewerGesichterZeigen));
+    await waitFor(tester, find.byTooltip(de.viewerGesichterVerbergen));
     await zurueck(tester);
     await waitGone(tester, find.byType(AssetViewerScreen));
     // Beim Video fehlt der Eintrag.

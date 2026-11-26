@@ -239,7 +239,7 @@
   "personenUnbenannteTab": "Unnamed faces",
   "personenLeer": "No people yet. Switch to the “Unnamed faces” tab, pick a few faces and assign them to a new person.",
   "personenLangeDruecken": "press and hold: merge",
-  "personenKeineUnbenannten": "No unnamed faces (left). New ones appear here automatically as you import more photos or run another face scan. You can also mark individual ones yourself: open a photo, right-click → “Edit faces”, then use “Add face manually” at the top right.",
+  "personenKeineUnbenannten": "No unnamed faces (left). New ones appear here automatically as you import more photos or run another face scan. You can also mark individual ones yourself: open a photo, right-click → “Edit faces” → “Add a missing face – drag a frame”.",
   "personenOhneGesichtsmodell": "Without a face-detection model Photo Vault cannot find any faces.",
   "personenNochNichtDurchsucht": "{offen, plural, =1{One photo has not been scanned for faces yet.} other{{offen} photos have not been scanned for faces yet.}} Until that is done, nothing can appear here.",
   "@personenNochNichtDurchsucht": {
@@ -3784,6 +3784,15 @@
   },
   "viewerGesichtAufziehen": "Add a missing face – drag a frame",
   "viewerGesichtAufziehenEnde": "Stop adding",
+  "viewerBeiseitegelegteZeigen": "{anzahl, plural, =1{Show ignored face} other{Show {anzahl} ignored faces}}",
+  "@viewerBeiseitegelegteZeigen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "viewerBeiseitegelegteVerbergen": "Hide ignored faces",
   "viewerGesichtNachtragen": "Name the added face",
   "viewerRahmenZuKlein": "That frame is too small. Drag a box around the face.",
   "viewerRahmenNichtLesbar": "The photograph could not be read – no face was added.",

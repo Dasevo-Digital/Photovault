@@ -358,7 +358,7 @@
   "personenUnbenannteTab": "Unbenannte Gesichter",
   "personenLeer": "Noch keine Personen angelegt. Wechsle zum Tab „Unbenannte Gesichter“, wähle ein paar Gesichter aus und ordne sie einer neuen Person zu.",
   "personenLangeDruecken": "lange drücken: zusammenführen",
-  "personenKeineUnbenannten": "Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“, dann oben rechts auf „Gesicht manuell hinzufügen“.",
+  "personenKeineUnbenannten": "Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“ → „Gesicht nachtragen – Rahmen aufziehen“.",
   "personenOhneGesichtsmodell": "Ohne ein Modell für die Gesichtserkennung findet Photo Vault keine Gesichter.",
   "personenNochNichtDurchsucht": "{offen, plural, =1{Eine Aufnahme ist noch nicht nach Gesichtern durchsucht.} other{{offen} Aufnahmen sind noch nicht nach Gesichtern durchsucht.}} Solange das aussteht, kann hier nichts stehen.",
   "@personenNochNichtDurchsucht": {
@@ -5016,6 +5016,15 @@
   },
   "viewerGesichtAufziehen": "Gesicht nachtragen – Rahmen aufziehen",
   "viewerGesichtAufziehenEnde": "Nachtragen beenden",
+  "viewerBeiseitegelegteZeigen": "{anzahl, plural, =1{Ignoriertes Gesicht zeigen} other{{anzahl} ignorierte Gesichter zeigen}}",
+  "@viewerBeiseitegelegteZeigen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "viewerBeiseitegelegteVerbergen": "Ignorierte Gesichter verbergen",
   "viewerGesichtNachtragen": "Nachgetragenes Gesicht benennen",
   "viewerRahmenZuKlein": "Der Rahmen ist zu klein. Ziehe einen Kasten um das Gesicht.",
   "viewerRahmenNichtLesbar": "Das Foto liess sich nicht lesen – kein Gesicht angelegt.",

@@ -1149,7 +1149,7 @@ abstract class AppTexte {
   /// No description provided for @personenKeineUnbenannten.
   ///
   /// In de, this message translates to:
-  /// **'Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“, dann oben rechts auf „Gesicht manuell hinzufügen“.'**
+  /// **'Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“ → „Gesicht nachtragen – Rahmen aufziehen“.'**
   String get personenKeineUnbenannten;
 
   /// No description provided for @personenOhneGesichtsmodell.
@@ -12294,6 +12294,18 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Nachtragen beenden'**
   String get viewerGesichtAufziehenEnde;
+
+  /// No description provided for @viewerBeiseitegelegteZeigen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Ignoriertes Gesicht zeigen} other{{anzahl} ignorierte Gesichter zeigen}}'**
+  String viewerBeiseitegelegteZeigen(int anzahl);
+
+  /// No description provided for @viewerBeiseitegelegteVerbergen.
+  ///
+  /// In de, this message translates to:
+  /// **'Ignorierte Gesichter verbergen'**
+  String get viewerBeiseitegelegteVerbergen;
 
   /// No description provided for @viewerGesichtNachtragen.
   ///

@@ -10,7 +10,6 @@ import 'package:flutter/services.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:uuid/uuid.dart';
 
 import 'package:kern/abgleich/verbindung.dart' show KeineVerbindung;
 import 'package:kern/db/database.dart';
@@ -29,6 +28,7 @@ import '../widgets/tastenkuerzel.dart' show schreibtGerade;
 import '../widgets/bild_zoom_gesten.dart';
 import '../widgets/asset_info_sheet.dart';
 import '../widgets/automatisch_zugeordnet_marke.dart';
+import '../widgets/gesichtsmenue.dart';
 import '../widgets/gesichtsrahmen.dart';
 import '../services/gesicht_von_hand.dart';
 import '../widgets/textrahmen.dart';
@@ -40,7 +40,6 @@ import '../widgets/video_playback.dart';
 import '../widgets/selection_action_bar.dart'
     show confirmDialog, runBatchPasteDevelop;
 import 'develop_screen.dart';
-import 'face_review_screen.dart';
 import 'person_detail_screen.dart';
 import 'image_editor_screen.dart';
 import 'similar_photos_screen.dart';
@@ -58,7 +57,6 @@ enum _ContextMenuAction {
   showInTimeline,
   showSimilar,
   editMetadata,
-  faceReview,
   entwicklungEinfuegen,
   originalHerstellen,
 }
@@ -178,6 +176,19 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// blind neben ein Gesicht, das schon einen hat) und PhotoView bekommt
   /// keine Gesten mehr: Ziehen verschiebt sonst das Bild, statt zu malen.
   bool _gesichtAufziehen = false;
+
+  /// Ob beiseitegelegte Gesichter grau mit im Bild stehen (#495).
+  ///
+  /// Gewöhnlich nicht: Wer ein Plakatgesicht weggelegt hat, will es nicht
+  /// bei jedem Ansehen wiedersehen. Wer eines zurückholen will, schaltet
+  /// sie über das Menü ein – bisher ging das nur in der
+  /// Gesichts-Bearbeitung. Wie [_gesichterZeigen] für die ganze Sitzung.
+  bool _beiseitegelegteZeigen = false;
+
+  /// Zählt jede Änderung an den Gesichtern. Die Seiten und die
+  /// Info-Ansicht laden daraufhin neu – eine Erkennung, die über das Menü
+  /// gelöscht wurde, stünde sonst weiter im Bild.
+  int _gesichterStand = 0;
 
   /// Ob die gelesenen Textstellen als Kästen über dem Foto liegen (siehe
   /// [Textrahmen]). Wie bei den Gesichtern eine Sitzungseinstellung: Man
@@ -611,11 +622,64 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// das alte Menü sofort und öffnet das neue an der neuen Stelle.
   final MenuController _menue = MenuController();
 
-  void _showContextMenu(Offset globalPosition) {
+  /// Das Gesicht, auf dessen Rahmen zuletzt rechts geklickt wurde, und wo.
+  ({FaceData gesicht, Offset stelle})? _menueGesicht;
+
+  /// Die Gesichter des gezeigten Fotos und ihre Namen, als das Menü
+  /// aufging – für die Sammeleinträge und deren Anzahl.
+  List<FaceData> _menueGesichter = const [];
+  Map<String, String> _menueNamen = const {};
+
+  /// Ob das Menü Gesichtseinträge trägt: nur für Fotos, nicht für Videos
+  /// und nichts aus dem gesperrten Ordner, und nur mit Bibliothek – das
+  /// Löschen einer Erkennung räumt deren Ausschnitt dort mit weg.
+  bool get _gesichtsmenue => _gesichtsmenueFuer(_currentAsset);
+
+  bool _gesichtsmenueFuer(AssetData a) =>
+      widget.library != null && a.type == 'IMAGE' && !a.isLocked;
+
+  /// Ein Rechtsklick auf einen Gesichtsrahmen (#495): dasselbe Menü, mit
+  /// den Einträgen für dieses Gesicht obenauf.
+  void _gesichtRechtsklick(FaceData gesicht, Offset stelle) {
+    _menueGesicht = (gesicht: gesicht, stelle: stelle);
+    unawaited(_showContextMenu(stelle));
+  }
+
+  Future<void> _showContextMenu(Offset globalPosition) async {
     // Jeder Punkt darin ändert die Aufnahme oder sucht sie dort, wo eine
     // gesperrte nicht steht (Zeitleiste, ähnliche Fotos) – siehe
     // [_bearbeitbar].
     if (!_bearbeitbar) return;
+    // Hält man die Taste auf einem Rahmen einen Augenblick, melden sich
+    // beide Erkenner, der des Rahmens zuerst. An derselben Stelle gilt sein
+    // Gesicht deshalb weiter; jeder andere Klick ist einer daneben.
+    final angeklickt = _menueGesicht?.stelle == globalPosition
+        ? _menueGesicht
+        : null;
+    _menueGesicht = null;
+    final asset = _currentAsset;
+    var gesichter = const <FaceData>[];
+    var namen = const <String, String>{};
+    if (_gesichtsmenue) {
+      gesichter = await widget.db.facesForAsset(asset.id);
+      namen = {
+        for (final p in await widget.db.peopleForAsset(asset.id)) p.id: p.name,
+      };
+      if (!mounted || _currentAsset.id != asset.id) return;
+    }
+    // Die frische Zeile, nicht die der Seite: Sie kann seit dem Laden der
+    // Rahmen eine andere Person tragen.
+    FaceData? gesicht;
+    for (final g in gesichter) {
+      if (g.id == angeklickt?.gesicht.id) gesicht = g;
+    }
+    setState(() {
+      _menueGesichter = gesichter;
+      _menueNamen = namen;
+      _menueGesicht = gesicht == null
+          ? null
+          : (gesicht: gesicht, stelle: globalPosition);
+    });
     final bildbereich =
         _bildbereichKey.currentContext?.findRenderObject() as RenderBox?;
     if (bildbereich == null) return;
@@ -718,13 +782,14 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
 
   List<Widget> _menuepunkte(BuildContext context) {
     final t = AppTexte.of(context);
+    final gesicht = _gesichtsmenue ? _menueGesicht?.gesicht : null;
     Widget punkt(_ContextMenuAction aktion, IconData symbol, String text) =>
         MenuItemButton(
           leadingIcon: Icon(symbol, size: 20),
           onPressed: () => unawaited(_fuehreAus(aktion)),
           child: Text(text),
         );
-    return [
+    final punkte = [
       // Nur, wenn tatsächlich Einstellungen kopiert wurden. Der Weg über
       // die Mehrfachauswahl bleibt daneben bestehen – hier gesucht hatte
       // ihn der erste Bericht (Fehlerbericht).
@@ -768,21 +833,114 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         Icons.edit_note_outlined,
         t.viewerMetadatenBearbeiten,
       ),
-      // Nur für Fotos (nicht Videos), nicht gesperrt (FaceReviewScreen
-      // liest Original/Vorschau direkt von der Platte, ohne die
-      // Entschlüsselungs-/Wiederverschlüsselungs-Logik der Vollbildansicht
-      // zu kennen – analog zum Ausschluss in ImageEditorScreen/
-      // DevelopScreen) und nur, wenn eine LibraryState-Instanz vorliegt
-      // (FaceReviewScreen braucht sie zwingend, siehe dessen Konstruktor).
-      if (widget.library != null &&
-          _currentAsset.type == 'IMAGE' &&
-          !_currentAsset.isLocked)
-        punkt(
-          _ContextMenuAction.faceReview,
-          Icons.face_retouching_natural_outlined,
-          t.viewerGesichterBearbeiten,
+      // Alles, was die Gesichts-Bearbeitung an Gesichtern kann, hier – in
+      // einem Untermenü unter dem Namen, unter dem bisher der Sprung
+      // dorthin stand (#495).
+      if (_gesichtsmenue)
+        SubmenuButton(
+          leadingIcon: const Icon(
+            Icons.face_retouching_natural_outlined,
+            size: 20,
+          ),
+          menuChildren: _gesichtsuntermenue(t),
+          child: Text(t.viewerGesichterBearbeiten),
         ),
     ];
+    if (gesicht == null) return punkte;
+    return [
+      ...gesichtsEintraege(
+        t,
+        gesicht,
+        (wahl) => unawaited(_gesichtswahl(wahl, gesicht)),
+      ),
+      const Divider(height: 1),
+      ...punkte,
+    ];
+  }
+
+  /// Was das ganze Foto betrifft: Rahmen zeigen, nachtragen, die
+  /// beiseitegelegten zeigen, die unbenannten auf einmal wegräumen und das
+  /// Foto von der Suche ausnehmen.
+  List<Widget> _gesichtsuntermenue(AppTexte t) {
+    void waehle(Gesichtswahl wahl) => unawaited(_gesichtswahl(wahl, null));
+    final beiseite = _menueGesichter.where((g) => g.isIgnored).length;
+    MenuItemButton punkt(IconData symbol, String text, VoidCallback tun) =>
+        MenuItemButton(
+          leadingIcon: Icon(symbol, size: 20),
+          onPressed: tun,
+          child: Text(text),
+        );
+    return [
+      punkt(
+        _gesichterZeigen
+            ? Icons.face_retouching_natural
+            : Icons.face_retouching_natural_outlined,
+        _gesichterZeigen ? t.viewerGesichterVerbergen : t.viewerGesichterZeigen,
+        _gesichterUmschalten,
+      ),
+      punkt(
+        Icons.person_add_outlined,
+        _gesichtAufziehen
+            ? t.viewerGesichtAufziehenEnde
+            : t.viewerGesichtAufziehen,
+        () {
+          _diaschauBeenden();
+          setState(() {
+            // Wer nachträgt, muss sehen, was schon da ist.
+            if (!_gesichtAufziehen) _gesichterZeigen = true;
+            _gesichtAufziehen = !_gesichtAufziehen;
+          });
+        },
+      ),
+      if (beiseite > 0 || _beiseitegelegteZeigen)
+        punkt(
+          _beiseitegelegteZeigen
+              ? Icons.visibility_off_outlined
+              : Icons.visibility_outlined,
+          _beiseitegelegteZeigen
+              ? t.viewerBeiseitegelegteVerbergen
+              : t.viewerBeiseitegelegteZeigen(beiseite),
+          () => setState(() {
+            _beiseitegelegteZeigen = !_beiseitegelegteZeigen;
+            if (_beiseitegelegteZeigen) _gesichterZeigen = true;
+          }),
+        ),
+      const Divider(height: 1),
+      ...unbenannteEintraege(t, _menueGesichter, waehle),
+      const Divider(height: 1),
+      durchsuchenEintrag(t, _currentAsset, waehle),
+    ];
+  }
+
+  void _gesichterUmschalten() => setState(() {
+    _gesichterZeigen = !_gesichterZeigen;
+    // Rahmen aus heisst auch: nicht mehr aufziehen. Sonst bliebe ein
+    // unsichtbarer Malmodus zurück, in dem sich das Bild nicht mehr
+    // verschieben lässt.
+    if (!_gesichterZeigen) _gesichtAufziehen = false;
+  });
+
+  /// Ein Eintrag aus dem gemeinsamen Gesichtsmenü – dieselben wie in der
+  /// Gesichts-Bearbeitung (siehe [fuehreGesichtswahlAus]).
+  Future<void> _gesichtswahl(Gesichtswahl wahl, FaceData? gesicht) async {
+    final library = widget.library;
+    if (library == null || !mounted) return;
+    // Die Diaschau zuerst: Sonst träfe die Wahl nach einer Rückfrage ein
+    // anderes Foto als das, auf dem sie getroffen wurde (#428).
+    _diaschauBeenden();
+    final asset = _currentAsset;
+    final geaendert = await fuehreGesichtswahlAus(
+      context,
+      library: library,
+      wahl: wahl,
+      asset: asset,
+      gesichter: _menueGesichter,
+      gesicht: gesicht,
+      aktuellerName: _menueNamen[gesicht?.personId],
+    );
+    if (!geaendert || !mounted) return;
+    if (wahl == Gesichtswahl.durchsuchen) await _refreshAsset(asset.id);
+    if (mounted) setState(() => _gesichterStand++);
   }
 
   Future<void> _fuehreAus(_ContextMenuAction aktion) async {
@@ -799,8 +957,6 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         _showSimilarImages();
       case _ContextMenuAction.editMetadata:
         await _openMetadataEditor();
-      case _ContextMenuAction.faceReview:
-        await _openFaceReview();
       case _ContextMenuAction.entwicklungEinfuegen:
         final id = _currentAsset.id;
         await runBatchPasteDevelop(context, widget.library!, [id]);
@@ -808,28 +964,6 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       case _ContextMenuAction.originalHerstellen:
         await _originalWiederherstellen();
     }
-  }
-
-  /// Springt direkt aus der Vollbildansicht in die Gesichts-Bearbeitung für
-  /// das aktuelle Foto (bisher nur über den Personen-Tab erreichbar) –
-  /// reduziert die Hürde, ein übersehenes oder falsch zugeordnetes Gesicht
-  /// direkt beim Ansehen zu korrigieren, statt erst zum Personen-Tab
-  /// wechseln und das Foto dort wiederfinden zu müssen.
-  Future<void> _openFaceReview() async {
-    final library = widget.library;
-    if (library == null) return;
-    _diaschauBeenden();
-    final id = _currentAsset.id;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => FaceReviewScreen(
-          library: library,
-          assets: _assets,
-          startIndex: _currentIndex,
-        ),
-      ),
-    );
-    if (mounted) await _refreshAsset(id);
   }
 
   Future<void> _editAsset() async {
@@ -1063,13 +1197,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                 tooltip: _gesichterZeigen
                     ? AppTexte.of(context).viewerGesichterVerbergen
                     : AppTexte.of(context).viewerGesichterZeigen,
-                onPressed: () => setState(() {
-                  _gesichterZeigen = !_gesichterZeigen;
-                  // Rahmen aus heisst auch: nicht mehr aufziehen. Sonst
-                  // bliebe ein unsichtbarer Malmodus zurück, in dem sich
-                  // das Bild nicht mehr verschieben lässt.
-                  if (!_gesichterZeigen) _gesichtAufziehen = false;
-                }),
+                onPressed: _gesichterUmschalten,
               ),
             // Nur wenn die Rahmen an sind: Wer nachtragen will, muss erst
             // sehen, was schon da ist.
@@ -1252,6 +1380,13 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                                   library: widget.library,
                                   isCurrent: index == _currentIndex,
                                   gesichterZeigen: _gesichterZeigen,
+                                  beiseitegelegteZeigen: _beiseitegelegteZeigen,
+                                  gesichterStand: _gesichterStand,
+                                  beiGesichtsmenue: _gesichtsmenueFuer(a)
+                                      ? _gesichtRechtsklick
+                                      : null,
+                                  beiGesichterGeaendert: () =>
+                                      setState(() => _gesichterStand++),
                                   gesichtAufziehen:
                                       _gesichtAufziehen &&
                                       index == _currentIndex,
@@ -1309,6 +1444,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                           asset: asset,
                           db: widget.db,
                           paths: widget.paths,
+                          gesichterStand: _gesichterStand,
                           onUpdated: _replaceAsset,
                           onClose: _toggleInfo,
                         ),
@@ -1633,6 +1769,20 @@ class _AssetPage extends StatefulWidget {
   /// Ob die erkannten Gesichter als Rahmen über dem Foto liegen.
   final bool gesichterZeigen;
 
+  /// Ob beiseitegelegte Gesichter grau mit im Bild stehen.
+  final bool beiseitegelegteZeigen;
+
+  /// Ändert sich, sobald an den Gesichtern etwas geändert wurde – dann
+  /// lädt die Seite ihre Rahmen neu.
+  final int gesichterStand;
+
+  /// Ein Rechtsklick auf einen Rahmen; `null`, wo das Menü keine
+  /// Gesichtseinträge trägt.
+  final void Function(FaceData gesicht, Offset stelle)? beiGesichtsmenue;
+
+  /// Nach einer Änderung an den Gesichtern über einen Tipp auf den Rahmen.
+  final VoidCallback? beiGesichterGeaendert;
+
   /// Ob ein Rahmen um ein übersehenes Gesicht aufgezogen werden kann.
   /// Immer nur auf der gerade sichtbaren Seite – ein Malmodus auf den
   /// Nachbarseiten des Blätterwerks wäre unsichtbar und würde dort still
@@ -1658,6 +1808,10 @@ class _AssetPage extends StatefulWidget {
     required this.library,
     required this.isCurrent,
     this.gesichterZeigen = false,
+    this.beiseitegelegteZeigen = false,
+    this.gesichterStand = 0,
+    this.beiGesichtsmenue,
+    this.beiGesichterGeaendert,
     this.gesichtAufziehen = false,
     this.beiGesichtAngelegt,
     this.textZeigen = false,
@@ -1828,7 +1982,9 @@ class _AssetPageState extends State<_AssetPage> {
       _gesichtsnamen = const {};
       _bildmasse = null;
       if (widget.gesichterZeigen) unawaited(_gesichterLaden());
-    } else if (widget.gesichterZeigen && !oldWidget.gesichterZeigen) {
+    } else if (widget.gesichterZeigen &&
+        (!oldWidget.gesichterZeigen ||
+            widget.gesichterStand != oldWidget.gesichterStand)) {
       unawaited(_gesichterLaden());
     }
     if (_brauchtMasse(widget) &&
@@ -1930,6 +2086,13 @@ class _AssetPageState extends State<_AssetPage> {
   Future<void> _gesichtAngetippt(FaceData gesicht) async {
     final person = gesicht.personId;
     final bibliothek = widget.library;
+    // Grau, also beiseitegelegt: Der Tipp holt es zurück – wie in der
+    // Gesichts-Bearbeitung, auch wenn es einen Namen trägt.
+    if (gesicht.isIgnored) {
+      await gesichtZurueckholen(context, widget.db, gesicht);
+      if (mounted) _gesichterGeaendert();
+      return;
+    }
     if (person != null) {
       if (bibliothek == null) return;
       final zeile = await (widget.db.select(
@@ -1942,31 +2105,32 @@ class _AssetPageState extends State<_AssetPage> {
               PersonDetailScreen(library: bibliothek, person: zeile),
         ),
       );
-      await _gesichterLaden();
+      // Dort kann die Person umbenannt worden sein.
+      if (mounted) _gesichterGeaendert();
       return;
     }
-    if (gesicht.isIgnored) return;
-    final personen = await widget.db.select(widget.db.people).get();
-    // Wer könnte das sein? Ohne Bibliothek gibt es keinen Vorschlag – der
-    // Betrachter läuft auch ohne sie (siehe [widget.library]).
-    final vorschlag = await bibliothek?.personenvorschlag(gesicht.embedding);
-    if (!mounted) return;
-    final wahl = await showPersonPickerDialog(
+    // Ohne Bibliothek gibt es keinen Vorschlag – der Betrachter läuft auch
+    // ohne sie (siehe [widget.library]).
+    final geaendert = await gesichtBenennen(
       context,
-      personen,
+      db: widget.db,
       paths: widget.paths,
-      suggestedPerson: vorschlag,
-      title: AppTexte.of(context).viewerGesichtBenennen,
+      library: bibliothek,
+      gesicht: gesicht,
+      titel: AppTexte.of(context).viewerGesichtBenennen,
     );
-    if (wahl == null) return;
-    final id = wahl.newName != null
-        ? const Uuid().v4()
-        : wahl.existingPersonId!;
-    if (wahl.newName != null) {
-      await widget.db.fuehreAus(PersonAnlegen(id, wahl.newName!));
+    if (geaendert && mounted) _gesichterGeaendert();
+  }
+
+  /// Nach einer Änderung an den Gesichtern: Die Ansicht zählt mit, die
+  /// Info-Ansicht lädt ihre Personen neu und diese Seite ihre Rahmen.
+  void _gesichterGeaendert() {
+    final melden = widget.beiGesichterGeaendert;
+    if (melden != null) {
+      melden();
+    } else {
+      unawaited(_gesichterLaden());
     }
-    await widget.db.fuehreAus(GesichterZuordnen([gesicht.id], id));
-    await _gesichterLaden();
   }
 
   /// Bestätigt eine automatische Zuordnung (PER-074).
@@ -1974,7 +2138,7 @@ class _AssetPageState extends State<_AssetPage> {
     final person = gesicht.personId;
     if (person == null) return;
     await bestaetigeZuordnung(context, widget.db, [gesicht.id], person);
-    await _gesichterLaden();
+    _gesichterGeaendert();
   }
 
   /// Ein aufgezogener Rahmen wird zu einem Gesicht.
@@ -2039,7 +2203,7 @@ class _AssetPageState extends State<_AssetPage> {
       return;
     }
     widget.beiGesichtAngelegt?.call();
-    await _gesichterLaden();
+    _gesichterGeaendert();
   }
 
   /// Nur für Fotos, nicht für Videos. Ein Live Photo zeigt mit
@@ -2356,7 +2520,8 @@ class _AssetPageState extends State<_AssetPage> {
                               ),
                             if (rahmen)
                               for (final gesicht in _gesichter)
-                                if (!gesicht.isIgnored)
+                                if (widget.beiseitegelegteZeigen ||
+                                    !gesicht.isIgnored)
                                   // Der Massstab folgt dem Zoom: Die Namen bleiben
                                   // auf dem Schirm gleich gross (Issue #16).
                                   StreamBuilder<PhotoViewControllerValue>(
@@ -2374,6 +2539,14 @@ class _AssetPageState extends State<_AssetPage> {
                                               verkleinerung,
                                           beiTipp: () =>
                                               _gesichtAngetippt(gesicht),
+                                          beiMenue:
+                                              widget.beiGesichtsmenue == null
+                                              ? null
+                                              : (stelle) =>
+                                                    widget.beiGesichtsmenue!(
+                                                      gesicht,
+                                                      stelle,
+                                                    ),
                                           beiBestaetigen: () =>
                                               _gesichtBestaetigen(gesicht),
                                         ),

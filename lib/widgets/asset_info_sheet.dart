@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'datierungs_dialog.dart';
 import '../services/datierungstext.dart';
@@ -56,6 +57,10 @@ class AssetInfoSheet extends StatefulWidget {
   final void Function(AssetData updated) onUpdated;
   final VoidCallback onClose;
 
+  /// Ändert sich, wenn an den Gesichtern des Fotos etwas geändert wurde –
+  /// dann lädt die Personenzeile neu.
+  final int gesichterStand;
+
   const AssetInfoSheet({
     super.key,
     required this.asset,
@@ -63,6 +68,7 @@ class AssetInfoSheet extends StatefulWidget {
     required this.paths,
     required this.onUpdated,
     required this.onClose,
+    this.gesichterStand = 0,
   });
 
   @override
@@ -162,6 +168,11 @@ class _AssetInfoSheetState extends State<AssetInfoSheet> {
   @override
   void didUpdateWidget(covariant AssetInfoSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Im Vollbild über das Gesichtsmenü benannt, gelöst oder gelöscht:
+    // Die Personenzeile zöge sonst nicht nach (#495).
+    if (widget.gesichterStand != oldWidget.gesichterStand && !_nurLesen) {
+      unawaited(_loadPeople());
+    }
     if (identical(widget.asset, oldWidget.asset) || widget.asset == _asset) {
       return;
     }

@@ -3531,22 +3531,16 @@ void main() {
       await befehl(tester, const GesichterZuordnen(['gA'], 'pA'));
       await befehl(tester, const GesichterBeiseitelegen(['gB'], true));
 
-      // KI-068: Foto 2 über „Gesichter bearbeiten“ ausnehmen.
+      // KI-068: Foto 2 über „Gesichter bearbeiten“ ausnehmen – seit #495
+      // ein Untermenü im Vollbild, kein zweiter Bildschirm.
       await betrachter(tester, ids, ids[1]);
       await rechtsklick(tester, find.byType(PageView));
       await tippe(tester, find.text(de.viewerGesichterBearbeiten));
-      await pumpe(tester, 1500);
-      await waitFor(tester, find.byType(FaceReviewScreen));
-      final flaeche = find.descendant(
-        of: find.byType(FaceReviewScreen),
-        matching: find.byType(AspectRatio),
-      );
-      await waitFor(tester, flaeche, timeout: const Duration(seconds: 30));
-      await rechtsklick(tester, flaeche.first);
+      await pumpe(tester, 600);
       await tippe(tester, find.text(de.gesichtNichtMehrDurchsuchen));
       await erwarteMeldung(tester, de.gesichtNichtMehrDurchsuchtHinweis);
       expect((await aufnahme(tester, ids[1])).faceScanExcluded, isTrue);
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      expect(find.byType(FaceReviewScreen), findsNothing);
       await pumpe(tester);
       while (_findet(find.byType(AssetViewerScreen))) {
         Navigator.of(

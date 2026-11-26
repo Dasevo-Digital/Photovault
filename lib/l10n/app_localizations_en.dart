@@ -652,7 +652,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get personenKeineUnbenannten =>
-      'No unnamed faces (left). New ones appear here automatically as you import more photos or run another face scan. You can also mark individual ones yourself: open a photo, right-click → “Edit faces”, then use “Add face manually” at the top right.';
+      'No unnamed faces (left). New ones appear here automatically as you import more photos or run another face scan. You can also mark individual ones yourself: open a photo, right-click → “Edit faces” → “Add a missing face – drag a frame”.';
 
   @override
   String get personenOhneGesichtsmodell =>
@@ -7920,6 +7920,20 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get viewerGesichtAufziehenEnde => 'Stop adding';
+
+  @override
+  String viewerBeiseitegelegteZeigen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: 'Show $anzahl ignored faces',
+      one: 'Show ignored face',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewerBeiseitegelegteVerbergen => 'Hide ignored faces';
 
   @override
   String get viewerGesichtNachtragen => 'Name the added face';

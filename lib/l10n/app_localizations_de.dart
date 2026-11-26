@@ -659,7 +659,7 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get personenKeineUnbenannten =>
-      'Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“, dann oben rechts auf „Gesicht manuell hinzufügen“.';
+      'Keine unbenannten Gesichter (mehr). Neue erscheinen hier automatisch, sobald du weitere Fotos importierst oder erneut nach Gesichtern suchst. Einzelne kannst du auch selbst markieren: Foto öffnen, Rechtsklick → „Gesichter bearbeiten“ → „Gesicht nachtragen – Rahmen aufziehen“.';
 
   @override
   String get personenOhneGesichtsmodell =>
@@ -7959,6 +7959,20 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get viewerGesichtAufziehenEnde => 'Nachtragen beenden';
+
+  @override
+  String viewerBeiseitegelegteZeigen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl ignorierte Gesichter zeigen',
+      one: 'Ignoriertes Gesicht zeigen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get viewerBeiseitegelegteVerbergen => 'Ignorierte Gesichter verbergen';
 
   @override
   String get viewerGesichtNachtragen => 'Nachgetragenes Gesicht benennen';
