@@ -1968,6 +1968,80 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String get linkWasserzeichen => 'Wasserzeichen in die Bilder rechnen';
+
+  @override
+  String get linkWasserzeichenText => 'Text des Wasserzeichens';
+
+  @override
+  String get linkWasserzeichenPosition => 'Position';
+
+  @override
+  String linkWasserzeichenGroesse(int prozent) {
+    return 'Größe: $prozent % der Bildbreite';
+  }
+
+  @override
+  String linkWasserzeichenDeckkraft(int prozent) {
+    return 'Deckkraft: $prozent %';
+  }
+
+  @override
+  String linkWasserzeichenRand(int prozent) {
+    return 'Randabstand: $prozent % der Bildbreite';
+  }
+
+  @override
+  String get linkWasserzeichenHinweis =>
+      'Das Wasserzeichen steckt in den Vorschauen und Ansichten der Gäste. Videos bleiben ohne.';
+
+  @override
+  String get linkWasserzeichenOriginal =>
+      'Erlaubte Originale gehen unverändert hinaus – ohne Wasserzeichen.';
+
+  @override
+  String get linkWasserzeichenTextFehlt =>
+      'Bitte einen Text für das Wasserzeichen eingeben.';
+
+  @override
+  String get linkWasserzeichenServerZuAlt =>
+      'Der Server kennt noch keine Wasserzeichen. Der Link wurde nicht angelegt – bitte zuerst den Server aktualisieren.';
+
+  @override
+  String get linkWasserzeichenNichtWiderrufen =>
+      'Der Server kennt noch keine Wasserzeichen und hat den Link ohne angelegt. Bitte unter „Geteilte Links“ löschen und den Server aktualisieren.';
+
+  @override
+  String get linkMitWasserzeichen => 'mit Wasserzeichen';
+
+  @override
+  String get lageObenLinks => 'Oben links';
+
+  @override
+  String get lageOben => 'Oben Mitte';
+
+  @override
+  String get lageObenRechts => 'Oben rechts';
+
+  @override
+  String get lageLinks => 'Mitte links';
+
+  @override
+  String get lageMitte => 'Mitte';
+
+  @override
+  String get lageRechts => 'Mitte rechts';
+
+  @override
+  String get lageUntenLinks => 'Unten links';
+
+  @override
+  String get lageUnten => 'Unten Mitte';
+
+  @override
+  String get lageUntenRechts => 'Unten rechts';
+
+  @override
   String get linkLoeschen => 'Löschen';
 
   @override

@@ -563,6 +563,28 @@
       <label>Passwort (frei lassen für keins) <input name="passwort" type="password" autocomplete="new-password" minlength="4"></label>
       <label class="haken"><input name="herunterladen" type="checkbox"> Originale herunterladen erlauben</label>
       <p class="leise klein">Gezeigt werden Bilder ohne Orts- und Kameraangaben. Originale enthalten sie.</p>
+      <label class="haken"><input name="wasserzeichen" type="checkbox"> Wasserzeichen in die Bilder rechnen</label>
+      <div id="link-wasserzeichen" hidden>
+        <label>Text des Wasserzeichens <input name="wzText" maxlength="120" autocomplete="off"></label>
+        <label>Position
+          <select name="wzLage">
+            <option value="obenLinks">Oben links</option>
+            <option value="oben">Oben Mitte</option>
+            <option value="obenRechts">Oben rechts</option>
+            <option value="links">Mitte links</option>
+            <option value="mitte">Mitte</option>
+            <option value="rechts">Mitte rechts</option>
+            <option value="untenLinks">Unten links</option>
+            <option value="unten">Unten Mitte</option>
+            <option value="untenRechts" selected>Unten rechts</option>
+          </select>
+        </label>
+        <label>Größe (Anteil der Bildbreite) <input name="wzGroesse" type="range" min="0.03" max="0.6" step="0.01" value="0.2"> <span id="wz-groesse-wert">20 %</span></label>
+        <label>Deckkraft <input name="wzDeckkraft" type="range" min="0.1" max="1" step="0.05" value="0.6"> <span id="wz-deckkraft-wert">60 %</span></label>
+        <label>Randabstand (Anteil der Bildbreite) <input name="wzRand" type="range" min="0" max="0.15" step="0.01" value="0.03"> <span id="wz-rand-wert">3 %</span></label>
+        <p class="leise klein">Das Wasserzeichen steckt in den Vorschauen und Ansichten der Gäste. Videos bleiben ohne.</p>
+        <p id="link-wz-original" class="fehler klein" hidden>Erlaubte Originale gehen unverändert hinaus – ohne Wasserzeichen.</p>
+      </div>
       <div id="link-hochladen">
         <label class="haken"><input name="hochladen" type="checkbox"> Gäste dürfen Fotos und Videos hinzufügen</label>
         <p class="leise klein">Jede Datei wird abgeschottet geprüft und neu geschrieben. Ins Album kommt sie erst, wenn du sie annimmst.</p>

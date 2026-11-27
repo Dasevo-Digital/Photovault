@@ -3121,6 +3121,132 @@ abstract class AppTexte {
   /// **'{n, plural, =1{1 Aufruf} other{{n} Aufrufe}}'**
   String linkAufrufe(int n);
 
+  /// No description provided for @linkWasserzeichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Wasserzeichen in die Bilder rechnen'**
+  String get linkWasserzeichen;
+
+  /// No description provided for @linkWasserzeichenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Text des Wasserzeichens'**
+  String get linkWasserzeichenText;
+
+  /// No description provided for @linkWasserzeichenPosition.
+  ///
+  /// In de, this message translates to:
+  /// **'Position'**
+  String get linkWasserzeichenPosition;
+
+  /// No description provided for @linkWasserzeichenGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe: {prozent} % der Bildbreite'**
+  String linkWasserzeichenGroesse(int prozent);
+
+  /// No description provided for @linkWasserzeichenDeckkraft.
+  ///
+  /// In de, this message translates to:
+  /// **'Deckkraft: {prozent} %'**
+  String linkWasserzeichenDeckkraft(int prozent);
+
+  /// No description provided for @linkWasserzeichenRand.
+  ///
+  /// In de, this message translates to:
+  /// **'Randabstand: {prozent} % der Bildbreite'**
+  String linkWasserzeichenRand(int prozent);
+
+  /// No description provided for @linkWasserzeichenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Wasserzeichen steckt in den Vorschauen und Ansichten der Gäste. Videos bleiben ohne.'**
+  String get linkWasserzeichenHinweis;
+
+  /// No description provided for @linkWasserzeichenOriginal.
+  ///
+  /// In de, this message translates to:
+  /// **'Erlaubte Originale gehen unverändert hinaus – ohne Wasserzeichen.'**
+  String get linkWasserzeichenOriginal;
+
+  /// No description provided for @linkWasserzeichenTextFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Bitte einen Text für das Wasserzeichen eingeben.'**
+  String get linkWasserzeichenTextFehlt;
+
+  /// No description provided for @linkWasserzeichenServerZuAlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kennt noch keine Wasserzeichen. Der Link wurde nicht angelegt – bitte zuerst den Server aktualisieren.'**
+  String get linkWasserzeichenServerZuAlt;
+
+  /// No description provided for @linkWasserzeichenNichtWiderrufen.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server kennt noch keine Wasserzeichen und hat den Link ohne angelegt. Bitte unter „Geteilte Links“ löschen und den Server aktualisieren.'**
+  String get linkWasserzeichenNichtWiderrufen;
+
+  /// No description provided for @linkMitWasserzeichen.
+  ///
+  /// In de, this message translates to:
+  /// **'mit Wasserzeichen'**
+  String get linkMitWasserzeichen;
+
+  /// No description provided for @lageObenLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben links'**
+  String get lageObenLinks;
+
+  /// No description provided for @lageOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben Mitte'**
+  String get lageOben;
+
+  /// No description provided for @lageObenRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben rechts'**
+  String get lageObenRechts;
+
+  /// No description provided for @lageLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Mitte links'**
+  String get lageLinks;
+
+  /// No description provided for @lageMitte.
+  ///
+  /// In de, this message translates to:
+  /// **'Mitte'**
+  String get lageMitte;
+
+  /// No description provided for @lageRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Mitte rechts'**
+  String get lageRechts;
+
+  /// No description provided for @lageUntenLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten links'**
+  String get lageUntenLinks;
+
+  /// No description provided for @lageUnten.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten Mitte'**
+  String get lageUnten;
+
+  /// No description provided for @lageUntenRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten rechts'**
+  String get lageUntenRechts;
+
   /// No description provided for @linkLoeschen.
   ///
   /// In de, this message translates to:

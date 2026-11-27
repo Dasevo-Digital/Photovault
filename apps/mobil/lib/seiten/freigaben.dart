@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:kern/abgleich/konten.dart' show grundAus;
 import 'package:kern/abgleich/serveradresse.dart' show imEigenenNetz;
 import 'package:kern/abgleich/verbindung.dart';
+import 'package:kern/services/wasserzeichen.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:zierbild/wasserzeichen_text.dart';
 
 import '../einfuegbares_menue.dart';
 import '../fehlertext.dart';
@@ -15,7 +17,8 @@ import '../l10n/app_localizations.dart';
 
 /// Als Link teilen (Issue #106) – wie im Browser (web/app.js,
 /// oeffneLinkDialog): ein Album oder eine Auswahl, mit Ablauf, auf Wunsch
-/// mit Passwort, Originale nur, wenn erlaubt. Der Link geht über den
+/// mit Passwort, Originale nur, wenn erlaubt, und auf Wunsch mit einem
+/// Wasserzeichen in den Bildern der Gäste (#497). Der Link geht über den
 /// Server; ohne Verbindung gibt es keinen.
 Future<void> alsLinkTeilen(
   BuildContext context,
@@ -62,6 +65,12 @@ class _LinkBlattState extends State<_LinkBlatt> {
   int? _tage = 7;
   var _herunterladen = false;
   var _hochladen = false;
+  var _wasserzeichen = false;
+  final _wzText = TextEditingController();
+  var _wzLage = Wasserzeichenlage.untenRechts;
+  var _wzGroesse = Wasserzeichen.vorgabeGroesse;
+  var _wzDeckkraft = Wasserzeichen.vorgabeDeckkraft;
+  var _wzRand = Wasserzeichen.vorgabeRand;
   var _laeuft = false;
   String? _link;
   String? _meldung;
@@ -70,6 +79,7 @@ class _LinkBlattState extends State<_LinkBlatt> {
   void dispose() {
     _titel.dispose();
     _passwort.dispose();
+    _wzText.dispose();
     super.dispose();
   }
 
@@ -85,6 +95,11 @@ class _LinkBlattState extends State<_LinkBlatt> {
       setState(() => _meldung = t.linkPasswortKurz);
       return;
     }
+    final wzText = _wzText.text.trim();
+    if (_wasserzeichen && wzText.isEmpty) {
+      setState(() => _meldung = t.linkWasserzeichenTextFehlt);
+      return;
+    }
     final verbindung = widget.verbindung;
     if (verbindung == null) {
       setState(() => _meldung = t.linkOhneServer);
@@ -95,6 +110,24 @@ class _LinkBlattState extends State<_LinkBlatt> {
       _meldung = null;
     });
     try {
+      // Der Text wird hier gezeichnet, nicht am Server: Der hat nur kleine
+      // Bitmap-Schriften (siehe kern/services/wasserzeichen.dart). So breit,
+      // wie das Zeichen in der grössten Ansicht der Gäste wird – kleiner
+      // rechnet es der Server, grösser nie.
+      final zeichen = _wasserzeichen
+          ? Wasserzeichen(
+              art: Wasserzeichenart.text,
+              text: wzText,
+              bild: await zeichneWasserzeichentext(
+                wzText,
+                breite: (_wzGroesse * linkAnsichtBreite).round(),
+              ),
+              lage: _wzLage,
+              groesse: _wzGroesse,
+              deckkraft: _wzDeckkraft,
+              rand: _wzRand,
+            ).alsJson()
+          : null;
       final d = await verbindung.schicke('api/v1/freigaben', {
         'titel': titel,
         'album': ?widget.albumId,
@@ -103,7 +136,23 @@ class _LinkBlattState extends State<_LinkBlatt> {
         if (passwort.isNotEmpty) 'passwort': passwort,
         'herunterladen': _herunterladen,
         if (widget.albumId != null && _hochladen) 'hochladen': true,
+        'wasserzeichen': ?zeichen,
       });
+      // **Ein Server von vor #497** kennt das Feld nicht, legt den Link
+      // trotzdem an – ohne Zeichen – und sagt in der Antwort nichts dazu.
+      // Wer ein Wasserzeichen wollte, bekäme einen Link, der die Bilder
+      // ohne zeigt. Deshalb geht er gleich wieder, bevor ihn jemand kopiert.
+      if (zeichen != null && d['wasserzeichen'] != true) {
+        final weg = await _widerrufe(verbindung, d['id']);
+        if (!mounted) return;
+        setState(
+          () => _meldung = weg
+              ? t.linkWasserzeichenServerZuAlt
+              : t.linkWasserzeichenNichtWiderrufen,
+        );
+        return;
+      }
+      if (!mounted) return;
       setState(() => _link = '${d['link']}');
     } on KeineVerbindung {
       // Wie ohne Abgleich – nicht die rohe Ausnahme samt SocketException.
@@ -114,6 +163,109 @@ class _LinkBlattState extends State<_LinkBlatt> {
       setState(() => _meldung = t.fehlerAllgemein);
     } finally {
       if (mounted) setState(() => _laeuft = false);
+    }
+  }
+
+  List<Widget> _wasserzeichenFelder(AppTexte t, ColorScheme farben) {
+    final klein = TextStyle(fontSize: 12, color: farben.onSurfaceVariant);
+    Widget regler(
+      String titel,
+      double wert,
+      double min,
+      double max,
+      int stufen,
+      void Function(double) setze,
+    ) => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titel),
+        Slider(
+          value: wert.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: stufen,
+          onChanged: (w) => setState(() => setze(w)),
+        ),
+      ],
+    );
+    int prozent(double w) => (w * 100).round();
+    return [
+      TextField(
+        controller: _wzText,
+        maxLength: Wasserzeichen.hoechstensText,
+        contextMenuBuilder: einfuegbaresMenue,
+        decoration: InputDecoration(
+          labelText: t.linkWasserzeichenText,
+          border: const OutlineInputBorder(),
+        ),
+      ),
+      const SizedBox(height: 4),
+      DropdownButtonFormField<Wasserzeichenlage>(
+        initialValue: _wzLage,
+        decoration: InputDecoration(
+          labelText: t.linkWasserzeichenPosition,
+          border: const OutlineInputBorder(),
+        ),
+        items: [
+          for (final l in Wasserzeichenlage.values)
+            DropdownMenuItem(
+              value: l,
+              child: Text(wasserzeichenlageText(t, l)),
+            ),
+        ],
+        onChanged: (w) => setState(() => _wzLage = w ?? _wzLage),
+      ),
+      const SizedBox(height: 8),
+      regler(
+        t.linkWasserzeichenGroesse(prozent(_wzGroesse)),
+        _wzGroesse,
+        Wasserzeichen.groesseMin,
+        Wasserzeichen.groesseMax,
+        57,
+        (w) => _wzGroesse = w,
+      ),
+      regler(
+        t.linkWasserzeichenDeckkraft(prozent(_wzDeckkraft)),
+        _wzDeckkraft,
+        Wasserzeichen.deckkraftMin,
+        Wasserzeichen.deckkraftMax,
+        18,
+        (w) => _wzDeckkraft = w,
+      ),
+      regler(
+        t.linkWasserzeichenRand(prozent(_wzRand)),
+        _wzRand,
+        Wasserzeichen.randMin,
+        Wasserzeichen.randMax,
+        15,
+        (w) => _wzRand = w,
+      ),
+      Text(t.linkWasserzeichenHinweis, style: klein),
+      // Was erlaubt heruntergeladen wird, ist Bit für Bit das Original –
+      // auch ohne das Zeichen. Das soll niemand erst beim Gast merken.
+      if (_herunterladen)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            t.linkWasserzeichenOriginal,
+            style: TextStyle(fontSize: 12, color: farben.error),
+          ),
+        ),
+    ];
+  }
+
+  /// Nimmt den eben angelegten Link [id] zurück; `false`, wenn das nicht
+  /// ging.
+  Future<bool> _widerrufe(Serververbindung verbindung, Object? id) async {
+    if (id is! String) return false;
+    try {
+      final r = await verbindung.anfrage(
+        'DELETE',
+        'api/v1/freigaben/${Uri.encodeComponent(id)}',
+      );
+      return r.statusCode < 300;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -175,6 +327,13 @@ class _LinkBlattState extends State<_LinkBlatt> {
               t.linkOhneMetadaten,
               style: TextStyle(fontSize: 12, color: farben.onSurfaceVariant),
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(t.linkWasserzeichen),
+              value: _wasserzeichen,
+              onChanged: (w) => setState(() => _wasserzeichen = w),
+            ),
+            if (_wasserzeichen) ..._wasserzeichenFelder(t, farben),
             // Beiträge von Gästen gehen nur in ein Album.
             if (widget.albumId != null) ...[
               SwitchListTile(
@@ -241,6 +400,24 @@ class _LinkBlattState extends State<_LinkBlatt> {
     );
   }
 }
+
+/// So breit ist die grösste Fassung, die der Server Gästen zeigt
+/// (`Freigabeapi.datei`, Art `ansicht`): In dieser Breite wird der Text
+/// des Wasserzeichens gezeichnet.
+const linkAnsichtBreite = 2560;
+
+/// Die neun Ankerpunkte in Worten.
+String wasserzeichenlageText(AppTexte t, Wasserzeichenlage l) => switch (l) {
+  Wasserzeichenlage.obenLinks => t.lageObenLinks,
+  Wasserzeichenlage.oben => t.lageOben,
+  Wasserzeichenlage.obenRechts => t.lageObenRechts,
+  Wasserzeichenlage.links => t.lageLinks,
+  Wasserzeichenlage.mitte => t.lageMitte,
+  Wasserzeichenlage.rechts => t.lageRechts,
+  Wasserzeichenlage.untenLinks => t.lageUntenLinks,
+  Wasserzeichenlage.unten => t.lageUnten,
+  Wasserzeichenlage.untenRechts => t.lageUntenRechts,
+};
 
 Future<void> _kopiere(BuildContext context, String link) async {
   await Clipboard.setData(ClipboardData(text: link));
@@ -387,6 +564,7 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                 else
                   t.linkUnbegrenzt,
                 if (x['passwort'] == true) t.linkMitPasswort,
+                if (x['wasserzeichen'] == true) t.linkMitWasserzeichen,
                 if (x['hochladen'] == true)
                   (x['beitraege'] as int? ?? 0) > 0
                       ? t.linkBeitraegeOffen(x['beitraege'] as int)

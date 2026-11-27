@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:kern/services/wasserzeichen.dart';
 
 import 'konten/bremse.dart';
 import 'konten/passwort.dart';
@@ -20,6 +21,8 @@ class Freigabe {
     required this.mitPasswort,
     required this.herunterladen,
     this.hochladen = false,
+    this.wasserzeichen,
+    this.wasserzeichenKennung,
     required this.angelegt,
     required this.ablauf,
     required this.aufrufe,
@@ -41,6 +44,17 @@ class Freigabe {
 
   /// Ob Gäste zum Album beitragen dürfen (nur bei Alben).
   final bool hochladen;
+
+  /// Das Zeichen, das in Miniaturen und Ansichten für Gäste eingerechnet
+  /// wird (#497); `null` ohne. Es trägt stets ein fertiges PNG
+  /// ([Wasserzeichen.bild]) – auch bei einem Text, den das Gerät des
+  /// Besitzers gezeichnet hat (siehe `Freigabeapi.anlegen`).
+  final Wasserzeichen? wasserzeichen;
+
+  /// [Wasserzeichen.kennung] von [wasserzeichen] – im Namen der
+  /// zwischengespeicherten Bilder, damit zwei Links auf dasselbe Foto mit
+  /// verschiedenen Zeichen nicht dieselbe Datei teilen.
+  final String? wasserzeichenKennung;
   final DateTime angelegt;
   final DateTime? ablauf;
   final int aufrufe;
@@ -103,6 +117,7 @@ class Freigabedienst {
     String? passwortKlartext,
     bool herunterladen = false,
     bool hochladen = false,
+    Wasserzeichen? wasserzeichen,
   }) async {
     if ((album == null) == (aufnahmen == null)) {
       throw ArgumentError('entweder album oder aufnahmen');
@@ -110,13 +125,16 @@ class Freigabedienst {
     if (hochladen && album == null) {
       throw ArgumentError('Beiträge nur zu einem Album');
     }
+    if (wasserzeichen != null && wasserzeichen.bild == null) {
+      throw ArgumentError('Wasserzeichen ohne Bild');
+    }
     final id = _zufallstext(9);
     final link = _zufallstext(16);
     final jetzt = _uhr();
     _sdb.db.execute(
       'INSERT INTO freigaben (id, konto, pruefwert, link, geheimnis, titel, '
       'album, aufnahmen, passwort, herunterladen, hochladen, angelegt, '
-      'ablauf) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'ablauf, wasserzeichen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         konto,
@@ -133,9 +151,31 @@ class Freigabedienst {
         hochladen ? 1 : 0,
         jetzt.millisecondsSinceEpoch,
         gueltig == null ? null : jetzt.add(gueltig).millisecondsSinceEpoch,
+        wasserzeichen?.kodiert(),
       ],
     );
     return (id: id, link: link);
+  }
+
+  /// Gelesene Wasserzeichen nach ihrem gespeicherten Text.
+  ///
+  /// Jede Miniatur einer Freigabe sucht die Freigabe neu (`fuer`), und eine
+  /// Seite mit zweihundert Fotos fragt zweihundertmal. Das Zeichen jedes Mal
+  /// aus Base64 zu lesen und seine Kennung (SHA-256 über das ganze PNG) neu
+  /// zu rechnen, kostete mehr als das Ausliefern der fertigen Datei.
+  final _gelesen = <String, ({Wasserzeichen zeichen, String kennung})?>{};
+
+  ({Wasserzeichen zeichen, String kennung})? _zeichen(String? roh) {
+    if (roh == null) return null;
+    if (_gelesen.containsKey(roh)) return _gelesen[roh];
+    // Nicht lesbar heisst ohne Zeichen – wie ein Link von vor Schema 15.
+    // Anlegen lässt sich ein unlesbares nicht (Freigabeapi.anlegen prüft).
+    final w = Wasserzeichen.ausKodiert(roh);
+    final gelesen = w == null || w.bild == null
+        ? null
+        : (zeichen: w, kennung: w.kennung);
+    if (_gelesen.length >= 32) _gelesen.remove(_gelesen.keys.first);
+    return _gelesen[roh] = gelesen;
   }
 
   Freigabe _aus(Map<String, Object?> z) => Freigabe(
@@ -149,6 +189,8 @@ class Freigabedienst {
     mitPasswort: z['passwort'] != null,
     herunterladen: z['herunterladen'] == 1,
     hochladen: z['hochladen'] == 1,
+    wasserzeichen: _zeichen(z['wasserzeichen'] as String?)?.zeichen,
+    wasserzeichenKennung: _zeichen(z['wasserzeichen'] as String?)?.kennung,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
     ablauf: z['ablauf'] == null
         ? null

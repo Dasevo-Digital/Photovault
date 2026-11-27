@@ -759,6 +759,7 @@ body.teilen { min-height: 100vh; }
 #link-dialog select { width: 100%; padding: 8px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 #link-dialog input[type=password] { width: 100%; padding: 8px 10px; border: 1px solid var(--rand); border-radius: 8px; background: var(--grund); color: var(--text); }
 #link-dialog label.haken { display: flex; align-items: center; gap: 8px; }
+#link-dialog input[type=range] { width: 100%; }
 #link-adresse { width: 100%; padding: 10px; border: 1px solid var(--akzent); border-radius: 8px; background: var(--grund); color: var(--text); font-family: ui-monospace, monospace; font-size: .85em; }
 #freigaben { list-style: none; padding: 0; margin: 0; }
 #freigaben li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--rand); }

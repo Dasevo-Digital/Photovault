@@ -2226,7 +2226,82 @@ function oeffneLinkDialog(fall, titel) {
   $('link-meldung').textContent = '';
   // Beiträge von Gästen gehen nur in ein Album.
   $('link-hochladen').hidden = !fall.album;
+  wasserzeichenFelderZeigen();
   $('link-dialog').showModal();
+}
+
+// --- Wasserzeichen für Links (#497) -------------------------------------------
+//
+// Den Text zeichnet der Browser zu einem PNG; eingerechnet wird es vom Server
+// in Vorschau und Ansicht der Gäste. Der Server selbst zeichnet keinen Text:
+// Sein Bildpaket hat nur kleine Bitmap-Schriften, vergrössert treppig und
+// ohne die meisten Zeichen jenseits von Latin-1 (Freigabeapi.anlegen).
+//
+// Gezeichnet wie in den Apps (zierbild/wasserzeichen_text.dart): weiss,
+// halbfett, mit weichem dunklem Schatten, rundum 0,15 Schriftgrössen Platz
+// dafür – und so breit, wie das Zeichen in der grössten Ansicht (2560 px)
+// wird. Kleiner rechnet es der Server, grösser nie: Vergrössert würde es
+// unscharf.
+const WZ_ANSICHT = 2560;
+const WZ_RAUM = 0.15;
+
+function wasserzeichenSchrift(g) {
+  return `600 ${g}px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`;
+}
+
+function wasserzeichenTextBild(text, breite) {
+  const leinwand = el('canvas');
+  const z = leinwand.getContext('2d');
+  const mess = 100;
+  z.font = wasserzeichenSchrift(mess);
+  const je = z.measureText(text).width / mess + 2 * WZ_RAUM;
+  const g = Math.min(1200, Math.max(4, Math.min(breite, 8000) / je));
+  z.font = wasserzeichenSchrift(g);
+  const rand = WZ_RAUM * g;
+  leinwand.width = Math.max(1, Math.ceil(z.measureText(text).width + 2 * rand));
+  leinwand.height = Math.max(1, Math.ceil(g * 1.15 + 2 * rand));
+  // Nach dem Setzen der Grösse ist der Zeichenstand zurückgesetzt.
+  z.font = wasserzeichenSchrift(g);
+  z.textBaseline = 'middle';
+  z.fillStyle = '#ffffff';
+  z.shadowColor = 'rgba(0, 0, 0, 0.6)';
+  z.shadowBlur = 0.08 * g;
+  z.shadowOffsetY = 0.03 * g;
+  z.fillText(text, rand, leinwand.height / 2);
+  return leinwand.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+}
+
+// Die Felder nur mit Haken; der Hinweis zum Original nur, wenn Originale
+// erlaubt sind – die gehen unverändert hinaus, ohne Zeichen.
+function wasserzeichenFelderZeigen() {
+  const f = $('form-link');
+  $('link-wasserzeichen').hidden = !f.wasserzeichen.checked;
+  $('link-wz-original').hidden = !(f.wasserzeichen.checked && f.herunterladen.checked);
+  $('wz-groesse-wert').textContent = prozent(f.wzGroesse.value);
+  $('wz-deckkraft-wert').textContent = prozent(f.wzDeckkraft.value);
+  $('wz-rand-wert').textContent = prozent(f.wzRand.value);
+}
+
+for (const name of ['wasserzeichen', 'herunterladen', 'wzGroesse', 'wzDeckkraft', 'wzRand']) {
+  $('form-link')[name].addEventListener('input', wasserzeichenFelderZeigen);
+}
+
+// Das Wasserzeichen für den Körper der Anfrage – `null` ohne Haken. Wirft
+// mit einem Text für die Meldung, wenn der Text fehlt.
+function wasserzeichenFuerLink(f) {
+  if (!f.wasserzeichen.checked) return null;
+  const text = f.wzText.value.trim();
+  if (!text) throw new Error(t('Bitte einen Text für das Wasserzeichen eingeben.'));
+  const groesse = Number(f.wzGroesse.value);
+  return {
+    art: 'text',
+    text,
+    bild: wasserzeichenTextBild(text, Math.round(groesse * WZ_ANSICHT)),
+    lage: f.wzLage.value,
+    groesse,
+    deckkraft: Number(f.wzDeckkraft.value),
+    rand: Number(f.wzRand.value),
+  };
 }
 
 // Eine Adresse, die von aussen niemand erreicht: im Heimnetz oder lokal –
@@ -2256,6 +2331,8 @@ $('form-link').addEventListener('submit', (e) => {
 async function linkAnlegen(f) {
   const titel = f.titel.value.trim();
   if (!titel) { $('link-meldung').textContent = t('Bitte einen Titel eingeben.'); return; }
+  let wasserzeichen;
+  try { wasserzeichen = wasserzeichenFuerLink(f); } catch (x) { $('link-meldung').textContent = x.message; return; }
   const koerper = {
     titel,
     ...linkFall,
@@ -2263,6 +2340,7 @@ async function linkAnlegen(f) {
     ...(f.passwort.value ? { passwort: f.passwort.value } : {}),
     herunterladen: f.herunterladen.checked,
     ...(linkFall.album && f.hochladen.checked ? { hochladen: true } : {}),
+    ...(wasserzeichen ? { wasserzeichen } : {}),
   };
   try {
     const d = await api('/api/v1/freigaben', { methode: 'POST', json: koerper });
@@ -2314,6 +2392,7 @@ async function zeigeFreigaben() {
       x.ablauf ? (abgelaufen ? t('abgelaufen') : t('bis {datum}', { datum: datumZeit.format(new Date(x.ablauf)) })) : t('unbegrenzt'),
       x.passwort ? t('mit Passwort') : null,
       x.herunterladen ? t('Originale erlaubt') : null,
+      x.wasserzeichen ? t('mit Wasserzeichen') : null,
       x.hochladen ? (x.beitraege ? (x.beitraege === 1 ? t('1 Beitrag offen') : t('{n} Beiträge offen', { n: x.beitraege })) : t('Gäste dürfen hinzufügen')) : null,
       x.aufrufe === 1 ? t('1 Aufruf') : t('{n} Aufrufe', { n: x.aufrufe }),
       x.link ? null : t('Link nicht mehr lesbar – neu anlegen'),

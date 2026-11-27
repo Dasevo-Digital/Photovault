@@ -5,6 +5,7 @@ import 'package:kern/services/asset_display_path.dart';
 import 'package:path/path.dart' as p;
 
 import 'bibliothek.dart';
+import 'teilbilder.dart';
 import 'videofassung.dart';
 import 'vollbild.dart';
 
@@ -100,7 +101,7 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
     var name = p.basename(f.path);
     if (name.endsWith('.teil')) return null;
     if (p.dirname(f.path) == geteilt.path) {
-      return RegExp(r'^(.+)-[am]\.jpg$').firstMatch(name)?.group(1);
+      return teilbildAusName(name)?.id;
     }
     if (p.dirname(f.path) == vollbild.path) {
       return RegExp(r'^(.+)-[0-9a-f]{12}\.jpg$').firstMatch(name)?.group(1);
@@ -116,6 +117,12 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
 
   final ids = {for (final f in dateien) ?kennung(f)};
   final behalten = <String>{};
+  // Die Bilder für Gäste gehen nach der Aufnahme, nicht nach dem Namen:
+  // Neben `<id>-a.jpg` und `<id>-m.jpg` liegen die Fassungen der Links mit
+  // Wasserzeichen (`<id>-a-<kennung>.jpg`, #497). Welche Kennungen noch ein
+  // Link trägt, weiss die Bibliothek nicht; die eines gelöschten Links
+  // räumt das Löschen weg (Freigabeapi.loeschen).
+  final lebendig = <String>{};
   final liste = ids.toList();
   for (var i = 0; i < liste.length; i += 500) {
     final teil = liste.sublist(i, (i + 500).clamp(0, liste.length));
@@ -123,9 +130,7 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
       b.db.assets,
     )..where((t) => t.id.isIn(teil) & t.isLocked.equals(false))).get();
     for (final a in zeilen) {
-      for (final art in const ['a', 'm']) {
-        behalten.add(p.join(geteilt.path, '${a.id}-$art.jpg'));
-      }
+      lebendig.add(a.id);
       if (a.type == 'VIDEO') {
         final name = a.trimmedRelativePath != null ? '${a.id}-gekuerzt' : a.id;
         behalten.add(Videofassungen.ziel(abspielbar, name).path);
@@ -139,6 +144,9 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
   var weg = 0;
   for (final f in dateien) {
     if (behalten.contains(f.path)) continue;
+    if (p.dirname(f.path) == geteilt.path && lebendig.contains(kennung(f))) {
+      continue;
+    }
     try {
       await f.delete();
       weg++;

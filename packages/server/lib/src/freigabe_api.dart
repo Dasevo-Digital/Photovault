@@ -11,6 +11,7 @@ import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/dateikennung.dart';
 import 'package:kern/services/import_service.dart'
     show ImportOutcome, ImportResult;
+import 'package:kern/services/wasserzeichen.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
@@ -185,13 +186,29 @@ class Freigabeapi {
       'herunterladen': f.herunterladen,
       'hochladen': f.hochladen,
       if (f.hochladen) 'beitraege': beitraege?.offen(f.id) ?? 0,
+      // Immer, auch als `false`: Fehlt das Feld, kennt der Server keine
+      // Wasserzeichen (vor #497), und die Apps legen keinen Link an, der
+      // ohne das gewünschte Zeichen hinausginge.
+      'wasserzeichen': f.wasserzeichen != null,
+      if (f.wasserzeichen case final w? when w.text.isNotEmpty)
+        'wasserzeichenText': w.text,
       'aufrufe': f.aufrufe,
       'zuletzt': f.zuletzt?.toUtc().toIso8601String(),
     };
   }
 
-  /// `{titel, album | ids, tage?, passwort?, herunterladen?}` → die neue
-  /// Freigabe mit ihrem Link.
+  /// `{titel, album | ids, tage?, passwort?, herunterladen?, hochladen?,
+  /// wasserzeichen?}` → die neue Freigabe mit ihrem Link.
+  ///
+  /// **`wasserzeichen`** (#497) im Format von `Wasserzeichen.alsJson`, und
+  /// immer mit `bild`: einem PNG, das genau so eingerechnet wird. Auch ein
+  /// Text kommt als Bild – gezeichnet vom Browser bzw. der App. Der Server
+  /// zeichnet keinen Text: Das Bildpaket hat nur Bitmap-Schriften bis 48
+  /// Punkt, vergrössert treppig und ohne die Zeichen jenseits von Latin-1
+  /// (siehe kern/services/wasserzeichen.dart). Ein Zeichen, das sich nicht
+  /// lesen lässt oder die Grenzen sprengt, wird abgelehnt (400) statt
+  /// stillschweigend weggelassen – sonst ginge ein Link ohne das gewollte
+  /// Zeichen hinaus.
   Future<Response> anlegen(Request r) async {
     final Object? k;
     try {
@@ -243,6 +260,14 @@ class Freigabeapi {
     if (hochladen && album is! String) {
       return _json({'fehler': 'Beiträge nur zu einem Album'}, status: 400);
     }
+    Wasserzeichen? wasserzeichen;
+    if (k['wasserzeichen'] case final roh?) {
+      wasserzeichen = Wasserzeichen.ausJson(roh);
+      final bild = wasserzeichen?.bild;
+      if (bild == null || !Wasserzeichenbild.gueltig(bild)) {
+        return _json({'fehler': wasserzeichenUngueltig}, status: 400);
+      }
+    }
     final neu = await dienst.lege(
       konto: konto.id,
       titel: titel,
@@ -252,6 +277,7 @@ class Freigabeapi {
       passwortKlartext: passwort as String?,
       herunterladen: k['herunterladen'] == true,
       hochladen: hochladen && beitraege != null,
+      wasserzeichen: wasserzeichen,
     );
     final f = (await dienst.von(
       konto.id,
@@ -279,6 +305,10 @@ class Freigabeapi {
     });
   }
 
+  /// Die Antwort auf ein Wasserzeichen, das sich nicht einrechnen lässt –
+  /// die Weboberfläche übersetzt sie (texte.js).
+  static const wasserzeichenUngueltig = 'Wasserzeichen ungültig';
+
   /// Der Hinweis über der Liste, wenn Links nicht mehr zu lesen sind.
   static const linksUnlesbar =
       'Einige Links lassen sich mit dem jetzigen server.schluessel nicht '
@@ -289,6 +319,11 @@ class Freigabeapi {
     final konto = kontoVon(r).id;
     // Was Gäste beigetragen haben und noch nicht angenommen ist, geht mit.
     final offen = beitraege?.zu(id) ?? const <Gastbeitrag>[];
+    final kennung = dienst
+        .ohneLinkVon(konto)
+        .where((f) => f.id == id)
+        .firstOrNull
+        ?.wasserzeichenKennung;
     if (!dienst.widerrufe(konto, id)) {
       return _json({'fehler': 'unbekannt'}, status: 404);
     }
@@ -298,7 +333,36 @@ class Freigabeapi {
         await _raeumeWeg(b, x.id);
       }
     }
+    if (kennung != null &&
+        !dienst
+            .ohneLinkVon(konto)
+            .any((f) => f.wasserzeichenKennung == kennung)) {
+      await _raeumeZeichenWeg(
+        (await bibliotheken.fuer(konto)).bibliothek,
+        kennung,
+      );
+    }
     return _json({'geloescht': true});
+  }
+
+  /// Die Bilder mit dem Wasserzeichen [kennung] aus dem Zwischenspeicher
+  /// der Gäste (#497). Das Aufräumen der Fassungen behält sie, solange es
+  /// die Aufnahme gibt (`raeumeFassungenAuf` weiss nichts von Links); ohne
+  /// den Link, der sie zeigte, sind sie nur noch unverschlüsselte Kopien
+  /// auf der Platte. Teilen zwei Links desselben Kontos ein Zeichen,
+  /// bleiben sie, bis der letzte geht.
+  Future<void> _raeumeZeichenWeg(Bibliothek b, String kennung) async {
+    final speicher = Directory(p.join(b.ordner.path, 'geteilt'));
+    if (!await speicher.exists()) return;
+    await for (final e in speicher.list(followLinks: false)) {
+      if (e is! File) continue;
+      if (teilbildAusName(p.basename(e.path))?.kennung != kennung) continue;
+      try {
+        await e.delete();
+      } on FileSystemException {
+        // Schon weg.
+      }
+    }
   }
 
   // --- Für Besucher --------------------------------------------------------
@@ -444,6 +508,15 @@ class Freigabeapi {
 
   /// `miniatur` und `ansicht` (Bilder, ohne Metadaten), `video` (H.264,
   /// sonst 202 wie bei `abspielbar`), `original` (nur mit Herunterladen).
+  ///
+  /// **Das Wasserzeichen** der Freigabe (#497) steckt in Miniatur und
+  /// Ansicht – auch in der Miniatur eines Videos, sie ist ein Bild. Nicht
+  /// im `original`: Das hat der Besitzer ausdrücklich zum Herunterladen
+  /// freigegeben, und es heisst Original, weil es Bit für Bit die Datei
+  /// ist (der Dialog sagt das beim Anlegen). Nicht im `video`: Dafür
+  /// müsste ffmpeg das Zeichen in jedes Bild legen und die Fassung je
+  /// Zeichen eigens gerechnet werden – nicht Teil dieses Schritts; auch
+  /// das sagt der Dialog.
   Future<Response> datei(Request r, String link, String id, String art) async {
     final o = await _oeffne(link);
     if (o == null) return Response.notFound(null, headers: _keineSuche);
@@ -467,9 +540,10 @@ class Freigabeapi {
         if (q == null || !await q.exists()) return Response.notFound(null);
         final d = await _teilbilder.fassung(
           speicher,
-          '${a.id}-m',
+          teilbildName(a.id, 'm', f.wasserzeichenKennung),
           q,
           kante: 512,
+          wasserzeichen: f.wasserzeichen,
         );
         return d == null ? Response.notFound(null) : dateiAntwort(r, d);
       case 'ansicht':
@@ -478,9 +552,10 @@ class Freigabeapi {
         if (q == null || !await q.exists()) return Response.notFound(null);
         final d = await _teilbilder.fassung(
           speicher,
-          '${a.id}-a',
+          teilbildName(a.id, 'a', f.wasserzeichenKennung),
           q,
           kante: 2560,
+          wasserzeichen: f.wasserzeichen,
         );
         return d == null ? Response.notFound(null) : dateiAntwort(r, d);
       case 'video':

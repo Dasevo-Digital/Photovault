@@ -1962,6 +1962,80 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String get linkWasserzeichen => 'Add a watermark to the images';
+
+  @override
+  String get linkWasserzeichenText => 'Watermark text';
+
+  @override
+  String get linkWasserzeichenPosition => 'Position';
+
+  @override
+  String linkWasserzeichenGroesse(int prozent) {
+    return 'Size: $prozent % of the image width';
+  }
+
+  @override
+  String linkWasserzeichenDeckkraft(int prozent) {
+    return 'Opacity: $prozent %';
+  }
+
+  @override
+  String linkWasserzeichenRand(int prozent) {
+    return 'Margin: $prozent % of the image width';
+  }
+
+  @override
+  String get linkWasserzeichenHinweis =>
+      'The watermark is part of the previews and views guests see. Videos stay without one.';
+
+  @override
+  String get linkWasserzeichenOriginal =>
+      'Allowed originals are passed on unchanged – without a watermark.';
+
+  @override
+  String get linkWasserzeichenTextFehlt =>
+      'Please enter a text for the watermark.';
+
+  @override
+  String get linkWasserzeichenServerZuAlt =>
+      'The server does not know watermarks yet. The link was not created – please update the server first.';
+
+  @override
+  String get linkWasserzeichenNichtWiderrufen =>
+      'The server does not know watermarks yet and created the link without one. Please delete it under “Shared links” and update the server.';
+
+  @override
+  String get linkMitWasserzeichen => 'with watermark';
+
+  @override
+  String get lageObenLinks => 'Top left';
+
+  @override
+  String get lageOben => 'Top centre';
+
+  @override
+  String get lageObenRechts => 'Top right';
+
+  @override
+  String get lageLinks => 'Centre left';
+
+  @override
+  String get lageMitte => 'Centre';
+
+  @override
+  String get lageRechts => 'Centre right';
+
+  @override
+  String get lageUntenLinks => 'Bottom left';
+
+  @override
+  String get lageUnten => 'Bottom centre';
+
+  @override
+  String get lageUntenRechts => 'Bottom right';
+
+  @override
   String get linkLoeschen => 'Delete';
 
   @override

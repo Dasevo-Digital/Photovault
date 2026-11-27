@@ -539,4 +539,58 @@ void main() {
       expect(texte, contains("  '${m[1]}': '"), reason: m[1]);
     }
   });
+
+  test('Wasserzeichen im Link-Dialog (#497): nur mit Haken, Text als PNG, '
+      'jeder Text übersetzt', () {
+    // Ohne Haken geht kein Feld `wasserzeichen` hinaus – ein alter Server
+    // kennte es ohnehin nicht, und ein neuer rechnete sonst ein leeres
+    // Zeichen ein.
+    final fuer = funktion('wasserzeichenFuerLink');
+    expect(fuer, contains('if (!f.wasserzeichen.checked) return null;'));
+    expect(fuer, contains('bild: wasserzeichenTextBild('));
+    expect(fuer, contains("art: 'text'"));
+    final anlegen = funktion('linkAnlegen');
+    expect(anlegen, contains('wasserzeichenFuerLink(f)'));
+    expect(anlegen, contains('...(wasserzeichen ? { wasserzeichen } : {})'));
+    // Gezeichnet wie in den Apps (zierbild/wasserzeichen_text.dart): Rand,
+    // Schatten und die Breite der grössten Ansicht der Gäste.
+    final app = File('web/app.js').readAsStringSync();
+    expect(app, contains('const WZ_ANSICHT = 2560;'));
+    expect(app, contains('const WZ_RAUM = 0.15;'));
+    final bild = funktion('wasserzeichenTextBild');
+    expect(bild, contains('z.shadowBlur = 0.08 * g;'));
+    expect(bild, contains('z.shadowOffsetY = 0.03 * g;'));
+    expect(bild, contains("toDataURL('image/png')"));
+    final kern = File(
+      '../zierbild/lib/wasserzeichen_text.dart',
+    ).readAsStringSync();
+    expect(kern, contains('const _schattenraum = 0.15;'));
+    expect(kern, contains('blurRadius: schriftgroesse * 0.08'));
+    expect(kern, contains('offset: Offset(0, schriftgroesse * 0.03)'));
+
+    // Jeder neue Text hat eine englische Fassung.
+    final html = File('web/index.html').readAsStringSync();
+    final beginn = html.indexOf('<input name="wasserzeichen"');
+    final ende = html.indexOf('</div>', html.indexOf('id="link-wz-original"'));
+    expect(beginn, isNonNegative);
+    final teil = html.substring(beginn, ende);
+    final texte = File('web/texte.js').readAsStringSync();
+    final gefunden = [
+      for (final m in RegExp(r'>([^<>]+)<').allMatches(teil))
+        if (m[1]!.trim().isNotEmpty && !m[1]!.trim().endsWith('%'))
+          m[1]!.trim(),
+      for (final quelle in [fuer, anlegen])
+        for (final m in RegExp(r"t\('([^']+)'").allMatches(quelle)) m[1]!,
+      'mit Wasserzeichen',
+      Freigabeapi.wasserzeichenUngueltig,
+    ];
+    expect(gefunden, contains('Unten rechts'));
+    expect(
+      funktion('zeigeFreigaben'),
+      contains("x.wasserzeichen ? t('mit Wasserzeichen') : null"),
+    );
+    for (final text in gefunden) {
+      expect(texte, contains("  '$text': '"), reason: text);
+    }
+  });
 }

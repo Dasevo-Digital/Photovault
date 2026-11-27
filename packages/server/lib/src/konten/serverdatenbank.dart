@@ -35,7 +35,7 @@ class Serverdatenbank {
 
   final Database db;
 
-  static const schema = 14;
+  static const schema = 15;
 
   void _bereite() {
     db.execute('PRAGMA journal_mode = WAL');
@@ -403,6 +403,27 @@ class Serverdatenbank {
           }
         }
         db.execute('PRAGMA user_version = 14');
+        db.execute('COMMIT');
+      } on Object {
+        db.execute('ROLLBACK');
+        rethrow;
+      }
+    }
+    if (stand < 15) {
+      // Ein Wasserzeichen je Freigabe (#497): die Einstellungen samt dem
+      // PNG, das in die Bilder der Gäste eingerechnet wird, als JSON
+      // (`Wasserzeichen.kodiert`). Bestehende Links bleiben ohne – NULL.
+      // Nur, was fehlt – wie Schritt 12.
+      final spalten = db
+          .select('PRAGMA table_info(freigaben)')
+          .map((r) => r['name'])
+          .toSet();
+      db.execute('BEGIN');
+      try {
+        if (spalten.isNotEmpty && !spalten.contains('wasserzeichen')) {
+          db.execute('ALTER TABLE freigaben ADD COLUMN wasserzeichen TEXT');
+        }
+        db.execute('PRAGMA user_version = 15');
         db.execute('COMMIT');
       } on Object {
         db.execute('ROLLBACK');
