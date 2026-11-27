@@ -4866,6 +4866,94 @@ class AppTexteEn extends AppTexte {
   String get exportVorgabeOhneXmp => 'no XMP';
 
   @override
+  String get exportVorgabeMitWasserzeichen => 'with watermark';
+
+  @override
+  String get wasserzeichen => 'Watermark';
+
+  @override
+  String get wasserzeichenHinweis => 'Burned into every exported photo.';
+
+  @override
+  String get wasserzeichenNurGerendert =>
+      'Only with “Render as JPEG”: originals copied unchanged get no watermark.';
+
+  @override
+  String get wasserzeichenArtText => 'Text';
+
+  @override
+  String get wasserzeichenArtLogo => 'Logo';
+
+  @override
+  String get wasserzeichenText => 'Watermark text';
+
+  @override
+  String get wasserzeichenTextBeispiel => 'e.g. © 2026 Name';
+
+  @override
+  String get wasserzeichenLogoWaehlen => 'Choose logo …';
+
+  @override
+  String get wasserzeichenLogoHinweis =>
+      'PNG with a transparent background. Large logos are reduced to 1600 pixels.';
+
+  @override
+  String get wasserzeichenLogoUngueltig =>
+      'This file can’t be used as a logo. Please choose a PNG.';
+
+  @override
+  String get wasserzeichenLage => 'Position';
+
+  @override
+  String get wasserzeichenLageObenLinks => 'Top left';
+
+  @override
+  String get wasserzeichenLageOben => 'Top';
+
+  @override
+  String get wasserzeichenLageObenRechts => 'Top right';
+
+  @override
+  String get wasserzeichenLageLinks => 'Left';
+
+  @override
+  String get wasserzeichenLageMitte => 'Centre';
+
+  @override
+  String get wasserzeichenLageRechts => 'Right';
+
+  @override
+  String get wasserzeichenLageUntenLinks => 'Bottom left';
+
+  @override
+  String get wasserzeichenLageUnten => 'Bottom';
+
+  @override
+  String get wasserzeichenLageUntenRechts => 'Bottom right';
+
+  @override
+  String wasserzeichenGroesse(int prozent) {
+    return 'Size: $prozent% of the image width';
+  }
+
+  @override
+  String wasserzeichenDeckkraft(int prozent) {
+    return 'Opacity: $prozent%';
+  }
+
+  @override
+  String wasserzeichenRand(int prozent) {
+    return 'Margin: $prozent% of the image width';
+  }
+
+  @override
+  String get wasserzeichenVorschau => 'Preview';
+
+  @override
+  String get wasserzeichenFehlt =>
+      'The watermark still needs a text or a logo.';
+
+  @override
   String get exportVorgabeLoeschenTitel => 'Delete preset?';
 
   @override
@@ -8704,6 +8792,17 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String wasserzeichenAusgelassen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl items left out',
+      one: '1 item left out',
+    );
+    return '$_temp0: videos and images that cannot be rendered cannot get a watermark.';
+  }
+
+  @override
   String get sicherTeilenTitel => 'Encrypted sharing package';
 
   @override
@@ -9107,6 +9206,21 @@ class AppTexteEn extends AppTexte {
   String fotobuchFehler(String fehler) {
     return 'The photo book could not be created: $fehler';
   }
+
+  @override
+  String get fotobuchWasserzeichenOhne => 'None';
+
+  @override
+  String fotobuchWasserzeichenAusVorgabe(String name) {
+    return 'From the preset “$name”';
+  }
+
+  @override
+  String get fotobuchWasserzeichenEigenes => 'Custom';
+
+  @override
+  String get fotobuchWasserzeichenHinweis =>
+      'Burned into every photo of the book.';
 
   @override
   String get suchePlatzhalterTranskript => 'e.g. “birthday”, “Hamburg” …';

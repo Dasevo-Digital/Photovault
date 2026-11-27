@@ -64,7 +64,7 @@ void main() {
           .data
           .values
           .single,
-      103,
+      db.schemaVersion,
     );
     // Schritt 102 läuft nicht noch einmal: Die Temperatur bleibt stehen.
     final warm = await db.select(db.developPresets).getSingle();

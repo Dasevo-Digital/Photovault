@@ -7,15 +7,19 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/wasserzeichen.dart';
 import '../l10n/app_localizations.dart';
+import '../services/export_service.dart' show vorgabeWasserzeichen;
 import '../services/fotobuch.dart';
 import 'package:kern/services/laendernamen.dart';
 import '../services/meldungsdienst.dart';
 import '../services/native_image_converter.dart';
 import '../services/platform/speicherort.dart';
+import '../services/wasserzeichen_einrechnen.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import 'einfuegbares_menue.dart';
+import 'wasserzeichen_editor.dart';
 
 /// [dateiname] mit der Endung des Fotobuchs statt der bisherigen – aus
 /// dem Namen einer Diashow wird so der des Buches.
@@ -40,9 +44,20 @@ typedef Fotobuchwahl = ({
   Set<Fotobuchangabe> angaben,
 });
 
+/// Woher das Wasserzeichen des Buches kommt (#497): keines, das einer
+/// Exportvorgabe (dann mit ihrem Namen) oder ein eigenes, nur für dieses
+/// Buch eingestelltes.
+typedef Fotobuchzeichen = ({String? vorgabe, Wasserzeichen? wasserzeichen});
+
+/// Die Antwort des Dialogs. Das Wasserzeichen steht neben [Fotobuchwahl]
+/// statt darin: Die Wahl beschreibt das Buch, das Zeichen die Bilder, und
+/// [erstelleFotobuch] nimmt es als eigene Angabe.
+typedef _Dialogantwort = ({Fotobuchwahl wahl, Fotobuchzeichen zeichen});
+
 /// Die zuletzt gewählte Gestaltung, für die Dauer der Sitzung. Wer ein
 /// zweites Buch macht, will meist dasselbe noch einmal.
 Fotobuchwahl? _zuletzt;
+Fotobuchzeichen? _zuletztZeichen;
 
 /// Macht aus [aufnahmen] ein Fotobuch als PDF – mit Rückfrage nach der
 /// Gestaltung und dem Ziel und einem Fenster, das den Fortschritt zeigt
@@ -70,13 +85,28 @@ Future<void> fotobuchExportieren(
     return;
   }
   final fotos = alleFotos.take(fotobuchHoechstensBilder).toList();
-  final wahl = await showDialog<Fotobuchwahl>(
+  // Nur gerenderte Vorgaben tragen ein Zeichen (Exportvorgabe.wasserzeichen).
+  final vorgaben = [
+    for (final v in await library.db.alleExportPresets())
+      if (v.nachJpeg)
+        if (vorgabeWasserzeichen(v) case final w?)
+          (name: v.name, wasserzeichen: w),
+  ];
+  if (!context.mounted) return;
+  final antwort = await showDialog<_Dialogantwort>(
     context: context,
-    builder: (_) =>
-        _FotobuchDialog(titel: titel, anzahl: fotos.length, vorher: _zuletzt),
+    builder: (_) => _FotobuchDialog(
+      titel: titel,
+      anzahl: fotos.length,
+      vorher: _zuletzt,
+      vorherZeichen: _zuletztZeichen,
+      vorgaben: vorgaben,
+    ),
   );
-  if (wahl == null || !context.mounted) return;
+  if (antwort == null || !context.mounted) return;
+  final wahl = antwort.wahl;
   _zuletzt = wahl;
+  _zuletztZeichen = antwort.zeichen;
   final pfad = await waehleSpeicherort(
     dialogTitel: t.fotobuchSpeichern,
     dateiname: dateiname,
@@ -129,6 +159,7 @@ Future<void> fotobuchExportieren(
       sprache: sprache.languageCode,
       fortschritt: (a) => stand.value = a,
       abbruch: () => abbrechen,
+      wasserzeichen: antwort.zeichen.wasserzeichen,
     );
   } catch (e) {
     fehler = e;
@@ -181,6 +212,13 @@ Future<Uint8List?> _nativ(File datei, {int? maxDimension}) =>
 ///
 /// [fotos] sind schon gefiltert (keine Videos, nichts Gesperrtes). Wer
 /// sich nicht wandeln lässt, bleibt draussen und fehlt in `bilder`.
+///
+/// [wasserzeichen] wird in jedes Bild eingerechnet, nachdem es in der
+/// Grösse für den Druck vorliegt – in die Pixel, nicht als eigenes
+/// Objekt über das Bild gelegt: Ein Objekt im PDF nimmt jedes
+/// PDF-Programm mit einem Klick wieder heraus. Lässt es sich in ein Bild
+/// nicht einrechnen, bleibt das Bild draussen wie eines, das sich nicht
+/// wandeln lässt – ohne Zeichen kommt keines ins Buch.
 Future<({int seiten, int bilder})?> erstelleFotobuch(
   LibraryState library,
   List<AssetData> fotos,
@@ -192,6 +230,7 @@ Future<({int seiten, int bilder})?> erstelleFotobuch(
   required void Function(double anteil) fortschritt,
   required bool Function() abbruch,
   Fotobuchwandler wandle = _nativ,
+  Wasserzeichen? wasserzeichen,
 }) async {
   final mitUnterschrift = wahl.angaben.isNotEmpty;
   // Erst planen, dann laden: Wie gross ein Bild gerechnet werden muss,
@@ -236,8 +275,15 @@ Future<({int seiten, int bilder})?> erstelleFotobuch(
     if (!await datei.exists()) {
       datei = await library.paths.bereit(a.relativePath);
     }
-    final roh = await wandle(datei, maxDimension: pixel[i]);
+    var roh = await wandle(datei, maxDimension: pixel[i]);
     if (roh == null) continue;
+    if (wasserzeichen != null) {
+      try {
+        roh = await jpegMitWasserzeichenAuf(roh, wasserzeichen, qualitaet: 90);
+      } catch (_) {
+        continue;
+      }
+    }
     final jpeg = jpegOhneBeipackzettel(roh);
     final groesse = jpegGroesse(jpeg);
     if (groesse == null) continue;
@@ -306,11 +352,17 @@ class _FotobuchDialog extends StatefulWidget {
   final String titel;
   final int anzahl;
   final Fotobuchwahl? vorher;
+  final Fotobuchzeichen? vorherZeichen;
+
+  /// Die Exportvorgaben mit Wasserzeichen, zur Auswahl.
+  final List<({String name, Wasserzeichen wasserzeichen})> vorgaben;
 
   const _FotobuchDialog({
     required this.titel,
     required this.anzahl,
     this.vorher,
+    this.vorherZeichen,
+    this.vorgaben = const [],
   });
 
   @override
@@ -327,6 +379,39 @@ class _FotobuchDialogState extends State<_FotobuchDialog> {
     ...(widget.vorher?.angaben ??
         {Fotobuchangabe.datum, Fotobuchangabe.ort, Fotobuchangabe.personen}),
   };
+
+  /// Die Auswahl im Feld „Wasserzeichen“: [_ohne], [_eigenes] oder die
+  /// Nummer einer Vorgabe in `widget.vorgaben`. War beim letzten Mal eine
+  /// Vorgabe gewählt, die es nicht mehr gibt, beginnt es ohne.
+  static const _ohne = -1;
+  static const _eigenes = -2;
+  late int _zeichenwahl = () {
+    final vorher = widget.vorherZeichen;
+    if (vorher == null || vorher.wasserzeichen == null) return _ohne;
+    if (vorher.vorgabe case final name?) {
+      final i = widget.vorgaben.indexWhere((v) => v.name == name);
+      return i >= 0 ? i : _ohne;
+    }
+    return _eigenes;
+  }();
+  late Wasserzeichen _eigenesZeichen =
+      (widget.vorherZeichen?.vorgabe == null
+          ? widget.vorherZeichen?.wasserzeichen
+          : null) ??
+      const Wasserzeichen();
+
+  Fotobuchzeichen get _zeichen => switch (_zeichenwahl) {
+    _ohne => (vorgabe: null, wasserzeichen: null),
+    _eigenes => (vorgabe: null, wasserzeichen: _eigenesZeichen),
+    final i => (
+      vorgabe: widget.vorgaben[i].name,
+      wasserzeichen: widget.vorgaben[i].wasserzeichen,
+    ),
+  };
+
+  /// Ein eigenes Zeichen ohne Text und ohne Logo liesse sich nicht
+  /// einrechnen – dann gibt es noch kein Buch.
+  bool get _bereit => _zeichenwahl != _eigenes || _eigenesZeichen.vollstaendig;
 
   @override
   void dispose() {
@@ -413,6 +498,44 @@ class _FotobuchDialogState extends State<_FotobuchDialog> {
                     ),
                 ],
               ),
+              const SizedBox(height: AppSpacing.md),
+              Text(t.wasserzeichen, style: stil),
+              const SizedBox(height: AppSpacing.xs),
+              DropdownButtonFormField<int>(
+                key: const ValueKey('fotobuchWasserzeichen'),
+                initialValue: _zeichenwahl,
+                isExpanded: true,
+                items: [
+                  DropdownMenuItem(
+                    value: _ohne,
+                    child: Text(t.fotobuchWasserzeichenOhne),
+                  ),
+                  for (final (i, v) in widget.vorgaben.indexed)
+                    DropdownMenuItem(
+                      value: i,
+                      child: Text(t.fotobuchWasserzeichenAusVorgabe(v.name)),
+                    ),
+                  DropdownMenuItem(
+                    value: _eigenes,
+                    child: Text(t.fotobuchWasserzeichenEigenes),
+                  ),
+                ],
+                onChanged: (w) => setState(() => _zeichenwahl = w ?? _ohne),
+              ),
+              if (_zeichenwahl != _ohne) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  t.fotobuchWasserzeichenHinweis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+              if (_zeichenwahl == _eigenes) ...[
+                const SizedBox(height: AppSpacing.md),
+                WasserzeichenEditor(
+                  wert: _eigenesZeichen,
+                  beiAenderung: (w) => setState(() => _eigenesZeichen = w),
+                ),
+              ],
             ],
           ),
         ),
@@ -423,12 +546,17 @@ class _FotobuchDialogState extends State<_FotobuchDialog> {
           child: Text(t.allgAbbrechen),
         ),
         FilledButton(
-          onPressed: () => Navigator.pop<Fotobuchwahl>(context, (
-            titel: _titel.text.trim(),
-            format: _format,
-            jeSeite: _jeSeite,
-            angaben: {..._angaben},
-          )),
+          onPressed: _bereit
+              ? () => Navigator.pop<_Dialogantwort>(context, (
+                  wahl: (
+                    titel: _titel.text.trim(),
+                    format: _format,
+                    jeSeite: _jeSeite,
+                    angaben: {..._angaben},
+                  ),
+                  zeichen: _zeichen,
+                ))
+              : null,
           child: Text(t.fotobuchErstellen),
         ),
       ],

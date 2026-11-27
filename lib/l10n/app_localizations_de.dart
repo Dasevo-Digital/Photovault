@@ -4896,6 +4896,95 @@ class AppTexteDe extends AppTexte {
   String get exportVorgabeOhneXmp => 'ohne XMP';
 
   @override
+  String get exportVorgabeMitWasserzeichen => 'mit Wasserzeichen';
+
+  @override
+  String get wasserzeichen => 'Wasserzeichen';
+
+  @override
+  String get wasserzeichenHinweis =>
+      'Wird in jedes exportierte Foto eingerechnet.';
+
+  @override
+  String get wasserzeichenNurGerendert =>
+      'Nur mit „Nach JPEG rendern“: Unverändert kopierte Originale bekommen kein Wasserzeichen.';
+
+  @override
+  String get wasserzeichenArtText => 'Text';
+
+  @override
+  String get wasserzeichenArtLogo => 'Logo';
+
+  @override
+  String get wasserzeichenText => 'Text des Wasserzeichens';
+
+  @override
+  String get wasserzeichenTextBeispiel => 'z. B. © 2026 Name';
+
+  @override
+  String get wasserzeichenLogoWaehlen => 'Logo wählen …';
+
+  @override
+  String get wasserzeichenLogoHinweis =>
+      'PNG mit transparentem Hintergrund. Große Logos werden auf 1600 Pixel verkleinert.';
+
+  @override
+  String get wasserzeichenLogoUngueltig =>
+      'Diese Datei lässt sich nicht als Logo verwenden. Bitte ein PNG wählen.';
+
+  @override
+  String get wasserzeichenLage => 'Position';
+
+  @override
+  String get wasserzeichenLageObenLinks => 'Oben links';
+
+  @override
+  String get wasserzeichenLageOben => 'Oben';
+
+  @override
+  String get wasserzeichenLageObenRechts => 'Oben rechts';
+
+  @override
+  String get wasserzeichenLageLinks => 'Links';
+
+  @override
+  String get wasserzeichenLageMitte => 'Mitte';
+
+  @override
+  String get wasserzeichenLageRechts => 'Rechts';
+
+  @override
+  String get wasserzeichenLageUntenLinks => 'Unten links';
+
+  @override
+  String get wasserzeichenLageUnten => 'Unten';
+
+  @override
+  String get wasserzeichenLageUntenRechts => 'Unten rechts';
+
+  @override
+  String wasserzeichenGroesse(int prozent) {
+    return 'Größe: $prozent % der Bildbreite';
+  }
+
+  @override
+  String wasserzeichenDeckkraft(int prozent) {
+    return 'Deckkraft: $prozent %';
+  }
+
+  @override
+  String wasserzeichenRand(int prozent) {
+    return 'Randabstand: $prozent % der Bildbreite';
+  }
+
+  @override
+  String get wasserzeichenVorschau => 'Vorschau';
+
+  @override
+  String get wasserzeichenFehlt =>
+      'Für das Wasserzeichen fehlt noch ein Text oder ein Logo.';
+
+  @override
   String get exportVorgabeLoeschenTitel => 'Voreinstellung löschen?';
 
   @override
@@ -8752,6 +8841,17 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String wasserzeichenAusgelassen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl Aufnahmen ausgelassen',
+      one: '1 Aufnahme ausgelassen',
+    );
+    return '$_temp0: Videos und Bilder, die sich nicht rendern lassen, bekommen kein Wasserzeichen.';
+  }
+
+  @override
   String get sicherTeilenTitel => 'Verschlüsseltes Austauschpaket';
 
   @override
@@ -9157,6 +9257,21 @@ class AppTexteDe extends AppTexte {
   String fotobuchFehler(String fehler) {
     return 'Das Fotobuch ließ sich nicht erstellen: $fehler';
   }
+
+  @override
+  String get fotobuchWasserzeichenOhne => 'Ohne';
+
+  @override
+  String fotobuchWasserzeichenAusVorgabe(String name) {
+    return 'Aus der Vorgabe „$name“';
+  }
+
+  @override
+  String get fotobuchWasserzeichenEigenes => 'Eigenes';
+
+  @override
+  String get fotobuchWasserzeichenHinweis =>
+      'Wird in jedes Foto des Buches eingerechnet.';
 
   @override
   String get suchePlatzhalterTranskript => 'z.B. „Geburtstag“, „Hamburg“ …';

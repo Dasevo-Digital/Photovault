@@ -2,11 +2,14 @@ import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 
 import 'package:kern/db/database.dart';
+import 'package:kern/services/wasserzeichen.dart';
 import '../l10n/app_localizations.dart';
 import '../services/export_naming.dart';
+import '../services/export_service.dart' show vorgabeWasserzeichen;
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/einfuegbares_menue.dart';
+import '../widgets/wasserzeichen_editor.dart';
 
 /// Verwaltung benannter Export-Vorgaben.
 ///
@@ -138,6 +141,8 @@ String vorgabeZusammenfassung(AppTexte t, ExportPresetData v) {
       t.exportVorgabeJpegKante(v.maxKante!, (v.qualitaet * 100).round()),
     v.namensmuster,
     if (v.nachJpeg && v.ortMitgeben) t.exportVorgabeMitOrt,
+    if (v.nachJpeg && vorgabeWasserzeichen(v) != null)
+      t.exportVorgabeMitWasserzeichen,
     if (!v.xmpDaneben) t.exportVorgabeOhneXmp,
   ];
   return teile.join(' · ');
@@ -174,6 +179,18 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
   /// Neu aus: So gab eine gerenderte Vorgabe bis zum Schalter keinen Ort
   /// mit (#468).
   late bool _ort = widget.bestehend?.ortMitgeben ?? false;
+
+  /// Das Wasserzeichen (#497). Auch ausgeschaltet bleibt die Gestalt im
+  /// Editor erhalten, solange er offen ist – wer es kurz aus- und wieder
+  /// einschaltet, soll Text und Logo nicht neu eingeben müssen. Gespeichert
+  /// wird es nur eingeschaltet.
+  late bool _wasserzeichenAn =
+      widget.bestehend != null &&
+      widget.bestehend!.nachJpeg &&
+      vorgabeWasserzeichen(widget.bestehend!) != null;
+  late Wasserzeichen _wasserzeichen =
+      Wasserzeichen.ausKodiert(widget.bestehend?.wasserzeichen) ??
+      const Wasserzeichen();
   String? _fehler;
 
   @override
@@ -208,6 +225,16 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
       setState(() => _fehler = t.exportVorgabeMusterNoetig);
       return;
     }
+    final mitZeichen = _nachJpeg && _wasserzeichenAn;
+    if (mitZeichen && !_wasserzeichen.vollstaendig) {
+      setState(() => _fehler = t.wasserzeichenFehlt);
+      return;
+    }
+    // Ein Text braucht kein Logo: War vorher eines gewählt, reiste es sonst
+    // als totes Gewicht in jeder Zeile mit, auch zu den anderen Geräten.
+    final zeichen = _wasserzeichen.art == Wasserzeichenart.text
+        ? _wasserzeichen.kopieMit(ohneBild: true)
+        : _wasserzeichen;
 
     Navigator.pop(
       context,
@@ -225,6 +252,8 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
         xmpDaneben: Value(_xmp),
         // Nur beim Rendern von Bedeutung, siehe Exportvorgabe.ausPreset.
         ortMitgeben: Value(_nachJpeg && _ort),
+        // Ebenso nur beim Rendern – siehe Exportvorgabe.wasserzeichen.
+        wasserzeichen: Value(mitZeichen ? zeichen.kodiert() : null),
         erstelltAm: Value(widget.bestehend?.erstelltAm ?? DateTime.now()),
       ),
     );
@@ -292,6 +321,29 @@ class _VorgabeEditorState extends State<_VorgabeEditor> {
                   onChanged: (v) => setState(() => _ort = v),
                 ),
               ],
+              const Divider(height: AppSpacing.xxl),
+              // Ohne „Nach JPEG rendern“ gesperrt, nicht versteckt: Wer ein
+              // Wasserzeichen sucht, soll sehen, dass es das gibt und woran
+              // es hängt (siehe Exportvorgabe.wasserzeichen).
+              SwitchListTile(
+                key: const ValueKey('wasserzeichenSchalter'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(t.wasserzeichen),
+                subtitle: Text(
+                  _nachJpeg
+                      ? t.wasserzeichenHinweis
+                      : t.wasserzeichenNurGerendert,
+                ),
+                value: _nachJpeg && _wasserzeichenAn,
+                onChanged: _nachJpeg
+                    ? (v) => setState(() => _wasserzeichenAn = v)
+                    : null,
+              ),
+              if (_nachJpeg && _wasserzeichenAn)
+                WasserzeichenEditor(
+                  wert: _wasserzeichen,
+                  beiAenderung: (w) => _wasserzeichen = w,
+                ),
               const Divider(height: AppSpacing.xxl),
               TextField(
                 contextMenuBuilder: einfuegbaresMenue,

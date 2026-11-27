@@ -10,6 +10,7 @@ import 'package:kern/db/database.dart';
 import '../state/library_state.dart';
 import 'export_naming.dart';
 import 'fotobuch.dart' show jpegOhneBeipackzettel;
+import 'wasserzeichen_einrechnen.dart';
 import 'native_image_converter.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/jpeg_angaben.dart';
@@ -19,6 +20,7 @@ import 'package:kern/services/xmp_regionen.dart';
 import 'xmp_writer.dart';
 import 'farbverwaltung.dart';
 import 'package:kern/services/jpeg_icc.dart';
+import 'package:kern/services/wasserzeichen.dart';
 
 /// Größe und Format, in denen exportiert wird.
 ///
@@ -106,6 +108,26 @@ class Exportvorgabe {
   /// selbst trägt; die Beilage folgt trotzdem dieser Einstellung.
   final bool ortMitgeben;
 
+  /// Das Wasserzeichen, das in jedes gerenderte Bild eingerechnet wird
+  /// (#497); `null` = keines.
+  ///
+  /// **Nur beim Rendern.** Eine Vorgabe ohne [nachJpeg] verspricht, die
+  /// Datei Bit für Bit zu kopieren – RAW, Videos und alles Übrige
+  /// unangetastet. Ein Wasserzeichen dort hiesse entweder, das Versprechen
+  /// stillschweigend zu brechen (aus „Originale“ würden JPEGs), oder es für
+  /// alles, was sich nicht wandeln lässt, doch wieder ohne Zeichen
+  /// hinauszugeben. Beides überrascht. Deshalb gilt es nur zusammen mit
+  /// [nachJpeg]; der Editor sperrt den Schalter ohne „Nach JPEG rendern“
+  /// und sagt warum (`wasserzeichenNurGerendert`).
+  ///
+  /// Was sich auch mit [nachJpeg] nicht rendern lässt – ein Video, ein
+  /// Bild, dessen Umwandlung scheitert –, geht bei einer Vorgabe mit
+  /// Wasserzeichen **nicht** unverändert hinaus, sondern wird ausgelassen
+  /// und gezählt ([WasserzeichenNichtMoeglich]), wie beim
+  /// Datenschutzexport: Wer ein Zeichen einstellt, will kein Bild ohne
+  /// hinausgeben.
+  final Wasserzeichen? wasserzeichen;
+
   const Exportvorgabe({
     this.nachJpeg = false,
     this.raw16 = false,
@@ -116,8 +138,10 @@ class Exportvorgabe {
     this.metadatenEntfernen = false,
     this.gesichterVerdecken = false,
     bool? ortMitgeben,
+    Wasserzeichen? wasserzeichen,
   }) : ortMitgeben =
-           !metadatenEntfernen && (ortMitgeben ?? (!nachJpeg && !raw16));
+           !metadatenEntfernen && (ortMitgeben ?? (!nachJpeg && !raw16)),
+       wasserzeichen = nachJpeg && !raw16 ? wasserzeichen : null;
 
   /// Die Entsprechung einer der vier festen Grössen – damit der schnelle
   /// Weg und der Voreinstellungs-Weg denselben Code durchlaufen.
@@ -140,6 +164,9 @@ class Exportvorgabe {
   /// Der Schalter „Ort mitgeben“ gilt nur für eine gerenderte Vorgabe: Eine
   /// unverändert kopierte Datei behält ihren Ort, und die Beilage folgt
   /// ihr – sonst ginge der Ort in der Datei hinaus und fehlte nur daneben.
+  ///
+  /// Das Wasserzeichen ebenso nur beim Rendern (siehe [wasserzeichen]);
+  /// eine Vorgabe von vor Schema 104 hat keines.
   factory Exportvorgabe.ausPreset(ExportPresetData p) => Exportvorgabe(
     nachJpeg: p.nachJpeg,
     maxKante: p.maxKante,
@@ -147,7 +174,16 @@ class Exportvorgabe {
     namensmuster: p.namensmuster,
     xmpDaneben: p.xmpDaneben,
     ortMitgeben: p.nachJpeg ? p.ortMitgeben : null,
+    wasserzeichen: p.nachJpeg ? vorgabeWasserzeichen(p) : null,
   );
+}
+
+/// Das gespeicherte Wasserzeichen einer Vorgabe – `null`, wenn sie keines
+/// hat oder es nichts Einrechenbares beschreibt (ein leerer Text, ein
+/// Logo, das fehlt).
+Wasserzeichen? vorgabeWasserzeichen(ExportPresetData p) {
+  final w = Wasserzeichen.ausKodiert(p.wasserzeichen);
+  return w != null && w.vollstaendig ? w : null;
 }
 
 /// Eine Aufnahme, deren Metadaten sich nicht entfernen lassen.
@@ -176,6 +212,23 @@ class DatenschutzNichtMoeglich implements Exception {
   // ohnehin `datenschutzAusgelassen`, nicht diese Zeile.
   @override
   String toString() => 'DatenschutzNichtMoeglich($dateiname)';
+}
+
+/// Eine Aufnahme, in die sich das Wasserzeichen einer Vorgabe nicht
+/// einrechnen lässt – ein Video, ein Bild, dessen Umwandlung scheitert,
+/// ein Zeichen, das sich nicht lesen lässt (#497).
+///
+/// Dieselbe Abwägung wie bei [DatenschutzNichtMoeglich]: Bei einer reinen
+/// Grössenvorgabe geht so etwas unverändert hinaus. Wer aber ein Zeichen
+/// einstellt, will damit gerade verhindern, dass ein Bild ohne seinen
+/// Namen weitergegeben wird – also auslassen und zählen statt durchreichen.
+class WasserzeichenNichtMoeglich implements Exception {
+  const WasserzeichenNichtMoeglich(this.dateiname);
+
+  final String dateiname;
+
+  @override
+  String toString() => 'WasserzeichenNichtMoeglich($dateiname)';
 }
 
 /// Exportiert Original-Dateien aus der verwalteten Bibliothek zurück in
@@ -289,6 +342,21 @@ class ExportService {
       gerendert = await (await Farbverwaltung.fuer(
         _paths,
       )).exportiere(gerendert, datenschutz: v.metadatenEntfernen);
+      // Das Wasserzeichen nach der Farbumrechnung: Eingerechnet wird in das
+      // Bild, wie es hinausgeht, und ein Logo trägt seine Farben so in den
+      // Werten des Ausgabefarbraums (bei sRGB genau die der PNG-Datei).
+      // Vor den Aufnahmeangaben, weil das Einrechnen neu kodiert.
+      if (v.wasserzeichen case final zeichen?) {
+        try {
+          gerendert = await jpegMitWasserzeichenAuf(
+            gerendert,
+            zeichen,
+            qualitaet: (v.qualitaet * 100).round(),
+          );
+        } catch (_) {
+          throw WasserzeichenNichtMoeglich(asset.originalFileName);
+        }
+      }
       if (!v.metadatenEntfernen) {
         gerendert = mitAufnahmeangaben(gerendert, asset, mitOrt: v.ortMitgeben);
       }
@@ -310,6 +378,11 @@ class ExportService {
     // halbe Kopie zurückbleibt, die aussieht wie ein Ergebnis.
     if (v.metadatenEntfernen && gerendert == null) {
       throw DatenschutzNichtMoeglich(asset.originalFileName);
+    }
+    // Derselbe Riegel für das Wasserzeichen: Ein Video oder ein Bild, das
+    // sich nicht rendern liess, ginge sonst ohne Zeichen hinaus.
+    if (v.wasserzeichen != null && gerendert == null) {
+      throw WasserzeichenNichtMoeglich(asset.originalFileName);
     }
 
     // Die Endung richtet sich danach, was WIRKLICH geschrieben wird: Ist

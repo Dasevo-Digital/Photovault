@@ -118,6 +118,21 @@ class ExportPresets extends Table {
   /// ist das, was bis dahin galt – eine gerenderte Vorgabe gab keinen Ort
   /// mit –, also ändert sich für bestehende Vorgaben nichts.
   BoolColumn get ortMitgeben => boolean().withDefault(const Constant(false))();
+
+  /// Das Wasserzeichen als JSON (`Wasserzeichen.kodiert`, siehe
+  /// `services/wasserzeichen.dart`); `null` = keines. Seit Schema 104
+  /// (#497).
+  ///
+  /// Eine Spalte mit JSON statt sieben einzelner: Art, Text, Logo, Lage,
+  /// Grösse, Deckkraft und Rand gehören zusammen und werden nur zusammen
+  /// gelesen, und ein Logo (PNG, höchstens 1600 px) wäre als eigene Spalte
+  /// ohnehin ein Block. So bleibt eine Vorgabe von vor 104 einfach eine
+  /// Vorgabe ohne Wasserzeichen, und der Befehl `ExportvorgabeSpeichern`,
+  /// der ganze Zeilen trägt, nimmt das Logo zu den anderen Geräten mit.
+  ///
+  /// Nur mit [nachJpeg] von Bedeutung – eine unverändert kopierte Datei
+  /// bekommt kein Zeichen (siehe `Exportvorgabe.ausPreset`).
+  TextColumn get wasserzeichen => text().nullable()();
 }
 
 /// Verallgemeinerung von [CameraPresets] auf andere Bedingungen als die

@@ -1360,6 +1360,7 @@ Future<void> runBatchExport(
 
   var exported = 0;
   var ausgelassen = 0;
+  var ohneWasserzeichen = 0;
   for (final asset in assets) {
     try {
       // Die laufende Nummer zählt die Fotos des Laufs, nicht die
@@ -1379,6 +1380,10 @@ Future<void> runBatchExport(
       // das Schlimmste von beidem – der Nutzer hielte die Auswahl für
       // gesäubert und hätte eine Datei weniger, ohne zu wissen welche.
       ausgelassen++;
+    } on WasserzeichenNichtMoeglich {
+      // Dieselbe Zusage für das Wasserzeichen (#497): lieber auslassen und
+      // sagen, als ein Bild ohne Zeichen hinauszugeben.
+      ohneWasserzeichen++;
     } catch (_) {
       // Einzelne fehlgeschlagene Datei überspringen, Rest weiter exportieren.
     }
@@ -1397,5 +1402,8 @@ Future<void> runBatchExport(
     // schränkt die Zeile darüber ein, und wer sie überliest, hält den
     // Export für vollständig.
     if (ausgelassen > 0) melde.warnung(t.datenschutzAusgelassen(ausgelassen));
+    if (ohneWasserzeichen > 0) {
+      melde.warnung(t.wasserzeichenAusgelassen(ohneWasserzeichen));
+    }
   }
 }

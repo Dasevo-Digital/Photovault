@@ -1572,6 +1572,17 @@ extension Migrationsschritte on AppDatabase {
         'ort_mitgeben',
       );
     }
+    if (from < 104) {
+      // Das Wasserzeichen der Exportvorgaben (#497). `NULL` ist, was bis
+      // 103 für jede Vorgabe galt: keines.
+      await _addColumnIfMissing(
+        m,
+        exportPresets,
+        exportPresets.wasserzeichen,
+        'export_presets',
+        'wasserzeichen',
+      );
+    }
   }
 
   /// Die Tabellen, deren Spalte `temperature` eine Farbtemperatur trägt.

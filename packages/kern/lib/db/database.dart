@@ -401,7 +401,7 @@ class AppDatabase extends _$AppDatabase {
   @override
   int get schemaVersion => aktuelleSchemaVersion;
 
-  static const aktuelleSchemaVersion = 103;
+  static const aktuelleSchemaVersion = 104;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

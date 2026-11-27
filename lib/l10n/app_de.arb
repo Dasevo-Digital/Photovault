@@ -2991,6 +2991,53 @@
   },
   "exportVorgabeMitOrt": "mit Ort",
   "exportVorgabeOhneXmp": "ohne XMP",
+  "exportVorgabeMitWasserzeichen": "mit Wasserzeichen",
+  "wasserzeichen": "Wasserzeichen",
+  "wasserzeichenHinweis": "Wird in jedes exportierte Foto eingerechnet.",
+  "wasserzeichenNurGerendert": "Nur mit „Nach JPEG rendern“: Unverändert kopierte Originale bekommen kein Wasserzeichen.",
+  "wasserzeichenArtText": "Text",
+  "wasserzeichenArtLogo": "Logo",
+  "wasserzeichenText": "Text des Wasserzeichens",
+  "wasserzeichenTextBeispiel": "z. B. © 2026 Name",
+  "wasserzeichenLogoWaehlen": "Logo wählen …",
+  "wasserzeichenLogoHinweis": "PNG mit transparentem Hintergrund. Große Logos werden auf 1600 Pixel verkleinert.",
+  "wasserzeichenLogoUngueltig": "Diese Datei lässt sich nicht als Logo verwenden. Bitte ein PNG wählen.",
+  "wasserzeichenLage": "Position",
+  "wasserzeichenLageObenLinks": "Oben links",
+  "wasserzeichenLageOben": "Oben",
+  "wasserzeichenLageObenRechts": "Oben rechts",
+  "wasserzeichenLageLinks": "Links",
+  "wasserzeichenLageMitte": "Mitte",
+  "wasserzeichenLageRechts": "Rechts",
+  "wasserzeichenLageUntenLinks": "Unten links",
+  "wasserzeichenLageUnten": "Unten",
+  "wasserzeichenLageUntenRechts": "Unten rechts",
+  "wasserzeichenGroesse": "Größe: {prozent} % der Bildbreite",
+  "@wasserzeichenGroesse": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "wasserzeichenDeckkraft": "Deckkraft: {prozent} %",
+  "@wasserzeichenDeckkraft": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "wasserzeichenRand": "Randabstand: {prozent} % der Bildbreite",
+  "@wasserzeichenRand": {
+    "placeholders": {
+      "prozent": {
+        "type": "int"
+      }
+    }
+  },
+  "wasserzeichenVorschau": "Vorschau",
+  "wasserzeichenFehlt": "Für das Wasserzeichen fehlt noch ein Text oder ein Logo.",
   "exportVorgabeLoeschenTitel": "Voreinstellung löschen?",
   "exportVorgabeLoeschenText": "„{name}\" wird entfernt. Bereits exportierte Dateien bleiben unberührt.",
   "@exportVorgabeLoeschenText": {
@@ -5623,6 +5670,14 @@
       }
     }
   },
+  "wasserzeichenAusgelassen": "{anzahl, plural, =1{1 Aufnahme ausgelassen} other{{anzahl} Aufnahmen ausgelassen}}: Videos und Bilder, die sich nicht rendern lassen, bekommen kein Wasserzeichen.",
+  "@wasserzeichenAusgelassen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
   "sicherTeilenTitel": "Verschlüsseltes Austauschpaket",
   "sicherTeilenText": "Originale und Dateinamen in einer passwortgeschützten .pvshare-Datei weitergeben.",
   "sicherTeilenZiel": "Austauschpaket speichern",
@@ -5881,6 +5936,17 @@
       }
     }
   },
+  "fotobuchWasserzeichenOhne": "Ohne",
+  "fotobuchWasserzeichenAusVorgabe": "Aus der Vorgabe „{name}“",
+  "@fotobuchWasserzeichenAusVorgabe": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fotobuchWasserzeichenEigenes": "Eigenes",
+  "fotobuchWasserzeichenHinweis": "Wird in jedes Foto des Buches eingerechnet.",
   "suchePlatzhalterTranskript": "z.B. „Geburtstag“, „Hamburg“ …",
   "suchoptTypTranskript": "Gesprochenes (Videos)",
   "suchoptNachTranskript": "Suche nach Gesprochenem in Videos",

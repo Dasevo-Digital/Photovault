@@ -7933,6 +7933,162 @@ abstract class AppTexte {
   /// **'ohne XMP'**
   String get exportVorgabeOhneXmp;
 
+  /// No description provided for @exportVorgabeMitWasserzeichen.
+  ///
+  /// In de, this message translates to:
+  /// **'mit Wasserzeichen'**
+  String get exportVorgabeMitWasserzeichen;
+
+  /// No description provided for @wasserzeichen.
+  ///
+  /// In de, this message translates to:
+  /// **'Wasserzeichen'**
+  String get wasserzeichen;
+
+  /// No description provided for @wasserzeichenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Wird in jedes exportierte Foto eingerechnet.'**
+  String get wasserzeichenHinweis;
+
+  /// No description provided for @wasserzeichenNurGerendert.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur mit „Nach JPEG rendern“: Unverändert kopierte Originale bekommen kein Wasserzeichen.'**
+  String get wasserzeichenNurGerendert;
+
+  /// No description provided for @wasserzeichenArtText.
+  ///
+  /// In de, this message translates to:
+  /// **'Text'**
+  String get wasserzeichenArtText;
+
+  /// No description provided for @wasserzeichenArtLogo.
+  ///
+  /// In de, this message translates to:
+  /// **'Logo'**
+  String get wasserzeichenArtLogo;
+
+  /// No description provided for @wasserzeichenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Text des Wasserzeichens'**
+  String get wasserzeichenText;
+
+  /// No description provided for @wasserzeichenTextBeispiel.
+  ///
+  /// In de, this message translates to:
+  /// **'z. B. © 2026 Name'**
+  String get wasserzeichenTextBeispiel;
+
+  /// No description provided for @wasserzeichenLogoWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Logo wählen …'**
+  String get wasserzeichenLogoWaehlen;
+
+  /// No description provided for @wasserzeichenLogoHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'PNG mit transparentem Hintergrund. Große Logos werden auf 1600 Pixel verkleinert.'**
+  String get wasserzeichenLogoHinweis;
+
+  /// No description provided for @wasserzeichenLogoUngueltig.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Datei lässt sich nicht als Logo verwenden. Bitte ein PNG wählen.'**
+  String get wasserzeichenLogoUngueltig;
+
+  /// No description provided for @wasserzeichenLage.
+  ///
+  /// In de, this message translates to:
+  /// **'Position'**
+  String get wasserzeichenLage;
+
+  /// No description provided for @wasserzeichenLageObenLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben links'**
+  String get wasserzeichenLageObenLinks;
+
+  /// No description provided for @wasserzeichenLageOben.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben'**
+  String get wasserzeichenLageOben;
+
+  /// No description provided for @wasserzeichenLageObenRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Oben rechts'**
+  String get wasserzeichenLageObenRechts;
+
+  /// No description provided for @wasserzeichenLageLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Links'**
+  String get wasserzeichenLageLinks;
+
+  /// No description provided for @wasserzeichenLageMitte.
+  ///
+  /// In de, this message translates to:
+  /// **'Mitte'**
+  String get wasserzeichenLageMitte;
+
+  /// No description provided for @wasserzeichenLageRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Rechts'**
+  String get wasserzeichenLageRechts;
+
+  /// No description provided for @wasserzeichenLageUntenLinks.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten links'**
+  String get wasserzeichenLageUntenLinks;
+
+  /// No description provided for @wasserzeichenLageUnten.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten'**
+  String get wasserzeichenLageUnten;
+
+  /// No description provided for @wasserzeichenLageUntenRechts.
+  ///
+  /// In de, this message translates to:
+  /// **'Unten rechts'**
+  String get wasserzeichenLageUntenRechts;
+
+  /// No description provided for @wasserzeichenGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Größe: {prozent} % der Bildbreite'**
+  String wasserzeichenGroesse(int prozent);
+
+  /// No description provided for @wasserzeichenDeckkraft.
+  ///
+  /// In de, this message translates to:
+  /// **'Deckkraft: {prozent} %'**
+  String wasserzeichenDeckkraft(int prozent);
+
+  /// No description provided for @wasserzeichenRand.
+  ///
+  /// In de, this message translates to:
+  /// **'Randabstand: {prozent} % der Bildbreite'**
+  String wasserzeichenRand(int prozent);
+
+  /// No description provided for @wasserzeichenVorschau.
+  ///
+  /// In de, this message translates to:
+  /// **'Vorschau'**
+  String get wasserzeichenVorschau;
+
+  /// No description provided for @wasserzeichenFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Für das Wasserzeichen fehlt noch ein Text oder ein Logo.'**
+  String get wasserzeichenFehlt;
+
   /// No description provided for @exportVorgabeLoeschenTitel.
   ///
   /// In de, this message translates to:
@@ -13435,6 +13591,12 @@ abstract class AppTexte {
   /// **'{anzahl} Aufnahme(n) ausgelassen: Videos und nicht renderbare Bilder lassen sich nicht von ihren Metadaten befreien.'**
   String datenschutzAusgelassen(int anzahl);
 
+  /// No description provided for @wasserzeichenAusgelassen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Aufnahme ausgelassen} other{{anzahl} Aufnahmen ausgelassen}}: Videos und Bilder, die sich nicht rendern lassen, bekommen kein Wasserzeichen.'**
+  String wasserzeichenAusgelassen(int anzahl);
+
   /// No description provided for @sicherTeilenTitel.
   ///
   /// In de, this message translates to:
@@ -14022,6 +14184,30 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'Das Fotobuch ließ sich nicht erstellen: {fehler}'**
   String fotobuchFehler(String fehler);
+
+  /// No description provided for @fotobuchWasserzeichenOhne.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne'**
+  String get fotobuchWasserzeichenOhne;
+
+  /// No description provided for @fotobuchWasserzeichenAusVorgabe.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus der Vorgabe „{name}“'**
+  String fotobuchWasserzeichenAusVorgabe(String name);
+
+  /// No description provided for @fotobuchWasserzeichenEigenes.
+  ///
+  /// In de, this message translates to:
+  /// **'Eigenes'**
+  String get fotobuchWasserzeichenEigenes;
+
+  /// No description provided for @fotobuchWasserzeichenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Wird in jedes Foto des Buches eingerechnet.'**
+  String get fotobuchWasserzeichenHinweis;
 
   /// No description provided for @suchePlatzhalterTranskript.
   ///

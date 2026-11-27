@@ -20104,6 +20104,17 @@ class $ExportPresetsTable extends ExportPresets
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _wasserzeichenMeta = const VerificationMeta(
+    'wasserzeichen',
+  );
+  @override
+  late final GeneratedColumn<String> wasserzeichen = GeneratedColumn<String>(
+    'wasserzeichen',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -20115,6 +20126,7 @@ class $ExportPresetsTable extends ExportPresets
     xmpDaneben,
     erstelltAm,
     ortMitgeben,
+    wasserzeichen,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -20189,6 +20201,15 @@ class $ExportPresetsTable extends ExportPresets
         ),
       );
     }
+    if (data.containsKey('wasserzeichen')) {
+      context.handle(
+        _wasserzeichenMeta,
+        wasserzeichen.isAcceptableOrUnknown(
+          data['wasserzeichen']!,
+          _wasserzeichenMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -20234,6 +20255,10 @@ class $ExportPresetsTable extends ExportPresets
         DriftSqlType.bool,
         data['${effectivePrefix}ort_mitgeben'],
       )!,
+      wasserzeichen: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}wasserzeichen'],
+      ),
     );
   }
 
@@ -20270,6 +20295,21 @@ class ExportPresetData extends DataClass
   /// ist das, was bis dahin galt – eine gerenderte Vorgabe gab keinen Ort
   /// mit –, also ändert sich für bestehende Vorgaben nichts.
   final bool ortMitgeben;
+
+  /// Das Wasserzeichen als JSON (`Wasserzeichen.kodiert`, siehe
+  /// `services/wasserzeichen.dart`); `null` = keines. Seit Schema 104
+  /// (#497).
+  ///
+  /// Eine Spalte mit JSON statt sieben einzelner: Art, Text, Logo, Lage,
+  /// Grösse, Deckkraft und Rand gehören zusammen und werden nur zusammen
+  /// gelesen, und ein Logo (PNG, höchstens 1600 px) wäre als eigene Spalte
+  /// ohnehin ein Block. So bleibt eine Vorgabe von vor 104 einfach eine
+  /// Vorgabe ohne Wasserzeichen, und der Befehl `ExportvorgabeSpeichern`,
+  /// der ganze Zeilen trägt, nimmt das Logo zu den anderen Geräten mit.
+  ///
+  /// Nur mit [nachJpeg] von Bedeutung – eine unverändert kopierte Datei
+  /// bekommt kein Zeichen (siehe `Exportvorgabe.ausPreset`).
+  final String? wasserzeichen;
   const ExportPresetData({
     required this.id,
     required this.name,
@@ -20280,6 +20320,7 @@ class ExportPresetData extends DataClass
     required this.xmpDaneben,
     required this.erstelltAm,
     required this.ortMitgeben,
+    this.wasserzeichen,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -20295,6 +20336,9 @@ class ExportPresetData extends DataClass
     map['xmp_daneben'] = Variable<bool>(xmpDaneben);
     map['erstellt_am'] = Variable<DateTime>(erstelltAm);
     map['ort_mitgeben'] = Variable<bool>(ortMitgeben);
+    if (!nullToAbsent || wasserzeichen != null) {
+      map['wasserzeichen'] = Variable<String>(wasserzeichen);
+    }
     return map;
   }
 
@@ -20311,6 +20355,9 @@ class ExportPresetData extends DataClass
       xmpDaneben: Value(xmpDaneben),
       erstelltAm: Value(erstelltAm),
       ortMitgeben: Value(ortMitgeben),
+      wasserzeichen: wasserzeichen == null && nullToAbsent
+          ? const Value.absent()
+          : Value(wasserzeichen),
     );
   }
 
@@ -20329,6 +20376,7 @@ class ExportPresetData extends DataClass
       xmpDaneben: serializer.fromJson<bool>(json['xmpDaneben']),
       erstelltAm: serializer.fromJson<DateTime>(json['erstelltAm']),
       ortMitgeben: serializer.fromJson<bool>(json['ortMitgeben']),
+      wasserzeichen: serializer.fromJson<String?>(json['wasserzeichen']),
     );
   }
   @override
@@ -20344,6 +20392,7 @@ class ExportPresetData extends DataClass
       'xmpDaneben': serializer.toJson<bool>(xmpDaneben),
       'erstelltAm': serializer.toJson<DateTime>(erstelltAm),
       'ortMitgeben': serializer.toJson<bool>(ortMitgeben),
+      'wasserzeichen': serializer.toJson<String?>(wasserzeichen),
     };
   }
 
@@ -20357,6 +20406,7 @@ class ExportPresetData extends DataClass
     bool? xmpDaneben,
     DateTime? erstelltAm,
     bool? ortMitgeben,
+    Value<String?> wasserzeichen = const Value.absent(),
   }) => ExportPresetData(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -20367,6 +20417,9 @@ class ExportPresetData extends DataClass
     xmpDaneben: xmpDaneben ?? this.xmpDaneben,
     erstelltAm: erstelltAm ?? this.erstelltAm,
     ortMitgeben: ortMitgeben ?? this.ortMitgeben,
+    wasserzeichen: wasserzeichen.present
+        ? wasserzeichen.value
+        : this.wasserzeichen,
   );
   ExportPresetData copyWithCompanion(ExportPresetsCompanion data) {
     return ExportPresetData(
@@ -20387,6 +20440,9 @@ class ExportPresetData extends DataClass
       ortMitgeben: data.ortMitgeben.present
           ? data.ortMitgeben.value
           : this.ortMitgeben,
+      wasserzeichen: data.wasserzeichen.present
+          ? data.wasserzeichen.value
+          : this.wasserzeichen,
     );
   }
 
@@ -20401,7 +20457,8 @@ class ExportPresetData extends DataClass
           ..write('namensmuster: $namensmuster, ')
           ..write('xmpDaneben: $xmpDaneben, ')
           ..write('erstelltAm: $erstelltAm, ')
-          ..write('ortMitgeben: $ortMitgeben')
+          ..write('ortMitgeben: $ortMitgeben, ')
+          ..write('wasserzeichen: $wasserzeichen')
           ..write(')'))
         .toString();
   }
@@ -20417,6 +20474,7 @@ class ExportPresetData extends DataClass
     xmpDaneben,
     erstelltAm,
     ortMitgeben,
+    wasserzeichen,
   );
   @override
   bool operator ==(Object other) =>
@@ -20430,7 +20488,8 @@ class ExportPresetData extends DataClass
           other.namensmuster == this.namensmuster &&
           other.xmpDaneben == this.xmpDaneben &&
           other.erstelltAm == this.erstelltAm &&
-          other.ortMitgeben == this.ortMitgeben);
+          other.ortMitgeben == this.ortMitgeben &&
+          other.wasserzeichen == this.wasserzeichen);
 }
 
 class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
@@ -20443,6 +20502,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
   final Value<bool> xmpDaneben;
   final Value<DateTime> erstelltAm;
   final Value<bool> ortMitgeben;
+  final Value<String?> wasserzeichen;
   const ExportPresetsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -20453,6 +20513,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     this.xmpDaneben = const Value.absent(),
     this.erstelltAm = const Value.absent(),
     this.ortMitgeben = const Value.absent(),
+    this.wasserzeichen = const Value.absent(),
   });
   ExportPresetsCompanion.insert({
     this.id = const Value.absent(),
@@ -20464,6 +20525,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     this.xmpDaneben = const Value.absent(),
     required DateTime erstelltAm,
     this.ortMitgeben = const Value.absent(),
+    this.wasserzeichen = const Value.absent(),
   }) : name = Value(name),
        erstelltAm = Value(erstelltAm);
   static Insertable<ExportPresetData> custom({
@@ -20476,6 +20538,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     Expression<bool>? xmpDaneben,
     Expression<DateTime>? erstelltAm,
     Expression<bool>? ortMitgeben,
+    Expression<String>? wasserzeichen,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -20487,6 +20550,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
       if (xmpDaneben != null) 'xmp_daneben': xmpDaneben,
       if (erstelltAm != null) 'erstellt_am': erstelltAm,
       if (ortMitgeben != null) 'ort_mitgeben': ortMitgeben,
+      if (wasserzeichen != null) 'wasserzeichen': wasserzeichen,
     });
   }
 
@@ -20500,6 +20564,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     Value<bool>? xmpDaneben,
     Value<DateTime>? erstelltAm,
     Value<bool>? ortMitgeben,
+    Value<String?>? wasserzeichen,
   }) {
     return ExportPresetsCompanion(
       id: id ?? this.id,
@@ -20511,6 +20576,7 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
       xmpDaneben: xmpDaneben ?? this.xmpDaneben,
       erstelltAm: erstelltAm ?? this.erstelltAm,
       ortMitgeben: ortMitgeben ?? this.ortMitgeben,
+      wasserzeichen: wasserzeichen ?? this.wasserzeichen,
     );
   }
 
@@ -20544,6 +20610,9 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
     if (ortMitgeben.present) {
       map['ort_mitgeben'] = Variable<bool>(ortMitgeben.value);
     }
+    if (wasserzeichen.present) {
+      map['wasserzeichen'] = Variable<String>(wasserzeichen.value);
+    }
     return map;
   }
 
@@ -20558,7 +20627,8 @@ class ExportPresetsCompanion extends UpdateCompanion<ExportPresetData> {
           ..write('namensmuster: $namensmuster, ')
           ..write('xmpDaneben: $xmpDaneben, ')
           ..write('erstelltAm: $erstelltAm, ')
-          ..write('ortMitgeben: $ortMitgeben')
+          ..write('ortMitgeben: $ortMitgeben, ')
+          ..write('wasserzeichen: $wasserzeichen')
           ..write(')'))
         .toString();
   }
@@ -38283,6 +38353,7 @@ typedef $$ExportPresetsTableCreateCompanionBuilder =
       Value<bool> xmpDaneben,
       required DateTime erstelltAm,
       Value<bool> ortMitgeben,
+      Value<String?> wasserzeichen,
     });
 typedef $$ExportPresetsTableUpdateCompanionBuilder =
     ExportPresetsCompanion Function({
@@ -38295,6 +38366,7 @@ typedef $$ExportPresetsTableUpdateCompanionBuilder =
       Value<bool> xmpDaneben,
       Value<DateTime> erstelltAm,
       Value<bool> ortMitgeben,
+      Value<String?> wasserzeichen,
     });
 
 class $$ExportPresetsTableFilterComposer
@@ -38348,6 +38420,11 @@ class $$ExportPresetsTableFilterComposer
 
   ColumnFilters<bool> get ortMitgeben => $composableBuilder(
     column: $table.ortMitgeben,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get wasserzeichen => $composableBuilder(
+    column: $table.wasserzeichen,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -38405,6 +38482,11 @@ class $$ExportPresetsTableOrderingComposer
     column: $table.ortMitgeben,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get wasserzeichen => $composableBuilder(
+    column: $table.wasserzeichen,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$ExportPresetsTableAnnotationComposer
@@ -38448,6 +38530,11 @@ class $$ExportPresetsTableAnnotationComposer
 
   GeneratedColumn<bool> get ortMitgeben => $composableBuilder(
     column: $table.ortMitgeben,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get wasserzeichen => $composableBuilder(
+    column: $table.wasserzeichen,
     builder: (column) => column,
   );
 }
@@ -38496,6 +38583,7 @@ class $$ExportPresetsTableTableManager
                 Value<bool> xmpDaneben = const Value.absent(),
                 Value<DateTime> erstelltAm = const Value.absent(),
                 Value<bool> ortMitgeben = const Value.absent(),
+                Value<String?> wasserzeichen = const Value.absent(),
               }) => ExportPresetsCompanion(
                 id: id,
                 name: name,
@@ -38506,6 +38594,7 @@ class $$ExportPresetsTableTableManager
                 xmpDaneben: xmpDaneben,
                 erstelltAm: erstelltAm,
                 ortMitgeben: ortMitgeben,
+                wasserzeichen: wasserzeichen,
               ),
           createCompanionCallback:
               ({
@@ -38518,6 +38607,7 @@ class $$ExportPresetsTableTableManager
                 Value<bool> xmpDaneben = const Value.absent(),
                 required DateTime erstelltAm,
                 Value<bool> ortMitgeben = const Value.absent(),
+                Value<String?> wasserzeichen = const Value.absent(),
               }) => ExportPresetsCompanion.insert(
                 id: id,
                 name: name,
@@ -38528,6 +38618,7 @@ class $$ExportPresetsTableTableManager
                 xmpDaneben: xmpDaneben,
                 erstelltAm: erstelltAm,
                 ortMitgeben: ortMitgeben,
+                wasserzeichen: wasserzeichen,
               ),
           withReferenceMapper: (p0) => p0
               .map(
