@@ -154,10 +154,13 @@ void main() {
 
     test('verkleinert über der Grenze und nimmt gleich geformte Quellen '
         'anderer Grösse', () {
+      // Die kleinere Quelle zeigt dieselbe Szene – das Muster der
+      // künstlichen Aufnahmen hängt an Punkten, nicht an der Bildgrösse,
+      // und eine anders gezeichnete Szene liesse sich nicht ausrichten.
       final e = fuegeBelichtungen(
         2,
         (i) => i == 0
-            ? belichtungsaufnahme(240, 180, -1)
+            ? verkleinere(belichtungsaufnahme(480, 360, -1), 240, 180)
             : belichtungsaufnahme(480, 360, 1),
         optionen: const HdrOptionen(hoechstensPixel: 30000),
       );
@@ -190,6 +193,133 @@ void main() {
               .having((f) => f.quelle, 'quelle', 2),
         ),
       );
+    });
+
+    test('eine Aufnahme, die auch ausgerichtet nicht passt, scheitert '
+        'verständlich statt mit Doppelkanten (#498)', () {
+      // Weiter verschoben, als die Suche reicht (bei 480 Punkten gut 15).
+      final weit = belichtungsaufnahme(breite, hoehe, 2, dx: 60, dy: 40);
+      expect(
+        () => fuegeBelichtungen(3, (i) => [reihe[0], reihe[1], weit][i]),
+        throwsA(
+          isA<Zusammenfuegefehler>()
+              .having((f) => f.grund, 'grund', Fuegegrund.nichtAusrichtbar)
+              .having((f) => f.quelle, 'quelle', 2),
+        ),
+      );
+      // Gegenprobe: ohne Ausrichten wird nichts geprüft.
+      expect(
+        fuegeBelichtungen(
+          3,
+          (i) => [reihe[0], reihe[1], weit][i],
+          optionen: const HdrOptionen(ausrichten: false),
+        ).bild.breite,
+        breite,
+      );
+    });
+
+    test('vom Stativ bleibt jede Aufnahme unverschoben, und zu kleine '
+        'Aufnahmen scheitern mit eigenem Grund', () {
+      final stativ = fuegeBelichtungen(
+        3,
+        (i) => belichtungsaufnahme(breite, hoehe, [-3.0, 0.0, 3.0][i]),
+      );
+      for (final l in stativ.lagen) {
+        expect((l.dx, l.dy, l.winkel), (0, 0, 0));
+      }
+      expect(stativ.bild.breite, breite);
+      final winzig = [
+        for (final ev in [-1.0, 1.0]) belichtungsaufnahme(40, 30, ev),
+      ];
+      expect(
+        () => fuegeBelichtungen(2, (i) => winzig[i]),
+        throwsA(
+          isA<Zusammenfuegefehler>().having(
+            (f) => f.grund,
+            'grund',
+            Fuegegrund.zuKlein,
+          ),
+        ),
+      );
+      expect(
+        fuegeBelichtungen(
+          2,
+          (i) => winzig[i],
+          optionen: const HdrOptionen(ausrichten: false),
+        ).bild.breite,
+        40,
+      );
+    });
+
+    test('eine Schwarzweissreihe wird verschmolzen, nicht bloss gemittelt '
+        '(#498)', () {
+      Farbbild grau(Farbbild b) {
+        final g = Farbbild.leer(b.breite, b.hoehe);
+        for (var i = 0; i < b.rgb.length; i += 3) {
+          g.rgb[i] = g.rgb[i + 1] = g.rgb[i + 2] = b.rgb[i];
+        }
+        return g;
+      }
+
+      final sw = [
+        for (final ev in [-2.0, 0.0, 2.0])
+          grau(belichtungsaufnahme(breite, hoehe, ev)),
+      ];
+      final fusion = fuegeBelichtungen(3, (i) => sw[i]).bild;
+      final mittel = Farbbild.leer(breite, hoehe);
+      for (var k = 0; k < mittel.rgb.length; k++) {
+        mittel.rgb[k] = (sw[0].rgb[k] + sw[1].rgb[k] + sw[2].rgb[k]) ~/ 3;
+      }
+      // Mehr Zeichnung als das Mittel in Schatten und Lichtern.
+      for (final (a, b) in const [(0.03, 0.2), (0.8, 0.97)]) {
+        expect(
+          zeichnung(fusion, a, b),
+          greaterThan(zeichnung(mittel, a, b) * 1.15),
+          reason: '$a–$b',
+        );
+      }
+      // Gegenprobe: Mit der Sättigung im Gewicht ist es überall dasselbe –
+      // eben das Mittel.
+      final mitSaettigung = gewichteNachMertens(sw[1]);
+      expect(mitSaettigung.werte.every((w) => w < 1e-11), isTrue);
+      expect(
+        gewichteNachMertens(
+          sw[1],
+          saettigung: false,
+        ).werte.any((w) => w > 1e-3),
+        isTrue,
+      );
+    });
+
+    test('die kleine Fassung im ersten Durchgang ergibt dieselben Lagen und '
+        'dieselbe Grösse; voll gelesen wird jede Quelle nur einmal', () {
+      final voll = fuegeBelichtungen(3, (i) => reihe[i]);
+      var gelesen = 0;
+      final klein = fuegeBelichtungen(
+        3,
+        (i) {
+          gelesen++;
+          return reihe[i];
+        },
+        ladeKlein: (i) => (
+          bild: verkleinere(reihe[i], breite ~/ 2, hoehe ~/ 2),
+          breite: breite,
+          hoehe: hoehe,
+        ),
+      );
+      expect(gelesen, 3);
+      expect(klein.bezug, voll.bezug);
+      expect(klein.ausschnitt, voll.ausschnitt);
+      for (var i = 0; i < 3; i++) {
+        final (a, b) = (klein.lagen[i], voll.lagen[i]);
+        expect((a.dx - b.dx).abs(), lessThan(0.5), reason: '$i: $a / $b');
+        expect((a.dy - b.dy).abs(), lessThan(0.5), reason: '$i: $a / $b');
+        expect(
+          (a.winkel - b.winkel).abs() * 180 / math.pi,
+          lessThan(0.05),
+          reason: '$i: $a / $b',
+        );
+      }
     });
   });
 }

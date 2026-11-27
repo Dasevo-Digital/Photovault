@@ -5,6 +5,7 @@ import 'package:kern/db/database.dart';
 import 'package:kern/services/zusammenfuegen/zusammenfuegen.dart';
 
 import '../l10n/app_localizations.dart';
+import '../services/importfehler.dart';
 import '../services/meldungsdienst.dart';
 import '../services/zusammenfuegen_dienst.dart';
 import '../state/hintergrundlauf.dart';
@@ -95,29 +96,35 @@ Future<void> starteZusammenfuegen(
   await Future<void>(() {});
   final fehler = lauf.fehler;
   final a = ausgang;
-  if (lauf.abgebrochen) {
-    // Wer abbricht, weiss es schon.
-  } else if (fehler != null) {
-    melde.fehler(zusammenfuegeFehlertext(t, fehler, quellen, art));
-  } else if (a != null) {
+  // Was abgelegt ist, wird gemeldet – auch wenn erst während des Ablegens
+  // abgebrochen wurde: Sonst läge ein Bild im Stapel, von dem niemand weiss.
+  if (a != null) {
     melde.erfolg(art == Fuegeart.hdr ? t.zusfFertigHdr : t.zusfFertigPanorama);
+    if (a.zurueckgeholt) melde.hinweis(t.zusfZurueckgeholt);
     if (a.verwendet < a.angeboten) {
       melde.warnung(t.zusfTeilweise(a.angeboten - a.verwendet));
     }
+  } else if (lauf.abgebrochen) {
+    // Wer abbricht, weiss es schon.
+  } else if (fehler != null) {
+    melde.fehler(zusammenfuegeFehlertext(t, fehler, quellen, art));
   }
   library.verwerfeLauf(zusammenfuegenSchluessel);
 }
 
 /// Der Satz zu einem gescheiterten Zusammenfügen: die bekannten Gründe in
 /// der Sprache der Oberfläche, mit dem Namen der betroffenen Quelle, wo es
-/// einen gibt; alles andere als Text des Fehlers.
+/// einen gibt. Was sonst kommt – etwa vom Hochladen –, übersetzt
+/// [importFehlertext], soweit es eine bekannte Kennung trägt.
 String zusammenfuegeFehlertext(
   AppTexte t,
   Object fehler,
   List<AssetData> quellen,
   Fuegeart art,
 ) {
-  if (fehler is! Zusammenfuegefehler) return t.zusfFehlerAllgemein('$fehler');
+  if (fehler is! Zusammenfuegefehler) {
+    return t.zusfFehlerAllgemein(_ursache(t, fehler));
+  }
   final stelle = fehler.quelle;
   final name = stelle != null && stelle >= 0 && stelle < quellen.length
       ? quellen[stelle].originalFileName
@@ -126,10 +133,30 @@ String zusammenfuegeFehlertext(
     Fuegegrund.anzahl => t.zusfAnzahl(art.mindestens, art.hoechstens),
     Fuegegrund.groessenUngleich => t.zusfFehlerGroesse(name),
     Fuegegrund.keineUeberlappung => t.zusfFehlerUeberlappung,
+    Fuegegrund.nichtAusrichtbar when stelle != null =>
+      t.zusfFehlerAusrichtungQuelle(name),
     Fuegegrund.nichtAusrichtbar => t.zusfFehlerAusrichtung,
     Fuegegrund.unlesbar => t.zusfFehlerUnlesbar(name),
+    Fuegegrund.zuGross => t.zusfFehlerZuGross(name),
+    Fuegegrund.zuKlein => t.zusfFehlerZuKlein,
+    Fuegegrund.keinSchwenk => t.zusfFehlerKeinSchwenk,
+    Fuegegrund.quelleGesperrt => t.zusfFehlerQuelleGesperrt(name),
+    Fuegegrund.quelleWeg => t.zusfFehlerQuelleWeg(name),
+    Fuegegrund.ergebnisGesperrt => t.zusfFehlerErgebnisGesperrt,
+    Fuegegrund.einlesen => t.zusfFehlerEinlesen(_ursache(t, fehler.ursache)),
+    Fuegegrund.nichtAngekommen => t.zusfFehlerNichtAngekommen,
+    Fuegegrund.nichtVerbunden => t.zusfFehlerNichtVerbunden,
+    Fuegegrund.ohneErgebnis => t.zusfFehlerOhneErgebnis,
+    Fuegegrund.rechenfehler => t.zusfFehlerRechnen(_ursache(t, fehler.ursache)),
   };
 }
+
+/// Ein Fehler, der nicht von hier stammt, als Satz: bekannte Kennungen
+/// übersetzt, `StateError` ohne das vorangestellte „Bad state“.
+String _ursache(AppTexte t, Object? fehler) => switch (fehler) {
+  StateError(:final message) => importFehlertext(t, message),
+  _ => importFehlertext(t, fehler),
+};
 
 /// Was im Dialog gewählt wurde.
 class _Fuegewahl {

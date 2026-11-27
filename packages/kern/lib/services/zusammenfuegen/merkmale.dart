@@ -153,12 +153,19 @@ bool _istEcke(Uint8List q, int w, int i, int t) {
   final hell = p + t, dunkel = p - t;
   // Schnelltest an den vier Himmelsrichtungen: Ein Bogen aus neun Punkten
   // trifft mindestens zwei davon.
+  // Ausgeschrieben statt über eine Liste: Der Test läuft für jeden Punkt
+  // des Bilds, und eine Liste je Punkt war dort der grösste Posten.
   final n = q[i - 3 * w], o = q[i + 3], s = q[i + 3 * w], we = q[i - 3];
-  var heller = 0, dunkler = 0;
-  for (final v in [n, o, s, we]) {
-    if (v > hell) heller++;
-    if (v < dunkel) dunkler++;
-  }
+  final heller =
+      (n > hell ? 1 : 0) +
+      (o > hell ? 1 : 0) +
+      (s > hell ? 1 : 0) +
+      (we > hell ? 1 : 0);
+  final dunkler =
+      (n < dunkel ? 1 : 0) +
+      (o < dunkel ? 1 : 0) +
+      (s < dunkel ? 1 : 0) +
+      (we < dunkel ? 1 : 0);
   if (heller < 2 && dunkler < 2) return false;
   var mh = 0, md = 0;
   for (var k = 0; k < 16; k++) {
@@ -294,12 +301,18 @@ Homographiebefund? ransacHomographie(
   final zufall = math.Random(17 + n);
   final v4 = Float64List(8), n4 = Float64List(8);
   final s2 = schwelle * schwelle;
+  // [bildeAb] ausgeschrieben: Es liefe je Runde für jedes Paar und legte
+  // jedes Mal ein Ergebnis an – bis zu 1500 × 500 Stück je Bildpaar.
   List<int> passendZu(Float64List h) {
     final aus = <int>[];
+    final h0 = h[0], h1 = h[1], h2 = h[2], h3 = h[3], h4 = h[4];
+    final h5 = h[5], h6 = h[6], h7 = h[7], h8 = h[8];
     for (var i = 0; i < n; i++) {
-      final p = bildeAb(h, von[i * 2], von[i * 2 + 1]);
-      if (p == null) continue;
-      final dx = p.$1 - nach[i * 2], dy = p.$2 - nach[i * 2 + 1];
+      final x = von[i * 2], y = von[i * 2 + 1];
+      final w = h6 * x + h7 * y + h8;
+      if (w.abs() < 1e-12) continue;
+      final dx = (h0 * x + h1 * y + h2) / w - nach[i * 2];
+      final dy = (h3 * x + h4 * y + h5) / w - nach[i * 2 + 1];
       if (dx * dx + dy * dy < s2) aus.add(i);
     }
     return aus;

@@ -173,6 +173,64 @@ void main() {
     expect(teil.verwendet, [0, 1, 3]);
   });
 
+  test('zwei fast gleiche Aufnahmen sind kein Schwenk: eigene Meldung statt '
+      'eines verbogenen Bilds (#498)', () {
+    // Ohne Aufnahmeangaben gewann hier bisher eine zufällige Stufe der
+    // Brennweitensuche, bis hin zu einem Bildwinkel von 140°.
+    final fast = [
+      schwenk[1],
+      schwenkaufnahme(breite, hoehe, f, 0.05, nickGrad: 0.02),
+    ];
+    for (final angaben in [null, List.filled(2, f35)]) {
+      expect(
+        () => fuegePanorama(2, (i) => fast[i], brennweiten35: angaben),
+        throwsA(
+          isA<Zusammenfuegefehler>().having(
+            (e) => e.grund,
+            'grund',
+            Fuegegrund.keinSchwenk,
+          ),
+        ),
+        reason: 'Brennweite ${angaben == null ? 'unbekannt' : 'bekannt'}',
+      );
+    }
+    // Gegenprobe: ein kleiner, aber echter Schwenk ohne Aufnahmeangaben
+    // kommt mit einer vernünftigen Brennweite heraus.
+    final klein = fuegePanorama(
+      2,
+      (i) => [schwenk[1], schwenkaufnahme(breite, hoehe, f, 6)][i],
+      optionen: const PanoramaOptionen(zuschneiden: false),
+    );
+    expect(klein.brennweite, closeTo(f / breite, f / breite * 0.15));
+    final soll = f * (6 * math.pi / 180 + 2 * math.atan(breite / 2 / f));
+    expect(klein.bild.breite, closeTo(soll, soll * 0.04));
+  });
+
+  test('mit kleiner Fassung im ersten Durchgang dasselbe Panorama; voll '
+      'gelesen wird jede Quelle nur einmal (#498)', () {
+    final ohne = fuegePanorama(
+      4,
+      (i) => schwenk[i],
+      brennweiten35: List.filled(4, f35),
+    );
+    final gelesen = <int>[];
+    final mit = fuegePanorama(
+      4,
+      (i) {
+        gelesen.add(i);
+        return schwenk[i];
+      },
+      ladeKlein: (i) => (bild: schwenk[i], breite: breite, hoehe: hoehe),
+      brennweiten35: List.filled(4, f35),
+    );
+    expect(gelesen..sort(), [0, 1, 2, 3]);
+    expect(
+      (mit.bild.breite, mit.bild.hoehe),
+      (ohne.bild.breite, ohne.bild.hoehe),
+    );
+    expect(mit.bild.rgb, ohne.bild.rgb);
+  });
+
   test('hält die Grenze der Ausgabegrösse ein', () {
     final e = fuegePanorama(
       4,

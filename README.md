@@ -684,10 +684,13 @@ echter Hardware.
   Merkmale, RANSAC und die Drehungen der Kamera zu einem zylindrischen
   Panorama zusammengesetzt, in der Helligkeit angeglichen, weich
   überblendet und auf das grösste volle Rechteck zugeschnitten. Das
-  Ergebnis ist ein neues Foto mit Zeit, Kamera und Ort der mittleren
-  Aufnahme und liegt vorn in einem Variantenstapel mit seinen Quellen.
+  Ergebnis ist ein neues Foto mit Zeit (auch einer Datierung), Zeitzone,
+  Kamera und Ort der mittleren Aufnahme, ist von der Gesichtssuche
+  ausgenommen und liegt vorn in einem Variantenstapel mit seinen Quellen;
+  Alben, Favorit und Sterne aller bisher sichtbaren Quellen ziehen mit.
   Gerechnet wird am Rechner, auch mit Server (das Ergebnis geht wie ein
-  Import hinauf); gesperrte Fotos und Videos bleiben aussen vor
+  Import hinauf); gesperrte Fotos und Videos bleiben aussen vor, auch
+  wenn sie erst während des Rechnens gesperrt werden
 - **Bildeditor** – Zuschneiden, Drehen, Spiegeln, Geradeziehen,
   Perspektive und Retusche, immer auf dem Original in voller Auflösung
   (HEIC und RAW wandelt das System dafür in voller Grösse). Gespeichert

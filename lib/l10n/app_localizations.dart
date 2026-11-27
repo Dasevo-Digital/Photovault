@@ -18826,6 +18826,84 @@ abstract class AppTexte {
   /// **'Zusammenfügen gescheitert: {fehler}'**
   String zusfFehlerAllgemein(String fehler);
 
+  /// No description provided for @zusfFehlerAusrichtungQuelle.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ passt auch ausgerichtet nicht auf die übrigen Aufnahmen – sie ist stärker verschoben, als sich ausgleichen lässt, oder zeigt etwas anderes. Vom Stativ aufgenommen? Dann ohne „Aus der Hand aufgenommen“.'**
+  String zusfFehlerAusrichtungQuelle(String name);
+
+  /// No description provided for @zusfFehlerZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ ist zu groß, um es zusammenzufügen, und ließ sich vorher nicht verkleinern.'**
+  String zusfFehlerZuGross(String name);
+
+  /// No description provided for @zusfFehlerZuKlein.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahmen sind zu klein, um sie verlässlich aneinander auszurichten. Ohne „Aus der Hand aufgenommen“ lassen sie sich trotzdem verschmelzen.'**
+  String get zusfFehlerZuKlein;
+
+  /// No description provided for @zusfFehlerKeinSchwenk.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahmen zeigen fast denselben Ausschnitt. Für ein Panorama wird die Kamera zwischen den Aufnahmen geschwenkt; eine Belichtungsreihe wird mit „Zu HDR zusammenfügen“ verschmolzen.'**
+  String get zusfFehlerKeinSchwenk;
+
+  /// No description provided for @zusfFehlerQuelleGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ wurde während des Zusammenfügens gesperrt. Das Ergebnis wurde deshalb nicht abgelegt.'**
+  String zusfFehlerQuelleGesperrt(String name);
+
+  /// No description provided for @zusfFehlerQuelleWeg.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ wurde während des Zusammenfügens gelöscht oder in den Papierkorb gelegt. Das Ergebnis wurde deshalb nicht abgelegt.'**
+  String zusfFehlerQuelleWeg(String name);
+
+  /// No description provided for @zusfFehlerErgebnisGesperrt.
+  ///
+  /// In de, this message translates to:
+  /// **'Genau dieses Bild gibt es schon – es liegt im gesperrten Ordner.'**
+  String get zusfFehlerErgebnisGesperrt;
+
+  /// No description provided for @zusfFehlerEinlesen.
+  ///
+  /// In de, this message translates to:
+  /// **'Das fertige Bild ließ sich nicht in die Bibliothek bringen: {fehler}'**
+  String zusfFehlerEinlesen(String fehler);
+
+  /// No description provided for @zusfFehlerNichtAngekommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Der Server hat das Bild angenommen, hier ist es aber noch nicht angekommen. Ein zweiter Versuch ordnet es ein.'**
+  String get zusfFehlerNichtAngekommen;
+
+  /// No description provided for @zusfFehlerNichtVerbunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Keine Verbindung zum Server – das Bild wurde nicht hochgeladen.'**
+  String get zusfFehlerNichtVerbunden;
+
+  /// No description provided for @zusfFehlerOhneErgebnis.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Berechnung endete ohne Ergebnis, vermutlich reichte der Arbeitsspeicher nicht. Mit weniger oder kleineren Aufnahmen geht es eher.'**
+  String get zusfFehlerOhneErgebnis;
+
+  /// No description provided for @zusfFehlerRechnen.
+  ///
+  /// In de, this message translates to:
+  /// **'Beim Rechnen ging etwas Unerwartetes schief: {fehler}'**
+  String zusfFehlerRechnen(String fehler);
+
+  /// No description provided for @zusfZurueckgeholt.
+  ///
+  /// In de, this message translates to:
+  /// **'Genau dieses Bild lag im Papierkorb; es ist zurückgeholt.'**
+  String get zusfZurueckgeholt;
+
   /// No description provided for @zusfLaeuftSchon.
   ///
   /// In de, this message translates to:

@@ -55,6 +55,17 @@ const panoramaHoechstensKante = 30000;
 /// verkleinert.
 const _registrierPixel = 600 * 1000;
 
+/// So weit (Anteil der langen Seite) müssen die Merkmale wenigstens eines
+/// Paars gegeneinander verschoben sein, sonst ist es kein Schwenk: bei
+/// einem Objektiv mit 26 mm (Kleinbild) gut 3°. Darunter wird das
+/// „Panorama" kaum breiter als ein Foto, und die Brennweite liesse sich
+/// nicht schätzen (siehe [_schaetzeBrennweite]).
+const _schwenkMindestens = 0.04;
+
+/// Die Brennweite, die ohne Aufnahmeangaben gilt, wenn die Paare sie nicht
+/// entscheiden: 26 mm Kleinbild, das Weitwinkel eines Telefons.
+const _vorgabeBrennweite35 = 26.0;
+
 /// Was beim Zusammensetzen gewählt werden kann.
 class PanoramaOptionen {
   const PanoramaOptionen({
@@ -138,13 +149,20 @@ class _Kante {
 /// 35-mm-Äquivalent, wo sie bekannt ist. [lade] wird je Quelle zweimal
 /// gerufen. [fortschritt] meldet erledigte Schritte von 2 × [anzahl] + 2.
 ///
+/// Registriert wird auf gut 0,6 MP. Liefert [ladeKlein] eine kleine,
+/// aufrechte Fassung mit wenigstens so vielen Punkten (und die volle
+/// Grösse dazu), liest der erste Durchgang sie statt der vollen Quelle –
+/// das Ergebnis ist dasselbe, das Dekodieren in voller Grösse entfällt.
+///
 /// Wirft [Zusammenfuegefehler] mit [Fuegegrund.keineUeberlappung], wenn
-/// sich keine zwei Fotos verbinden lassen. Lassen sich nur einige
+/// sich keine zwei Fotos verbinden lassen, und mit [Fuegegrund.keinSchwenk],
+/// wenn sie fast denselben Ausschnitt zeigen. Lassen sich nur einige
 /// verbinden, entsteht das Panorama aus der grössten zusammenhängenden
 /// Gruppe; [PanoramaErgebnis.verwendet] sagt, welche das sind.
 PanoramaErgebnis fuegePanorama(
   int anzahl,
   Farbbild Function(int i) lade, {
+  Kleinfassung Function(int i)? ladeKlein,
   List<double?>? brennweiten35,
   PanoramaOptionen optionen = const PanoramaOptionen(),
   void Function(int erledigt, int gesamt)? fortschritt,
@@ -159,10 +177,16 @@ PanoramaErgebnis fuegePanorama(
   // Erster Durchgang: verkleinern und Merkmale suchen.
   final quellen = <_Quelle>[];
   for (var i = 0; i < anzahl; i++) {
-    final b = lade(i);
-    final klein = verkleinereAuf(b, _registrierPixel);
+    final Kleinfassung f;
+    if (ladeKlein != null) {
+      f = ladeKlein(i);
+    } else {
+      final b = lade(i);
+      f = (bild: b, breite: b.breite, hoehe: b.hoehe);
+    }
+    final klein = verkleinereAuf(f.bild, _registrierPixel);
     quellen.add(
-      _Quelle(b.breite, b.hoehe, klein, findeMerkmale(Graubild.aus(klein))),
+      _Quelle(f.breite, f.hoehe, klein, findeMerkmale(Graubild.aus(klein))),
     );
     schritt();
   }
@@ -187,6 +211,12 @@ PanoramaErgebnis fuegePanorama(
     for (final k in kanten)
       if (inGruppe.contains(k.a)) k,
   ];
+  // Zeigen alle Paare fast denselben Ausschnitt, gibt es nichts
+  // zusammenzusetzen – und keine Brennweite, die sich daraus ablesen liesse.
+  if (eigene.map((k) => _verschiebung(quellen, k)).reduce(math.max) <
+      _schwenkMindestens) {
+    throw const Zusammenfuegefehler(Fuegegrund.keinSchwenk);
+  }
 
   // Brennweite: aus den Aufnahmeangaben, sonst geschätzt.
   final bekannt = <double>[];
@@ -202,7 +232,7 @@ PanoramaErgebnis fuegePanorama(
   }
   final phi = bekannt.isNotEmpty
       ? (bekannt..sort())[bekannt.length ~/ 2]
-      : _schaetzeBrennweite(quellen, eigene);
+      : _schaetzeBrennweite(quellen, eigene, gruppe);
   for (final q in quellen) {
     q.phi = phi;
   }
@@ -373,6 +403,20 @@ Float64List _abweichungen(_Kante k, Float64List r, double fa, double fb) {
   return aus;
 }
 
+/// Wie weit die Merkmale der Kante [k] im Median gegeneinander verschoben
+/// sind, als Anteil der langen Seite.
+double _verschiebung(List<_Quelle> quellen, _Kante k) {
+  final n = k.passend;
+  final d = Float64List(n);
+  for (var m = 0; m < n; m++) {
+    final dx = k.pb[m * 2] - k.pa[m * 2];
+    final dy = k.pb[m * 2 + 1] - k.pa[m * 2 + 1];
+    d[m] = math.sqrt(dx * dx + dy * dy);
+  }
+  d.sort();
+  return d[n ~/ 2] / math.max(quellen[k.a].kleinLang, quellen[k.b].kleinLang);
+}
+
 /// Schätzt die Brennweite (bezogen auf die lange Seite), bei der die
 /// Drehungen der einzelnen Paare deren Merkmale am besten erklären: erst
 /// ein Raster von 0,3 bis 5 (Bildwinkel gut 140° bis 11°), dann ein
@@ -380,10 +424,19 @@ Float64List _abweichungen(_Kante k, Float64List r, double fa, double fb) {
 ///
 /// Warum das trägt: Unter einer reinen Drehung bildet nur die richtige
 /// Brennweite die Strahlen des einen Bilds durch eine Drehung auf die des
-/// anderen ab; jede andere verbiegt sie, und es bleibt ein Rest. Bei sehr
-/// kleinen Drehungen ist der Rest flach – dann ist aber auch die
-/// Brennweite fürs Ergebnis gleichgültig.
-double _schaetzeBrennweite(List<_Quelle> quellen, List<_Kante> kanten) {
+/// anderen ab; jede andere verbiegt sie, und es bleibt ein Rest.
+///
+/// **Bei kleinen Drehungen ist der Rest flach.** Dann gewann bisher die
+/// erste Stufe des Rasters – ein Bildwinkel von 140° –, und das Panorama
+/// kam stark verbogen heraus. Erklärt die Vorgabe ([_vorgabeBrennweite35])
+/// die Paare fast so gut wie das Beste (bis 10 % mehr Rest und
+/// 0,05 Punkte²), gilt deshalb sie: Die Paare entscheiden die Frage dann
+/// nicht, und ein gewöhnliches Weitwinkel ist die beste Annahme.
+double _schaetzeBrennweite(
+  List<_Quelle> quellen,
+  List<_Kante> kanten,
+  List<int> gruppe,
+) {
   double rest(double phi) {
     var summe = 0.0;
     var n = 0;
@@ -431,7 +484,15 @@ double _schaetzeBrennweite(List<_Quelle> quellen, List<_Kante> kanten) {
       rd = rest(math.exp(d));
     }
   }
-  return math.exp((a + b) / 2);
+  final beste = math.exp((a + b) / 2);
+  final q = quellen[gruppe.first];
+  final vorgabe =
+      _vorgabeBrennweite35 /
+      43.27 *
+      math.sqrt(q.breite * q.breite + q.hoehe * q.hoehe) /
+      q.langeSeite;
+  final rb = rest(beste);
+  return rest(vorgabe) <= rb * 1.1 + 0.05 ? vorgabe : beste;
 }
 
 /// Setzt die Drehung jeder Quelle der Gruppe: entlang des Spannbaums mit
@@ -501,9 +562,15 @@ void _setzeDrehungen(
         final sf = _strahlen(fremde, quellen[andere].fKlein);
         final ra = quellen[andere].drehung;
         for (var m = 0; m < se.length ~/ 3; m++) {
-          von.addAll([se[m * 3], se[m * 3 + 1], se[m * 3 + 2]]);
-          final (x, y, z) = wende3(ra, sf[m * 3], sf[m * 3 + 1], sf[m * 3 + 2]);
-          nach.addAll([x, y, z]);
+          von
+            ..add(se[m * 3])
+            ..add(se[m * 3 + 1])
+            ..add(se[m * 3 + 2]);
+          final x = sf[m * 3], y = sf[m * 3 + 1], z = sf[m * 3 + 2];
+          nach
+            ..add(ra[0] * x + ra[1] * y + ra[2] * z)
+            ..add(ra[3] * x + ra[4] * y + ra[5] * z)
+            ..add(ra[6] * x + ra[7] * y + ra[8] * z);
         }
       }
       if (von.length < 9) continue;

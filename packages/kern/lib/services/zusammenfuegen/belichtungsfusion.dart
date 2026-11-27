@@ -13,8 +13,9 @@
 ///
 /// **Grösse und Speicher.** Das Ergebnis hat höchstens [hdrHoechstensPixel]
 /// Bildpunkte (24 MP); grössere Quellen werden vorher verkleinert. Die
-/// Quellen werden zweimal gelesen (einmal für das Ausrichten, einmal zum
-/// Verschmelzen) und nie alle zugleich gehalten. Bleibend im Speicher sind
+/// Quellen werden zweimal gelesen (einmal für das Ausrichten, wofür eine
+/// kleine Fassung genügt, einmal zum Verschmelzen) und nie alle zugleich
+/// gehalten. Bleibend im Speicher sind
 /// die Summen der Pyramiden: Helligkeit in voller Auflösung, die beiden
 /// Farbdifferenzen in halber (wie in jedem JPEG mit 4:2:0 – sichtbar wird
 /// davon nichts, und es spart ein Drittel), dazu die Summe der Gewichte.
@@ -71,14 +72,46 @@ class HdrErgebnis {
   final (int, int, int, int) ausschnitt;
 }
 
+/// So lang ist die lange Seite der Grauwerte, auf denen ausgerichtet wird,
+/// höchstens. [richteAus] schiebt ohnehin nur bis zu einer Stufe mit
+/// höchstens 3200 Punkten nach und rechnet den Rest als Massstab hoch;
+/// was darüber liegt, kostete nur Speicher und Zeit.
+const _ausrichtenHoechstensKante = 3200;
+
+/// Darunter (kürzere Seite) lassen sich die Aufnahmen nicht verlässlich
+/// ausrichten: Die Pyramide hätte nur eine Stufe, und die Güte sagte
+/// nichts.
+const _ausrichtenMindestensKante = 48;
+
+/// Bis zu dieser mittleren Sättigung (Streuung von R, G, B, 0..1) gilt eine
+/// Aufnahme als farblos – gut zwei Stufen, so viel trägt das Rauschen eines
+/// Schwarzweiss-JPEG. Gemessen an Farbaufnahmen: um 0,05 bis 0,15.
+const _farblosBis = 0.01;
+
 /// Verschmilzt [anzahl] Aufnahmen, die [lade] der Reihe nach liefert.
 ///
 /// [lade] wird je Quelle zweimal gerufen und darf jedes Mal neu dekodieren
 /// – so liegt nie mehr als eine Quelle im Speicher. [fortschritt] meldet
 /// erledigte Schritte von 3 × [anzahl].
+///
+/// **Der erste Durchgang braucht nur eine kleine Fassung.** Er bestimmt
+/// Helligkeit, Bezug und Lage jeder Aufnahme, und ausgerichtet wird auf
+/// höchstens 3200 Punkten an der langen Seite. Liefert [ladeKlein] eine
+/// verkleinerte, aufrechte Fassung (die App lässt sie von ihren
+/// Bildwerkzeugen erzeugen, was um ein Vielfaches schneller geht als das
+/// Dekodieren in Dart), wird sie dafür genommen und jede Lage danach auf
+/// die volle Grösse umgerechnet. Ohne [ladeKlein] liest der erste
+/// Durchgang [lade] wie der zweite.
+///
+/// **Geprüft.** Wo ausgerichtet wird, muss jede Aufnahme danach auf ihren
+/// Bezug passen ([ausrichtgueteMindestens]); sonst scheitert es mit
+/// [Fuegegrund.nichtAusrichtbar] statt mit einem Bild voller Doppelkanten.
+/// Passt sie unverschoben besser, bleibt sie unverschoben. Zu kleine
+/// Aufnahmen scheitern mit [Fuegegrund.zuKlein].
 HdrErgebnis fuegeBelichtungen(
   int anzahl,
   Farbbild Function(int i) lade, {
+  Kleinfassung Function(int i)? ladeKlein,
   HdrOptionen optionen = const HdrOptionen(),
   void Function(int erledigt, int gesamt)? fortschritt,
 }) {
@@ -89,50 +122,90 @@ HdrErgebnis fuegeBelichtungen(
   var erledigt = 0;
   void schritt() => fortschritt?.call(++erledigt, gesamt);
 
-  // Erster Durchgang: Grösse festlegen, Grauwerte und Helligkeit je
-  // Aufnahme. Die Grauwerte (1 Byte je Punkt) bleiben bis zum Ausrichten.
-  var breite = 0, hoehe = 0;
+  (int, int) begrenzt(Farbbild b) {
+    final f = b.pixel > optionen.hoechstensPixel
+        ? math.sqrt(optionen.hoechstensPixel / b.pixel)
+        : 1.0;
+    return (
+      math.max(1, (b.breite * f).floor()),
+      math.max(1, (b.hoehe * f).floor()),
+    );
+  }
+
+  // Erster Durchgang: Grösse festlegen, Grauwerte, Helligkeit und Farbe je
+  // Aufnahme. Die Grauwerte (1 Byte je Punkt, höchstens 3200 an der langen
+  // Seite) bleiben bis zum Ausrichten.
+  var b1 = 0, h1 = 0;
   final grau = <Graubild>[];
   final hell = <double>[];
+  var farbig = false;
+  // Um so viel sind die Grauwerte kleiner als der erste Durchgang.
+  var teiler = 1;
   for (var i = 0; i < anzahl; i++) {
-    var b = lade(i);
-    if (i == 0) {
-      final f = b.pixel > optionen.hoechstensPixel
-          ? math.sqrt(optionen.hoechstensPixel / b.pixel)
-          : 1.0;
-      breite = math.max(1, (b.breite * f).floor());
-      hoehe = math.max(1, (b.hoehe * f).floor());
-    }
-    b = _angleichen(b, breite, hoehe, i);
-    final g = Graubild.aus(b);
+    var b = ladeKlein?.call(i).bild ?? lade(i);
+    if (i == 0) (b1, h1) = begrenzt(b);
+    b = _angleichen(b, b1, h1, i);
+    farbig = farbig || _mittlereSaettigung(b) > _farblosBis;
+    var g = Graubild.aus(b);
     var summe = 0;
     for (final v in g.werte) {
       summe += v;
     }
     hell.add(summe / g.werte.length);
+    if (optionen.ausrichten) {
+      if (math.min(g.breite, g.hoehe) < _ausrichtenMindestensKante) {
+        throw const Zusammenfuegefehler(Fuegegrund.zuKlein);
+      }
+      // Genau die Stufen, die [richteAus] selbst bilden würde: Das Ergebnis
+      // bleibt dasselbe, nur ohne die oberen Stufen.
+      var t = 1;
+      while (math.max(g.breite, g.hoehe) > _ausrichtenHoechstensKante) {
+        g = g.halb();
+        t *= 2;
+      }
+      teiler = t;
+    }
     grau.add(optionen.ausrichten ? g : Graubild(1, 1));
     schritt();
   }
 
   // Bezug ist die mittlere Helligkeit: Mit ihr teilen die hellste und die
-  // dunkelste Aufnahme am meisten Zeichnung.
+  // dunkelste Aufnahme am meisten Zeichnung. Seine Stufen entstehen einmal
+  // für alle.
   final reihe = List<int>.generate(anzahl, (i) => i)
     ..sort((a, b) => hell[a].compareTo(hell[b]));
   final bezug = reihe[(anzahl - 1) ~/ 2];
-  final lagen = List<Lage>.filled(anzahl, Lage.ruhe);
+  final grob = List<Lage>.filled(anzahl, Lage.ruhe);
+  final vorbereitet = optionen.ausrichten ? Ausrichtbezug(grau[bezug]) : null;
   for (var i = 0; i < anzahl; i++) {
-    if (i != bezug && optionen.ausrichten) {
-      lagen[i] = richteAus(grau[bezug], grau[i], drehung: optionen.drehung);
+    if (i == bezug) continue;
+    if (vorbereitet != null) {
+      final r = richteAusAn(vorbereitet, grau[i], drehung: optionen.drehung);
+      if (math.max(r.guete, r.gueteRuhe) < ausrichtgueteMindestens) {
+        throw Zusammenfuegefehler(Fuegegrund.nichtAusrichtbar, quelle: i);
+      }
+      grob[i] = r.gueteRuhe >= r.guete ? Lage.ruhe : r.lage;
     }
-    if (i != bezug) schritt();
+    schritt();
   }
   grau.clear();
+
+  // Zweiter Durchgang: verschmelzen. Mit kleiner Fassung steht die volle
+  // Grösse erst fest, wenn die erste Aufnahme gelesen ist.
+  Farbbild? vorab;
+  var breite = b1, hoehe = h1;
+  if (ladeKlein != null) {
+    vorab = lade(0);
+    (breite, hoehe) = begrenzt(vorab);
+  }
+  final kx = teiler * breite / b1, ky = teiler * hoehe / h1;
+  final lagen = [
+    for (final l in grob) glaetteLage(Lage(l.dx * kx, l.dy * ky, l.winkel)),
+  ];
   final (x0, y0, w, h) = gemeinsamerAusschnitt(lagen, breite, hoehe);
   if (w < 16 || h < 16) {
     throw const Zusammenfuegefehler(Fuegegrund.nichtAusrichtbar);
   }
-
-  // Zweiter Durchgang: verschmelzen.
   final stufen = pyramidenstufen(w, h);
   List<Ebene>? summeGewichte;
   List<Ebene>? summeY, summeCb, summeCr;
@@ -140,10 +213,15 @@ HdrErgebnis fuegeBelichtungen(
     // In einer eigenen Funktion, damit das Farbbild schon wieder frei ist,
     // wenn die Pyramiden entstehen – bei 24 MP 144 MB weniger zugleich.
     final (gp, y, cb, cr) = _bereite(
-      () => _angleichen(lade(i), breite, hoehe, i),
+      () {
+        final q = vorab ?? lade(i);
+        vorab = null;
+        return _angleichen(q, breite, hoehe, i);
+      },
       lagen[i],
       (x0, y0, w, h),
       stufen,
+      saettigung: farbig,
     );
     // Helligkeit in voller, Farbe in halber Auflösung – Farbe ab Stufe 1
     // der Gewichte.
@@ -191,13 +269,14 @@ HdrErgebnis fuegeBelichtungen(
 
 /// Liest eine Quelle, legt sie auf den gemeinsamen [ausschnitt] und gibt
 /// ihre Gewichtspyramide, die Helligkeit und die beiden halben
-/// Farbdifferenzen.
+/// Farbdifferenzen. [saettigung] wie bei [gewichteNachMertens].
 (List<Ebene>, Ebene, Ebene, Ebene) _bereite(
   Farbbild Function() lade,
   Lage lage,
   (int, int, int, int) ausschnitt,
-  int stufen,
-) {
+  int stufen, {
+  required bool saettigung,
+}) {
   final quelle = lade();
   final (x0, y0, w, h) = ausschnitt;
   final a =
@@ -210,7 +289,10 @@ HdrErgebnis fuegeBelichtungen(
           h == quelle.hoehe
       ? quelle
       : lege(quelle, lage, x0, y0, w, h);
-  final gp = gausspyramide(gewichteNachMertens(a), stufen);
+  final gp = gausspyramide(
+    gewichteNachMertens(a, saettigung: saettigung),
+    stufen,
+  );
   final (y, cb, cr) = _zerlege(a);
   return (gp, y, cb, cr);
 }
@@ -240,7 +322,14 @@ Farbbild _angleichen(Farbbild b, int breite, int hoehe, int i) {
 /// Das Gewicht jedes Punkts nach Mertens: Kontrast · Sättigung · gute
 /// Belichtung, alle Exponenten 1, dazu 1e-12, damit eine Fläche, an der
 /// keine Aufnahme etwas zeigt, gleichmässig gemischt wird.
-Ebene gewichteNachMertens(Farbbild a) {
+///
+/// **Ohne [saettigung] für farblose Reihen.** Bei einer Schwarzweissreihe
+/// ist die Sättigung überall null, jedes Gewicht damit 1e-12 – und das
+/// Verfahren mittelte die Aufnahmen bloss, mit flauen Lichtern und
+/// Schatten. Bei Farbaufnahmen trägt die Sättigung dagegen mit, wie bei
+/// Mertens; ob eine Reihe farblos ist, entscheidet [fuegeBelichtungen] für
+/// alle Aufnahmen gemeinsam, damit die Gewichte vergleichbar bleiben.
+Ebene gewichteNachMertens(Farbbild a, {bool saettigung = true}) {
   final w = a.breite, h = a.hoehe;
   final q = a.rgb;
   // Die gute Belichtung hängt je Kanal nur vom Wert ab: 256 Einträge statt
@@ -265,14 +354,38 @@ Ebene gewichteNachMertens(Farbbild a) {
       final kontrast =
           (4 * g[i] - g[links] - g[rechts] - g[oben + x] - g[unten + x]).abs();
       final r = q[i * 3], gr = q[i * 3 + 1], bl = q[i * 3 + 2];
-      final m = (r + gr + bl) / 3;
-      final dr = r - m, dg = gr - m, db = bl - m;
-      final saettigung = math.sqrt((dr * dr + dg * dg + db * db) / 3) / 255;
+      final double satt;
+      if (saettigung) {
+        final m = (r + gr + bl) / 3;
+        final dr = r - m, dg = gr - m, db = bl - m;
+        satt = math.sqrt((dr * dr + dg * dg + db * db) / 3) / 255;
+      } else {
+        satt = 1;
+      }
       final belichtung = glocke[r] * glocke[gr] * glocke[bl];
-      z[i] = kontrast * saettigung * belichtung + 1e-12;
+      z[i] = kontrast * satt * belichtung + 1e-12;
     }
   }
   return aus;
+}
+
+/// Die mittlere Sättigung von [b] (Streuung von R, G, B, 0..1), an jedem
+/// vierten Punkt jeder vierten Zeile gemessen – für die Frage, ob eine
+/// Reihe farblos ist.
+double _mittlereSaettigung(Farbbild b) {
+  final q = b.rgb;
+  var summe = 0.0;
+  var n = 0;
+  for (var y = 0; y < b.hoehe; y += 4) {
+    for (var x = 0, i = y * b.breite * 3; x < b.breite; x += 4, i += 12) {
+      final r = q[i], g = q[i + 1], bl = q[i + 2];
+      final m = (r + g + bl) / 3;
+      final dr = r - m, dg = g - m, db = bl - m;
+      summe += math.sqrt((dr * dr + dg * dg + db * db) / 3);
+      n++;
+    }
+  }
+  return n == 0 ? 0 : summe / n / 255;
 }
 
 /// Helligkeit (voll) und die Farbdifferenzen Cb, Cr (halb, je vier Punkte

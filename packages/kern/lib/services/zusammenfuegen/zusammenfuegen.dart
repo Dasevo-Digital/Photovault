@@ -7,7 +7,8 @@
 /// Fotos rechnet eine Minute, und wer abbricht, will nicht, dass es im
 /// Hintergrund weiterläuft und den Speicher hält. Hier meldet das Isolat
 /// jeden Schritt über einen Port, und das Ende des Abonnements beendet es
-/// sofort.
+/// sofort – auch mitten in einem Schritt, nicht erst bei der nächsten
+/// Meldung (siehe [fuegeZusammen]).
 ///
 /// **Was das Isolat liest.** Nur JPEG- und PNG-Dateien: Was in einem
 /// anderen Format vorliegt (HEIC, RAW …), wandelt vorher die App mit ihren
@@ -61,6 +62,7 @@ class Fuegeauftrag {
     required this.dateien,
     required this.ziel,
     this.brennweiten35 = const [],
+    this.vorschauen = const [],
     this.ausrichten = true,
     this.drehung = true,
     this.zuschneiden = true,
@@ -79,6 +81,13 @@ class Fuegeauftrag {
   /// Je Quelle die Brennweite als 35-mm-Äquivalent, wo bekannt (nur
   /// Panorama).
   final List<double?> brennweiten35;
+
+  /// Je Quelle eine kleine, aufrechte Fassung (JPEG oder PNG) für den
+  /// ersten Durchgang, wo die App sie erzeugen konnte – beim HDR
+  /// höchstens gut 3200 Punkte an der langen Seite, beim Panorama
+  /// wenigstens 0,6 MP. Fehlt sie oder passt sie nicht zur Quelle, liest
+  /// der erste Durchgang die Quelle selbst.
+  final List<String?> vorschauen;
 
   /// Nur HDR: aus der Hand aufgenommen ausrichten, auch drehen.
   final bool ausrichten;
@@ -125,16 +134,47 @@ Fuegeergebnis fuegeZusammenJetzt(
   if (n < a.art.mindestens || n > a.art.hoechstens) {
     throw const Zusammenfuegefehler(Fuegegrund.anzahl);
   }
-  Farbbild lade(int i) {
-    final Uint8List bytes;
+  Uint8List lies(int i) {
     try {
-      bytes = File(a.dateien[i]).readAsBytesSync();
+      return File(a.dateien[i]).readAsBytesSync();
     } on FileSystemException {
       throw Zusammenfuegefehler(Fuegegrund.unlesbar, quelle: i);
     }
-    return dekodiereBild(bytes, hoechstensPixel: a.art.quellenPixel, quelle: i);
   }
 
+  Farbbild lade(int i) =>
+      dekodiereBild(lies(i), hoechstensPixel: a.art.quellenPixel, quelle: i);
+
+  // Die kleine Fassung, mit der Grösse der vollen aus deren Kopf. Taugt
+  // sie nicht – unlesbar, oder anders geformt als die Quelle, etwa weil
+  // der Wandler sie anders gedreht hat –, wird die Quelle selbst gelesen.
+  Kleinfassung ladeKlein(int i) {
+    final voll = lies(i);
+    final groesse = dekodierteGroesse(
+      voll,
+      hoechstensPixel: a.art.quellenPixel,
+    );
+    final pfad = i < a.vorschauen.length ? a.vorschauen[i] : null;
+    if (groesse != null && pfad != null) {
+      try {
+        final klein = dekodiereBild(File(pfad).readAsBytesSync(), quelle: i);
+        final soll = groesse.breite / groesse.hoehe;
+        if ((klein.breite / klein.hoehe - soll).abs() / soll <= 0.015) {
+          return (bild: klein, breite: groesse.breite, hoehe: groesse.hoehe);
+        }
+      } on Object {
+        // Dann eben die Quelle selbst.
+      }
+    }
+    final b = dekodiereBild(
+      voll,
+      hoechstensPixel: a.art.quellenPixel,
+      quelle: i,
+    );
+    return (bild: b, breite: b.breite, hoehe: b.hoehe);
+  }
+
+  final mitKlein = a.vorschauen.any((v) => v != null);
   final Farbbild bild;
   final List<int> verwendet;
   switch (a.art) {
@@ -142,6 +182,7 @@ Fuegeergebnis fuegeZusammenJetzt(
       final e = fuegeBelichtungen(
         n,
         lade,
+        ladeKlein: mitKlein ? ladeKlein : null,
         optionen: HdrOptionen(ausrichten: a.ausrichten, drehung: a.drehung),
         fortschritt: fortschritt,
       );
@@ -151,6 +192,7 @@ Fuegeergebnis fuegeZusammenJetzt(
       final e = fuegePanorama(
         n,
         lade,
+        ladeKlein: mitKlein ? ladeKlein : null,
         brennweiten35: a.brennweiten35,
         optionen: PanoramaOptionen(zuschneiden: a.zuschneiden),
         fortschritt: fortschritt,
@@ -171,40 +213,85 @@ Fuegeergebnis fuegeZusammenJetzt(
 /// Schritt; der letzte Stand trägt das Ergebnis. Wer das Abonnement
 /// kündigt, beendet das Isolat sofort.
 ///
-/// Scheitert es aus einem bekannten Grund, endet der Strom mit
-/// [Zusammenfuegefehler].
-Stream<Fuegestand> fuegeZusammen(Fuegeauftrag a) async* {
+/// **Sofort heisst sofort.** Vorher war das ein `async*`-Generator mit
+/// `await for` über den Port. Den hält ein Kündigen erst beim nächsten
+/// `yield` an – das Isolat rechnete bis zu seiner nächsten Meldung weiter,
+/// nach der letzten also bis zum fertigen JPEG, und der Speicher blieb so
+/// lange belegt. Hier beendet das Kündigen ([StreamController.onCancel])
+/// das Isolat auf der Stelle und schliesst den Port.
+///
+/// Scheitert es, endet der Strom mit [Zusammenfuegefehler] – für die
+/// bekannten Gründe mit ihrem, sonst mit [Fuegegrund.rechenfehler] oder
+/// [Fuegegrund.ohneErgebnis].
+Stream<Fuegestand> fuegeZusammen(Fuegeauftrag a) {
   final empfang = ReceivePort();
   Isolate? isolat;
-  try {
-    isolat = await Isolate.spawn(
-      _arbeite,
-      (a, empfang.sendPort),
-      onError: empfang.sendPort,
-      onExit: empfang.sendPort,
-      errorsAreFatal: true,
-    );
-    await for (final m in empfang) {
-      switch (m) {
-        case (final int erledigt, final int gesamt):
-          yield Fuegestand(erledigt, gesamt);
-        case final Fuegeergebnis ergebnis:
-          yield Fuegestand(1, 1, ergebnis);
-          return;
-        case (final Fuegegrund grund, final int? quelle):
-          throw Zusammenfuegefehler(grund, quelle: quelle);
-        case [final Object? fehler, _]:
-          // Ein unerwarteter Fehler im Isolat: als Text, mehr kommt nicht
-          // über den Port.
-          throw StateError('pv_fuegen_fehler: $fehler');
-        case null:
-          throw StateError('pv_fuegen_ohne_ergebnis');
-      }
-    }
-  } finally {
+  var vorbei = false;
+  late final StreamController<Fuegestand> aus;
+
+  void beende() {
+    if (vorbei) return;
+    vorbei = true;
     empfang.close();
     isolat?.kill(priority: Isolate.immediate);
   }
+
+  void scheitere(Zusammenfuegefehler f) {
+    beende();
+    aus.addError(f);
+    unawaited(aus.close());
+  }
+
+  aus = StreamController<Fuegestand>(
+    onListen: () {
+      empfang.listen((m) {
+        if (vorbei) return;
+        switch (m) {
+          case (final int erledigt, final int gesamt):
+            aus.add(Fuegestand(erledigt, gesamt));
+          case final Fuegeergebnis ergebnis:
+            beende();
+            aus.add(Fuegestand(1, 1, ergebnis));
+            unawaited(aus.close());
+          case (final Fuegegrund grund, final int? quelle):
+            scheitere(Zusammenfuegefehler(grund, quelle: quelle));
+          case [final Object? fehler, _]:
+            // Ein unerwarteter Fehler im Isolat: als Text, mehr kommt nicht
+            // über den Port.
+            scheitere(
+              Zusammenfuegefehler(Fuegegrund.rechenfehler, ursache: '$fehler'),
+            );
+          case null:
+            scheitere(const Zusammenfuegefehler(Fuegegrund.ohneErgebnis));
+        }
+      });
+      Isolate.spawn(
+        _arbeite,
+        (a, empfang.sendPort),
+        onError: empfang.sendPort,
+        onExit: empfang.sendPort,
+        errorsAreFatal: true,
+      ).then(
+        (i) {
+          // Schon gekündigt, während es startete: gleich wieder beenden.
+          if (vorbei) {
+            i.kill(priority: Isolate.immediate);
+          } else {
+            isolat = i;
+          }
+        },
+        onError: (Object e) {
+          if (!vorbei) {
+            scheitere(
+              Zusammenfuegefehler(Fuegegrund.rechenfehler, ursache: '$e'),
+            );
+          }
+        },
+      );
+    },
+    onCancel: beende,
+  );
+  return aus.stream;
 }
 
 void _arbeite((Fuegeauftrag, SendPort) eingabe) {

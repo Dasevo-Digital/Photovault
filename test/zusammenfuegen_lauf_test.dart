@@ -114,4 +114,56 @@ void main() {
       expect(File(ziel).existsSync(), isFalse);
     },
   );
+
+  test('Abbrechen nach der letzten Meldung beendet das Isolat sofort – '
+      'nicht erst, wenn das JPEG geschrieben ist (#498)', () async {
+    final dateien = [
+      for (var i = 0; i < 4; i++)
+        schreibe('l$i.jpg', schwenkaufnahme(480, 360, 420, i * 25.0).alsJpeg()),
+    ];
+    final ziel = p.join(temp.path, 'spaet.jpg');
+    final letzte = Completer<void>();
+    final staende = <Fuegestand>[];
+    late StreamSubscription<Fuegestand> abo;
+    abo =
+        fuegeZusammen(
+          Fuegeauftrag(art: Fuegeart.panorama, dateien: dateien, ziel: ziel),
+        ).listen((s) {
+          staende.add(s);
+          // Eine Runde später gekündigt, wie die Aufgabenleiste es tut:
+          // Das Isolat schreibt da gerade das JPEG.
+          if (s.ergebnis == null && s.erledigt == s.gesamt) {
+            Timer.run(() => abo.cancel().whenComplete(letzte.complete));
+          }
+        });
+    await letzte.future;
+    await Future<void>.delayed(const Duration(seconds: 1));
+    expect(staende.where((s) => s.ergebnis != null), isEmpty);
+    expect(File(ziel).existsSync(), isFalse);
+  });
+
+  test('ein unerwartetes Ende kommt als bekannter Grund, nicht als Text mit '
+      'Kennung', () async {
+    // Ein Ziel in einem Ordner, den es nicht gibt: Das Schreiben scheitert
+    // im Isolat mit einer Ausnahme, die kein Zusammenfuegefehler ist.
+    final dateien = [
+      for (final (i, ev) in [(0, -1.0), (1, 1.0)])
+        schreibe('u$i.jpg', belichtungsaufnahme(120, 90, ev).alsJpeg()),
+    ];
+    await expectLater(
+      fuegeZusammen(
+        Fuegeauftrag(
+          art: Fuegeart.hdr,
+          dateien: dateien,
+          ziel: p.join(temp.path, 'fehlt', 'nirgends.jpg'),
+          ausrichten: false,
+        ),
+      ).toList(),
+      throwsA(
+        isA<Zusammenfuegefehler>()
+            .having((f) => f.grund, 'grund', Fuegegrund.rechenfehler)
+            .having((f) => '${f.ursache}', 'ursache', contains('nirgends')),
+      ),
+    );
+  });
 }

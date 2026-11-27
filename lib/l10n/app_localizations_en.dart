@@ -12388,6 +12388,64 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String zusfFehlerAusrichtungQuelle(String name) {
+    return '“$name” does not match the other shots even after aligning – it is shifted further than can be corrected, or shows something else. Shot on a tripod? Then turn off “Handheld”.';
+  }
+
+  @override
+  String zusfFehlerZuGross(String name) {
+    return '“$name” is too large to merge and could not be scaled down beforehand.';
+  }
+
+  @override
+  String get zusfFehlerZuKlein =>
+      'The shots are too small to be aligned reliably. Without “Handheld” they can still be fused.';
+
+  @override
+  String get zusfFehlerKeinSchwenk =>
+      'The shots show almost the same view. For a panorama the camera is panned between the shots; an exposure bracket is fused with “Merge to HDR”.';
+
+  @override
+  String zusfFehlerQuelleGesperrt(String name) {
+    return '“$name” was locked while merging, so the result was not saved.';
+  }
+
+  @override
+  String zusfFehlerQuelleWeg(String name) {
+    return '“$name” was deleted or moved to the trash while merging, so the result was not saved.';
+  }
+
+  @override
+  String get zusfFehlerErgebnisGesperrt =>
+      'This exact image already exists – it is in the locked folder.';
+
+  @override
+  String zusfFehlerEinlesen(String fehler) {
+    return 'The finished image could not be added to the library: $fehler';
+  }
+
+  @override
+  String get zusfFehlerNichtAngekommen =>
+      'The server accepted the image, but it has not arrived here yet. Trying again will put it in place.';
+
+  @override
+  String get zusfFehlerNichtVerbunden =>
+      'No connection to the server – the image was not uploaded.';
+
+  @override
+  String get zusfFehlerOhneErgebnis =>
+      'The computation ended without a result, probably because memory ran out. Fewer or smaller shots are more likely to work.';
+
+  @override
+  String zusfFehlerRechnen(String fehler) {
+    return 'Something unexpected went wrong while computing: $fehler';
+  }
+
+  @override
+  String get zusfZurueckgeholt =>
+      'This exact image was in the trash; it has been restored.';
+
+  @override
   String get zusfLaeuftSchon =>
       'A merge is already running. The next one can start once this image is finished.';
 }

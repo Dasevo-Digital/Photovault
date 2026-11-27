@@ -17,6 +17,7 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
+import '../dateikopf.dart' show jpegExifLage, jpegMasse;
 import 'fehler.dart';
 
 /// Ein Farbbild mit 8 Bit je Kanal, die Kanäle R, G, B verschachtelt.
@@ -54,18 +55,163 @@ class Farbbild {
       img.encodeJpg(bild, quality: qualitaet.clamp(1, 100));
 }
 
+/// So viele Bildpunkte entstehen beim Lesen einer Datei im Isolat
+/// höchstens, bei 8 Bit und drei Kanälen 192 MB.
+///
+/// **Warum eine Grenze vor dem Dekodieren.** Die Grösse, nach der die App
+/// eine Quelle vorher verkleinert, steht in der Datenbank – fehlt sie dort
+/// oder kann der Wandler die Datei nicht lesen, kam das Original
+/// ungeprüft hierher. `package:image` legt dann für jeden Punkt Speicher
+/// an, den der Kopf der Datei behauptet: ein PNG von wenigen Kilobyte mit
+/// 50 000 × 50 000 Punkten verlangte 7,5 GB, ein JPEG mit 100 MP gut
+/// 300 MB, bevor es überhaupt verkleinert wird. Darum wird zuerst der Kopf
+/// gelesen ([leseBildkopf]): Ein grösseres JPEG wird schon beim Dekodieren
+/// verkleinert (`JpegDecoder.scale`, gemessen an 96 MP: 126 statt 342 MB),
+/// ein PNG lässt sich so nicht lesen und wird abgewiesen.
+const lesenHoechstensPixel = 64 * 1000 * 1000;
+
+/// So viele Bildpunkte darf ein JPEG laut seinem Kopf höchstens haben.
+/// Auch verkleinert gelesen braucht ein progressives JPEG Platz für alle
+/// Koeffizienten (gut 3 Byte je Punkt) – bei 200 MP 0,6 GB. Mehr hat keine
+/// Kamera.
+const jpegHoechstensPixel = 200 * 1000 * 1000;
+
+/// Was der Kopf einer Bilddatei über das Bild sagt, ohne es zu dekodieren:
+/// die gespeicherte Grösse (vor einer EXIF-Drehung) und beim PNG, wie
+/// viele Byte ein dekodierter Punkt belegt.
+class Bildkopf {
+  const Bildkopf._(this.png, this.breite, this.hoehe, this.bytesJePunkt);
+
+  final bool png;
+  final int breite;
+  final int hoehe;
+  final int bytesJePunkt;
+
+  int get pixel => breite * hoehe;
+}
+
+/// Der Kopf eines JPEG oder PNG in [b] – oder `null`, wenn [b] keines ist
+/// oder sein Kopf nicht stimmt. [b] darf auch nur der Anfang der Datei
+/// sein; beim PNG zählt dann, was darin steht.
+///
+/// Beim PNG zählt jeder `IHDR`-Abschnitt: `package:image` liest sie alle,
+/// und ein zweiter hinter dem ersten setzte unbemerkt eine andere Grösse.
+/// Eine Datei mit mehr als einem gilt darum als kaputt.
+Bildkopf? leseBildkopf(Uint8List b) {
+  if (b.length >= 4 && b[0] == 0xFF && b[1] == 0xD8) {
+    final masse = jpegMasse(b);
+    if (masse == null) return null;
+    return Bildkopf._(false, masse.$1, masse.$2, 3);
+  }
+  const signatur = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (b.length < 33) return null;
+  for (var i = 0; i < signatur.length; i++) {
+    if (b[i] != signatur[i]) return null;
+  }
+  int be32(int o) => b[o] << 24 | b[o + 1] << 16 | b[o + 2] << 8 | b[o + 3];
+  var o = 8;
+  var ihdr = 0;
+  var breite = 0, hoehe = 0, bytes = 0;
+  while (o + 8 <= b.length) {
+    final laenge = be32(o);
+    final typ = String.fromCharCodes(b, o + 4, o + 8);
+    if (o == 8 && typ != 'IHDR') return null;
+    if (typ == 'IHDR') {
+      if (laenge < 13 || o + 8 + 13 > b.length) return null;
+      ihdr++;
+      breite = be32(o + 8);
+      hoehe = be32(o + 12);
+      final tiefe = b[o + 16] > 8 ? 2 : 1;
+      final kanaele = switch (b[o + 17]) {
+        2 => 3,
+        4 => 2,
+        6 => 4,
+        _ => 1,
+      };
+      bytes = kanaele * tiefe;
+    }
+    if (typ == 'IEND') break;
+    o += 12 + laenge;
+  }
+  if (ihdr != 1 || breite <= 0 || hoehe <= 0) return null;
+  return Bildkopf._(true, breite, hoehe, bytes);
+}
+
+/// Um welchen Teiler ein JPEG mit dem Kopf [k] beim Lesen verkleinert
+/// wird, damit höchstens [lesenHoechstensPixel] entstehen – unter
+/// [jpegHoechstensPixel] ist das 1 oder 2. `null`, wenn der Kopf mehr
+/// behauptet.
+int? jpegLeseteiler(Bildkopf k) {
+  if (k.pixel > jpegHoechstensPixel) return null;
+  for (final s in const [1, 2, 4, 8]) {
+    final b = (k.breite + s - 1) ~/ s, h = (k.hoehe + s - 1) ~/ s;
+    if (b * h <= lesenHoechstensPixel) return s;
+  }
+  return null;
+}
+
+/// Ob [k] ein Bild beschreibt, das [dekodiereBild] liest – ein PNG nur bis
+/// zu dem Speicher, den ein JPEG an der Grenze belegte.
+bool lesbarNachKopf(Bildkopf k) => k.png
+    ? k.pixel * k.bytesJePunkt <= 3 * lesenHoechstensPixel
+    : jpegLeseteiler(k) != null;
+
+/// Die Grösse, in der [dekodiereBild] die Datei [bytes] liefert – aus dem
+/// Kopf, ohne zu dekodieren: verkleinert gelesen, aufrecht gedreht (beim
+/// JPEG; `package:image` liest beim PNG keine Lage) und auf
+/// [hoechstensPixel] begrenzt. `null`, wo [dekodiereBild] scheiterte.
+({int breite, int hoehe})? dekodierteGroesse(
+  Uint8List bytes, {
+  int? hoechstensPixel,
+}) {
+  final k = leseBildkopf(bytes);
+  if (k == null || !lesbarNachKopf(k)) return null;
+  final s = k.png ? 1 : jpegLeseteiler(k)!;
+  var b = (k.breite + s - 1) ~/ s, h = (k.hoehe + s - 1) ~/ s;
+  if (!k.png && (jpegExifLage(bytes) ?? 1) >= 5) (b, h) = (h, b);
+  final grenze = hoechstensPixel;
+  if (grenze != null && b * h > grenze) {
+    final f = math.sqrt(grenze / (b * h));
+    (b, h) = (math.max(1, (b * f).floor()), math.max(1, (h * f).floor()));
+  }
+  return (breite: b, hoehe: h);
+}
+
+/// Eine verkleinerte, aufrechte Fassung einer Quelle für den ersten
+/// Durchgang eines Zusammenfügens – und die Grösse, in der dieselbe Quelle
+/// voll gelesen wird.
+typedef Kleinfassung = ({Farbbild bild, int breite, int hoehe});
+
 /// Liest ein JPEG oder PNG, dreht es nach seiner EXIF-Ausrichtung aufrecht
 /// und verkleinert es auf höchstens [hoechstensPixel] Bildpunkte.
 ///
 /// Wirft [Zusammenfuegefehler] mit [Fuegegrund.unlesbar], wenn die Bytes
-/// kein lesbares Bild sind.
+/// kein lesbares Bild sind, und mit [Fuegegrund.zuGross], wenn das Bild
+/// über den Grenzen oben liegt – geprüft am Kopf, bevor Speicher für die
+/// Punkte angelegt wird.
 ///
 /// `bakeOrientation` nur bei einer echten Drehung: Es legt sonst trotzdem
 /// eine Kopie an – bei 24 MP noch einmal 72 MB, die niemand braucht.
 Farbbild dekodiereBild(Uint8List bytes, {int? hoechstensPixel, int? quelle}) {
+  final kopf = leseBildkopf(bytes);
+  if (kopf == null) {
+    throw Zusammenfuegefehler(Fuegegrund.unlesbar, quelle: quelle);
+  }
+  if (!lesbarNachKopf(kopf)) {
+    throw Zusammenfuegefehler(Fuegegrund.zuGross, quelle: quelle);
+  }
   img.Image? roh;
   try {
-    roh = img.decodeImage(bytes);
+    // Nur das erste Bild eines animierten PNG, und die Grenze auch im
+    // Dekoder selbst – für den Fall, dass er den Kopf anders liest.
+    roh = kopf.png
+        ? img.PngDecoder(
+            maxPixels: lesenHoechstensPixel,
+          ).decode(bytes, frame: 0)
+        : img.JpegDecoder(
+            scale: jpegLeseteiler(kopf)!,
+            maxPixels: jpegHoechstensPixel,
+          ).decode(bytes);
   } on Object {
     roh = null;
   }

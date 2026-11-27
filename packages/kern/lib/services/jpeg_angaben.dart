@@ -20,8 +20,9 @@ import '../db/database.dart';
 ///
 /// **Den Zeitzonenversatz nur mit [mitZeitversatz]** (`OffsetTimeOriginal`,
 /// siehe `zeitversatz.dart`) – für eine Datei, die wieder in die Bibliothek
-/// kommt, etwa ein hochskaliertes Foto (#500): Der Import liest ihn so
-/// wieder ein.
+/// kommt, etwa ein hochskaliertes (#500) oder zusammengefügtes Foto (#498):
+/// Der Import liest ihn so wieder ein. Steht die Zeit nicht im EXIF
+/// (Kalenderdatierung), auch der Versatz nicht.
 ///
 /// Gibt [jpeg] unverändert zurück, wenn sich der Anhang nicht einsetzen
 /// lässt.
@@ -67,13 +68,6 @@ Uint8List mitAufnahmeangaben(
   }
 }
 
-/// Der Versatz in der Form, die EXIF verlangt: `+02:00`, `-04:30`.
-String _versatzText(int minuten) {
-  final betrag = minuten.abs();
-  String zwei(int n) => n.toString().padLeft(2, '0');
-  return '${minuten < 0 ? '-' : '+'}${zwei(betrag ~/ 60)}:${zwei(betrag % 60)}';
-}
-
 /// Grad, Minuten und Sekunden als drei Brüche – die Form, die EXIF für
 /// GPS-Angaben vorschreibt. `setGpsLocation` aus `package:image` schreibt
 /// stattdessen eine Kommazahl, die übliche Leser nicht verstehen.
@@ -89,4 +83,14 @@ img.IfdValueRational _gradMinutenSekunden(double wert) {
     ..value.addAll(
       img.IfdValueRational((sekunden * 10000).round(), 10000).value,
     );
+}
+
+/// Der Versatz in Minuten als EXIF-Text: `+02:00`, `-04:30`; null als `Z`
+/// – ein geschriebenes `+00:00` liest der Import als Werkseinstellung einer
+/// Kamera und verwirft es (siehe `zeitversatzAusText`).
+String _versatzText(int minuten) {
+  if (minuten == 0) return 'Z';
+  String zwei(int n) => n.toString().padLeft(2, '0');
+  final b = minuten.abs();
+  return '${minuten < 0 ? '-' : '+'}${zwei(b ~/ 60)}:${zwei(b % 60)}';
 }

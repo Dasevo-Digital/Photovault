@@ -12462,6 +12462,64 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String zusfFehlerAusrichtungQuelle(String name) {
+    return '„$name“ passt auch ausgerichtet nicht auf die übrigen Aufnahmen – sie ist stärker verschoben, als sich ausgleichen lässt, oder zeigt etwas anderes. Vom Stativ aufgenommen? Dann ohne „Aus der Hand aufgenommen“.';
+  }
+
+  @override
+  String zusfFehlerZuGross(String name) {
+    return '„$name“ ist zu groß, um es zusammenzufügen, und ließ sich vorher nicht verkleinern.';
+  }
+
+  @override
+  String get zusfFehlerZuKlein =>
+      'Die Aufnahmen sind zu klein, um sie verlässlich aneinander auszurichten. Ohne „Aus der Hand aufgenommen“ lassen sie sich trotzdem verschmelzen.';
+
+  @override
+  String get zusfFehlerKeinSchwenk =>
+      'Die Aufnahmen zeigen fast denselben Ausschnitt. Für ein Panorama wird die Kamera zwischen den Aufnahmen geschwenkt; eine Belichtungsreihe wird mit „Zu HDR zusammenfügen“ verschmolzen.';
+
+  @override
+  String zusfFehlerQuelleGesperrt(String name) {
+    return '„$name“ wurde während des Zusammenfügens gesperrt. Das Ergebnis wurde deshalb nicht abgelegt.';
+  }
+
+  @override
+  String zusfFehlerQuelleWeg(String name) {
+    return '„$name“ wurde während des Zusammenfügens gelöscht oder in den Papierkorb gelegt. Das Ergebnis wurde deshalb nicht abgelegt.';
+  }
+
+  @override
+  String get zusfFehlerErgebnisGesperrt =>
+      'Genau dieses Bild gibt es schon – es liegt im gesperrten Ordner.';
+
+  @override
+  String zusfFehlerEinlesen(String fehler) {
+    return 'Das fertige Bild ließ sich nicht in die Bibliothek bringen: $fehler';
+  }
+
+  @override
+  String get zusfFehlerNichtAngekommen =>
+      'Der Server hat das Bild angenommen, hier ist es aber noch nicht angekommen. Ein zweiter Versuch ordnet es ein.';
+
+  @override
+  String get zusfFehlerNichtVerbunden =>
+      'Keine Verbindung zum Server – das Bild wurde nicht hochgeladen.';
+
+  @override
+  String get zusfFehlerOhneErgebnis =>
+      'Die Berechnung endete ohne Ergebnis, vermutlich reichte der Arbeitsspeicher nicht. Mit weniger oder kleineren Aufnahmen geht es eher.';
+
+  @override
+  String zusfFehlerRechnen(String fehler) {
+    return 'Beim Rechnen ging etwas Unerwartetes schief: $fehler';
+  }
+
+  @override
+  String get zusfZurueckgeholt =>
+      'Genau dieses Bild lag im Papierkorb; es ist zurückgeholt.';
+
+  @override
   String get zusfLaeuftSchon =>
       'Es wird schon zusammengefügt. Das nächste lässt sich starten, sobald dieses Bild fertig ist.';
 }

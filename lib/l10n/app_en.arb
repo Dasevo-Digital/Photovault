@@ -6099,5 +6099,18 @@
   "zusfFehlerAusrichtung": "The shots could not be aligned to each other consistently.",
   "zusfFehlerUnlesbar": "“{name}” could not be read.",
   "zusfFehlerAllgemein": "Merging failed: {fehler}",
+  "zusfFehlerAusrichtungQuelle": "“{name}” does not match the other shots even after aligning – it is shifted further than can be corrected, or shows something else. Shot on a tripod? Then turn off “Handheld”.",
+  "zusfFehlerZuGross": "“{name}” is too large to merge and could not be scaled down beforehand.",
+  "zusfFehlerZuKlein": "The shots are too small to be aligned reliably. Without “Handheld” they can still be fused.",
+  "zusfFehlerKeinSchwenk": "The shots show almost the same view. For a panorama the camera is panned between the shots; an exposure bracket is fused with “Merge to HDR”.",
+  "zusfFehlerQuelleGesperrt": "“{name}” was locked while merging, so the result was not saved.",
+  "zusfFehlerQuelleWeg": "“{name}” was deleted or moved to the trash while merging, so the result was not saved.",
+  "zusfFehlerErgebnisGesperrt": "This exact image already exists – it is in the locked folder.",
+  "zusfFehlerEinlesen": "The finished image could not be added to the library: {fehler}",
+  "zusfFehlerNichtAngekommen": "The server accepted the image, but it has not arrived here yet. Trying again will put it in place.",
+  "zusfFehlerNichtVerbunden": "No connection to the server – the image was not uploaded.",
+  "zusfFehlerOhneErgebnis": "The computation ended without a result, probably because memory ran out. Fewer or smaller shots are more likely to work.",
+  "zusfFehlerRechnen": "Something unexpected went wrong while computing: {fehler}",
+  "zusfZurueckgeholt": "This exact image was in the trash; it has been restored.",
   "zusfLaeuftSchon": "A merge is already running. The next one can start once this image is finished."
 }

@@ -8041,5 +8041,60 @@
       }
     }
   },
+  "zusfFehlerAusrichtungQuelle": "„{name}“ passt auch ausgerichtet nicht auf die übrigen Aufnahmen – sie ist stärker verschoben, als sich ausgleichen lässt, oder zeigt etwas anderes. Vom Stativ aufgenommen? Dann ohne „Aus der Hand aufgenommen“.",
+  "@zusfFehlerAusrichtungQuelle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerZuGross": "„{name}“ ist zu groß, um es zusammenzufügen, und ließ sich vorher nicht verkleinern.",
+  "@zusfFehlerZuGross": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerZuKlein": "Die Aufnahmen sind zu klein, um sie verlässlich aneinander auszurichten. Ohne „Aus der Hand aufgenommen“ lassen sie sich trotzdem verschmelzen.",
+  "zusfFehlerKeinSchwenk": "Die Aufnahmen zeigen fast denselben Ausschnitt. Für ein Panorama wird die Kamera zwischen den Aufnahmen geschwenkt; eine Belichtungsreihe wird mit „Zu HDR zusammenfügen“ verschmolzen.",
+  "zusfFehlerQuelleGesperrt": "„{name}“ wurde während des Zusammenfügens gesperrt. Das Ergebnis wurde deshalb nicht abgelegt.",
+  "@zusfFehlerQuelleGesperrt": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerQuelleWeg": "„{name}“ wurde während des Zusammenfügens gelöscht oder in den Papierkorb gelegt. Das Ergebnis wurde deshalb nicht abgelegt.",
+  "@zusfFehlerQuelleWeg": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerErgebnisGesperrt": "Genau dieses Bild gibt es schon – es liegt im gesperrten Ordner.",
+  "zusfFehlerEinlesen": "Das fertige Bild ließ sich nicht in die Bibliothek bringen: {fehler}",
+  "@zusfFehlerEinlesen": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerNichtAngekommen": "Der Server hat das Bild angenommen, hier ist es aber noch nicht angekommen. Ein zweiter Versuch ordnet es ein.",
+  "zusfFehlerNichtVerbunden": "Keine Verbindung zum Server – das Bild wurde nicht hochgeladen.",
+  "zusfFehlerOhneErgebnis": "Die Berechnung endete ohne Ergebnis, vermutlich reichte der Arbeitsspeicher nicht. Mit weniger oder kleineren Aufnahmen geht es eher.",
+  "zusfFehlerRechnen": "Beim Rechnen ging etwas Unerwartetes schief: {fehler}",
+  "@zusfFehlerRechnen": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfZurueckgeholt": "Genau dieses Bild lag im Papierkorb; es ist zurückgeholt.",
   "zusfLaeuftSchon": "Es wird schon zusammengefügt. Das nächste lässt sich starten, sobald dieses Bild fertig ist."
 }

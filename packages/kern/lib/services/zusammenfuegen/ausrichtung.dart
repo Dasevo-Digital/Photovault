@@ -170,35 +170,101 @@ double _fehler(_Bitbild a, _Bitbild b, int sx, int sy, double winkel) {
 /// bereinigt und durch deren Streuung geteilt sind ([_normiert]). Das
 /// macht die verschiedene Belichtung fast wirkungslos und liefert Bruchteile
 /// eines Punkts.
-Lage richteAus(Graubild bezug, Graubild bild, {bool drehung = true}) {
+///
+/// Für mehrere Fotos gegen denselben Bezug [richteAusAn] mit einem
+/// [Ausrichtbezug]: Dessen Stufen rechnet es nur einmal.
+Lage richteAus(Graubild bezug, Graubild bild, {bool drehung = true}) =>
+    glaetteLage(richteAusAn(Ausrichtbezug(bezug), bild, drehung: drehung).lage);
+
+/// Das Bezugsbild einer Ausrichtung mit allem, was daran für jedes Foto
+/// gleich ist: seine Stufen, ihre Schwellenbilder und die normierten
+/// Fassungen für das Nachschieben.
+///
+/// Bisher rechnete [richteAus] all das je Foto neu – bei einer Reihe aus
+/// neun Aufnahmen achtmal dieselbe Pyramide. Schwellenbilder und normierte
+/// Fassungen entstehen hier erst, wenn eine Stufe sie braucht, und bleiben
+/// dann.
+class Ausrichtbezug {
+  Ausrichtbezug(Graubild bezug) : stufen = _stufen(bezug);
+
+  final List<Graubild> stufen;
+  final _bits = <int, _Bitbild>{};
+  final _norm = <int, Float32List>{};
+
+  int get breite => stufen.first.breite;
+  int get hoehe => stufen.first.hoehe;
+
+  _Bitbild _bitbild(int l) => _bits[l] ??= _Bitbild.aus(stufen[l]);
+  Float32List _normiertAuf(int l) => _norm[l] ??= _normiert(stufen[l]);
+
+  int _lang(int l) => math.max(stufen[l].breite, stufen[l].hoehe);
+
+  /// Die Stufe, auf der die Drehung grob gesucht wird: die feinste mit
+  /// höchstens 512 Punkten an der langen Seite. Gröber verfälscht eine
+  /// Drehung schon die Verschiebung, die von oben kommt (im Versuch um zwei
+  /// Punkte); darum dort ein Fenster von ±2 statt ±1.
+  int get _drehstufe {
+    var l = 0;
+    while (l < stufen.length - 1 && _lang(l) > 512) {
+      l++;
+    }
+    return l;
+  }
+
+  /// Bis zu dieser Stufe (höchstens 1600 Punkte) laufen die
+  /// Schwellenbilder; dort und eine Stufe feiner übernimmt [_verfeinere].
+  int get _mittelstufe {
+    var l = 0;
+    while (l < stufen.length - 1 && _lang(l) > 1600) {
+      l++;
+    }
+    return l;
+  }
+}
+
+/// Stufen, bis die kürzere Seite unter 32 fiele, höchstens acht: Auf der
+/// gröbsten Stufe ist ±1 dann bis zu 2^7 = 128 Punkte im Original (bei
+/// 24 MP gut 2 % der Breite), bei kleinen Bildern entsprechend weniger.
+List<Graubild> _stufen(Graubild g) {
+  final p = <Graubild>[g];
+  while (p.length < 8 && math.min(p.last.breite, p.last.hoehe) >= 64) {
+    p.add(p.last.halb());
+  }
+  return p;
+}
+
+/// Ab dieser [richteAusAn]-Güte gilt eine Aufnahme einer Belichtungsreihe
+/// als ausgerichtet. Gemessen an künstlichen Reihen bis ±3 Blenden, auch
+/// verschoben und gedreht: ausgerichtet 0,93 bis 0,97; fremde Bilder und
+/// solche, die weiter verschoben sind, als die Suche reicht, unter 0,03.
+/// Echte Aufnahmen liegen wegen Rauschen und Bewegung in der Szene
+/// niedriger – daher die Schwelle weit unten.
+const ausrichtgueteMindestens = 0.2;
+
+/// Wie [richteAus] gegen einen schon vorbereiteten [bezug], dazu die Güte
+/// der gefundenen Lage: die Korrelation der normierten Bilder ([_normiert])
+/// auf der mittleren Stufe, nur wo beide weder abgesoffen noch
+/// ausgefressen sind. Nahe eins heisst deckungsgleich, nahe null, dass
+/// nichts zueinander passt (siehe [ausrichtgueteMindestens]).
+///
+/// [gueteRuhe] ist dieselbe Güte für [Lage.ruhe]: Liegt das Foto schon
+/// deckungsgleich (vom Stativ), ist eine Suche, die etwas anderes findet,
+/// ein Fehlgriff.
+///
+/// Die Lage ist noch nicht geglättet ([glaetteLage]): Wer sie auf eine
+/// andere Grösse umrechnet, glättet erst danach.
+({Lage lage, double guete, double gueteRuhe}) richteAusAn(
+  Ausrichtbezug bezug,
+  Graubild bild, {
+  bool drehung = true,
+}) {
   if (bezug.breite != bild.breite || bezug.hoehe != bild.hoehe) {
     throw ArgumentError('Ungleiche Grösse');
   }
-  // Stufen, bis die kürzere Seite unter 32 fiele, höchstens acht: Auf der
-  // gröbsten Stufe ist ±1 dann bis zu 2^7 = 128 Punkte im Original (bei
-  // 24 MP gut 2 % der Breite), bei kleinen Bildern entsprechend weniger.
-  final ga = <Graubild>[bezug];
-  final gb = <Graubild>[bild];
-  while (ga.length < 8 && math.min(ga.last.breite, ga.last.hoehe) >= 64) {
-    ga.add(ga.last.halb());
-    gb.add(gb.last.halb());
-  }
-  final n = ga.length;
-  int lang(int l) => math.max(ga[l].breite, ga[l].hoehe);
-  // Die Drehung wird grob auf der feinsten Stufe mit höchstens 512 Punkten
-  // an der langen Seite gesucht. Gröber verfälscht eine Drehung schon die
-  // Verschiebung, die von oben kommt (im Versuch um zwei Punkte); darum
-  // dort ein Fenster von ±2 statt ±1.
-  var drehstufe = 0;
-  while (drehstufe < n - 1 && lang(drehstufe) > 512) {
-    drehstufe++;
-  }
-  // Die Schwellenbilder laufen bis zur Stufe mit höchstens 1600 Punkten;
-  // dort und eine Stufe feiner übernimmt [_verfeinere].
-  var mittelstufe = 0;
-  while (mittelstufe < n - 1 && lang(mittelstufe) > 1600) {
-    mittelstufe++;
-  }
+  final gb = _stufen(bild);
+  final n = bezug.stufen.length;
+  final drehstufe = bezug._drehstufe;
+  final mittelstufe = bezug._mittelstufe;
   var sx = 0, sy = 0;
   var winkel = 0.0;
   const grad = math.pi / 180;
@@ -207,7 +273,7 @@ Lage richteAus(Graubild bezug, Graubild bild, {bool drehung = true}) {
       sx *= 2;
       sy *= 2;
     }
-    final a = _Bitbild.aus(ga[l]);
+    final a = bezug._bitbild(l);
     final b = _Bitbild.aus(gb[l]);
     // Die beste Verschiebung im Fenster ±[r] um die bisherige.
     (int, int, double) besteVerschiebung(double w, [int r = 1]) {
@@ -260,7 +326,8 @@ Lage richteAus(Graubild bezug, Graubild bild, {bool drehung = true}) {
       lage = Lage(lage.dx * 2, lage.dy * 2, lage.winkel);
     }
     lage = _verfeinere(
-      ga[l],
+      bezug.stufen[l],
+      bezug._normiertAuf(l),
       gb[l],
       lage,
       drehung: drehung,
@@ -270,18 +337,78 @@ Lage richteAus(Graubild bezug, Graubild bild, {bool drehung = true}) {
   // Was noch an Stufen fehlt, ist nur noch Massstab.
   final faktor = 1 << math.max(0, mittelstufe - 1);
   lage = Lage(lage.dx * faktor, lage.dy * faktor, lage.winkel);
-  // Eine Drehung unter 0,01° (bei 24 MP ein halber Punkt an der Ecke)
-  // lohnt das Umrechnen nicht, eine Verschiebung bis 0,05 Punkte auch
-  // nicht: Es kostete nur Schärfe und einen Rand.
-  if (lage.winkel.abs() < 0.01 * grad) {
-    double glatt(double v) {
-      final r = v.roundToDouble();
-      return (v - r).abs() < 0.05 ? r : v;
-    }
+  final nb = _normiert(gb[mittelstufe]);
+  return (
+    lage: lage,
+    guete: _guete(bezug, gb[mittelstufe], nb, lage, mittelstufe),
+    gueteRuhe: _guete(bezug, gb[mittelstufe], nb, Lage.ruhe, mittelstufe),
+  );
+}
 
-    lage = Lage(glatt(lage.dx), glatt(lage.dy));
+/// Eine Drehung unter 0,01° (bei 24 MP ein halber Punkt an der Ecke)
+/// lohnt das Umrechnen nicht, eine Verschiebung bis 0,05 Punkte auch
+/// nicht: Es kostete nur Schärfe und einen Rand. Darum wird [lage] dann auf
+/// ganze Punkte ohne Drehung gelegt.
+Lage glaetteLage(Lage lage) {
+  if (lage.winkel.abs() >= 0.01 * math.pi / 180) return lage;
+  double glatt(double v) {
+    final r = v.roundToDouble();
+    return (v - r).abs() < 0.05 ? r : v;
   }
-  return lage;
+
+  return Lage(glatt(lage.dx), glatt(lage.dy));
+}
+
+/// Die Güte von [lage] (in Punkten der Stufe 0) auf der Stufe [l], deren
+/// Foto [b] mit seiner normierten Fassung [nb] ist: die Korrelation der
+/// normierten Bilder, gezählt nur, wo beide Punkte mitzählen (weder ≤ 4
+/// noch ≥ 251) und das Foto den Bezug deckt.
+double _guete(
+  Ausrichtbezug bezug,
+  Graubild b,
+  Float32List nb,
+  Lage lage,
+  int l,
+) {
+  final a = bezug.stufen[l];
+  final w = a.breite, h = a.hoehe;
+  if (w < 8 || h < 8) return 0;
+  final na = bezug._normiertAuf(l);
+  final qa = a.werte, qb = b.werte;
+  final teil = 1 << l;
+  final tx = lage.dx / teil, ty = lage.dy / teil;
+  final c = math.cos(lage.winkel), s = math.sin(lage.winkel);
+  final mx = (w - 1) / 2, my = (h - 1) / 2;
+  final abstand = w * h > 1200000 ? 2 : 1;
+  var sab = 0.0, saa = 0.0, sbb = 0.0;
+  for (var y = 0; y < h; y += abstand) {
+    final uy = y - my - ty;
+    for (var x = 0; x < w; x += abstand) {
+      final ia = y * w + x;
+      final va = qa[ia];
+      if (va <= 4 || va >= 251) continue;
+      final ux = x - mx - tx;
+      final xb = c * ux + s * uy + mx;
+      final yb = -s * ux + c * uy + my;
+      if (xb < 0 || yb < 0 || xb > w - 2 || yb > h - 2) continue;
+      final x0 = xb.toInt(), y0 = yb.toInt();
+      final i = y0 * w + x0;
+      final vb = qb[i];
+      if (vb <= 4 || vb >= 251) continue;
+      final fx = xb - x0, fy = yb - y0;
+      final wb =
+          nb[i] * (1 - fx) * (1 - fy) +
+          nb[i + 1] * fx * (1 - fy) +
+          nb[i + w] * (1 - fx) * fy +
+          nb[i + w + 1] * fx * fy;
+      final wa = na[ia];
+      sab += wa * wb;
+      saa += wa * wa;
+      sbb += wb * wb;
+    }
+  }
+  if (saa <= 0 || sbb <= 0) return 0;
+  return sab / math.sqrt(saa * sbb);
 }
 
 /// Ein Grauwertbild, je Punkt um das Mittel seiner Umgebung (9 × 9)
@@ -324,9 +451,11 @@ Float32List _normiert(Graubild g, {int radius = 4}) {
 
 /// Schiebt [start] nach Gauss-Newton nach, bis [bild] auf [bezug] am
 /// besten deckt (kleinste Quadrate auf [_normiert], abgeschnittene Punkte
-/// zählen nicht, grosse Abweichungen nur gedämpft).
+/// zählen nicht, grosse Abweichungen nur gedämpft). [na] ist
+/// `_normiert(bezug)`, vom [Ausrichtbezug] einmal gerechnet.
 Lage _verfeinere(
   Graubild bezug,
+  Float32List na,
   Graubild bild,
   Lage start, {
   required bool drehung,
@@ -334,7 +463,6 @@ Lage _verfeinere(
 }) {
   final w = bezug.breite, h = bezug.hoehe;
   if (w < 8 || h < 8) return start;
-  final na = _normiert(bezug);
   final nb = _normiert(bild);
   final qa = bezug.werte, qb = bild.werte;
   final mx = (w - 1) / 2, my = (h - 1) / 2;
