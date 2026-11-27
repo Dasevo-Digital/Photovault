@@ -4118,6 +4118,22 @@ class AppTexteDe extends AppTexte {
   String get restaurGrundKeinFoto => 'Nur Fotos lassen sich hochskalieren.';
 
   @override
+  String get restaurGrundUnbekannteArt =>
+      'Diese Art von Auftrag kennt diese Fassung der App nicht.';
+
+  @override
+  String get hochskalierenVorlageRestaurierung =>
+      'Vergrößert wird das KI-Entrauschen, das das Foto gerade zeigt.';
+
+  @override
+  String get hochskalierenRestaurierungUebergangen =>
+      'Die KI-Restaurierung dieses Fotos ist schon vergrößert und wird nicht verwendet; gerechnet wird die gespeicherte Entwicklung.';
+
+  @override
+  String get hochskalierenUngespeichert =>
+      'Noch nicht gespeicherte Änderungen zählen nicht – gerechnet wird die zuletzt gespeicherte Entwicklung.';
+
+  @override
   String personSchwelleWieAllgemein(String allgemein) {
     return 'weiterhin $allgemein';
   }

@@ -29,8 +29,8 @@ class RestoreQueueScreen extends StatefulWidget {
 class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
   LibraryState get library => widget.library;
 
-  Future<void> _openAsset(BuildContext context, String assetId) async {
-    final asset = await library.db.assetById(assetId);
+  Future<void> _openAsset(BuildContext context, RestoreJobData job) async {
+    final asset = await ergebnisDesAuftrags(library.db, job);
     if (asset == null || !context.mounted) return;
     Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
@@ -90,6 +90,7 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
       hochskalierMaxPixel ~/ 1000000,
     ),
     'keinFoto' => t.restaurGrundKeinFoto,
+    'unbekannteArt' => t.restaurGrundUnbekannteArt,
     _ => null,
   };
 
@@ -153,7 +154,7 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
                     ),
                     subtitle: Text(_statusLabel(context, job)),
                     onTap: job.status == 'done'
-                        ? () => _openAsset(context, job.assetId)
+                        ? () => _openAsset(context, job)
                         : null,
                     trailing: isActive
                         ? IconButton(
@@ -162,11 +163,28 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
                             onPressed: () =>
                                 library.restoreQueue.cancel(job.id),
                           )
-                        : IconButton(
-                            icon: const Icon(Icons.delete_outline),
-                            tooltip: AppTexte.of(context).restaurAusListe,
-                            onPressed: () =>
-                                library.db.deleteRestoreJob(job.id),
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Liegt das Ergebnis schon vor, wird nur noch
+                              // abgelegt (siehe Auftragsergebnisse).
+                              if (job.status == 'failed' ||
+                                  job.status == 'cancelled')
+                                IconButton(
+                                  icon: const Icon(Icons.refresh),
+                                  tooltip: AppTexte.of(
+                                    context,
+                                  ).allgErneutVersuchen,
+                                  onPressed: () =>
+                                      library.restoreQueue.wiederholen(job.id),
+                                ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline),
+                                tooltip: AppTexte.of(context).restaurAusListe,
+                                onPressed: () =>
+                                    library.restoreQueue.entferne(job.id),
+                              ),
+                            ],
                           ),
                   );
                 },
@@ -177,6 +195,32 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
       ),
     );
   }
+}
+
+/// Was ein Klick auf einen fertigen Auftrag öffnet: bei einer Restaurierung
+/// das Foto, bei einem Hochskalieren (#500) das Ergebnis – die jüngste
+/// Aufnahme dieses Namens im Stapel des Originals. Bis hierher öffnete auch
+/// das Hochskalieren das Original, und das Ergebnis lag verdeckt im Stapel.
+/// Ist es nicht mehr zu finden (herausgenommen, gelöscht, umbenannt), bleibt
+/// es beim Original.
+Future<AssetData?> ergebnisDesAuftrags(
+  AppDatabase db,
+  RestoreJobData job,
+) async {
+  final original = await db.assetById(job.assetId);
+  final faktor = hochskalierfaktor(job.id);
+  final stapel = original?.stackId;
+  if (original == null || faktor == null || stapel == null) return original;
+  final name = hochskalierName(original.originalFileName, faktor);
+  final treffer = [
+    for (final m in await db.assetsInStack(stapel))
+      if (m.id != original.id &&
+          m.originalFileName == name &&
+          !m.isTrashed &&
+          !m.isLocked)
+        m,
+  ]..sort((a, b) => b.importedAt.compareTo(a.importedAt));
+  return treffer.firstOrNull ?? original;
 }
 
 /// Was die Zeile eines laufenden Auftrags sagt.
@@ -226,7 +270,7 @@ String? restaurierungsbandText(
   final queuedCount = wartend.length;
   if (running == null && queuedCount == 0) return null;
   if (running == null) {
-    return wartend.every((j) => hochskalierfaktor(j.id) != null)
+    return wartend.every((j) => istHochskalierauftrag(j.id))
         ? t.hochskalierenWartend(queuedCount)
         : t.restaurierungWartend(queuedCount);
   }

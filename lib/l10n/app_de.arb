@@ -2345,6 +2345,10 @@
     }
   },
   "restaurGrundKeinFoto": "Nur Fotos lassen sich hochskalieren.",
+  "restaurGrundUnbekannteArt": "Diese Art von Auftrag kennt diese Fassung der App nicht.",
+  "hochskalierenVorlageRestaurierung": "Vergrößert wird das KI-Entrauschen, das das Foto gerade zeigt.",
+  "hochskalierenRestaurierungUebergangen": "Die KI-Restaurierung dieses Fotos ist schon vergrößert und wird nicht verwendet; gerechnet wird die gespeicherte Entwicklung.",
+  "hochskalierenUngespeichert": "Noch nicht gespeicherte Änderungen zählen nicht – gerechnet wird die zuletzt gespeicherte Entwicklung.",
   "personSchwelleWieAllgemein": "weiterhin {allgemein}",
   "@personSchwelleWieAllgemein": {
     "placeholders": {

@@ -6767,6 +6767,30 @@ abstract class AppTexte {
   /// **'Nur Fotos lassen sich hochskalieren.'**
   String get restaurGrundKeinFoto;
 
+  /// No description provided for @restaurGrundUnbekannteArt.
+  ///
+  /// In de, this message translates to:
+  /// **'Diese Art von Auftrag kennt diese Fassung der App nicht.'**
+  String get restaurGrundUnbekannteArt;
+
+  /// No description provided for @hochskalierenVorlageRestaurierung.
+  ///
+  /// In de, this message translates to:
+  /// **'Vergrößert wird das KI-Entrauschen, das das Foto gerade zeigt.'**
+  String get hochskalierenVorlageRestaurierung;
+
+  /// No description provided for @hochskalierenRestaurierungUebergangen.
+  ///
+  /// In de, this message translates to:
+  /// **'Die KI-Restaurierung dieses Fotos ist schon vergrößert und wird nicht verwendet; gerechnet wird die gespeicherte Entwicklung.'**
+  String get hochskalierenRestaurierungUebergangen;
+
+  /// No description provided for @hochskalierenUngespeichert.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch nicht gespeicherte Änderungen zählen nicht – gerechnet wird die zuletzt gespeicherte Entwicklung.'**
+  String get hochskalierenUngespeichert;
+
   /// No description provided for @personSchwelleWieAllgemein.
   ///
   /// In de, this message translates to:

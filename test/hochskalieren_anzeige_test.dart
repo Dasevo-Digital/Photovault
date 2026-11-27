@@ -141,6 +141,10 @@ void main() {
     );
     // Die Restaurierung daneben behält ihren blossen Dateinamen.
     expect(find.text('foto.jpg'), findsOneWidget);
+    // Der gescheiterte Auftrag lässt sich noch einmal anstossen, der fertige
+    // nicht.
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
+    expect(find.byIcon(Icons.delete_outline), findsNWidgets(2));
 
     // Abbauen und den Aufräum-Timer von drift auslaufen lassen (wie in
     // strom_wird_gehalten_test.dart).

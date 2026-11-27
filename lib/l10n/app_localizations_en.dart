@@ -4092,6 +4092,22 @@ class AppTexteEn extends AppTexte {
   String get restaurGrundKeinFoto => 'Only photos can be upscaled.';
 
   @override
+  String get restaurGrundUnbekannteArt =>
+      'This version of the app doesn\'t know this kind of job.';
+
+  @override
+  String get hochskalierenVorlageRestaurierung =>
+      'The AI denoising the photo currently shows is what gets upscaled.';
+
+  @override
+  String get hochskalierenRestaurierungUebergangen =>
+      'The AI restoration of this photo is already enlarged and is not used; the saved development is upscaled.';
+
+  @override
+  String get hochskalierenUngespeichert =>
+      'Unsaved changes don\'t count – the last saved development is upscaled.';
+
+  @override
   String personSchwelleWieAllgemein(String allgemein) {
     return 'still $allgemein';
   }

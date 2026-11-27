@@ -2576,41 +2576,43 @@ class LibraryState extends ChangeNotifier {
   ///
   /// Nachbearbeitung und Auswertung kommen erst nach dem Ablegen: Das
   /// Ablegen läuft in der Tresorreihe, und die Auswertung reiht sich selbst
-  /// dort ein – darin aufgerufen, wartete sie auf sich selbst.
-  Future<String?> _legeHochskaliertAb(
-    String originalId,
-    Uint8List jpeg,
-    int faktor,
-  ) async {
+  /// dort ein – darin aufgerufen, wartete sie auf sich selbst. Scheitert
+  /// die Nachbearbeitung, ist die Aufnahme trotzdem angelegt und
+  /// eingeordnet; der Auftrag gilt dann nicht als gescheitert (siehe
+  /// `legeHochskaliertAb`).
+  Future<String?> _legeHochskaliertAb(Hochskalierablage ablage) async {
     final a = abgleich;
     if (verbunden && a != null) {
       final id = await legeHochskaliertAmServerAb(
         db: db,
-        originalId: originalId,
-        jpeg: jpeg,
-        faktor: faktor,
-        hochladen: (datei, angaben) =>
-            TusHochladen(a.verbindung).lade(datei, 'api/v1/hochladen', angaben),
+        ablage: ablage,
+        paths: paths,
+        hochladen: (datei, angaben, {fortsetzen, angelegt, abbrechen}) =>
+            TusHochladen(a.verbindung).lade(
+              datei,
+              'api/v1/hochladen',
+              angaben,
+              fortsetzen: fortsetzen,
+              angelegt: angelegt,
+              abbrechen: abbrechen,
+            ),
         abholen: a.empfange,
       );
       unawaited(pruefeServerspeicher());
       return id;
     }
-    final id = await legeHochskaliertAb(
+    return legeHochskaliertAb(
       db: db,
       paths: paths,
       importe: importService,
-      originalId: originalId,
-      jpeg: jpeg,
-      faktor: faktor,
+      ablage: ablage,
+      nachbearbeiten: (id) async {
+        await _postProcessNewAsset(id);
+        if (await db.autoAnalyzeAfterImportEnabled()) {
+          unawaited(starteHintergrundanalyse());
+        }
+      },
     );
-    if (id != null) {
-      await _postProcessNewAsset(id);
-      if (await db.autoAnalyzeAfterImportEnabled()) {
-        unawaited(starteHintergrundanalyse());
-      }
-    }
-    return id;
   }
 
   /// Siehe [Nachbearbeitung.neueAufnahme].
@@ -4732,6 +4734,8 @@ class LibraryState extends ChangeNotifier {
         }
       }
       await db.setAssetsLocked(ids, true);
+      // Aufgehobene Ergebnisse der Warteschlange sind Klartext (#500).
+      if (_restoreQueueAngelegt) await restoreQueue.verwirfErgebnisseFuer(ids);
       await db.clearDerivedContentData(ids);
       await db.verlegeProfilbilderVon(ids);
     } else {

@@ -18,12 +18,18 @@ import '../db/database.dart';
 /// in der Bibliothek und im Original. Mit [mitOrt] kommt er als GPS-Angabe
 /// dazu – so, wie die XMP-Beilage desselben Exports ihn trägt (BEA-128).
 ///
+/// **Den Zeitzonenversatz nur mit [mitZeitversatz]** (`OffsetTimeOriginal`,
+/// siehe `zeitversatz.dart`) – für eine Datei, die wieder in die Bibliothek
+/// kommt, etwa ein hochskaliertes Foto (#500): Der Import liest ihn so
+/// wieder ein.
+///
 /// Gibt [jpeg] unverändert zurück, wenn sich der Anhang nicht einsetzen
 /// lässt.
 Uint8List mitAufnahmeangaben(
   Uint8List jpeg,
   AssetData a, {
   bool mitOrt = false,
+  bool mitZeitversatz = false,
 }) {
   final ort = a.fileCreatedAt.toLocal();
   String zwei(int n) => n.toString().padLeft(2, '0');
@@ -44,6 +50,9 @@ Uint8List mitAufnahmeangaben(
     if (a.datumVon == null) {
       exif.exifIfd['DateTimeOriginal'] = img.IfdValueAscii(zeit);
       exif.exifIfd['DateTimeDigitized'] = img.IfdValueAscii(zeit);
+      if (a.zeitversatzMinuten case final v? when mitZeitversatz) {
+        exif.exifIfd['OffsetTimeOriginal'] = img.IfdValueAscii(_versatzText(v));
+      }
     }
     if ((a.latitude, a.longitude) case (final lat?, final lon?) when mitOrt) {
       final gps = exif.gpsIfd;
@@ -56,6 +65,13 @@ Uint8List mitAufnahmeangaben(
   } catch (_) {
     return jpeg;
   }
+}
+
+/// Der Versatz in der Form, die EXIF verlangt: `+02:00`, `-04:30`.
+String _versatzText(int minuten) {
+  final betrag = minuten.abs();
+  String zwei(int n) => n.toString().padLeft(2, '0');
+  return '${minuten < 0 ? '-' : '+'}${zwei(betrag ~/ 60)}:${zwei(betrag % 60)}';
 }
 
 /// Grad, Minuten und Sekunden als drei Brüche – die Form, die EXIF für

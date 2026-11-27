@@ -13,21 +13,45 @@ import '../services/restore_queue_service.dart';
 /// Warteschlange der Restaurierung und läuft auch, wenn Vollbild oder
 /// Entwickeln längst geschlossen sind (siehe
 /// [RestoreQueueService.hochskalieren]).
+///
+/// Die Grösse im Dialog ist die der Vorlage, die die Warteschlange rechnen
+/// wird ([RestoreQueueService.hochskalierplan]): nach dem gespeicherten
+/// Zuschnitt, oder die des KI-Entrauschens. [ungespeichert] sagt das
+/// Entwickeln, wenn dort Änderungen noch nicht gespeichert sind – sie
+/// zählen nicht, und der Dialog sagt das.
 Future<void> hochskalierenAnbieten(
   BuildContext context, {
   required RestoreQueueService? warteschlange,
   required AssetData asset,
+  bool ungespeichert = false,
 }) async {
   final queue = warteschlange;
   // Gesperrte Fotos und Videos bietet niemand an; doppelt hält besser,
   // falls ein Menü es doch tut.
   if (queue == null || asset.isLocked || asset.type != 'IMAGE') return;
+  Hochskalierplan plan;
+  try {
+    plan = await queue.hochskalierplan(asset);
+  } catch (_) {
+    // Ohne Plan wie bisher mit dem Original; die Warteschlange prüft ohnehin
+    // noch einmal an dem, was sie wirklich rechnet.
+    plan = (
+      breite: asset.widthPx,
+      hoehe: asset.heightPx,
+      quelle: Hochskalierquelle.entwicklung,
+      restaurierungUebergangen: false,
+    );
+  }
+  if (!context.mounted) return;
   final faktor = await showDialog<int>(
     context: context,
     builder: (_) => HochskalierenDialog(
-      breite: asset.widthPx,
-      hoehe: asset.heightPx,
+      breite: plan.breite,
+      hoehe: plan.hoehe,
       modellInstalliert: queue.restoreHalter?.installiert == true,
+      quelle: plan.quelle,
+      restaurierungUebergangen: plan.restaurierungUebergangen,
+      ungespeichert: ungespeichert,
     ),
   );
   if (faktor == null || !context.mounted) return;
@@ -56,12 +80,23 @@ class HochskalierenDialog extends StatefulWidget {
     required this.breite,
     required this.hoehe,
     required this.modellInstalliert,
+    this.quelle = Hochskalierquelle.entwicklung,
+    this.restaurierungUebergangen = false,
+    this.ungespeichert = false,
   });
 
-  /// Grösse des Fotos – `null`, wenn sie nicht bekannt ist.
+  /// Grösse der Vorlage – `null`, wenn sie nicht bekannt ist.
   final int? breite;
   final int? hoehe;
   final bool modellInstalliert;
+
+  /// Woraus gerechnet wird, und ob dabei eine Restaurierung übergangen wird
+  /// (siehe [Hochskalierplan]).
+  final Hochskalierquelle quelle;
+  final bool restaurierungUebergangen;
+
+  /// Das Entwickeln hat Änderungen, die noch nicht gespeichert sind.
+  final bool ungespeichert;
 
   @override
   State<HochskalierenDialog> createState() => _HochskalierenDialogState();
@@ -83,6 +118,13 @@ class _HochskalierenDialogState extends State<HochskalierenDialog> {
     final b = widget.breite;
     final h = widget.hoehe;
     final bekannt = b != null && h != null && b > 0 && h > 0;
+    final hinweise = [
+      if (widget.quelle == Hochskalierquelle.restaurierung)
+        t.hochskalierenVorlageRestaurierung,
+      if (widget.restaurierungUebergangen)
+        t.hochskalierenRestaurierungUebergangen,
+      if (widget.ungespeichert) t.hochskalierenUngespeichert,
+    ];
     return AlertDialog(
       title: Text(t.hochskalierenTitel),
       content: SizedBox(
@@ -93,6 +135,17 @@ class _HochskalierenDialogState extends State<HochskalierenDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(t.hochskalierenText),
+              for (final hinweis in hinweise) ...[
+                const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.info_outline, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(hinweis)),
+                  ],
+                ),
+              ],
               if (!widget.modellInstalliert) ...[
                 const SizedBox(height: 12),
                 Row(

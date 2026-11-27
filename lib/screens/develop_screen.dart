@@ -492,6 +492,17 @@ class _DevelopScreenState extends _EntwickelnBasis
     super.dispose();
   }
 
+  /// Ob seit dem Öffnen etwas geändert und noch nicht gespeichert ist –
+  /// Regler, Zuschnitt oder Masken. Gerechnet wird ausserhalb dieses
+  /// Bildschirms nur, was gespeichert ist (Hochskalieren, #500).
+  bool get _hatUngespeichertes =>
+      (_sitzung.isNotEmpty &&
+          istAnders(_sitzung.first.stand, _currentAdjustments())) ||
+      _geaenderteMasken.isNotEmpty ||
+      _neueMasken.isNotEmpty ||
+      _umgeformteMasken.isNotEmpty ||
+      _geloeschteMasken.isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -535,6 +546,7 @@ class _DevelopScreenState extends _EntwickelnBasis
                   context,
                   warteschlange: widget.restoreQueue,
                   asset: widget.asset,
+                  ungespeichert: _hatUngespeichertes,
                 );
               }
             },

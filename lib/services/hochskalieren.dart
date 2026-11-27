@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -43,16 +44,16 @@ const hochskalierMaxKante = 16384;
 /// Wie viele Bildpunkte ein Ergebnis höchstens haben darf.
 ///
 /// **Warum 100 Megapixel, und warum zusätzlich zur Kante.** Die Kante
-/// allein liesse ein Quadrat von 16384 × 16384 zu, 268 Megapixel. Davon
-/// hält die Zusammensetzung in `processInTiles` 805 MB Ergebnis und bis zu
-/// 537 MB Zeilenband gleichzeitig – zusammen mit Quelle und Kachel knapp an
-/// den 1,5 GB, die sie sich zugesteht, und das JPEG entsteht danach noch
-/// einmal daneben. Bei 100 Megapixeln sind es höchstens 300 MB Ergebnis und
-/// zusammen knapp 0,9 GB (siehe den Test in `hochskalieren_test.dart`); das
-/// geht auch auf einem Rechner mit 8 GB. Jedes spätere Dekodieren des Fotos
-/// (Miniatur, Entwickeln, Auswertung) kostet dann 400 MB statt über einem
-/// Gigabyte. Mehr als 100 Megapixel braucht kein Druck, der sich aus einem
-/// Kamerabild sinnvoll vergrössern lässt.
+/// allein liesse ein Quadrat von 16384 × 16384 zu, 268 Megapixel: 805 MB
+/// Ergebnis allein in der Zusammensetzung von `processInTiles`, und das
+/// JPEG entsteht danach noch einmal daneben. Bei 100 Megapixeln sind es
+/// höchstens 300 MB Ergebnis; mit Quelle, Überblendung und einer Kachel
+/// bleibt die Zusammensetzung unter einem halben Gigabyte (siehe den Test
+/// in `hochskalieren_test.dart`), das geht auch auf einem Rechner mit
+/// 8 GB. Jedes spätere Dekodieren des Fotos (Miniatur, Entwickeln,
+/// Auswertung) kostet dann 400 MB statt über einem Gigabyte. Mehr als
+/// 100 Megapixel braucht kein Druck, der sich aus einem Kamerabild
+/// sinnvoll vergrössern lässt.
 const hochskalierMaxPixel = 100 * 1000 * 1000;
 
 /// Warum ein Faktor gesperrt ist.
@@ -113,7 +114,16 @@ const _auftragsPraefix = 'hochskalieren-';
 String hochskalierAuftragsId(int faktor) =>
     '$_auftragsPraefix${faktor}x-${const Uuid().v4()}';
 
-/// Der Faktor eines Auftrags – `null` für eine gewöhnliche Restaurierung.
+/// Ob [auftragsId] ein Hochskalieren ist – auch mit einem Faktor, den
+/// diese Fassung nicht kennt (siehe [hochskalierfaktor]).
+bool istHochskalierauftrag(String auftragsId) =>
+    auftragsId.startsWith(_auftragsPraefix);
+
+/// Der Faktor eines Auftrags – `null` für eine gewöhnliche Restaurierung
+/// und für einen Faktor, den diese Fassung nicht kennt. Welches von
+/// beiden, sagt [istHochskalierauftrag]: Ein `hochskalieren-8x-…` einer
+/// späteren Fassung darf nicht als Restaurierung laufen und die
+/// vorhandene ersetzen.
 int? hochskalierfaktor(String auftragsId) {
   if (!auftragsId.startsWith(_auftragsPraefix)) return null;
   final rest = auftragsId.substring(_auftragsPraefix.length);
@@ -137,11 +147,66 @@ String hochskalierName(String originalName, int faktor) {
 }
 
 /// Breite und Höhe eines JPEG aus seinem Kopf, ohne die Bildpunkte zu
-/// dekodieren – `null`, wenn es keines ist.
+/// dekodieren – `null`, wenn es keines ist oder der Kopf nicht in [jpeg]
+/// liegt.
+///
+/// **Nur bis zum Bildkopf.** `JpegDecoder.startDecode` las bis hierher die
+/// ganze Datei Byte für Byte bis zu ihrem Ende, auch hinter den Bilddaten
+/// – bei der Vorlage eines grossen Fotos Dutzende Megabyte auf dem Faden
+/// der Oberfläche. Der Bildkopf (SOF) steht vor den Bilddaten; danach
+/// kommt nichts mehr, was die Grösse sagt.
 ({int breite, int hoehe})? jpegMasse(Uint8List jpeg) {
-  final info = img.JpegDecoder().startDecode(jpeg);
-  if (info == null || info.width <= 0 || info.height <= 0) return null;
-  return (breite: info.width, hoehe: info.height);
+  final n = jpeg.length;
+  if (n < 4 || jpeg[0] != 0xFF || jpeg[1] != 0xD8) return null;
+  var i = 2;
+  while (i < n) {
+    if (jpeg[i] != 0xFF) return null;
+    // Füllbytes vor dem Marker.
+    while (i < n && jpeg[i] == 0xFF) {
+      i++;
+    }
+    if (i >= n) return null;
+    final marker = jpeg[i++];
+    // Marker ohne Länge.
+    if (marker == 0x01 || (marker >= 0xD0 && marker <= 0xD8)) continue;
+    // Bilddaten oder Ende, ohne dass ein Bildkopf kam.
+    if (marker == 0xD9 || marker == 0xDA || i + 2 > n) return null;
+    final laenge = (jpeg[i] << 8) | jpeg[i + 1];
+    if (laenge < 2) return null;
+    final istKopf =
+        marker >= 0xC0 &&
+        marker <= 0xCF &&
+        marker != 0xC4 &&
+        marker != 0xC8 &&
+        marker != 0xCC;
+    if (istKopf) {
+      if (i + 7 > n) return null;
+      final hoehe = (jpeg[i + 3] << 8) | jpeg[i + 4];
+      final breite = (jpeg[i + 5] << 8) | jpeg[i + 6];
+      return breite > 0 && hoehe > 0 ? (breite: breite, hoehe: hoehe) : null;
+    }
+    i += laenge;
+  }
+  return null;
+}
+
+/// [jpegMasse] einer Datei, aus ihrem Anfang gelesen: Vor dem Bildkopf
+/// stehen nur Anhänge wie EXIF und Farbprofil, selten mehr als einige
+/// Dutzend Kilobyte. Erst wenn er dort nicht liegt, wird mehr gelesen.
+Future<({int breite, int hoehe})?> jpegMasseAusDatei(File datei) async {
+  final roh = await datei.open();
+  try {
+    final laenge = await roh.length();
+    for (final menge in [256 * 1024, 4 * 1024 * 1024, laenge]) {
+      await roh.setPosition(0);
+      final kopf = await roh.read(math.min(menge, laenge));
+      final masse = jpegMasse(kopf);
+      if (masse != null || menge >= laenge) return masse;
+    }
+    return null;
+  } finally {
+    await roh.close();
+  }
 }
 
 // --- Rechnen ----------------------------------------------------------
@@ -172,6 +237,11 @@ String hochskalierName(String originalName, int faktor) {
 /// Speicher liegt dabei nur das Ergebnis in Zielgrösse – bei 2× ein Viertel,
 /// bei 3× gut die Hälfte dessen, was ein vierfaches Zwischenbild belegte –
 /// und eine einzige vierfache Kachel.
+///
+/// Alle Kacheln eines Bildes sind gleich gross (siehe `Kachelraster`); die
+/// Anteile des Verkleinerns und sein Zwischenpuffer werden deshalb einmal
+/// angelegt und für jede Kachel wieder benutzt. [vielfaches] siehe
+/// `Kachelraster`.
 Future<img.Image> hochskaliereInKacheln(
   img.Image quelle, {
   required int tileSize,
@@ -181,15 +251,19 @@ Future<img.Image> hochskaliereInKacheln(
   required Future<img.Image> Function(img.Image kachel) infer,
   void Function(int done, int total)? onProgress,
   bool Function()? isCancelled,
+  int vielfaches = 1,
 }) {
   if (zielfaktor < 1 || zielfaktor > modellfaktor) {
     throw ArgumentError('pv_zielfaktor');
   }
+  _Verkleinerer? verkleinerer;
   return processInTiles(
     quelle,
     tileSize: tileSize,
     overlap: overlap,
     scaleFactor: zielfaktor,
+    modellfaktor: modellfaktor,
+    vielfaches: vielfaches,
     onProgress: onProgress,
     isCancelled: isCancelled,
     infer: (kachel) async {
@@ -199,11 +273,24 @@ Future<img.Image> hochskaliereInKacheln(
           gross.height != kachel.height * modellfaktor) {
         throw StateError('pv_kachel_ausgabe');
       }
-      return verkleinereFlaechig(
-        gross,
-        kachel.width * zielfaktor,
-        kachel.height * zielfaktor,
-      );
+      final breite = kachel.width * zielfaktor;
+      final hoehe = kachel.height * zielfaktor;
+      final v = verkleinerer;
+      final passend =
+          v != null &&
+          v.quellBreite == gross.width &&
+          v.quellHoehe == gross.height &&
+          v.breite == breite &&
+          v.hoehe == hoehe;
+      return (passend
+              ? v
+              : verkleinerer = _Verkleinerer(
+                  gross.width,
+                  gross.height,
+                  breite,
+                  hoehe,
+                ))
+          .verkleinere(gross);
     },
   );
 }
@@ -228,62 +315,85 @@ img.Image verkleinereFlaechig(img.Image bild, int breite, int hoehe) {
     throw ArgumentError('pv_verkleinern');
   }
   if (breite == bild.width && hoehe == bild.height) return bild;
-  final quelle = bild.getBytes(order: img.ChannelOrder.rgb);
-  final waagrecht = _Flaechenanteile(bild.width, breite);
-  final senkrecht = _Flaechenanteile(bild.height, hoehe);
+  return _Verkleinerer(
+    bild.width,
+    bild.height,
+    breite,
+    hoehe,
+  ).verkleinere(bild);
+}
 
-  // Erst jede Zeile auf die Zielbreite, dann jede Spalte auf die Zielhöhe –
-  // die Fläche zerfällt in beide Richtungen, das Ergebnis ist dasselbe wie
-  // in einem Schritt, kostet aber je Pixel nur zwei kurze Summen.
-  final zwischen = Float32List(bild.height * breite * 3);
-  for (var y = 0; y < bild.height; y++) {
-    final zeile = y * bild.width * 3;
-    final ziel = y * breite * 3;
-    for (var x = 0; x < breite; x++) {
-      final erstes = waagrecht.erstes[x];
-      final basis = x * waagrecht.hoechstens;
-      var r = 0.0, g = 0.0, b = 0.0;
-      for (var k = 0; k < waagrecht.anzahl[x]; k++) {
-        final w = waagrecht.gewicht[basis + k];
-        final q = zeile + (erstes + k) * 3;
-        r += quelle[q] * w;
-        g += quelle[q + 1] * w;
-        b += quelle[q + 2] * w;
-      }
-      final z = ziel + x * 3;
-      zwischen[z] = r;
-      zwischen[z + 1] = g;
-      zwischen[z + 2] = b;
-    }
-  }
+/// [verkleinereFlaechig] für Bilder einer festen Grösse – die Anteile und
+/// der Zwischenpuffer gelten für jedes davon.
+class _Verkleinerer {
+  _Verkleinerer(this.quellBreite, this.quellHoehe, this.breite, this.hoehe)
+    : waagrecht = _Flaechenanteile(quellBreite, breite),
+      senkrecht = _Flaechenanteile(quellHoehe, hoehe),
+      zwischen = Float32List(quellHoehe * breite * 3);
 
-  final aus = Uint8List(hoehe * breite * 3);
-  int kanal(double v) => (v + 0.5).floor().clamp(0, 255);
-  for (var y = 0; y < hoehe; y++) {
-    final erstes = senkrecht.erstes[y];
-    final basis = y * senkrecht.hoechstens;
-    final ziel = y * breite * 3;
-    for (var x = 0; x < breite; x++) {
-      var r = 0.0, g = 0.0, b = 0.0;
-      for (var k = 0; k < senkrecht.anzahl[y]; k++) {
-        final w = senkrecht.gewicht[basis + k];
-        final q = ((erstes + k) * breite + x) * 3;
-        r += zwischen[q] * w;
-        g += zwischen[q + 1] * w;
-        b += zwischen[q + 2] * w;
-      }
-      final z = ziel + x * 3;
-      aus[z] = kanal(r);
-      aus[z + 1] = kanal(g);
-      aus[z + 2] = kanal(b);
+  final int quellBreite, quellHoehe, breite, hoehe;
+  final _Flaechenanteile waagrecht, senkrecht;
+  final Float32List zwischen;
+
+  img.Image verkleinere(img.Image bild) {
+    if (bild.width != quellBreite || bild.height != quellHoehe) {
+      throw ArgumentError('pv_verkleinern');
     }
+    if (breite == quellBreite && hoehe == quellHoehe) return bild;
+    final quelle = rgbBytes(bild);
+
+    // Erst jede Zeile auf die Zielbreite, dann jede Spalte auf die Zielhöhe –
+    // die Fläche zerfällt in beide Richtungen, das Ergebnis ist dasselbe wie
+    // in einem Schritt, kostet aber je Pixel nur zwei kurze Summen.
+    for (var y = 0; y < quellHoehe; y++) {
+      final zeile = y * quellBreite * 3;
+      final ziel = y * breite * 3;
+      for (var x = 0; x < breite; x++) {
+        final erstes = waagrecht.erstes[x];
+        final basis = x * waagrecht.hoechstens;
+        var r = 0.0, g = 0.0, b = 0.0;
+        for (var k = 0; k < waagrecht.anzahl[x]; k++) {
+          final w = waagrecht.gewicht[basis + k];
+          final q = zeile + (erstes + k) * 3;
+          r += quelle[q] * w;
+          g += quelle[q + 1] * w;
+          b += quelle[q + 2] * w;
+        }
+        final z = ziel + x * 3;
+        zwischen[z] = r;
+        zwischen[z + 1] = g;
+        zwischen[z + 2] = b;
+      }
+    }
+
+    final aus = Uint8List(hoehe * breite * 3);
+    int kanal(double v) => (v + 0.5).floor().clamp(0, 255);
+    for (var y = 0; y < hoehe; y++) {
+      final erstes = senkrecht.erstes[y];
+      final basis = y * senkrecht.hoechstens;
+      final ziel = y * breite * 3;
+      for (var x = 0; x < breite; x++) {
+        var r = 0.0, g = 0.0, b = 0.0;
+        for (var k = 0; k < senkrecht.anzahl[y]; k++) {
+          final w = senkrecht.gewicht[basis + k];
+          final q = ((erstes + k) * breite + x) * 3;
+          r += zwischen[q] * w;
+          g += zwischen[q + 1] * w;
+          b += zwischen[q + 2] * w;
+        }
+        final z = ziel + x * 3;
+        aus[z] = kanal(r);
+        aus[z + 1] = kanal(g);
+        aus[z + 2] = kanal(b);
+      }
+    }
+    return img.Image.fromBytes(
+      width: breite,
+      height: hoehe,
+      bytes: aus.buffer,
+      numChannels: 3,
+    );
   }
-  return img.Image.fromBytes(
-    width: breite,
-    height: hoehe,
-    bytes: aus.buffer,
-    numChannels: 3,
-  );
 }
 
 /// Welche Quellpixel einer Achse jedes Zielpixel überdeckt, und mit welchem

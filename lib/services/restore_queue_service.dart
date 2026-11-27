@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:drift/drift.dart' show BooleanExpressionOperators;
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:kern/services/bildzuschnitt.dart';
+import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import 'package:kern/db/database.dart';
@@ -77,6 +81,132 @@ enum RestaurierungsGrund {
 
   /// Hochskalieren (#500) gibt es nur für Fotos, nicht für Videos.
   keinFoto,
+
+  /// Ein Auftrag, den diese Fassung nicht kennt – etwa ein Hochskalieren
+  /// um einen Faktor, den erst eine spätere Fassung anbietet. Er läuft
+  /// nicht, statt als Restaurierung die vorhandene zu ersetzen.
+  unbekannteArt,
+}
+
+/// Woraus ein Hochskalieren rechnet (#500) – siehe
+/// [RestoreQueueService.hochskalierVorlage].
+enum Hochskalierquelle {
+  /// Die gespeicherte Entwicklung des Originals.
+  entwicklung,
+
+  /// Das KI-Entrauschen oder die KI-Restaurierung, die das Foto zeigt.
+  restaurierung,
+}
+
+/// Was der Dialog des Hochskalierens über die Vorlage wissen muss: ihre
+/// Grösse (`null`, wenn unbekannt), woher sie kommt, und ob eine
+/// Restaurierung übergangen wird, weil sie schon vergrössert ist.
+typedef Hochskalierplan = ({
+  int? breite,
+  int? hoehe,
+  Hochskalierquelle quelle,
+  bool restaurierungUebergangen,
+});
+
+/// Fertig gerechnete Ergebnisse, die noch abgelegt werden müssen – je
+/// Auftrag eine Datei im Ordner `auftragsergebnisse` der Bibliothek (#500).
+///
+/// **Warum.** Bis hierher lag ein fertiges Ergebnis nur im Speicher. Jeder
+/// Fehler beim Ablegen verwarf es – ein Server, der kurz nicht erreichbar
+/// war, ein Import, der scheiterte –, und wurde die App währenddessen
+/// beendet, rechnete der Auftrag beim nächsten Start von vorn: Minuten
+/// Rechenzeit für ein Ergebnis, das schon fertig war. Jetzt wird es
+/// aufgehoben, bevor das Ablegen beginnt; ein weiterer Versuch (nach einem
+/// Neustart oder über „Erneut versuchen“) legt es ab, ohne zu rechnen.
+///
+/// **Nicht im Temp-Ordner des Systems**: macOS leert ihn, auch binnen
+/// Stunden. In der Bibliothek überlebt das Ergebnis jeden Neustart.
+///
+/// **Und nicht länger als nötig.** Es ist eine Klartextkopie des Fotos:
+/// Sie geht weg, sobald der Auftrag fertig ist oder aus der Liste genommen
+/// wird, wenn das Foto gesperrt wird ([RestoreQueueService.verwirfErgebnisseFuer])
+/// oder das Ablegen daran scheitert, und beim Start alles, wozu es keinen
+/// offenen Auftrag mehr gibt.
+class Auftragsergebnisse {
+  Auftragsergebnisse(this._paths);
+
+  final StoragePaths _paths;
+
+  Directory get ordner =>
+      Directory(p.join(_paths.root.path, 'auftragsergebnisse'));
+
+  /// Nur Kennungen, die sich gefahrlos als Dateiname nehmen lassen – die
+  /// Warteschlange vergibt nur solche.
+  static final _kennung = RegExp(r'^[A-Za-z0-9-]{1,128}$');
+
+  File? _datei(String auftrag, String endung) => _kennung.hasMatch(auftrag)
+      ? File(p.join(ordner.path, '$auftrag$endung'))
+      : null;
+
+  /// Das aufgehobene Ergebnis von [auftrag] – `null`, wenn es keines gibt
+  /// oder es kein JPEG ist.
+  Future<Uint8List?> lies(String auftrag) async {
+    final f = _datei(auftrag, '.jpg');
+    if (f == null || !await f.exists()) return null;
+    final bytes = await f.readAsBytes();
+    if (jpegMasse(bytes) != null) return bytes;
+    await verwirf(auftrag);
+    return null;
+  }
+
+  /// Hebt [jpeg] für [auftrag] auf – erst unter einem Zwischennamen, dann
+  /// umbenannt: Ein halb geschriebenes Ergebnis gilt nie als fertig.
+  Future<void> lege(String auftrag, Uint8List jpeg) async {
+    final f = _datei(auftrag, '.jpg');
+    if (f == null) return;
+    await ordner.create(recursive: true);
+    final teil = File('${f.path}.teil');
+    await teil.writeAsBytes(jpeg, flush: true);
+    await teil.rename(f.path);
+  }
+
+  /// Wo ein angefangenes Hochladen des Ergebnisses steht (siehe
+  /// [Hochskalierablage.hochladeort]).
+  Future<String?> hochladeort(String auftrag) async {
+    final f = _datei(auftrag, '.ort');
+    if (f == null || !await f.exists()) return null;
+    final ort = (await f.readAsString()).trim();
+    return ort.isEmpty ? null : ort;
+  }
+
+  /// Synchron: Das Hochladen meldet den Ort, bevor es das erste Stück
+  /// schickt, und soll danach nicht auf die Platte warten.
+  void merkeHochladeort(String auftrag, String ort) {
+    final f = _datei(auftrag, '.ort');
+    if (f == null) return;
+    try {
+      ordner.createSync(recursive: true);
+      f.writeAsStringSync(ort, flush: true);
+    } on FileSystemException catch (e) {
+      // Ohne Ort beginnt ein weiterer Versuch eben von vorn.
+      debugPrint('Hochladeort nicht gemerkt: $e');
+    }
+  }
+
+  Future<void> verwirf(String auftrag) async {
+    for (final endung in ['.jpg', '.jpg.teil', '.ort']) {
+      final f = _datei(auftrag, endung);
+      if (f != null && await f.exists()) await f.delete();
+    }
+  }
+
+  /// Löscht alles, was zu keinem der [behalten]en Aufträge gehört.
+  Future<void> raeumeAuf(Set<String> behalten) async {
+    if (!await ordner.exists()) return;
+    await for (final e in ordner.list()) {
+      final name = p.basename(e.path);
+      final auftrag = name.substring(
+        0,
+        name.indexOf('.').clamp(0, name.length),
+      );
+      if (!behalten.contains(auftrag)) await e.delete(recursive: true);
+    }
+  }
 }
 
 /// Geworfen, wenn das Modell fehlt – der Aufrufer zeigt seinen eigenen,
@@ -126,8 +256,12 @@ class RestoreQueueService {
   /// Bibliothek mit einem Server verbunden ist (dann geht die Datei dorthin)
   /// und was nach einem Import noch zu tun ist. Ohne ihn importiert die
   /// Warteschlange selbst in diese Bibliothek – so laufen die Prüfstände.
-  Future<String?> Function(String originalId, Uint8List jpeg, int faktor)?
-  hochskaliertAblegen;
+  ///
+  /// Bekommt die Datei samt Abbruch und Hochladeort ([Hochskalierablage]).
+  Future<String?> Function(Hochskalierablage ablage)? hochskaliertAblegen;
+
+  /// Siehe [Auftragsergebnisse].
+  late final ergebnisse = Auftragsergebnisse(_paths);
 
   bool _processing = false;
   String? _activeJobId;
@@ -228,7 +362,15 @@ class RestoreQueueService {
                   t.status.isIn(const ['queued', 'running']),
             ))
             .get();
-    return aktiv.where((j) => hochskalierfaktor(j.id) == faktor).firstOrNull;
+    // Nach der Art, nicht nur nach dem Faktor: Ein Hochskalieren mit einem
+    // unbekannten Faktor hat den Faktor `null` wie eine Restaurierung.
+    return aktiv
+        .where(
+          (j) =>
+              istHochskalierauftrag(j.id) == (faktor != null) &&
+              hochskalierfaktor(j.id) == faktor,
+        )
+        .firstOrNull;
   }
 
   /// Ein noch wartender Auftrag wird sofort entfernt; ein gerade laufender
@@ -241,7 +383,76 @@ class RestoreQueueService {
       _cancelRequested.add(jobId);
       _lauf?.abbrechen();
     } else {
-      await _db.deleteRestoreJob(jobId);
+      await entferne(jobId);
+    }
+  }
+
+  /// Nimmt einen Auftrag, der nicht gerade läuft, aus der Liste – samt
+  /// seinem aufgehobenen Ergebnis (siehe [Auftragsergebnisse]).
+  Future<void> entferne(String jobId) async {
+    if (_beendet || jobId == _activeJobId) return;
+    await _db.deleteRestoreJob(jobId);
+    await _verwirfErgebnis(jobId);
+  }
+
+  /// Reiht einen gescheiterten oder abgebrochenen Auftrag noch einmal ein.
+  /// Liegt sein Ergebnis schon vor (siehe [Auftragsergebnisse]), wird nur
+  /// noch abgelegt. Wartet schon ein Auftrag derselben Art für dasselbe
+  /// Foto, bleibt es bei dem.
+  Future<void> wiederholen(String jobId) async {
+    if (_beendet) return;
+    final job = await (_db.select(
+      _db.restoreJobs,
+    )..where((t) => t.id.equals(jobId))).getSingleOrNull();
+    if (job == null || (job.status != 'failed' && job.status != 'cancelled')) {
+      return;
+    }
+    final art = istHochskalierauftrag(job.id);
+    final faktor = hochskalierfaktor(job.id);
+    if (!art || faktor != null) {
+      if (await _aktiverAuftrag(job.assetId, faktor) != null) return;
+    }
+    await _db.requeueRestoreJob(jobId);
+    if (waitForIdle) {
+      _warteAufLeerlauf();
+    } else {
+      _idle = true;
+      unawaited(_maybeStartNext());
+    }
+  }
+
+  /// Verwirft die aufgehobenen Ergebnisse aller Aufträge zu [assetIds] –
+  /// beim Sperren: Eine Klartextkopie eines gesperrten Fotos darf nicht
+  /// liegen bleiben, bis jemand den Auftrag aus der Liste nimmt.
+  Future<void> verwirfErgebnisseFuer(List<String> assetIds) async {
+    if (assetIds.isEmpty) return;
+    final auftraege = await (_db.select(
+      _db.restoreJobs,
+    )..where((t) => t.assetId.isIn(assetIds))).get();
+    for (final a in auftraege) {
+      await _verwirfErgebnis(a.id);
+    }
+  }
+
+  /// Räumt beim Start auf, was kein offener Auftrag mehr braucht: Ergebnisse
+  /// ohne Auftrag, fertiger Aufträge und solcher, deren Foto inzwischen
+  /// gesperrt, gelöscht oder im Papierkorb ist.
+  Future<void> _raeumeErgebnisseAuf() async {
+    if (_beendet) return;
+    try {
+      final behalten = <String>{};
+      for (final a in await _db.select(_db.restoreJobs).get()) {
+        if (_beendet) return;
+        if (a.status == 'done') continue;
+        final foto = await _db.assetById(a.assetId);
+        if (foto != null && !foto.isLocked && !foto.isTrashed) {
+          behalten.add(a.id);
+        }
+      }
+      if (_beendet) return;
+      await ergebnisse.raeumeAuf(behalten);
+    } catch (e) {
+      debugPrint('Aufgehobene Ergebnisse nicht aufgeräumt: $e');
     }
   }
 
@@ -278,6 +489,8 @@ class RestoreQueueService {
   }
 
   Future<void> resumeWhenIdle() {
+    if (_beendet) return Future<void>.value();
+    unawaited(_raeumeErgebnisseAuf());
     _warteAufLeerlauf();
     return Future<void>.value();
   }
@@ -300,7 +513,11 @@ class RestoreQueueService {
 
   /// Hält die Warteschlange an und bricht die laufende Inferenz ab.
   /// Die Aufträge bleiben beim Beenden offen und werden beim Neustart
-  /// wieder eingereiht. Eine bereits begonnene Ablage darf fertig werden.
+  /// wieder eingereiht. Eine begonnene Restaurierung darf fertig abgelegt
+  /// werden; ein Hochskalieren bricht am nächsten sicheren Schritt ab (auch
+  /// mitten im Hochladen) und legt beim nächsten Start die aufgehobene Datei
+  /// ab (siehe [Auftragsergebnisse]) – vorher schloss die Datenbank nach
+  /// drei Sekunden mitten im Import.
   Future<void> beende() async {
     _beendet = true;
     _idle = false;
@@ -309,6 +526,11 @@ class RestoreQueueService {
     _lauf?.abbrechen();
     try {
       await _ablage?.timeout(const Duration(seconds: 3));
+    } on TimeoutException {
+      rethrow;
+    } catch (_) {
+      // Wie das Ablegen endet, vermerkt der Auftrag selbst (siehe
+      // [_process]); hier zählt nur, dass es zu Ende ist.
     } finally {
       _ablagefristAbgelaufen = true;
     }
@@ -346,6 +568,21 @@ class RestoreQueueService {
   Future<void> _process(RestoreJobData job) async {
     // Ein Hochskalier-Auftrag (#500) trägt seinen Faktor in der Kennung.
     final faktor = hochskalierfaktor(job.id);
+    if (istHochskalierauftrag(job.id) && faktor == null) {
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: RestaurierungsGrund.unbekannteArt.name,
+      );
+      return;
+    }
+    // Schon gerechnet und nur nicht abgelegt: dann ohne Modell weiter.
+    Uint8List? fertig;
+    try {
+      fertig = await ergebnisse.lies(job.id);
+    } on FileSystemException catch (e) {
+      debugPrint('Aufgehobenes Ergebnis nicht lesbar: $e');
+    }
     // Lokal einfangen statt später erneut über das Feld zu gehen: Ersetzt
     // LibraryState.reloadModels() [restoreHalter] mitten in der Verarbeitung
     // (neuer Modell-Download), soll [zurueckgeben] weiterhin auf DIESEM
@@ -353,30 +590,33 @@ class RestoreQueueService {
     // sonst bliebe sein Nutzerzähler für immer > 0 und er würde nie entsorgt.
     final halter = restoreHalter;
     RestoreService? service;
-    try {
-      service = await halter?.leihen();
-    } catch (e) {
-      // Ohne dieses try/catch verließ eine Ladefehler-Exception (z.B. eine
-      // beschädigte Modelldatei) _process() unbehandelt – der Auftrag blieb
-      // für immer auf "queued" stehen UND das nachfolgende
-      // unawaited(_maybeStartNext()) in _maybeStartNext() wurde nie erreicht,
-      // wodurch die gesamte Warteschlange dauerhaft blockierte (Audit-Fund).
-      await _status(
-        job.id,
-        'failed',
-        // Kennung UND Ursache: Die Kennung wird übersetzt, die Ursache
-        // dahinter ist das, was bei einem Fehlerbericht wirklich hilft.
-        errorMessage: '${RestaurierungsGrund.modellLaedtNicht.name}: $e',
-      );
-      return;
-    }
-    if (service == null) {
-      await _status(
-        job.id,
-        'failed',
-        errorMessage: RestaurierungsGrund.modellWeg.name,
-      );
-      return;
+    if (fertig == null) {
+      try {
+        service = await halter?.leihen();
+      } catch (e) {
+        // Ohne dieses try/catch verließ eine Ladefehler-Exception (z.B. eine
+        // beschädigte Modelldatei) _process() unbehandelt – der Auftrag blieb
+        // für immer auf "queued" stehen UND das nachfolgende
+        // unawaited(_maybeStartNext()) in _maybeStartNext() wurde nie
+        // erreicht, wodurch die gesamte Warteschlange dauerhaft blockierte
+        // (Audit-Fund).
+        await _status(
+          job.id,
+          'failed',
+          // Kennung UND Ursache: Die Kennung wird übersetzt, die Ursache
+          // dahinter ist das, was bei einem Fehlerbericht wirklich hilft.
+          errorMessage: '${RestaurierungsGrund.modellLaedtNicht.name}: $e',
+        );
+        return;
+      }
+      if (service == null) {
+        await _status(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.modellWeg.name,
+        );
+        return;
+      }
     }
     try {
       if (_beendet) return;
@@ -385,6 +625,7 @@ class RestoreQueueService {
       final asset = await _db.assetById(job.assetId);
       if (_beendet) return;
       if (asset == null) {
+        await _verwirfErgebnis(job.id);
         await _status(
           job.id,
           'failed',
@@ -393,6 +634,7 @@ class RestoreQueueService {
         return;
       }
       if (asset.isLocked) {
+        await _verwirfErgebnis(job.id);
         await _status(
           job.id,
           'failed',
@@ -401,6 +643,7 @@ class RestoreQueueService {
         return;
       }
       if (faktor != null && (asset.type != 'IMAGE' || asset.isTrashed)) {
+        await _verwirfErgebnis(job.id);
         await _status(
           job.id,
           'failed',
@@ -410,91 +653,8 @@ class RestoreQueueService {
         );
         return;
       }
-      final targetWidth = asset.widthPx;
-      final targetHeight = asset.heightPx;
-      if (targetWidth == null || targetHeight == null) {
-        await _status(
-          job.id,
-          'failed',
-          errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name,
-        );
-        return;
-      }
-
-      final jpegBytes = await entwickeltesJpeg(asset);
-      if (_beendet) return;
-      if (jpegBytes == null) {
-        await _status(
-          job.id,
-          'failed',
-          errorMessage: RestaurierungsGrund.nichtGerendert.name,
-        );
-        return;
-      }
-      if (faktor != null) {
-        // Gemessen wird, was wirklich gerechnet wird: Die Entwicklung kann
-        // das Foto seit dem Einreihen beschnitten oder gedreht haben.
-        final masse = jpegMasse(jpegBytes);
-        if (masse == null) {
-          await _status(
-            job.id,
-            'failed',
-            errorMessage: RestaurierungsGrund.nichtDekodiert.name,
-          );
-          return;
-        }
-        if (hochskalierziel(masse.breite, masse.hoehe, faktor).sperre != null) {
-          await _status(
-            job.id,
-            'failed',
-            errorMessage: RestaurierungsGrund.zuGross.name,
-          );
-          return;
-        }
-      }
-      // Absichtlich nicht awaited (der Fortschritt darf die Inferenz
-      // nicht ausbremsen) – catchError statt eines unbehandelten
-      // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
-      // fehlschlägt.
-      void fortschritt(int done, int total) {
-        if (!_beendet) {
-          unawaited(
-            _db
-                .updateRestoreJobProgress(job.id, done, total)
-                .catchError((_) {}),
-          );
-        }
-      }
-
-      // Dekodieren, Kacheln, Zusammensetzen und das JPEG schreiben laufen
-      // im Isolat des Laufs, nicht auf dem Faden der Oberfläche (#14).
-      final lauf = faktor == null
-          ? service.starteJpeg(jpegBytes, quality: 92, onProgress: fortschritt)
-          : service.starteHochskalieren(
-              jpegBytes,
-              faktor: faktor,
-              quality: 92,
-              onProgress: fortschritt,
-            );
-      _lauf = lauf;
-      // Kam in der Zwischenzeit eine Eingabe, wartet er von Anfang an.
-      if (!_idle) lauf.pausieren();
-      if (_cancelRequested.contains(job.id)) lauf.abbrechen();
-      final ergebnis = await lauf.ergebnis;
-      if (_beendet) return;
-
-      if (_cancelRequested.contains(job.id)) {
-        await _status(job.id, 'cancelled');
-        return;
-      }
-      if (ergebnis == null) {
-        await _status(
-          job.id,
-          'failed',
-          errorMessage: RestaurierungsGrund.nichtDekodiert.name,
-        );
-        return;
-      }
+      final ergebnis = fertig ?? await _rechne(job, asset, faktor, service!);
+      if (_beendet || ergebnis == null) return;
 
       final ablage = faktor == null
           ? _speichereErgebnis(job, ergebnis)
@@ -505,9 +665,13 @@ class RestoreQueueService {
       } finally {
         _ablage = null;
       }
+    } on AblageAbgebrochen {
+      // Beim Beenden: Der Auftrag bleibt offen, das Ergebnis aufgehoben.
     } on AufnahmeNichtAblegbar catch (e) {
       // Während des Rechnens gesperrt oder gelöscht (#430): Das Ergebnis
-      // ist verworfen, nichts liegt im Klartext im gesperrten Foto.
+      // ist verworfen, nichts liegt im Klartext im gesperrten Foto – auch
+      // nicht unter den aufgehobenen Ergebnissen.
+      await _verwirfErgebnis(job.id);
       await _status(
         job.id,
         'failed',
@@ -516,6 +680,8 @@ class RestoreQueueService {
             : RestaurierungsGrund.fotoWeg.name,
       );
     } catch (e) {
+      // Das Ergebnis bleibt aufgehoben: „Erneut versuchen“ legt es ab, ohne
+      // noch einmal zu rechnen.
       await _status(
         job.id,
         'failed',
@@ -524,8 +690,127 @@ class RestoreQueueService {
             : e.toString(),
       );
     } finally {
-      halter!.zurueckgeben();
-      if (_beendet) await halter.freigebenWennUnbenutzt();
+      if (service != null) {
+        halter!.zurueckgeben();
+        if (_beendet) await halter.freigebenWennUnbenutzt();
+      }
+    }
+  }
+
+  /// Rechnet [job] und hebt das Ergebnis auf (siehe [Auftragsergebnisse]).
+  /// `null`, wenn nichts abzulegen ist – der Grund steht dann schon am
+  /// Auftrag, oder die App wird beendet.
+  Future<Uint8List?> _rechne(
+    RestoreJobData job,
+    AssetData asset,
+    int? faktor,
+    RestoreService service,
+  ) async {
+    final targetWidth = asset.widthPx;
+    final targetHeight = asset.heightPx;
+    if (targetWidth == null || targetHeight == null) {
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: RestaurierungsGrund.aufloesungUnbekannt.name,
+      );
+      return null;
+    }
+
+    final jpegBytes = faktor == null
+        ? await entwickeltesJpeg(asset)
+        : await hochskalierVorlage(asset);
+    if (_beendet) return null;
+    if (jpegBytes == null) {
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: RestaurierungsGrund.nichtGerendert.name,
+      );
+      return null;
+    }
+    if (faktor != null) {
+      // Gemessen wird, was wirklich gerechnet wird: Die Entwicklung kann
+      // das Foto seit dem Einreihen beschnitten oder gedreht haben.
+      final masse = jpegMasse(jpegBytes);
+      if (masse == null) {
+        await _status(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.nichtDekodiert.name,
+        );
+        return null;
+      }
+      if (hochskalierziel(masse.breite, masse.hoehe, faktor).sperre != null) {
+        await _status(
+          job.id,
+          'failed',
+          errorMessage: RestaurierungsGrund.zuGross.name,
+        );
+        return null;
+      }
+    }
+    // Absichtlich nicht awaited (der Fortschritt darf die Inferenz
+    // nicht ausbremsen) – catchError statt eines unbehandelten
+    // Future-Fehlers, falls der DB-Schreibzugriff einmal transient
+    // fehlschlägt.
+    void fortschritt(int done, int total) {
+      if (!_beendet) {
+        unawaited(
+          _db.updateRestoreJobProgress(job.id, done, total).catchError((_) {}),
+        );
+      }
+    }
+
+    // Dekodieren, Kacheln, Zusammensetzen und das JPEG schreiben laufen
+    // im Isolat des Laufs, nicht auf dem Faden der Oberfläche (#14).
+    final lauf = faktor == null
+        ? service.starteJpeg(jpegBytes, quality: 92, onProgress: fortschritt)
+        : service.starteHochskalieren(
+            jpegBytes,
+            faktor: faktor,
+            quality: 92,
+            onProgress: fortschritt,
+          );
+    _lauf = lauf;
+    // Kam in der Zwischenzeit eine Eingabe, wartet er von Anfang an.
+    if (!_idle) lauf.pausieren();
+    if (_cancelRequested.contains(job.id)) lauf.abbrechen();
+    var ergebnis = await lauf.ergebnis;
+    // Ein spätes Ergebnis nach dem Beenden zählt nicht: Der Lauf war
+    // abgebrochen.
+    if (_beendet) return null;
+
+    if (_cancelRequested.contains(job.id)) {
+      await _status(job.id, 'cancelled');
+      return null;
+    }
+    if (ergebnis == null) {
+      await _status(
+        job.id,
+        'failed',
+        errorMessage: RestaurierungsGrund.nichtDekodiert.name,
+      );
+      return null;
+    }
+    if (faktor != null) ergebnis = mitHochskalierangaben(ergebnis, asset);
+    try {
+      await ergebnisse.lege(job.id, ergebnis);
+    } on FileSystemException catch (e) {
+      // Ohne Platz zum Aufheben wird trotzdem abgelegt – nur ein weiterer
+      // Versuch müsste dann wieder rechnen.
+      debugPrint('Ergebnis nicht aufgehoben: $e');
+    }
+    return ergebnis;
+  }
+
+  /// [Auftragsergebnisse.verwirf], ohne dass ein Fehler der Platte den
+  /// Auftrag aufhält.
+  Future<void> _verwirfErgebnis(String id) async {
+    try {
+      await ergebnisse.verwirf(id);
+    } on FileSystemException catch (e) {
+      debugPrint('Aufgehobenes Ergebnis nicht gelöscht: $e');
     }
   }
 
@@ -544,6 +829,7 @@ class RestoreQueueService {
     );
     if (!_ablagefristAbgelaufen) {
       await _db.markRestoreJobStatus(job.id, 'done');
+      await _verwirfErgebnis(job.id);
     }
   }
 
@@ -552,6 +838,10 @@ class RestoreQueueService {
   /// inzwischen gesperrt oder gelöscht, wirft das Ablegen
   /// [AufnahmeNichtAblegbar], und [_process] vermerkt den Grund – wie bei
   /// einer Restaurierung (#430).
+  ///
+  /// Beim Beenden bricht das Ablegen am nächsten sicheren Schritt ab
+  /// ([Hochskalierablage.abgebrochen]); ein angefangenes Hochladen geht beim
+  /// nächsten Versuch dort weiter, wo es stand.
   Future<void> _speichereHochskaliert(
     RestoreJobData job,
     int faktor,
@@ -559,18 +849,26 @@ class RestoreQueueService {
   ) async {
     final ablegen =
         hochskaliertAblegen ??
-        (String originalId, Uint8List jpeg, int faktor) => legeHochskaliertAb(
+        (Hochskalierablage ablage) => legeHochskaliertAb(
           db: _db,
           paths: _paths,
           importe: ImportService(_db, _paths),
-          originalId: originalId,
-          jpeg: jpeg,
-          faktor: faktor,
+          ablage: ablage,
         );
-    if (_ablagefristAbgelaufen) return;
-    await ablegen(job.assetId, jpeg, faktor);
+    if (_beendet) return;
+    await ablegen(
+      Hochskalierablage(
+        originalId: job.assetId,
+        jpeg: jpeg,
+        faktor: faktor,
+        abgebrochen: () => _beendet,
+        hochladeort: await ergebnisse.hochladeort(job.id),
+        hochladeortMerken: (ort) => ergebnisse.merkeHochladeort(job.id, ort),
+      ),
+    );
     if (!_ablagefristAbgelaufen) {
       await _db.markRestoreJobStatus(job.id, 'done');
+      await _verwirfErgebnis(job.id);
     }
   }
 
@@ -628,6 +926,91 @@ class RestoreQueueService {
       quality: 0.95,
     );
     return jpegBytes;
+  }
+
+  /// Die Vorlage des Hochskalierens (#500): das Foto, wie es angezeigt
+  /// wird.
+  ///
+  /// **Erst entrauschen, dann vergrössern.** Bis hierher rechnete das
+  /// Hochskalieren immer aus der gespeicherten Entwicklung des Originals,
+  /// auch wenn das Foto ein KI-Entrauschen trug: Wer erst entrauschte und
+  /// dann vergrösserte, bekam die verrauschte Fassung vergrössert. Liegt
+  /// eine Restaurierung in Originalgrösse vor – so gross wie das Original
+  /// oder kleiner, also ein Entrauschen der (womöglich beschnittenen)
+  /// Entwicklung –, ist sie die Vorlage; sie zeigt auch die Anzeige, und sie
+  /// trägt die Entwicklung, aus der sie gerechnet wurde.
+  ///
+  /// Eine KI-Restaurierung mit Real-ESRGAN ist schon vierfach vergrössert;
+  /// sie noch einmal zu vergrössern sprengte jede Grenze. Dann bleibt es bei
+  /// der Entwicklung, und der Dialog sagt das ([hochskalierplan]).
+  Future<Uint8List?> hochskalierVorlage(AssetData asset) async {
+    final restauriert = await _restaurierungAlsVorlage(asset);
+    if (restauriert != null) return restauriert.datei.readAsBytes();
+    return entwickeltesJpeg(asset);
+  }
+
+  /// Was [hochskalierVorlage] nehmen wird, und wie gross das ist – für den
+  /// Dialog, ohne etwas zu rendern: Bei der Entwicklung sind es die Masse
+  /// des Originals nach dem gespeicherten Zuschnitt und seiner Drehung
+  /// ([masseNachZuschnitt]); bisher rechnete der Dialog mit dem
+  /// unbeschnittenen Original, und ein Faktor, den er anbot, scheiterte
+  /// erst in der Warteschlange.
+  Future<Hochskalierplan> hochskalierplan(AssetData asset) async {
+    final restauriert = await _restaurierungAlsVorlage(asset);
+    if (restauriert != null) {
+      return (
+        breite: restauriert.masse.breite,
+        hoehe: restauriert.masse.hoehe,
+        quelle: Hochskalierquelle.restaurierung,
+        restaurierungUebergangen: false,
+      );
+    }
+    final uebergangen = asset.restoredRelativePath != null;
+    final b = asset.widthPx, h = asset.heightPx;
+    if (b == null || h == null || b <= 0 || h <= 0) {
+      return (
+        breite: null,
+        hoehe: null,
+        quelle: Hochskalierquelle.entwicklung,
+        restaurierungUebergangen: uebergangen,
+      );
+    }
+    var zuschnitt = Bildzuschnitt.ganz;
+    try {
+      zuschnitt = Bildzuschnitt.aus(
+        (await _db.developSettingsForAsset(asset.id))?.cropJson,
+      );
+    } on FormatException {
+      // Ein unlesbarer Zuschnitt: so, wie das Entwickeln ihn auch nähme.
+    }
+    final m = masseNachZuschnitt(zuschnitt, b, h);
+    return (
+      breite: m.breite,
+      hoehe: m.hoehe,
+      quelle: Hochskalierquelle.entwicklung,
+      restaurierungUebergangen: uebergangen,
+    );
+  }
+
+  /// Die Restaurierung von [asset], wenn sie als Vorlage taugt (siehe
+  /// [hochskalierVorlage]), samt ihren Massen aus dem Kopf der Datei.
+  Future<({File datei, ({int breite, int hoehe}) masse})?>
+  _restaurierungAlsVorlage(AssetData asset) async {
+    final relativ = asset.restoredRelativePath;
+    final kante = math.max(asset.widthPx ?? 0, asset.heightPx ?? 0);
+    if (relativ == null || kante <= 0) return null;
+    try {
+      final datei = await _paths.bereit(relativ);
+      final masse = await jpegMasseAusDatei(datei);
+      if (masse == null || math.max(masse.breite, masse.hoehe) > kante) {
+        return null;
+      }
+      return (datei: datei, masse: masse);
+    } on Exception catch (e) {
+      // Nicht zu holen oder nicht zu lesen: dann aus der Entwicklung.
+      debugPrint('Restaurierung als Vorlage nicht lesbar: $e');
+      return null;
+    }
   }
 
   /// Legt [jpeg] als Restaurierung von [assetId] ab – so, wie die

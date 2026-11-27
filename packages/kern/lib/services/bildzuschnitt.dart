@@ -141,6 +141,21 @@ Uint8List _schneide((Uint8List, Bildzuschnitt) werte) {
   );
 }
 
+/// Breite und Höhe, die [schneideBild] aus einem Bild von [breite] ×
+/// [hoehe] macht – auf einen Punkt genau, ohne Bild. Etwa für die Grösse,
+/// die eine gespeicherte Entwicklung hat, bevor sie gerendert ist.
+({int breite, int hoehe}) masseNachZuschnitt(
+  Bildzuschnitt z,
+  int breite,
+  int hoehe,
+) {
+  if (z.istGanz) return (breite: breite, hoehe: hoehe);
+  final a = _ausschnitt(z, breite, hoehe);
+  return z.drehungen.isOdd
+      ? (breite: a.hoehe, hoehe: a.breite)
+      : (breite: a.breite, hoehe: a.hoehe);
+}
+
 /// Schneidet [bild] zu und dreht es – die Rechnung hinter jeder
 /// zugeschnittenen Entwicklung, auf jedem Renderweg.
 img.Image schneideBild(img.Image bild, Bildzuschnitt z) {

@@ -682,6 +682,58 @@ void main() {
     },
   );
 
+  test('eine aus einem gesperrten Original gerechnete Datei nimmt der Server '
+      'nicht an (#500, #430)', () async {
+    final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
+    final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);
+    addTearDown(v.schliesse);
+    File bild(String name, int rot) {
+      final b = img.Image(width: 64, height: 48);
+      img.fill(b, color: img.ColorRgb8(rot, 90, 200 - rot));
+      return File('${ordner.path}/$name')..writeAsBytesSync(img.encodeJpg(b));
+    }
+
+    final tus = TusHochladen(v);
+    final erst = await tus.lade(bild('foto.jpg', 30), 'api/v1/hochladen', {
+      'filename': 'foto.jpg',
+    });
+    final original = erst['pv-aufnahme']!;
+    final db = (await bibliotheken.fuer(erika.id)).bibliothek.db;
+    await db.setAssetsLocked([original], true);
+
+    final gesperrt = await tus.lade(bild('gross.jpg', 90), 'api/v1/hochladen', {
+      'filename': 'foto (2×).jpg',
+      'abgeleitetVon': original,
+    });
+    expect(gesperrt['pv-ausgang'], 'failed');
+    expect(gesperrt['pv-fehler'], 'pv_original_gesperrt');
+    final unbekannt = await tus.lade(
+      bild('gross2.jpg', 100),
+      'api/v1/hochladen',
+      {'filename': 'foto (2×).jpg', 'abgeleitetVon': 'gibt-es-nicht'},
+    );
+    expect(unbekannt['pv-fehler'], 'pv_original_weg');
+    expect(await db.select(db.assets).get(), hasLength(1));
+
+    // Gegenprobe: offen geht es durch.
+    await db.setAssetsLocked([original], false);
+    final offen = await tus.lade(bild('gross3.jpg', 120), 'api/v1/hochladen', {
+      'filename': 'foto (2×).jpg',
+      'abgeleitetVon': original,
+    });
+    expect(offen['pv-ausgang'], 'imported');
+    expect(await db.select(db.assets).get(), hasLength(2));
+
+    // Was keine Kennung ist, nimmt er gar nicht erst an.
+    await expectLater(
+      tus.lade(bild('gross4.jpg', 140), 'api/v1/hochladen', {
+        'filename': 'x.jpg',
+        'abgeleitetVon': '../etc',
+      }),
+      throwsA(anything),
+    );
+  });
+
   test('Fotokammer: hochladen, ansehen, freigeben, verwerfen (#336)', () async {
     final token = konten.meldeAn(erika.id, 'Rechner', 'x').token;
     final v = Serververbindung(Uri.parse('http://127.0.0.1:$port/'), token);

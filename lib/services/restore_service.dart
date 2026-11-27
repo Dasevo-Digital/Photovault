@@ -11,6 +11,7 @@ import 'package:image/image.dart' as img;
 
 import 'hochskalieren.dart';
 import 'tile_processor.dart';
+import 'package:kern/services/jpeg_icc.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
 
@@ -265,8 +266,8 @@ Restaurierungslauf _starte(
         lauf._verbinde(p);
       case ('fortschritt', int fertig, int gesamt):
         onProgress?.call(fertig, gesamt);
-      case ('fertig', TransferableTypedData daten):
-        ergebnis = daten.materialize().asUint8List();
+      case ('fertig', Uint8List daten):
+        ergebnis = daten;
         if (!lauf._fertig.isCompleted) lauf._fertig.complete(ergebnis);
       case ('fertig', null):
         if (!lauf._fertig.isCompleted) lauf._fertig.complete(null);
@@ -306,11 +307,12 @@ Future<img.Image> _rechneKachel(
   final height = tile.height;
   final ebene = width * height;
   final chw = Float32List(3 * ebene);
-  for (final p in tile) {
-    final i = p.y * width + p.x;
-    chw[i] = p.r / 255.0;
-    chw[ebene + i] = p.g / 255.0;
-    chw[2 * ebene + i] = p.b / 255.0;
+  // Aus den Bytes statt über ein Pixel-Objekt je Punkt.
+  final rgb = rgbBytes(tile);
+  for (var i = 0; i < ebene; i++) {
+    chw[i] = rgb[i * 3] / 255.0;
+    chw[ebene + i] = rgb[i * 3 + 1] / 255.0;
+    chw[2 * ebene + i] = rgb[i * 3 + 2] / 255.0;
   }
 
   final inputTensor = await OrtValue.fromList(chw, [1, 3, height, width]);
@@ -331,27 +333,27 @@ Future<img.Image> _rechneKachel(
             for (final v in outputRaw) (v as num).toDouble(),
           ]);
     int kanal(double v) => (v * 255).round().clamp(0, 255);
-    final result = img.Image(width: outWidth, height: outHeight);
-    for (var y = 0; y < outHeight; y++) {
+    // Gleich in der Grösse der ungefüllten Kachel und direkt in die Bytes
+    // des Bildes: kein setPixelRgb je Punkt, kein zweiter Zuschnitt.
+    final breite = kachel.width * massstab;
+    final hoehe = kachel.height * massstab;
+    final aus = Uint8List(breite * hoehe * 3);
+    for (var y = 0; y < hoehe; y++) {
       final rowBase = y * outWidth;
-      for (var x = 0; x < outWidth; x++) {
+      final ziel = y * breite * 3;
+      for (var x = 0; x < breite; x++) {
         final pixelIdx = rowBase + x;
-        result.setPixelRgb(
-          x,
-          y,
-          kanal(werte[pixelIdx]),
-          kanal(werte[channelSize + pixelIdx]),
-          kanal(werte[2 * channelSize + pixelIdx]),
-        );
+        final o = ziel + x * 3;
+        aus[o] = kanal(werte[pixelIdx]);
+        aus[o + 1] = kanal(werte[channelSize + pixelIdx]);
+        aus[o + 2] = kanal(werte[2 * channelSize + pixelIdx]);
       }
     }
-    if (identical(tile, kachel)) return result;
-    return img.copyCrop(
-      result,
-      x: 0,
-      y: 0,
-      width: kachel.width * massstab,
-      height: kachel.height * massstab,
+    return img.Image.fromBytes(
+      width: breite,
+      height: hoehe,
+      bytes: aus.buffer,
+      numChannels: 3,
     );
   } finally {
     for (final v in liveTensors) {
@@ -435,15 +437,16 @@ Future<void> _restaurierungImIsolat(
     }
   });
   try {
-    final quelle = img.decodeJpg(a.jpeg.materialize().asUint8List());
-    if (quelle == null) Isolate.exit(a.antwort, ('fertig', null));
-    final ergebnis = await hochskaliereInKacheln(
-      quelle,
-      tileSize: a.art.kachel,
+    final jpeg = await rechneLauf(
+      a.jpeg.materialize().asUint8List(),
+      kachel: a.art.kachel,
       overlap: a.art.overlap,
-      modellfaktor: a.art.massstab,
-      zielfaktor: a.art.ziel,
-      infer: (kachel) async {
+      massstab: a.art.massstab,
+      ziel: a.art.ziel,
+      vielfaches: a.art.vielfaches,
+      staerke: a.art.staerke,
+      qualitaet: a.qualitaet,
+      netz: (kachel) async {
         // Vor jeder Kachel: angehalten wird zwischen zwei Kacheln, nie
         // mitten in einer.
         while (pausiert && !abgebrochen) {
@@ -461,21 +464,74 @@ Future<void> _restaurierungImIsolat(
           a.antwort.send(('fortschritt', fertig, gesamt)),
       isCancelled: () => abgebrochen,
     );
-    if (abgebrochen) Isolate.exit(a.antwort, ('fertig', null));
-    if (a.art.staerke < 1 && a.art.massstab == 1) {
-      mische(quelle, ergebnis, a.art.staerke);
-    }
-    final jpeg = img.encodeJpg(ergebnis, quality: a.qualitaet);
     // Isolate.exit statt send: Der Kanal zur Plattform hält einen eigenen
     // Port offen, und ein Isolat mit offenem Port endet nie von selbst.
     // Mit `send` und `return` lief es weiter, und das Ergebnis kam nie an.
-    Isolate.exit(a.antwort, ('fertig', TransferableTypedData.fromList([jpeg])));
+    // Das JPEG selbst, nicht in TransferableTypedData: Isolate.exit
+    // übergibt es ohne Kopie, der Umweg kopierte es einmal mehr.
+    Isolate.exit(a.antwort, ('fertig', abgebrochen ? null : jpeg));
   } on _Abgebrochen {
     Isolate.exit(a.antwort, ('fertig', null));
   } finally {
     await abo.cancel();
     eingang.close();
   }
+}
+
+/// Was im Isolat eines Laufs geschieht – ohne Isolat und ohne Modell, das
+/// [netz] einsetzt: das JPEG [jpeg] dekodieren, kachelweise rechnen (siehe
+/// [hochskaliereInKacheln]), beim Entrauschen nach [staerke] mischen und
+/// wieder als JPEG schreiben. `null`, wenn sich [jpeg] nicht dekodieren
+/// liess oder [isCancelled] den Lauf abbrach.
+///
+/// **Mit dem Farbprofil der Vorlage.** Die Vorlage kommt am Mac aus dem
+/// Entwickeln in Display P3, mit eingebettetem Profil (siehe
+/// `ImageConverter.swift`). Das Netz rechnet nur mit den Zahlen; das
+/// Ergebnis wurde bis hierher ohne Profil geschrieben und damit als sRGB
+/// gelesen – jede Restaurierung, jedes Entrauschen und jede Vergrösserung
+/// eines P3-Fotos kam blasser heraus. Das Profil geht jetzt Teil für Teil
+/// mit ([JpegIcc]), auch eines, das über mehrere Anhänge reicht.
+@visibleForTesting
+Future<Uint8List?> rechneLauf(
+  Uint8List jpeg, {
+  required int kachel,
+  required int overlap,
+  required int massstab,
+  required int ziel,
+  required Future<img.Image> Function(img.Image kachel) netz,
+  int vielfaches = 1,
+  double staerke = 1,
+  int qualitaet = 92,
+  void Function(int done, int total)? onProgress,
+  bool Function()? isCancelled,
+}) async {
+  final quelle = img.decodeJpg(jpeg);
+  if (quelle == null) return null;
+  Uint8List? profil;
+  try {
+    profil = JpegIcc.lesen(jpeg);
+  } on FormatException {
+    // Ein kaputtes Profil hält das Ergebnis nicht auf; es kommt dann ohne.
+    profil = null;
+  }
+  final ergebnis = await hochskaliereInKacheln(
+    quelle,
+    tileSize: kachel,
+    overlap: overlap,
+    modellfaktor: massstab,
+    zielfaktor: ziel,
+    vielfaches: vielfaches,
+    infer: netz,
+    onProgress: onProgress,
+    isCancelled: isCancelled,
+  );
+  if (isCancelled?.call() ?? false) return null;
+  if (staerke < 1 && massstab == 1) {
+    mische(quelle, ergebnis, staerke);
+  }
+  ergebnis.iccProfile = null;
+  final aus = img.encodeJpg(ergebnis, quality: qualitaet);
+  return profil == null ? aus : JpegIcc.schreiben(aus, profil);
 }
 
 /// Legt [ergebnis] mit [staerke] über [original] – in [ergebnis]. Beide

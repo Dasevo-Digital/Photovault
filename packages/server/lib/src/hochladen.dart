@@ -42,6 +42,15 @@ import 'package:kern/services/import_plan.dart';
 /// Fotos-App des Telefons bearbeitete Fassung (#271): Sie wird nicht als
 /// eigene Aufnahme aufgenommen, sondern über das Original gelegt – siehe
 /// [_bearbeitung].
+///
+/// `abgeleitetVon` (die Kennung einer Aufnahme) kennzeichnet eine Datei,
+/// die ein Rechner aus dieser Aufnahme gerechnet hat – etwa ein
+/// hochskaliertes Foto (#500). Ist die Aufnahme beim Import gesperrt,
+/// gelöscht oder im Papierkorb, wird die Datei nicht aufgenommen
+/// (`pv_original_gesperrt`, `pv_original_weg`): Sie wäre eine offene
+/// Klartextkopie eines gesperrten Fotos (#430). Geprüft wird hier, im
+/// selben Schritt wie der Import – der Rechner kennt nur den Stand seines
+/// letzten Abgleichs.
 class Hochladen {
   Hochladen(
     this.eingang,
@@ -165,6 +174,10 @@ class Hochladen {
         return Response(400, body: schluessel, headers: _tus);
       }
     }
+    if (meta['abgeleitetVon'] case final von?
+        when !RegExp(r'^[A-Za-z0-9-]{1,128}$').hasMatch(von)) {
+      return Response(400, body: 'abgeleitetVon', headers: _tus);
+    }
     if (abschluss != null &&
         (zielpfad == null ||
             zielpfad.isEmpty ||
@@ -196,6 +209,7 @@ class Hochladen {
       'pfad': ?zielpfad,
       'sha256': ?meta['sha256'],
       'bearbeitungVon': ?meta['bearbeitungVon'],
+      'abgeleitetVon': ?meta['abgeleitetVon'],
       'art': ?meta['art'],
       'regelstand': ?meta['regelstand'],
       'kammer': ?(meta['kammer'] == '1' && kammer != null ? true : null),
@@ -487,6 +501,15 @@ class Hochladen {
     Map<String, Object?> a,
   ) async {
     final b = bibliothek!;
+    if (a['abgeleitetVon'] case final String von) {
+      final original = await b.db.assetById(von);
+      if (original == null || original.isTrashed) {
+        return {'ausgang': 'failed', 'fehler': 'pv_original_weg'};
+      }
+      if (original.isLocked) {
+        return {'ausgang': 'failed', 'fehler': 'pv_original_gesperrt'};
+      }
+    }
     if (a['bearbeitungVon'] case final String von) {
       final r = await _bearbeitung(b, datei, von);
       if (r != null) {

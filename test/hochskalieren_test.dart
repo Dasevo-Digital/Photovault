@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:kern/services/jpeg_icc.dart';
 import 'package:photo_vault/services/hochskalieren.dart';
 import 'package:photo_vault/services/restore_service.dart';
 import 'package:photo_vault/services/tile_processor.dart';
@@ -84,25 +87,46 @@ void main() {
             tileSize: kachel,
             overlap: RestoreService.overlap,
             scaleFactor: f,
+            modellfaktor: RestoreService.scaleFactor,
           );
           expect(plan.totalBytes, lessThan(budget), reason: '$f× / $kachel');
+          // Was der Kommentar an hochskalierMaxPixel verspricht.
+          expect(
+            plan.totalBytes,
+            lessThan(512 * 1024 * 1024),
+            reason: '$f× / $kachel: ${plan.totalBytes}',
+          );
         }
       }
     });
 
-    // Gegenprobe zum Weg über die Kachel: Bei 2× an der Grenze sprengte
-    // ein vierfaches Zwischenbild des ganzen Fotos das Budget.
-    test('ein vierfaches Zwischenbild des ganzen Fotos passte nicht', () {
-      const budget = 1536 * 1024 * 1024;
+    // Gegenprobe zum Weg über die Kachel: Bei 2× an der Grenze kostete ein
+    // vierfaches Zwischenbild des ganzen Fotos fast das Dreifache – mit dem
+    // alten Zeilenband sprengte es sogar das Budget.
+    test('ein vierfaches Zwischenbild des ganzen Fotos kostete fast das '
+        'Dreifache', () {
       final breite = hochskalierMaxKante ~/ 2;
       final hoehe = hochskalierMaxPixel ~/ (breite * 2) ~/ 2;
-      final plan = tileMemoryPlan(
-        img.Image(width: breite, height: hoehe),
-        tileSize: RestoreService.kachelGroesse(macos: true),
+      final quelle = img.Image(width: breite, height: hoehe);
+      final kachel = RestoreService.kachelGroesse(macos: true);
+      final jeKachel = tileMemoryPlan(
+        quelle,
+        tileSize: kachel,
+        overlap: RestoreService.overlap,
+        scaleFactor: 2,
+        modellfaktor: 4,
+      );
+      final gesamt = tileMemoryPlan(
+        quelle,
+        tileSize: kachel,
         overlap: RestoreService.overlap,
         scaleFactor: 4,
       );
-      expect(plan.totalBytes, greaterThan(budget));
+      expect(
+        gesamt.totalBytes,
+        greaterThan(jeKachel.totalBytes * 2.5),
+        reason: '${gesamt.totalBytes} / ${jeKachel.totalBytes}',
+      );
     });
   });
 
@@ -134,6 +158,87 @@ void main() {
       final jpeg = img.encodeJpg(img.Image(width: 37, height: 21));
       expect(jpegMasse(jpeg), (breite: 37, hoehe: 21));
       expect(jpegMasse(img.encodePng(img.Image(width: 2, height: 2))), isNull);
+    });
+
+    test('nur bis zum Bildkopf gelesen, auch hinter EXIF und Profil', () async {
+      final voll = JpegIcc.schreiben(
+        img.encodeJpg(zufallsbild(300, 200)),
+        Uint8List(70000),
+      );
+      // Ohne die Bilddaten: Was die Grösse sagt, steht davor.
+      final kopf = Uint8List.sublistView(voll, 0, 70500);
+      expect(jpegMasse(kopf), (breite: 300, hoehe: 200));
+      expect(jpegMasse(Uint8List.sublistView(voll, 0, 100)), isNull);
+      final ordner = await Directory.systemTemp.createTemp('pv_masse_');
+      addTearDown(() => ordner.delete(recursive: true));
+      final datei = File('${ordner.path}/a.jpg')..writeAsBytesSync(voll);
+      expect(await jpegMasseAusDatei(datei), (breite: 300, hoehe: 200));
+    });
+  });
+
+  group('Farbprofil (#500)', () {
+    final profil = Uint8List.fromList(List.generate(600, (i) => (i * 7) % 256));
+
+    Future<Uint8List?> lauf(
+      Uint8List vorlage, {
+      required int massstab,
+      required int ziel,
+      double staerke = 1,
+    }) => rechneLauf(
+      vorlage,
+      kachel: 32,
+      overlap: 8,
+      massstab: massstab,
+      ziel: ziel,
+      staerke: staerke,
+      vielfaches: massstab == 1 ? 16 : 1,
+      netz: (k) async => massstab == 1 ? k : vierfach(k),
+    );
+
+    test('Restaurierung, Hochskalieren und Entrauschen behalten das Profil der '
+        'Vorlage', () async {
+      // Die Vorlage kommt am Mac in Display P3 mit Profil.
+      final vorlage = JpegIcc.schreiben(
+        img.encodeJpg(zufallsbild(70, 50)),
+        profil,
+      );
+      for (final (massstab, ziel, staerke) in [
+        (4, 4, 1.0), // KI-Restaurierung
+        (4, 2, 1.0), // Hochskalieren 2×
+        (4, 3, 1.0), // Hochskalieren 3×
+        (1, 1, 0.7), // KI-Entrauschen
+      ]) {
+        final aus = await lauf(
+          vorlage,
+          massstab: massstab,
+          ziel: ziel,
+          staerke: staerke,
+        );
+        final grund = '$massstab → $ziel';
+        expect(JpegIcc.lesen(aus!), profil, reason: grund);
+        expect(jpegMasse(aus), (breite: 70 * ziel, hoehe: 50 * ziel));
+      }
+    });
+
+    test('auch ein Profil über mehrere Anhänge', () async {
+      final gross = Uint8List.fromList(
+        List.generate(150000, (i) => (i * 13) % 251),
+      );
+      final vorlage = JpegIcc.schreiben(
+        img.encodeJpg(zufallsbild(40, 30)),
+        gross,
+      );
+      final aus = await lauf(vorlage, massstab: 4, ziel: 2);
+      expect(JpegIcc.lesen(aus!), gross);
+    });
+
+    test('Gegenprobe: ohne Profil kommt keines dazu', () async {
+      final aus = await lauf(
+        img.encodeJpg(zufallsbild(40, 30)),
+        massstab: 4,
+        ziel: 4,
+      );
+      expect(JpegIcc.lesen(aus!), isNull);
     });
   });
 

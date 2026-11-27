@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/l10n/app_localizations_de.dart';
 import 'package:photo_vault/services/hochskalieren.dart';
+import 'package:photo_vault/services/restore_queue_service.dart';
 import 'package:photo_vault/theme/app_theme.dart';
 import 'package:photo_vault/widgets/hochskalieren_dialog.dart';
 
@@ -18,6 +19,9 @@ void main() {
     required int? breite,
     required int? hoehe,
     bool modell = true,
+    Hochskalierquelle quelle = Hochskalierquelle.entwicklung,
+    bool uebergangen = false,
+    bool ungespeichert = false,
   }) async {
     // Gross genug, dass alle drei Zeilen ohne Rollen zu sehen sind – sonst
     // träfe ein Tipp auf die unterste die Knöpfe darunter.
@@ -42,6 +46,9 @@ void main() {
                     breite: breite,
                     hoehe: hoehe,
                     modellInstalliert: modell,
+                    quelle: quelle,
+                    restaurierungUebergangen: uebergangen,
+                    ungespeichert: ungespeichert,
                   ),
                 ),
                 child: const Text('auf'),
@@ -138,5 +145,32 @@ void main() {
     expect(find.text(de.restaurGrundAufloesung), findsOneWidget);
     expect(find.byType(RadioListTile<int>), findsNothing);
     expect(starten(tester).onPressed, isNull);
+  });
+
+  testWidgets('sagt, woraus gerechnet wird, und was nicht zählt', (
+    tester,
+  ) async {
+    await oeffne(
+      tester,
+      breite: 1000,
+      hoehe: 750,
+      quelle: Hochskalierquelle.restaurierung,
+      ungespeichert: true,
+    );
+    expect(find.text(de.hochskalierenVorlageRestaurierung), findsOneWidget);
+    expect(find.text(de.hochskalierenUngespeichert), findsOneWidget);
+    expect(find.text(de.hochskalierenRestaurierungUebergangen), findsNothing);
+  });
+
+  testWidgets('eine übergangene Restaurierung wird genannt', (tester) async {
+    await oeffne(tester, breite: 1000, hoehe: 750, uebergangen: true);
+    expect(find.text(de.hochskalierenRestaurierungUebergangen), findsOneWidget);
+  });
+
+  testWidgets('Gegenprobe: ohne Anlass kein Hinweis', (tester) async {
+    await oeffne(tester, breite: 1000, hoehe: 750);
+    expect(find.text(de.hochskalierenVorlageRestaurierung), findsNothing);
+    expect(find.text(de.hochskalierenUngespeichert), findsNothing);
+    expect(find.text(de.hochskalierenRestaurierungUebergangen), findsNothing);
   });
 }
