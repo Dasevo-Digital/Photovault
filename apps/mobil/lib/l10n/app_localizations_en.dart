@@ -2009,6 +2009,10 @@ class AppTexteEn extends AppTexte {
   String get linkMitWasserzeichen => 'with watermark';
 
   @override
+  String get linkWasserzeichenUnlesbar =>
+      'watermark can no longer be read – images withheld, create a new link';
+
+  @override
   String get lageObenLinks => 'Top left';
 
   @override

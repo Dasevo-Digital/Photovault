@@ -139,6 +139,7 @@ const EN = {
   'Erlaubte Originale gehen unverändert hinaus – ohne Wasserzeichen.': 'Allowed originals are passed on unchanged – without a watermark.',
   'Bitte einen Text für das Wasserzeichen eingeben.': 'Please enter a text for the watermark.',
   'Wasserzeichen ungültig': 'The watermark cannot be used.',
+  'Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen': 'watermark can no longer be read – images withheld, create a new link',
   'Ohne Ort': 'Without location',
   'Mit Ort': 'With location',
   'Ort für {name}': 'Location for {name}',

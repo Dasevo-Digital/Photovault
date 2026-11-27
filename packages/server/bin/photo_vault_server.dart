@@ -65,6 +65,7 @@ Future<void> main(List<String> argumente) async {
     modelle: modelle,
     ortsverzeichnis: await _ladeOrtsverzeichnis(e.geodaten),
     selbst: e.selbstRechnen,
+    lebendeZeichen: konten.freigaben.zeichenVon,
   );
   if (e.selbstRechnen.isEmpty) {
     protokoll(

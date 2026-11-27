@@ -2015,6 +2015,10 @@ class AppTexteDe extends AppTexte {
   String get linkMitWasserzeichen => 'mit Wasserzeichen';
 
   @override
+  String get linkWasserzeichenUnlesbar =>
+      'Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen';
+
+  @override
   String get lageObenLinks => 'Oben links';
 
   @override

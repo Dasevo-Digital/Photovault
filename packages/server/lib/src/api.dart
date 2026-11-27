@@ -136,6 +136,9 @@ Handler baueApi({
     regeln: konten.albumregeln,
     kontoname: (id) => konten.konto(id)?.name,
   );
+  // Welche Wasserzeichen die Links eines Kontos tragen, weiss nur der
+  // Freigabedienst; das Aufräumen der Fassungen braucht es (#497).
+  bibliotheken.lebendeZeichen ??= konten.freigaben.zeichenVon;
   final freigabe = Freigabeapi(
     dienst: konten.freigaben,
     bibliotheken: bibliotheken,
@@ -918,6 +921,10 @@ class _Api {
           // Kartenkacheln über den Server statt direkt beim Anbieter
           // (#180, `GET /api/v1/karte/…`).
           'karte': karte ? 1 : 0,
+          // Wasserzeichen in den Bildern geteilter Links (#497): Die
+          // Handy-App fragt vor dem Anlegen, statt einen Link wieder
+          // zurückzunehmen, den ein älterer Server ohne Zeichen anlegte.
+          'wasserzeichen': 1,
         },
         'fassung': serverFassung,
         if (serverCommit.isNotEmpty) 'commit': serverCommit,

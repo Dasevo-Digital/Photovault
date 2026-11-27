@@ -110,6 +110,19 @@ class _LinkBlattState extends State<_LinkBlatt> {
       _meldung = null;
     });
     try {
+      // **Erst fragen, ob der Server Wasserzeichen kennt.** Ein Server von
+      // vor #497 legte den Link an – ohne Zeichen – und sagte nichts dazu.
+      // Ihn danach wieder zu löschen (unten) bleibt der Rückfall; zuvor
+      // stand er einen Augenblick ohne Zeichen da, und scheiterte das
+      // Löschen, blieb er.
+      if (_wasserzeichen) {
+        final zustand = await verbindung.hole('api/v1/zustand');
+        if ((zustand['funktionen'] as Map?)?['wasserzeichen'] == null) {
+          if (!mounted) return;
+          setState(() => _meldung = t.linkWasserzeichenServerZuAlt);
+          return;
+        }
+      }
       // Der Text wird hier gezeichnet, nicht am Server: Der hat nur kleine
       // Bitmap-Schriften (siehe kern/services/wasserzeichen.dart). So breit,
       // wie das Zeichen in der grössten Ansicht der Gäste wird – kleiner
@@ -141,7 +154,8 @@ class _LinkBlattState extends State<_LinkBlatt> {
       // **Ein Server von vor #497** kennt das Feld nicht, legt den Link
       // trotzdem an – ohne Zeichen – und sagt in der Antwort nichts dazu.
       // Wer ein Wasserzeichen wollte, bekäme einen Link, der die Bilder
-      // ohne zeigt. Deshalb geht er gleich wieder, bevor ihn jemand kopiert.
+      // ohne zeigt. Sagt die Antwort trotz der Frage oben nichts von einem
+      // Zeichen, geht er deshalb gleich wieder, bevor ihn jemand kopiert.
       if (zeichen != null && d['wasserzeichen'] != true) {
         final weg = await _widerrufe(verbindung, d['id']);
         if (!mounted) return;
@@ -565,6 +579,8 @@ class _GeteilteLinksState extends State<GeteilteLinks> {
                   t.linkUnbegrenzt,
                 if (x['passwort'] == true) t.linkMitPasswort,
                 if (x['wasserzeichen'] == true) t.linkMitWasserzeichen,
+                if (x['wasserzeichenUnlesbar'] == true)
+                  t.linkWasserzeichenUnlesbar,
                 if (x['hochladen'] == true)
                   (x['beitraege'] as int? ?? 0) > 0
                       ? t.linkBeitraegeOffen(x['beitraege'] as int)

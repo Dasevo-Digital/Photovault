@@ -21,7 +21,20 @@ import 'videofassung.dart';
 /// Was zu einem Konto gehört: seine Bibliothek, sein Eingang für Uploads
 /// und seine Auswertung.
 class Kontobereich {
-  Kontobereich(this.bibliothek, this.hochladen, this.auswertung, this.vergabe);
+  Kontobereich(
+    this.bibliothek,
+    this.hochladen,
+    this.auswertung,
+    this.vergabe, {
+    Set<String>? Function()? lebendeZeichen,
+  }) : lebendeZeichen = lebendeZeichen ?? _unbekannt;
+
+  static Set<String>? _unbekannt() => null;
+
+  /// Die Kennungen der Wasserzeichen, die Links des Kontos tragen (#497) –
+  /// `null`, wenn der Server sie nicht nennt (siehe
+  /// [Bibliotheken.lebendeZeichen]).
+  final Set<String>? Function() lebendeZeichen;
 
   final Bibliothek bibliothek;
   final Hochladen hochladen;
@@ -56,6 +69,7 @@ class Bibliotheken {
     this.ruhe = const Duration(seconds: 10),
     this.selbst = const {...Analysestufe.values},
     Videofassungen? videofassungen,
+    this.lebendeZeichen,
   }) : modelle = modelle ?? Modelle(),
        videofassungen = videofassungen ?? Videofassungen() {
     // drift warnt, sobald es AppDatabase zweimal gibt – für den Fall, dass
@@ -80,6 +94,12 @@ class Bibliotheken {
   /// Die Videofassungen aller Konten – dieselben, die die Schnittstelle
   /// ausliefert, damit Vorrat und Abruf eine Reihe teilen (#394).
   final Videofassungen videofassungen;
+
+  /// Die Kennungen der Wasserzeichen, die die Links eines Kontos tragen
+  /// (`Freigabedienst.zeichenVon`, #497): Damit räumt das Aufräumen der
+  /// Fassungen auch die Bilder für Gäste weg, deren Link es nicht mehr gibt.
+  /// `baueApi` setzt es, wenn es fehlt.
+  Set<String> Function(String kontoId)? lebendeZeichen;
 
   final _offen = <String, Future<Kontobereich>>{};
 
@@ -176,13 +196,23 @@ class Bibliotheken {
     final beitraege = Directory(p.join(b.ordner.path, 'kontobeitraege'));
     if (await beitraege.exists()) await beitraege.delete(recursive: true);
     try {
-      final n = await raeumeFassungenAuf(b, beimOeffnen: true);
+      final n = await raeumeFassungenAuf(
+        b,
+        beimOeffnen: true,
+        zeichen: lebendeZeichen?.call(kontoId),
+      );
       if (n > 0) protokoll('$n gewandelte Fassungen aufgeräumt');
     } catch (e) {
       protokoll('Gewandelte Fassungen nicht aufgeräumt: $e');
     }
     auswertung.anstossen();
-    return Kontobereich(b, hochladen, auswertung, vergabe);
+    return Kontobereich(
+      b,
+      hochladen,
+      auswertung,
+      vergabe,
+      lebendeZeichen: () => lebendeZeichen?.call(kontoId),
+    );
   }
 
   /// Der Eingang eines Umzugs (`eingang/<Konto>.umzug`) – die Notizen zu

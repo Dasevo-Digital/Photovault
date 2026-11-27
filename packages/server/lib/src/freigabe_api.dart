@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math' show max;
 
 import 'package:crypto/crypto.dart';
@@ -170,6 +171,7 @@ class Freigabeapi {
       anzahl = gezaehlt?[album] ?? await db.sichtbareAnzahl(album);
       gezaehlt?[album] = anzahl;
     }
+    final zeichen = dienst.wasserzeichenVon(f);
     return {
       'id': f.id,
       'titel': f.titel,
@@ -189,9 +191,12 @@ class Freigabeapi {
       // Immer, auch als `false`: Fehlt das Feld, kennt der Server keine
       // Wasserzeichen (vor #497), und die Apps legen keinen Link an, der
       // ohne das gewünschte Zeichen hinausginge.
-      'wasserzeichen': f.wasserzeichen != null,
-      if (f.wasserzeichen case final w? when w.text.isNotEmpty)
-        'wasserzeichenText': w.text,
+      'wasserzeichen': f.mitWasserzeichen,
+      if (zeichen != null && zeichen.text.isNotEmpty)
+        'wasserzeichenText': zeichen.text,
+      // Gesetzt, aber nicht mehr zu lesen: Miniatur und Ansicht antworten
+      // dann mit 404 statt ohne Zeichen – hier steht, warum.
+      if (f.mitWasserzeichen && zeichen == null) 'wasserzeichenUnlesbar': true,
       'aufrufe': f.aufrufe,
       'zuletzt': f.zuletzt?.toUtc().toIso8601String(),
     };
@@ -262,11 +267,23 @@ class Freigabeapi {
     }
     Wasserzeichen? wasserzeichen;
     if (k['wasserzeichen'] case final roh?) {
-      wasserzeichen = Wasserzeichen.ausJson(roh);
-      final bild = wasserzeichen?.bild;
-      if (bild == null || !Wasserzeichenbild.gueltig(bild)) {
+      final gelesen = Wasserzeichen.ausJson(roh);
+      final bild = gelesen?.bild;
+      // Gespeichert wird nur, was hier gelesen und neu geschrieben ist:
+      // das erste Bild, RGBA, nicht grösser, als es in einer Ansicht wird
+      // (Wasserzeichenbild.normalisiert). In einem eigenen Isolate – das
+      // Dekodieren soll keine andere Anfrage aufhalten.
+      final normal = gelesen == null || bild == null
+          ? null
+          : await _normalisiertImIsolat(
+              bild,
+              (gelesen.groesse * ansichtKante).ceil(),
+              ansichtKante,
+            );
+      if (gelesen == null || normal == null) {
         return _json({'fehler': wasserzeichenUngueltig}, status: 400);
       }
+      wasserzeichen = gelesen.kopieMit(bild: normal);
     }
     final neu = await dienst.lege(
       konto: konto.id,
@@ -309,6 +326,12 @@ class Freigabeapi {
   /// die Weboberfläche übersetzt sie (texte.js).
   static const wasserzeichenUngueltig = 'Wasserzeichen ungültig';
 
+  /// Die lange Seite der Miniatur und der Ansicht für Gäste. Breiter als in
+  /// der Ansicht wird kein Wasserzeichen; so gross speichert es der Server
+  /// höchstens.
+  static const miniaturKante = 512;
+  static const ansichtKante = 2560;
+
   /// Der Hinweis über der Liste, wenn Links nicht mehr zu lesen sind.
   static const linksUnlesbar =
       'Einige Links lassen sich mit dem jetzigen server.schluessel nicht '
@@ -333,10 +356,7 @@ class Freigabeapi {
         await _raeumeWeg(b, x.id);
       }
     }
-    if (kennung != null &&
-        !dienst
-            .ohneLinkVon(konto)
-            .any((f) => f.wasserzeichenKennung == kennung)) {
+    if (kennung != null && !dienst.zeichenVon(konto).contains(kennung)) {
       await _raeumeZeichenWeg(
         (await bibliotheken.fuer(konto)).bibliothek,
         kennung,
@@ -346,10 +366,10 @@ class Freigabeapi {
   }
 
   /// Die Bilder mit dem Wasserzeichen [kennung] aus dem Zwischenspeicher
-  /// der Gäste (#497). Das Aufräumen der Fassungen behält sie, solange es
-  /// die Aufnahme gibt (`raeumeFassungenAuf` weiss nichts von Links); ohne
-  /// den Link, der sie zeigte, sind sie nur noch unverschlüsselte Kopien
-  /// auf der Platte. Teilen zwei Links desselben Kontos ein Zeichen,
+  /// der Gäste (#497) – gleich, nicht erst beim nächsten Aufräumen der
+  /// Fassungen (`raeumeFassungenAuf` mit [Freigabedienst.zeichenVon]):
+  /// Ohne den Link, der sie zeigte, sind sie nur noch unverschlüsselte
+  /// Kopien auf der Platte. Teilen zwei Links desselben Kontos ein Zeichen,
   /// bleiben sie, bis der letzte geht.
   Future<void> _raeumeZeichenWeg(Bibliothek b, String kennung) async {
     final speicher = Directory(p.join(b.ordner.path, 'geteilt'));
@@ -534,16 +554,28 @@ class Freigabeapi {
     }
 
     final speicher = Directory(p.join(b.ordner.path, 'geteilt'));
+    // Ein Zeichen ist gesetzt, aber seine Kennung fehlt: Dann gibt es keine
+    // Bilder (404) statt solcher ohne Zeichen. Gelesen wird das Zeichen
+    // erst, wenn ein Bild neu zu rechnen ist.
+    final kennung = f.wasserzeichenKennung;
+    if (f.mitWasserzeichen &&
+        kennung == null &&
+        (art == 'miniatur' || art == 'ansicht')) {
+      return Response.notFound(null);
+    }
+    final Teilbildzeichen? zeichen = kennung == null
+        ? null
+        : (kennung: kennung, laden: () => dienst.wasserzeichenVon(f));
     switch (art) {
       case 'miniatur':
         final q = ausDer(a.thumbnailRelativePath);
         if (q == null || !await q.exists()) return Response.notFound(null);
         final d = await _teilbilder.fassung(
           speicher,
-          teilbildName(a.id, 'm', f.wasserzeichenKennung),
+          teilbildName(a.id, 'm', kennung),
           q,
-          kante: 512,
-          wasserzeichen: f.wasserzeichen,
+          kante: miniaturKante,
+          zeichen: zeichen,
         );
         return d == null ? Response.notFound(null) : dateiAntwort(r, d);
       case 'ansicht':
@@ -552,10 +584,10 @@ class Freigabeapi {
         if (q == null || !await q.exists()) return Response.notFound(null);
         final d = await _teilbilder.fassung(
           speicher,
-          teilbildName(a.id, 'a', f.wasserzeichenKennung),
+          teilbildName(a.id, 'a', kennung),
           q,
-          kante: 2560,
-          wasserzeichen: f.wasserzeichen,
+          kante: ansichtKante,
+          zeichen: zeichen,
         );
         return d == null ? Response.notFound(null) : dateiAntwort(r, d);
       case 'video':
@@ -980,3 +1012,17 @@ class Freigabeapi {
     return _json({'geloescht': true});
   }
 }
+
+/// [Wasserzeichenbild.normalisiert] in einem eigenen Isolate – auf oberster
+/// Ebene, damit der Abschluss nichts aus [Freigabeapi] mitnimmt.
+Future<Uint8List?> _normalisiertImIsolat(
+  Uint8List bild,
+  int breite,
+  int hoehe,
+) => Isolate.run(
+  () => Wasserzeichenbild.normalisiert(
+    bild,
+    hoechstensBreite: breite,
+    hoechstensHoehe: hoehe,
+  ),
+);

@@ -2393,6 +2393,9 @@ async function zeigeFreigaben() {
       x.passwort ? t('mit Passwort') : null,
       x.herunterladen ? t('Originale erlaubt') : null,
       x.wasserzeichen ? t('mit Wasserzeichen') : null,
+      // Gesetzt, aber nicht mehr zu lesen: Der Server zeigt die Bilder dann
+      // gar nicht statt ohne Zeichen (#497).
+      x.wasserzeichenUnlesbar ? t('Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen') : null,
       x.hochladen ? (x.beitraege ? (x.beitraege === 1 ? t('1 Beitrag offen') : t('{n} Beiträge offen', { n: x.beitraege })) : t('Gäste dürfen hinzufügen')) : null,
       x.aufrufe === 1 ? t('1 Aufruf') : t('{n} Aufrufe', { n: x.aufrufe }),
       x.link ? null : t('Link nicht mehr lesbar – neu anlegen'),

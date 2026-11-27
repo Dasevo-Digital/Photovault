@@ -21,7 +21,7 @@ class Freigabe {
     required this.mitPasswort,
     required this.herunterladen,
     this.hochladen = false,
-    this.wasserzeichen,
+    this.mitWasserzeichen = false,
     this.wasserzeichenKennung,
     required this.angelegt,
     required this.ablauf,
@@ -45,15 +45,16 @@ class Freigabe {
   /// Ob Gäste zum Album beitragen dürfen (nur bei Alben).
   final bool hochladen;
 
-  /// Das Zeichen, das in Miniaturen und Ansichten für Gäste eingerechnet
-  /// wird (#497); `null` ohne. Es trägt stets ein fertiges PNG
-  /// ([Wasserzeichen.bild]) – auch bei einem Text, den das Gerät des
-  /// Besitzers gezeichnet hat (siehe `Freigabeapi.anlegen`).
-  final Wasserzeichen? wasserzeichen;
+  /// Ob in Miniaturen und Ansichten für Gäste ein Zeichen eingerechnet
+  /// wird (#497). Das Zeichen selbst liest erst, wer ein Bild neu rechnet
+  /// ([Freigabedienst.wasserzeichenVon]): Es trägt ein ganzes PNG, und
+  /// jeder Abruf eines Gastes sucht die Freigabe neu.
+  final bool mitWasserzeichen;
 
-  /// [Wasserzeichen.kennung] von [wasserzeichen] – im Namen der
-  /// zwischengespeicherten Bilder, damit zwei Links auf dasselbe Foto mit
-  /// verschiedenen Zeichen nicht dieselbe Datei teilen.
+  /// [Wasserzeichen.kennung] des Zeichens, beim Anlegen gerechnet – im
+  /// Namen der zwischengespeicherten Bilder, damit zwei Links auf dasselbe
+  /// Foto mit verschiedenen Zeichen nicht dieselbe Datei teilen. `null`
+  /// ohne Zeichen.
   final String? wasserzeichenKennung;
   final DateTime angelegt;
   final DateTime? ablauf;
@@ -128,13 +129,15 @@ class Freigabedienst {
     if (wasserzeichen != null && wasserzeichen.bild == null) {
       throw ArgumentError('Wasserzeichen ohne Bild');
     }
+    final kodiert = wasserzeichen?.kodiert();
     final id = _zufallstext(9);
     final link = _zufallstext(16);
     final jetzt = _uhr();
     _sdb.db.execute(
       'INSERT INTO freigaben (id, konto, pruefwert, link, geheimnis, titel, '
       'album, aufnahmen, passwort, herunterladen, hochladen, angelegt, '
-      'ablauf, wasserzeichen) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'ablauf, wasserzeichen, wasserzeichen_kennung) '
+      'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         konto,
@@ -151,32 +154,59 @@ class Freigabedienst {
         hochladen ? 1 : 0,
         jetzt.millisecondsSinceEpoch,
         gueltig == null ? null : jetzt.add(gueltig).millisecondsSinceEpoch,
-        wasserzeichen?.kodiert(),
+        kodiert,
+        wasserzeichen?.kennung,
       ],
     );
     return (id: id, link: link);
   }
 
-  /// Gelesene Wasserzeichen nach ihrem gespeicherten Text.
-  ///
-  /// Jede Miniatur einer Freigabe sucht die Freigabe neu (`fuer`), und eine
-  /// Seite mit zweihundert Fotos fragt zweihundertmal. Das Zeichen jedes Mal
-  /// aus Base64 zu lesen und seine Kennung (SHA-256 über das ganze PNG) neu
-  /// zu rechnen, kostete mehr als das Ausliefern der fertigen Datei.
-  final _gelesen = <String, ({Wasserzeichen zeichen, String kennung})?>{};
+  /// Was [_aus] braucht – alles ausser dem Zeichen selbst, das ein ganzes
+  /// PNG trägt (#497). Statt seiner nur, ob es eines gibt.
+  static const _spalten =
+      'id, konto, link, titel, album, aufnahmen, passwort, herunterladen, '
+      'hochladen, angelegt, ablauf, aufrufe, zuletzt, wasserzeichen_kennung, '
+      'wasserzeichen IS NOT NULL AS mit_wasserzeichen';
 
-  ({Wasserzeichen zeichen, String kennung})? _zeichen(String? roh) {
-    if (roh == null) return null;
-    if (_gelesen.containsKey(roh)) return _gelesen[roh];
-    // Nicht lesbar heisst ohne Zeichen – wie ein Link von vor Schema 15.
-    // Anlegen lässt sich ein unlesbares nicht (Freigabeapi.anlegen prüft).
-    final w = Wasserzeichen.ausKodiert(roh);
-    final gelesen = w == null || w.bild == null
+  /// Zuletzt gelesene Zeichen nach ihrer Kennung – für die Liste der
+  /// Freigaben, die den Text nennt. Die Bilder der Gäste halten sich das
+  /// vorbereitete Zeichen selbst (`Teilbilder`).
+  final _gelesen = <String, Wasserzeichen>{};
+
+  /// Das Zeichen von [f]; `null` ohne – oder, wenn [Freigabe.mitWasserzeichen]
+  /// gilt, weil es sich nicht lesen lässt. Dann darf kein Bild ohne Zeichen
+  /// hinaus (siehe `Freigabeapi.datei`).
+  Wasserzeichen? wasserzeichenVon(Freigabe f) {
+    final kennung = f.wasserzeichenKennung;
+    if (!f.mitWasserzeichen || kennung == null) return null;
+    if (_gelesen.remove(kennung) case final w?) return _gelesen[kennung] = w;
+    final z = _sdb.db.select(
+      'SELECT wasserzeichen FROM freigaben WHERE id = ?',
+      [f.id],
+    );
+    final w = z.isEmpty
         ? null
-        : (zeichen: w, kennung: w.kennung);
-    if (_gelesen.length >= 32) _gelesen.remove(_gelesen.keys.first);
-    return _gelesen[roh] = gelesen;
+        : Wasserzeichen.ausKodiert(z.first['wasserzeichen'] as String?);
+    // Ohne Bild liesse sich nichts einrechnen; und die Kennung muss passen,
+    // sonst trüge eine Datei unter diesem Namen ein anderes Zeichen.
+    if (w == null || w.bild == null || w.kennung != kennung) return null;
+    if (_gelesen.length >= 16) _gelesen.remove(_gelesen.keys.first);
+    return _gelesen[kennung] = w;
   }
+
+  /// Die Kennungen der Zeichen, die Links von [konto] tragen und die noch
+  /// jemand aufrufen kann – für das Aufräumen der Bilder der Gäste
+  /// (`raeumeFassungenAuf`). Ein abgelaufener Link zeigt nichts mehr, und
+  /// verlängern lässt er sich nicht.
+  Set<String> zeichenVon(String konto) => {
+    for (final z in _sdb.db.select(
+      'SELECT wasserzeichen_kennung FROM freigaben WHERE konto = ? '
+      'AND wasserzeichen_kennung IS NOT NULL '
+      'AND (ablauf IS NULL OR ablauf > ?)',
+      [konto, _uhr().millisecondsSinceEpoch],
+    ))
+      z['wasserzeichen_kennung']! as String,
+  };
 
   Freigabe _aus(Map<String, Object?> z) => Freigabe(
     id: z['id']! as String,
@@ -189,8 +219,8 @@ class Freigabedienst {
     mitPasswort: z['passwort'] != null,
     herunterladen: z['herunterladen'] == 1,
     hochladen: z['hochladen'] == 1,
-    wasserzeichen: _zeichen(z['wasserzeichen'] as String?)?.zeichen,
-    wasserzeichenKennung: _zeichen(z['wasserzeichen'] as String?)?.kennung,
+    mitWasserzeichen: z['mit_wasserzeichen'] == 1,
+    wasserzeichenKennung: z['wasserzeichen_kennung'] as String?,
     angelegt: DateTime.fromMillisecondsSinceEpoch(z['angelegt']! as int),
     ablauf: z['ablauf'] == null
         ? null
@@ -210,7 +240,7 @@ class Freigabedienst {
   /// widerrufen liess sich nichts mehr.
   Future<List<({Freigabe freigabe, String? link})>> von(String konto) async {
     final zeilen = _sdb.db.select(
-      'SELECT * FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
+      'SELECT $_spalten FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
       [konto],
     );
     final liste = <({Freigabe freigabe, String? link})>[];
@@ -234,7 +264,7 @@ class Freigabedienst {
   /// in der Liste der Beiträge von Gästen.
   List<Freigabe> ohneLinkVon(String konto) => [
     for (final z in _sdb.db.select(
-      'SELECT * FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
+      'SELECT $_spalten FROM freigaben WHERE konto = ? ORDER BY angelegt DESC',
       [konto],
     ))
       _aus(z),
@@ -253,9 +283,10 @@ class Freigabedienst {
   /// oder sie abgelaufen ist.
   Freigabe? fuer(String link) {
     if (link.length < 16 || link.length > 64) return null;
-    final z = _sdb.db.select('SELECT * FROM freigaben WHERE pruefwert = ?', [
-      _pruefwert(link),
-    ]);
+    final z = _sdb.db.select(
+      'SELECT $_spalten FROM freigaben WHERE pruefwert = ?',
+      [_pruefwert(link)],
+    );
     if (z.isEmpty) return null;
     final f = _aus(z.first);
     final ablauf = f.ablauf;

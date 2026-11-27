@@ -700,6 +700,7 @@
   "linkWasserzeichenServerZuAlt": "The server does not know watermarks yet. The link was not created – please update the server first.",
   "linkWasserzeichenNichtWiderrufen": "The server does not know watermarks yet and created the link without one. Please delete it under “Shared links” and update the server.",
   "linkMitWasserzeichen": "with watermark",
+  "linkWasserzeichenUnlesbar": "watermark can no longer be read – images withheld, create a new link",
   "lageObenLinks": "Top left",
   "lageOben": "Top centre",
   "lageObenRechts": "Top right",

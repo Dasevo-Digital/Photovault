@@ -413,7 +413,11 @@ class Serverdatenbank {
       // Ein Wasserzeichen je Freigabe (#497): die Einstellungen samt dem
       // PNG, das in die Bilder der Gäste eingerechnet wird, als JSON
       // (`Wasserzeichen.kodiert`). Bestehende Links bleiben ohne – NULL.
-      // Nur, was fehlt – wie Schritt 12.
+      // Daneben seine Kennung (`Wasserzeichen.kennung`, beim Anlegen
+      // gerechnet): Jeder Abruf eines Gastes sucht die Freigabe, und
+      // dafür das ganze PNG zu lesen und zu hashen, kostete mehr als die
+      // fertige Datei auszuliefern. Gelesen wird das Zeichen nur noch, wenn
+      // ein Bild neu zu rechnen ist. Nur, was fehlt – wie Schritt 12.
       final spalten = db
           .select('PRAGMA table_info(freigaben)')
           .map((r) => r['name'])
@@ -422,6 +426,11 @@ class Serverdatenbank {
       try {
         if (spalten.isNotEmpty && !spalten.contains('wasserzeichen')) {
           db.execute('ALTER TABLE freigaben ADD COLUMN wasserzeichen TEXT');
+        }
+        if (spalten.isNotEmpty && !spalten.contains('wasserzeichen_kennung')) {
+          db.execute(
+            'ALTER TABLE freigaben ADD COLUMN wasserzeichen_kennung TEXT',
+          );
         }
         db.execute('PRAGMA user_version = 15');
         db.execute('COMMIT');

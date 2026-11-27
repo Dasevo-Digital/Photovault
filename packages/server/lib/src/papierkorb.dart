@@ -29,7 +29,7 @@ Future<List<String>> leereImBereich(
   if (weg.isEmpty) return weg;
   teilungen?.vergissBeitraege(kontoId, weg);
   try {
-    await raeumeFassungenAuf(b);
+    await raeumeFassungenAuf(b, zeichen: bereich.lebendeZeichen());
   } catch (e) {
     protokoll('Gewandelte Fassungen nicht aufgeräumt: $e');
   }

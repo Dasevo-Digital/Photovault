@@ -3193,6 +3193,12 @@ abstract class AppTexte {
   /// **'mit Wasserzeichen'**
   String get linkMitWasserzeichen;
 
+  /// No description provided for @linkWasserzeichenUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen'**
+  String get linkWasserzeichenUnlesbar;
+
   /// No description provided for @lageObenLinks.
   ///
   /// In de, this message translates to:

@@ -28,14 +28,29 @@ class _Mitschrift {
   }
 }
 
+/// [serverKennt]: ob die Antwort auf das Anlegen `wasserzeichen` trägt;
+/// [meldetFunktion]: ob der Zustand des Servers die Funktion nennt.
 Future<_Mitschrift> _oeffne(
   WidgetTester tester, {
   required bool serverKennt,
+  bool? meldetFunktion,
 }) async {
   final mitschrift = _Mitschrift();
   final client = MockClient((r) async {
     mitschrift.anfragen.add(r);
     if (r.method == 'DELETE') return http.Response('{"geloescht":true}', 200);
+    if (r.method == 'GET' && r.url.path.endsWith('api/v1/zustand')) {
+      return http.Response(
+        jsonEncode({
+          'dienst': 'photo-vault',
+          'funktionen': {
+            'papierkorb': 1,
+            if (meldetFunktion ?? serverKennt) 'wasserzeichen': 1,
+          },
+        }),
+        200,
+      );
+    }
     final k = (jsonDecode(r.body) as Map).cast<String, Object?>();
     return http.Response(
       jsonEncode({
@@ -134,10 +149,28 @@ void main() {
     expect(m.anfragen.where((r) => r.method == 'DELETE'), isEmpty);
   });
 
-  testWidgets('ein Server ohne Wasserzeichen: der Link geht gleich wieder', (
+  testWidgets('ein Server ohne Wasserzeichen: erst gar kein Link', (
     tester,
   ) async {
     final m = await _oeffne(tester, serverKennt: false);
+    await tester.tap(find.text(t.linkWasserzeichen));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, t.linkWasserzeichenText),
+      '© Erika',
+    );
+    await _erstellen(tester);
+
+    // Gefragt, nichts angelegt, nichts zu löschen.
+    expect(m.anfragen.map((r) => r.method), ['GET']);
+    expect(m.angelegt, isNull);
+    expect(find.text(t.linkWasserzeichenServerZuAlt), findsOneWidget);
+    expect(find.text(t.linkWerHatSieht), findsNothing);
+  });
+
+  testWidgets('sagt die Antwort trotzdem nichts vom Zeichen: der Link geht '
+      'gleich wieder', (tester) async {
+    final m = await _oeffne(tester, serverKennt: false, meldetFunktion: true);
     await tester.tap(find.text(t.linkWasserzeichen));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -173,5 +206,61 @@ void main() {
     expect(m.angelegt!.keys, isNot(contains('wasserzeichen')));
     expect(m.anfragen.where((r) => r.method == 'DELETE'), isEmpty);
     expect(find.text(t.linkWerHatSieht), findsOneWidget);
+  });
+
+  testWidgets('in der Liste: ein Zeichen, das der Server nicht mehr lesen '
+      'kann', (tester) async {
+    final verbindung = Serververbindung(
+      Uri.parse('https://fotos.example/'),
+      'token',
+      client: MockClient(
+        (r) async => switch (r.url.path) {
+          '/api/v1/freigaben' => http.Response(
+            jsonEncode({
+              'freigaben': [
+                {
+                  'id': 'f1',
+                  'titel': 'Sommer',
+                  'link': 'https://fotos.example/teilen/abcdefghijklmnopqrstuv',
+                  'anzahl': 3,
+                  'aufrufe': 0,
+                  'wasserzeichen': true,
+                  'wasserzeichenUnlesbar': true,
+                },
+                {
+                  'id': 'f2',
+                  'titel': 'Herbst',
+                  'link': 'https://fotos.example/teilen/bcdefghijklmnopqrstuvw',
+                  'anzahl': 1,
+                  'aufrufe': 0,
+                  'wasserzeichen': true,
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          ),
+          _ => http.Response(jsonEncode({'beitraege': []}), 200),
+        },
+      ),
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        locale: const Locale('de'),
+        localizationsDelegates: AppTexte.localizationsDelegates,
+        supportedLocales: AppTexte.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: GeteilteLinks(verbindung: verbindung),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining(t.linkMitWasserzeichen), findsNWidgets(2));
+    expect(find.textContaining(t.linkWasserzeichenUnlesbar), findsOneWidget);
   });
 }

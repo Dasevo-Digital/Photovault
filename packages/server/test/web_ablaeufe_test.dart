@@ -582,12 +582,22 @@ void main() {
       for (final quelle in [fuer, anlegen])
         for (final m in RegExp(r"t\('([^']+)'").allMatches(quelle)) m[1]!,
       'mit Wasserzeichen',
+      'Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen',
       Freigabeapi.wasserzeichenUngueltig,
     ];
     expect(gefunden, contains('Unten rechts'));
     expect(
       funktion('zeigeFreigaben'),
       contains("x.wasserzeichen ? t('mit Wasserzeichen') : null"),
+    );
+    // Ein gesetztes, aber unlesbares Zeichen (#497): Der Server zeigt die
+    // Bilder dann nicht; die Liste sagt, warum.
+    expect(
+      funktion('zeigeFreigaben'),
+      contains(
+        "x.wasserzeichenUnlesbar ? t('Wasserzeichen nicht lesbar – Bilder "
+        "gesperrt, neu anlegen') : null",
+      ),
     );
     for (final text in gefunden) {
       expect(texte, contains("  '$text': '"), reason: text);

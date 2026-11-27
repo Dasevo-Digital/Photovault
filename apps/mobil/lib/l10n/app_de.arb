@@ -1088,6 +1088,7 @@
   "linkWasserzeichenServerZuAlt": "Der Server kennt noch keine Wasserzeichen. Der Link wurde nicht angelegt – bitte zuerst den Server aktualisieren.",
   "linkWasserzeichenNichtWiderrufen": "Der Server kennt noch keine Wasserzeichen und hat den Link ohne angelegt. Bitte unter „Geteilte Links“ löschen und den Server aktualisieren.",
   "linkMitWasserzeichen": "mit Wasserzeichen",
+  "linkWasserzeichenUnlesbar": "Wasserzeichen nicht lesbar – Bilder gesperrt, neu anlegen",
   "lageObenLinks": "Oben links",
   "lageOben": "Oben Mitte",
   "lageObenRechts": "Oben rechts",

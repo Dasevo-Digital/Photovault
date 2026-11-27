@@ -80,7 +80,17 @@ Future<void> begrenzeZwischenspeicher(
 /// [beimOeffnen]: Läuft, bevor eine Anfrage die Bibliothek erreicht. Nur dann
 /// gehen auch halbe Dateien (`.teil`) einer abgebrochenen Wandlung; im
 /// laufenden Betrieb gehörten sie einer Wandlung, die gerade schreibt.
-Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
+///
+/// [zeichen]: die Kennungen der Wasserzeichen, die Links des Kontos noch
+/// tragen (`Freigabedienst.zeichenVon`, #497). Die Bilder für Gäste mit
+/// einem anderen Zeichen gehen, auch wenn es die Aufnahme noch gibt – etwa
+/// die eines Links, der gelöscht wurde, während ein Bild für ihn gerechnet
+/// wurde, oder der abgelaufen ist. `null`: unbekannt, dann bleiben sie.
+Future<int> raeumeFassungenAuf(
+  Bibliothek b, {
+  bool beimOeffnen = false,
+  Set<String>? zeichen,
+}) async {
   final vollbild = Directory(p.join(b.ordner.path, 'vollbild'));
   final abspielbar = Directory(p.join(b.ordner.path, 'abspielbar'));
   // Die Bilder für Gäste geteilter Links: unverschlüsselt und bis zu 2560 px
@@ -120,8 +130,7 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
   // Die Bilder für Gäste gehen nach der Aufnahme, nicht nach dem Namen:
   // Neben `<id>-a.jpg` und `<id>-m.jpg` liegen die Fassungen der Links mit
   // Wasserzeichen (`<id>-a-<kennung>.jpg`, #497). Welche Kennungen noch ein
-  // Link trägt, weiss die Bibliothek nicht; die eines gelöschten Links
-  // räumt das Löschen weg (Freigabeapi.loeschen).
+  // Link trägt, weiss die Bibliothek nicht – das sagt [zeichen].
   final lebendig = <String>{};
   final liste = ids.toList();
   for (var i = 0; i < liste.length; i += 500) {
@@ -145,7 +154,8 @@ Future<int> raeumeFassungenAuf(Bibliothek b, {bool beimOeffnen = false}) async {
   for (final f in dateien) {
     if (behalten.contains(f.path)) continue;
     if (p.dirname(f.path) == geteilt.path && lebendig.contains(kennung(f))) {
-      continue;
+      final mit = teilbildAusName(p.basename(f.path))?.kennung;
+      if (mit == null || zeichen == null || zeichen.contains(mit)) continue;
     }
     try {
       await f.delete();
