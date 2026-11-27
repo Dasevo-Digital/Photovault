@@ -7429,18 +7429,6 @@ abstract class AppTexte {
   /// **'Bewertung'**
   String get xmpFeldBewertung;
 
-  /// No description provided for @viewerInDarktable.
-  ///
-  /// In de, this message translates to:
-  /// **'In darktable bearbeiten'**
-  String get viewerInDarktable;
-
-  /// No description provided for @viewerAusDarktable.
-  ///
-  /// In de, this message translates to:
-  /// **'Ergebnis aus darktable übernehmen'**
-  String get viewerAusDarktable;
-
   /// No description provided for @darktableGeoeffnet.
   ///
   /// In de, this message translates to:
@@ -7470,6 +7458,132 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'darktable: {fehler}'**
   String darktableFehler(String fehler);
+
+  /// No description provided for @viewerBearbeitenIn.
+  ///
+  /// In de, this message translates to:
+  /// **'Bearbeiten in'**
+  String get viewerBearbeitenIn;
+
+  /// No description provided for @viewerAnderesProgramm.
+  ///
+  /// In de, this message translates to:
+  /// **'Anderes Programm …'**
+  String get viewerAnderesProgramm;
+
+  /// No description provided for @viewerErgebnisAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Ergebnis aus {programm} übernehmen'**
+  String viewerErgebnisAus(String programm);
+
+  /// No description provided for @fremdProgrammWaehlen.
+  ///
+  /// In de, this message translates to:
+  /// **'Programm zum Bearbeiten wählen'**
+  String get fremdProgrammWaehlen;
+
+  /// No description provided for @fremdGeoeffnet.
+  ///
+  /// In de, this message translates to:
+  /// **'In {programm} geöffnet. Speichere das Ergebnis als JPEG, TIFF oder PNG im Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.'**
+  String fremdGeoeffnet(String programm);
+
+  /// No description provided for @fremdGeoeffnetOn1.
+  ///
+  /// In de, this message translates to:
+  /// **'In ON1 Photo RAW geöffnet. ON1 hält die Bearbeitung in einer .on1-Datei fest; exportiere das Ergebnis über „Exportieren“ als JPEG oder TIFF in den Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.'**
+  String get fremdGeoeffnetOn1;
+
+  /// No description provided for @fremdNichtGestartet.
+  ///
+  /// In de, this message translates to:
+  /// **'{programm} liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.'**
+  String fremdNichtGestartet(String programm);
+
+  /// No description provided for @fremdKeinErgebnis.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch kein Ergebnis gefunden. Speichere das Bild in {programm} als JPEG, TIFF oder PNG im geöffneten Ordner.'**
+  String fremdKeinErgebnis(String programm);
+
+  /// No description provided for @fremdKeinErgebnisOn1.
+  ///
+  /// In de, this message translates to:
+  /// **'Noch kein Ergebnis gefunden. Die .on1-Datei enthält nur die Bearbeitung – exportiere das Bild in ON1 Photo RAW als JPEG oder TIFF in den geöffneten Ordner.'**
+  String get fremdKeinErgebnisOn1;
+
+  /// No description provided for @fremdNurUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ kann Photo Vault nicht lesen. Speichere das Ergebnis zusätzlich als JPEG oder TIFF im geöffneten Ordner.'**
+  String fremdNurUnlesbar(String datei);
+
+  /// No description provided for @fremdErgebnisUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ liess sich nicht lesen. Speichere das Ergebnis als JPEG im geöffneten Ordner.'**
+  String fremdErgebnisUnlesbar(String datei);
+
+  /// No description provided for @fremdUebernommen.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernommen. Das Original liegt als Variante dahinter.'**
+  String get fremdUebernommen;
+
+  /// No description provided for @fremdFehler.
+  ///
+  /// In de, this message translates to:
+  /// **'{programm}: {fehler}'**
+  String fremdFehler(String programm, String fehler);
+
+  /// No description provided for @einstAbschnittBearbeitenIn.
+  ///
+  /// In de, this message translates to:
+  /// **'Bearbeiten in anderen Programmen'**
+  String get einstAbschnittBearbeitenIn;
+
+  /// No description provided for @einstBeschrBearbeitenIn.
+  ///
+  /// In de, this message translates to:
+  /// **'Welche Programme das Vollbild unter „Bearbeiten in“ anbietet – darktable, Photoshop, GIMP, Affinity, ON1 oder ein eigenes'**
+  String get einstBeschrBearbeitenIn;
+
+  /// No description provided for @einstBearbeitenInText.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Programm bekommt eine Kopie des Fotos in einem eigenen Ordner, die Bibliothek bleibt unberührt. Das Ergebnis holst du im Vollbild über das Rechtsklick-Menü ab; das Original bleibt als Variante dahinter.'**
+  String get einstBearbeitenInText;
+
+  /// No description provided for @einstBearbeitenInNichtGefunden.
+  ///
+  /// In de, this message translates to:
+  /// **'Nicht gefunden'**
+  String get einstBearbeitenInNichtGefunden;
+
+  /// No description provided for @einstBearbeitenInHinzufuegen.
+  ///
+  /// In de, this message translates to:
+  /// **'Programm hinzufügen …'**
+  String get einstBearbeitenInHinzufuegen;
+
+  /// No description provided for @einstBearbeitenInEntfernen.
+  ///
+  /// In de, this message translates to:
+  /// **'Entfernen'**
+  String get einstBearbeitenInEntfernen;
+
+  /// No description provided for @einstBearbeitenInFlatpak.
+  ///
+  /// In de, this message translates to:
+  /// **'Als Flatpak kann Photo Vault keine anderen Programme starten. Es legt die Arbeitskopie bereit und öffnet ihren Ordner; dort öffnest du sie selbst im Programm.'**
+  String get einstBearbeitenInFlatpak;
+
+  /// No description provided for @einstBearbeitenInOrdner.
+  ///
+  /// In de, this message translates to:
+  /// **'Arbeitskopien liegen unter {ordner}.'**
+  String einstBearbeitenInOrdner(String ordner);
 
   /// No description provided for @xmpOrdnerWaehlen.
   ///

@@ -2965,7 +2965,7 @@ void main() {
     final erste = r.topLeft + const Offset(200, 150);
     await rechtsklick(tester, flaeche, stelle: erste);
     final punkte = [
-      de.viewerInDarktable,
+      de.viewerBearbeitenIn,
       de.viewerInTimelineZeigen,
       de.viewerAehnlicheZeigen,
       de.viewerMetadatenBearbeiten,
@@ -2975,7 +2975,7 @@ void main() {
       expect(find.text(t), findsOneWidget, reason: t);
     }
     expect(find.text(de.infoOriginalHerstellen), findsNothing);
-    final lage1 = tester.getTopLeft(find.text(de.viewerInDarktable));
+    final lage1 = tester.getTopLeft(find.text(de.viewerBearbeitenIn));
     expect(
       (lage1 - erste).distance,
       lessThan(120),
@@ -2983,14 +2983,14 @@ void main() {
     );
     // Esc schliesst nur das Menü.
     await key(tester, LogicalKeyboardKey.escape);
-    await waitGone(tester, find.text(de.viewerInDarktable));
+    await waitGone(tester, find.text(de.viewerBearbeitenIn));
     expect(betrachter, findsOneWidget);
     // Zweimal kurz nacheinander: das Menü zieht um.
     await rechtsklick(tester, flaeche, stelle: erste);
     final zweite = r.topLeft + const Offset(500, 380);
     await rechtsklick(tester, flaeche, stelle: zweite);
-    expect(find.text(de.viewerInDarktable), findsOneWidget);
-    final lage2 = tester.getTopLeft(find.text(de.viewerInDarktable));
+    expect(find.text(de.viewerBearbeitenIn), findsOneWidget);
+    final lage2 = tester.getTopLeft(find.text(de.viewerBearbeitenIn));
     expect((lage2 - lage1).distance, greaterThan(150));
     await key(tester, LogicalKeyboardKey.escape);
     // Bearbeitetes Foto: „Original wiederherstellen“.
@@ -3004,7 +3004,7 @@ void main() {
     await waitFor(tester, betrachterZeigt(DateTime(2025, 4, 1, 10)));
     await rechtsklick(tester, flaeche, stelle: erste);
     expect(find.text(de.viewerInTimelineZeigen), findsOneWidget);
-    expect(find.text(de.viewerInDarktable), findsNothing);
+    expect(find.text(de.viewerBearbeitenIn), findsNothing);
     expect(find.text(de.viewerGesichterBearbeiten), findsNothing);
     await key(tester, LogicalKeyboardKey.escape);
     await schliesseBetrachter(tester);
@@ -7378,7 +7378,7 @@ void main() {
         find.descendant(of: betrachter, matching: find.byType(PageView)),
       );
       expect(find.text(de.viewerInTimelineZeigen), findsOneWidget);
-      expect(find.text(de.viewerInDarktable), findsNothing);
+      expect(find.text(de.viewerBearbeitenIn), findsNothing);
       expect(find.text(de.viewerGesichterBearbeiten), findsNothing);
       await key(tester, LogicalKeyboardKey.escape);
       // Das gesperrte Video.

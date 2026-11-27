@@ -1608,8 +1608,6 @@
   "zweitKeineBibliothek": "Not a Photo Vault folder: library.sqlite is missing in “{ordner}”.",
   "xmpEinlesenFehlgeschlagen": "Reading failed: {fehler}",
   "xmpFeldBewertung": "Rating",
-  "viewerInDarktable": "Edit in darktable",
-  "viewerAusDarktable": "Take result from darktable",
   "darktableGeoeffnet": "Opened in darktable. Export the result as JPEG, then take it over from the context menu.",
   "darktableNichtGestartet": "darktable could not be started. The folder with the working copy is open.",
   "darktableKeinErgebnis": "No JPEG found yet. Export the photo as JPEG from darktable into the suggested folder.",
@@ -1618,6 +1616,86 @@
   "@darktableFehler": {
     "placeholders": {
       "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerBearbeitenIn": "Edit in",
+  "viewerAnderesProgramm": "Other app …",
+  "viewerErgebnisAus": "Take result from {programm}",
+  "@viewerErgebnisAus": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdProgrammWaehlen": "Choose an app for editing",
+  "fremdGeoeffnet": "Opened in {programm}. Save the result as JPEG, TIFF or PNG in the folder of the working copy, then take it over from the context menu.",
+  "@fremdGeoeffnet": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdGeoeffnetOn1": "Opened in ON1 Photo RAW. ON1 keeps the edit in an .on1 file; export the result via “Export” as JPEG or TIFF into the folder of the working copy, then take it over from the context menu.",
+  "fremdNichtGestartet": "{programm} could not be started. The folder with the working copy is open.",
+  "@fremdNichtGestartet": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdKeinErgebnis": "No result found yet. Save the image from {programm} as JPEG, TIFF or PNG in the opened folder.",
+  "@fremdKeinErgebnis": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdKeinErgebnisOn1": "No result found yet. The .on1 file only holds the edit – export the image from ON1 Photo RAW as JPEG or TIFF into the opened folder.",
+  "fremdNurUnlesbar": "Photo Vault cannot read “{datei}”. Also save the result as JPEG or TIFF in the opened folder.",
+  "@fremdNurUnlesbar": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdErgebnisUnlesbar": "“{datei}” could not be read. Save the result as JPEG in the opened folder.",
+  "@fremdErgebnisUnlesbar": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdUebernommen": "Taken over. The original stays behind it as a variant.",
+  "fremdFehler": "{programm}: {fehler}",
+  "@fremdFehler": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      },
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "einstAbschnittBearbeitenIn": "Edit in other apps",
+  "einstBeschrBearbeitenIn": "Which apps full screen offers under “Edit in” – darktable, Photoshop, GIMP, Affinity, ON1 or one of your own",
+  "einstBearbeitenInText": "The app gets a copy of the photo in a folder of its own; the library stays untouched. Take the result over in full screen from the context menu; the original stays behind it as a variant.",
+  "einstBearbeitenInNichtGefunden": "Not found",
+  "einstBearbeitenInHinzufuegen": "Add app …",
+  "einstBearbeitenInEntfernen": "Remove",
+  "einstBearbeitenInFlatpak": "As a Flatpak, Photo Vault cannot start other apps. It prepares the working copy and opens its folder; open it in the app from there.",
+  "einstBearbeitenInOrdner": "Working copies are kept in {ordner}.",
+  "@einstBearbeitenInOrdner": {
+    "placeholders": {
+      "ordner": {
         "type": "String"
       }
     }

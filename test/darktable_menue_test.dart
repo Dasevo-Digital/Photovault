@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/asset_viewer_screen.dart';
 import 'package:photo_vault/services/backup_service.dart';
+import 'package:photo_vault/services/bearbeitungsprogramme.dart';
 import 'package:photo_vault/services/darktable_bruecke.dart';
 import 'package:photo_vault/state/library_state.dart';
 import 'package:photo_vault/theme/app_theme.dart';
@@ -23,12 +24,16 @@ import 'package:provider/provider.dart';
 /// Nach „In darktable bearbeiten“ baute die Vollbildansicht aber nicht neu
 /// auf; der Punkt erschien erst, wenn sie aus anderem Grund neu gezeichnet
 /// wurde.
+///
+/// Seit #499 steht darktable im Untermenü „Bearbeiten in“; der Punkt zum
+/// Übernehmen bleibt im Menü selbst.
 void main() {
   late Directory wurzel;
   late AppDatabase db;
   late StoragePaths pfade;
   late LibraryState bibliothek;
   late DarktableBruecke bruecke;
+  late Bearbeitungsprogramme programme;
   late AssetData foto;
 
   setUp(() async {
@@ -46,6 +51,14 @@ void main() {
     bruecke = DarktableBruecke(
       Directory(p.join(wurzel.path, 'darktable')),
       starte: (_) async => true,
+    );
+    // Keine Erkennung auf dem Prüfrechner, keine Einstellung im echten
+    // Datenordner: darktable steht auch ohne Fund im Menü.
+    programme = Bearbeitungsprogramme(
+      basis: Directory(p.join(wurzel.path, 'arbeit')),
+      einstellungen: () async => File(p.join(wurzel.path, 'programme.json')),
+      erkenne: () async => const {},
+      zeigeOrdner: (_) async => true,
     );
     final original = pfade.absolute('originals/a.jpg');
     await original.parent.create(recursive: true);
@@ -103,6 +116,7 @@ void main() {
             db: db,
             library: bibliothek,
             darktable: bruecke,
+            programme: programme,
           ),
         ),
       ),
@@ -110,9 +124,11 @@ void main() {
     await warte(tester);
 
     await menueOeffnen(tester);
-    expect(find.text('In darktable bearbeiten'), findsOneWidget);
+    expect(find.text('Bearbeiten in'), findsOneWidget);
     expect(find.text('Ergebnis aus darktable übernehmen'), findsNothing);
-    await tester.tap(find.text('In darktable bearbeiten'));
+    await tester.tap(find.text('Bearbeiten in'));
+    await warte(tester);
+    await tester.tap(find.text('darktable'));
     await warte(tester);
     expect(bruecke.offen('a'), isTrue, reason: 'die Arbeitskopie liegt da');
 

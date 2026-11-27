@@ -1061,7 +1061,7 @@ void _entwickelnTests() {
           );
           await rechtsklick(tester);
           expect(find.text(de.viewerInTimelineZeigen), findsOneWidget);
-          expect(find.text(de.viewerInDarktable), findsNothing);
+          expect(find.text(de.viewerBearbeitenIn), findsNothing);
           expect(find.text(de.viewerGesichterBearbeiten), findsNothing);
           await menueSchliessen(tester);
         } else {
@@ -6797,7 +6797,8 @@ void _darktableTests() {
         await oeffneFoto(tester, a);
         await rechtsklick(tester);
         merkeMeldungen();
-        await tap(tester, find.text(de.viewerInDarktable));
+        await tap(tester, find.text(de.viewerBearbeitenIn));
+        await tap(tester, find.text('darktable'));
         await erwarteNeueMeldung(
           tester,
           de.darktableNichtGestartet,
@@ -6814,7 +6815,10 @@ void _darktableTests() {
 
         // BEA-152
         await rechtsklick(tester);
-        final sofort = find.text(de.viewerAusDarktable).evaluate().isNotEmpty;
+        final sofort = find
+            .text(de.viewerErgebnisAus('darktable'))
+            .evaluate()
+            .isNotEmpty;
         beobachtung(
           'BEA-152',
           'gleich nach „In darktable bearbeiten“ steht „Ergebnis aus darktable übernehmen“ im Menü: $sofort',
@@ -6825,7 +6829,7 @@ void _darktableTests() {
           await rechtsklick(tester);
         }
         merkeMeldungen();
-        await tap(tester, find.text(de.viewerAusDarktable));
+        await tap(tester, find.text(de.viewerErgebnisAus('darktable')));
         await erwarteNeueMeldung(
           tester,
           de.darktableKeinErgebnis,
@@ -6834,9 +6838,9 @@ void _darktableTests() {
         expect(sha(datei((await aufnahme(tester, a)).relativePath)), shaA);
         await oeffneFoto(tester, ids[1]);
         await rechtsklick(tester);
-        expect(find.text(de.viewerInDarktable), findsOneWidget);
+        expect(find.text(de.viewerBearbeitenIn), findsOneWidget);
         expect(
-          find.text(de.viewerAusDarktable),
+          find.text(de.viewerErgebnisAus('darktable')),
           findsNothing,
           reason: 'ohne Arbeitskopie kein Menüpunkt',
         );
@@ -6859,7 +6863,7 @@ void _darktableTests() {
         await oeffneFoto(tester, a);
         await rechtsklick(tester);
         merkeMeldungen();
-        await tap(tester, find.text(de.viewerAusDarktable));
+        await tap(tester, find.text(de.viewerErgebnisAus('darktable')));
         await erwarteNeueMeldung(
           tester,
           de.darktableUebernommen,

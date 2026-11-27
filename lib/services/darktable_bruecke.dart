@@ -2,123 +2,55 @@ import 'dart:io';
 
 import 'package:path/path.dart' as p;
 
-/// Der Weg zu darktable und zurück (#347).
+import 'bearbeitungsbruecke.dart';
+import 'fremdprogramme.dart';
+
+/// Der Weg zu darktable und zurück (#347) – eine [Bearbeitungsbruecke]
+/// mit den Eigenheiten von darktable.
 ///
-/// **Arbeitskopie statt Bibliothek.** darktable bekommt eine Kopie des
-/// Originals in einem eigenen Ordner, daneben die Beilage unter dem Namen,
-/// den darktable sucht (`IMG_1234.CR3.xmp`). Die Bibliothek gehört
-/// Photo Vault; mit Server liegen die Originale ohnehin nicht hier.
+/// **Die Beilage.** darktable bekommt neben der Kopie die Beilage unter
+/// dem Namen, den es sucht (`IMG_1234.CR3.xmp`). Darin stehen Sterne und
+/// Farbmarke aus der Bibliothek; was darktable dort ändert, kommt beim
+/// Übernehmen zurück, und seine Bearbeitung kann der Server rendern
+/// (#351).
 ///
-/// **Kein Warten im Hintergrund.** Bearbeiten dauert Stunden oder Tage, und
-/// ob ein JPEG schon fertig geschrieben ist, sieht man ihm nicht an. Das
-/// Ergebnis holt man deshalb von Hand ab. Der Ordner merkt sich dabei, was
-/// noch offen ist, über jeden Neustart hinweg.
-class DarktableBruecke {
-  DarktableBruecke(this.ablage, {Future<bool> Function(String)? starte})
-    : _starte = starte ?? starteDarktable;
+/// **Nur JPEG.** darktable exportiert nach `darktable_exported/`, und sein
+/// Hinweis sagt „als JPEG“. Daran ändert #499 nichts: Wer schon einen
+/// Arbeitsordner mit einem TIFF-Zwischenstand liegen hat, soll ihn nicht
+/// plötzlich als Ergebnis übernommen bekommen.
+class DarktableBruecke extends Bearbeitungsbruecke {
+  DarktableBruecke(super.ablage, {Future<bool> Function(String)? starte})
+    : super(
+        starte: starte ?? starteDarktable,
+        mitBeilage: true,
+        endungen: const {'.jpg', '.jpeg'},
+        kopieZaehlt: false,
+      );
 
   /// Unter „Bilder“, dort kommt darktable auch aus dem Flatpak hin. Auf dem
   /// Mac direkt im Container: HOME zeigt in der Sandbox dorthin, und
   /// `Pictures` wäre ein Verweis auf einen Ordner, den die App nicht
-  /// beschreiben darf.
-  factory DarktableBruecke.standard() {
-    final heim =
-        Platform.environment['HOME'] ??
-        Platform.environment['USERPROFILE'] ??
-        Directory.systemTemp.path;
-    return DarktableBruecke(
-      Directory(
-        Platform.isMacOS
-            ? p.join(heim, 'PhotoVault-darktable')
-            : p.join(heim, 'Pictures', 'PhotoVault-darktable'),
-      ),
-    );
-  }
+  /// beschreiben darf. Der Ort selbst steht seit #499 in
+  /// [arbeitsordnerBasis], damit die anderen Programme daneben liegen.
+  factory DarktableBruecke.standard() => DarktableBruecke(
+    Directory(p.join(arbeitsordnerBasis(), Bekannt.darktable.ordner)),
+  );
+}
 
-  final Directory ablage;
-  final Future<bool> Function(String) _starte;
-
-  Directory ordner(String id) => Directory(p.join(ablage.path, id));
-  bool offen(String id) => ordner(id).existsSync();
-
-  File beilage(String id, String name) =>
-      File(p.join(ordner(id).path, '${p.basename(name)}.xmp'));
-
-  /// Legt Kopie und Beilage an und startet darktable. `false`: Das Programm
-  /// liess sich nicht starten, die Kopie liegt trotzdem bereit. Ist schon
-  /// eine Arbeitskopie da, bleibt sie, mitsamt ihrer Bearbeitung.
-  Future<bool> oeffne({
-    required String id,
-    required String name,
-    required File original,
-    required String xmp,
-  }) async {
-    final platz = await ordner(id).create(recursive: true);
-    final kopie = File(p.join(platz.path, p.basename(name)));
-    if (!await kopie.exists()) {
-      final teil = File('${kopie.path}.teil');
-      await original.copy(teil.path);
-      await teil.rename(kopie.path);
-      await beilage(id, name).writeAsString(xmp, flush: true);
-    }
-    return _starte(kopie.path);
-  }
-
-  /// Das zuletzt exportierte JPEG, irgendwo im Ordner (darktable legt es in
-  /// `darktable_exported/` ab). Die Arbeitskopie selbst zählt nicht.
-  Future<File?> ergebnis(String id, String name) async {
-    final platz = ordner(id);
-    if (!await platz.exists()) return null;
-    final kopie = p.join(platz.path, p.basename(name));
-    File? beste;
-    DateTime? zeit;
-    await for (final e in platz.list(recursive: true, followLinks: false)) {
-      if (e is! File || p.equals(e.path, kopie)) continue;
-      final endung = p.extension(e.path).toLowerCase();
-      if (endung != '.jpg' && endung != '.jpeg') continue;
-      final t = await e.lastModified();
-      if (zeit == null || t.isAfter(zeit)) {
-        beste = e;
-        zeit = t;
-      }
-    }
-    return beste;
-  }
-
-  /// Räumt die Arbeitskopie weg. Nur unterhalb der [ablage].
-  Future<void> schliesse(String id) async {
-    final platz = ordner(id);
-    if (p.isWithin(ablage.path, platz.path) && await platz.exists()) {
-      await platz.delete(recursive: true);
-    }
-  }
+/// Wo die Ordner der Arbeitskopien liegen (siehe [DarktableBruecke.standard]).
+String arbeitsordnerBasis() {
+  final heim =
+      Platform.environment['HOME'] ??
+      Platform.environment['USERPROFILE'] ??
+      Directory.systemTemp.path;
+  return Platform.isMacOS ? heim : p.join(heim, 'Pictures');
 }
 
 /// Startet darktable mit [datei]; `false`, wenn das nicht geht. Aus dem
 /// Flatpak kommt man an Programme des Systems nicht heran.
-Future<bool> starteDarktable(String datei) async {
-  try {
-    if (Platform.isMacOS) {
-      final r = await Process.run('open', ['-a', 'darktable', datei]);
-      return r.exitCode == 0;
-    }
-    if (Platform.isWindows) {
-      final wurzel =
-          Platform.environment['ProgramFiles'] ?? r'C:\Program Files';
-      final programm = p.join(wurzel, 'darktable', 'bin', 'darktable.exe');
-      if (!await File(programm).exists()) return false;
-      await Process.start(programm, [datei], mode: ProcessStartMode.detached);
-      return true;
-    }
-    if (Platform.isLinux) {
-      if (Platform.environment.containsKey('FLATPAK_ID')) return false;
-      await Process.start('darktable', [
-        datei,
-      ], mode: ProcessStartMode.detached);
-      return true;
-    }
-  } on ProcessException {
-    return false;
-  }
-  return false;
-}
+///
+/// Ohne gefundenen Pfad – genau der Weg von vor #499: unter macOS
+/// `open -a darktable`, unter Windows der übliche Programmordner, unter
+/// Linux `darktable` aus dem PATH (siehe [Programmstarter]).
+Future<bool> starteDarktable(String datei) =>
+    Programmstarter().starte(Fremdprogramm.bekannt(Bekannt.darktable), datei);

@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
 import '../widgets/tastenkuerzel.dart';
+import 'einstellungen/bearbeiten_in.dart';
 import 'einstellungen/bibliotheken.dart';
 import 'einstellungen/einstellungsstand.dart';
 import 'einstellungen/erscheinungsbild.dart';
@@ -136,6 +137,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       titel: t.einstAbschnittKarte,
       beschreibung: t.einstBeschrKarte,
       inhalt: () => [KarteGruppe(_stand)],
+    ),
+    _Gruppe(
+      icon: Icons.open_in_new,
+      titel: t.einstAbschnittBearbeitenIn,
+      beschreibung: t.einstBeschrBearbeitenIn,
+      inhalt: () => [const BearbeitenInGruppe()],
     ),
     _Gruppe(
       icon: Icons.lock_outline,

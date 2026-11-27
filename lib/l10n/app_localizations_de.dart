@@ -4530,12 +4530,6 @@ class AppTexteDe extends AppTexte {
   String get xmpFeldBewertung => 'Bewertung';
 
   @override
-  String get viewerInDarktable => 'In darktable bearbeiten';
-
-  @override
-  String get viewerAusDarktable => 'Ergebnis aus darktable übernehmen';
-
-  @override
   String get darktableGeoeffnet =>
       'In darktable geöffnet. Exportiere das Ergebnis als JPEG und übernimm es dann über das Kontextmenü.';
 
@@ -4554,6 +4548,91 @@ class AppTexteDe extends AppTexte {
   @override
   String darktableFehler(String fehler) {
     return 'darktable: $fehler';
+  }
+
+  @override
+  String get viewerBearbeitenIn => 'Bearbeiten in';
+
+  @override
+  String get viewerAnderesProgramm => 'Anderes Programm …';
+
+  @override
+  String viewerErgebnisAus(String programm) {
+    return 'Ergebnis aus $programm übernehmen';
+  }
+
+  @override
+  String get fremdProgrammWaehlen => 'Programm zum Bearbeiten wählen';
+
+  @override
+  String fremdGeoeffnet(String programm) {
+    return 'In $programm geöffnet. Speichere das Ergebnis als JPEG, TIFF oder PNG im Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.';
+  }
+
+  @override
+  String get fremdGeoeffnetOn1 =>
+      'In ON1 Photo RAW geöffnet. ON1 hält die Bearbeitung in einer .on1-Datei fest; exportiere das Ergebnis über „Exportieren“ als JPEG oder TIFF in den Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.';
+
+  @override
+  String fremdNichtGestartet(String programm) {
+    return '$programm liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.';
+  }
+
+  @override
+  String fremdKeinErgebnis(String programm) {
+    return 'Noch kein Ergebnis gefunden. Speichere das Bild in $programm als JPEG, TIFF oder PNG im geöffneten Ordner.';
+  }
+
+  @override
+  String get fremdKeinErgebnisOn1 =>
+      'Noch kein Ergebnis gefunden. Die .on1-Datei enthält nur die Bearbeitung – exportiere das Bild in ON1 Photo RAW als JPEG oder TIFF in den geöffneten Ordner.';
+
+  @override
+  String fremdNurUnlesbar(String datei) {
+    return '„$datei“ kann Photo Vault nicht lesen. Speichere das Ergebnis zusätzlich als JPEG oder TIFF im geöffneten Ordner.';
+  }
+
+  @override
+  String fremdErgebnisUnlesbar(String datei) {
+    return '„$datei“ liess sich nicht lesen. Speichere das Ergebnis als JPEG im geöffneten Ordner.';
+  }
+
+  @override
+  String get fremdUebernommen =>
+      'Übernommen. Das Original liegt als Variante dahinter.';
+
+  @override
+  String fremdFehler(String programm, String fehler) {
+    return '$programm: $fehler';
+  }
+
+  @override
+  String get einstAbschnittBearbeitenIn => 'Bearbeiten in anderen Programmen';
+
+  @override
+  String get einstBeschrBearbeitenIn =>
+      'Welche Programme das Vollbild unter „Bearbeiten in“ anbietet – darktable, Photoshop, GIMP, Affinity, ON1 oder ein eigenes';
+
+  @override
+  String get einstBearbeitenInText =>
+      'Das Programm bekommt eine Kopie des Fotos in einem eigenen Ordner, die Bibliothek bleibt unberührt. Das Ergebnis holst du im Vollbild über das Rechtsklick-Menü ab; das Original bleibt als Variante dahinter.';
+
+  @override
+  String get einstBearbeitenInNichtGefunden => 'Nicht gefunden';
+
+  @override
+  String get einstBearbeitenInHinzufuegen => 'Programm hinzufügen …';
+
+  @override
+  String get einstBearbeitenInEntfernen => 'Entfernen';
+
+  @override
+  String get einstBearbeitenInFlatpak =>
+      'Als Flatpak kann Photo Vault keine anderen Programme starten. Es legt die Arbeitskopie bereit und öffnet ihren Ordner; dort öffnest du sie selbst im Programm.';
+
+  @override
+  String einstBearbeitenInOrdner(String ordner) {
+    return 'Arbeitskopien liegen unter $ordner.';
   }
 
   @override

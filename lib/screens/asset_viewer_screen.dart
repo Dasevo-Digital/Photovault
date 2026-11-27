@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path/path.dart' as p;
 import 'package:photo_view/photo_view.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -45,15 +46,15 @@ import 'image_editor_screen.dart';
 import 'similar_photos_screen.dart';
 import 'video_trim_screen.dart';
 import '../services/bearbeitung_zuruecknehmen.dart';
+import '../services/bearbeitungsbruecke.dart';
+import '../services/bearbeitungsprogramme.dart';
 import '../services/darktable_bruecke.dart';
-import '../services/platform/reveal_in_file_manager.dart';
+import '../services/fremdprogramme.dart';
 import '../services/xmp_writer.dart';
 import '../services/meldungsdienst.dart';
 import '../widgets/bibliotheksbild.dart';
 
 enum _ContextMenuAction {
-  inDarktable,
-  ausDarktable,
   showInTimeline,
   showSimilar,
   editMetadata,
@@ -108,9 +109,14 @@ class AssetViewerScreen extends StatefulWidget {
   /// schnellen Durchlauf frisch importierter oder noch unbewerteter Fotos.
   final bool cullingMode;
 
-  /// Wo die Arbeitskopien für darktable liegen. Ohne Angabe der übliche
-  /// Ordner ([DarktableBruecke.standard]); ein Test gibt einen eigenen.
+  /// Wo die Arbeitskopien für darktable liegen. Ohne Angabe der Ordner
+  /// aus [programme]; ein Test gibt einen eigenen.
   final DarktableBruecke? darktable;
+
+  /// Die Programme unter „Bearbeiten in“ (#499). Ohne Angabe die eine
+  /// Liste der App ([Bearbeitungsprogramme.standard]); ein Test gibt eine
+  /// mit nachgestellter Erkennung und einem Start, der nichts startet.
+  final Bearbeitungsprogramme? programme;
 
   const AssetViewerScreen({
     super.key,
@@ -125,6 +131,7 @@ class AssetViewerScreen extends StatefulWidget {
     this.onLock,
     this.cullingMode = false,
     this.darktable,
+    this.programme,
   });
 
   @override
@@ -249,10 +256,13 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     super.initState();
     _assets.addAll(widget.assets);
     unawaited(_pruefeGesichtsschaerfe());
+    _programme.addListener(_programmeGeaendert);
+    unawaited(_programme.laden());
   }
 
   @override
   void dispose() {
+    _programme.removeListener(_programmeGeaendert);
     _slideshowTimer?.cancel();
     // Der PageController haengt als ChangeNotifier an der PageView; ohne
     // dies blieb er bei jedem geoeffneten Vollbild zurueck.
@@ -721,65 +731,163 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     });
   }
 
-  late final _darktable = widget.darktable ?? DarktableBruecke.standard();
+  late final Bearbeitungsprogramme _programme =
+      widget.programme ?? Bearbeitungsprogramme.standard;
+
+  /// Eine Einstellung hat sich geändert, oder die Erkennung ist fertig:
+  /// Das Menü baut beim nächsten Öffnen mit der neuen Liste.
+  void _programmeGeaendert() {
+    if (mounted) setState(() {});
+  }
+
+  /// Der Weg zu [programm]. Für darktable der eigene eines Tests, wenn er
+  /// einen mitgibt.
+  Bearbeitungsbruecke _brueckeFuer(Fremdprogramm programm) =>
+      programm.art == Bekannt.darktable && widget.darktable != null
+      ? widget.darktable!
+      : _programme.bruecke(programm);
 
   /// Nur Fotos, und nichts aus dem gesperrten Ordner: Dessen Klartext hat
   /// in einem fremden Programm nichts zu suchen.
-  bool get _kannDarktable =>
+  bool get _kannBearbeitenIn =>
       widget.library != null &&
       _currentAsset.type == 'IMAGE' &&
       !_currentAsset.isLocked;
 
-  Future<void> _inDarktable() async {
+  /// Wie [_fuehreAus], für die Einträge, die an einem Programm hängen.
+  Future<void> _mitProgramm(Future<void> Function() tun) async {
+    if (!mounted) return;
+    _diaschauBeenden();
+    await tun();
+  }
+
+  /// Legt die Arbeitskopie für [programm] an und startet es (#347, #499).
+  /// Nur darktable bekommt eine Beilage mit Sternen, Farbmarke und
+  /// Schlagwörtern: Es liest sie als seine eigene Bearbeitung ein. Die
+  /// anderen läsen eine `IMG.JPG.xmp` gar nicht – Photoshop und ON1
+  /// erwarten `IMG.xmp` und schrieben ihre Bearbeitung hinein.
+  Future<void> _inProgramm(Fremdprogramm programm) async {
     final asset = _currentAsset;
     final t = AppTexte.of(context);
+    final darktable = programm.art == Bekannt.darktable;
+    final bruecke = _brueckeFuer(programm);
     try {
-      final tags = await widget.db.tagsForAsset(asset.id);
-      final gestartet = await _darktable.oeffne(
+      final tags = darktable
+          ? await widget.db.tagsForAsset(asset.id)
+          : const <TagData>[];
+      final gestartet = await bruecke.oeffne(
         id: asset.id,
         name: asset.originalFileName,
         original: await widget.paths.bereit(asset.relativePath),
         // Ohne ausdrückliche 0 vergibt darktable beim Einlesen seine
         // Vorgabe von einem Stern, und die käme als Änderung zurück.
-        xmp: buildXmpPacket(asset, [
-          for (final x in tags) x.name,
-        ], bewertungImmer: true),
+        xmp: darktable
+            ? buildXmpPacket(asset, [
+                for (final x in tags) x.name,
+              ], bewertungImmer: true)
+            : null,
       );
       if (!mounted) return;
       // Jetzt liegt eine Arbeitskopie bereit: Das Menü muss „Ergebnis aus
-      // darktable übernehmen“ zeigen, und das fragt es beim Aufbau
-      // (BEA-152).
+      // … übernehmen“ zeigen, und das fragt es beim Aufbau (BEA-152).
       setState(() {});
       if (gestartet) {
-        melde.hinweis(t.darktableGeoeffnet);
+        melde.hinweis(switch (programm.art) {
+          Bekannt.darktable => t.darktableGeoeffnet,
+          Bekannt.on1 => t.fremdGeoeffnetOn1,
+          _ => t.fremdGeoeffnet(programm.name),
+        });
       } else {
-        await revealInFileManager(_darktable.ordner(asset.id).path);
-        melde.hinweis(t.darktableNichtGestartet);
+        await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
+        melde.hinweis(
+          darktable
+              ? t.darktableNichtGestartet
+              : t.fremdNichtGestartet(programm.name),
+        );
       }
     } on Object catch (e) {
-      melde.fehler(t.darktableFehler('$e'));
+      melde.fehler(
+        darktable
+            ? t.darktableFehler('$e')
+            : t.fremdFehler(programm.name, '$e'),
+      );
     }
   }
 
-  Future<void> _ausDarktable() async {
+  /// „Anderes Programm …“: wählen, für die Zukunft merken und gleich
+  /// damit öffnen.
+  Future<void> _anderesProgramm() async {
+    final t = AppTexte.of(context);
+    try {
+      final pfad = await _programme.waehle(t.fremdProgrammWaehlen);
+      if (pfad == null || !mounted) return;
+      final programm = await _programme.fuegeHinzu(pfad);
+      if (!mounted) return;
+      await _inProgramm(programm);
+    } on Object catch (e) {
+      melde.fehler('$e');
+    }
+  }
+
+  /// Holt das Ergebnis aus [programm] ab und legt es als neue Fassung
+  /// über die Aufnahme; das Original bleibt als Variante dahinter.
+  Future<void> _ausProgramm(Fremdprogramm programm) async {
+    if (programm.art == Bekannt.darktable) return _ausDarktable(programm);
     final asset = _currentAsset;
     final library = widget.library;
     if (library == null) return;
     final t = AppTexte.of(context);
+    final bruecke = _brueckeFuer(programm);
+    try {
+      final fund = await bruecke.suche(asset.id, asset.originalFileName);
+      final datei = fund.datei;
+      if (datei == null) {
+        await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
+        melde.hinweis(switch (fund.unlesbar) {
+          final f? => t.fremdNurUnlesbar(p.basename(f.path)),
+          null when programm.art == Bekannt.on1 => t.fremdKeinErgebnisOn1,
+          null => t.fremdKeinErgebnis(programm.name),
+        });
+        return;
+      }
+      final Uint8List jpeg;
+      try {
+        jpeg = await ergebnisAlsJpeg(datei);
+      } on ErgebnisUnlesbar {
+        await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
+        melde.warnung(t.fremdErgebnisUnlesbar(p.basename(datei.path)));
+        return;
+      }
+      await library.speichereNeueFassung(asset, jpeg);
+      await bruecke.schliesse(asset.id);
+      vergissAlleBilder();
+      await _refreshAsset(asset.id);
+      melde.erfolg(t.fremdUebernommen);
+    } on Object catch (e) {
+      melde.fehler(t.fremdFehler(programm.name, '$e'));
+    }
+  }
+
+  Future<void> _ausDarktable(Fremdprogramm programm) async {
+    final asset = _currentAsset;
+    final library = widget.library;
+    if (library == null) return;
+    final t = AppTexte.of(context);
+    final bruecke = _brueckeFuer(programm);
     try {
       final name = asset.originalFileName;
-      final jpeg = await _darktable.ergebnis(asset.id, name);
+      final jpeg = await bruecke.ergebnis(asset.id, name);
       // Kein Export, aber bearbeitet: Das Rendern kann der Server (#351).
       if (jpeg == null &&
           await library.darktableAmServer() &&
           await library.entwickleAmServer(
             asset.id,
-            _darktable.beilage(asset.id, name),
+            bruecke.beilage(asset.id, name),
           )) {
         melde.hinweis(t.darktableAmServerLaeuft);
         final ok = await library.warteAufServerEntwicklung(asset.id);
         if (ok) {
-          await _darktable.schliesse(asset.id);
+          await bruecke.schliesse(asset.id);
           vergissAlleBilder();
           if (mounted) await _refreshAsset(asset.id);
           melde.erfolg(t.darktableAmServerFertig);
@@ -789,22 +897,67 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         return;
       }
       if (jpeg == null) {
-        await revealInFileManager(_darktable.ordner(asset.id).path);
+        await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
         melde.hinweis(t.darktableKeinErgebnis);
         return;
       }
       await library.uebernimmAusDarktable(
         asset,
         jpeg,
-        _darktable.beilage(asset.id, name),
+        bruecke.beilage(asset.id, name),
       );
-      await _darktable.schliesse(asset.id);
+      await bruecke.schliesse(asset.id);
       vergissAlleBilder();
       await _refreshAsset(asset.id);
       melde.erfolg(t.darktableUebernommen);
     } on Object catch (e) {
       melde.fehler(t.darktableFehler('$e'));
     }
+  }
+
+  /// „Bearbeiten in ▸“ mit den eingeschalteten Programmen und „Anderes
+  /// Programm …“, darunter je ein „Ergebnis aus … übernehmen“, solange
+  /// für dieses Foto eine Arbeitskopie offen ist. Das Übernehmen steht
+  /// auch bei einem ausgeschalteten Programm da: Wer es abschaltet, soll
+  /// seine angefangene Arbeit trotzdem noch abholen können.
+  List<Widget> _bearbeitenInEintraege(AppTexte t) {
+    MenuItemButton eintrag(
+      IconData symbol,
+      String text,
+      Future<void> Function() tun,
+    ) => MenuItemButton(
+      leadingIcon: Icon(symbol, size: 20),
+      onPressed: () => unawaited(_mitProgramm(tun)),
+      child: Text(text),
+    );
+    final aktive = _programme.aktive;
+    return [
+      SubmenuButton(
+        leadingIcon: const Icon(Icons.tune, size: 20),
+        menuChildren: [
+          for (final programm in aktive)
+            eintrag(
+              Icons.open_in_new,
+              programm.name,
+              () => _inProgramm(programm),
+            ),
+          if (aktive.isNotEmpty) const Divider(height: 1),
+          eintrag(
+            Icons.apps_outlined,
+            t.viewerAnderesProgramm,
+            _anderesProgramm,
+          ),
+        ],
+        child: Text(t.viewerBearbeitenIn),
+      ),
+      for (final programm in _programme.alle)
+        if (_brueckeFuer(programm).offen(_currentAsset.id))
+          eintrag(
+            Icons.file_download_done_outlined,
+            t.viewerErgebnisAus(programm.name),
+            () => _ausProgramm(programm),
+          ),
+    ];
   }
 
   List<Widget> _menuepunkte(BuildContext context) {
@@ -826,15 +979,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           Icons.auto_fix_high_outlined,
           t.viewerEntwicklungAnwenden,
         ),
-      if (_kannDarktable) ...[
-        punkt(_ContextMenuAction.inDarktable, Icons.tune, t.viewerInDarktable),
-        if (_darktable.offen(_currentAsset.id))
-          punkt(
-            _ContextMenuAction.ausDarktable,
-            Icons.file_download_done_outlined,
-            t.viewerAusDarktable,
-          ),
-      ],
+      if (_kannBearbeitenIn) ..._bearbeitenInEintraege(t),
       punkt(
         _ContextMenuAction.showInTimeline,
         Icons.photo_library_outlined,
@@ -985,10 +1130,6 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (!mounted) return;
     _diaschauBeenden();
     switch (aktion) {
-      case _ContextMenuAction.inDarktable:
-        await _inDarktable();
-      case _ContextMenuAction.ausDarktable:
-        await _ausDarktable();
       case _ContextMenuAction.showInTimeline:
         _showInTimeline();
       case _ContextMenuAction.showSimilar:

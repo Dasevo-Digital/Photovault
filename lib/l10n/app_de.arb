@@ -2698,8 +2698,6 @@
     }
   },
   "xmpFeldBewertung": "Bewertung",
-  "viewerInDarktable": "In darktable bearbeiten",
-  "viewerAusDarktable": "Ergebnis aus darktable übernehmen",
   "darktableGeoeffnet": "In darktable geöffnet. Exportiere das Ergebnis als JPEG und übernimm es dann über das Kontextmenü.",
   "darktableNichtGestartet": "darktable liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.",
   "darktableKeinErgebnis": "Noch kein JPEG gefunden. Exportiere das Foto in darktable als JPEG in den vorgeschlagenen Ordner.",
@@ -2708,6 +2706,86 @@
   "@darktableFehler": {
     "placeholders": {
       "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "viewerBearbeitenIn": "Bearbeiten in",
+  "viewerAnderesProgramm": "Anderes Programm …",
+  "viewerErgebnisAus": "Ergebnis aus {programm} übernehmen",
+  "@viewerErgebnisAus": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdProgrammWaehlen": "Programm zum Bearbeiten wählen",
+  "fremdGeoeffnet": "In {programm} geöffnet. Speichere das Ergebnis als JPEG, TIFF oder PNG im Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.",
+  "@fremdGeoeffnet": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdGeoeffnetOn1": "In ON1 Photo RAW geöffnet. ON1 hält die Bearbeitung in einer .on1-Datei fest; exportiere das Ergebnis über „Exportieren“ als JPEG oder TIFF in den Ordner der Arbeitskopie und übernimm es dann über das Kontextmenü.",
+  "fremdNichtGestartet": "{programm} liess sich nicht starten. Der Ordner mit der Arbeitskopie ist geöffnet.",
+  "@fremdNichtGestartet": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdKeinErgebnis": "Noch kein Ergebnis gefunden. Speichere das Bild in {programm} als JPEG, TIFF oder PNG im geöffneten Ordner.",
+  "@fremdKeinErgebnis": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdKeinErgebnisOn1": "Noch kein Ergebnis gefunden. Die .on1-Datei enthält nur die Bearbeitung – exportiere das Bild in ON1 Photo RAW als JPEG oder TIFF in den geöffneten Ordner.",
+  "fremdNurUnlesbar": "„{datei}“ kann Photo Vault nicht lesen. Speichere das Ergebnis zusätzlich als JPEG oder TIFF im geöffneten Ordner.",
+  "@fremdNurUnlesbar": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdErgebnisUnlesbar": "„{datei}“ liess sich nicht lesen. Speichere das Ergebnis als JPEG im geöffneten Ordner.",
+  "@fremdErgebnisUnlesbar": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdUebernommen": "Übernommen. Das Original liegt als Variante dahinter.",
+  "fremdFehler": "{programm}: {fehler}",
+  "@fremdFehler": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      },
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "einstAbschnittBearbeitenIn": "Bearbeiten in anderen Programmen",
+  "einstBeschrBearbeitenIn": "Welche Programme das Vollbild unter „Bearbeiten in“ anbietet – darktable, Photoshop, GIMP, Affinity, ON1 oder ein eigenes",
+  "einstBearbeitenInText": "Das Programm bekommt eine Kopie des Fotos in einem eigenen Ordner, die Bibliothek bleibt unberührt. Das Ergebnis holst du im Vollbild über das Rechtsklick-Menü ab; das Original bleibt als Variante dahinter.",
+  "einstBearbeitenInNichtGefunden": "Nicht gefunden",
+  "einstBearbeitenInHinzufuegen": "Programm hinzufügen …",
+  "einstBearbeitenInEntfernen": "Entfernen",
+  "einstBearbeitenInFlatpak": "Als Flatpak kann Photo Vault keine anderen Programme starten. Es legt die Arbeitskopie bereit und öffnet ihren Ordner; dort öffnest du sie selbst im Programm.",
+  "einstBearbeitenInOrdner": "Arbeitskopien liegen unter {ordner}.",
+  "@einstBearbeitenInOrdner": {
+    "placeholders": {
+      "ordner": {
         "type": "String"
       }
     }
