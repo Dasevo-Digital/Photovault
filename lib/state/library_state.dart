@@ -2202,8 +2202,15 @@ class LibraryState extends ChangeNotifier {
   /// Gegenstück dort (die Ablage ordnen) heisst die Abweisung
   /// [Startabweisung.nurOhneServer] – „dort läuft diese Arbeit“ stimmte
   /// sonst nicht (IMP-131).
-  Startabweisung? pruefeStart(String schluessel, {bool amServer = true}) =>
-      verbunden
+  ///
+  /// [auchVerbunden]: Die Arbeit geschieht hier und geht danach wie ein
+  /// Import zum Server – etwa das Zusammenfügen zu HDR oder Panorama
+  /// (#498). Dann gilt nur noch, dass sie nicht doppelt läuft.
+  Startabweisung? pruefeStart(
+    String schluessel, {
+    bool amServer = true,
+    bool auchVerbunden = false,
+  }) => verbunden && !auchVerbunden
       ? (amServer ? Startabweisung.amServer : Startabweisung.nurOhneServer)
       : (_laeufe[schluessel]?.offen ?? false)
       ? Startabweisung.laeuftBereits
@@ -2260,8 +2267,13 @@ class LibraryState extends ChangeNotifier {
     String Function(int getan, int gesamt)? bilanztext,
     bool rechenintensiv = false,
     bool amServer = true,
+    bool auchVerbunden = false,
   }) {
-    final abweisung = pruefeStart(schluessel, amServer: amServer);
+    final abweisung = pruefeStart(
+      schluessel,
+      amServer: amServer,
+      auchVerbunden: auchVerbunden,
+    );
     if (abweisung != null) return abweisung;
 
     _laeufe[schluessel] = Hintergrundlauf(

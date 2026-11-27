@@ -7856,5 +7856,90 @@
   "sucheExakterIndex": "Optionaler exakter Suchindex: Aufbau benötigt Zeit und Speicher; je nach Bildbestand schneller oder langsamer.",
   "datierungBeispielJahr": "1985",
   "datierungBeispielMonat": "1985-06",
-  "datierungBeispielTag": "1985-06-15"
+  "datierungBeispielTag": "1985-06-15",
+  "zusfMenue": "Zusammenfügen",
+  "zusfHdr": "Zu HDR zusammenfügen …",
+  "zusfPanorama": "Zu Panorama zusammenfügen …",
+  "zusfHdrTitel": "Zu HDR zusammenfügen",
+  "zusfPanoramaTitel": "Zu Panorama zusammenfügen",
+  "zusfHdrText": "{anzahl} Aufnahmen einer Belichtungsreihe werden zu einem Bild verschmolzen, das in Lichtern und Schatten mehr Zeichnung hat. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.",
+  "@zusfHdrText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "zusfPanoramaText": "{anzahl} Aufnahmen eines Schwenks werden zu einem breiten Bild zusammengesetzt. Die Reihenfolge spielt keine Rolle; benachbarte Aufnahmen sollten sich um etwa ein Drittel überlappen. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.",
+  "@zusfPanoramaText": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "zusfAusgelassen": "{anzahl, plural, =1{Eine ausgewählte Aufnahme bleibt außen vor (Video, gesperrt oder im Papierkorb).} other{{anzahl} ausgewählte Aufnahmen bleiben außen vor (Videos, gesperrte oder im Papierkorb).}}",
+  "@zusfAusgelassen": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "zusfAusrichten": "Aus der Hand aufgenommen – Aufnahmen aneinander ausrichten",
+  "zusfDrehung": "Auch eine leichte Drehung ausgleichen",
+  "zusfZuschneiden": "Auf das größte volle Rechteck zuschneiden",
+  "zusfZuschneidenHinweis": "Ohne Zuschnitt bleiben die Ränder schwarz.",
+  "zusfGeisterHinweis": "Was sich zwischen den Aufnahmen bewegt, kann doppelt oder halb durchsichtig erscheinen.",
+  "zusfStarten": "Zusammenfügen",
+  "zusfLaufHdr": "HDR wird zusammengefügt",
+  "zusfLaufPanorama": "Panorama wird zusammengefügt",
+  "zusfFertigHdr": "Das HDR-Bild ist fertig und liegt vorn im Stapel seiner Quellen.",
+  "zusfFertigPanorama": "Das Panorama ist fertig und liegt vorn im Stapel seiner Quellen.",
+  "zusfTeilweise": "{anzahl, plural, =1{Eine Aufnahme überlappt mit keiner anderen und wurde nicht eingefügt.} other{{anzahl} Aufnahmen überlappen mit keiner anderen und wurden nicht eingefügt.}}",
+  "@zusfTeilweise": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "zusfAnzahl": "Dafür braucht es {mindestens} bis {hoechstens} Fotos (keine Videos, keine gesperrten).",
+  "@zusfAnzahl": {
+    "placeholders": {
+      "mindestens": {
+        "type": "int"
+      },
+      "hoechstens": {
+        "type": "int"
+      }
+    }
+  },
+  "zusfFehlerUeberlappung": "Die Aufnahmen überlappen zu wenig, um sie zusammenzusetzen. Benachbarte Aufnahmen eines Schwenks sollten sich um etwa ein Drittel überlappen.",
+  "zusfFehlerGroesse": "Die Aufnahmen einer Belichtungsreihe brauchen dasselbe Seitenverhältnis – „{name}“ passt nicht dazu.",
+  "@zusfFehlerGroesse": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerAusrichtung": "Die Aufnahmen ließen sich nicht schlüssig aneinander ausrichten.",
+  "zusfFehlerUnlesbar": "„{name}“ ließ sich nicht lesen.",
+  "@zusfFehlerUnlesbar": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfFehlerAllgemein": "Zusammenfügen gescheitert: {fehler}",
+  "@zusfFehlerAllgemein": {
+    "placeholders": {
+      "fehler": {
+        "type": "String"
+      }
+    }
+  },
+  "zusfLaeuftSchon": "Es wird schon zusammengefügt. Das nächste lässt sich starten, sobald dieses Bild fertig ist."
 }

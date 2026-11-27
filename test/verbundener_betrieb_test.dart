@@ -14,13 +14,18 @@ import 'package:kern/abgleich/verbindungsdatei.dart';
 import 'package:kern/auswertung/herkunft.dart';
 import 'package:kern/auswertung/rechenhilfe.dart';
 import 'package:kern/db/database.dart';
+import 'package:kern/services/collage.dart' show mitAufnahmezeit;
 import 'package:kern/services/textstellen.dart';
+import 'package:kern/services/zusammenfuegen/zusammenfuegen.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/l10n/app_localizations.dart';
 import 'package:photo_vault/screens/background_tasks_screen.dart';
 import 'package:photo_vault/services/library_location.dart';
+import 'package:photo_vault/services/zusammenfuegen_dienst.dart';
 import 'package:photo_vault/state/hintergrundlauf.dart';
 import 'package:photo_vault/state/library_state.dart';
+
+import 'hilfen/synthetische_bilder.dart';
 
 /// Die App als verbundenes Gerät (Issue #86, Stufe 2) – gegen einen echten
 /// Server-Prozess aus packages/server.
@@ -339,5 +344,52 @@ void main() {
     await bib.setzeRechenhilfe(false);
     expect((await Verbindungsdatei.lies(wurzel))!.rechenhilfe, isFalse);
     expect(bib.rechenhilfestand.value, isNull);
+  });
+
+  test('HDR zusammenfügen geht auch verbunden: hier gerechnet, hochgeladen, '
+      'auf dem Server als Variante vor den Quellen (#498)', () async {
+    // Die Aufgabenleiste weist es verbunden nicht ab – anders als die
+    // Auswertungen, die der Server selbst erledigt.
+    expect(bib.pruefeStart(zusammenfuegenSchluessel), Startabweisung.amServer);
+    expect(
+      bib.pruefeStart(zusammenfuegenSchluessel, auchVerbunden: true),
+      isNull,
+    );
+    final dateien = [
+      for (final (i, ev) in [(0, -1.5), (1, 0.0), (2, 1.5)])
+        (File(p.join(ordner.path, 'eingang', 'reihe_$i.jpg'))
+              ..createSync(recursive: true)
+              ..writeAsBytesSync(
+                mitAufnahmezeit(
+                  belichtungsaufnahme(200, 150, ev, dx: i * 1.0).alsJpeg(),
+                  DateTime(2024, 8, 1, 9, 0, i),
+                ),
+              ))
+            .path,
+    ];
+    final hoch = await bib.importFiles(dateien).toList();
+    final ids = [for (final f in hoch) ?f.assetId];
+    final quellen = await bib.db.assetsByIds(ids);
+    expect(quellen, hasLength(3));
+
+    Fuegeausgang? ausgang;
+    await zusammenfuegenLauf(
+      bib,
+      quellen: quellen,
+      art: Fuegeart.hdr,
+      fertig: (a) => ausgang = a,
+    ).drain<void>();
+    final id = ausgang!.assetId;
+    expect(
+      (await bib.db.assetsByIds([id])).single.originalFileName,
+      'reihe_1-HDR.jpg',
+    );
+    await bis(() async {
+      final e = await aufServer(id);
+      return e['isStackCover'] == true && e['stackSize'] == 4;
+    }, 'Variantenstapel auf dem Server');
+    for (final q in ids) {
+      expect((await aufServer(q))['stackId'], (await aufServer(id))['stackId']);
+    }
   });
 }

@@ -12198,4 +12198,118 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get datierungBeispielTag => '1985-06-15';
+
+  @override
+  String get zusfMenue => 'Merge';
+
+  @override
+  String get zusfHdr => 'Merge to HDR …';
+
+  @override
+  String get zusfPanorama => 'Merge to panorama …';
+
+  @override
+  String get zusfHdrTitel => 'Merge to HDR';
+
+  @override
+  String get zusfPanoramaTitel => 'Merge to panorama';
+
+  @override
+  String zusfHdrText(int anzahl) {
+    return '$anzahl shots of an exposure bracket are fused into one image with more detail in the highlights and shadows. The result becomes a new photo; the sources are kept behind it as variants.';
+  }
+
+  @override
+  String zusfPanoramaText(int anzahl) {
+    return '$anzahl shots of a pan are stitched into one wide image. The order does not matter; neighbouring shots should overlap by about a third. The result becomes a new photo; the sources are kept behind it as variants.';
+  }
+
+  @override
+  String zusfAusgelassen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl selected items are left out (videos, locked or in the trash).',
+      one: 'One selected item is left out (video, locked or in the trash).',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get zusfAusrichten => 'Handheld – align the shots to each other';
+
+  @override
+  String get zusfDrehung => 'Also correct a slight rotation';
+
+  @override
+  String get zusfZuschneiden => 'Crop to the largest complete rectangle';
+
+  @override
+  String get zusfZuschneidenHinweis =>
+      'Without cropping, the edges stay black.';
+
+  @override
+  String get zusfGeisterHinweis =>
+      'Anything that moves between the shots may appear doubled or semi-transparent.';
+
+  @override
+  String get zusfStarten => 'Merge';
+
+  @override
+  String get zusfLaufHdr => 'Merging HDR';
+
+  @override
+  String get zusfLaufPanorama => 'Merging panorama';
+
+  @override
+  String get zusfFertigHdr =>
+      'The HDR image is ready and sits on top of the stack with its sources.';
+
+  @override
+  String get zusfFertigPanorama =>
+      'The panorama is ready and sits on top of the stack with its sources.';
+
+  @override
+  String zusfTeilweise(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl shots do not overlap with any other and were left out.',
+      one: 'One shot does not overlap with any other and was left out.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String zusfAnzahl(int mindestens, int hoechstens) {
+    return 'This needs $mindestens to $hoechstens photos (no videos, no locked ones).';
+  }
+
+  @override
+  String get zusfFehlerUeberlappung =>
+      'The shots overlap too little to be stitched. Neighbouring shots of a pan should overlap by about a third.';
+
+  @override
+  String zusfFehlerGroesse(String name) {
+    return 'The shots of an exposure bracket need the same aspect ratio – “$name” does not match.';
+  }
+
+  @override
+  String get zusfFehlerAusrichtung =>
+      'The shots could not be aligned to each other consistently.';
+
+  @override
+  String zusfFehlerUnlesbar(String name) {
+    return '“$name” could not be read.';
+  }
+
+  @override
+  String zusfFehlerAllgemein(String fehler) {
+    return 'Merging failed: $fehler';
+  }
+
+  @override
+  String get zusfLaeuftSchon =>
+      'A merge is already running. The next one can start once this image is finished.';
 }

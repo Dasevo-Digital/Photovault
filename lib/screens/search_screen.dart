@@ -23,6 +23,7 @@ import '../widgets/pin_dialogs.dart';
 import '../widgets/search_options_sheet.dart';
 import '../widgets/rasterbedienung.dart';
 import '../widgets/selection_action_bar.dart';
+import '../widgets/zusammenfuegen_dialog.dart';
 import '../widgets/sortierungswahl.dart';
 import 'asset_viewer_screen.dart';
 import '../widgets/einfuegbares_menue.dart';
@@ -804,6 +805,14 @@ class _SearchScreenState extends State<SearchScreen>
                             _selected.toList(),
                           ),
                           onCollage: collageAktion(
+                            context,
+                            widget.library,
+                            _selected.toList(),
+                            danach: () {
+                              if (mounted) setState(_selected.clear);
+                            },
+                          ),
+                          onZusammenfuegen: zusammenfuegenAktion(
                             context,
                             widget.library,
                             _selected.toList(),

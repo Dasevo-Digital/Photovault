@@ -675,6 +675,19 @@ echter Hardware.
   Collage ist ein neues Foto und steht in der Zeitleiste bei ihren Fotos
   (Aufnahmezeit des jüngsten). Am Rechner ohne Server rechnet der Rechner
   selbst, sonst – und im Browser und am Handy – der Server
+- **HDR und Panorama zusammenfügen** – in der Mehrfachauswahl unter
+  „Zusammenfügen“. Eine Belichtungsreihe (2–9 Fotos) wird nach Mertens,
+  Kautz und Van Reeth zu einem Bild verschmolzen, das in Lichtern und
+  Schatten mehr Zeichnung hat; eine Reihe aus der Hand wird vorher
+  ausgerichtet (Verschiebung und Drehung bis ±2°, auf Bruchteile eines
+  Punkts). Ein Schwenk (2–12 Fotos, Reihenfolge beliebig) wird über
+  Merkmale, RANSAC und die Drehungen der Kamera zu einem zylindrischen
+  Panorama zusammengesetzt, in der Helligkeit angeglichen, weich
+  überblendet und auf das grösste volle Rechteck zugeschnitten. Das
+  Ergebnis ist ein neues Foto mit Zeit, Kamera und Ort der mittleren
+  Aufnahme und liegt vorn in einem Variantenstapel mit seinen Quellen.
+  Gerechnet wird am Rechner, auch mit Server (das Ergebnis geht wie ein
+  Import hinauf); gesperrte Fotos und Videos bleiben aussen vor
 - **Bildeditor** – Zuschneiden, Drehen, Spiegeln, Geradeziehen,
   Perspektive und Retusche, immer auf dem Original in voller Auflösung
   (HEIC und RAW wandelt das System dafür in voller Grösse). Gespeichert
@@ -1497,6 +1510,16 @@ gilt die `LICENSE`-Datei, die ihnen beiliegt.
   bewusst nur einen Auftrag gleichzeitig ab.
 - HEIC-Dateien mit HDR-Gain-Map werden korrekt angezeigt, die HDR-Feinheiten
   gehen bei der JPEG-Vorschau aber verloren.
+- **HDR und Panorama** rechnen in reinem Dart. Ein HDR wird höchstens
+  24 MP gross (aus drei 24-MP-Aufnahmen gemessen rund 11 s und 0,7 GB
+  Arbeitsspeicher), ein Panorama höchstens 50 MP und 30 000 Punkte an
+  einer Seite (sechs 24-MP-Aufnahmen: rund 11 s, 0,4 GB). Was sich
+  zwischen den Aufnahmen bewegt, kann doppelt oder halb durchsichtig
+  erscheinen – es gibt weder eine Erkennung von Geisterbildern noch eine
+  Nahtsuche. Ein Panorama setzt reine Drehungen der Kamera voraus:
+  Parallaxe naher Gegenstände, Schwenks nach oben über etwa 68° und ein
+  geschlossener Kreis von 360° werden nicht ausgeglichen. Das Ergebnis
+  ist ein JPEG mit 8 Bit, ein 16-Bit-TIFF gibt es nicht.
 - Die **Baum**-Sicht des Stammbaums zeigt bewusst nur die unmittelbare
   Verwandtschaft: Für Großeltern und Enkel in derselben Reihe ließe sich
   keine Verbindungslinie zeichnen, die stimmt. Mehrere Generationen zeigt

@@ -18567,6 +18567,162 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'1985-06-15'**
   String get datierungBeispielTag;
+
+  /// No description provided for @zusfMenue.
+  ///
+  /// In de, this message translates to:
+  /// **'Zusammenfügen'**
+  String get zusfMenue;
+
+  /// No description provided for @zusfHdr.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu HDR zusammenfügen …'**
+  String get zusfHdr;
+
+  /// No description provided for @zusfPanorama.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu Panorama zusammenfügen …'**
+  String get zusfPanorama;
+
+  /// No description provided for @zusfHdrTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu HDR zusammenfügen'**
+  String get zusfHdrTitel;
+
+  /// No description provided for @zusfPanoramaTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Zu Panorama zusammenfügen'**
+  String get zusfPanoramaTitel;
+
+  /// No description provided for @zusfHdrText.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Aufnahmen einer Belichtungsreihe werden zu einem Bild verschmolzen, das in Lichtern und Schatten mehr Zeichnung hat. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.'**
+  String zusfHdrText(int anzahl);
+
+  /// No description provided for @zusfPanoramaText.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl} Aufnahmen eines Schwenks werden zu einem breiten Bild zusammengesetzt. Die Reihenfolge spielt keine Rolle; benachbarte Aufnahmen sollten sich um etwa ein Drittel überlappen. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.'**
+  String zusfPanoramaText(int anzahl);
+
+  /// No description provided for @zusfAusgelassen.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Eine ausgewählte Aufnahme bleibt außen vor (Video, gesperrt oder im Papierkorb).} other{{anzahl} ausgewählte Aufnahmen bleiben außen vor (Videos, gesperrte oder im Papierkorb).}}'**
+  String zusfAusgelassen(int anzahl);
+
+  /// No description provided for @zusfAusrichten.
+  ///
+  /// In de, this message translates to:
+  /// **'Aus der Hand aufgenommen – Aufnahmen aneinander ausrichten'**
+  String get zusfAusrichten;
+
+  /// No description provided for @zusfDrehung.
+  ///
+  /// In de, this message translates to:
+  /// **'Auch eine leichte Drehung ausgleichen'**
+  String get zusfDrehung;
+
+  /// No description provided for @zusfZuschneiden.
+  ///
+  /// In de, this message translates to:
+  /// **'Auf das größte volle Rechteck zuschneiden'**
+  String get zusfZuschneiden;
+
+  /// No description provided for @zusfZuschneidenHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Ohne Zuschnitt bleiben die Ränder schwarz.'**
+  String get zusfZuschneidenHinweis;
+
+  /// No description provided for @zusfGeisterHinweis.
+  ///
+  /// In de, this message translates to:
+  /// **'Was sich zwischen den Aufnahmen bewegt, kann doppelt oder halb durchsichtig erscheinen.'**
+  String get zusfGeisterHinweis;
+
+  /// No description provided for @zusfStarten.
+  ///
+  /// In de, this message translates to:
+  /// **'Zusammenfügen'**
+  String get zusfStarten;
+
+  /// No description provided for @zusfLaufHdr.
+  ///
+  /// In de, this message translates to:
+  /// **'HDR wird zusammengefügt'**
+  String get zusfLaufHdr;
+
+  /// No description provided for @zusfLaufPanorama.
+  ///
+  /// In de, this message translates to:
+  /// **'Panorama wird zusammengefügt'**
+  String get zusfLaufPanorama;
+
+  /// No description provided for @zusfFertigHdr.
+  ///
+  /// In de, this message translates to:
+  /// **'Das HDR-Bild ist fertig und liegt vorn im Stapel seiner Quellen.'**
+  String get zusfFertigHdr;
+
+  /// No description provided for @zusfFertigPanorama.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Panorama ist fertig und liegt vorn im Stapel seiner Quellen.'**
+  String get zusfFertigPanorama;
+
+  /// No description provided for @zusfTeilweise.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{Eine Aufnahme überlappt mit keiner anderen und wurde nicht eingefügt.} other{{anzahl} Aufnahmen überlappen mit keiner anderen und wurden nicht eingefügt.}}'**
+  String zusfTeilweise(int anzahl);
+
+  /// No description provided for @zusfAnzahl.
+  ///
+  /// In de, this message translates to:
+  /// **'Dafür braucht es {mindestens} bis {hoechstens} Fotos (keine Videos, keine gesperrten).'**
+  String zusfAnzahl(int mindestens, int hoechstens);
+
+  /// No description provided for @zusfFehlerUeberlappung.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahmen überlappen zu wenig, um sie zusammenzusetzen. Benachbarte Aufnahmen eines Schwenks sollten sich um etwa ein Drittel überlappen.'**
+  String get zusfFehlerUeberlappung;
+
+  /// No description provided for @zusfFehlerGroesse.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahmen einer Belichtungsreihe brauchen dasselbe Seitenverhältnis – „{name}“ passt nicht dazu.'**
+  String zusfFehlerGroesse(String name);
+
+  /// No description provided for @zusfFehlerAusrichtung.
+  ///
+  /// In de, this message translates to:
+  /// **'Die Aufnahmen ließen sich nicht schlüssig aneinander ausrichten.'**
+  String get zusfFehlerAusrichtung;
+
+  /// No description provided for @zusfFehlerUnlesbar.
+  ///
+  /// In de, this message translates to:
+  /// **'„{name}“ ließ sich nicht lesen.'**
+  String zusfFehlerUnlesbar(String name);
+
+  /// No description provided for @zusfFehlerAllgemein.
+  ///
+  /// In de, this message translates to:
+  /// **'Zusammenfügen gescheitert: {fehler}'**
+  String zusfFehlerAllgemein(String fehler);
+
+  /// No description provided for @zusfLaeuftSchon.
+  ///
+  /// In de, this message translates to:
+  /// **'Es wird schon zusammengefügt. Das nächste lässt sich starten, sobald dieses Bild fertig ist.'**
+  String get zusfLaeuftSchon;
 }
 
 class _AppTexteDelegate extends LocalizationsDelegate<AppTexte> {

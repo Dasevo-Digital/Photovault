@@ -10,6 +10,7 @@ import 'package:uuid/uuid.dart';
 import 'package:kern/db/database.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/collage.dart';
+import 'package:kern/services/zusammenfuegen/zusammenfuegen.dart' show Fuegeart;
 import 'package:teilen_ui/geteilte_alben.dart';
 import 'package:kern/services/exif_camera.dart' show fruehesteAufnahme;
 import '../l10n/app_localizations.dart';
@@ -75,6 +76,10 @@ class SelectionActionBar extends StatelessWidget {
   /// Zwei bis neun Fotos als Collage (#301) – siehe [collageAktion].
   final VoidCallback? onCollage;
 
+  /// Zu HDR oder Panorama zusammenfügen (#498) – siehe
+  /// `zusammenfuegenAktion`.
+  final void Function(Fuegeart art)? onZusammenfuegen;
+
   /// Zurück in die Fotokammer (#337); nur mit einem Server.
   final VoidCallback? onFotokammer;
 
@@ -96,6 +101,7 @@ class SelectionActionBar extends StatelessWidget {
     this.onCompare,
     this.onCreateVariants,
     this.onCollage,
+    this.onZusammenfuegen,
     this.onFotokammer,
     this.onArchive,
     this.onPasteDevelop,
@@ -190,6 +196,22 @@ class SelectionActionBar extends StatelessWidget {
                     icon: const Icon(Icons.dashboard_customize_outlined),
                     tooltip: teilenTexte(context).collage,
                     onPressed: onCollage,
+                  ),
+                if (onZusammenfuegen case final zusammenfuegen?)
+                  PopupMenuButton<Fuegeart>(
+                    icon: const Icon(Icons.layers_outlined),
+                    tooltip: t.zusfMenue,
+                    onSelected: zusammenfuegen,
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: Fuegeart.hdr,
+                        child: Text(AppTexte.of(context).zusfHdr),
+                      ),
+                      PopupMenuItem(
+                        value: Fuegeart.panorama,
+                        child: Text(AppTexte.of(context).zusfPanorama),
+                      ),
+                    ],
                   ),
                 IconButton(
                   icon: const Icon(Icons.ios_share),

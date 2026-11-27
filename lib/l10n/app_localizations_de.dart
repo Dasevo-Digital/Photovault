@@ -12268,4 +12268,122 @@ class AppTexteDe extends AppTexte {
 
   @override
   String get datierungBeispielTag => '1985-06-15';
+
+  @override
+  String get zusfMenue => 'Zusammenfügen';
+
+  @override
+  String get zusfHdr => 'Zu HDR zusammenfügen …';
+
+  @override
+  String get zusfPanorama => 'Zu Panorama zusammenfügen …';
+
+  @override
+  String get zusfHdrTitel => 'Zu HDR zusammenfügen';
+
+  @override
+  String get zusfPanoramaTitel => 'Zu Panorama zusammenfügen';
+
+  @override
+  String zusfHdrText(int anzahl) {
+    return '$anzahl Aufnahmen einer Belichtungsreihe werden zu einem Bild verschmolzen, das in Lichtern und Schatten mehr Zeichnung hat. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.';
+  }
+
+  @override
+  String zusfPanoramaText(int anzahl) {
+    return '$anzahl Aufnahmen eines Schwenks werden zu einem breiten Bild zusammengesetzt. Die Reihenfolge spielt keine Rolle; benachbarte Aufnahmen sollten sich um etwa ein Drittel überlappen. Das Ergebnis wird ein neues Foto; die Quellen liegen danach als Varianten dahinter.';
+  }
+
+  @override
+  String zusfAusgelassen(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl ausgewählte Aufnahmen bleiben außen vor (Videos, gesperrte oder im Papierkorb).',
+      one:
+          'Eine ausgewählte Aufnahme bleibt außen vor (Video, gesperrt oder im Papierkorb).',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get zusfAusrichten =>
+      'Aus der Hand aufgenommen – Aufnahmen aneinander ausrichten';
+
+  @override
+  String get zusfDrehung => 'Auch eine leichte Drehung ausgleichen';
+
+  @override
+  String get zusfZuschneiden => 'Auf das größte volle Rechteck zuschneiden';
+
+  @override
+  String get zusfZuschneidenHinweis =>
+      'Ohne Zuschnitt bleiben die Ränder schwarz.';
+
+  @override
+  String get zusfGeisterHinweis =>
+      'Was sich zwischen den Aufnahmen bewegt, kann doppelt oder halb durchsichtig erscheinen.';
+
+  @override
+  String get zusfStarten => 'Zusammenfügen';
+
+  @override
+  String get zusfLaufHdr => 'HDR wird zusammengefügt';
+
+  @override
+  String get zusfLaufPanorama => 'Panorama wird zusammengefügt';
+
+  @override
+  String get zusfFertigHdr =>
+      'Das HDR-Bild ist fertig und liegt vorn im Stapel seiner Quellen.';
+
+  @override
+  String get zusfFertigPanorama =>
+      'Das Panorama ist fertig und liegt vorn im Stapel seiner Quellen.';
+
+  @override
+  String zusfTeilweise(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other:
+          '$anzahl Aufnahmen überlappen mit keiner anderen und wurden nicht eingefügt.',
+      one:
+          'Eine Aufnahme überlappt mit keiner anderen und wurde nicht eingefügt.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String zusfAnzahl(int mindestens, int hoechstens) {
+    return 'Dafür braucht es $mindestens bis $hoechstens Fotos (keine Videos, keine gesperrten).';
+  }
+
+  @override
+  String get zusfFehlerUeberlappung =>
+      'Die Aufnahmen überlappen zu wenig, um sie zusammenzusetzen. Benachbarte Aufnahmen eines Schwenks sollten sich um etwa ein Drittel überlappen.';
+
+  @override
+  String zusfFehlerGroesse(String name) {
+    return 'Die Aufnahmen einer Belichtungsreihe brauchen dasselbe Seitenverhältnis – „$name“ passt nicht dazu.';
+  }
+
+  @override
+  String get zusfFehlerAusrichtung =>
+      'Die Aufnahmen ließen sich nicht schlüssig aneinander ausrichten.';
+
+  @override
+  String zusfFehlerUnlesbar(String name) {
+    return '„$name“ ließ sich nicht lesen.';
+  }
+
+  @override
+  String zusfFehlerAllgemein(String fehler) {
+    return 'Zusammenfügen gescheitert: $fehler';
+  }
+
+  @override
+  String get zusfLaeuftSchon =>
+      'Es wird schon zusammengefügt. Das nächste lässt sich starten, sobald dieses Bild fertig ist.';
 }

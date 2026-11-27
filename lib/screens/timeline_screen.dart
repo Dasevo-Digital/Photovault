@@ -19,6 +19,7 @@ import '../widgets/timeline_grid_layout.dart';
 import '../widgets/pin_dialogs.dart';
 import '../widgets/rasterbedienung.dart';
 import '../widgets/selection_action_bar.dart';
+import '../widgets/zusammenfuegen_dialog.dart';
 import 'fotokammer_screen.dart' show inDieFotokammer;
 import '../widgets/sortierungswahl.dart';
 import 'asset_viewer_screen.dart';
@@ -800,6 +801,14 @@ class _TimelineScreenState extends State<TimelineScreen>
                     _selected.toList(),
                   ),
                   onCollage: collageAktion(
+                    context,
+                    widget.library,
+                    _selected.toList(),
+                    danach: () {
+                      if (mounted) setState(_selected.clear);
+                    },
+                  ),
+                  onZusammenfuegen: zusammenfuegenAktion(
                     context,
                     widget.library,
                     _selected.toList(),
