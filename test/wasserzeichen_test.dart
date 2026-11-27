@@ -268,7 +268,7 @@ void main() {
       final rein = JpegIcc.schreiben(jpeg(grau(200, 100)), profil);
       final raus = jpegMitWasserzeichen((
         jpeg: rein,
-        zeichen: png(rot(40, 20)),
+        zeichen: Wasserzeichenbild.pixel(png(rot(40, 20)))!,
         wasserzeichen: const Wasserzeichen(text: 'x', rand: 0, deckkraft: 1),
         qualitaet: 95,
       ));
@@ -285,7 +285,7 @@ void main() {
       final bild = grau(100, 200)..exif.imageIfd.orientation = 6;
       final raus = jpegMitWasserzeichen((
         jpeg: jpeg(bild),
-        zeichen: png(rot(40, 20)),
+        zeichen: Zeichenpixel.aus(rot(40, 20)),
         wasserzeichen: const Wasserzeichen(text: 'x', rand: 0, deckkraft: 1),
         qualitaet: 95,
       ));
@@ -296,16 +296,100 @@ void main() {
       expect(gelesen.getPixel(10, 5).r, inInclusiveRange(95, 105));
     });
 
-    test('ein unlesbares Zeichen ist ein Fehler, kein Bild ohne Zeichen', () {
+    test('ein unlesbares Zeichen gibt keine Pixel, ein unlesbares Foto ist '
+        'ein Fehler', () {
+      expect(Wasserzeichenbild.pixel(Uint8List.fromList([1, 2, 3])), isNull);
       expect(
         () => jpegMitWasserzeichen((
-          jpeg: jpeg(grau(20, 20)),
-          zeichen: Uint8List.fromList([1, 2, 3]),
+          jpeg: Uint8List.fromList([0xFF, 0xD8, 1, 2, 3]),
+          zeichen: Zeichenpixel.aus(rot(4, 2)),
           wasserzeichen: const Wasserzeichen(text: 'x'),
           qualitaet: 90,
         )),
         throwsFormatException,
       );
+    });
+
+    test('ein Zeichen breiter als 4096 Pixel (Text auf einem Panorama)', () {
+      // Die Grenze für Fremdes gilt nicht für Pixel, die das Gerät selbst
+      // gezeichnet hat: 50 % von 9000 px sind 4500.
+      final raus = jpegMitWasserzeichen((
+        jpeg: jpeg(grau(9000, 60)),
+        zeichen: Zeichenpixel.aus(rot(4500, 20)),
+        wasserzeichen: const Wasserzeichen(
+          text: 'x',
+          groesse: 0.5,
+          rand: 0,
+          deckkraft: 1,
+        ),
+        qualitaet: 90,
+      ));
+      final bild = img.decodeJpg(raus)!;
+      expect(bild.getPixel(8000, 55).r, greaterThan(200));
+      expect(bild.getPixel(8000, 55).g, lessThan(60));
+      expect(bild.getPixel(1000, 55).r, inInclusiveRange(95, 105));
+    });
+  });
+
+  group('Graustufen (#497)', () {
+    test('ein graues Logo bleibt grau, statt rot zu werden', () {
+      // Ein Kanal: Das Bildpaket liefert dort Grün und Blau als 0.
+      final logo = img.Image(width: 20, height: 10, numChannels: 1)
+        ..clear(img.ColorUint8.rgb(200, 200, 200));
+      expect(logo.getPixel(0, 0).g, 0, reason: 'so liest das Bildpaket');
+      final bild = rechneWasserzeichenEin(
+        grau(100, 50, 0),
+        img.decodePng(png(logo))!,
+        const Wasserzeichen(text: 'x', rand: 0, deckkraft: 1),
+      );
+      final p = bild.getPixel(90, 45);
+      expect((p.r, p.g, p.b), (200, 200, 200));
+    });
+
+    test('in ein Graustufenfoto kommt ein farbiges Logo farbig', () {
+      final bild = img.Image(width: 100, height: 50, numChannels: 1)
+        ..clear(img.ColorUint8.rgb(100, 100, 100));
+      final raus = rechneWasserzeichenEin(
+        bild,
+        rot(20, 10),
+        const Wasserzeichen(text: 'x', rand: 0, deckkraft: 1),
+      );
+      expect(raus.numChannels, 3);
+      final p = raus.getPixel(90, 45);
+      expect((p.r, p.g, p.b), (255, 0, 0));
+      final q = raus.getPixel(10, 10);
+      expect((q.r, q.g, q.b), (100, 100, 100));
+    });
+  });
+
+  group('vorbereitete Pixel', () {
+    test('aus gewöhnlichen Farben vormultipliziert', () {
+      final z = Zeichenpixel.ausGerade(
+        1,
+        2,
+        Uint8List.fromList([255, 255, 255, 128, 200, 100, 0, 0]),
+      );
+      expect(z.rgba, [128, 128, 128, 128, 0, 0, 0, 0]);
+    });
+
+    test('umgerechnet ohne die Deckung', () {
+      final z = Zeichenpixel.ausGerade(
+        2,
+        1,
+        Uint8List.fromList([200, 100, 50, 128, 10, 20, 30, 255]),
+      );
+      final gesehen = <int>[];
+      final neu = z.umgerechnet((rgb) {
+        gesehen.addAll(rgb);
+        return Uint8List.fromList([for (final v in rgb) 255 - v]);
+      });
+      // Die Werte ohne Deckung, auf ±1 genau zurückgerechnet.
+      for (final (i, soll) in [200, 100, 50, 10, 20, 30].indexed) {
+        expect((gesehen[i] - soll).abs(), lessThanOrEqualTo(1));
+      }
+      expect(neu.rgba[3], 128);
+      expect((neu.rgba[0] - (55 * 128 / 255).round()).abs(), lessThan(2));
+      expect(neu.rgba.sublist(4), [245, 235, 225, 255]);
     });
   });
 
@@ -404,6 +488,112 @@ void main() {
       expect(Wasserzeichenbild.bereiteVor(bombe), isNull);
     });
 
+    test('ein zweiter Kopf kommt nicht an der Prüfung vorbei', () {
+      // Der erste Kopf sagt 2 × 2, ein zweiter 16000 × 16000 – das
+      // Bildpaket nimmt den zweiten und belegte beim Dekodieren ein
+      // Gigabyte.
+      final teile = _abschnitte(png(rot(2, 2)));
+      final bombe = _png([
+        teile.first,
+        _abschnitt('IHDR', [..._u32(16000), ..._u32(16000), 8, 6, 0, 0, 0]),
+        ...teile.skip(1),
+      ]);
+      expect(img.PngDecoder().startDecode(bombe)?.width, 16000);
+      expect(Wasserzeichenbild.masse(bombe), isNull);
+      expect(Wasserzeichenbild.gueltig(bombe), isFalse);
+      expect(Wasserzeichenbild.lies(bombe), isNull);
+      expect(Wasserzeichenbild.bereiteVor(bombe), isNull);
+      expect(
+        Wasserzeichenbild.normalisiert(
+          bombe,
+          hoechstensBreite: 100,
+          hoechstensHoehe: 100,
+        ),
+        isNull,
+      );
+    });
+
+    test('eine Animation (APNG) wird nicht gelesen', () {
+      final animation = rot(4, 4)
+        ..addFrame(
+          img.Image(width: 4, height: 4, numChannels: 4)
+            ..clear(img.ColorRgba8(0, 0, 255, 255)),
+        );
+      final apng = png(animation);
+      expect(String.fromCharCodes(apng), contains('acTL'));
+      expect(Wasserzeichenbild.masse(apng), isNull);
+      expect(Wasserzeichenbild.gueltig(apng), isFalse);
+      expect(Wasserzeichenbild.bereiteVor(apng), isNull);
+    });
+
+    test('der Dekoder sieht nur geprüfte Abschnitte', () {
+      // bKGD liest das Bildpaket nicht in seiner Länge: Ist der Abschnitt
+      // länger, liest es danach mitten in ihm weiter – dort liesse sich ein
+      // Kopf verstecken, den die Prüfung nie sähe.
+      final teile = _abschnitte(png(rot(2, 2)));
+      final versteckt = _png([
+        teile.first,
+        _abschnitt('bKGD', List.filled(40, 0)),
+        ...teile.skip(1),
+      ]);
+      expect(img.decodePng(versteckt), isNull, reason: 'aus dem Tritt');
+      final gelesen = Wasserzeichenbild.lies(versteckt)!;
+      expect((gelesen.width, gelesen.height), (2, 2));
+      expect(gelesen.getPixel(1, 1).r, 255);
+    });
+
+    test('wie der Server ein Zeichen speichert', () {
+      // Graustufen mit 16 Bit, 3000 × 60, mit einem Textabschnitt.
+      final grau16 = img.Image(
+        width: 3000,
+        height: 60,
+        numChannels: 2,
+        format: img.Format.uint16,
+      );
+      for (final p in grau16) {
+        p
+          ..r = 40000
+          ..a = 65535;
+      }
+      final teile = _abschnitte(png(grau16));
+      final eingang = _png([
+        teile.first,
+        _abschnitt('tEXt', 'Kommentar\u0000geheim'.codeUnits),
+        ...teile.skip(1),
+      ]);
+      final gespeichert = Wasserzeichenbild.normalisiert(
+        eingang,
+        hoechstensBreite: 640,
+        hoechstensHoehe: 2560,
+      )!;
+      expect(Wasserzeichenbild.masse(gespeichert), (breite: 640, hoehe: 13));
+      expect(
+        [for (final (n, _) in _benannt(gespeichert)) n],
+        ['IHDR', 'IDAT', 'IEND'],
+      );
+      final bild = img.decodePng(gespeichert)!;
+      expect((bild.numChannels, bild.format), (4, img.Format.uint8));
+      final p = bild.getPixel(300, 6);
+      expect((p.r, p.g, p.b, p.a), (156, 156, 156, 255));
+      // Ein kleines bleibt so gross, wird aber neu geschrieben.
+      final klein = Wasserzeichenbild.normalisiert(
+        eingang,
+        hoechstensBreite: 4000,
+        hoechstensHoehe: 2560,
+      )!;
+      expect(Wasserzeichenbild.masse(klein), (breite: 3000, hoehe: 60));
+      expect(String.fromCharCodes(klein), isNot(contains('geheim')));
+      // Und nur, was sich lesen lässt.
+      expect(
+        Wasserzeichenbild.normalisiert(
+          Uint8List.fromList([1, 2, 3]),
+          hoechstensBreite: 10,
+          hoechstensHoehe: 10,
+        ),
+        isNull,
+      );
+    });
+
     test('ein grosses Logo wird verkleinert, ein kleines bleibt', () {
       final klein = png(rot(300, 100));
       expect(Wasserzeichenbild.bereiteVor(klein), klein);
@@ -431,3 +621,58 @@ void main() {
     });
   });
 }
+
+List<int> _u32(int v) => [
+  (v >> 24) & 0xFF,
+  (v >> 16) & 0xFF,
+  (v >> 8) & 0xFF,
+  v & 0xFF,
+];
+
+int _crc32(List<int> bytes) {
+  var c = 0xFFFFFFFF;
+  for (final b in bytes) {
+    c ^= b;
+    for (var k = 0; k < 8; k++) {
+      c = (c & 1) != 0 ? (c >> 1) ^ 0xEDB88320 : c >> 1;
+    }
+  }
+  return c ^ 0xFFFFFFFF;
+}
+
+/// Ein PNG-Abschnitt samt Länge und Prüfsumme.
+Uint8List _abschnitt(String name, List<int> daten) => Uint8List.fromList([
+  ..._u32(daten.length),
+  ...name.codeUnits,
+  ...daten,
+  ..._u32(_crc32([...name.codeUnits, ...daten])),
+]);
+
+/// Die Abschnitte eines PNG, wie sie in der Datei stehen, mit Namen.
+List<(String, Uint8List)> _benannt(Uint8List png) {
+  final aus = <(String, Uint8List)>[];
+  var pos = 8;
+  while (pos < png.length) {
+    final laenge = ByteData.sublistView(png, pos, pos + 4).getUint32(0);
+    final name = String.fromCharCodes(png, pos + 4, pos + 8);
+    aus.add((name, Uint8List.sublistView(png, pos, pos + 12 + laenge)));
+    pos += 12 + laenge;
+  }
+  return aus;
+}
+
+List<Uint8List> _abschnitte(Uint8List png) => [
+  for (final (_, a) in _benannt(png)) a,
+];
+
+Uint8List _png(List<Uint8List> abschnitte) => Uint8List.fromList([
+  137,
+  80,
+  78,
+  71,
+  13,
+  10,
+  26,
+  10,
+  for (final a in abschnitte) ...a,
+]);

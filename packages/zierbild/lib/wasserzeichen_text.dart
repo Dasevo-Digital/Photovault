@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/painting.dart';
+import 'package:kern/services/wasserzeichen.dart';
 
 /// Wie der Text eines Wasserzeichens aussieht (#497): die Systemschrift,
 /// halbfett, weiss mit einem weichen dunklen Schatten.
@@ -30,7 +31,9 @@ const _schattenraum = 0.15;
 
 /// Breiter wird kein Textbild: Grafikkarten zeichnen Flächen bis 16384
 /// Pixel, und mehr als die Hälfte eines Exports in voller Auflösung ist
-/// selbst für eine sehr grosse Vorgabe genug.
+/// selbst für eine sehr grosse Vorgabe genug. Braucht ein Bild mehr (ein
+/// Panorama mit bis zu 30000 Pixeln Breite), wird das Zeichen beim
+/// Einrechnen vergrössert.
 const wasserzeichentextHoechstensBreite = 8000;
 
 TextPainter _setzer(String text, double schriftgroesse) => TextPainter(
@@ -54,17 +57,55 @@ double wasserzeichentextVerhaeltnis(String text) {
 }
 
 /// Zeichnet [text] als PNG mit Transparenz, [breite] Pixel breit (samt
-/// dem Platz für den Schatten).
+/// dem Platz für den Schatten) – für einen Link, dessen Zeichen der Server
+/// einrechnet.
 ///
-/// Der Export zeichnet den Text für jedes Bild in genau der Breite, die
-/// das Zeichen dort bekommt: So wird beim Einrechnen nichts skaliert, und
-/// die Kanten bleiben so scharf, wie die Schrift sie setzt. Eingerechnet
-/// wird im Kern (`kern/services/wasserzeichen.dart`), der keinen Text
-/// zeichnen kann.
+/// Eingerechnet wird im Kern (`kern/services/wasserzeichen.dart`), der
+/// keinen Text zeichnen kann.
 Future<Uint8List> zeichneWasserzeichentext(
   String text, {
   required int breite,
 }) async {
+  final bild = await _zeichne(text, breite);
+  try {
+    final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
+    return daten!.buffer.asUint8List();
+  } finally {
+    bild.dispose();
+  }
+}
+
+/// [zeichneWasserzeichentext] als Pixel, fertig zum Einrechnen – für den
+/// Export und das Fotobuch, die das Zeichen selbst einrechnen.
+///
+/// Der Export zeichnet den Text für jedes Bild in genau der Breite, die
+/// das Zeichen dort bekommt: So wird beim Einrechnen nichts skaliert, und
+/// die Kanten bleiben so scharf, wie die Schrift sie setzt. Ohne den Umweg
+/// über ein PNG: Das kostete je Foto ein Kodieren und ein Dekodieren, und
+/// das gelesene PNG unterläge der Grenze für Fremdes
+/// ([Wasserzeichen.hoechstensBildKante]) – ein Text auf einem Panorama ist
+/// breiter. Über [wasserzeichentextHoechstensBreite] hinaus wird das
+/// Zeichen beim Einrechnen vergrössert.
+Future<Zeichenpixel> zeichneWasserzeichentextPixel(
+  String text, {
+  required int breite,
+}) async {
+  final bild = await _zeichne(text, breite);
+  try {
+    final daten = await bild.toByteData(
+      format: ui.ImageByteFormat.rawStraightRgba,
+    );
+    return Zeichenpixel.ausGerade(
+      bild.width,
+      bild.height,
+      daten!.buffer.asUint8List(daten.offsetInBytes, daten.lengthInBytes),
+    );
+  } finally {
+    bild.dispose();
+  }
+}
+
+Future<ui.Image> _zeichne(String text, int breite) async {
   const mess = 100.0;
   final probe = _setzer(text, mess);
   final jeGroesse = probe.width / mess + 2 * _schattenraum;
@@ -81,10 +122,9 @@ Future<Uint8List> zeichneWasserzeichentext(
   final aufnahme = ui.PictureRecorder();
   setzer.paint(Canvas(aufnahme), Offset(rand, rand));
   setzer.dispose();
-  final bild = await aufnahme.endRecording().toImage(w, h);
+  final bild = aufnahme.endRecording();
   try {
-    final daten = await bild.toByteData(format: ui.ImageByteFormat.png);
-    return daten!.buffer.asUint8List();
+    return await bild.toImage(w, h);
   } finally {
     bild.dispose();
   }

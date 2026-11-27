@@ -1,18 +1,23 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:farbverwaltung/farbverwaltung.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:kern/db/database.dart';
 import 'package:kern/services/import_service.dart';
+import 'package:kern/services/jpeg_icc.dart';
 import 'package:kern/services/storage_paths.dart';
 import 'package:kern/services/wasserzeichen.dart';
 import 'package:path/path.dart' as p;
 import 'package:photo_vault/services/export_service.dart';
+import 'package:photo_vault/services/farbverwaltung.dart';
 import 'package:photo_vault/services/library_location.dart';
+import 'package:photo_vault/services/wasserzeichen_einrechnen.dart';
 
 import 'hilfen/datenbanken.dart';
 
@@ -24,8 +29,8 @@ void main() {
   late StoragePaths paths;
   late Directory ziel;
 
-  Uint8List grauesJpeg() {
-    final bild = img.Image(width: 200, height: 100)
+  Uint8List grauesJpeg({int breite = 200, int hoehe = 100}) {
+    final bild = img.Image(width: breite, height: hoehe)
       ..clear(img.ColorRgb8(90, 90, 90));
     return Uint8List.fromList(img.encodeJpg(bild, quality: 95));
   }
@@ -69,9 +74,9 @@ void main() {
     tempRoot.deleteSync(recursive: true);
   });
 
-  Future<AssetData> foto() async {
+  Future<AssetData> foto({Uint8List? jpeg}) async {
     final rein = File(p.join(tempRoot.path, 'turm.jpg'))
-      ..writeAsBytesSync(grauesJpeg());
+      ..writeAsBytesSync(jpeg ?? grauesJpeg());
     final r = await ImportService(db, paths).importFile(rein.path);
     return (await db.assetById(r.assetId!))!;
   }
@@ -151,6 +156,150 @@ void main() {
     expect(hellste, greaterThan(200));
     expect(bild.getPixel(190, 95).r, inInclusiveRange(80, 100));
   });
+
+  test('ein Text auf einem sehr breiten Bild in voller Auflösung', () async {
+    // 50 % von 9000 px: Das Textbild wird 4500 px breit, mehr als ein PNG
+    // von aussen haben darf (4096). Vorher ging es als PNG durch diese
+    // Prüfung, und das Foto wurde ausgelassen – wie jedes in voller
+    // Auflösung ab gut 8200 px Breite, jedes Panorama.
+    final name = await ExportService(paths).exportAsset(
+      await foto(jpeg: grauesJpeg(breite: 9000, hoehe: 300)),
+      ziel.path,
+      vorgabe: const Exportvorgabe(
+        nachJpeg: true,
+        wasserzeichen: Wasserzeichen(
+          text: '© 2026',
+          groesse: 0.5,
+          deckkraft: 1,
+          rand: 0,
+        ),
+      ),
+    );
+    final bild = lies(name);
+    expect(bild.width, 9000);
+    int hellste(int von, int bis) {
+      var h = 0;
+      for (var y = 0; y < 300; y += 2) {
+        for (var x = von; x < bis; x += 2) {
+          h = math.max(h, bild.getPixel(x, y).r.toInt());
+        }
+      }
+      return h;
+    }
+
+    expect(hellste(4500, 9000), greaterThan(200), reason: 'unten rechts');
+    expect(hellste(0, 4000), lessThan(110));
+  });
+
+  test(
+    'ein Text wird je Breite einmal gezeichnet, ein Logo einmal gelesen',
+    () async {
+      vergissWasserzeichenpixel();
+      const text = Wasserzeichen(text: '© 2026');
+      final a = await wasserzeichenpixelFuer(text, bildBreite: 2000);
+      final b = await wasserzeichenpixelFuer(text, bildBreite: 2000);
+      final c = await wasserzeichenpixelFuer(text, bildBreite: 1000);
+      expect(a!.breite, closeTo(400, 2));
+      expect(identical(a, b), isTrue, reason: 'dieselbe Breite');
+      expect(c!.breite, closeTo(200, 2));
+      final logo = Wasserzeichen(art: Wasserzeichenart.bild, bild: rotesLogo);
+      final l1 = await wasserzeichenpixelFuer(logo, bildBreite: 2000);
+      final l2 = await wasserzeichenpixelFuer(logo, bildBreite: 1000);
+      expect(
+        identical(l1, l2),
+        isTrue,
+        reason: 'das Logo hängt nicht an der Breite',
+      );
+    },
+  );
+
+  test('mit Ausgabeprofil: Zeichen und Umrechnung in einem Durchgang, das '
+      'Logo im Zielfarbraum', () async {
+    await (await Farbverwaltung.fuer(
+      paths,
+    )).speichern(const Farbeinstellungen(ausgabe: 'p3'));
+    final name = await ExportService(paths).exportAsset(
+      await foto(),
+      ziel.path,
+      vorgabe: Exportvorgabe(
+        nachJpeg: true,
+        wasserzeichen: Wasserzeichen(
+          art: Wasserzeichenart.bild,
+          bild: rotesLogo,
+          deckkraft: 1,
+          rand: 0,
+        ),
+      ),
+    );
+    final datei = File(p.join(ziel.path, name)).readAsBytesSync();
+    expect(
+      JpegIcc.lesen(datei),
+      Farbengine.standard(Standardfarbraum.displayP3),
+    );
+    final bild = img.decodeJpg(datei)!;
+    // sRGB-Rot ist in Display P3 etwa (234, 51, 35). Ungewandelt stünde
+    // dort (255, 0, 0) – in P3 ein satteres Rot als das des Logos.
+    final ecke = bild.getPixel(185, 92);
+    expect(ecke.r, inInclusiveRange(215, 250));
+    expect(ecke.g, inInclusiveRange(30, 75));
+    // Grau bleibt Grau: dieselbe Tonkurve in sRGB und P3.
+    expect(bild.getPixel(100, 50).r, inInclusiveRange(80, 100));
+    expect(bild.exif.exifIfd['DateTimeOriginal'], isNotNull);
+  });
+
+  test(
+    'Farbverwaltung.exportiere rechnet ein mitgegebenes Zeichen ein',
+    () async {
+      final farbe = Farbverwaltung(Directory(p.join(tempRoot.path, 'farbe')));
+      await farbe.speichern(const Farbeinstellungen(ausgabe: 'p3'));
+      final w = Wasserzeichen(
+        art: Wasserzeichenart.bild,
+        bild: rotesLogo,
+        deckkraft: 1,
+        rand: 0,
+      );
+      final raus = await farbe.exportiere(
+        grauesJpeg(),
+        zeichen: (
+          pixel: Wasserzeichenbild.pixel(rotesLogo)!,
+          wasserzeichen: w,
+          qualitaet: 90,
+        ),
+      );
+      expect(
+        JpegIcc.lesen(raus),
+        Farbengine.standard(Standardfarbraum.displayP3),
+      );
+      final bild = img.decodeJpg(raus)!;
+      expect(bild.getPixel(185, 92).r, greaterThan(200));
+      expect(bild.getPixel(185, 92).g, lessThan(60));
+      expect(bild.getPixel(100, 50).r, inInclusiveRange(80, 100));
+    },
+  );
+
+  test(
+    'ohne Umrechnung kommt ein Logo in das Profil, das das Bild trägt',
+    () async {
+      final p3 = Farbengine.standard(Standardfarbraum.displayP3);
+      final name = await ExportService(paths).exportAsset(
+        await foto(jpeg: JpegIcc.schreiben(grauesJpeg(), p3)),
+        ziel.path,
+        vorgabe: Exportvorgabe(
+          nachJpeg: true,
+          wasserzeichen: Wasserzeichen(
+            art: Wasserzeichenart.bild,
+            bild: rotesLogo,
+            deckkraft: 1,
+            rand: 0,
+          ),
+        ),
+      );
+      final datei = File(p.join(ziel.path, name)).readAsBytesSync();
+      expect(JpegIcc.lesen(datei), p3);
+      final ecke = img.decodeJpg(datei)!.getPixel(185, 92);
+      expect(ecke.g, inInclusiveRange(30, 75));
+    },
+  );
 
   test('eine Vorgabe ohne „Nach JPEG rendern“ kopiert unverändert', () async {
     // Das Zeichen steht in der Zeile, gilt aber nicht: Unverändert kopiert

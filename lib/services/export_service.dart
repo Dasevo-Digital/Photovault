@@ -19,6 +19,7 @@ import '../l10n/app_localizations.dart';
 import 'package:kern/services/xmp_regionen.dart';
 import 'xmp_writer.dart';
 import 'farbverwaltung.dart';
+import 'package:farbverwaltung/farbverwaltung.dart' show FarbprofilFehler;
 import 'package:kern/services/jpeg_icc.dart';
 import 'package:kern/services/wasserzeichen.dart';
 
@@ -339,23 +340,31 @@ class ExportService {
     }
 
     if (gerendert != null && !v.raw16) {
-      gerendert = await (await Farbverwaltung.fuer(
-        _paths,
-      )).exportiere(gerendert, datenschutz: v.metadatenEntfernen);
-      // Das Wasserzeichen nach der Farbumrechnung: Eingerechnet wird in das
-      // Bild, wie es hinausgeht, und ein Logo trägt seine Farben so in den
-      // Werten des Ausgabefarbraums (bei sRGB genau die der PNG-Datei).
-      // Vor den Aufnahmeangaben, weil das Einrechnen neu kodiert.
+      final farbe = await Farbverwaltung.fuer(_paths);
       if (v.wasserzeichen case final zeichen?) {
+        // Das Wasserzeichen im selben Durchgang wie die Farbumrechnung:
+        // eingerechnet in das Bild, wie es hinausgeht, ein Logo umgerechnet
+        // in den Ausgabefarbraum – und nur einmal neu kodiert. Vor den
+        // Aufnahmeangaben, weil das Einrechnen neu kodiert.
         try {
-          gerendert = await jpegMitWasserzeichenAuf(
+          gerendert = await exportiereMitWasserzeichen(
+            farbe,
             gerendert,
             zeichen,
+            datenschutz: v.metadatenEntfernen,
             qualitaet: (v.qualitaet * 100).round(),
           );
+        } on FarbprofilFehler {
+          // Wie ohne Zeichen: ein Fehler der Umrechnung, nicht des Zeichens.
+          rethrow;
         } catch (_) {
           throw WasserzeichenNichtMoeglich(asset.originalFileName);
         }
+      } else {
+        gerendert = await farbe.exportiere(
+          gerendert,
+          datenschutz: v.metadatenEntfernen,
+        );
       }
       if (!v.metadatenEntfernen) {
         gerendert = mitAufnahmeangaben(gerendert, asset, mitOrt: v.ortMitgeben);

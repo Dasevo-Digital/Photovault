@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:kern/berechne.dart';
 import 'package:kern/services/jpeg_icc.dart';
 import 'package:kern/services/storage_paths.dart';
+import 'package:kern/services/wasserzeichen.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -205,28 +206,72 @@ class Farbverwaltung {
       gamut: gamutwarnung,
       papier: papierfarbe,
       intent: werte.intent,
+      zeichen: null,
     ));
   }
 
-  Future<Uint8List> exportiere(
-    Uint8List jpeg, {
+  /// Wohin [exportiere] umrechnet: das Zielprofil (`null` darin heisst
+  /// sRGB) und der Intent – `null`, wenn das Bild bleibt, wie es ist
+  /// (Ausgabe „original“).
+  Future<({Uint8List? ziel, int intent})?> exportziel({
     bool datenschutz = false,
   }) async {
     final werte = datenschutz
         ? const Farbeinstellungen(ausgabe: 'srgb')
         : await laden();
-    if (werte.ausgabe == 'original') return jpeg;
+    if (werte.ausgabe == 'original') return null;
+    return (ziel: await profil(werte.ausgabe, rgb: true), intent: werte.intent);
+  }
+
+  /// Das Bild im Ausgabeprofil; mit [zeichen] auch mit dem Wasserzeichen
+  /// (#497).
+  ///
+  /// **In einem Durchgang.** Die Farbumrechnung dekodiert das JPEG und
+  /// kodiert es neu; das Wasserzeichen danach eigens einzurechnen hiesse,
+  /// dasselbe Bild gleich noch einmal in reinem Dart zu dekodieren und zu
+  /// kodieren – eine Runde JPEG-Verlust und die Rechenzeit dafür je Foto
+  /// mehr. Deshalb kommt das Zeichen in [_wandleJpeg] nach der Umrechnung
+  /// dazu, und kodiert wird einmal, in der Qualität der Vorgabe. Bleibt das
+  /// Bild, wie es ist („original“), wird nur das Zeichen eingerechnet.
+  ///
+  /// Die Pixel des Zeichens müssen schon im Zielfarbraum sein
+  /// ([exportziel]; `wasserzeichenpixelFuer` rechnet ein Logo um).
+  Future<Uint8List> exportiere(
+    Uint8List jpeg, {
+    bool datenschutz = false,
+    Exportzeichen? zeichen,
+  }) async {
+    final ziel = await exportziel(datenschutz: datenschutz);
+    if (ziel == null) {
+      if (zeichen == null) return jpeg;
+      return berechne(jpegMitWasserzeichen, (
+        jpeg: jpeg,
+        zeichen: zeichen.pixel,
+        wasserzeichen: zeichen.wasserzeichen,
+        qualitaet: zeichen.qualitaet,
+      ));
+    }
     return berechne(_wandleJpeg, (
       jpeg: jpeg,
-      ziel: await profil(werte.ausgabe, rgb: true),
+      ziel: ziel.ziel,
       druck: null,
       proof: false,
       gamut: false,
       papier: false,
-      intent: werte.intent,
+      intent: ziel.intent,
+      zeichen: zeichen,
     ));
   }
 }
+
+/// Ein Wasserzeichen, das [Farbverwaltung.exportiere] im selben Durchgang
+/// wie die Farbumrechnung einrechnet (#497): die Pixel im Zielfarbraum,
+/// die Einstellungen und die Qualität, in der danach kodiert wird (1–100).
+typedef Exportzeichen = ({
+  Zeichenpixel pixel,
+  Wasserzeichen wasserzeichen,
+  int qualitaet,
+});
 
 Uint8List _wandleJpeg(
   ({
@@ -237,6 +282,7 @@ Uint8List _wandleJpeg(
     bool gamut,
     bool papier,
     int intent,
+    Exportzeichen? zeichen,
   })
   w,
 ) {
@@ -255,16 +301,25 @@ Uint8List _wandleJpeg(
     papierfarbe: w.papier,
     intent: w.intent,
   );
-  final aus = img.Image.fromBytes(
+  var aus = img.Image.fromBytes(
     width: bild.width,
     height: bild.height,
     bytes: gewandelt.buffer,
     numChannels: 3,
     order: img.ChannelOrder.rgb,
   );
+  final zeichen = w.zeichen;
+  if (zeichen != null) {
+    aus = rechneZeichenpixelEin(aus, zeichen.pixel, zeichen.wasserzeichen);
+  }
   // Neu kodiert: keine EXIF/GPS-Daten und kein fehlerhafter ICC-Encoderpfad.
+  // Mit Wasserzeichen ist das die letzte Kodierung vor der Datei, also in
+  // der Qualität der Vorgabe (vorher kodierte das Einrechnen danach noch
+  // einmal in ihr).
   return JpegIcc.schreiben(
-    Uint8List.fromList(img.encodeJpg(aus, quality: 95)),
+    Uint8List.fromList(
+      img.encodeJpg(aus, quality: zeichen?.qualitaet.clamp(1, 100) ?? 95),
+    ),
     w.ziel ?? Farbengine.standard(Standardfarbraum.srgb),
   );
 }

@@ -271,9 +271,108 @@ class Wasserzeichen {
   );
 }
 
+/// Ein Zeichen, fertig zum Einrechnen: RGBA mit 8 Bit je Kanal, Zeile für
+/// Zeile, die Farben schon mit ihrer Deckung multipliziert (siehe
+/// [rechneWasserzeichenEin]).
+///
+/// **Warum eigens.** Ein Zeichen geht in viele Bilder: beim Export in jedes
+/// Foto, am Server in jede Miniatur und Ansicht eines Links. Als PNG müsste
+/// es jedes Mal dekodiert und vormultipliziert werden; so geschieht das
+/// einmal, und das Ergebnis lässt sich zwischenspeichern und als ein
+/// Block Bytes in ein Isolate schicken. Ein Text, den das Gerät zeichnet,
+/// kommt ohne den Umweg über ein PNG hierher – und ohne dessen Grenze von
+/// [Wasserzeichen.hoechstensBildKante], die nur für Fremdes gilt.
+final class Zeichenpixel {
+  Zeichenpixel(this.breite, this.hoehe, this.rgba)
+    : assert(breite > 0 && hoehe > 0 && rgba.length == breite * hoehe * 4);
+
+  /// Aus einem Bild mit gewöhnlichen (nicht vormultiplizierten) Farben.
+  ///
+  /// Graustufen und Farbpaletten werden vorher zu RGBA: Das Bildpaket
+  /// liefert bei einem Bild mit einem Kanal Grün und Blau als 0, und ein
+  /// graues Logo käme sonst rot ins Foto.
+  factory Zeichenpixel.aus(img.Image zeichen) {
+    final z = zeichen.hasPalette || zeichen.numChannels < 3
+        ? zeichen.convert(numChannels: 4)
+        : zeichen;
+    final rgba = Uint8List(z.width * z.height * 4);
+    for (final p in z) {
+      final a = p.aNormalized.clamp(0, 1);
+      final i = (p.y * z.width + p.x) * 4;
+      rgba[i] = (p.rNormalized.clamp(0, 1) * a * 255).round();
+      rgba[i + 1] = (p.gNormalized.clamp(0, 1) * a * 255).round();
+      rgba[i + 2] = (p.bNormalized.clamp(0, 1) * a * 255).round();
+      rgba[i + 3] = (a * 255).round();
+    }
+    return Zeichenpixel(z.width, z.height, rgba);
+  }
+
+  /// Aus RGBA mit gewöhnlichen Farben, wie `dart:ui` sie als
+  /// `rawStraightRgba` liefert.
+  factory Zeichenpixel.ausGerade(int breite, int hoehe, Uint8List gerade) {
+    final rgba = Uint8List(breite * hoehe * 4);
+    for (var i = 0; i < rgba.length; i += 4) {
+      final a = gerade[i + 3];
+      rgba[i] = (gerade[i] * a / 255).round();
+      rgba[i + 1] = (gerade[i + 1] * a / 255).round();
+      rgba[i + 2] = (gerade[i + 2] * a / 255).round();
+      rgba[i + 3] = a;
+    }
+    return Zeichenpixel(breite, hoehe, rgba);
+  }
+
+  final int breite;
+  final int hoehe;
+
+  /// Vormultipliziertes RGBA, 4 Bytes je Pixel.
+  final Uint8List rgba;
+
+  /// Dasselbe Zeichen mit umgerechneten Farben – für ein Logo, das in einem
+  /// anderen Farbraum als sRGB eingerechnet wird. [wandle] bekommt die
+  /// gewöhnlichen RGB-Werte (3 Bytes je Pixel) und gibt die umgerechneten
+  /// zurück. Umgerechnet wird ohne die Deckung: Ein Farbprofil ist nicht
+  /// linear, und ein halb deckendes Rot wäre vormultipliziert ein anderes
+  /// Rot.
+  Zeichenpixel umgerechnet(Uint8List Function(Uint8List rgb) wandle) {
+    final n = breite * hoehe;
+    final rgb = Uint8List(n * 3);
+    for (var p = 0; p < n; p++) {
+      final a = rgba[p * 4 + 3];
+      if (a == 0) continue;
+      for (var k = 0; k < 3; k++) {
+        rgb[p * 3 + k] = math.min(255, (rgba[p * 4 + k] * 255 / a).round());
+      }
+    }
+    final neu = wandle(rgb);
+    if (neu.length != rgb.length) {
+      throw const FormatException('pv_wasserzeichen_farbe');
+    }
+    final aus = Uint8List(rgba.length);
+    for (var p = 0; p < n; p++) {
+      final a = rgba[p * 4 + 3];
+      aus[p * 4 + 3] = a;
+      if (a == 0) continue;
+      for (var k = 0; k < 3; k++) {
+        aus[p * 4 + k] = (neu[p * 3 + k] * a / 255).round();
+      }
+    }
+    return Zeichenpixel(breite, hoehe, aus);
+  }
+
+  /// Die Pixel als Bild des Bildpakets (teilt sich die Bytes).
+  img.Image get bild => img.Image.fromBytes(
+    width: breite,
+    height: hoehe,
+    bytes: rgba.buffer,
+    bytesOffset: rgba.offsetInBytes,
+    numChannels: 4,
+    order: img.ChannelOrder.rgba,
+  );
+}
+
 /// Rechnet [zeichen] nach [wasserzeichen] in [bild] ein und gibt das
 /// Ergebnis zurück – [bild] selbst, verändert, ausser es hatte eine
-/// Farbpalette (dann eine Kopie ohne).
+/// Farbpalette oder weniger als drei Kanäle (dann eine Kopie in RGB).
 ///
 /// **Vormultipliziert skaliert.** Ein PNG speichert die Farbe auch dort,
 /// wo es ganz durchsichtig ist, meist als Schwarz. Beim Verkleinern
@@ -285,44 +384,41 @@ img.Image rechneWasserzeichenEin(
   img.Image bild,
   img.Image zeichen,
   Wasserzeichen wasserzeichen,
+) => rechneZeichenpixelEin(bild, Zeichenpixel.aus(zeichen), wasserzeichen);
+
+/// [rechneWasserzeichenEin] mit einem schon vorbereiteten Zeichen.
+img.Image rechneZeichenpixelEin(
+  img.Image bild,
+  Zeichenpixel zeichen,
+  Wasserzeichen wasserzeichen,
 ) {
   final r = wasserzeichenRechteck(
     bildBreite: bild.width,
     bildHoehe: bild.height,
-    zeichenBreite: zeichen.width,
-    zeichenHoehe: zeichen.height,
+    zeichenBreite: zeichen.breite,
+    zeichenHoehe: zeichen.hoehe,
     wasserzeichen: wasserzeichen,
   );
   if (r == null) return bild;
-  final ziel = bild.hasPalette ? bild.convert(numChannels: 4) : bild;
+  // Ein Graustufenbild hat nur einen Kanal: Grün und Blau zu setzen ginge
+  // ins Leere, und das Zeichen landete mit seinem Rot im Grau. Also erst
+  // nach RGB – ein farbiges Logo bleibt farbig.
+  final ziel = bild.hasPalette || bild.numChannels < 3
+      ? bild.convert(numChannels: bild.hasPalette || bild.hasAlpha ? 4 : 3)
+      : bild;
   final deckkraft = wasserzeichen.deckkraft.clamp(
     Wasserzeichen.deckkraftMin,
     Wasserzeichen.deckkraftMax,
   );
 
-  final vor = img.Image(
-    width: zeichen.width,
-    height: zeichen.height,
-    numChannels: 4,
-  );
-  for (final p in zeichen) {
-    final a = p.aNormalized;
-    vor.setPixelRgba(
-      p.x,
-      p.y,
-      (p.rNormalized * a * 255).round(),
-      (p.gNormalized * a * 255).round(),
-      (p.bNormalized * a * 255).round(),
-      (a * 255).round(),
-    );
-  }
-  final skaliert = r.breite == zeichen.width && r.hoehe == zeichen.height
+  final vor = zeichen.bild;
+  final skaliert = r.breite == zeichen.breite && r.hoehe == zeichen.hoehe
       ? vor
       : img.copyResize(
           vor,
           width: r.breite,
           height: r.hoehe,
-          interpolation: r.breite < zeichen.width
+          interpolation: r.breite < zeichen.breite
               ? img.Interpolation.average
               : img.Interpolation.linear,
         );
@@ -354,10 +450,18 @@ img.Image rechneWasserzeichenEin(
 /// `compute` bzw. `Isolate.run` in ein Isolate geht.
 typedef WasserzeichenAuftrag = ({
   Uint8List jpeg,
-  Uint8List zeichen,
+  Zeichenpixel zeichen,
   Wasserzeichen wasserzeichen,
   int qualitaet,
 });
+
+/// So viele Pixel darf ein Foto haben, in das [jpegMitWasserzeichen] ein
+/// Zeichen rechnet. Ein Export in voller Auflösung hat bei heutigen Kameras
+/// gut 60 Millionen Pixel, ein zusammengefügtes Panorama höchstens 50
+/// Millionen bei bis zu 30000 Pixeln an der langen Seite
+/// (`zusammenfuegen/panorama.dart`). Darüber hinaus hält die Grenze Bomben
+/// ab – wie beim Verdecken von Gesichtern, nur weiter.
+const wasserzeichenHoechstensFotoPixel = 120000000;
 
 /// [WasserzeichenAuftrag.jpeg] mit eingerechnetem Zeichen, wieder als
 /// JPEG in [WasserzeichenAuftrag.qualitaet] (1–100).
@@ -370,23 +474,18 @@ typedef WasserzeichenAuftrag = ({
 /// selbst; der eigene Schritt hält das Ergebnis unabhängig davon, welche
 /// Fassung ein Paket auflöst.
 ///
-/// Wirft [FormatException], wenn sich Foto oder Zeichen nicht lesen lassen
-/// – der Aufrufer soll dann nicht stillschweigend ohne Zeichen ausliefern.
+/// Wirft [FormatException], wenn sich das Foto nicht lesen lässt – der
+/// Aufrufer soll dann nicht stillschweigend ohne Zeichen ausliefern.
 Uint8List jpegMitWasserzeichen(WasserzeichenAuftrag auftrag) {
-  // Dieselbe Grenze gegen Bomben wie beim Verdecken von Gesichtern, nur
-  // weiter: Ein Export in voller Auflösung hat bei heutigen Kameras gut
-  // 60 Millionen Pixel.
-  JpegIcc.masse(auftrag.jpeg, maxPixel: 120000000);
+  JpegIcc.masse(auftrag.jpeg, maxPixel: wasserzeichenHoechstensFotoPixel);
   final profil = JpegIcc.lesen(auftrag.jpeg);
   var bild = img.decodeJpg(auftrag.jpeg);
   if (bild == null) throw const FormatException('pv_wasserzeichen_foto');
-  final zeichen = Wasserzeichenbild.lies(auftrag.zeichen);
-  if (zeichen == null) throw const FormatException('pv_wasserzeichen_bild');
   if (bild.exif.imageIfd.hasOrientation &&
       bild.exif.imageIfd.orientation != 1) {
     bild = img.bakeOrientation(bild);
   }
-  bild = rechneWasserzeichenEin(bild, zeichen, auftrag.wasserzeichen);
+  bild = rechneZeichenpixelEin(bild, auftrag.zeichen, auftrag.wasserzeichen);
   bild.iccProfile = null;
   return JpegIcc.schreiben(
     Uint8List.fromList(
@@ -405,24 +504,75 @@ abstract final class Wasserzeichenbild {
   /// nicht.
   static const hoechstensKante = 1600;
 
-  /// Breite und Höhe aus dem Kopf eines PNG, ohne es zu dekodieren –
-  /// `null`, wenn es keines ist.
-  static ({int breite, int hoehe})? masse(Uint8List daten) {
-    const signatur = [137, 80, 78, 71, 13, 10, 26, 10];
-    if (daten.length < 24) return null;
-    for (var i = 0; i < signatur.length; i++) {
-      if (daten[i] != signatur[i]) return null;
+  static const _signatur = [137, 80, 78, 71, 13, 10, 26, 10];
+
+  /// Die Abschnitte, die zum Bild gehören. Alles andere (Text, Farbprofil,
+  /// Hintergrundfarbe …) fällt beim Lesen weg.
+  static const _bildabschnitte = {'IHDR', 'PLTE', 'tRNS', 'IDAT', 'IEND'};
+
+  /// Abschnitte, mit denen ein PNG mehr als ein Bild beschreibt: eine
+  /// Animation (APNG) oder ein zweiter Kopf.
+  static const _verboten = {'IHDR', 'acTL', 'fcTL', 'fdAT'};
+
+  /// Läuft die Abschnitte von [daten] ab: die Masse aus dem Kopf und das
+  /// PNG nur mit den Abschnitten des Bildes – `null`, wenn es keines ist
+  /// oder mehr als ein Bild beschreibt.
+  ///
+  /// **Warum nicht nur der erste Kopf.** Das Bildpaket (4.12) übernimmt die
+  /// Masse jedes weiteren IHDR-Abschnitts, und eine Animation dekodiert es
+  /// ganz, Bild für Bild. Ein PNG, dessen erster Kopf 1 × 1 sagt und dessen
+  /// zweiter 16000 × 16000, kam so an der Prüfung vorbei und belegte beim
+  /// Dekodieren ein Gigabyte. Einige Abschnitte (bKGD, iCCP) liest das Paket
+  /// ausserdem nicht in der angegebenen Länge; darin liesse sich ein Kopf
+  /// verstecken, den nur das Paket sieht. Deshalb bekommt es nur noch, was
+  /// hier geprüft ist.
+  static ({int breite, int hoehe, Uint8List png})? _abgelaufen(
+    Uint8List daten,
+  ) {
+    if (daten.length < _signatur.length + 25) return null;
+    for (var i = 0; i < _signatur.length; i++) {
+      if (daten[i] != _signatur[i]) return null;
     }
-    // Der erste Abschnitt ist IHDR: Länge (4), Name (4), Breite, Höhe.
-    if (String.fromCharCodes(daten.sublist(12, 16)) != 'IHDR') return null;
     int zahl(int ab) =>
         (daten[ab] << 24) |
         (daten[ab + 1] << 16) |
         (daten[ab + 2] << 8) |
         daten[ab + 3];
-    final breite = zahl(16), hoehe = zahl(20);
-    if (breite <= 0 || hoehe <= 0) return null;
-    return (breite: breite, hoehe: hoehe);
+    final aus = BytesBuilder(copy: false)
+      ..add(Uint8List.sublistView(daten, 0, _signatur.length));
+    int? breite, hoehe;
+    var pos = _signatur.length;
+    while (true) {
+      if (pos + 12 > daten.length) return null;
+      final laenge = zahl(pos);
+      final name = String.fromCharCodes(daten, pos + 4, pos + 8);
+      final ende = pos + 12 + laenge;
+      if (laenge > 0x7FFFFFFF || ende > daten.length) return null;
+      if (breite == null) {
+        // Der erste Abschnitt ist der Kopf: Breite, Höhe und fünf Bytes.
+        if (name != 'IHDR' || laenge != 13) return null;
+        breite = zahl(pos + 8);
+        hoehe = zahl(pos + 12);
+      } else if (_verboten.contains(name)) {
+        return null;
+      }
+      if (_bildabschnitte.contains(name)) {
+        aus.add(Uint8List.sublistView(daten, pos, ende));
+      }
+      if (name == 'IEND') break;
+      pos = ende;
+    }
+    final b = breite, h = hoehe!;
+    if (b <= 0 || h <= 0) return null;
+    return (breite: b, hoehe: h, png: aus.takeBytes());
+  }
+
+  /// Breite und Höhe aus dem Kopf eines PNG, ohne es zu dekodieren –
+  /// `null`, wenn es keines ist oder mehr als ein Bild beschreibt (ein
+  /// zweiter Kopf, eine Animation).
+  static ({int breite, int hoehe})? masse(Uint8List daten) {
+    final m = _abgelaufen(daten);
+    return m == null ? null : (breite: m.breite, hoehe: m.hoehe);
   }
 
   /// Ob [daten] ein PNG innerhalb der Grenzen ist
@@ -431,19 +581,80 @@ abstract final class Wasserzeichenbild {
   static bool gueltig(Uint8List daten) => lies(daten) != null;
 
   /// [daten] als Bild, wenn es [gueltig] ist; sonst `null`.
-  static img.Image? lies(Uint8List daten) {
-    if (daten.length > Wasserzeichen.hoechstensBildBytes) return null;
-    final m = masse(daten);
-    if (m == null ||
-        m.breite > Wasserzeichen.hoechstensBildKante ||
-        m.hoehe > Wasserzeichen.hoechstensBildKante) {
+  static img.Image? lies(Uint8List daten) => _dekodiert(
+    daten,
+    hoechstensBytes: Wasserzeichen.hoechstensBildBytes,
+    hoechstensKante: Wasserzeichen.hoechstensBildKante,
+  );
+
+  /// [lies], gleich vorbereitet zum Einrechnen.
+  static Zeichenpixel? pixel(Uint8List daten) {
+    final bild = lies(daten);
+    return bild == null ? null : Zeichenpixel.aus(bild);
+  }
+
+  /// Dekodiert nur das erste Bild und nur, was der Kopf ankündigt: Der
+  /// Dekoder bekommt dieselbe Grenze in Pixeln mit, und nach dem Lesen muss
+  /// das Bild die Masse aus [masse] haben.
+  static img.Image? _dekodiert(
+    Uint8List daten, {
+    required int hoechstensBytes,
+    required int hoechstensKante,
+  }) {
+    if (daten.length > hoechstensBytes) return null;
+    final m = _abgelaufen(daten);
+    if (m == null || m.breite > hoechstensKante || m.hoehe > hoechstensKante) {
       return null;
     }
     try {
-      return img.decodePng(daten);
+      final bild = img.PngDecoder(
+        maxPixels: m.breite * m.hoehe,
+      ).decode(m.png, frame: 0);
+      if (bild == null || bild.width != m.breite || bild.height != m.hoehe) {
+        return null;
+      }
+      return bild;
     } catch (_) {
       return null;
     }
+  }
+
+  /// Ein Zeichen, wie es der Server speichert (#497): nur das erste Bild,
+  /// RGBA mit 8 Bit, höchstens [hoechstensBreite] × [hoechstensHoehe] –
+  /// grösser wird es in keinem Bild, das er ausliefert –, ohne andere
+  /// Abschnitte neu als PNG geschrieben. `null`, wenn [daten] nicht
+  /// [gueltig] ist oder das Ergebnis über [Wasserzeichen.hoechstensBildBytes]
+  /// läge.
+  ///
+  /// So hält sich, was jede Miniatur und Ansicht eines Links einrechnet,
+  /// klein, und gespeichert wird nur, was hier gelesen und neu geschrieben
+  /// wurde – nicht, was ein Gerät geschickt hat.
+  static Uint8List? normalisiert(
+    Uint8List daten, {
+    required int hoechstensBreite,
+    required int hoechstensHoehe,
+  }) {
+    final gelesen = lies(daten);
+    if (gelesen == null) return null;
+    var bild = gelesen.convert(format: img.Format.uint8, numChannels: 4)
+      ..textData = null
+      ..iccProfile = null;
+    final faktor = math.min(
+      1.0,
+      math.min(
+        math.max(1, hoechstensBreite) / bild.width,
+        math.max(1, hoechstensHoehe) / bild.height,
+      ),
+    );
+    if (faktor < 1) {
+      bild = _verkleinert(
+        bild,
+        math.max(1, (bild.width * faktor).round()),
+        math.max(1, (bild.height * faktor).round()),
+      );
+    }
+    final png = img.encodePng(bild);
+    return png.length > Wasserzeichen.hoechstensBildBytes ? null : png;
   }
 
   /// Ein gewähltes Logo zum Speichern: höchstens [hoechstensKante] an der
@@ -454,15 +665,11 @@ abstract final class Wasserzeichenbild {
   /// Bewusst nur PNG: Das Logo braucht Transparenz, und ein JPEG hätte
   /// stets einen weissen oder schwarzen Kasten um sich.
   static Uint8List? bereiteVor(Uint8List daten) {
-    if (daten.length > 40 * 1024 * 1024) return null;
-    final m = masse(daten);
-    if (m == null || m.breite > 12000 || m.hoehe > 12000) return null;
-    img.Image? bild;
-    try {
-      bild = img.decodePng(daten);
-    } catch (_) {
-      return null;
-    }
+    final bild = _dekodiert(
+      daten,
+      hoechstensBytes: 40 * 1024 * 1024,
+      hoechstensKante: 12000,
+    );
     if (bild == null) return null;
     final lang = math.max(bild.width, bild.height);
     Uint8List ergebnis;
@@ -484,24 +691,8 @@ abstract final class Wasserzeichenbild {
   /// [rechneWasserzeichenEin]) und rechnet danach zurück, damit das
   /// gespeicherte PNG wieder gewöhnliche Farben trägt.
   static img.Image _verkleinert(img.Image bild, int breite, int hoehe) {
-    final vor = img.Image(
-      width: bild.width,
-      height: bild.height,
-      numChannels: 4,
-    );
-    for (final p in bild) {
-      final a = p.aNormalized;
-      vor.setPixelRgba(
-        p.x,
-        p.y,
-        (p.rNormalized * a * 255).round(),
-        (p.gNormalized * a * 255).round(),
-        (p.bNormalized * a * 255).round(),
-        (a * 255).round(),
-      );
-    }
     final klein = img.copyResize(
-      vor,
+      Zeichenpixel.aus(bild).bild,
       width: breite,
       height: hoehe,
       interpolation: img.Interpolation.average,
