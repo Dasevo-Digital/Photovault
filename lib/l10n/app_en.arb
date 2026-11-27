@@ -1701,6 +1701,102 @@
       }
     }
   },
+  "viewerArbeitsdateienAus": "Show working files from {programm}",
+  "@viewerArbeitsdateienAus": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdErgebnisUnvollstaendig": "“{datei}” is incomplete – saving was probably interrupted. Save the result again in the opened folder.",
+  "@fremdErgebnisUnvollstaendig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdErgebnisZuGross": "“{datei}” has {megapixel} megapixels. Without the system’s image tools, Photo Vault converts at most {grenze} megapixels; save the result as JPEG in the opened folder.",
+  "@fremdErgebnisZuGross": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      },
+      "megapixel": {
+        "type": "int"
+      },
+      "grenze": {
+        "type": "int"
+      }
+    }
+  },
+  "fremdErgebnisNurMitWerkzeug": "“{datei}” cannot be converted reliably without the system’s image tools (libvips on Linux and Windows): Photo Vault cannot read its compression, bit depth or colour profile correctly on its own. Save the result as JPEG or as an uncompressed TIFF in the opened folder.",
+  "@fremdErgebnisNurMitWerkzeug": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdNochNichtFertig": "“{datei}” is still being written. Take over the result again once the program has finished saving.",
+  "@fremdNochNichtFertig": {
+    "placeholders": {
+      "datei": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdNeuereArbeitsdateiTitel": "Newer working file",
+  "fremdNeuereArbeitsdatei": "“{arbeitsdatei}” was saved after “{ergebnis}”. The latest state is probably only in that file, which Photo Vault cannot read. Also save it as JPEG or TIFF – or take over the older state.",
+  "@fremdNeuereArbeitsdatei": {
+    "placeholders": {
+      "arbeitsdatei": {
+        "type": "String"
+      },
+      "ergebnis": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdAelterenUebernehmen": "Take over older state",
+  "fremdUebernommenArbeitsdateien": "Taken over. The original remains behind it as a variant. The other files from {programm} stay in the working folder; the context menu shows it.",
+  "@fremdUebernommenArbeitsdateien": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "fremdArbeitsdateienGeblieben": "Photo Vault removed its working copies. What another program saved from the photo is still in {ordner} – delete it there yourself if it should not stay.",
+  "@fremdArbeitsdateienGeblieben": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      }
+    }
+  },
+  "einstBearbeitenInEntfernenTitel": "Remove {programm}",
+  "@einstBearbeitenInEntfernenTitel": {
+    "placeholders": {
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "einstBearbeitenInEntfernenText": "{ordner} still contains working copies for {programm}. Remove them as well? Whatever the program saved itself stays.",
+  "@einstBearbeitenInEntfernenText": {
+    "placeholders": {
+      "ordner": {
+        "type": "String"
+      },
+      "programm": {
+        "type": "String"
+      }
+    }
+  },
+  "einstBearbeitenInNurProgramm": "Only the program",
+  "einstBearbeitenInMitKopien": "The copies too",
   "einstAbschnittBearbeitenIn": "Edit in other apps",
   "einstBeschrBearbeitenIn": "Which apps full screen offers under “Edit in” – darktable, Photoshop, GIMP, Affinity, ON1 or one of your own",
   "einstBearbeitenInText": "The app gets a copy of the photo in a folder of its own; the library stays untouched. Take the result over in full screen from the context menu; the original stays behind it as a variant.",

@@ -4822,7 +4822,25 @@ class LibraryState extends ChangeNotifier {
     );
     await db.sichtbaresTitelbild({for (final a in aufnahmen) ?a.stackId});
     vergissAlleBilder();
+    if (sperren) await _klartextFort([for (final a in aufnahmen) a.id]);
   });
+
+  /// Räumt nach dem Sperren und dem endgültigen Löschen die Arbeitskopien
+  /// für andere Programme weg (#499): Sie liegen als Klartext unter
+  /// „Bilder“. Die App setzt ihn beim Start (main.dart); ohne bleibt es,
+  /// wie es war – so fasst kein Test die Ordner des Nutzers an.
+  Future<void> Function(List<String> ids)? beiKlartextFort;
+
+  Future<void> _klartextFort(Iterable<String> ids) async {
+    final aufraeumen = beiKlartextFort;
+    final liste = ids.toList();
+    if (aufraeumen == null || liste.isEmpty) return;
+    try {
+      await aufraeumen(liste);
+    } on Object catch (e) {
+      debugPrint('Arbeitskopien nicht aufgeräumt: $e');
+    }
+  }
 
   /// Verschlüsselt ein Foto/Video und verschiebt es in den gesperrten
   /// Ordner. Setzt voraus, dass der gesperrte Ordner für diese Sitzung
@@ -5238,6 +5256,7 @@ class LibraryState extends ChangeNotifier {
       await paths.deletePermanently(relPath);
     }
     await paths.deletePermanently(paths.vaultMetadataRelativePath(asset.id));
+    await _klartextFort([asset.id]);
   }
 
   /// Löscht [aufnahmen] endgültig aus dem Papierkorb – ohne Angabe alles
@@ -5251,11 +5270,13 @@ class LibraryState extends ChangeNotifier {
     if (verbunden) {
       final a = abgleich;
       if (a == null) throw StateError('pv_nur_ueber_server');
+      final weg = aufnahmen ?? await db.papierkorb();
       final n = await leereServerpapierkorb(
         a.verbindung,
         ids: aufnahmen?.map((x) => x.id),
       );
       a.jetzt();
+      await _klartextFort(weg.map((x) => x.id));
       return n;
     }
     // Erst die Zeilen, dann die Dateien, und nur, was noch im Papierkorb
@@ -5267,6 +5288,7 @@ class LibraryState extends ChangeNotifier {
       ids: aufnahmen?.map((a) => a.id),
       mitGesperrten: aufnahmen != null,
     );
+    await _klartextFort(weg);
     return weg.length;
   }
 
@@ -5285,7 +5307,7 @@ class LibraryState extends ChangeNotifier {
         Duration(days: config.autoDeleteAfterDays),
       );
       _nurOhneServer();
-      await leerePapierkorb(db, paths, vor: cutoff);
+      await _klartextFort(await leerePapierkorb(db, paths, vor: cutoff));
       await db.setLastTrashPurgeAt(DateTime.now());
     } catch (e) {
       debugPrint('Automatisches Leeren des Papierkorbs fehlgeschlagen: $e');

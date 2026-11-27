@@ -661,6 +661,14 @@ class DesktopImageTools {
   /// Ab dieser Kante wird nicht verkleinert – nur gedreht und kodiert.
   static const _vipsOhneGrenze = 1 << 16;
 
+  /// Nur der Weg über libvips, in voller Grösse und ohne Rückfall auf
+  /// Dart: für Ergebnisse aus anderen Programmen (#499), deren Farbprofil
+  /// und Kompression `package:image` nicht immer richtig liest. `null`,
+  /// wenn das Werkzeug fehlt oder scheitert; dann entscheidet der
+  /// Aufrufer, ob Dart es versuchen darf.
+  static Future<Uint8List?> nurMitVips(File datei, {int quality = 95}) =>
+      _mitVips(datei.path, _vipsOhneGrenze, quality, drehen: true);
+
   /// Verkleinert und kodiert [quelle] mit `vipsthumbnail` (#274) – im
   /// linearen Licht, wie Immich 3.3, und mit einem Bruchteil des Speichers
   /// von Dart. `null`, wenn das Werkzeug fehlt oder scheitert; dann

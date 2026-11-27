@@ -130,7 +130,11 @@ void main() {
     await warte(tester);
     await tester.tap(find.text('darktable'));
     await warte(tester);
-    expect(bruecke.offen('a'), isTrue, reason: 'die Arbeitskopie liegt da');
+    expect(
+      await tester.runAsync(() => bruecke.offen('a')),
+      isTrue,
+      reason: 'die Arbeitskopie liegt da',
+    );
 
     await menueOeffnen(tester);
     expect(find.text('Ergebnis aus darktable übernehmen'), findsOneWidget);

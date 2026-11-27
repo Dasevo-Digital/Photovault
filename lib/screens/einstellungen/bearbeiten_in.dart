@@ -44,6 +44,59 @@ class _BearbeitenInGruppeState extends State<BearbeitenInGruppe> {
     }
   }
 
+  /// Entfernt ein eigenes Programm. Liegen in seinem Ordner noch
+  /// Arbeitskopien, wird gefragt, ob sie mitgehen (#499) – sonst blieben
+  /// sie als Klartext unter „Bilder“ liegen, ohne dass das Menü sie noch
+  /// zeigt. Was das Programm selbst gespeichert hat, bleibt in jedem Fall.
+  Future<void> _entfernen(Fremdprogramm programm) async {
+    final t = AppTexte.of(context);
+    var kopienWeg = false;
+    if (await _programme.hatArbeitsordner(programm)) {
+      if (!mounted) return;
+      final wahl = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(t.einstBearbeitenInEntfernenTitel(programm.name)),
+          content: Text(
+            t.einstBearbeitenInEntfernenText(
+              _programme.bruecke(programm).ablage.path,
+              programm.name,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(t.allgAbbrechen),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(t.einstBearbeitenInNurProgramm),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(t.einstBearbeitenInMitKopien),
+            ),
+          ],
+        ),
+      );
+      if (wahl == null) return;
+      kopienWeg = wahl;
+    }
+    await _tue(() async {
+      final geblieben = await _programme.entferne(
+        programm.kennung,
+        kopienWeg: kopienWeg,
+      );
+      if (geblieben.isNotEmpty) {
+        melde.warnung(
+          t.fremdArbeitsdateienGeblieben(
+            geblieben.map((d) => d.path).join(', '),
+          ),
+        );
+      }
+    });
+  }
+
   Future<void> _hinzufuegen() async {
     final t = AppTexte.of(context);
     await _tue(() async {
@@ -84,8 +137,7 @@ class _BearbeitenInGruppeState extends State<BearbeitenInGruppe> {
                     schalte: (an) =>
                         _tue(() => _programme.schalte(programm.kennung, an)),
                     entferne: programm.eigenes
-                        ? () =>
-                              _tue(() => _programme.entferne(programm.kennung))
+                        ? () => unawaited(_entfernen(programm))
                         : null,
                   ),
                 Padding(

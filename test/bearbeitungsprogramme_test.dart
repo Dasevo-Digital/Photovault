@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:photo_vault/services/bearbeitungsbruecke.dart';
 import 'package:photo_vault/services/bearbeitungsprogramme.dart';
 import 'package:photo_vault/services/darktable_bruecke.dart';
 import 'package:photo_vault/services/fremdprogramme.dart';
@@ -92,13 +94,93 @@ void main() {
     expect(schalter(dritte)['gimp'], isFalse);
   });
 
-  test('eine kaputte Einstellungsdatei kostet nur die Einstellung', () async {
+  test('eine kaputte Einstellungsdatei kostet nur die Einstellung – und '
+      'wird beiseitegelegt, nicht überschrieben', () async {
     datei
       ..createSync(recursive: true)
       ..writeAsStringSync('{kaputt');
     final programme = neu();
     await programme.laden();
     expect(programme.aktive.map((x) => x.name), ['darktable', 'GIMP']);
+    await programme.schalte('gimp', false);
+    expect(File('${datei.path}.kaputt').readAsStringSync(), '{kaputt');
+    expect(jsonDecode(datei.readAsStringSync())['fassung'], 1);
+  });
+
+  test('Speichern geht nacheinander: viele Änderungen auf einmal, eine '
+      'heile Datei mit allen', () async {
+    final programme = neu();
+    await programme.laden();
+    await Future.wait([
+      programme.schalte('gimp', false),
+      programme.fuegeHinzu('/Applications/Pixelmator Pro.app'),
+      programme.schalte('photoshop', true),
+      programme.fuegeHinzu('/Applications/Krita.app'),
+      programme.schalte('darktable', false),
+    ]);
+    final danach = neu();
+    await danach.laden();
+    expect(schalter(danach), {
+      'darktable': false,
+      'on1': false,
+      'affinity': false,
+      'photoshop': true,
+      'gimp': false,
+      'eigen:/Applications/Pixelmator Pro.app': true,
+      'eigen:/Applications/Krita.app': true,
+    });
+    expect(File('${datei.path}.neu').existsSync(), isFalse);
+  });
+
+  test('Ordner aus der Datei werden geprüft: nichts ausserhalb, nichts '
+      'Fremdes', () async {
+    datei
+      ..createSync(recursive: true)
+      ..writeAsStringSync(
+        jsonEncode({
+          'fassung': 1,
+          'eigene': [
+            for (final (name, ordner) in [
+              ('A', '../../Dokumente'),
+              ('B', '/tmp/irgendwo'),
+              ('C', 'PhotoVault-darktable'),
+              ('D', 'PhotoVault-..'),
+              ('E', 'PhotoVault-Gut'),
+              ('F', 'photovault-gut'),
+            ])
+              {
+                'name': name,
+                'pfad': '/Applications/$name.app',
+                'ordner': ordner,
+              },
+          ],
+        }),
+      );
+    final programme = neu();
+    await programme.laden();
+    final eigene = [
+      for (final x in programme.alle)
+        if (x.eigenes) x.ordner,
+    ];
+    expect(eigene, [
+      'PhotoVault-A',
+      'PhotoVault-B',
+      'PhotoVault-C',
+      'PhotoVault-D',
+      'PhotoVault-Gut',
+      'PhotoVault-F',
+    ]);
+    for (final x in programme.alle) {
+      expect(
+        p.isWithin(programme.basis.path, programme.bruecke(x).ablage.path),
+        isTrue,
+        reason: x.ordner,
+      );
+    }
+    // Die neuen Namen stehen gleich in der Datei, damit sie beim nächsten
+    // Start dieselben sind.
+    final gespeichert = jsonDecode(datei.readAsStringSync())['eigene'] as List;
+    expect([for (final e in gespeichert) (e as Map)['ordner']], eigene);
   });
 
   test('ein eigenes Programm: Name aus dem Bündel, eigener Ordner, '
@@ -145,6 +227,109 @@ void main() {
     );
   });
 
+  test('ein freigewordener Ordner geht nicht an ein anderes Programm, aber '
+      'zurück an dasselbe', () async {
+    final programme = neu();
+    await programme.laden();
+    final erstes = await programme.fuegeHinzu('/Applications/Foto.app');
+    expect(erstes.ordner, 'PhotoVault-Foto');
+    await programme.entferne(erstes.kennung);
+    final anderes = await programme.fuegeHinzu('/Volumes/Alt/Foto.app');
+    expect(anderes.ordner, 'PhotoVault-Foto 2');
+    final danach = neu();
+    await danach.laden();
+    final wieder = await danach.fuegeHinzu('/Applications/Foto.app');
+    expect(
+      wieder.ordner,
+      'PhotoVault-Foto',
+      reason: 'seine Kopien liegen dort',
+    );
+  });
+
+  test('Gegenprobe: ein Ordner, den keine Einstellung kennt, ist auch '
+      'vergeben', () async {
+    Directory(
+      p.join(wurzel.path, 'Bilder', 'PhotoVault-Foto', 'a1'),
+    ).createSync(recursive: true);
+    final programme = neu();
+    await programme.laden();
+    final x = await programme.fuegeHinzu('/Applications/Foto.app');
+    expect(x.ordner, 'PhotoVault-Foto 2');
+  });
+
+  group('Aufräumen (#499)', () {
+    late File original;
+    setUp(() {
+      original = File(p.join(wurzel.path, 'a.jpg'))..writeAsStringSync('x');
+    });
+
+    test('ein Programm mit seinen Kopien entfernen: Kopien gehen, '
+        'Arbeitsdateien bleiben', () async {
+      final programme = neu();
+      await programme.laden();
+      final foto = await programme.fuegeHinzu('/Applications/Foto.app');
+      final b = programme.bruecke(foto);
+      expect(await programme.hatArbeitsordner(foto), isFalse);
+      await b.oeffne(id: 'a1', name: 'a.jpg', original: original);
+      await b.oeffne(id: 'a2', name: 'b.jpg', original: original);
+      File(p.join(b.ordner('a2').path, 'b.psd')).writeAsStringSync('ebenen');
+      expect(await programme.hatArbeitsordner(foto), isTrue);
+      final geblieben = await programme.entferne(foto.kennung, kopienWeg: true);
+      expect(geblieben.map((d) => d.path), [b.ordner('a2').path]);
+      expect(b.ordner('a1').existsSync(), isFalse);
+      expect(File(p.join(b.ordner('a2').path, 'b.jpg')).existsSync(), isFalse);
+      expect(File(p.join(b.ordner('a2').path, 'b.psd')).existsSync(), isTrue);
+    });
+
+    test('Gegenprobe: ohne kopienWeg bleibt alles liegen', () async {
+      final programme = neu();
+      await programme.laden();
+      final foto = await programme.fuegeHinzu('/Applications/Foto.app');
+      final b = programme.bruecke(foto);
+      await b.oeffne(id: 'a1', name: 'a.jpg', original: original);
+      expect(await programme.entferne(foto.kennung), isEmpty);
+      expect(File(p.join(b.ordner('a1').path, 'a.jpg')).existsSync(), isTrue);
+    });
+
+    test('beim Sperren: in allen Ordnern, auch entfernter Programme und '
+        'unbekannter', () async {
+      final programme = neu();
+      await programme.laden();
+      final gimp = programme.alle.singleWhere((x) => x.art == Bekannt.gimp);
+      await programme
+          .bruecke(gimp)
+          .oeffne(id: 'a1', name: 'a.jpg', original: original);
+      final foto = await programme.fuegeHinzu('/Applications/Foto.app');
+      final fb = programme.bruecke(foto);
+      await fb.oeffne(id: 'a1', name: 'a.jpg', original: original);
+      File(p.join(fb.ordner('a1').path, 'a.psd')).writeAsStringSync('ebenen');
+      await programme.entferne(foto.kennung);
+      final unbekannt = Bearbeitungsbruecke(
+        Directory(p.join(wurzel.path, 'Bilder', 'PhotoVault-Alt')),
+        starte: (_) async => true,
+      );
+      await unbekannt.oeffne(id: 'a1', name: 'a.jpg', original: original);
+      await unbekannt.oeffne(id: 'a9', name: 'z.jpg', original: original);
+      final fremd = Directory(p.join(wurzel.path, 'Bilder', 'Urlaub', 'a1'))
+        ..createSync(recursive: true);
+      File(p.join(fremd.path, 'a.jpg')).writeAsStringSync('nicht unseres');
+      // Heisst wie ein Arbeitsordner, ist aber eine Sicherung: ohne Marke
+      // bleibt sie unberührt.
+      final sicherung = Directory(
+        p.join(wurzel.path, 'Bilder', 'PhotoVault-Backup', 'a1'),
+      )..createSync(recursive: true);
+      File(p.join(sicherung.path, 'a.jpg')).writeAsStringSync('gesichert');
+
+      final geblieben = await programme.raeumeKlartextWeg(['a1']);
+      expect(geblieben.map((d) => d.path), [fb.ordner('a1').path]);
+      expect(programme.bruecke(gimp).ordner('a1').existsSync(), isFalse);
+      expect(unbekannt.ordner('a1').existsSync(), isFalse);
+      expect(unbekannt.ordner('a9').existsSync(), isTrue, reason: 'nur a1');
+      expect(File(p.join(fremd.path, 'a.jpg')).existsSync(), isTrue);
+      expect(sicherung.listSync().map((e) => p.basename(e.path)), ['a.jpg']);
+    });
+  });
+
   test('Gegenprobe: ein schon gefundenes Programm wird nicht doppelt '
       'aufgenommen, nur eingeschaltet', () async {
     final programme = neu();
@@ -183,7 +368,7 @@ void main() {
     final bruecke = programme.bruecke(darktable);
     expect(bruecke, isA<DarktableBruecke>());
     expect(bruecke.ordner('a9').path, alt.path);
-    expect(bruecke.offen('a9'), isTrue);
+    expect(await bruecke.offen('a9'), isTrue);
   });
 
   test('programmnameAus', () {

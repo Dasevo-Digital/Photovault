@@ -4688,6 +4688,68 @@ class AppTexteEn extends AppTexte {
   }
 
   @override
+  String viewerArbeitsdateienAus(String programm) {
+    return 'Show working files from $programm';
+  }
+
+  @override
+  String fremdErgebnisUnvollstaendig(String datei) {
+    return '“$datei” is incomplete – saving was probably interrupted. Save the result again in the opened folder.';
+  }
+
+  @override
+  String fremdErgebnisZuGross(String datei, int megapixel, int grenze) {
+    return '“$datei” has $megapixel megapixels. Without the system’s image tools, Photo Vault converts at most $grenze megapixels; save the result as JPEG in the opened folder.';
+  }
+
+  @override
+  String fremdErgebnisNurMitWerkzeug(String datei) {
+    return '“$datei” cannot be converted reliably without the system’s image tools (libvips on Linux and Windows): Photo Vault cannot read its compression, bit depth or colour profile correctly on its own. Save the result as JPEG or as an uncompressed TIFF in the opened folder.';
+  }
+
+  @override
+  String fremdNochNichtFertig(String datei) {
+    return '“$datei” is still being written. Take over the result again once the program has finished saving.';
+  }
+
+  @override
+  String get fremdNeuereArbeitsdateiTitel => 'Newer working file';
+
+  @override
+  String fremdNeuereArbeitsdatei(String arbeitsdatei, String ergebnis) {
+    return '“$arbeitsdatei” was saved after “$ergebnis”. The latest state is probably only in that file, which Photo Vault cannot read. Also save it as JPEG or TIFF – or take over the older state.';
+  }
+
+  @override
+  String get fremdAelterenUebernehmen => 'Take over older state';
+
+  @override
+  String fremdUebernommenArbeitsdateien(String programm) {
+    return 'Taken over. The original remains behind it as a variant. The other files from $programm stay in the working folder; the context menu shows it.';
+  }
+
+  @override
+  String fremdArbeitsdateienGeblieben(String ordner) {
+    return 'Photo Vault removed its working copies. What another program saved from the photo is still in $ordner – delete it there yourself if it should not stay.';
+  }
+
+  @override
+  String einstBearbeitenInEntfernenTitel(String programm) {
+    return 'Remove $programm';
+  }
+
+  @override
+  String einstBearbeitenInEntfernenText(String ordner, String programm) {
+    return '$ordner still contains working copies for $programm. Remove them as well? Whatever the program saved itself stays.';
+  }
+
+  @override
+  String get einstBearbeitenInNurProgramm => 'Only the program';
+
+  @override
+  String get einstBearbeitenInMitKopien => 'The copies too';
+
+  @override
   String get einstAbschnittBearbeitenIn => 'Edit in other apps';
 
   @override

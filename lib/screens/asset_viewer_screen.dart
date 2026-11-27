@@ -260,6 +260,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     unawaited(_pruefeGesichtsschaerfe());
     _programme.addListener(_programmeGeaendert);
     unawaited(_programme.laden());
+    unawaited(_ermittleArbeitsstaende(_currentAsset));
   }
 
   @override
@@ -739,7 +740,54 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// Eine Einstellung hat sich geändert, oder die Erkennung ist fertig:
   /// Das Menü baut beim nächsten Öffnen mit der neuen Liste.
   void _programmeGeaendert() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    unawaited(_ermittleArbeitsstaende(_currentAsset));
+  }
+
+  /// Wie es um die Arbeitsordner der gezeigten Aufnahme steht, je
+  /// Programm (#499). Das Menü baut bei jedem Neuaufbau des Vollbilds mit;
+  /// Plattenzugriffe dort kosteten bei jedem Blättern und jedem Bild der
+  /// Diaschau. Deshalb wird es beim Blättern einmal im Hintergrund
+  /// ermittelt und nach jedem Öffnen und Übernehmen neu.
+  ({String id, Map<String, Arbeitsstand> je})? _arbeitsstaende;
+
+  Future<void> _ermittleArbeitsstaende(AssetData asset) async {
+    if (widget.library == null || asset.type != 'IMAGE' || asset.isLocked) {
+      return;
+    }
+    final je = <String, Arbeitsstand>{};
+    for (final programm in _programme.alle) {
+      try {
+        je[programm.kennung] = await _brueckeFuer(programm).stand(asset.id);
+      } on Object catch (e) {
+        debugPrint('Arbeitsordner von ${programm.name}: $e');
+      }
+    }
+    if (!mounted || _currentAsset.id != asset.id) return;
+    setState(() => _arbeitsstaende = (id: asset.id, je: je));
+  }
+
+  /// Für welche Aufnahme gerade nachgefragt wird (siehe [_arbeitsstand]).
+  String? _staendeFuer;
+
+  /// Der Stand aus dem Zwischenspeicher. Gehört der zu einer anderen
+  /// Aufnahme – nach dem Löschen rückt die nächste auf denselben Platz,
+  /// ohne dass geblättert wurde –, wird einmal nachgefragt.
+  Arbeitsstand _arbeitsstand(Fremdprogramm programm) {
+    final asset = _currentAsset;
+    if (_arbeitsstaende?.id == asset.id) {
+      return _arbeitsstaende!.je[programm.kennung] ?? Arbeitsstand.keiner;
+    }
+    if (_staendeFuer != asset.id) {
+      _staendeFuer = asset.id;
+      unawaited(
+        _ermittleArbeitsstaende(asset).whenComplete(() {
+          if (_staendeFuer == asset.id) _staendeFuer = null;
+        }),
+      );
+    }
+    return Arbeitsstand.keiner;
   }
 
   /// Der Weg zu [programm]. Für darktable der eigene eines Tests, wenn er
@@ -756,6 +804,20 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       _currentAsset.type == 'IMAGE' &&
       !_currentAsset.isLocked;
 
+  /// Ein externes Original (#285) lässt sich nicht durch eine neue Fassung
+  /// ersetzen; die Übernahme scheiterte erst ganz am Ende, nach der
+  /// ganzen Arbeit im anderen Programm. Der eingebaute Editor sagt es
+  /// vorher, genauso hier.
+  bool _externOriginal(AssetData asset) {
+    if (!widget.paths.istReferenziert(asset.relativePath)) return false;
+    melde.warnung(AppTexte.of(context).katalogGrenzen);
+    return true;
+  }
+
+  /// Name der Arbeitskopie (siehe [arbeitsname]).
+  ({String name, String? frueher}) _arbeitsname(AssetData asset) =>
+      arbeitsname(asset.originalFileName, asset.relativePath);
+
   /// Wie [_fuehreAus], für die Einträge, die an einem Programm hängen.
   Future<void> _mitProgramm(Future<void> Function() tun) async {
     if (!mounted) return;
@@ -771,15 +833,18 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   Future<void> _inProgramm(Fremdprogramm programm) async {
     final asset = _currentAsset;
     final t = AppTexte.of(context);
+    if (_externOriginal(asset)) return;
     final darktable = programm.art == Bekannt.darktable;
     final bruecke = _brueckeFuer(programm);
+    final n = _arbeitsname(asset);
     try {
       final tags = darktable
           ? await widget.db.tagsForAsset(asset.id)
           : const <TagData>[];
       final gestartet = await bruecke.oeffne(
         id: asset.id,
-        name: asset.originalFileName,
+        name: n.name,
+        frueher: n.frueher,
         original: await widget.paths.bereit(asset.relativePath),
         // Ohne ausdrückliche 0 vergibt darktable beim Einlesen seine
         // Vorgabe von einem Stern, und die käme als Änderung zurück.
@@ -791,8 +856,8 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
       );
       if (!mounted) return;
       // Jetzt liegt eine Arbeitskopie bereit: Das Menü muss „Ergebnis aus
-      // … übernehmen“ zeigen, und das fragt es beim Aufbau (BEA-152).
-      setState(() {});
+      // … übernehmen“ zeigen (BEA-152).
+      await _ermittleArbeitsstaende(asset);
       if (gestartet) {
         melde.hinweis(switch (programm.art) {
           Bekannt.darktable => t.darktableGeoeffnet,
@@ -820,6 +885,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// damit öffnen.
   Future<void> _anderesProgramm() async {
     final t = AppTexte.of(context);
+    if (_externOriginal(_currentAsset)) return;
     try {
       final pfad = await _programme.waehle(t.fremdProgrammWaehlen);
       if (pfad == null || !mounted) return;
@@ -831,8 +897,50 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     }
   }
 
+  /// Warum [e] nicht übernommen werden kann, als Satz.
+  String _unlesbar(AppTexte t, ErgebnisUnlesbar e) {
+    final datei = p.basename(e.pfad);
+    return switch (e.grund) {
+      Unlesbarkeit.format => t.fremdErgebnisUnlesbar(datei),
+      Unlesbarkeit.unvollstaendig => t.fremdErgebnisUnvollstaendig(datei),
+      Unlesbarkeit.zuGross => t.fremdErgebnisZuGross(
+        datei,
+        e.megapixel ?? 0,
+        ergebnisHoechstensPixel ~/ 1000000,
+      ),
+      Unlesbarkeit.nurMitWerkzeug => t.fremdErgebnisNurMitWerkzeug(datei),
+    };
+  }
+
+  /// Ob [datei] übernommen werden kann: fertig geschrieben und ein
+  /// lesbares Bild. Liefert die Bytes des JPEG oder `null` nach einer
+  /// Meldung; der Ordner ist dann offen.
+  Future<Uint8List?> _pruefeErgebnis(
+    Bearbeitungsbruecke bruecke,
+    String id,
+    File datei,
+  ) async {
+    final t = AppTexte.of(context);
+    if (!await bruecke.fertig(datei)) {
+      melde.hinweis(t.fremdNochNichtFertig(p.basename(datei.path)));
+      return null;
+    }
+    try {
+      return await ergebnisAlsJpeg(datei);
+    } on ErgebnisUnlesbar catch (e) {
+      await _programme.zeigeOrdner(bruecke.ordner(id).path);
+      if (mounted) melde.warnung(_unlesbar(t, e));
+      return null;
+    }
+  }
+
   /// Holt das Ergebnis aus [programm] ab und legt es als neue Fassung
   /// über die Aufnahme; das Original bleibt als Variante dahinter.
+  ///
+  /// **Eine neuere Arbeitsdatei.** Liegt neben dem Ergebnis ein PSD, eine
+  /// XCF oder eine Affinity-Datei, die später gespeichert wurde, steckt
+  /// der letzte Stand vermutlich nur darin. Dann wird gefragt, statt still
+  /// den älteren zu übernehmen.
   Future<void> _ausProgramm(Fremdprogramm programm) async {
     if (programm.art == Bekannt.darktable) return _ausDarktable(programm);
     final asset = _currentAsset;
@@ -840,8 +948,9 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     if (library == null) return;
     final t = AppTexte.of(context);
     final bruecke = _brueckeFuer(programm);
+    final n = _arbeitsname(asset);
     try {
-      final fund = await bruecke.suche(asset.id, asset.originalFileName);
+      final fund = await bruecke.suche(asset.id, n.name, frueher: n.frueher);
       final datei = fund.datei;
       if (datei == null) {
         await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
@@ -852,19 +961,44 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         });
         return;
       }
-      final Uint8List jpeg;
-      try {
-        jpeg = await ergebnisAlsJpeg(datei);
-      } on ErgebnisUnlesbar {
-        await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
-        melde.warnung(t.fremdErgebnisUnlesbar(p.basename(datei.path)));
-        return;
+      if (fund.unlesbar case final fremd?
+          when (await fremd.lastModified()).isAfter(
+            await datei.lastModified(),
+          )) {
+        if (!mounted) return;
+        final trotzdem = await confirmDialog(
+          context,
+          t.fremdNeuereArbeitsdateiTitel,
+          t.fremdNeuereArbeitsdatei(
+            p.basename(fremd.path),
+            p.basename(datei.path),
+          ),
+          bestaetigen: t.fremdAelterenUebernehmen,
+          destruktiv: false,
+        );
+        if (!trotzdem) {
+          await _programme.zeigeOrdner(bruecke.ordner(asset.id).path);
+          return;
+        }
       }
+      if (!mounted) return;
+      final jpeg = await _pruefeErgebnis(bruecke, asset.id, datei);
+      if (jpeg == null) return;
       await library.speichereNeueFassung(asset, jpeg);
-      await bruecke.schliesse(asset.id);
+      final blieb = await bruecke.nachUebernahme(
+        asset.id,
+        datei,
+        name: n.name,
+        frueher: n.frueher,
+      );
       vergissAlleBilder();
       await _refreshAsset(asset.id);
-      melde.erfolg(t.fremdUebernommen);
+      if (mounted) await _ermittleArbeitsstaende(_currentAsset);
+      melde.erfolg(
+        blieb
+            ? t.fremdUebernommenArbeitsdateien(programm.name)
+            : t.fremdUebernommen,
+      );
     } on Object catch (e) {
       melde.fehler(t.fremdFehler(programm.name, '$e'));
     }
@@ -877,21 +1011,24 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
     final t = AppTexte.of(context);
     final bruecke = _brueckeFuer(programm);
     try {
-      final name = asset.originalFileName;
-      final jpeg = await bruecke.ergebnis(asset.id, name);
+      final n = _arbeitsname(asset);
+      final beilage = await bruecke.beilage(
+        asset.id,
+        n.name,
+        frueher: n.frueher,
+      );
+      final jpeg = await bruecke.ergebnis(asset.id, n.name, frueher: n.frueher);
       // Kein Export, aber bearbeitet: Das Rendern kann der Server (#351).
       if (jpeg == null &&
           await library.darktableAmServer() &&
-          await library.entwickleAmServer(
-            asset.id,
-            bruecke.beilage(asset.id, name),
-          )) {
+          await library.entwickleAmServer(asset.id, beilage)) {
         melde.hinweis(t.darktableAmServerLaeuft);
         final ok = await library.warteAufServerEntwicklung(asset.id);
         if (ok) {
           await bruecke.schliesse(asset.id);
           vergissAlleBilder();
           if (mounted) await _refreshAsset(asset.id);
+          if (mounted) await _ermittleArbeitsstaende(_currentAsset);
           melde.erfolg(t.darktableAmServerFertig);
         } else {
           melde.fehler(t.darktableAmServerFehler);
@@ -903,14 +1040,18 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         melde.hinweis(t.darktableKeinErgebnis);
         return;
       }
-      await library.uebernimmAusDarktable(
-        asset,
+      if (!mounted) return;
+      if (await _pruefeErgebnis(bruecke, asset.id, jpeg) == null) return;
+      await library.uebernimmAusDarktable(asset, jpeg, beilage);
+      await bruecke.nachUebernahme(
+        asset.id,
         jpeg,
-        bruecke.beilage(asset.id, name),
+        name: n.name,
+        frueher: n.frueher,
       );
-      await bruecke.schliesse(asset.id);
       vergissAlleBilder();
       await _refreshAsset(asset.id);
+      if (mounted) await _ermittleArbeitsstaende(_currentAsset);
       melde.erfolg(t.darktableUebernommen);
     } on Object catch (e) {
       melde.fehler(t.darktableFehler('$e'));
@@ -922,6 +1063,11 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
   /// für dieses Foto eine Arbeitskopie offen ist. Das Übernehmen steht
   /// auch bei einem ausgeschalteten Programm da: Wer es abschaltet, soll
   /// seine angefangene Arbeit trotzdem noch abholen können.
+  ///
+  /// Hat ein Programm nach dem Übernehmen Arbeitsdateien hinterlassen
+  /// (siehe [Bearbeitungsbruecke.nachUebernahme]), steht dort stattdessen
+  /// „Arbeitsdateien aus … zeigen“: Es gibt nichts mehr zu übernehmen,
+  /// aber einen Ordner, den man sonst unter „Bilder“ suchen müsste.
   List<Widget> _bearbeitenInEintraege(AppTexte t) {
     MenuItemButton eintrag(
       IconData symbol,
@@ -953,12 +1099,21 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         child: Text(t.viewerBearbeitenIn),
       ),
       for (final programm in _programme.alle)
-        if (_brueckeFuer(programm).offen(_currentAsset.id))
-          eintrag(
+        ?switch (_arbeitsstand(programm)) {
+          Arbeitsstand.offen => eintrag(
             Icons.file_download_done_outlined,
             t.viewerErgebnisAus(programm.name),
             () => _ausProgramm(programm),
           ),
+          Arbeitsstand.arbeitsdateien => eintrag(
+            Icons.folder_open_outlined,
+            t.viewerArbeitsdateienAus(programm.name),
+            () => _programme.zeigeOrdner(
+              _brueckeFuer(programm).ordner(_currentAsset.id).path,
+            ),
+          ),
+          Arbeitsstand.keiner => null,
+        },
     ];
   }
 
@@ -1557,6 +1712,7 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
                               onPageChanged: (i) {
                                 setState(() => _currentIndex = i);
                                 unawaited(_pruefeGesichtsschaerfe());
+                                unawaited(_ermittleArbeitsstaende(_assets[i]));
                               },
                               itemBuilder: (context, index) {
                                 final a = _assets[index];

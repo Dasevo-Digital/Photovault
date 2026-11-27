@@ -35,6 +35,7 @@ import 'widgets/mini_location_map.dart'
         setzeCartoSchluessel,
         setzeEigeneKarte,
         setzeKarteHochaufloesend;
+import 'services/bearbeitungsprogramme.dart';
 import 'services/meldungsdienst.dart';
 import 'services/serversperre.dart';
 import 'widgets/beenden_dialog.dart';
@@ -227,6 +228,18 @@ class _PhotoVaultAppState extends State<PhotoVaultApp> {
                       melde.hinweis(AppTexte.of(context).syncAuswahlZuGross);
                   meldeServersperre = () =>
                       melde.hinweis(AppTexte.of(context).nurOhneServer);
+                  // Arbeitskopien für andere Programme (#499) gehen beim
+                  // Sperren und endgültigen Löschen mit.
+                  library.beiKlartextFort = (ids) async {
+                    final geblieben = await Bearbeitungsprogramme.standard
+                        .raeumeKlartextWeg(ids);
+                    if (geblieben.isEmpty || !context.mounted) return;
+                    melde.warnung(
+                      AppTexte.of(context).fremdArbeitsdateienGeblieben(
+                        geblieben.map((d) => d.path).join(', '),
+                      ),
+                    );
+                  };
                   return Benutzungsmelder(
                     library: library,
                     child: mitMeldungen(kind),

@@ -37,21 +37,24 @@ void main() {
   }
 
   test('legt Kopie und Beilage unter dem Namen von darktable an', () async {
-    expect(bruecke.offen('a1'), isFalse);
+    expect(await bruecke.offen('a1'), isFalse);
     expect(await oeffne(), isTrue);
     final platz = bruecke.ordner('a1').path;
     expect(File('$platz/IMG_1.CR3').readAsStringSync(), 'roh');
     expect(File('$platz/IMG_1.CR3.xmp').readAsStringSync(), '<a/>');
     expect(gestartet, ['$platz/IMG_1.CR3']);
-    expect(bruecke.offen('a1'), isTrue);
+    expect(await bruecke.offen('a1'), isTrue);
   });
 
   test('ein zweites Öffnen behält die Bearbeitung', () async {
     await oeffne();
-    bruecke.beilage('a1', 'IMG_1.CR3').writeAsStringSync('<bearbeitet/>');
+    (await bruecke.beilage(
+      'a1',
+      'IMG_1.CR3',
+    )).writeAsStringSync('<bearbeitet/>');
     await oeffne(xmp: '<neu/>');
     expect(
-      bruecke.beilage('a1', 'IMG_1.CR3').readAsStringSync(),
+      (await bruecke.beilage('a1', 'IMG_1.CR3')).readAsStringSync(),
       '<bearbeitet/>',
     );
     expect(gestartet, hasLength(2));
@@ -60,7 +63,7 @@ void main() {
   test('ohne darktable liegt die Kopie trotzdem bereit', () async {
     klappt = false;
     expect(await oeffne(), isFalse);
-    expect(bruecke.offen('a1'), isTrue);
+    expect(await bruecke.offen('a1'), isTrue);
   });
 
   test('das Ergebnis ist das neueste JPEG, nie die Arbeitskopie', () async {
@@ -82,7 +85,7 @@ void main() {
   test('schliessen räumt die Arbeitskopie weg', () async {
     await oeffne();
     await bruecke.schliesse('a1');
-    expect(bruecke.offen('a1'), isFalse);
+    expect(await bruecke.offen('a1'), isFalse);
     expect(original.existsSync(), isTrue);
   });
 }

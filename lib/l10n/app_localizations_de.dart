@@ -4718,6 +4718,68 @@ class AppTexteDe extends AppTexte {
   }
 
   @override
+  String viewerArbeitsdateienAus(String programm) {
+    return 'Arbeitsdateien aus $programm zeigen';
+  }
+
+  @override
+  String fremdErgebnisUnvollstaendig(String datei) {
+    return '„$datei“ ist unvollständig – vermutlich wurde das Speichern abgebrochen. Speichere das Ergebnis noch einmal im geöffneten Ordner.';
+  }
+
+  @override
+  String fremdErgebnisZuGross(String datei, int megapixel, int grenze) {
+    return '„$datei“ hat $megapixel Megapixel. Ohne die Bildwerkzeuge des Systems wandelt Photo Vault höchstens $grenze Megapixel um; speichere das Ergebnis als JPEG im geöffneten Ordner.';
+  }
+
+  @override
+  String fremdErgebnisNurMitWerkzeug(String datei) {
+    return '„$datei“ lässt sich ohne die Bildwerkzeuge des Systems (unter Linux und Windows libvips) nicht zuverlässig umwandeln: Kompression, Farbtiefe oder Farbprofil liest Photo Vault selbst nicht richtig. Speichere das Ergebnis als JPEG oder als unkomprimiertes TIFF im geöffneten Ordner.';
+  }
+
+  @override
+  String fremdNochNichtFertig(String datei) {
+    return '„$datei“ wird gerade noch geschrieben. Übernimm das Ergebnis gleich noch einmal, wenn das Programm mit dem Speichern fertig ist.';
+  }
+
+  @override
+  String get fremdNeuereArbeitsdateiTitel => 'Neuere Arbeitsdatei';
+
+  @override
+  String fremdNeuereArbeitsdatei(String arbeitsdatei, String ergebnis) {
+    return '„$arbeitsdatei“ wurde nach „$ergebnis“ gespeichert. Vermutlich steckt der letzte Stand nur darin, und diese Datei kann Photo Vault nicht lesen. Speichere ihn zusätzlich als JPEG oder TIFF – oder übernimm den älteren Stand.';
+  }
+
+  @override
+  String get fremdAelterenUebernehmen => 'Älteren Stand übernehmen';
+
+  @override
+  String fremdUebernommenArbeitsdateien(String programm) {
+    return 'Übernommen. Das Original liegt als Variante dahinter. Die übrigen Dateien aus $programm bleiben im Arbeitsordner; das Rechtsklick-Menü zeigt ihn.';
+  }
+
+  @override
+  String fremdArbeitsdateienGeblieben(String ordner) {
+    return 'Photo Vault hat seine Arbeitskopien entfernt. Was ein anderes Programm aus dem Foto gespeichert hat, liegt noch unter $ordner – lösche es dort selbst, wenn es nicht bleiben soll.';
+  }
+
+  @override
+  String einstBearbeitenInEntfernenTitel(String programm) {
+    return '$programm entfernen';
+  }
+
+  @override
+  String einstBearbeitenInEntfernenText(String ordner, String programm) {
+    return 'Unter $ordner liegen noch Arbeitskopien für $programm. Sollen sie mit entfernt werden? Was das Programm selbst gespeichert hat, bleibt liegen.';
+  }
+
+  @override
+  String get einstBearbeitenInNurProgramm => 'Nur das Programm';
+
+  @override
+  String get einstBearbeitenInMitKopien => 'Auch die Kopien';
+
+  @override
   String get einstAbschnittBearbeitenIn => 'Bearbeiten in anderen Programmen';
 
   @override

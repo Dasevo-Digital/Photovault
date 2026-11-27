@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 import 'package:kern/berechne.dart';
+import 'package:kern/services/bildwerkzeuge.dart';
+import 'package:kern/services/platform/desktop_image_tools.dart';
 import 'package:path/path.dart' as p;
 
 /// Die Programme, die Photo Vault von sich aus kennt (#499).
@@ -101,15 +103,31 @@ abstract interface class Systemblick {
   Future<String?> appPfad(String exe);
 }
 
-/// Der echte [Systemblick].
+/// Führt ein Programm aus und wartet auf sein Ende.
+typedef Prozesslauf =
+    Future<ProcessResult> Function(String programm, List<String> argumente);
+
+Future<ProcessResult> _prozess(String programm, List<String> argumente) =>
+    Process.run(programm, argumente);
+
+/// Der echte [Systemblick]. [system], [umgebung] und [laufe] lassen sich
+/// für die Tests vorgeben; ohne Angabe gilt das laufende System.
 class EchterSystemblick implements Systemblick {
-  const EchterSystemblick();
+  const EchterSystemblick({
+    this._system,
+    this._umgebung,
+    this.laufe = _prozess,
+  });
+
+  final String? _system;
+  final Map<String, String>? _umgebung;
+  final Prozesslauf laufe;
 
   @override
-  String get system => Platform.operatingSystem;
+  String get system => _system ?? Platform.operatingSystem;
 
   @override
-  Map<String, String> get umgebung => Platform.environment;
+  Map<String, String> get umgebung => _umgebung ?? Platform.environment;
 
   @override
   Future<List<String>> namenIn(String ordner) async {
@@ -132,12 +150,15 @@ class EchterSystemblick implements Systemblick {
     }
   }
 
+  /// Fragt die Registrierung mit `reg.exe` aus dem Systemordner, nicht mit
+  /// `reg` über den Suchpfad: Ein `reg.exe` oder `reg.bat` im
+  /// Arbeitsordner oder weiter vorn im PATH liefe sonst an seiner Stelle.
   @override
   Future<String?> appPfad(String exe) async {
-    if (!Platform.isWindows) return null;
+    if (system != 'windows') return null;
     for (final zweig in const ['HKCU', 'HKLM']) {
       try {
-        final r = await Process.run('reg', [
+        final r = await laufe(regPfad(umgebung), [
           'query',
           '$zweig\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\App Paths\\$exe',
           '/ve',
@@ -152,6 +173,25 @@ class EchterSystemblick implements Systemblick {
     return null;
   }
 }
+
+/// Wo `reg.exe` liegt: `%SystemRoot%\System32`, ohne die Variable
+/// `C:\Windows`.
+String regPfad(Map<String, String> umgebung) {
+  String? wert(String name) {
+    for (final e in umgebung.entries) {
+      if (e.key.toLowerCase() == name) return e.value;
+    }
+    return null;
+  }
+
+  final wurzel = wert('systemroot') ?? wert('windir') ?? r'C:\Windows';
+  return p.windows.join(wurzel, 'System32', 'reg.exe');
+}
+
+/// Ob [pfad] eine `.exe` ist. Unter Windows startet nur eine solche:
+/// Eine `.bat` oder `.cmd` reicht CreateProcess an `cmd.exe` weiter, und
+/// dort würde ein `&` im Namen der Arbeitskopie zum nächsten Befehl.
+bool istExe(String pfad) => p.windows.extension(pfad).toLowerCase() == '.exe';
 
 /// Liest den Standardwert aus der Ausgabe von `reg query … /ve`:
 ///
@@ -179,32 +219,59 @@ String? appPfadAus(String ausgabe, Map<String, String> umgebung) {
   return wert.isEmpty ? null : wert;
 }
 
-/// Die Namen der Programme unter macOS, ohne `.app`. Die erste Gruppe ist
-/// die Fassung, nach der bei mehreren die neueste gewinnt.
+/// Ein Name, unter dem ein Programm liegt. [rang] ordnet die Generationen
+/// vor jeder Fassungsnummer; die erste Gruppe von [muster] ist die
+/// Fassung innerhalb einer Generation.
+typedef _Name = ({RegExp muster, int rang});
+
+/// Die Namen der Programme unter macOS, ohne `.app`. Bei mehreren gewinnt
+/// der höchste Rang, darin die neueste Fassung.
 ///
 /// **Jahresfassungen.** Adobe und ON1 hängen das Jahr an den Namen
 /// („Adobe Photoshop 2026“, „ON1 Photo RAW 2027“) und legen das Bündel in
 /// einen gleichnamigen Ordner unter /Programme. Wer zwei Jahre
 /// nebeneinander hat, will das neuere.
-final _macNamen = {
-  Bekannt.darktable: RegExp(r'^darktable$', caseSensitive: false),
-  Bekannt.on1: RegExp(r'^ON1 Photo RAW(?: MAX)?(?: (\d{4}))?$'),
-  // „Affinity“ allein ist die Nachfolgerin, die Foto, Grafik und Layout
-  // vereint.
-  Bekannt.affinity: RegExp(r'^Affinity(?: Photo(?: (\d+))?)?$'),
-  Bekannt.photoshop: RegExp(r'^Adobe Photoshop(?: CC)?(?: (\d{4}))?$'),
-  Bekannt.gimp: RegExp(r'^GIMP(?:[- ](\d+(?:\.\d+)*))?$', caseSensitive: false),
+///
+/// **Nachfolger ohne Nummer.** „Affinity“ allein ist die Nachfolgerin von
+/// „Affinity Photo 2“, die Foto, Grafik und Layout vereint; „GIMP“ ist
+/// GIMP 3, die Fassung davor hiess „GIMP-2.10“. Nach der Nummer allein
+/// verlöre der Nachfolger, weil er keine trägt – deshalb der Rang.
+final Map<Bekannt, List<_Name>> _macNamen = {
+  Bekannt.darktable: [
+    (muster: RegExp(r'^darktable$', caseSensitive: false), rang: 1),
+  ],
+  Bekannt.on1: [
+    (muster: RegExp(r'^ON1 Photo RAW(?: MAX)?(?: (\d{4}))?$'), rang: 1),
+  ],
+  Bekannt.affinity: [
+    (muster: RegExp(r'^Affinity$'), rang: 2),
+    (muster: RegExp(r'^Affinity Photo(?: (\d+))?$'), rang: 1),
+  ],
+  Bekannt.photoshop: [
+    (muster: RegExp(r'^Adobe Photoshop(?: CC)?(?: (\d{4}))?$'), rang: 1),
+  ],
+  Bekannt.gimp: [
+    (muster: RegExp(r'^GIMP$', caseSensitive: false), rang: 2),
+    (
+      muster: RegExp(r'^GIMP[- ](\d+(?:\.\d+)*)$', caseSensitive: false),
+      rang: 1,
+    ),
+  ],
 };
 
 /// Wo die Programme unter Windows liegen: im Programmordner, bei Adobe,
 /// Affinity und ON1 darunter im Ordner des Herstellers, dann der Ordner
 /// des Programms (auch hier mit Jahr oder Fassung) und darin die `.exe`.
+///
+/// [raenge] ordnet wie unter macOS die Generationen vor der Nummer, nach
+/// dem Namen der `.exe` (klein geschrieben); ohne Eintrag Rang 1.
 typedef _Windowsort = ({
   String? hersteller,
   RegExp ordner,
   String unterordner,
   RegExp exe,
   List<String> appPfade,
+  Map<String, int> raenge,
 });
 
 final Map<Bekannt, _Windowsort> _windowsOrte = {
@@ -214,6 +281,7 @@ final Map<Bekannt, _Windowsort> _windowsOrte = {
     unterordner: 'bin',
     exe: RegExp(r'^darktable\.exe$', caseSensitive: false),
     appPfade: ['darktable.exe'],
+    raenge: const {},
   ),
   Bekannt.gimp: (
     hersteller: null,
@@ -222,6 +290,7 @@ final Map<Bekannt, _Windowsort> _windowsOrte = {
     // Nicht gimp-console-3.0.exe: Das ist die Fassung ohne Fenster.
     exe: RegExp(r'^gimp-(\d+(?:\.\d+)*)\.exe$', caseSensitive: false),
     appPfade: ['gimp-3.exe', 'gimp-3.0.exe', 'gimp-2.10.exe'],
+    raenge: const {},
   ),
   Bekannt.photoshop: (
     hersteller: 'Adobe',
@@ -229,6 +298,7 @@ final Map<Bekannt, _Windowsort> _windowsOrte = {
     unterordner: '',
     exe: RegExp(r'^Photoshop\.exe$', caseSensitive: false),
     appPfade: ['Photoshop.exe'],
+    raenge: const {},
   ),
   Bekannt.affinity: (
     hersteller: 'Affinity',
@@ -236,6 +306,8 @@ final Map<Bekannt, _Windowsort> _windowsOrte = {
     unterordner: '',
     exe: RegExp(r'^(?:Photo|Affinity)\.exe$', caseSensitive: false),
     appPfade: const [],
+    // Die Nachfolgerin von Affinity Photo 2 (siehe _macNamen).
+    raenge: const {'affinity.exe': 2},
   ),
   Bekannt.on1: (
     hersteller: 'ON1',
@@ -243,6 +315,7 @@ final Map<Bekannt, _Windowsort> _windowsOrte = {
     unterordner: '',
     exe: RegExp(r'^ON1 Photo RAW(?: MAX)?(?: (\d{4}))?\.exe$'),
     appPfade: const [],
+    raenge: const {},
   ),
 };
 
@@ -334,14 +407,15 @@ Future<Map<Bekannt, String>> _erkenneMac(Systemblick blick) async {
   void pruefe(String name, String ort) {
     if (!name.endsWith('.app')) return;
     final stamm = name.substring(0, name.length - 4);
-    for (final MapEntry(key: art, value: muster) in _macNamen.entries) {
-      final m = muster.firstMatch(stamm);
-      if (m == null) continue;
-      liste.biete(
-        art,
-        pfad.join(ort, name),
-        _fassung(m.groupCount > 0 ? m.group(1) : null),
-      );
+    for (final MapEntry(key: art, value: namen) in _macNamen.entries) {
+      for (final n in namen) {
+        final m = n.muster.firstMatch(stamm);
+        if (m == null) continue;
+        liste.biete(art, pfad.join(ort, name), [
+          n.rang,
+          ..._fassung(m.groupCount > 0 ? m.group(1) : null),
+        ]);
+      }
     }
   }
 
@@ -353,7 +427,9 @@ Future<Map<Bekannt, String>> _erkenneMac(Systemblick blick) async {
       }
       // Nur in Ordner hinein, die wie eines der Programme heissen – nicht
       // in jeden Ordner unter /Programme.
-      if (!_macNamen.values.any((m) => m.hasMatch(name))) continue;
+      if (!_macNamen.values.any((l) => l.any((n) => n.muster.hasMatch(name)))) {
+        continue;
+      }
       final innen = pfad.join(ort, name);
       for (final buendel in await blick.namenIn(innen)) {
         pruefe(buendel, innen);
@@ -394,6 +470,7 @@ Future<Map<Bekannt, String>> _erkenneWindows(Systemblick blick) async {
           final me = ort.exe.firstMatch(exe);
           if (me == null) continue;
           liste.biete(art, pfad.join(innen, exe), [
+            ort.raenge[exe.toLowerCase()] ?? 1,
             ..._fassung(mo.groupCount > 0 ? mo.group(1) : null),
             ..._fassung(me.groupCount > 0 ? me.group(1) : null),
           ]);
@@ -409,7 +486,8 @@ Future<Map<Bekannt, String>> _erkenneWindows(Systemblick blick) async {
     if (gefunden.containsKey(art)) continue;
     for (final exe in ort.appPfade) {
       final ziel = await blick.appPfad(exe);
-      if (ziel != null && await blick.gibtEs(ziel)) {
+      // Ein Installer kann dort auch eine .bat eintragen (siehe istExe).
+      if (ziel != null && istExe(ziel) && await blick.gibtEs(ziel)) {
         gefunden[art] = ziel;
         break;
       }
@@ -501,6 +579,9 @@ Future<bool> _echtAusfuehren(
 /// damit die Erlaubnis, beliebige Befehle ausserhalb auszuführen. Das ist
 /// mehr, als eine Fotoverwaltung haben sollte. Es bleibt deshalb beim
 /// geöffneten Ordner, wie bisher bei darktable.
+///
+/// **Windows.** Gestartet wird nur eine `.exe`, die als gewöhnliche Datei
+/// da ist ([gibtEs]); siehe [istExe].
 class Programmstarter {
   Programmstarter({
     String? system,
@@ -509,8 +590,16 @@ class Programmstarter {
     Ausfuehren? ausfuehren,
   }) : system = system ?? Platform.operatingSystem,
        umgebung = umgebung ?? Platform.environment,
-       _gibtEs = gibtEs ?? const EchterSystemblick().gibtEs,
+       _gibtEs = gibtEs ?? _istDatei,
        _ausfuehren = ausfuehren ?? _echtAusfuehren;
+
+  static Future<bool> _istDatei(String pfad) async {
+    try {
+      return await FileSystemEntity.type(pfad) == FileSystemEntityType.file;
+    } on Object {
+      return false;
+    }
+  }
 
   final String system;
   final Map<String, String> umgebung;
@@ -531,7 +620,7 @@ class Programmstarter {
             (darktable
                 ? p.windows.join(wurzel, 'darktable', 'bin', 'darktable.exe')
                 : null);
-        if (exe == null || !await _gibtEs(exe)) return false;
+        if (exe == null || !istExe(exe) || !await _gibtEs(exe)) return false;
         return _ausfuehren(exe, [datei], warten: false);
       case 'linux':
         if (umgebung.containsKey('FLATPAK_ID')) return false;
@@ -543,13 +632,64 @@ class Programmstarter {
   }
 }
 
-/// Das Ergebnis aus [datei] ist kein Bild, das Photo Vault lesen kann.
+/// Warum ein Ergebnis nicht übernommen werden kann.
+enum Unlesbarkeit {
+  /// Kein Bild, das Photo Vault lesen kann.
+  format,
+
+  /// Abgeschnitten: Das Programm schreibt noch oder ist beim Speichern
+  /// abgebrochen.
+  unvollstaendig,
+
+  /// Zu gross, um es ohne die Werkzeuge des Systems umzuwandeln (siehe
+  /// [ergebnisHoechstensPixel]).
+  zuGross,
+
+  /// Ein TIFF (oder ein Farbprofil), das ohne die Werkzeuge des Systems
+  /// nicht zuverlässig umzuwandeln ist (siehe [ergebnisAlsJpeg]).
+  nurMitWerkzeug,
+}
+
+/// Das Ergebnis aus [pfad] lässt sich nicht übernehmen; [grund] sagt,
+/// warum. [megapixel] nur bei [Unlesbarkeit.zuGross].
 class ErgebnisUnlesbar implements Exception {
-  const ErgebnisUnlesbar(this.pfad);
+  const ErgebnisUnlesbar(
+    this.pfad, [
+    this.grund = Unlesbarkeit.format,
+    this.megapixel,
+  ]);
   final String pfad;
+  final Unlesbarkeit grund;
+  final int? megapixel;
 
   @override
-  String toString() => 'ErgebnisUnlesbar($pfad)';
+  String toString() => 'ErgebnisUnlesbar($pfad, ${grund.name})';
+}
+
+/// Wie viele Pixel ein Ergebnis höchstens haben darf, das Dart selbst
+/// umwandelt: 120 Megapixel, genug für die grössten Kameras (102 MP).
+/// Ein 16-Bit-TIFF dieser Grösse belegt dabei schon rund 700 MB. Die
+/// Werkzeuge des Systems lesen in Streifen und brauchen die Grenze nicht.
+const ergebnisHoechstensPixel = 120 * 1000 * 1000;
+
+/// Der Weg für ein TIFF vor `package:image` (#499): unter macOS ImageIO
+/// über den Kanal der App ([Bildwerkzeuge.standard]), sonst libvips
+/// ([DesktopImageTools.nurMitVips]). Beide lesen das Farbprofil und jede
+/// Kompressionsart. `null`, wenn es den Weg nicht gibt oder er scheitert.
+///
+/// Unter Linux und Windows bewusst nicht über
+/// `Bildwerkzeuge.convertToJpegBytes`: Fehlt libvips, rechnet der dort
+/// mit `package:image` weiter – genau dem Weg, der ein TIFF falsch lesen
+/// kann, und ohne die Prüfung von [ergebnisAlsJpeg].
+Future<Uint8List?> tiffUeberWerkzeug(File datei) async {
+  if (Platform.isMacOS) {
+    return Bildwerkzeuge.standard.convertToJpegBytes(
+      datei,
+      maxDimension: null,
+      quality: 0.95,
+    );
+  }
+  return DesktopImageTools.nurMitVips(datei, quality: 95);
 }
 
 /// Die Bytes für `speichereNeueFassung`: ein JPEG.
@@ -561,39 +701,238 @@ class ErgebnisUnlesbar implements Exception {
 /// Das kostet die 16 Bit eines TIFF; die Bibliothek hätte sie ohnehin nicht
 /// gehalten.
 ///
+/// **Vollständig.** Ein JPEG muss bis zum Ende seines Bildes reichen
+/// ([jpegVollstaendig]); sonst wäre ein halb geschriebenes Ergebnis als
+/// Fassung mit grauem Rand in der Bibliothek gelandet.
+///
+/// **TIFF zuerst über die Werkzeuge des Systems** ([tiff]: Vorgabe
+/// [tiffUeberWerkzeug]). Der TIFF-Leser von `package:image` 4.12 liest
+/// kein Farbprofil (Tag 34675), übergeht bei Deflate den Prädiktor,
+/// rechnet ihn bei 16-Bit-LZW byteweise und verschluckt Fehler im
+/// LZW-Strom – heraus kam ein falsches Bild ohne jede Meldung. Er springt
+/// nur noch ein, wenn es keinen anderen Weg gibt, und dann nur für TIFFs,
+/// die er richtig liest (siehe [_tiffFuerDart]); das Farbprofil setzt
+/// Photo Vault selbst. Alles andere lehnt er mit
+/// [Unlesbarkeit.nurMitWerkzeug] ab.
+///
 /// **Angaben.** Das Farbprofil geht mit, die EXIF-Angaben nicht: Ein TIFF
 /// trägt in demselben Verzeichnis seine Streifen und Kachelversätze, die
 /// in einem JPEG ins Leere zeigten. Aufnahmedatum, Ort und Kamera stehen
 /// in der Datenbank und bleiben an der Aufnahme. Eine Drehung aus den
 /// Angaben wird vorher ins Bild gerechnet.
-Future<Uint8List> ergebnisAlsJpeg(File datei) async {
-  final bytes = await datei.readAsBytes();
-  if (bytes.length > 3 &&
-      bytes[0] == 0xFF &&
-      bytes[1] == 0xD8 &&
-      bytes[2] == 0xFF) {
-    return bytes;
+///
+/// **Speicher.** Dart liest die Datei erst im eigenen Isolat (nur der Pfad
+/// geht hinüber, zurück kommt das JPEG ohne Kopie), prüft vor dem
+/// Dekodieren die Masse
+/// ([ergebnisHoechstensPixel]) und liest nur die erste Seite eines
+/// mehrseitigen TIFF.
+Future<Uint8List> ergebnisAlsJpeg(
+  File datei, {
+  Future<Uint8List?> Function(File datei) tiff = tiffUeberWerkzeug,
+}) async {
+  final kopf = await _kopf(datei);
+  if (_istJpeg(kopf)) {
+    // Auch das Prüfen läuft im Isolat: Ein JPEG mit 30 MB ist ebenso
+    // viele Bytes, durch die es gehen muss.
+    final ({Uint8List? jpeg, Unlesbarkeit? grund, int? megapixel}) r;
+    try {
+      r = await berechne(_jpegLesen, datei.path);
+    } on Object {
+      throw ErgebnisUnlesbar(datei.path);
+    }
+    if (r.jpeg case final jpeg?) return jpeg;
+    throw ErgebnisUnlesbar(datei.path, r.grund ?? Unlesbarkeit.format);
   }
-  Uint8List? jpeg;
+  if (_istTiff(kopf)) {
+    Uint8List? werkzeug;
+    try {
+      werkzeug = await tiff(datei);
+    } on Object {
+      werkzeug = null;
+    }
+    if (werkzeug != null && jpegVollstaendig(werkzeug)) return werkzeug;
+  }
+  final ({Uint8List? jpeg, Unlesbarkeit? grund, int? megapixel}) r;
   try {
-    jpeg = await berechne(_alsJpeg, bytes);
+    r = await berechne(_alsJpeg, datei.path);
   } on Object {
-    jpeg = null;
+    throw ErgebnisUnlesbar(datei.path);
   }
-  if (jpeg == null) throw ErgebnisUnlesbar(datei.path);
-  return jpeg;
+  if (r.jpeg case final jpeg?) return jpeg;
+  throw ErgebnisUnlesbar(
+    datei.path,
+    r.grund ?? Unlesbarkeit.format,
+    r.megapixel,
+  );
 }
 
-Uint8List? _alsJpeg(Uint8List bytes) {
-  var bild = img.decodeImage(bytes);
-  if (bild == null) return null;
-  final ifd = bild.exif.imageIfd;
-  if (ifd.hasOrientation && ifd.orientation != 1) {
+Future<Uint8List> _kopf(File datei) async {
+  final f = await datei.open();
+  try {
+    return await f.read(16);
+  } finally {
+    await f.close();
+  }
+}
+
+bool _istJpeg(Uint8List b) =>
+    b.length > 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF;
+
+bool _istTiff(Uint8List b) =>
+    b.length > 3 &&
+    ((b[0] == 0x49 && b[1] == 0x49 && b[2] == 0x2A && b[3] == 0x00) ||
+        (b[0] == 0x4D && b[1] == 0x4D && b[2] == 0x00 && b[3] == 0x2A));
+
+/// Ob [b] ein vollständiges JPEG ist: vom Anfang über alle Segmente und
+/// die Bilddaten bis zum Ende des Hauptbilds (EOI).
+///
+/// Danach darf noch etwas folgen – manche Kameras und Programme hängen
+/// Daten an, MPF ein zweites Bild. Das Vorschaubild im EXIF zählt nicht
+/// als Ende: Es steckt in einem Segment, das mit seiner Länge
+/// übersprungen wird. In den Bilddaten selbst kann keine Endmarke
+/// vorkommen, weil dort jedes 0xFF ein 0x00 hinter sich hat; ein
+/// abgeschnittenes JPEG hat also keine.
+bool jpegVollstaendig(Uint8List b) {
+  if (b.length < 4 || b[0] != 0xFF || b[1] != 0xD8) return false;
+  var i = 2;
+  while (i < b.length) {
+    if (b[i] != 0xFF) return false;
+    // Füllbytes vor einer Marke.
+    while (i < b.length && b[i] == 0xFF) {
+      i++;
+    }
+    if (i >= b.length) return false;
+    final marke = b[i++];
+    if (marke == 0xD9) return true;
+    // Marken ohne Länge.
+    if (marke == 0x01 || (marke >= 0xD0 && marke <= 0xD7)) continue;
+    if (i + 2 > b.length) return false;
+    final laenge = (b[i] << 8) | b[i + 1];
+    if (laenge < 2) return false;
+    i += laenge;
+    if (i > b.length) return false;
+    if (marke != 0xDA) continue;
+    // Bilddaten nach SOS: bis zur nächsten Marke, die weder ein
+    // gestopftes 0x00 noch eine Wiederaufsetzmarke ist.
+    while (true) {
+      if (i + 1 >= b.length) return false;
+      if (b[i] == 0xFF) {
+        final n = b[i + 1];
+        if (n == 0x00 || (n >= 0xD0 && n <= 0xD7)) {
+          i += 2;
+          continue;
+        }
+        if (n == 0xFF) {
+          i++;
+          continue;
+        }
+        break;
+      }
+      i++;
+    }
+  }
+  return false;
+}
+
+/// Wie gross ein Farbprofil in einem einzigen APP2-Segment höchstens sein
+/// darf; der JPEG-Kodierer von `package:image` teilt grössere nicht auf.
+const _iccHoechstens = 65519 - 14;
+
+/// Im eigenen Isolat: liest das JPEG unter [pfad] und prüft, ob es
+/// vollständig ist.
+({Uint8List? jpeg, Unlesbarkeit? grund, int? megapixel}) _jpegLesen(
+  String pfad,
+) {
+  final bytes = File(pfad).readAsBytesSync();
+  return jpegVollstaendig(bytes)
+      ? (jpeg: bytes, grund: null, megapixel: null)
+      : (jpeg: null, grund: Unlesbarkeit.unvollstaendig, megapixel: null);
+}
+
+/// Im eigenen Isolat: liest [pfad] und wandelt ihn in ein JPEG.
+({Uint8List? jpeg, Unlesbarkeit? grund, int? megapixel}) _alsJpeg(String pfad) {
+  ({Uint8List? jpeg, Unlesbarkeit? grund, int? megapixel}) nicht(
+    Unlesbarkeit grund, [
+    int? megapixel,
+  ]) => (jpeg: null, grund: grund, megapixel: megapixel);
+
+  final bytes = File(pfad).readAsBytesSync();
+  final decoder = img.findDecoderForData(bytes);
+  if (decoder == null) return nicht(Unlesbarkeit.format);
+  final info = decoder.startDecode(bytes);
+  if (info == null) return nicht(Unlesbarkeit.format);
+  final (breite, hoehe) = decoder is img.TiffDecoder
+      ? switch (decoder.info?.images) {
+          final bilder? when bilder.isNotEmpty => (
+            bilder.first.width,
+            bilder.first.height,
+          ),
+          _ => (0, 0),
+        }
+      : (info.width, info.height);
+  if (breite <= 0 || hoehe <= 0) return nicht(Unlesbarkeit.format);
+  if (breite * hoehe > ergebnisHoechstensPixel) {
+    return nicht(Unlesbarkeit.zuGross, (breite * hoehe / 1000000).ceil());
+  }
+
+  img.Image? bild;
+  img.ExifData? exif;
+  if (decoder is img.TiffDecoder) {
+    final seite = decoder.info!.images.first;
+    if (!_tiffFuerDart(seite)) return nicht(Unlesbarkeit.nurMitWerkzeug);
+    bild = decoder.decodeFrame(0);
+    exif = decoder.exif;
+    // Der Leser übernimmt das Profil nicht; ohne es stünden Farben aus
+    // Adobe RGB oder ProPhoto als sRGB da, blass oder grell.
+    Uint8List? icc;
+    try {
+      icc = seite.tags[34675]?.read()?.toData();
+    } on Object {
+      return nicht(Unlesbarkeit.nurMitWerkzeug);
+    }
+    if (bild != null && icc != null && icc.isNotEmpty) {
+      bild.iccProfile = img.IccProfile(
+        'ICC Profile',
+        img.IccProfileCompression.none,
+        Uint8List.fromList(icc),
+      );
+    }
+  } else {
+    // Nur die erste Seite bzw. das erste Bild einer Animation.
+    bild = decoder.decode(bytes, frame: 0);
+    exif = bild?.exif;
+  }
+  if (bild == null) return nicht(Unlesbarkeit.format);
+  if (bild.iccProfile case final icc?
+      when icc.decompressed().length > _iccHoechstens) {
+    return nicht(Unlesbarkeit.nurMitWerkzeug);
+  }
+  final lage = exif?.imageIfd;
+  if (lage != null && lage.hasOrientation && lage.orientation != 1) {
+    bild.exif = exif!;
     bild = img.bakeOrientation(bild);
   }
   bild
     ..exif = img.ExifData()
     // Durchsichtiges aus einem PNG wird weiss, nicht schwarz.
     ..backgroundColor = img.ColorRgb8(255, 255, 255);
-  return img.encodeJpg(bild, quality: 95);
+  final jpeg = img.encodeJpg(bild, quality: 95);
+  return jpegVollstaendig(jpeg)
+      ? (jpeg: jpeg, grund: null, megapixel: null)
+      : nicht(Unlesbarkeit.format);
+}
+
+/// Ob `package:image` diese TIFF-Seite richtig liest: unkomprimiert,
+/// PackBits oder Deflate ohne Prädiktor, mit 8 oder 16 Bit Ganzzahlen.
+///
+/// Abgelehnt werden LZW (Fehler im Strom werden verschluckt, bei 16 Bit
+/// rechnet der Prädiktor byteweise), Deflate mit Prädiktor (wird
+/// übergangen), JPEG im TIFF (ein Fehler lässt die Kachel leer),
+/// Fax-Kompressionen und Fliesskomma.
+bool _tiffFuerDart(img.TiffImage seite) {
+  const ohne = 1, deflate = 8, zip = 32946, packBits = 32773;
+  return const {ohne, deflate, zip, packBits}.contains(seite.compression) &&
+      seite.predictor == 1 &&
+      (seite.bitsPerSample == 8 || seite.bitsPerSample == 16) &&
+      seite.sampleFormat == img.TiffFormat.uint;
 }

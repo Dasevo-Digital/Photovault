@@ -18,14 +18,39 @@ import 'fremdprogramme.dart';
 /// Hinweis sagt „als JPEG“. Daran ändert #499 nichts: Wer schon einen
 /// Arbeitsordner mit einem TIFF-Zwischenstand liegen hat, soll ihn nicht
 /// plötzlich als Ergebnis übernommen bekommen.
+///
+/// **Nach dem Übernehmen geht der ganze Ordner**, anders als bei den
+/// übrigen Programmen (siehe [Bearbeitungsbruecke.nachUebernahme]). Darin
+/// liegt nur, was Photo Vault angelegt hat – Kopie, Beilage, Marke – und
+/// was darktable exportiert hat. Ein Export ist eine Ansicht der
+/// Bearbeitung, kein eigenes Werk; die Bearbeitung selbst steht in der
+/// Beilage, deren Sterne und Farbmarke gerade übernommen wurden, und
+/// darktable hält sie zudem in seiner eigenen Datenbank. Eine Datei mit
+/// Ebenen, die verloren ginge, gibt es bei darktable nicht. Bliebe der
+/// Ordner stehen, stünde nach jedem Übernehmen ein Eintrag im Menü, der
+/// nur noch auf alte Exporte zeigt.
 class DarktableBruecke extends Bearbeitungsbruecke {
-  DarktableBruecke(super.ablage, {Future<bool> Function(String)? starte})
-    : super(
-        starte: starte ?? starteDarktable,
-        mitBeilage: true,
-        endungen: const {'.jpg', '.jpeg'},
-        kopieZaehlt: false,
-      );
+  DarktableBruecke(
+    super.ablage, {
+    Future<bool> Function(String)? starte,
+    super.ruhe,
+  }) : super(
+         starte: starte ?? starteDarktable,
+         mitBeilage: true,
+         endungen: const {'.jpg', '.jpeg'},
+         kopieZaehlt: false,
+       );
+
+  @override
+  Future<bool> nachUebernahme(
+    String id,
+    File genommen, {
+    required String name,
+    String? frueher,
+  }) async {
+    await schliesse(id);
+    return false;
+  }
 
   /// Unter „Bilder“, dort kommt darktable auch aus dem Flatpak hin. Auf dem
   /// Mac direkt im Container: HOME zeigt in der Sandbox dorthin, und

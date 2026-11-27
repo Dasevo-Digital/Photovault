@@ -7633,6 +7633,90 @@ abstract class AppTexte {
   /// **'{programm}: {fehler}'**
   String fremdFehler(String programm, String fehler);
 
+  /// No description provided for @viewerArbeitsdateienAus.
+  ///
+  /// In de, this message translates to:
+  /// **'Arbeitsdateien aus {programm} zeigen'**
+  String viewerArbeitsdateienAus(String programm);
+
+  /// No description provided for @fremdErgebnisUnvollstaendig.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ ist unvollständig – vermutlich wurde das Speichern abgebrochen. Speichere das Ergebnis noch einmal im geöffneten Ordner.'**
+  String fremdErgebnisUnvollstaendig(String datei);
+
+  /// No description provided for @fremdErgebnisZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ hat {megapixel} Megapixel. Ohne die Bildwerkzeuge des Systems wandelt Photo Vault höchstens {grenze} Megapixel um; speichere das Ergebnis als JPEG im geöffneten Ordner.'**
+  String fremdErgebnisZuGross(String datei, int megapixel, int grenze);
+
+  /// No description provided for @fremdErgebnisNurMitWerkzeug.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ lässt sich ohne die Bildwerkzeuge des Systems (unter Linux und Windows libvips) nicht zuverlässig umwandeln: Kompression, Farbtiefe oder Farbprofil liest Photo Vault selbst nicht richtig. Speichere das Ergebnis als JPEG oder als unkomprimiertes TIFF im geöffneten Ordner.'**
+  String fremdErgebnisNurMitWerkzeug(String datei);
+
+  /// No description provided for @fremdNochNichtFertig.
+  ///
+  /// In de, this message translates to:
+  /// **'„{datei}“ wird gerade noch geschrieben. Übernimm das Ergebnis gleich noch einmal, wenn das Programm mit dem Speichern fertig ist.'**
+  String fremdNochNichtFertig(String datei);
+
+  /// No description provided for @fremdNeuereArbeitsdateiTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Neuere Arbeitsdatei'**
+  String get fremdNeuereArbeitsdateiTitel;
+
+  /// No description provided for @fremdNeuereArbeitsdatei.
+  ///
+  /// In de, this message translates to:
+  /// **'„{arbeitsdatei}“ wurde nach „{ergebnis}“ gespeichert. Vermutlich steckt der letzte Stand nur darin, und diese Datei kann Photo Vault nicht lesen. Speichere ihn zusätzlich als JPEG oder TIFF – oder übernimm den älteren Stand.'**
+  String fremdNeuereArbeitsdatei(String arbeitsdatei, String ergebnis);
+
+  /// No description provided for @fremdAelterenUebernehmen.
+  ///
+  /// In de, this message translates to:
+  /// **'Älteren Stand übernehmen'**
+  String get fremdAelterenUebernehmen;
+
+  /// No description provided for @fremdUebernommenArbeitsdateien.
+  ///
+  /// In de, this message translates to:
+  /// **'Übernommen. Das Original liegt als Variante dahinter. Die übrigen Dateien aus {programm} bleiben im Arbeitsordner; das Rechtsklick-Menü zeigt ihn.'**
+  String fremdUebernommenArbeitsdateien(String programm);
+
+  /// No description provided for @fremdArbeitsdateienGeblieben.
+  ///
+  /// In de, this message translates to:
+  /// **'Photo Vault hat seine Arbeitskopien entfernt. Was ein anderes Programm aus dem Foto gespeichert hat, liegt noch unter {ordner} – lösche es dort selbst, wenn es nicht bleiben soll.'**
+  String fremdArbeitsdateienGeblieben(String ordner);
+
+  /// No description provided for @einstBearbeitenInEntfernenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'{programm} entfernen'**
+  String einstBearbeitenInEntfernenTitel(String programm);
+
+  /// No description provided for @einstBearbeitenInEntfernenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Unter {ordner} liegen noch Arbeitskopien für {programm}. Sollen sie mit entfernt werden? Was das Programm selbst gespeichert hat, bleibt liegen.'**
+  String einstBearbeitenInEntfernenText(String ordner, String programm);
+
+  /// No description provided for @einstBearbeitenInNurProgramm.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur das Programm'**
+  String get einstBearbeitenInNurProgramm;
+
+  /// No description provided for @einstBearbeitenInMitKopien.
+  ///
+  /// In de, this message translates to:
+  /// **'Auch die Kopien'**
+  String get einstBearbeitenInMitKopien;
+
   /// No description provided for @einstAbschnittBearbeitenIn.
   ///
   /// In de, this message translates to:
