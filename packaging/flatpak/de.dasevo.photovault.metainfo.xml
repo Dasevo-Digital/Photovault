@@ -75,6 +75,15 @@
   <content_rating type="oars-1.1" />
 
   <releases>
+    <release version="3.70.0" date="2026-11-27">
+      <description>
+        <p>Watermarks (text or logo) in export presets, photo books and public links.</p>
+        <p>Merge exposure brackets into an HDR image and pans into a panorama; the result becomes the main image of a variant stack.</p>
+        <p>"Edit in" now supports ON1 Photo RAW, Affinity Photo, Photoshop, GIMP and custom programs besides darktable.</p>
+        <p>Upscale photos 2×, 3× or 4×; restoration, denoising and upscaling keep the colour profile.</p>
+        <p>Library format 104 and server format 15: update server, desktop apps and the mobile app together.</p>
+      </description>
+    </release>
     <release version="3.69.0" date="2026-11-26">
       <description>
         <p>Locked folder: the dating of a locked photo is now stored in its encrypted package, and the info panel of a locked photo is read-only.</p>
