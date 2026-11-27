@@ -61,6 +61,7 @@ import '../services/platform/folder_access.dart';
 import 'package:kern/services/asset_display_path.dart';
 import 'package:kern/services/datierung.dart';
 import '../services/native_image_converter.dart';
+import '../services/hochskalieren_ablegen.dart';
 import '../services/restore_queue_service.dart';
 import '../services/restore_service.dart';
 import 'package:kern/services/reverse_geocoder.dart';
@@ -1076,7 +1077,8 @@ class LibraryState extends ChangeNotifier {
     );
     importService = ImportService(db, paths);
     backupService = BackupService(db, paths);
-    restoreQueue = RestoreQueueService(db, paths, waitForIdle: true);
+    restoreQueue = RestoreQueueService(db, paths, waitForIdle: true)
+      ..hochskaliertAblegen = _legeHochskaliertAb;
 
     // Nicht mehr selbst aus dem App-Support-Ordner gebaut: Unter Windows
     // liegt der Datenordner im MSIX-Paket woanders als in der
@@ -2554,6 +2556,49 @@ class LibraryState extends ChangeNotifier {
     } finally {
       await ordner.delete(recursive: true);
     }
+  }
+
+  /// Legt das Ergebnis eines Hochskalier-Auftrags als Variante neben sein
+  /// Original (#500, siehe hochskalieren_ablegen.dart) – ohne Server über
+  /// den Import hier, mit Server über das Hochladen dorthin.
+  ///
+  /// Nachbearbeitung und Auswertung kommen erst nach dem Ablegen: Das
+  /// Ablegen läuft in der Tresorreihe, und die Auswertung reiht sich selbst
+  /// dort ein – darin aufgerufen, wartete sie auf sich selbst.
+  Future<String?> _legeHochskaliertAb(
+    String originalId,
+    Uint8List jpeg,
+    int faktor,
+  ) async {
+    final a = abgleich;
+    if (verbunden && a != null) {
+      final id = await legeHochskaliertAmServerAb(
+        db: db,
+        originalId: originalId,
+        jpeg: jpeg,
+        faktor: faktor,
+        hochladen: (datei, angaben) =>
+            TusHochladen(a.verbindung).lade(datei, 'api/v1/hochladen', angaben),
+        abholen: a.empfange,
+      );
+      unawaited(pruefeServerspeicher());
+      return id;
+    }
+    final id = await legeHochskaliertAb(
+      db: db,
+      paths: paths,
+      importe: importService,
+      originalId: originalId,
+      jpeg: jpeg,
+      faktor: faktor,
+    );
+    if (id != null) {
+      await _postProcessNewAsset(id);
+      if (await db.autoAnalyzeAfterImportEnabled()) {
+        unawaited(starteHintergrundanalyse());
+      }
+    }
+    return id;
   }
 
   /// Siehe [Nachbearbeitung.neueAufnahme].

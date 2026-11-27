@@ -2780,7 +2780,7 @@ abstract class AppTexte {
   /// No description provided for @modellEsrganText.
   ///
   /// In de, this message translates to:
-  /// **'Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten.'**
+  /// **'Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten. Auch „Hochskalieren …“ (2×, 3×, 4×) im Vollbild und im Entwickeln rechnet damit.'**
   String get modellEsrganText;
 
   /// No description provided for @modellNafnetTitel.
@@ -6670,6 +6670,102 @@ abstract class AppTexte {
   /// In de, this message translates to:
   /// **'KI-Restaurierung ist nicht verfügbar – Modell nicht installiert.'**
   String get restaurNichtVerfuegbar;
+
+  /// No description provided for @hochskalierenMenue.
+  ///
+  /// In de, this message translates to:
+  /// **'Hochskalieren …'**
+  String get hochskalierenMenue;
+
+  /// No description provided for @hochskalierenTitel.
+  ///
+  /// In de, this message translates to:
+  /// **'Hochskalieren'**
+  String get hochskalierenTitel;
+
+  /// No description provided for @hochskalierenText.
+  ///
+  /// In de, this message translates to:
+  /// **'Real-ESRGAN rechnet das Foto so, wie seine Entwicklung gespeichert ist, auf die vierfache Kantenlänge hoch; für 2× und 3× wird das Ergebnis danach verkleinert. Es kommt als eigene Variante neben das Original, das unverändert Hauptbild bleibt. Gerechnet wird in der Warteschlange der KI-Restaurierung, sobald die App eine Weile ruht – je nach Größe mehrere Minuten.'**
+  String get hochskalierenText;
+
+  /// No description provided for @hochskalierenQuelle.
+  ///
+  /// In de, this message translates to:
+  /// **'Jetzt {breite} × {hoehe} px ({megapixel} MP)'**
+  String hochskalierenQuelle(int breite, int hoehe, double megapixel);
+
+  /// No description provided for @hochskalierenFaktor.
+  ///
+  /// In de, this message translates to:
+  /// **'{faktor}×'**
+  String hochskalierenFaktor(int faktor);
+
+  /// No description provided for @hochskalierenZiel.
+  ///
+  /// In de, this message translates to:
+  /// **'{breite} × {hoehe} px · {megapixel} MP'**
+  String hochskalierenZiel(int breite, int hoehe, double megapixel);
+
+  /// No description provided for @hochskalierenGesperrtKante.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesperrt: Die längste Kante läge über {kante} px.'**
+  String hochskalierenGesperrtKante(int kante);
+
+  /// No description provided for @hochskalierenGesperrtPixel.
+  ///
+  /// In de, this message translates to:
+  /// **'Gesperrt: Das Ergebnis hätte mehr als {megapixel} Megapixel.'**
+  String hochskalierenGesperrtPixel(int megapixel);
+
+  /// No description provided for @hochskalierenModellFehlt.
+  ///
+  /// In de, this message translates to:
+  /// **'Hochskalieren braucht das Modell „KI-Restaurierung – Real-ESRGAN x4“. Es lässt sich unter Einstellungen → KI-Modelle laden.'**
+  String get hochskalierenModellFehlt;
+
+  /// No description provided for @hochskalierenEingereiht.
+  ///
+  /// In de, this message translates to:
+  /// **'Zum Hochskalieren eingereiht. Das Ergebnis erscheint als Variante neben dem Original.'**
+  String get hochskalierenEingereiht;
+
+  /// No description provided for @hochskalierenAuftrag.
+  ///
+  /// In de, this message translates to:
+  /// **'Hochskalieren ({faktor}×)'**
+  String hochskalierenAuftrag(int faktor);
+
+  /// No description provided for @hochskalierenAuftragName.
+  ///
+  /// In de, this message translates to:
+  /// **'{name} – hochskalieren ({faktor}×)'**
+  String hochskalierenAuftragName(String name, int faktor);
+
+  /// No description provided for @hochskalierenBand.
+  ///
+  /// In de, this message translates to:
+  /// **'{auftrag}: {stand}'**
+  String hochskalierenBand(String auftrag, String stand);
+
+  /// No description provided for @hochskalierenWartend.
+  ///
+  /// In de, this message translates to:
+  /// **'{anzahl, plural, =1{1 Foto wartet aufs Hochskalieren} other{{anzahl} Fotos warten aufs Hochskalieren}}'**
+  String hochskalierenWartend(int anzahl);
+
+  /// No description provided for @restaurGrundZuGross.
+  ///
+  /// In de, this message translates to:
+  /// **'Das Ergebnis wäre zu groß – höchstens {kante} px Kantenlänge und {megapixel} Megapixel.'**
+  String restaurGrundZuGross(int kante, int megapixel);
+
+  /// No description provided for @restaurGrundKeinFoto.
+  ///
+  /// In de, this message translates to:
+  /// **'Nur Fotos lassen sich hochskalieren.'**
+  String get restaurGrundKeinFoto;
 
   /// No description provided for @personSchwelleWieAllgemein.
   ///

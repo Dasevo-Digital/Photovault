@@ -13,7 +13,6 @@ import 'package:zierbild/bibliothek_eintraege.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/groessentext.dart';
-import '../utils/dauertext.dart';
 import '../state/importlauf.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
@@ -30,7 +29,6 @@ import 'laenderliste_screen.dart';
 import 'map_screen.dart';
 import 'people_screen.dart';
 import '../services/meldungsdienst.dart';
-import '../services/restore_queue_service.dart';
 import '../services/tresor_waechter.dart';
 import 'restore_queue_screen.dart';
 import 'reisen_screen.dart';
@@ -65,33 +63,8 @@ class _RestoreQueueBanner extends StatelessWidget {
       stream: library.db.watchRestoreJobs(),
       builder: (context, snapshot) {
         final jobs = snapshot.data ?? const <RestoreJobData>[];
-        final running = jobs.where((j) => j.status == 'running').firstOrNull;
-        final queuedCount = jobs.where((j) => j.status == 'queued').length;
-        if (running == null && queuedCount == 0) return const SizedBox.shrink();
-
-        final t = AppTexte.of(context);
-        // Prozent statt „Kachel 12 von 20": Die Kachel ist ein Begriff
-        // aus dem Modell, nicht aus der Welt des Nutzers. Die Restzeit
-        // steht nur da, wenn sie sich aus bereits erledigten Kacheln
-        // wirklich rechnen lässt (siehe [restzeitSchaetzung]).
-        final prozent = running == null ? null : fortschrittProzent(running);
-        final rest = running == null ? null : restzeitSchaetzung(running);
-        final String text;
-        if (running == null) {
-          text = queuedCount > 0
-              ? t.restaurierungWartend(queuedCount)
-              : t.restaurierungWirdVorbereitet;
-        } else if (prozent == null) {
-          // Die Gesamtzahl der Kacheln steht erst fest, wenn das Bild
-          // dekodiert ist. Bis dahin gibt es keinen Anteil zu zeigen.
-          text = t.restaurierungWirdVorbereitet;
-        } else if (queuedCount > 0) {
-          text = t.restaurProzentMitWarteschlange(prozent, queuedCount);
-        } else if (rest != null && rest > Duration.zero) {
-          text = t.restaurProzentMitRest(prozent, dauerText(t, rest));
-        } else {
-          text = t.restaurProzentLaeuft(prozent);
-        }
+        final text = restaurierungsbandText(AppTexte.of(context), jobs);
+        if (text == null) return const SizedBox.shrink();
 
         return Material(
           color: Theme.of(context).colorScheme.secondaryContainer,

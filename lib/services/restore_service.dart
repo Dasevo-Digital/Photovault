@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as img;
 
+import 'hochskalieren.dart';
 import 'tile_processor.dart';
 import 'package:kern/services/model_catalog.dart';
 import 'package:kern/services/modellthreads.dart';
@@ -110,6 +111,38 @@ class RestoreService {
         kachel: kachelGroesse(),
         overlap: overlap,
         massstab: scaleFactor,
+        ziel: scaleFactor,
+        vielfaches: 1,
+        staerke: 1.0,
+      ),
+    );
+  }
+
+  /// Rechnet das JPEG [quelle] auf das [faktor]-fache hoch – das Werkzeug
+  /// „Hochskalieren“ (#500). Derselbe Lauf wie [starteJpeg], im selben
+  /// Isolat und mit demselben Anhalten und Abbrechen; das Netz rechnet
+  /// weiterhin vierfach, bei 2× und 3× wird jede Kachel gleich danach
+  /// verkleinert (siehe [hochskaliereInKacheln], dort auch, warum nicht
+  /// vorher).
+  Restaurierungslauf starteHochskalieren(
+    Uint8List quelle, {
+    required int faktor,
+    int quality = 92,
+    void Function(int done, int total)? onProgress,
+  }) {
+    if (!hochskalierFaktoren.contains(faktor)) {
+      throw ArgumentError.value(faktor, 'faktor');
+    }
+    return _starte(
+      _session,
+      quelle,
+      quality: quality,
+      onProgress: onProgress,
+      art: (
+        kachel: kachelGroesse(),
+        overlap: overlap,
+        massstab: scaleFactor,
+        ziel: faktor,
         vielfaches: 1,
         staerke: 1.0,
       ),
@@ -122,13 +155,15 @@ class RestoreService {
 }
 
 /// Was den einen Lauf vom anderen unterscheidet: Kachelgrösse und
-/// Überlappung, wie stark das Netz vergrössert, auf welches Vielfache eine
-/// Kachel aufzufüllen ist, und wie viel vom Ergebnis über das Original
-/// kommt (1 = alles).
+/// Überlappung, wie stark das Netz vergrössert ([massstab]) und wie gross
+/// das Ergebnis werden soll ([ziel], beim Hochskalieren auch kleiner als
+/// das Netz, #500), auf welches Vielfache eine Kachel aufzufüllen ist, und
+/// wie viel vom Ergebnis über das Original kommt (1 = alles).
 typedef _Laufart = ({
   int kachel,
   int overlap,
   int massstab,
+  int ziel,
   int vielfaches,
   double staerke,
 });
@@ -182,6 +217,7 @@ class Entrauschdienst {
       kachel: kachelGroesse,
       overlap: overlap,
       massstab: 1,
+      ziel: 1,
       vielfaches: 16,
       staerke: staerke.clamp(0.0, 1.0),
     ),
@@ -368,8 +404,8 @@ class Restaurierungslauf {
 
 class _Abgebrochen implements Exception {}
 
-/// Der Lauf im Isolat – siehe [RestoreService.starteJpeg] und
-/// [Entrauschdienst.starteJpeg].
+/// Der Lauf im Isolat – siehe [RestoreService.starteJpeg],
+/// [RestoreService.starteHochskalieren] und [Entrauschdienst.starteJpeg].
 Future<void> _restaurierungImIsolat(
   ({
     RootIsolateToken token,
@@ -401,11 +437,12 @@ Future<void> _restaurierungImIsolat(
   try {
     final quelle = img.decodeJpg(a.jpeg.materialize().asUint8List());
     if (quelle == null) Isolate.exit(a.antwort, ('fertig', null));
-    final ergebnis = await processInTiles(
+    final ergebnis = await hochskaliereInKacheln(
       quelle,
       tileSize: a.art.kachel,
       overlap: a.art.overlap,
-      scaleFactor: a.art.massstab,
+      modellfaktor: a.art.massstab,
+      zielfaktor: a.art.ziel,
       infer: (kachel) async {
         // Vor jeder Kachel: angehalten wird zwischen zwei Kacheln, nie
         // mitten in einer.

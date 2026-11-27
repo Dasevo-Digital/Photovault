@@ -1660,7 +1660,7 @@ class AppTexteEn extends AppTexte {
 
   @override
   String get modellEsrganText =>
-      'Scales a photo up by a factor of four and removes noise along the way. Runs as a background queue (Settings/Develop) and takes several minutes depending on the size of the photo.';
+      'Scales a photo up by a factor of four and removes noise along the way. Runs as a background queue (Settings/Develop) and takes several minutes depending on the size of the photo. “Upscale …” (2×, 3×, 4×) in the full-screen view and in Develop uses it as well.';
 
   @override
   String get modellNafnetTitel => 'AI denoise (NAFNet)';
@@ -3979,6 +3979,117 @@ class AppTexteEn extends AppTexte {
   @override
   String get restaurNichtVerfuegbar =>
       'AI restoration is not available – the model is not installed.';
+
+  @override
+  String get hochskalierenMenue => 'Upscale …';
+
+  @override
+  String get hochskalierenTitel => 'Upscale';
+
+  @override
+  String get hochskalierenText =>
+      'Real-ESRGAN upscales the photo, as its development is saved, to four times its edge length; for 2× and 3× the result is scaled down afterwards. It is added as a separate variant next to the original, which stays the main image, unchanged. The work runs in the AI restoration queue once the app has been idle for a while and takes several minutes depending on the size.';
+
+  @override
+  String hochskalierenQuelle(int breite, int hoehe, double megapixel) {
+    final intl.NumberFormat breiteNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String breiteString = breiteNumberFormat.format(breite);
+    final intl.NumberFormat hoeheNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String hoeheString = hoeheNumberFormat.format(hoehe);
+    final intl.NumberFormat megapixelNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+          locale: localeName,
+          decimalDigits: 1,
+        );
+    final String megapixelString = megapixelNumberFormat.format(megapixel);
+
+    return 'Currently $breiteString × $hoeheString px ($megapixelString MP)';
+  }
+
+  @override
+  String hochskalierenFaktor(int faktor) {
+    return '$faktor×';
+  }
+
+  @override
+  String hochskalierenZiel(int breite, int hoehe, double megapixel) {
+    final intl.NumberFormat breiteNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String breiteString = breiteNumberFormat.format(breite);
+    final intl.NumberFormat hoeheNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String hoeheString = hoeheNumberFormat.format(hoehe);
+    final intl.NumberFormat megapixelNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+          locale: localeName,
+          decimalDigits: 1,
+        );
+    final String megapixelString = megapixelNumberFormat.format(megapixel);
+
+    return '$breiteString × $hoeheString px · $megapixelString MP';
+  }
+
+  @override
+  String hochskalierenGesperrtKante(int kante) {
+    final intl.NumberFormat kanteNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String kanteString = kanteNumberFormat.format(kante);
+
+    return 'Not available: the longest edge would exceed $kanteString px.';
+  }
+
+  @override
+  String hochskalierenGesperrtPixel(int megapixel) {
+    return 'Not available: the result would have more than $megapixel megapixels.';
+  }
+
+  @override
+  String get hochskalierenModellFehlt =>
+      'Upscaling needs the model “AI restoration – Real-ESRGAN x4”. You can download it under Settings → AI models.';
+
+  @override
+  String get hochskalierenEingereiht =>
+      'Queued for upscaling. The result will appear as a variant next to the original.';
+
+  @override
+  String hochskalierenAuftrag(int faktor) {
+    return 'Upscaling ($faktor×)';
+  }
+
+  @override
+  String hochskalierenAuftragName(String name, int faktor) {
+    return '$name – upscale ($faktor×)';
+  }
+
+  @override
+  String hochskalierenBand(String auftrag, String stand) {
+    return '$auftrag: $stand';
+  }
+
+  @override
+  String hochskalierenWartend(int anzahl) {
+    String _temp0 = intl.Intl.pluralLogic(
+      anzahl,
+      locale: localeName,
+      other: '$anzahl photos waiting to be upscaled',
+      one: '1 photo waiting to be upscaled',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String restaurGrundZuGross(int kante, int megapixel) {
+    final intl.NumberFormat kanteNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String kanteString = kanteNumberFormat.format(kante);
+
+    return 'The result would be too large – at most $kanteString px edge length and $megapixel megapixels.';
+  }
+
+  @override
+  String get restaurGrundKeinFoto => 'Only photos can be upscaled.';
 
   @override
   String personSchwelleWieAllgemein(String allgemein) {

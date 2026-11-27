@@ -923,7 +923,7 @@
   "modellOcecText": "Markiert Gesichter mit geschlossenen Augen in der Sichtung – schnelleres Aussortieren von Fotos mit Blinzlern in Porträt-/Gruppenserien.",
   "modellOcecLizenz": "MIT",
   "modellEsrganTitel": "KI-Restaurierung – Real-ESRGAN x4",
-  "modellEsrganText": "Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten.",
+  "modellEsrganText": "Skaliert ein Foto um Faktor 4 hoch und entrauscht dabei. Läuft als Hintergrund-Warteschlange (Einstellungen/Entwickeln) und dauert je nach Fotogröße mehrere Minuten. Auch „Hochskalieren …“ (2×, 3×, 4×) im Vollbild und im Entwickeln rechnet damit.",
   "modellNafnetTitel": "KI-Entrauschen (NAFNet)",
   "modellNafnetText": "Entfernt Bildrauschen aus Fotos mit hoher ISO, ohne die Auflösung zu ändern – im Entwickeln, mit einstellbarer Stärke. Trainiert auf echtem Sensorrauschen (SIDD). Rechnet auf dem Gerät, je Foto etwa eine halbe bis eine Minute.",
   "modellNafnetLizenz": "MIT (NAFNet, Megvii Research)",
@@ -2224,6 +2224,127 @@
   "restaurGrundNichtGerendert": "Bild konnte nicht gerendert werden.",
   "restaurGrundNichtDekodiert": "Gerendertes Bild konnte nicht dekodiert werden.",
   "restaurNichtVerfuegbar": "KI-Restaurierung ist nicht verfügbar – Modell nicht installiert.",
+  "hochskalierenMenue": "Hochskalieren …",
+  "hochskalierenTitel": "Hochskalieren",
+  "hochskalierenText": "Real-ESRGAN rechnet das Foto so, wie seine Entwicklung gespeichert ist, auf die vierfache Kantenlänge hoch; für 2× und 3× wird das Ergebnis danach verkleinert. Es kommt als eigene Variante neben das Original, das unverändert Hauptbild bleibt. Gerechnet wird in der Warteschlange der KI-Restaurierung, sobald die App eine Weile ruht – je nach Größe mehrere Minuten.",
+  "hochskalierenQuelle": "Jetzt {breite} × {hoehe} px ({megapixel} MP)",
+  "@hochskalierenQuelle": {
+    "placeholders": {
+      "breite": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "hoehe": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "megapixel": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": {
+          "decimalDigits": 1
+        }
+      }
+    }
+  },
+  "hochskalierenFaktor": "{faktor}×",
+  "@hochskalierenFaktor": {
+    "placeholders": {
+      "faktor": {
+        "type": "int"
+      }
+    }
+  },
+  "hochskalierenZiel": "{breite} × {hoehe} px · {megapixel} MP",
+  "@hochskalierenZiel": {
+    "placeholders": {
+      "breite": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "hoehe": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "megapixel": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": {
+          "decimalDigits": 1
+        }
+      }
+    }
+  },
+  "hochskalierenGesperrtKante": "Gesperrt: Die längste Kante läge über {kante} px.",
+  "@hochskalierenGesperrtKante": {
+    "placeholders": {
+      "kante": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "hochskalierenGesperrtPixel": "Gesperrt: Das Ergebnis hätte mehr als {megapixel} Megapixel.",
+  "@hochskalierenGesperrtPixel": {
+    "placeholders": {
+      "megapixel": {
+        "type": "int"
+      }
+    }
+  },
+  "hochskalierenModellFehlt": "Hochskalieren braucht das Modell „KI-Restaurierung – Real-ESRGAN x4“. Es lässt sich unter Einstellungen → KI-Modelle laden.",
+  "hochskalierenEingereiht": "Zum Hochskalieren eingereiht. Das Ergebnis erscheint als Variante neben dem Original.",
+  "hochskalierenAuftrag": "Hochskalieren ({faktor}×)",
+  "@hochskalierenAuftrag": {
+    "placeholders": {
+      "faktor": {
+        "type": "int"
+      }
+    }
+  },
+  "hochskalierenAuftragName": "{name} – hochskalieren ({faktor}×)",
+  "@hochskalierenAuftragName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "faktor": {
+        "type": "int"
+      }
+    }
+  },
+  "hochskalierenBand": "{auftrag}: {stand}",
+  "@hochskalierenBand": {
+    "placeholders": {
+      "auftrag": {
+        "type": "String"
+      },
+      "stand": {
+        "type": "String"
+      }
+    }
+  },
+  "hochskalierenWartend": "{anzahl, plural, =1{1 Foto wartet aufs Hochskalieren} other{{anzahl} Fotos warten aufs Hochskalieren}}",
+  "@hochskalierenWartend": {
+    "placeholders": {
+      "anzahl": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurGrundZuGross": "Das Ergebnis wäre zu groß – höchstens {kante} px Kantenlänge und {megapixel} Megapixel.",
+  "@restaurGrundZuGross": {
+    "placeholders": {
+      "kante": {
+        "type": "int",
+        "format": "decimalPattern"
+      },
+      "megapixel": {
+        "type": "int"
+      }
+    }
+  },
+  "restaurGrundKeinFoto": "Nur Fotos lassen sich hochskalieren.",
   "personSchwelleWieAllgemein": "weiterhin {allgemein}",
   "@personSchwelleWieAllgemein": {
     "placeholders": {

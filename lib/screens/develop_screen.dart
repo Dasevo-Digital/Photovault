@@ -34,6 +34,7 @@ import '../services/develop_render.dart';
 import '../services/entwicklung_ablegen.dart';
 import '../services/entwicklungsverlauf.dart';
 import '../services/histogram.dart';
+import '../services/hochskalieren.dart' show hochskalierfaktor;
 import 'package:kern/services/modell_halter.dart';
 import '../services/native_image_converter.dart';
 import '../services/restore_queue_service.dart';
@@ -54,6 +55,7 @@ import '../theme/app_theme.dart';
 import '../services/meldungsdienst.dart';
 import 'package:kern/services/bild_lesen.dart';
 import '../widgets/einfuegbares_menue.dart';
+import '../widgets/hochskalieren_dialog.dart';
 
 part 'entwickeln/vorschau.dart';
 part 'entwickeln/verlauf_und_vorgaben.dart';
@@ -526,6 +528,15 @@ class _DevelopScreenState extends _EntwickelnBasis
                 await _farboption(wert);
               }
               if (wert == 'offline') await _arbeitsOeffnen();
+              // Hochskalieren (#500) rechnet die gespeicherte Entwicklung,
+              // wie die Restaurierung daneben.
+              if (wert == 'hochskalieren' && context.mounted) {
+                await hochskalierenAnbieten(
+                  context,
+                  warteschlange: widget.restoreQueue,
+                  asset: widget.asset,
+                );
+              }
             },
             itemBuilder: (context) => [
               if (!widget.arbeitsvorschau) ...[
@@ -545,6 +556,11 @@ class _DevelopScreenState extends _EntwickelnBasis
                   value: 'offline',
                   child: Text(AppTexte.of(context).arbeitskopienTitel),
                 ),
+                if (widget.restoreQueue != null && !widget.asset.isLocked)
+                  PopupMenuItem(
+                    value: 'hochskalieren',
+                    child: Text(AppTexte.of(context).hochskalierenMenue),
+                  ),
               ],
               PopupMenuItem(
                 value: 'farben',

@@ -136,6 +136,8 @@ mixin _Bedienfelder on _EntwickelnBasis {
         if (auftrag == null) return const SizedBox.shrink();
         final t = AppTexte.of(context);
         final prozent = fortschrittProzent(auftrag);
+        // Ein Hochskalieren (#500) läuft in derselben Warteschlange.
+        final faktor = hochskalierfaktor(auftrag.id);
         return Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.md,
@@ -150,7 +152,9 @@ mixin _Bedienfelder on _EntwickelnBasis {
                 children: [
                   Expanded(
                     child: Text(
-                      t.entwRestaurierungLaeuft,
+                      faktor == null
+                          ? t.entwRestaurierungLaeuft
+                          : t.hochskalierenAuftrag(faktor),
                       style: const TextStyle(color: Colors.white, fontSize: 13),
                     ),
                   ),

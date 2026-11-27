@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../utils/dauertext.dart';
 
 import 'package:kern/db/database.dart';
+import '../services/hochskalieren.dart';
 import '../services/restore_queue_service.dart';
 import '../state/library_state.dart';
 import '../theme/app_spacing.dart';
@@ -84,6 +85,11 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
     'nichtGerendert' => t.restaurGrundNichtGerendert,
     'nichtDekodiert' => t.restaurGrundNichtDekodiert,
     'speicherbudget' => t.restaurGrundSpeicherbudget,
+    'zuGross' => t.restaurGrundZuGross(
+      hochskalierMaxKante,
+      hochskalierMaxPixel ~/ 1000000,
+    ),
+    'keinFoto' => t.restaurGrundKeinFoto,
     _ => null,
   };
 
@@ -133,9 +139,18 @@ class _RestoreQueueScreenState extends State<RestoreQueueScreen> {
                 future: _asset(job.assetId),
                 builder: (context, assetSnapshot) {
                   final asset = assetSnapshot.data;
+                  final name = asset?.originalFileName ?? job.assetId;
+                  // Hochskalieren (#500) teilt sich die Warteschlange.
+                  final faktor = hochskalierfaktor(job.id);
                   return ListTile(
                     leading: Icon(_statusIcon(job.status)),
-                    title: Text(asset?.originalFileName ?? job.assetId),
+                    title: Text(
+                      faktor == null
+                          ? name
+                          : AppTexte.of(
+                              context,
+                            ).hochskalierenAuftragName(name, faktor),
+                    ),
                     subtitle: Text(_statusLabel(context, job)),
                     onTap: job.status == 'done'
                         ? () => _openAsset(context, job.assetId)
@@ -187,4 +202,51 @@ String restaurLaufText(AppTexte t, RestoreJobData job) {
     return t.restaurZeileLaeuft(prozent);
   }
   return t.restaurZeileMitRest(prozent, dauerText(t, rest));
+}
+
+/// Was das Band über der App-Hülle zur Warteschlange sagt – `null`, solange
+/// nichts wartet und nichts läuft (dann ist das Band nicht zu sehen).
+///
+/// Prozent statt „Kachel 12 von 20": Die Kachel ist ein Begriff aus dem
+/// Modell, nicht aus der Welt des Nutzers. Die Restzeit steht nur da, wenn
+/// sie sich aus bereits erledigten Kacheln wirklich rechnen lässt (siehe
+/// [restzeitSchaetzung]).
+///
+/// **Hochskalieren (#500)** läuft in derselben Warteschlange und sagt es
+/// auch: „KI-Restaurierung läuft“ wäre für ein Foto, das man eben zum
+/// Vergrössern geschickt hat, eine falsche Auskunft. Hier und nicht mehr im
+/// Band selbst, damit sich das prüfen lässt, ohne die ganze Hülle zu bauen.
+String? restaurierungsbandText(
+  AppTexte t,
+  List<RestoreJobData> jobs, {
+  DateTime? jetzt,
+}) {
+  final running = jobs.where((j) => j.status == 'running').firstOrNull;
+  final wartend = jobs.where((j) => j.status == 'queued').toList();
+  final queuedCount = wartend.length;
+  if (running == null && queuedCount == 0) return null;
+  if (running == null) {
+    return wartend.every((j) => hochskalierfaktor(j.id) != null)
+        ? t.hochskalierenWartend(queuedCount)
+        : t.restaurierungWartend(queuedCount);
+  }
+  final faktor = hochskalierfaktor(running.id);
+  if (faktor != null) {
+    return t.hochskalierenBand(
+      t.hochskalierenAuftrag(faktor),
+      restaurLaufText(t, running),
+    );
+  }
+  final prozent = fortschrittProzent(running);
+  final rest = restzeitSchaetzung(running, jetzt: jetzt);
+  // Die Gesamtzahl der Kacheln steht erst fest, wenn das Bild dekodiert
+  // ist. Bis dahin gibt es keinen Anteil zu zeigen.
+  if (prozent == null) return t.restaurierungWirdVorbereitet;
+  if (queuedCount > 0) {
+    return t.restaurProzentMitWarteschlange(prozent, queuedCount);
+  }
+  if (rest != null && rest > Duration.zero) {
+    return t.restaurProzentMitRest(prozent, dauerText(t, rest));
+  }
+  return t.restaurProzentLaeuft(prozent);
 }

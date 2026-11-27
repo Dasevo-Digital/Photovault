@@ -31,6 +31,7 @@ import '../widgets/asset_info_sheet.dart';
 import '../widgets/automatisch_zugeordnet_marke.dart';
 import '../widgets/gesichtsmenue.dart';
 import '../widgets/gesichtsrahmen.dart';
+import '../widgets/hochskalieren_dialog.dart';
 import '../services/gesicht_von_hand.dart';
 import '../widgets/textrahmen.dart';
 import '../widgets/live_photo_view.dart';
@@ -60,6 +61,7 @@ enum _ContextMenuAction {
   editMetadata,
   entwicklungEinfuegen,
   originalHerstellen,
+  hochskalieren,
 }
 
 /// Obergrenze für die Dekodierauflösung (längste Kante) in der
@@ -1000,6 +1002,16 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
           Icons.restore,
           t.infoOriginalHerstellen,
         ),
+      // Hochskalieren (#500): nur Fotos, und nur ausserhalb des gesperrten
+      // Ordners – das Ergebnis wird eine offene Aufnahme.
+      if (widget.library != null &&
+          _currentAsset.type == 'IMAGE' &&
+          _bearbeitbar)
+        punkt(
+          _ContextMenuAction.hochskalieren,
+          Icons.open_in_full,
+          t.hochskalierenMenue,
+        ),
       punkt(
         _ContextMenuAction.editMetadata,
         Icons.edit_note_outlined,
@@ -1142,6 +1154,12 @@ class _AssetViewerScreenState extends State<AssetViewerScreen> {
         await _refreshAsset(id);
       case _ContextMenuAction.originalHerstellen:
         await _originalWiederherstellen();
+      case _ContextMenuAction.hochskalieren:
+        await hochskalierenAnbieten(
+          context,
+          warteschlange: widget.library?.restoreQueue,
+          asset: _currentAsset,
+        );
     }
   }
 
