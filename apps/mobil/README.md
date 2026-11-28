@@ -80,8 +80,14 @@ Test Mode.
 
 | Variante | Android | iOS | Name |
 |---|---|---|---|
-| Debug, Profile | `de.dasevo.photovault.test` | `de.dasevo.photovault.test` | Photo Vault (Test) |
-| Release | `de.dasevo.photovault` | `de.dasevo.photovault` | Photo Vault |
+| Debug, Profile | `de.dasevo.photovault.test` | `de.dasevo.photovault.mobil.test` | Photo Vault (Test) |
+| Release | `de.dasevo.photovault` | `de.dasevo.photovault.mobil` | Photo Vault |
+
+Die Erweiterungen hängen `.sofort`, `.teilen` und `.erinnerung` an. Unter
+iOS heisst die App seit #509 anders als die Mac-App
+(`de.dasevo.photovault`): Ein iPhone- oder iPad-Bau, der auf einem Mac
+mit Apple-Chip läuft, hätte mit derselben Kennung den Sandbox-Container
+der Mac-App und damit deren Bibliothek benutzt.
 
 Die Telefon-Bauten des Desktop-Projekts heissen
 `de.dasevo.photovault.desktop`, damit sie der App nicht in die Quere

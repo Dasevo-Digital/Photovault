@@ -696,7 +696,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault";
-				PV_APP_KENNUNG = de.dasevo.photovault;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -773,10 +773,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault.test;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -804,7 +804,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).sofort";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault";
-				PV_APP_KENNUNG = de.dasevo.photovault;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -884,7 +884,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).sofort";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -913,7 +913,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -942,7 +942,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).erinnerung";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -972,7 +972,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -1108,10 +1108,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault.test;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -1134,10 +1134,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = de.dasevo.photovault;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault";
-				PV_APP_KENNUNG = de.dasevo.photovault;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil;
 				SWIFT_OBJC_BRIDGING_HEADER = "Runner/Runner-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -1165,7 +1165,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault";
-				PV_APP_KENNUNG = de.dasevo.photovault;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -1195,7 +1195,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).teilen";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
@@ -1225,7 +1225,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PV_APP_KENNUNG).sofort";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PV_ANZEIGENAME = "Photo Vault (Test)";
-				PV_APP_KENNUNG = de.dasevo.photovault.test;
+				PV_APP_KENNUNG = de.dasevo.photovault.mobil.test;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				SWIFT_VERSION = 5.0;
