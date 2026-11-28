@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Datenschutz-Manifest der App (#506). Ohne Manifest nimmt App Store
+     Connect den Build nicht an. Flutter und die Plugins bringen eigene
+     Manifeste mit (Flutter.framework, *.bundle); hier steht, was die App
+     selbst und die mitgelieferte SQLite (sqlite3.framework, ohne eigenes
+     Manifest) aufrufen. Nachprüfen mit `nm -u` auf die Binärdateien im
+     gebauten Runner.app. -->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<!-- Keine Erfassung im Sinne von Apple: Fotos, Angaben und Anmeldung
+	     gehen nur an den Server, den der Nutzer selbst betreibt und
+	     einträgt. Der Anbieter der App erhält nichts. Kartenkacheln kommen
+	     direkt von OpenStreetMap bzw. CARTO, Geländehöhen von AWS Open
+	     Data; das gehört in die Datenschutzerklärung (#507). -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- AppDelegate merkt sich Schalter in den eigenen UserDefaults. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+		<!-- Größe und Zeiten von Dateien im eigenen Container: SQLite
+		     (stat, fstat, lstat) für die Datenbank der Bibliothek.
+		     NSFileCreationDate im Runner stammt aus package_info_plus,
+		     das sein eigenes Manifest mitbringt. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<!-- statfs und fstatfs in SQLite: Angaben zum Dateisystem, auf das
+		     die Datenbank schreibt. E174.1 ist der passende der vier
+		     Gründe; die App zeigt keinen Speicherplatz an. -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

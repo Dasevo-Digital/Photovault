@@ -6,3 +6,6 @@
 
 /* App-Sperre (#376) */
 "NSFaceIDUsageDescription" = "Photo Vault uses Face ID to unlock the app when the app lock is on.";
+
+/* Asked when the app first reaches a server on the local network (#506) */
+"NSLocalNetworkUsageDescription" = "Photo Vault connects to your server on the local network to back up and show your photos.";

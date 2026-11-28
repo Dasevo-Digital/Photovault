@@ -21,6 +21,20 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<!-- Ein Server im Heimnetz löst ab iOS 14 die Abfrage „Lokales Netzwerk“
+	     aus. Ohne diesen Text nennt sie keinen Grund (#506). Die
+	     Erweiterungen nutzen die Freigabe der App. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Photo Vault verbindet sich mit deinem Server im Heimnetz, um Fotos zu sichern und anzuzeigen.</string>
+	<!-- Exportangabe für App Store Connect (#506). Verschlüsselt wird mit
+	     HTTPS des Systems und mit AES-256-GCM, einem Standardverfahren
+	     (Paket cryptography), für die zwischengespeicherten Abgleichsaufträge
+	     (kern/abgleich/abgleichsfaelle.dart). Für Standardverfahren verlangt
+	     Apple nur für den Store in Frankreich Unterlagen (französische
+	     Erklärung); TestFlight und Store ohne Frankreich brauchen keine. Vor
+	     einer Freigabe in Frankreich neu entscheiden (#507). -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Die Sicherung der Kamerarolle liest die Fotomediathek und arbeitet
 	     im Hintergrund (BGProcessingTask, siehe sicherung/hintergrund.dart). -->
 	<key>NSFaceIDUsageDescription</key>

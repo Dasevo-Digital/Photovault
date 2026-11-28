@@ -6,3 +6,6 @@
 
 /* App-Sperre (#376) */
 "NSFaceIDUsageDescription" = "Photo Vault fragt nach Face ID, wenn die App-Sperre an ist.";
+
+/* Abfrage „Lokales Netzwerk“ beim ersten Zugriff auf einen Server im Heimnetz (#506) */
+"NSLocalNetworkUsageDescription" = "Photo Vault verbindet sich mit deinem Server im Heimnetz, um Fotos zu sichern und anzuzeigen.";
